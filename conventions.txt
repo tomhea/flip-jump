@@ -1,0 +1,233 @@
+# Tom Herman, January 2021
+
+
+# All the numbers here are in hexadecimal
+# The bits are (lsb to msb) 0,1,2,.. i.e. the 7th bit represents 80
+
+
+
+0.  FlipJump Description
+
+    FlipJump (*.fj files) is an instruction architecture with only 1 instruction (OISC).
+
+    It is defined over a w-bits bit-wide memory (fully shared between instructions and memory),
+    and starts executing from address 0 (maintains an IP - Instruction Pointer).
+
+    Overall The instruction Flips a bit, then Jumps:
+    FlipJump F J
+      will flip (invert, making 0->1 and 1->0) the F'th bit in memory,
+      and jump to address J.
+
+    Specifically, Each cycle the CPU (execute 1 FlipJump operation, which is):
+        0. Reads w bits from IP   onwards, and interprets them as an unsigned little-endian number F
+        1. Flips (inverts) the F'th bit in memory
+        2. Reads w bits from IP+w onwards, and interprets them as an unsigned little-endian number J
+        3. Jumps to (IP = ) the J'th bit in memory
+
+    and in pseudo code:
+    def fj_cpu_64(w, mem):
+        uint64 IP = 0
+        while True:
+            mem[read_64(mem, IP)] = !mem[read_64(mem, IP)]
+            IP = mem[read_64(mem, IP+w)]
+
+    The instructions and memory aren't separated, and FJ operation may, and sometimes should, modify existing instructions.
+    An instruction can even modify itself, while it is running! Look at the next instruction (8bit machine, address 0):
+     >00: 0b
+      08: 10
+    At first it seems like after flipping the bit, the IP is set to 10, but it's wrong!
+    The flipped bit is in the second word (its 3'rd bit) and therefore after flipping, the memory data is:
+      00: 0b
+     >08: 18
+      And the IP will set to 18.
+
+    Can you code something meaningful in fj?
+
+
+
+1.  FlipJump compiled file & assembly
+
+    There are three kinds of fj files:
+    .fjc - FlipJump Compiled             - binary file containing the code in sectors
+    .fj  - pure FlipJump assembly        - text file containing only fj assembly
+    .fjm - FlipJump assembly with Macros - text file containing fj assembly with macros, and/or macros declarations.
+
+    ----------
+
+    The .fjc file format:
+
+    struct {
+        u8 mem_bits;
+        u64 sector_num;
+        u8 default_bit; // 0/1 is default 0/1, otherwise default garbage
+        struct sector {
+            u64 sector_start;   // in memory
+            u64 sector_length;  // in memory
+            u64 data_start;     // in the outer-struct.data
+            u64 data_length;    // in the outer-struct.data
+            u64 jumps;              // 0 for no jumps, 1 for 1 bit jump (writes data, advances 1 bit, write data again,..)
+            u64 jump_granularity;   // how many bits to write between jumps
+        } *sectors;             // sectors[sector_num]
+        char* data;             // the data
+    } fjc_file;
+
+    ----------
+
+    FJ assembly file is of the kind:
+      comment before : F;J // comment after
+    Everything after the // or before the : is ignored.
+
+    F;J means flip the F'th bit, then jump to address J.
+    They are both written in hexadecimal, and they can both be one of the next forms:
+      100         (equals 100)
+      100[3]      (equals 103)
+      67[20][2]   (equals 89)
+      label         (equals label)
+      label[3]      (equals label+3)
+      label[20][2]  (equals label+22)
+
+    The number in the [brackets] is just added to the first one (can be negative too)
+
+    The next forms are also acceptable (instead of using F;J):
+      F
+      ;J
+      ;
+    If F is missing - it will be replaced with the label temp (defined in the standard library).
+    If J is missing - it will be replaced with the next memory-word address (as in no jumping at all).
+
+    Labels are of the form (label_name) and can appear before and after the ;
+    For example:
+      (label) 40;40     40; (label) 40
+      (label) 40        ; (label) 40
+      (label) ;         ; (label)
+    And outside of line:
+      (label)
+        40;40
+    The label references the start of the next memory bit,
+      e.g. (label)40;50 references the address of 40, while 40; (label) 50 references the address of 50.
+
+    ----------
+
+    FJ Macros are defined using .def and .end:
+      .def name parameter_1 parameter_2 ... parameter_n
+        // macro body
+      .end
+
+    You can use a macro by the . operator:
+    .macro_name arg_1 arg_2 ... arg_n
+    This line will be replaced with the macro's body when compiled to .fj file.
+
+    Macro Example:
+        .def flip4 x
+            x[0];
+            x[1];
+            x[2];
+            x[3];
+        .end
+
+
+
+2.  Input/Output
+
+    IO is done in bits (every ascii char is inputted/outputted by its bits, lsb to msb ordered).
+    In order to handle io - cells no. 4,5 (starting at bits 4*w, or IO) are special:
+
+    - Flipping IO[0] (or IO[1]) outputs the bit 0 (or 1).
+
+    - When reading the content of cell 5 (for flipping or jumping purposes) -
+      its (dww)'th bit is filled with an input bit.
+
+    Therefore output is by flipping IO[0] / IO[1],
+    and input is by jumping to IO (which by its value will jump to io_handler or io_handler+2w for handling a bit-input of 0 or 1).
+
+    Legal but wrong (these are permitted, but will probably ruin the input functionality):
+        - Flipping any value in the 2w-2 bits following IO[0],IO[1].
+        - Jumping to any of the 2w-1 bits following IO.
+
+    starting values (for a 64bit computer):
+      (IO)
+        100: temp
+        140: io_handler
+
+
+
+3.  More conventions:
+
+    macro assembly extensions:
+
+        $   => will be replaced with a number never used before.
+
+        ..  => macros that stays until labels-resolve (usually depends on addresses)
+            ..pad X (placing zero-bits until address divides dw. Then placing ; until address divides X*dw)
+            ..flip_by to_address by_address (for every 1 in by_address's address - flip the corresponding bit in to_address)
+            ..flip_by_dbit to_address by_address (same as flip_by, but ignores the bits representing dbit)
+
+        #n#b    => will be replaced by the n-bit word b (given in hex).
+                   will advance the current address in exactly n bits.
+
+    lib64.fjm:
+
+        lib16.fjm  lib32.fjm  lib64.fjm  are standard libraries,
+         created by me to code with fj much simpler.
+        They do most of the [code overriding itself] nonsense for you.
+
+        It supplies you with the
+         *  .startup (to use on the start)
+         *  number variables (the already initialized zero and one)
+         *  important code labels: temp (2dw temp memory straight), 0 and flip_back
+         *  memory manipulation: .mov, .mov4, .mov16, .mov64
+
+        cat program for example:
+
+            .startup in0 in1
+            ;IO
+            (in0)
+              IO[0];IO
+            (in1)
+              IO[1];IO
+
+    bitlib.fjm
+
+        The standard library for operations on single-bit-variables.
+        It is independent of bit-size (gets the needed constants from the libXX.fjm).
+
+        It does Arithmetic/Logic operations:
+          .add x y carry    // x += y
+          .or  x y          // x |= y
+          .inc x            // x++
+        Memory operations:
+          .mov dst src      // dst = src
+        Conditional operations:
+          .test x l0 l1     // goto (x==0 ? l0 : l1)
+
+    veclib.fjm
+
+        The standard library for operations on vector of bit-variables.
+        It is independent of bit-size (gets the needed constants from the libXX.fjm), and have to be included with bitlib.fjm.
+
+        It does what bitlib.fjm does - but for more bits at a time (specifically, for 2,4,8,16,32,64 bits).
+        For example:
+          .add64 x y    // x += y
+          .or64  x y    // x |= y
+          .inc64 x      // x++
+
+
+
+4.  Memory and variables
+
+    I use big-bits as variables, i.e. I use dw memory-bits to store a bit.
+    The cells values are:
+      ;0    if the bit is 0
+      ;dw   if the bit it 1
+
+    The magic of this representation is if the following:
+      If we jump onto the variable, the next operation we will do is either 0 or dw (according to the bit's value).
+      The libXX.fjm standard library
+
+
+
+5.  What can be done?
+
+    Well, that's what I'm interested in!
+
+

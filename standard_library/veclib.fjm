@@ -1,0 +1,159 @@
+// Every line is (a vector of) bananas!
+// Implementation of vector of bit-variables operations
+
+// should be assembled with both bitlib.fjm and (exactly one) libXX.fjm files
+// This file is independent of the bit-width, and uses the consts defined at libXX.fjm
+
+// Everything after // is ignored, everything before first : is ignored too, and every whitespace is ignored (besides new line)
+// An opcode is:  F;L  F  ;L  or just  ;  (no F => F=temp;  no L => L=next)
+
+
+// TODO - implement every method 4,8,16,32,64 versions, and then implement pointer dereference (read and write)
+// TODO - maybe create a script that will create all the versions?
+
+
+// ---------- Memory Manipulation:
+
+
+.def mov2 dst src
+    .mov dst src
+    .mov dst[dw] src[dw]
+
+
+
+// ---------- Conditional Jump
+
+
+.def test2 x l0 l1
+    .__test2 x l0 l1 label$
+.end
+.def __test2 x l0 l1 middle_label
+    .test x middle_label l1
+  (middle_label)
+    .test x l0 l1
+.end
+
+
+
+// ---------- Logical Operators:
+
+
+.def or2 dst src
+    .or dst src
+    .or dst[dw] src[dw]
+.end
+
+
+.def and2 dst src
+    .and dst src
+    .and dst[dw] src[dw]
+.end
+
+
+.def not2 dst
+    .not dst src
+    .not dst[dw] src[dw]
+.end
+
+
+.def shl2 x
+    .mov x x[dw]
+    .mov x[dw] zero
+.end
+
+
+.def shr2 x
+    .mov x[dw] x
+    .mov x zero
+.end
+
+
+.def rol2 x
+    .__rol2 x label$
+.end
+.def __rol2 x rol2_bit_label
+    .mov rol2_bit_label x
+    .shl2 x
+    .mov x[dw] rol2_bit_label
+    ;rol2_bit_label[dw]
+  (rol2_bit_label)
+    ;0
+.end
+
+
+.def ror2 x
+    .__ror2 x label$
+.end
+.def __ror2 x ror2_bit_label
+    .mov ror2_bit_label x[dw]
+    .shr2 x
+    .mov x ror2_bit_label
+    ;ror2_bit_label[dw]
+  (ror2_bit_label)
+    ;0
+.end
+
+
+
+// ---------- Arithmetical Jump
+// carry is both input and output. full adder like
+
+
+.def inc2 x
+    .__inc2_carry1 x label$
+.end
+.def __inc2_carry1 x carry_label
+    .inc2 x carry_label
+    ;carry_label[dw]
+  (carry_label)
+    ;dw
+.end
+.def inc2 x carry
+    .inc x carry
+    .inc x[dw] carry
+.end
+
+
+.def dec2 x
+    .not2 x
+    .inc2 x
+    .not2 x
+.end
+
+
+.def neg2 x
+    .not2 x
+    .inc2 x
+.end
+
+
+.def add2 dst src
+    __add2_carry0 dst src label$
+.end
+.def __add2_carry0 dst src carry_label
+    .add2 dst src carry_label
+    ;carry_label[dw]
+  (carry_label)
+    ;0
+.end
+.def add2_carry1 dst src
+    __add2_carry1 dst src label$
+.end
+.def __add2_carry1 dst src carry_label
+    .add2 dst src carry_label
+    ;carry_label[dw]
+  (carry_label)
+    ;dw
+.end
+.def add2 dst src carry
+    .add dst src carry
+    .add dst[dw] src[dw] carry
+.end
+
+
+.def sub2 dst src
+    .not2 src
+    .add2_carry1 dst src
+    .not2 src
+.end
+
