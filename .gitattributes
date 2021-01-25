@@ -2,6 +2,6 @@
 * text=auto
 
 # Show statistics for FlipJump files.
-*fj  linguist-language=FlipJump
-*fjm linguist-language=FlipJump
+*.fj  linguist-language=FlipJump
+*.fjm linguist-language=FlipJump
 
