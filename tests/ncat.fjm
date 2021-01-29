@@ -1,0 +1,8 @@
+.startup in0 in1
+
+    ;IO
+
+(in0)
+    IO[1];IO
+(in1)
+    IO[0];IO

@@ -26,6 +26,7 @@
     000;040 : a         // now 40a; (400[a];)
     080;0c0 : ; (flip_start_return_address) 200      // now &temp;200
 
+  (IO)
     100;140 : ;io_handler  // now points to io_handler
 
   (zero)
@@ -57,4 +58,3 @@
 
     800;840 :               // start of code
 .end
-

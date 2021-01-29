@@ -76,6 +76,7 @@
     FJ assembly file is of the kind:
       comment before : F;J // comment after
     Everything after the // or before the : is ignored.
+    The only restriction on comments - no '/' can be before the ':'.
 
     F;J means flip the F'th bit, then jump to address J.
     They are both written in hexadecimal, and they can both be one of the next forms:

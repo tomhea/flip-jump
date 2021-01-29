@@ -1,0 +1,21 @@
+.startup in0 in1
+
+.test x l0 l1
+
+(l0)
+    IO[0];loop
+(l1)
+    IO[1];loop
+(loop)
+    ;loop
+
+(x)
+    ;0
+(in0)
+    IO[0];IO
+(in1)
+    IO[1];IO
+
+
+
+
