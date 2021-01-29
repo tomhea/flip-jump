@@ -139,8 +139,8 @@
 
     - Flipping IO[0] (or IO[1]) outputs the bit 0 (or 1).
 
-    - When reading the content of cell 5 (for flipping or jumping purposes) -
-      its (dww)'th bit is filled with an input bit.
+    - When reading the content of IO[dbit] (for flipping or jumping purposes) -
+      that bit is filled with an input bit.
 
     Therefore output is by flipping IO[0] / IO[1],
     and input is by jumping to IO (which by its value will jump to io_handler or io_handler+2w for handling a bit-input of 0 or 1).
