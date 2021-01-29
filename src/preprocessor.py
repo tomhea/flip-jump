@@ -54,9 +54,10 @@ def first_pass(code):
     return macros, defs
 
 
-def main(input_files, output_file, stl=64):
+def preprocess(input_files, output_file, stl=64):
     if stl:
         input_files += [f'stl/{name}.fjm' for name in ('bitlib', 'veclib', f'lib{stl}')]
+
     code = [' '.join(line.split('//', 1)[0].rsplit(':', 1)[-1].split()) for input_file in input_files for line in open(input_file, 'r')]
     code = [op for op in code if op]
     macros, defs = first_pass(code)
@@ -67,10 +68,11 @@ def main(input_files, output_file, stl=64):
     open(output_file, 'w').write('\n'.join(commands))
 
 
+def main():
+    print('preprocessing')
+    for test_name in ('cat', 'ncat', 'mathbit', 'not', 'testbit', 'mathvec'):
+        preprocess([f'tests/{test_name}.fjm'], f'tests/{test_name}.fj')
+
+
 if __name__ == '__main__':
-    main(['tests/cat.fjm'], 'tests/cat.fj')
-    main(['tests/ncat.fjm'], 'tests/ncat.fj')
-    main(['tests/mathbit.fjm'], 'tests/mathbit.fj')
-    main(['tests/not.fjm'], 'tests/not.fj')
-    main(['tests/testbit.fjm'], 'tests/testbit.fj')
-    main(['tests/mathvec.fjm'], 'tests/mathvec.fj')
+    main()

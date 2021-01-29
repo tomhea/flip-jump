@@ -2,7 +2,7 @@
 	
 interpreter/cmake-build-debug/*
 interpreter/.idea/*
-assembler/.idea/*
+src/.idea/*
 
 # Mac files
 ._*
