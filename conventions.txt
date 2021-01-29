@@ -56,19 +56,23 @@
 
     The .fjc file format:
 
+
+
     struct {
-        u8 mem_bits;
+        u8  mem_bits;
         u64 sector_num;
-        u8 default_bit; // 0/1 is default 0/1, otherwise default garbage
+        u8  default_bit; // 0/1 is default 0/1, otherwise default garbage
         struct sector {
-            u64 sector_start;   // in memory
-            u64 sector_length;  // in memory
-            u64 data_start;     // in the outer-struct.data
-            u64 data_length;    // in the outer-struct.data
+            u64 sector_start;   // in memory bits
+            u64 sector_length;  // in memory bits
+            u64 sector_pad;     // start writing at sector_start + sector_pad
+            u8  default_sector_bit;     // 0/1 is default 0/1, otherwise default garbage
+            u64 data_start;     // in the outer-struct.data bits
+            u64 data_length;    // in the outer-struct.data bits
             u64 jumps;              // 0 for no jumps, 1 for 1 bit jump (writes data, advances 1 bit, write data again,..)
             u64 jump_granularity;   // how many bits to write between jumps
         } *sectors;             // sectors[sector_num]
-        char* data;             // the data
+        u8* data;               // the data
     } fjc_file;
 
     ----------
