@@ -60,9 +60,13 @@ class Reader:
         print(f'Warning:  reading garbage bit at mem[{address}] = {int(self.mem[address])}')
         return self.mem[address]
 
-    def __getattr__(self, address):
+    def __getitem__(self, address):
         address &= ((1 << self.w) - 1)
         return self.mem.get(address, self.default_lookup(address))
+
+    def flip(self, address):
+        address &= ((1 << self.w) - 1)
+        self.mem[address] = 1 - self.mem.get(address, self.default_lookup(address))
 
     def get_word(self, address):
         out = 0
