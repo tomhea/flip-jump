@@ -72,7 +72,6 @@ def first_pass(code, bit_width=64):     # labels addresses, remove (label) defs,
             if num_args != len(args):
                 error(f'bad line with .. (..{name} takes {num_args} arguments, not {len(args)})')
 
-            starting_bit_address = bit_address
             if command_type == CommandType.DDotPad:
                 x = int(args[0], 16) * bit_width
                 filled_bits = (-bit_address) % x
@@ -80,11 +79,11 @@ def first_pass(code, bit_width=64):     # labels addresses, remove (label) defs,
                     next_code.append((CommandType.HashTagBits, (hex(filled_bits)[2:], 0)))
                     bit_address += filled_bits
             elif command_type == CommandType.DDotFlipBy:
-                bit_address += (2*bit_width) * bit_width
-                next_code.append((CommandType.DDotFlipBy, args + [starting_bit_address, bit_address]))
+                bit_address += 2 * bit_width
+                next_code.append((CommandType.DDotFlipBy, args + [bit_address]))
             elif command_type == CommandType.DDotFlipByDBit:
-                bit_address += (2 * bit_width) * (bit_width - bit_width.bit_length())
-                next_code.append((CommandType.DDotFlipByDBit, args + [starting_bit_address, bit_address]))
+                bit_address += 2 * bit_width
+                next_code.append((CommandType.DDotFlipByDBit, args + [bit_address]))
             else:
                 assert False
             if line.find('(') >= 0:
@@ -131,7 +130,7 @@ def first_pass(code, bit_width=64):     # labels addresses, remove (label) defs,
 
             next_code.append((CommandType.FlipSCJump, (f, j)))
 
-    return labels, next_code
+    return labels, next_code, bit_address
 
 # class CommandType(Enum):
 #     FlipSCJump = 0      # lambda w,f,j  : 2*w
@@ -190,7 +189,7 @@ def write_flip_jump(data, f, j, bit_width):
     data += lsb_first_bin_array(j, bit_width)
 
 
-def second_pass(writer, labels, code, bit_width):
+def second_pass(writer, labels, code, bit_width, last_address):
     data = []
     for command_type, args in code:
         args = [arg_to_int_address(arg, labels) for arg in args]
@@ -207,22 +206,26 @@ def second_pass(writer, labels, code, bit_width):
             # can be improved to b-1 times F;next, one time F;end,
             # and w-b times temp;next (for b - number of 1's in by_address bit representation)
 
-            to_address, by_address, start_address, end_address = args
+            to_address, by_address, return_address = args
             temp_address = labels['temp']
-            next = start_address
+            # next = start_address
 
             first_bit = 0 if command_type == CommandType.DDotFlipBy else bit_width.bit_length()
-
             flip_bits = [i for i in range(first_bit, bit_width) if by_address & (1 << i)]
-            if flip_bits:
-                for bit in flip_bits[:-1]:
+
+            if len(flip_bits) <= 1:
+                if len(flip_bits) == 0:
+                    write_flip_jump(data, temp_address, return_address, bit_width)
+                else:
+                    write_flip_jump(data, to_address + flip_bits[0], return_address, bit_width)
+            else:
+                next = last_address
+                write_flip_jump(data, to_address + flip_bits[0], next, bit_width)
+                for bit in flip_bits[1:-1]:
                     next += 2*bit_width
-                    write_flip_jump(data, to_address + bit, next, bit_width)
-                next += 2*bit_width
-                write_flip_jump(data, to_address + flip_bits[-1], end_address, bit_width)
-            for _ in range(len(flip_bits), bit_width - first_bit):
-                next += 2 * bit_width
-                write_flip_jump(data, temp_address, next, bit_width)
+                    code.append((CommandType.FlipSCJump, (to_address + bit, next)))
+                last_address = next + 2 * bit_width
+                code.append((CommandType.FlipSCJump, (to_address + flip_bits[-1], return_address)))
 
         else:
             assert False
@@ -234,9 +237,9 @@ def assemble(input_file, output_file, bit_width):
     writer = fjc.Writer(bit_width)
     code = [' '.join(line.split('//', 1)[0].rsplit(':', 1)[-1].split()) for line in open(input_file, 'r')]
     code = [op for op in code if op]
-    labels, code = first_pass(code, bit_width)
+    labels, code, last_address = first_pass(code, bit_width)
 
-    second_pass(writer, labels, code, bit_width)
+    second_pass(writer, labels, code, bit_width, last_address)
 
     writer.write_to_file(output_file)
 
