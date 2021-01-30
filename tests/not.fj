@@ -1,3 +1,27 @@
+(flip_start)
+a
+; (flip_start_return_address) 200
+(IO)
+;io_handler
+(zero)
+0;0
+0[1]
+0[6]
+c0[9];800
+(one)
+0;80
+(flip_back)
+;580
+440[8]
+(flip_back_dst) 0[47]
+; (flip_back_return_address) 0
+(temp)
+;
+;
+(io_handler)
+;x
+;x
 x[47];
+(l);l
 (x)
 ;0

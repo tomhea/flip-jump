@@ -21,6 +21,7 @@ c0[9];800
 (io_handler)
 ;in0
 ;in1
+..flip_by label0[40] label1
 ..flip_by flip_start_return_address label2
 ;x
 (label2)
@@ -35,15 +36,31 @@ c0[9];800
 (label4)
 ..flip_by_dbit flip_back_dst label0
 ..flip_by flip_back_return_address label4
+..flip_by label0[40] label1
+(label0)
 ;label1
 ..pad 2
 (label1)
 ;l0
 label0[47];l1
 (l0)
+IO[0]
+IO[1]
+IO[0]
+IO[1]
+IO[1]
+IO[0]
+IO[1]
 IO[0];loop
 (l1)
-IO[1];loop
+IO[1]
+IO[1]
+IO[1]
+IO[1]
+IO[0]
+IO[0]
+IO[1]
+IO[0];loop
 (loop)
 ;loop
 (x)
