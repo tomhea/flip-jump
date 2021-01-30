@@ -1,4 +1,6 @@
+.startup x x
 .not x
+(l);l
 
 (x)
-    ;0
+    .bit0

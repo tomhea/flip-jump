@@ -1,5 +1,6 @@
 from struct import pack, unpack
 from random import randint
+from time import sleep
 
 
 """
@@ -33,7 +34,7 @@ class Reader:
             self.w, sector_num, def_bit = unpack('<BQB', f.read(1+8+1))
             self.default_append(0, 1<<self.w, def_bit)
             sectors = [unpack('<QQQBQQQQ', f.read(7*8+1)) for _ in range(sector_num)]
-            data = [unpack('<B', b)[0] for b in f.read()]
+            data = [b for b in f.read()]
             for sector_start, sector_length, sector_pad, default_sector_bit, data_start, data_length, jumps, jump_granularity in sectors:
                 self.default_append(sector_start, sector_length, default_sector_bit)
                 sector_i, data_i = sector_start + sector_pad, data_start
@@ -56,22 +57,29 @@ class Reader:
             if start <= address <= end:
                 return default_bit
 
-        self.mem[address] = randint(0, 1)
-        print(f'Warning:  reading garbage bit at mem[{address}] = {int(self.mem[address])}')
-        return self.mem[address]
+        garbage_val = randint(0, 1)
+        print(f'Warning:  reading garbage bit at mem[{address}] = {garbage_val}')
+        sleep(0.1)
+        return garbage_val
 
     def __getitem__(self, address):
         address &= ((1 << self.w) - 1)
-        return self.mem.get(address, self.default_lookup(address))
+        if address not in self.mem:
+            self.mem[address] = self.default_lookup(address)
+        return self.mem[address]
+
+    def __setitem__(self, address, value):
+        address &= ((1 << self.w) - 1)
+        self.mem[address] = value
 
     def flip(self, address):
         address &= ((1 << self.w) - 1)
-        self.mem[address] = 1 - self.mem.get(address, self.default_lookup(address))
+        self[address] = 1 - self[address]
 
     def get_word(self, address):
         out = 0
         for i in range(self.w):
-            out = (out << 1) | self[address+i]
+            out |= self[address+i] << i
         return out
 
 
@@ -109,6 +117,6 @@ class Writer:
         return start
 
     def add_simple_sector_with_data(self, sector_start, data):
-        data_start = self.add_data(data)
+        data_start = self.add_data(data) - len(data)
         sector_length = data_length = len(data)
         self.add_sector(sector_start, sector_length, data_start, data_length)

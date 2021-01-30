@@ -21,6 +21,7 @@ c0[9];800
 (io_handler)
 ;x
 ;x
+..flip_by label4[40] label5
 ..flip_by flip_start_return_address label6
 ;label0
 (label6)
@@ -35,6 +36,8 @@ c0[9];800
 (label8)
 ..flip_by_dbit flip_back_dst label4
 ..flip_by flip_back_return_address label8
+..flip_by label4[40] label5
+(label4)
 ;label5
 ..pad 2
 (label5)
@@ -42,6 +45,7 @@ c0[9];800
 label4[47];label1
 (label1)
 x[47];
+..flip_by label9[40] label10
 ..flip_by flip_start_return_address label11
 ;x
 (label11)
@@ -56,6 +60,8 @@ x[47];
 (label13)
 ..flip_by_dbit flip_back_dst label9
 ..flip_by flip_back_return_address label13
+..flip_by label9[40] label10
+(label9)
 ;label10
 ..pad 2
 (label10)

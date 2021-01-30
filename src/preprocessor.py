@@ -5,11 +5,6 @@ main_macro = ('.__M_a_i_n__', 0)
 defs_macro = ('.__D_e_f_s__', 0)
 
 
-# TODO: change program to resolve the MainMacro macro recursively (output every known command).
-#   Every child will inherit the names from his father (handle $s).
-#   Should recursively eliminate all macro commands, but the .. (double-dot) ones.
-
-
 def resolve_main_macro(macros, defs):
     return resolve_macro_aux(macros, defs, main_macro, [], count())
 
