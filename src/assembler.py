@@ -11,17 +11,28 @@ def error(msg):     # TODO: print file and line number too (should be transferre
     exit(1)
 
 
+def smart_int16(num):
+    try:
+        return int(num, 16)
+    except ...:
+        error(f'{num} is not a number!')
+
+
 class CommandType(Enum):
     FlipSCJump = 0      # lambda w,f,j  : 2*w
     HashTagBits = 1     # lambda w,n,b  : int(n, 16)
     DDotPad = 2         # lambda w,n    : w*int(n, 16)
     DDotFlipBy = 3      # lambda w,to,by: w*w
     DDotFlipByDBit = 4  # lambda w,to,by: w*(w-w.bit_length())
+    DDotVar = 5
+    DDotOutput = 6
 
 
 double_dot_commands = {'pad': (CommandType.DDotPad, 1),
                        'flip_by': (CommandType.DDotFlipBy, 2),
-                       'flip_by_dbit': (CommandType.DDotFlipByDBit, 2)}
+                       'flip_by_dbit': (CommandType.DDotFlipByDBit, 2),
+                       'var': (CommandType.DDotVar, 2),
+                       'output': (CommandType.DDotOutput, 1)}
 
 
 def handle_front_labels(line, labels, bit_address):
@@ -51,13 +62,13 @@ def first_pass(code, bit_width=64):     # labels addresses, remove (label) defs,
             if line:
                 error('bad labels line')
         elif '#' in non_labels_line:
-            res = re.search(r'[0-9A-Fa-f]+#[0-9A-Fa-f]+', line)
+            res = re.match(r'[0-9A-Fa-f]+#[0-9A-Fa-f]+', line)
             if not res:
                 error('bad line with # (no n#b in opcode)')
 
             curr_code = res.group()
             n, b = curr_code.split('#')
-            bit_address += int(n, 16)
+            bit_address += smart_int16(n)
             if handle_front_labels(line[len(curr_code):], labels, bit_address):
                 error('bad line with # (forbidden actions after the main n#b)')
             next_code.append((CommandType.HashTagBits, (n, b)))
@@ -73,7 +84,7 @@ def first_pass(code, bit_width=64):     # labels addresses, remove (label) defs,
                 error(f'bad line with .. (..{name} takes {num_args} arguments, not {len(args)})')
 
             if command_type == CommandType.DDotPad:
-                x = int(args[0], 16) * bit_width
+                x = smart_int16(args[0]) * bit_width
                 filled_bits = (-bit_address) % x
                 if filled_bits:
                     next_code.append((CommandType.HashTagBits, (hex(filled_bits)[2:], 0)))
@@ -84,6 +95,14 @@ def first_pass(code, bit_width=64):     # labels addresses, remove (label) defs,
             elif command_type == CommandType.DDotFlipByDBit:
                 bit_address += 2 * bit_width
                 next_code.append((CommandType.DDotFlipByDBit, args + [bit_address]))
+            elif command_type == CommandType.DDotVar:
+                bit_address += 2 * bit_width * smart_int16(args[0])
+                next_code.append((CommandType.DDotVar, args))
+            elif command_type == CommandType.DDotOutput:
+                output = smart_int16(args[0]) & 0xff
+                for i in range(8):
+                    bit_address += 2 * bit_width
+                    next_code.append((CommandType.FlipSCJump, (f'IO[{(output >> i) & 1}]', bit_address)))
             else:
                 assert False
             if line.find('(') >= 0:
@@ -132,13 +151,6 @@ def first_pass(code, bit_width=64):     # labels addresses, remove (label) defs,
 
     return labels, next_code, bit_address
 
-# class CommandType(Enum):
-#     FlipSCJump = 0      # lambda w,f,j  : 2*w
-#     HashTagBits = 1     # lambda w,n,b  : int(n, 16)
-#     DDotPad = 2         # lambda w,n    : w*int(n, 16)
-#     DDotFlipBy = 3      # lambda w,to,by: w*w
-#     DDotFlipByDBit = 4  # lambda w,to,by: w*(w-w.bit_length())
-
 
 def arg_to_int_address(arg, labels):
     if type(arg) is int:
@@ -152,7 +164,7 @@ def arg_to_int_address(arg, labels):
     if not base_address:
         address = 0
     elif re.match(r'[0-9A-Fa-f]+$', base_address):
-        address = int(base_address, 16)
+        address = smart_int16(base_address)
     else:
         if base_address in labels:
             address = labels[base_address]
@@ -169,12 +181,12 @@ def arg_to_int_address(arg, labels):
     for bracket in single_brackets:
         if bracket not in arg:
             error(f'weird bracket found: {bracket} in: {base_address + arg}')
-        address += int(bracket[1:-1], 16)
+        address += smart_int16(bracket[1:-1])
 
     for bracket in multiplication_brackets:
         if bracket not in arg:
             error(f'weird bracket found: {bracket} in: {base_address + arg}')
-        x, y = (int(v, 16) for v in bracket[1:-1].split('*'))
+        x, y = (smart_int16(v) for v in bracket[1:-1].split('*'))
         address += x * y
 
     return address
@@ -197,30 +209,27 @@ def second_pass(writer, labels, code, bit_width, last_address):
             f, j = args
             write_flip_jump(data, f, j, bit_width)
         elif command_type == CommandType.HashTagBits:
-            n, b = (int(arg, 16) for arg in args)
-            data += [int(c) for c in bin(b)[2:].zfill(n)[-n:]][::-1]
+            n, b = args
+            data += lsb_first_bin_array(b, n)
         elif command_type == CommandType.DDotPad:
             error('..pad should not be handled at second pass level')
+        elif command_type == CommandType.DDotVar:
+            n, v = args
+            temp_address = labels['temp']
+            for i in range(n):
+                write_flip_jump(data, temp_address, 2*bit_width if v & (1 << i) else 0, bit_width)
         elif command_type in (CommandType.DDotFlipBy, CommandType.DDotFlipByDBit):
-            # should take w F;next ops.
-            # can be improved to b-1 times F;next, one time F;end,
-            # and w-b times temp;next (for b - number of 1's in by_address bit representation)
-
             to_address, by_address, return_address = args
             temp_address = labels['temp']
-            # next = start_address
 
             first_bit = 0 if command_type == CommandType.DDotFlipBy else bit_width.bit_length()
             flip_bits = [i for i in range(first_bit, bit_width) if by_address & (1 << i)]
 
             if len(flip_bits) <= 1:
-                if len(flip_bits) == 0:
-                    write_flip_jump(data, temp_address, return_address, bit_width)
-                else:
-                    write_flip_jump(data, to_address + flip_bits[0], return_address, bit_width)
+                write_flip_jump(data, to_address + flip_bits[0] if flip_bits else temp_address, return_address, bit_width)
             else:
+                write_flip_jump(data, to_address + flip_bits[0], last_address, bit_width)
                 next = last_address
-                write_flip_jump(data, to_address + flip_bits[0], next, bit_width)
                 for bit in flip_bits[1:-1]:
                     next += 2*bit_width
                     code.append((CommandType.FlipSCJump, (to_address + bit, next)))

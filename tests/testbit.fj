@@ -19,8 +19,8 @@ c0[9];800
 ;
 ;
 (io_handler)
-;in0
-;in1
+;0
+;0
 ..flip_by label0[40] label1
 ..flip_by flip_start_return_address label2
 ;x
@@ -44,28 +44,12 @@ c0[9];800
 ;l0
 label0[47];l1
 (l0)
-IO[0]
-IO[1]
-IO[0]
-IO[1]
-IO[1]
-IO[0]
-IO[1]
-IO[0];loop
+..output 5A
+;loop
 (l1)
-IO[1]
-IO[1]
-IO[1]
-IO[1]
-IO[0]
-IO[0]
-IO[1]
-IO[0];loop
+..output 31
+;loop
 (loop)
 ;loop
 (x)
 ;0
-(in0)
-IO[0];IO
-(in1)
-IO[1];IO

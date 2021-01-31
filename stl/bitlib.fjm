@@ -12,7 +12,12 @@
 
 
 
-// ---------- Memory Manipulation:
+// ---------- Input / Output:
+
+
+
+
+// ---------- Memory Variables:
 
 
 .def bit0
@@ -85,12 +90,24 @@
 
 
 .def or dst src
-    // TODO implement - look at it a truth-table, and what should change at every time (do something like __inc)
+    .__or dst src label$ label$
+.end
+.def __or dst src one_label cont_label
+    .test src cont_label one_label
+  (one_label)
+    .mov dst one
+  (cont_label)
 .end
 
 
 .def and dst src
-    // TODO implement - look at it a truth-table, and what should change at every time (do something like __inc)
+    .__and dst src label$ label$
+.end
+.def __and dst src zero_label cont_label
+    .test src zero_label cont_label
+  (zero_label)
+    .mov dst zero
+  (cont_label)
 .end
 
 
@@ -159,7 +176,9 @@
     ;dw
 .end
 .def add dst src carry
-    // TODO implement - maybe similar to __inc
+    .inc dst src
+    .inc dst carry
+    .or  dst carry
 .end
 
 

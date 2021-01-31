@@ -21,6 +21,9 @@
 // ---------- Startup Code
 
 
+.def startup
+    .startup 0 0
+.end
 .def startup in0_handler in1_handler
   (flip_start)
     000;040 : a         // now 40a; (400[a];)

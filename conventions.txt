@@ -166,6 +166,8 @@
             ..pad X (placing zero-bits until address divides dw. Then placing ; until address divides X*dw)
             ..flip_by to_address by_address (for every 1 in by_address's address - flip the corresponding bit in to_address)
             ..flip_by_dbit to_address by_address (same as flip_by, but ignores the bits representing dbit)
+            ..var n v (N bit variable initialized with the value of v)
+            ..output xx (2 digit hexadecimal, or 8 bits, to be outputted - great for ascii values)
 
         n#b => will be replaced by the n-bit word b (given in hex).
                will advance the current address in exactly n bits.
