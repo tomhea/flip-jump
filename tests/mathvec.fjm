@@ -1,6 +1,0 @@
-.startup x x
-.inc2 x
-
-(x)
-    .bit0
-    .bit0

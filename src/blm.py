@@ -6,6 +6,7 @@ from time import sleep
 """
 struct {
         u8  mem_bits;
+        u64 flags;
         u64 sector_num;
         u8  default_bit; // 0/1 is default 0/1, otherwise default garbage
         struct sector {
@@ -19,19 +20,20 @@ struct {
             u64 jump_granularity;   // how many bits to write between jumps
         } *sectors;             // sectors[sector_num]
         u8* data;               // the data
-    } fjc_file;
+    } blm_file;     // Bit-Level Memory file
 """
 
 NO_DEFAULT_BIT = 2
 
 
 class Reader:
-    def __init__(self, input_file):
+    def __init__(self, input_file, slow_garbage_read=True):
         self.mem = {}   # memory bits
+        self.slow_garbage_read = slow_garbage_read
         self.w = 64
         self.default_table = []
         with open(input_file, 'rb') as f:
-            self.w, sector_num, def_bit = unpack('<BQB', f.read(1+8+1))
+            self.w, self.flags, sector_num, def_bit = unpack('<BQQB', f.read(1+8+8+1))
             self.default_append(0, 1<<self.w, def_bit)
             sectors = [unpack('<QQQBQQQQ', f.read(7*8+1)) for _ in range(sector_num)]
             data = [b for b in f.read()]
@@ -59,7 +61,8 @@ class Reader:
 
         garbage_val = randint(0, 1)
         print(f'Warning:  reading garbage bit at mem[{address}] = {garbage_val}')
-        sleep(0.1)
+        if self.slow_garbage_read:
+            sleep(0.1)
         return garbage_val
 
     def __getitem__(self, address):
@@ -84,15 +87,16 @@ class Reader:
 
 
 class Writer:
-    def __init__(self, w, default_bit=NO_DEFAULT_BIT):
+    def __init__(self, w, default_bit=NO_DEFAULT_BIT, flags=0):
         self.mem_bits = w
+        self.flags = flags & ((1 << 64) - 1)
         self.default_bit = default_bit
         self.sectors = []
         self.data = []
 
     def write_to_file(self, output_file):
         with open(output_file, 'wb') as f:
-            f.write(pack('<BQB', self.mem_bits, len(self.sectors), self.default_bit))
+            f.write(pack('<BQQB', self.mem_bits, self.flags, len(self.sectors), self.default_bit))
 
             for sector in self.sectors:
                 f.write(pack('<QQQBQQQQ', *sector))

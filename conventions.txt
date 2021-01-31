@@ -48,18 +48,16 @@
 1.  FlipJump compiled file & assembly
 
     There are three kinds of fj files:
-    .fjc - FlipJump Compiled             - binary file containing the code in sectors
-    .fj  - pure FlipJump assembly        - text file containing only fj assembly
-    .fjm - FlipJump assembly with Macros - text file containing fj assembly with macros, and/or macros declarations.
+    .blm - Bit-Level Memory     - binary file containing the code in sectors
+    .fj  - FlipJump assembly    - text file containing fj assembly with macros, and/or macros declarations.
 
     ----------
 
-    The .fjc file format:
-
-
+    The .blm file format (uX is an unsigned X-bit little endian number):
 
     struct {
         u8  mem_bits;
+        u64 flags;
         u64 sector_num;
         u8  default_bit; // 0/1 is default 0/1, otherwise default garbage
         struct sector {
@@ -73,25 +71,26 @@
             u64 jump_granularity;   // how many bits to write between jumps
         } *sectors;             // sectors[sector_num]
         u8* data;               // the data
-    } fjc_file;
+    } blm_file;     // Bit-Level Memory file
 
     ----------
 
     FJ assembly file is of the kind:
       comment before : F;J // comment after
-    Everything after the // or before the : is ignored.
-    The only restriction on comments - no '/' can be before the ':'.
+    Everything after the first // or before the last : is ignored.
+    The only restriction on comments - no '//' can be before the ':'.
 
     F;J means flip the F'th bit, then jump to address J.
     They are both written in hexadecimal, and they can both be one of the next forms:
       100         (equals 100)
       100[3]      (equals 103)
+      100[3*10]   (equals 130)
       67[20][2]   (equals 89)
       label         (equals label)
       label[3]      (equals label+3)
       label[20][2]  (equals label+22)
 
-    The number in the [brackets] is just added to the first one (can be negative too)
+    The number in the [brackets] is just added to the first one (can be negative, or a product of two numbers)
 
     The next forms are also acceptable (instead of using F;J):
       F     (<==> F;)
@@ -172,9 +171,9 @@
         n#b => will be replaced by the n-bit word b (given in hex).
                will advance the current address in exactly n bits.
 
-    lib64.fjm:
+    lib64.fj:
 
-        lib16.fjm  lib32.fjm  lib64.fjm  are standard libraries,
+        lib8.fj  lib16.fj  lib32.fj  lib64.fj  are standard libraries,
          created by me to code with fj much simpler.
         They do most of the [code overriding itself] nonsense for you.
 
@@ -193,10 +192,10 @@
             (in1)
               IO[1];IO
 
-    bitlib.fjm
+    bitlib.fj
 
         The standard library for operations on single-bit-variables.
-        It is independent of bit-size (gets the needed constants from the libXX.fjm).
+        It is independent of bit-size (gets the needed constants from the libXX.fj).
 
         It does Arithmetic/Logic operations:
           .add x y carry    // x += y
@@ -207,12 +206,12 @@
         Conditional operations:
           .test x l0 l1     // goto (x==0 ? l0 : l1)
 
-    veclib.fjm
+    veclib.fj
 
         The standard library for operations on vector of bit-variables.
-        It is independent of bit-size (gets the needed constants from the libXX.fjm), and have to be included with bitlib.fjm.
+        It is independent of bit-size (gets the needed constants from the libXX.fj), and have to be included with bitlib.fj.
 
-        It does what bitlib.fjm does - but for more bits at a time (specifically, for 2,4,8,16,32,64 bits).
+        It does what bitlib.fj does - but for more bits at a time (specifically, for 2,4,8,16,32,64 bits).
         For example:
           .add64 x y    // x += y
           .or64  x y    // x |= y
@@ -229,7 +228,7 @@
 
     The magic of this representation is if the following:
       If we jump onto the variable, the next operation we will do is either 0 or dw (according to the bit's value).
-      The libXX.fjm standard library
+      The libXX.fj standard library
 
 
 

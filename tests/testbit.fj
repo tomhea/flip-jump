@@ -1,55 +1,14 @@
-(flip_start)
-a
-; (flip_start_return_address) 200
-(IO)
-;io_handler
-(zero)
-0;0
-0[1]
-0[6]
-c0[9];800
-(one)
-0;80
-(flip_back)
-;580
-440[8]
-(flip_back_dst) 0[47]
-; (flip_back_return_address) 0
-(temp)
-;
-;
-(io_handler)
-;0
-;0
-..flip_by label0[40] label1
-..flip_by flip_start_return_address label2
-;x
-(label2)
-..flip_by flip_start_return_address label2
-..flip_by flip_start_return_address label3
-;label0
-(label3)
-..flip_by flip_start_return_address label3
-..flip_by_dbit flip_back_dst label0
-..flip_by flip_back_return_address label4
-;flip_back
-(label4)
-..flip_by_dbit flip_back_dst label0
-..flip_by flip_back_return_address label4
-..flip_by label0[40] label1
-(label0)
-;label1
-..pad 2
-(label1)
-;l0
-label0[47];l1
+.startup
+.test x l0 l1
+
 (l0)
-..output 5A
-;loop
+    ..output 5A // 'Z'
+    ;loop
 (l1)
-..output 31
-;loop
+    ..output 31 // '1'
+    ;loop
 (loop)
-;loop
+    ;loop
+
 (x)
-;0
+    .bit0   // bit0 => 'Z',  bit1 => '1'

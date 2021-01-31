@@ -1,28 +1,8 @@
-(flip_start)
-a
-; (flip_start_return_address) 200
-(IO)
-;io_handler
-(zero)
-0;0
-0[1]
-0[6]
-c0[9];800
-(one)
-0;80
-(flip_back)
-;580
-440[8]
-(flip_back_dst) 0[47]
-; (flip_back_return_address) 0
-(temp)
-;
-;
-(io_handler)
-;in0
-;in1
-;IO
+.startup in0 in1
+
+    ;IO
+
 (in0)
-IO[1];IO
+    IO[1];IO
 (in1)
-IO[0];IO
+    IO[0];IO

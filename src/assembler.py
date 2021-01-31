@@ -1,9 +1,10 @@
-import fjc
+import blm
 from preprocessor import preprocess
 from tempfile import mkstemp
 import os
 import re
 from enum import Enum
+from operator import mul, add, sub, floordiv
 
 
 def error(msg):     # TODO: print file and line number too (should be transferred via extra temp file!)
@@ -39,7 +40,7 @@ def handle_front_labels(line, labels, bit_address):
     line = line.strip()
     while line.startswith('('):
         end = line.find(')')
-        label = line[1:end]
+        label = line[1:end].strip()
         if not re.match(r'\w+$', label):
             error(f'bad label name: ({label})')
         if label in labels:
@@ -56,7 +57,7 @@ def first_pass(code, bit_width=64):     # labels addresses, remove (label) defs,
 
     for line in code:
         line = handle_front_labels(line, labels, bit_address)
-        non_labels_line = re.sub(r'\([^\)\(]*\)', '', line)
+        non_labels_line = re.sub(r'\([^)(]*\)', '', line)
 
         if not non_labels_line:
             if line:
@@ -64,7 +65,7 @@ def first_pass(code, bit_width=64):     # labels addresses, remove (label) defs,
         elif '#' in non_labels_line:
             res = re.match(r'[0-9A-Fa-f]+#[0-9A-Fa-f]+', line)
             if not res:
-                error('bad line with # (no n#b in opcode)')
+                error(f'bad line with # (no n#b in opcode): {line}')
 
             curr_code = res.group()
             n, b = curr_code.split('#')
@@ -73,7 +74,6 @@ def first_pass(code, bit_width=64):     # labels addresses, remove (label) defs,
                 error('bad line with # (forbidden actions after the main n#b)')
             next_code.append((CommandType.HashTagBits, (n, b)))
 
-            pass
         elif non_labels_line.startswith('..'):
             uops = non_labels_line[2:].split()
             name, args = uops[0], uops[1:]
@@ -104,25 +104,25 @@ def first_pass(code, bit_width=64):     # labels addresses, remove (label) defs,
                     bit_address += 2 * bit_width
                     next_code.append((CommandType.FlipSCJump, (f'IO[{(output >> i) & 1}]', bit_address)))
             else:
-                assert False
+                error("bad '..' opcode")
+
             if line.find('(') >= 0:
-                leftovers = handle_front_labels(line + line.find('('), labels, bit_address)
+                leftovers = handle_front_labels(line[line.find('('):], labels, bit_address)
                 if leftovers:
                     error(f'bad line with .. (forbidden actions after the macro and arguments): {leftovers}')
 
         else:
-            if ';' not in non_labels_line:
+            if ';' not in non_labels_line:  # implicit ;
                 line += ';'
-            middle_bit_address = bit_address + bit_width
-            next_bit_address = bit_address + 2 * bit_width
-            re_query = r'\w+(\[[0-9A-Fa-f]+(\*[0-9A-Fa-f]+)?])*'
+            line = re.sub(r'\s', '', line)
+            re_query = r'\w+(\[\w+([\*\+\-\/]\w+)?\])*'
 
             uops = line.split(';')
             if len(uops) != 2:
                 error("can't have more then 1 ';' in a line")
             f, j = uops
 
-            bit_address = middle_bit_address
+            bit_address += bit_width
             if not f:
                 f = 'temp'
             else:
@@ -135,7 +135,7 @@ def first_pass(code, bit_width=64):     # labels addresses, remove (label) defs,
                     error('bad line with ; (forbidden actions after the flipping address)')
 
             j = handle_front_labels(j, labels, bit_address)
-            bit_address = next_bit_address
+            bit_address += bit_width
             if not j:
                 j = hex(bit_address)[2:]
             else:
@@ -171,11 +171,10 @@ def arg_to_int_address(arg, labels):
         else:
             error(f'base address label not found: {arg}')
 
-    arg = arg[len(base_address):]
-
-    single_brackets = re.findall(r'\[[0-9A-Fa-f]+\]', arg)
-    multiplication_brackets = re.findall(r'\[[0-9A-Fa-f]+\*[0-9A-Fa-f]+\]', arg)
-    if len(''.join(single_brackets + multiplication_brackets)) != len(arg):
+    arg = re.sub(r'\s', '', arg[len(base_address):])
+    single_brackets = re.findall(r'\[[0-9A-Fa-f]+]', arg)
+    binary_op_brackets = re.findall(r'\[[0-9A-Fa-f]+[*+\-/][0-9A-Fa-f]+]', arg)
+    if len(''.join(single_brackets + binary_op_brackets)) != len(arg):
         error(f'bad actions between the brackets in: {base_address + arg}')
 
     for bracket in single_brackets:
@@ -183,11 +182,13 @@ def arg_to_int_address(arg, labels):
             error(f'weird bracket found: {bracket} in: {base_address + arg}')
         address += smart_int16(bracket[1:-1])
 
-    for bracket in multiplication_brackets:
+    for bracket in binary_op_brackets:
         if bracket not in arg:
             error(f'weird bracket found: {bracket} in: {base_address + arg}')
-        x, y = (smart_int16(v) for v in bracket[1:-1].split('*'))
-        address += x * y
+        bracket = bracket[1:-1]
+        binary_op = re.sub(r'[0-9A-Fa-f]', '', bracket)
+        x, y = (smart_int16(v) for v in bracket.split(binary_op))
+        address += {'*': mul, '+': add, '-': sub, '/': floordiv}[binary_op](x, y)
 
     return address
 
@@ -243,7 +244,7 @@ def second_pass(writer, labels, code, bit_width, last_address):
 
 
 def assemble(input_file, output_file, bit_width):
-    writer = fjc.Writer(bit_width)
+    writer = blm.Writer(bit_width)
     code = [' '.join(line.split('//', 1)[0].rsplit(':', 1)[-1].split()) for line in open(input_file, 'r')]
     code = [op for op in code if op]
     labels, code, last_address = first_pass(code, bit_width)
@@ -269,7 +270,8 @@ def full_assemble(input_files, output_file, preprocessed_file=None, bit_width=64
 def main():
     print('assembling')
     for test_name in ('cat',):#, 'ncat', 'mathbit', 'not', 'testbit', 'mathvec'):
-        full_assemble([f'tests/{test_name}.fjm'], f'tests/{test_name}.fjc', preprocessed_file=f'tests/{test_name}.fj')
+        full_assemble([f'tests/{test_name}.fj'], f'tests/compiled/{test_name}.blm',
+                      preprocessed_file=f'tests/compiled/{test_name}__no_macros.fj')
 
 
 if __name__ == '__main__':
