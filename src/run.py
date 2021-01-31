@@ -1,5 +1,5 @@
 from assembler import full_assemble
-import fjc
+import blm
 from readchar import readchar
 from tempfile import mkstemp
 import os
@@ -7,7 +7,7 @@ import os
 
 def run(input_file, defined_input=None):
     ip = 0
-    mem = fjc.Reader(input_file)
+    mem = blm.Reader(input_file)
     w = mem.w
     OUT = 4*w
     IN = 5*w + w.bit_length()     # 5w + dww
@@ -75,7 +75,8 @@ def main():
     for test, _input in (('cat', "Hello World!\0"), ('ncat', "¹\x93\x96\x8fßµ\x8a\x92\x8fß\xad\x90\x9c\x94\x8cÞÿ"),
                          ('testbit', ''), ('mathbit', ''), ('mathvec', ''), ('not', '')):
         print(f'running test {test}({_input}):')
-        assemble_and_run([f'tests/{test}.fjm'], preprocessed_file=f'tests/{test}.fj', output_file=f'tests/{test}.fjc', defined_input=_input)
+        assemble_and_run([f'tests/{test}.fj'], preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
+                         output_file=f'tests/compiled/{test}.blm', defined_input=_input)
         print()
 
 
