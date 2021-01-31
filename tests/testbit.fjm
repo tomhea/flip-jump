@@ -1,34 +1,14 @@
-.startup in0 in1
+.startup
 .test x l0 l1
 
-(l0)    // prints 01011010 - 'Z'
-    IO[0]
-    IO[1]
-    IO[0]
-    IO[1]
-    IO[1]
-    IO[0]
-    IO[1]
-    IO[0];loop
-(l1)    // prints 01001111 - 'O'
-    IO[1]
-    IO[1]
-    IO[1]
-    IO[1]
-    IO[0]
-    IO[0]
-    IO[1]
-    IO[0];loop
+(l0)
+    ..output 5A // 'Z'
+    ;loop
+(l1)
+    ..output 31 // '1'
+    ;loop
 (loop)
     ;loop
 
 (x)
-    .bit0   // bit0 => 'Z',  bit1 => 'O'
-(in0)
-    IO[0];IO
-(in1)
-    IO[1];IO
-
-
-
-
+    .bit0   // bit0 => 'Z',  bit1 => '1'
