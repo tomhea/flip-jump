@@ -72,7 +72,7 @@ def assemble_and_run(input_files, preprocessed_file=None, output_file=None, defi
 
 
 def main():
-    for test, _input in (('cat', "Hello World!\0"), ('ncat', "¹\x93\x96\x8fßµ\x8a\x92\x8fß\xad\x90\x9c\x94\x8cÞÿ"),
+    for test, _input in (('cat', "Hello World!\0"), ('ncat', ''.join(chr(255-ord(c)) for c in 'Flip Jump Rocks!\0')),
                          ('testbit', ''), ('mathbit', ''), ('mathvec', ''), ('not', '')):
         print(f'running test {test}({_input}):')
         assemble_and_run([f'tests/{test}.fj'], preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
