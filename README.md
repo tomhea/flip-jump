@@ -4,7 +4,7 @@ FlipJump is an Esoteric language, with 1 operation: <br>
 - Flip a bit, then (unconditionally) jump. <br>
 - The operation takes 2 memory words, then flips (inverts) the bit referenced by the first word, and jumps to the address (which is the second word). <br>
 
-This project supplies an **Assembler** and **Standard Libraries** to the language.
+This project supplies an **Assembler** and **Standard Library** to the language.
 
 If you are intrigued with what can be done, and how to use the assembler / standard library, **Read *conventions.txt***. <br>
 
@@ -30,12 +30,25 @@ Then get a real undertanding following the testbit.fj code, and follow the macro
 
 # How to run?
 
-Call run.py assemble_and_run(input_file) to run a .fj file
-- Add constant input with the defined_input argument.
+```py
+import run
+
+run.assemble_and_run('input_file.fj')
+```
+
 - It will assemble your code with the standard library files (64 as bits default), and then run.
 - It will create temp middle-files, such as the binary file, and the no_macros.fj file.
-- You can make them non-temp too (just add the wanted paths to the call).
 
-You can also assemble and run separately:
-    assembler.py  ==>  full_assemble(input_files, output_file)
-    run.py  ==>  run(output_file)
+More options with assemble_and_run():
+- Add an input with the defined_input argument.
+- You can make the temp files non-temp too (just add the wanted paths to the call).
+
+You can also execute the assemble and run separately:
+
+```py
+import run
+import assembler
+
+assembler.full_assemble(input_files, output_file)
+run.run(output_file)
+```
