@@ -1,8 +1,5 @@
 # IDE's
-	
-interpreter/cmake-build-debug/*
-interpreter/.idea/*
-src/.idea/*
+.idea
 
 # Mac files
 ._*
