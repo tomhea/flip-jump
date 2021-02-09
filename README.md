@@ -8,7 +8,7 @@ This project supplies an **Assembler** and **Standard Library** to the language.
 
 If you are intrigued with what can be done, and how to use the assembler / standard library, **Read *conventions.txt***. <br>
 
-Then get a real undertanding following the testbit.fj code, and follow the macros it uses:
+Then get a good undertanding - follow the testbit.fj code, and follow the macros it uses (especialy the .test):
 
 ```
 .startup        // taken from lib64.fj
