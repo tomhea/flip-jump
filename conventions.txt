@@ -134,7 +134,7 @@
 2.  Input/Output
 
     IO is done in bits (every ascii char is inputted/outputted by its bits, lsb to msb ordered).
-    In order to handle io - cells no. 4,5 (starting at bits 4*w, or IO) are special:
+    In order to handle io - cells no. 2,3 (starting at bits 2*w, or IO) are special:
 
     - Flipping IO[0] (or IO[1]) outputs the bit 0 (or 1).
 
@@ -150,8 +150,8 @@
 
     starting values (for a 64bit computer):
       (IO)
-        100: temp
-        140: io_handler
+        80: temp
+        c0: io_handler
 
 
 
