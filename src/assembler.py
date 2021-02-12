@@ -223,7 +223,7 @@ def second_pass(writer, labels, code, bit_width, last_address):
             to_address, by_address, return_address = args
             temp_address = labels['temp']
 
-            first_bit = 0 if command_type == CommandType.DDotFlipBy else bit_width.bit_length()
+            first_bit = 0 if command_type == CommandType.DDotFlipBy else bit_width.bit_length()+1
             flip_bits = [i for i in range(first_bit, bit_width) if by_address & (1 << i)]
 
             if len(flip_bits) <= 1:
@@ -254,7 +254,7 @@ def assemble(input_file, output_file, bit_width):
     writer.write_to_file(output_file)
 
 
-def full_assemble(input_files, output_file, preprocessed_file=None, bit_width=64, stl=True):
+def full_assemble(input_files, output_file, preprocessed_file=None, bit_width=64, stl=True, verbose=False):
     temp_preprocessed_file, temp_fd = False, 0
     if preprocessed_file is None:
         temp_fd, preprocessed_file = mkstemp()

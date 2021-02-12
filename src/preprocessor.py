@@ -50,8 +50,8 @@ def first_pass(code):
         elif op == '.end':
             last_def_name = main_macro
         else:
-            macro_call = op.startswith('.') and op.count('.') == 1
-            double_dot_macro = op.startswith('..') and op.count('.') == 2
+            macro_call = (re.match(r'\.\b', op) or re.search(r'\s\.\b', op)) and op.count('.') == 1
+            double_dot_macro = (re.match(r'\.\.\b', op) or re.search(r'\s\.\.\b', op)) and op.count('.') == 2
             regular_op = '.' not in op
             if not regular_op and not macro_call and not double_dot_macro:
                 error(f'Bad dot in line: {op}')
