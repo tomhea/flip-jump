@@ -1,5 +1,6 @@
 .startup
 .inc x
+(loop);loop
 
 (x)
     .bit0

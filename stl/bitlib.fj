@@ -8,12 +8,27 @@
 // An opcode is:  F;L  F  ;L  or just  ;  (no F => F=temp;  no L => L=next)
 
 
-// TODO - implement 3 TODOs down below (then more-bit-versions in veclib.fjm), and then implement pointer dereference (read and write)
+// TODO - implement pointer dereference (read and write)
 
 
 
 // ---------- Input / Output:
 
+
+.def output x
+    .__output x __label$ __label$ __label$
+.end
+.def __output x label_ptr base_jump_label end
+    .xor label_ptr x
+  (label_ptr)
+    ;l0
+    ..pad 2
+  (base_jump_label)
+    IO[0];end
+    IO[1]
+    .not label_ptr
+  (end)
+.end
 
 
 
@@ -33,36 +48,20 @@
 // ---------- Memory Manipulation:
 
 
-.def flip_if0 src
-    .__flip_if0 src label$
-.end
-.def __flip_if0 src cleaner_label
-    ..flip_by flip_start_return_address cleaner_label
-
-    ;src
-  (cleaner_label)
-    ..flip_by flip_start_return_address cleaner_label
+.def zero x
+    .xor x x
 .end
 
 
-.def fix_flip dst
-    .__fix_flip dst label$
-.end
-.def __fix_flip dst cleaner_label
-    ..flip_by_dbit flip_back_dst dst
-    ..flip_by flip_back_return_address cleaner_label
-
-    ;flip_back
-  (cleaner_label)
-    ..flip_by_dbit flip_back_dst dst
-    ..flip_by flip_back_return_address cleaner_label
+.def one x
+    .zero x
+    .not x
 .end
 
 
-.def mov dst src    // b := a    O(8w, should be much less)
-    .flip_if0 src
-    .flip_if0 dst
-    .fix_flip dst
+.def mov dst src
+    .zero dst
+    .xor dst src
 .end
 
 
@@ -70,44 +69,87 @@
 // ---------- Conditional Jump
 
 
-.def test x l0 l1
-    .__test x l0 l1 label$ label$
+.def if x l0 l1
+    .__if x l0 l1 __label$ __label$
 .end
-.def __test x l0 l1 test_bit test_jump_label
-    ..flip_by test_bit[w] test_jump_label
-    .mov test_bit x
-    ..flip_by test_bit[w] test_jump_label
-  (test_bit)
-    ;test_jump_label
+.def __if x l0 l1 label_ptr base_jump_label
+    .xor label_ptr x
+  (label_ptr)
+    ;base_jump_label
     ..pad 2
-  (test_jump_label)
+  (base_jump_label)
     ;l0
-    test_bit[dbit];l1
+    label_ptr[dbit];l1
+.end
+
+.def if1 x l1
+    .__if1 x l1 __label$
+.end
+.def __if1 x l1 end
+    .if x end l1
+  (end)
+.end
+
+.def if0 x l0
+    .__if0 x l0 __label$
+.end
+.def __if0 x l0 end
+    .if x l0 end
+  (end)
 .end
 
 
-// ---------- Logical Operators:
+.def cmp a b lt eq gt
+    .__cmp a b lt eq gt __label$$
+.end
+.def __cmp a b lt eq gt a_is1_label
+    .if1 a a_is1_label
+    .if b eq lt
+  (a_is1_label)
+    .if b gt eq
+.end
+
+
+
+// ---------- Logical Macros:
+
+
+.def xor dst src
+    .naked_xor dst[dbit] src
+.end
+
+.def naked_xor dst src
+    .__naked_xor dst src __label$ __label$
+.end
+.def __naked_xor dst src base_jump_label cleanup
+    ..flip_by_dbit src[w] base_jump_label
+    ;src
+    ..pad 2
+  (base_jump_label)
+    ;cleanup
+    dst;cleanup
+  (cleanup)
+    ..flip_by_dbit src[w] base_jump_label
+.end
 
 
 .def or dst src
-    .__or dst src label$ label$
+    .__or dst src __label$
 .end
-.def __or dst src one_label cont_label
-    .test src cont_label one_label
-  (one_label)
-    .mov dst one
-  (cont_label)
+.def __or dst src end
+    .if0 src end
+    .one dst
+  (end)
 .end
 
 
 .def and dst src
-    .__and dst src label$ label$
+    .__and dst src __label$
 .end
-.def __and dst src zero_label cont_label
-    .test src zero_label cont_label
-  (zero_label)
-    .mov dst zero
-  (cont_label)
+.def __and dst src end
+    .if1 src end
+    .zero dst
+  (end)
 .end
 
 
@@ -117,30 +159,28 @@
 
 
 
-// ---------- Arithmetical Jump
-// carry is both input and output. full adder like
+// ---------- Arithmetical Macros
 
 
-.def inc x
-    .__inc_carry1 x label$
+.def inc dst
+    .__inc_carry1 dst __label$
 .end
-.def __inc_carry1 x carry_label
-    .inc x carry_label
+.def __inc_carry1 dst carry_label
+    .inc dst carry_label
     ;carry_label[dw]
   (carry_label)
-    ;dw
+    .bit1
 .end
-.def inc x carry
-    .__inc x carry label$ label$ label$
+
+.def inc dst carry
+    .__inc dst carry __label$
 .end
-.def __inc x carry inc_carry_on inc_end inc_turn_carry_off
-    .test carry inc_end inc_carry_on
-  (inc_carry_on)
-    .not x
-    .test x inc_end inc_turn_carry_off
-  (inc_turn_carry_off)
+.def __inc dst carry end
+    .if0 carry end
+    .not dst
+    .if0 dst end
     .not carry
-  (inc_end)
+  (end)
 .end
 
 
@@ -158,22 +198,22 @@
 
 
 .def add dst src
-    __add_carry0 dst src label$
+    __add_carry0 dst src __label$
 .end
 .def __add_carry0 dst src carry_label
     .add dst src carry_label
     ;carry_label[dw]
   (carry_label)
-    ;0
+    .bit0
 .end
 .def add_carry1 dst src
-    __add_carry1 dst src label$
+    __add_carry1 dst src __label$
 .end
 .def __add_carry1 dst src carry_label
     .add dst src carry_label
     ;carry_label[dw]
   (carry_label)
-    ;dw
+    .bit1
 .end
 .def add dst src carry
     .inc dst src

@@ -25,39 +25,22 @@
     .startup 0 0
 .end
 .def startup in0_handler in1_handler
-  (flip_start)
-    000;040 : a         // now 40a; (400[a];)
-    080;0c0 : ; (flip_start_return_address) 200      // now &temp;200
-
+    000;040 : ;400         // code start
   (IO)
-    100;140 : ;io_handler  // now points to io_handler
+    080;0c0 : ;io_handler  // now points to io_handler
 
   (zero)
-    180;1c0 : 0;0       // this variable is set to zero
-
-    // set first 2
-    200;240 : 0[1]      // 00;40: now 400[8];
-    280;2c0 : 0[6]      // 00;40: now 440[8];
-    300;340 : c0[9];800 // 80;c0: now &temp;0.  jump to code start.
-
+    100;140 : .bit0    // this variable is set to zero
   (one)
-    380;3c0 : 0;dw      // this variable is set to one
-
-  (flip_back)
-    400;440 : ;580      // 440[8] is the main flipped bit   (2^8==100)
-                        // so it's whether 580 (for even 0/2 flips) or 480 (for 1 flip)
-
-    480;4c0 : 440[8]    // flip the main flipped bit back to origin
-    500;540 : (flip_back_dst) 0[dbit]         // 500 should be overwritten with the dst bit address
-    580;5c0 : ; (flip_back_return_address) 0    // 5c0 should be overwritten with the return address
+    180;1c0 : .bit1    // this variable is set to one
 
   (temp)
-    600;640 : ;         // temp
-    680;6c0 : ;         // temp
+    200;240 : ;         // temp
+    280;2c0 : ;         // temp
 
   (io_handler)
-    700;740 : ;in0_handler  // handler of reading 0
-    780;7c0 : ;in1_handler  // handler of reading 1
+    300;340 : ;in0_handler  // handler of reading 0
+    380;3c0 : ;in1_handler  // handler of reading 1
 
-    800;840 :               // start of code
+    400;440 :           // start of code
 .end
