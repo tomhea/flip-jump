@@ -18,14 +18,14 @@
 .def mov2 dst src
     .mov dst src
     .mov dst[dw] src[dw]
-
+.end
 
 
 // ---------- Conditional Jump
 
 
 .def cmp2 a b lt eq gt
-    .__cmp2 a b lt eq gt __label$
+    .__cmp2 a b lt eq gt $
 .end
 .def __cmp2 a b lt eq gt middle_check
     .cmp a[dw] b[dw] lt middle_check gt
@@ -75,7 +75,7 @@
 
 
 .def rol2 x
-    .__rol2 x __label$
+    .__rol2 x $
 .end
 .def __rol2 x rol2_bit_label
     .mov rol2_bit_label x
@@ -88,7 +88,7 @@
 
 
 .def ror2 x
-    .__ror2 x __label$
+    .__ror2 x $
 .end
 .def __ror2 x ror2_bit_label
     .mov ror2_bit_label x[dw]
@@ -106,7 +106,7 @@
 
 
 .def inc2 x
-    .__inc2_carry1 x __label$
+    .__inc2_carry1 x $
 .end
 .def __inc2_carry1 x carry_label
     .inc2 x carry_label
@@ -134,7 +134,7 @@
 
 
 .def add2 dst src
-    __add2_carry0 dst src __label$
+    .__add2_carry0 dst src $
 .end
 .def __add2_carry0 dst src carry_label
     .add2 dst src carry_label
@@ -143,7 +143,7 @@
     .bit0
 .end
 .def add2_carry1 dst src
-    __add2_carry1 dst src __label$
+    .__add2_carry1 dst src $
 .end
 .def __add2_carry1 dst src carry_label
     .add2 dst src carry_label

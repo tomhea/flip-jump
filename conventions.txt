@@ -99,16 +99,20 @@
     If F is missing - it will be replaced with the label temp (defined in the standard library).
     If J is missing - it will be replaced with the next memory-word address (as in no jumping at all).
 
-    Labels are of the form (label_name) and can appear before and after the ;
+    Labels are of the form (label_name) and can appear before and after each opcode:
     For example:
-      (label) 40;40     40; (label) 40
-      (label) 40        ; (label) 40
-      (label) ;         ; (label)
-    And outside of line:
+      (label) 40;20
+      40;20 (label)
+      ; (label)
+      (label) ;
+      ...
+    Or on a line of its own:
       (label)
         40;40
+    Labels can be adjacent to each other:
+      (l0)(l1)  (l2)  40;20   (l3)  (l4)(l5)(l6) (l7)
     The label references the start of the next memory bit,
-      e.g. (label)40;50 references the address of 40, while 40; (label) 50 references the address of 50.
+      e.g. (label)40;50 references the address of 40, while 40;50(label) references the address after the 50.
 
     ----------
 
@@ -127,6 +131,36 @@
             x[1];
             x[2];
             x[3];
+        .end
+
+    You can define a repeated sequence using .rep and .end:
+      .rep n i
+        // repeated body
+      .end
+    You can also use the shortcut  .rep n i macro_name [macro_args..], for repeating a macro.
+
+    The same example as the above, but using rep:
+        .def flip4 x
+            .rep 4 i
+                x[i];
+            .end
+        .end
+
+    You can also pass use it like this:
+        .def flip n x
+            .rep n i
+                x[i];
+            .end
+        .end
+    For a more general macro :)
+
+    If there was a macro
+      .def flip1 x
+        x;
+      .end,
+    it could've been shortened even more!
+        .def flip n x
+            .rep n i flip1 x[i]
         .end
 
 
@@ -159,17 +193,18 @@
 
     macro assembly extensions:
 
-        $   => will be replaced with a number never used before.
+        $   => will be replaced with a label never used before (starting with __label, e.g. __label0, __label1, ...).
 
         ..  => macros that stays until labels-resolve (usually depends on addresses)
-            ..pad X (placing zero-bits until address divides dw. Then placing ; until address divides X*dw)
+            ..pad X (placing zero-bits until address divides X*dw)
             ..flip_by to_address by_address (for every 1 in by_address's address - flip the corresponding bit in to_address)
-            ..flip_by_dbit to_address by_address (same as flip_by, but ignores the bits representing dbit)
+            ..flip_by_dbit to_address by_address (same as flip_by, but ignores the bits representing dbit, and the one after)
             ..var n v (N bit variable initialized with the value of v)
-            ..output xx (2 digit hexadecimal, or 8 bits, to be outputted - great for ascii values)
+            ..output X (1/2 hexadecimal chars, to be outputted (as 8 bits). best for printing ascii char. if more given - will print X&ff)
 
         n#b => will be replaced by the n-bit word b (given in hex).
                will advance the current address in exactly n bits.
+
 
     lib64.fj:
 
@@ -178,10 +213,9 @@
         They do most of the [code overriding itself] nonsense for you.
 
         It supplies you with the
-         *  .startup (to use on the start)
+         *  .startup (to use on the start) and .startup in0 in1
          *  number variables (the already initialized zero and one)
-         *  important code labels: temp (2dw temp memory straight), 0 and flip_back
-         *  memory manipulation: .mov, .mov4, .mov16, .mov64
+         *  the 2dw sized temp label
 
         cat program for example:
 
@@ -197,7 +231,7 @@
         The standard library for operations on single-bit-variables.
         It is independent of bit-size (gets the needed constants from the libXX.fj).
 
-        It does Arithmetic/Logic operations:
+        It offers Arithmetic/Logic operations:
           .add x y carry    // x += y
           .or  x y          // x |= y
           .inc x            // x++
@@ -213,9 +247,11 @@
 
         It does what bitlib.fj does - but for more bits at a time (specifically, for 2,4,8,16,32,64 bits).
         For example:
-          .add64 x y    // x += y
-          .or64  x y    // x |= y
-          .inc64 x      // x++
+          .add 64 x y    // x += y
+          .or  64 x y    // x |= y
+          .inc 64 x      // x++
+
+    * Note that when using the libXX.fj file, it has to be parsed first.
 
 
 

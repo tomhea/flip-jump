@@ -8,13 +8,11 @@
 // An opcode is:  F;L  F  ;L  or just  ;  (no F => F=temp;  no L => L=next)
 
 
-.defs
-    w=40    // memory and operands width
-    dw=80   // double word size
-    ww=6    // w-width (log2(w))
-    dww=7   // double-w-width (log2(2w))
-    dbit=47 // bit-distance from variable start to bit value (w+dww)
-.end
+w=40    // memory and operands width
+dw=80   // double word size
+ww=6    // w-width (log2(w))
+dww=7   // double-w-width (log2(2w))
+dbit=47 // bit-distance from variable start to bit value (w+dww)
 
 
 
