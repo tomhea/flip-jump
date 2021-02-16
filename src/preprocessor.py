@@ -55,20 +55,20 @@ def resolve_macros(macros, output_file=None):
 
 def fix_labels(op, params, args):
     new_data = []
+    print(op, op.data, new_data)
+
     for datum in op.data:
         if type(datum) is Address and datum.base_type == AddrType.ID and datum.base in params:
             arg_address = args[params.index(datum.base)]
-            datum.base_type = arg_address.base_type
-            datum.base = arg_address.base
-            datum.index += arg_address.index
+            new_data.append(Address((arg_address.base_type, arg_address.base), datum.index + arg_address.index))
         elif op.op_type == OpType.Rep and type(datum) is list:
-            for _op in datum:
-                fix_labels(_op, params, args)
+            new_data.append(fix_labels(_op, params, args) for _op in datum)
         elif op.op_type == OpType.Label and datum in params:
-            datum = args[params.index(datum)].base
-        new_data.append(datum)
+            new_data.append(args[params.index(datum)].base)
+        else:
+            new_data.append(datum)
     print(op, op.data, new_data)
-    op.data = new_data
+    return new_data
 
 
 def resolve_macro_aux(macros, macro_name, args, dollar_count):
@@ -79,7 +79,8 @@ def resolve_macro_aux(macros, macro_name, args, dollar_count):
     params += dollar_params
     args += [new_label(dollar_count) for _ in dollar_params]    # dollar_args
     for op in ops:
-        fix_labels(op, params, args)
+        old_data = op.data
+        op.data = fix_labels(op, params, args)
         if op.op_type == OpType.Macro:
             commands += resolve_macro_aux(macros, op.data[0], list(op.data[1:]), dollar_count)
         elif op.op_type == OpType.Rep:
@@ -88,7 +89,7 @@ def resolve_macro_aux(macros, macro_name, args, dollar_count):
                 error(f"Rep used without a number ({n.base})")
             times = n.base + n.index
             for i in range(times):
-                pseudo_macro_name = new_label(dollar_count)
+                pseudo_macro_name = (new_label(dollar_count).base, 1)
                 macros[pseudo_macro_name] = (([i_name], []), statements)
                 commands += resolve_macro_aux(macros, pseudo_macro_name, [i], dollar_count)
         elif op.op_type == OpType.DDOutput:
@@ -98,6 +99,7 @@ def resolve_macro_aux(macros, macro_name, args, dollar_count):
                 commands.append(Op(OpType.FlipJump, (Address(io_base, (num >> i) & 1), next_address), op.file, op.line))
         else:
             commands.append(op)
+        op.data = old_data
     return commands
 
 
