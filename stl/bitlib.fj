@@ -15,10 +15,7 @@
 // ---------- Input / Output:
 
 
-.def output x
-    .__output x $ $ $
-.end
-.def __output x label_ptr base_jump_label end
+.def output x $ label_ptr base_jump_label end
     .xor label_ptr x
   (label_ptr)
     ;l0
@@ -69,10 +66,7 @@
 // ---------- Conditional Jump
 
 
-.def if x l0 l1
-    .__if x l0 l1 $ $
-.end
-.def __if x l0 l1 label_ptr base_jump_label
+.def if x l0 l1 $ label_ptr base_jump_label
     .xor label_ptr x
   (label_ptr)
     ;base_jump_label
@@ -82,27 +76,18 @@
     label_ptr[dbit];l1
 .end
 
-.def if1 x l1
-    .__if1 x l1 $
-.end
-.def __if1 x l1 end
+.def if1 x l1 $ end
     .if x end l1
   (end)
 .end
 
-.def if0 x l0
-    .__if0 x l0 $
-.end
-.def __if0 x l0 end
+.def if0 x l0 $ end
     .if x l0 end
   (end)
 .end
 
 
-.def cmp a b lt eq gt
-    .__cmp a b lt eq gt $
-.end
-.def __cmp a b lt eq gt a_is1_label
+.def cmp a b lt eq gt $ a_is1_label
     .if1 a a_is1_label
     .if b eq lt
   (a_is1_label)
@@ -118,10 +103,7 @@
     .naked_xor dst[dbit] src
 .end
 
-.def naked_xor dst src
-    .__naked_xor dst src $ $
-.end
-.def __naked_xor dst src base_jump_label cleanup
+.def naked_xor dst src $ base_jump_label cleanup
     ..flip_by_dbit src[w] base_jump_label
     ;src
     ..pad 2
@@ -133,20 +115,14 @@
 .end
 
 
-.def or dst src
-    .__or dst src $
-.end
-.def __or dst src end
+.def or dst src $ end
     .if0 src end
     .one dst
   (end)
 .end
 
 
-.def and dst src
-    .__and dst src $
-.end
-.def __and dst src end
+.def and dst src $ end
     .if1 src end
     .zero dst
   (end)
@@ -163,19 +139,16 @@
 
 
 .def inc dst
-    .__inc_carry1 dst $
+    .inc_carry1 dst
 .end
-.def __inc_carry1 dst carry_label
+.def inc_carry1 dst $ carry_label
     .inc dst carry_label
     ;carry_label[dw]
   (carry_label)
     .bit1
 .end
 
-.def inc dst carry
-    .__inc dst carry $
-.end
-.def __inc dst carry end
+.def inc dst carry $ end
     .if0 carry end
     .not dst
     .if0 dst end
@@ -198,18 +171,15 @@
 
 
 .def add dst src
-    .__add_carry0 dst src $
+    .add_carry0 dst src
 .end
-.def __add_carry0 dst src carry_label
+.def add_carry0 dst src $ carry_label
     .add dst src carry_label
     ;carry_label[dw]
   (carry_label)
     .bit0
 .end
-.def add_carry1 dst src
-    .__add_carry1 dst src $
-.end
-.def __add_carry1 dst src carry_label
+.def add_carry1 dst src $ carry_label
     .add dst src carry_label
     ;carry_label[dw]
   (carry_label)
