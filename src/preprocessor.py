@@ -3,6 +3,9 @@ from itertools import count
 from defs import *
 
 
+w = 64
+
+
 def printable_address(address, start_label):
     if address.index < 0:
         index = f'[0-{hex(0-address.index)[2:]}]'
@@ -16,9 +19,9 @@ def printable_address(address, start_label):
     if address.base_type == AddrType.Number:
         return hex(address.base)[2:] + index
     if address.base_type == AddrType.SkipAfter:
-        return f'{start_label}[{hex(2 + address.base)[2:]}]{index}'
+        return f'{start_label}[{hex((2 + address.base)*w)[2:]}]{index}'
     if address.base_type == AddrType.SkipBefore:
-        return f'{start_label}[{hex(0 - address.base)[2:]}]{index}'
+        return f'{start_label}[0-{hex(address.base)[2:]*w}]{index}'
 
 
 def output_ops(ops, output_file):
@@ -61,8 +64,10 @@ def fix_labels(op, params, args):
         elif op.op_type == OpType.Rep and type(datum) is list:
             for _op in datum:
                 fix_labels(_op, params, args)
+        elif op.op_type == OpType.Label and datum in params:
+            datum = args[params.index(datum)].base
         new_data.append(datum)
-    print(op, op.data)
+    print(op, op.data, new_data)
     op.data = new_data
 
 
