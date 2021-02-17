@@ -1,0 +1,29 @@
+.startup
+.if x l0 l1
+
+(l0)
+    ..output 5A // 'Z'
+    ;loop
+(l1)
+    ..output 31 // '1'
+    ;
+    temp;loop
+(loop)
+    temp;
+    temp
+    ..pad 2
+    ..flip_by temp loop
+    ..flip_by_dbit temp loop
+
+    ;loop
+    ..var 8 3
+    5#3
+    ..output 5c
+    y=3
+
+    .rep n i
+    .end
+    .rep n i startup
+
+(x)
+    .bit0   // bit0 => 'Z',  bit1 => '1'

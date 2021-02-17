@@ -1,45 +1,10 @@
 from sly import Lexer, Parser
-from enum import Enum
 from operator import mul, add, sub, floordiv
 from os.path import isfile
+from defs import *
 
 
-global curr_file
-
-
-def error(msg):
-    print(f'\nERROR: {msg}\n')
-    exit(1)
-
-
-def stl(xx):
-    return [f'stl/{lib}.fj' for lib in (f'lib{xx}', 'bitlib', 'veclib')]
-
-
-class OpType(Enum):
-    FlipJump = 1
-    Label = 2
-    Macro = 3
-    Rep = 4
-    BitSpecific = 5
-    DDPad = 6
-    DDFlipBy = 7
-    DDFlipByDbit = 8
-    DDVar = 9
-    DDOutput = 10
-
-
-class AddrType(Enum):
-    ID = 1
-    Number = 2
-    SkipBefore = 3
-    SkipAfter = 4
-    Dollar = 5
-
-
-main_macro = ('.__M_a_i_n__', 0)
-temp_address = (AddrType.ID, 'temp')
-next_address = (AddrType.SkipAfter, 0)
+global curr_file, curr_text
 
 
 class CalcLexer(Lexer):
@@ -65,8 +30,8 @@ class CalcLexer(Lexer):
     DDOUTPUT = r'\.\.output'
 
     # Tokens
-    ID = r'[a-zA-Z_][a-zA-Z_0-9]*'
-    NUMBER = r'[0-9a-fA-F]+'
+    ID = id_re
+    NUMBER = number_re
     DOLLAR = r'\$'
 
     MATH_OP = r'[+\-*/]'
@@ -110,7 +75,7 @@ class CalcParser(Parser):
     # debugfile = 'src/parser.out'
 
     def __init__(self):
-        self.macros = {main_macro: [[], []]}
+        self.macros = {main_macro: [([], []), []]}
         self.defs = {}
 
     def error(self, token):
@@ -145,29 +110,33 @@ class CalcParser(Parser):
     @_('DEF ID macro_params NL line_statements END')
     def macro_def(self, p):
         params = p[2]
-        name = (p[1], len(params))
+        name = (p[1], len(params[0]))
         statements = p[4]
         self.macros[name] = [params, statements]
         return None
 
-    @_('macro_args address')
-    def macro_args(self, p):
+    @_('addresses address')
+    def addresses(self, p):
         return p[0] + [p[1]]
 
-    @_('macro_args DOLLAR')
-    def macro_args(self, p):
-        return p[0] + [(AddrType.Dollar, '')]
-
     @_('empty')
-    def macro_args(self, p):
+    def addresses(self, p):
         return []
 
-    @_('macro_params ID')
+    @_('ids')
     def macro_params(self, p):
+        return p[0], []
+
+    @_('ids DOLLAR ids')
+    def macro_params(self, p):
+        return p[0], p[2]
+
+    @_('ids ID')
+    def ids(self, p):
         return p[0] + [p[1]]
 
     @_('empty')
-    def macro_params(self, p):
+    def ids(self, p):
         return []
 
     @_('line_statements line_statement')
@@ -181,6 +150,8 @@ class CalcParser(Parser):
     @_('labels statement labels NL')
     def line_statement(self, p):
         if p[1]:
+            if p[1].line is None:
+                p[1].line = p.lineno
             return p[0] + [p[1]] + p[2]
         return p[0] + p[2]
 
@@ -198,75 +169,74 @@ class CalcParser(Parser):
 
     @_('LPAREN ID RPAREN')
     def label(self, p):
-        return OpType.Label, p[1]
+        return Op(OpType.Label, (p[1],), curr_file, p.lineno)
 
     @_('address')
     def statement(self, p):
-        return OpType.FlipJump, (p[0], next_address)
+        return Op(OpType.FlipJump, (p[0], next_address), curr_file, None)  # FIXME
 
     @_('address SC')
     def statement(self, p):
-        return OpType.FlipJump, (p[0], next_address)
+        return Op(OpType.FlipJump, (p[0], next_address), curr_file, p.lineno)
 
     @_('address SC address')
     def statement(self, p):
-        return OpType.FlipJump, (p[0], p[2])
+        return Op(OpType.FlipJump, (p[0], p[2]), curr_file, p.lineno)
 
     @_('SC address')
     def statement(self, p):
-        return OpType.FlipJump, (temp_address, p[1])
+        return Op(OpType.FlipJump, (temp_address, p[1]), curr_file, p.lineno)
 
     @_('SC')
     def statement(self, p):
-        return OpType.FlipJump, (temp_address, next_address)
+        return Op(OpType.FlipJump, (temp_address, next_address), curr_file, p.lineno)
 
-    @_('DOT ID macro_args')
+    @_('DOT ID addresses')
     def statement(self, p):
-        return OpType.Macro, ((p[1], len(p[2])), p[2])
+        return Op(OpType.Macro, ((p[1], len(p[2])), *p[2]), curr_file, p.lineno)
 
     @_('DDPAD NUMBER')
     def statement(self, p):
-        return OpType.DDPad, (p[1],)
+        return Op(OpType.DDPad, (p[1],), curr_file, p.lineno)
 
     @_('DDFLIP_BY address address')
     def statement(self, p):
-        return OpType.DDFlipBy, (p[1], p[2])
+        return Op(OpType.DDFlipBy, (p[1], p[2]), curr_file, p.lineno)
 
     @_('DDFLIP_BY_DBIT address address')
     def statement(self, p):
-        return OpType.DDFlipByDbit, (p[1], p[2])
+        return Op(OpType.DDFlipByDbit, (p[1], p[2]), curr_file, p.lineno)
 
     @_('DDVAR NUMBER address')
     def statement(self, p):
-        return OpType.DDVar, (p[1], p[2])
+        return Op(OpType.DDVar, (p[1], p[2]), curr_file, p.lineno)
 
     @_('DDOUTPUT NUMBER')
     def statement(self, p):
-        return OpType.DDOutput, (p[1] & 0xff,)
+        return Op(OpType.DDOutput, (p[1] & 0xff,), curr_file, p.lineno)
 
     @_('NUMBER HASHTAG address')
     def statement(self, p):
-        return OpType.BitSpecific, (p[0], p[2])
+        return Op(OpType.BitSpecific, (p[0], p[2]), curr_file, p.lineno)
 
     @_('ID ASSIGN address')
     def statement(self, p):
-        (base_type, base_value), brackets = p[2]
-        if base_type == AddrType.Number:
-            self.defs[p[0]] = base_value + brackets
+        if p[2].base_type == AddrType.Number:
+            self.defs[p[0]] = p[2].base + p[2].index
             return None
-        error(f'No such variable at file {curr_file} line {p.lineno}:  {base_value}.')
+        error(f'No such variable at file {curr_file} line {p.lineno}:  {p[2].base}.')
 
-    @_('REP ID ID NL line_statements END')
+    @_('REP address ID NL line_statements END')
     def statement(self, p):
-        return OpType.Rep, (p[1], p[2], p[4])
+        return Op(OpType.Rep, (p[1], p[2], p[4]), curr_file, p.lineno)
 
-    @_('REP ID ID ID macro_args')
+    @_('REP address ID ID addresses')
     def statement(self, p):
-        return OpType.Rep, (p[1], p[2], [(OpType.Macro, ((p[3], len(p[4])), p[4]))])
+        return Op(OpType.Rep, (p[1], p[2], [Op(OpType.Macro, ((p[3], len(p[4])), *p[4]), curr_file, p.lineno)]), curr_file, p.lineno)
 
     @_('base_address address_brackets')     # or maybe just expression? no more [], just +-/*
     def address(self, p):
-        return p[0], p[1]
+        return Address(p[0], p[1])
 
     @_('SKIP_BEFORE NUMBER')
     def base_address(self, p):
@@ -313,20 +283,22 @@ class CalcParser(Parser):
         error(f'No such variable at file {curr_file} line {p.lineno}:  {p[0]}.')
 
 
-def parse(input_files):
-    global curr_file
+def parse_macro_tree(input_files):
+    global curr_file, curr_text
     lexer = CalcLexer()
     parser = CalcParser()
     for curr_file in input_files:
         if not isfile(curr_file):
             error(f"No such file {curr_file}.")
-        text = open(curr_file, 'r').read()
-        parser.parse(lexer.tokenize(text))
+        curr_text = open(curr_file, 'r').read()
+        parser.parse(lexer.tokenize(curr_text))
 
     return parser.macros
 
 
 if __name__ == '__main__':
-    macros = parse(stl(64) + ['tests/testbit.fj'])
-    for macro in macros:
-        print(f'\n{macro}:\n  ' + '\n  '.join(str(state) for state in macros[macro][1]))
+    # for test in ('cat', 'mathbit', 'mathvec', 'ncat', 'not', 'testbit', 'testbit_with_nops'):
+    #     parse_macro_tree(stl(64) + [f'tests/{test}.fj'])
+    macros = parse_macro_tree(stl(64) + ['tests/testbit.fj'])
+    # for macro in macros:
+    #     print(f'\n{macro}:\n  ' + '\n  '.join(str(state) for state in macros[macro][1]))

@@ -1,22 +1,11 @@
 import blm
-from preprocessor import preprocess
+from preprocessor import resolve_macros
 from tempfile import mkstemp
 import os
 import re
-from enum import Enum
 from operator import mul, add, sub, floordiv
-
-
-def error(msg):     # TODO: print file and line number too (should be transferred via extra temp file!)
-    print(f'\nERROR: {msg}\n')
-    exit(1)
-
-
-def smart_int16(num):
-    try:
-        return int(num, 16)
-    except ...:
-        error(f'{num} is not a number!')
+from defs import *
+from parser import parse_macro_tree
 
 
 class CommandType(Enum):
@@ -254,13 +243,16 @@ def assemble(input_file, output_file, bit_width):
     writer.write_to_file(output_file)
 
 
-def full_assemble(input_files, output_file, preprocessed_file=None, bit_width=64, stl=True, verbose=False):
+def full_assemble(input_files, output_file, preprocessed_file=None, bit_width=64, use_stl=True, verbose=False):
     temp_preprocessed_file, temp_fd = False, 0
     if preprocessed_file is None:
         temp_fd, preprocessed_file = mkstemp()
         temp_preprocessed_file = True
 
-    preprocess(input_files, preprocessed_file, stl=bit_width if stl else False)
+    if use_stl:
+        input_files = stl(bit_width) + input_files
+    macros = parse_macro_tree(input_files)
+    ops = resolve_macros(macros, output_file=preprocessed_file)
     assemble(preprocessed_file, output_file, bit_width)
 
     if temp_preprocessed_file:
