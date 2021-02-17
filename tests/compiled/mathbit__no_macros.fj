@@ -21,79 +21,79 @@ temp;__line_label9[80]
 (__line_label10)
 (io_handler)
 (__line_label11)
-temp;in0_handler
+temp;0
 (__line_label12)
-temp;in1_handler
+temp;0
 (__line_label13)
-..flip_by_dbit src[40] base_jump_label
+..flip_by_dbit __label0[40] __label5
 (__line_label14)
-temp;src
+temp;__label0
 (__line_label15)
 ..pad 2
 (__line_label16)
-(base_jump_label)
+(__label5)
 (__line_label17)
-temp;cleanup
+temp;__label6
 (__line_label18)
-dst;cleanup
+__label3[47];__label6
 (__line_label19)
-(cleanup)
+(__label6)
 (__line_label20)
-..flip_by_dbit src[40] base_jump_label
+..flip_by_dbit __label0[40] __label5
 (__line_label21)
-(label_ptr)
+(__label3)
 (__line_label22)
-temp;base_jump_label
+temp;__label4
 (__line_label23)
 ..pad 2
 (__line_label24)
-(base_jump_label)
+(__label4)
 (__line_label25)
-temp;l0
+temp;__label1
 (__line_label26)
-label_ptr[47];l1
+__label3[47];__label2
 (__line_label27)
-(end)
+(__label2)
 (__line_label28)
-dst[47];__line_label28[80]
+x[47];__line_label28[80]
 (__line_label29)
-..flip_by_dbit src[40] base_jump_label
+..flip_by_dbit x[40] __label10
 (__line_label30)
-temp;src
+temp;x
 (__line_label31)
 ..pad 2
 (__line_label32)
-(base_jump_label)
+(__label10)
 (__line_label33)
-temp;cleanup
+temp;__label11
 (__line_label34)
-dst;cleanup
+__label8[47];__label11
 (__line_label35)
-(cleanup)
+(__label11)
 (__line_label36)
-..flip_by_dbit src[40] base_jump_label
+..flip_by_dbit x[40] __label10
 (__line_label37)
-(label_ptr)
+(__label8)
 (__line_label38)
-temp;base_jump_label
+temp;__label9
 (__line_label39)
 ..pad 2
 (__line_label40)
-(base_jump_label)
+(__label9)
 (__line_label41)
-temp;l0
+temp;__label1
 (__line_label42)
-label_ptr[47];l1
+__label8[47];__label7
 (__line_label43)
-(end)
+(__label7)
 (__line_label44)
-dst[47];__line_label44[80]
+__label0[47];__line_label44[80]
 (__line_label45)
-(end)
+(__label1)
 (__line_label46)
-temp;carry_label[80]
+temp;__label0[80]
 (__line_label47)
-(carry_label)
+(__label0)
 (__line_label48)
 temp;80
 (__line_label49)

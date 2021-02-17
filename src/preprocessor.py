@@ -55,8 +55,6 @@ def resolve_macros(macros, output_file=None):
 
 def fix_labels(op, params, args):
     new_data = []
-    print(op, op.data, new_data)
-
     for datum in op.data:
         if type(datum) is Address and datum.base_type == AddrType.ID and datum.base in params:
             arg_address = args[params.index(datum.base)]
@@ -67,7 +65,6 @@ def fix_labels(op, params, args):
             new_data.append(args[params.index(datum)].base)
         else:
             new_data.append(datum)
-    print(op, op.data, new_data)
     return new_data
 
 
@@ -79,8 +76,8 @@ def resolve_macro_aux(macros, macro_name, args, dollar_count):
     params += dollar_params
     args += [new_label(dollar_count) for _ in dollar_params]    # dollar_args
     for op in ops:
-        old_data = op.data
-        op.data = fix_labels(op, params, args)
+        fixed_data = fix_labels(op, params, args)
+        op = Op(op.op_type, fixed_data, op.file, op.line)
         if op.op_type == OpType.Macro:
             commands += resolve_macro_aux(macros, op.data[0], list(op.data[1:]), dollar_count)
         elif op.op_type == OpType.Rep:
@@ -99,7 +96,6 @@ def resolve_macro_aux(macros, macro_name, args, dollar_count):
                 commands.append(Op(OpType.FlipJump, (Address(io_base, (num >> i) & 1), next_address), op.file, op.line))
         else:
             commands.append(op)
-        op.data = old_data
     return commands
 
 
