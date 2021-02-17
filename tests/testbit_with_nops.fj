@@ -15,15 +15,27 @@
     ..flip_by temp loop
     ..flip_by_dbit temp loop
 
-    ;loop
+    (cloop);cloop
     ..var 8 3
     5#3
     ..output 5c
     y=3
 
-    .rep n i
+    .rep 7 i
     .end
-    .rep n i startup
+    n=15
+    .rep 8 q
+        .if x l0 l1
+    .end
+
+    .rep n j
+        .temp_macro x zero
+    .end
+
+.def temp_macro x y
+    .not x
+    .not y
+.end
 
 (x)
     .bit0   // bit0 => 'Z',  bit1 => '1'

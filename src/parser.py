@@ -74,7 +74,8 @@ class CalcParser(Parser):
     tokens = CalcLexer.tokens
     # debugfile = 'src/parser.out'
 
-    def __init__(self):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
         self.macros = {main_macro: [([], []), []]}
         self.defs = {}
 
@@ -141,6 +142,8 @@ class CalcParser(Parser):
 
     @_('line_statements line_statement')
     def line_statements(self, p):
+        if self.verbose:
+            print('\n'.join(str(_) for _ in p[1]))
         return p[0] + p[1]
 
     @_('empty')
@@ -221,7 +224,7 @@ class CalcParser(Parser):
 
     @_('ID ASSIGN address')
     def statement(self, p):
-        if p[2].base_type == AddrType.Number:
+        if p[2].type == AddrType.Number:
             self.defs[p[0]] = p[2].base + p[2].index
             return None
         error(f'No such variable at file {curr_file} line {p.lineno}:  {p[2].base}.')
@@ -232,11 +235,13 @@ class CalcParser(Parser):
 
     @_('REP address ID ID addresses')
     def statement(self, p):
-        return Op(OpType.Rep, (p[1], p[2], [Op(OpType.Macro, ((p[3], len(p[4])), *p[4]), curr_file, p.lineno)]), curr_file, p.lineno)
+        return Op(OpType.Rep, (p[1], p[2],
+                               [Op(OpType.Macro, ((p[3], len(p[4])), *p[4]), curr_file, p.lineno)]
+                               ), curr_file, p.lineno)
 
     @_('base_address address_brackets')     # or maybe just expression? no more [], just +-/*
     def address(self, p):
-        return Address(p[0], p[1])
+        return Address(*p[0], p[1])
 
     @_('SKIP_BEFORE NUMBER')
     def base_address(self, p):
@@ -283,10 +288,10 @@ class CalcParser(Parser):
         error(f'No such variable at file {curr_file} line {p.lineno}:  {p[0]}.')
 
 
-def parse_macro_tree(input_files):
+def parse_macro_tree(input_files, verbose=False):
     global curr_file, curr_text
     lexer = CalcLexer()
-    parser = CalcParser()
+    parser = CalcParser(verbose=verbose)
     for curr_file in input_files:
         if not isfile(curr_file):
             error(f"No such file {curr_file}.")
