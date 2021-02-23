@@ -1,4 +1,3 @@
-import re
 from itertools import count
 from defs import *
 
@@ -14,13 +13,22 @@ def printable_address(address, start_label):
     else:
         index = ''
 
-    if address.base_type == AddrType.ID:
+    if address.type == AddrType.ID:
         return address.base + index
-    if address.base_type == AddrType.Number:
+    if address.type == AddrType.Number:
         return hex(address.base)[2:] + index
-    if address.base_type == AddrType.SkipAfter:
+
+    if address.type == AddrType.SkipAfter:
+        return f'>{address.base}{index}'
+    if address.type == AddrType.SkipBefore:
+        return f'<{address.base}{index}'
+
+    error('not suppose to ge here (1)')
+
+    # using_line_labels
+    if address.type == AddrType.SkipAfter:
         return f'{start_label}[{hex((2 + address.base)*w)[2:]}]{index}'
-    if address.base_type == AddrType.SkipBefore:
+    if address.type == AddrType.SkipBefore:
         return f'{start_label}[0-{hex(address.base)[2:]*w}]{index}'
 
 
@@ -29,25 +37,25 @@ def output_ops(ops, output_file):
     with open(output_file, 'w') as f:
         for op in ops:
             curr_label = f'__line_label{next(counter)}'
-            f.write(f'({curr_label})\n')
-            if op.op_type == OpType.FlipJump:
+            # f.write(f'({curr_label})\n')
+            if op.type == OpType.FlipJump:
                 f.write(f'{printable_address(op.data[0], curr_label)};{printable_address(op.data[1], curr_label)}\n')
-            elif op.op_type == OpType.Label:
+            elif op.type == OpType.Label:
                 f.write(f'({op.data[0]})\n')
-            elif op.op_type == OpType.BitSpecific:
+            elif op.type == OpType.BitSpecific:
                 f.write(f'{hex(op.data[0])[2:]}#{printable_address(op.data[1], curr_label)}\n')
-            elif op.op_type == OpType.DDPad:
+            elif op.type == OpType.DDPad:
                 f.write(f'..pad {hex(op.data[0])[2:]}\n')
-            elif op.op_type == OpType.DDFlipBy:
+            elif op.type == OpType.DDFlipBy:
                 f.write(f'..flip_by {printable_address(op.data[0], curr_label)} {printable_address(op.data[1], curr_label)}\n')
-            elif op.op_type == OpType.DDFlipByDbit:
+            elif op.type == OpType.DDFlipByDbit:
                 f.write(f'..flip_by_dbit {printable_address(op.data[0], curr_label)} {printable_address(op.data[1], curr_label)}\n')
-            elif op.op_type == OpType.DDVar:
+            elif op.type == OpType.DDVar:
                 f.write(f'..var {hex(op.data[0])[2:]} {printable_address(op.data[1], curr_label)}\n')
 
 
-def resolve_macros(macros, output_file=None):
-    ops = resolve_macro_aux(macros, main_macro, [], count())
+def resolve_macros(macros, output_file=None, verbose=False):
+    ops = resolve_macro_aux(macros, main_macro, [], count(), verbose)
     if output_file:
         output_ops(ops, output_file)
     return ops
@@ -56,19 +64,20 @@ def resolve_macros(macros, output_file=None):
 def fix_labels(op, params, args):
     new_data = []
     for datum in op.data:
-        if type(datum) is Address and datum.base_type == AddrType.ID and datum.base in params:
+        if type(datum) is Address and datum.type == AddrType.ID and datum.base in params:
             arg_address = args[params.index(datum.base)]
-            new_data.append(Address((arg_address.base_type, arg_address.base), datum.index + arg_address.index))
-        elif op.op_type == OpType.Rep and type(datum) is list:
-            new_data.append(fix_labels(_op, params, args) for _op in datum)
-        elif op.op_type == OpType.Label and datum in params:
+            new_data.append(Address(arg_address.type, arg_address.base, datum.index + arg_address.index))
+        elif op.type == OpType.Rep and type(datum) is list:
+            res = [Op(_op.type, fix_labels(_op, params, args), _op.file, _op.line) for _op in datum]
+            new_data.append(res)
+        elif op.type == OpType.Label and datum in params:
             new_data.append(args[params.index(datum)].base)
         else:
             new_data.append(datum)
     return new_data
 
 
-def resolve_macro_aux(macros, macro_name, args, dollar_count):
+def resolve_macro_aux(macros, macro_name, args, dollar_count, verbose=False):
     commands = []
     if macro_name not in macros:
         error(f"macro '{macro_name}' isn't defined.")
@@ -76,84 +85,32 @@ def resolve_macro_aux(macros, macro_name, args, dollar_count):
     params += dollar_params
     args += [new_label(dollar_count) for _ in dollar_params]    # dollar_args
     for op in ops:
+        if type(op) is not Op:
+            error(type(op) + str(op) + '\n\n' + str(ops))
+        if verbose:
+            print(op)
         fixed_data = fix_labels(op, params, args)
-        op = Op(op.op_type, fixed_data, op.file, op.line)
-        if op.op_type == OpType.Macro:
-            commands += resolve_macro_aux(macros, op.data[0], list(op.data[1:]), dollar_count)
-        elif op.op_type == OpType.Rep:
+        op = Op(op.type, fixed_data, op.file, op.line)
+        if op.type == OpType.Macro:
+            commands += resolve_macro_aux(macros, op.data[0], list(op.data[1:]), dollar_count, verbose)
+        elif op.type == OpType.Rep:
             n, i_name, statements = op.data
-            if n.base_type != AddrType.Number:
-                error(f"Rep used without a number ({n.base})")
+            statements = list(statements)
+            if n.type != AddrType.Number:
+                error(f'Rep used without a number "{n.base}" in file {op.file} line {op.line}.')
             times = n.base + n.index
             for i in range(times):
                 pseudo_macro_name = (new_label(dollar_count).base, 1)
                 macros[pseudo_macro_name] = (([i_name], []), statements)
-                commands += resolve_macro_aux(macros, pseudo_macro_name, [i], dollar_count)
-        elif op.op_type == OpType.DDOutput:
+                commands += resolve_macro_aux(macros, pseudo_macro_name, [i], dollar_count, verbose)
+        elif op.type == OpType.DDOutput:
             num = op.data[0]
             io_base = (AddrType.ID, 'IO')
             for i in range(8):
-                commands.append(Op(OpType.FlipJump, (Address(io_base, (num >> i) & 1), next_address), op.file, op.line))
+                commands.append(Op(OpType.FlipJump, (Address(*io_base, (num >> i) & 1), next_address), op.file, op.line))
         else:
             commands.append(op)
     return commands
-
-
-# def resolve_macro_aux(macros, defs, macro_name, args, dollar_count):
-#     commands = []
-#     if macro_name not in macros:
-#         error(f"macro '{macro_name}' isn't defined.")
-#     params, ops = macros[macro_name]
-#     for op in ops:
-#         op = re.sub(r'\$', lambda x: f'{next(dollar_count)}', op)    # handle '$' => next number
-#         for par, arg in zip(params, args):
-#             op = re.sub(fr'\b{par}\b', arg, op)                     # replace parameters with arguments
-#         for def_name in defs:
-#             op = re.sub(fr'\b{def_name}\b', defs[def_name], op)     # replace defined with their values
-#
-#         if op.startswith('.') and not op.startswith('..'):
-#             uops = op[1:].split()
-#             name, new_args = uops[0], uops[1:]
-#             commands += resolve_macro_aux(macros, defs, (name, len(new_args)), new_args, dollar_count)
-#         else:
-#             commands.append(op)
-#     return commands
-
-
-# def first_pass(code):
-#     last_def_name = main_macro
-#     macros = {last_def_name: ([], []), defs_macro: ([], [])}
-#
-#     for op in code:
-#         if op.startswith('.def '):
-#             uops = op.split()
-#             args = uops[2:]
-#             last_def_name = (uops[1], len(args))
-#             macros[last_def_name] = (args, [])
-#         elif op == '.defs':
-#             last_def_name = defs_macro
-#         elif op == '.end':
-#             last_def_name = main_macro
-#         else:
-#             macro_call = (re.match(r'\.\b', op) or re.search(r'\s\.\b', op)) and op.count('.') == 1
-#             double_dot_macro = (re.match(r'\.\.\b', op) or re.search(r'\s\.\.\b', op)) and op.count('.') == 2
-#             regular_op = '.' not in op
-#             if not regular_op and not macro_call and not double_dot_macro:
-#                 error(f'Bad dot in line: {op}')
-#             macros[last_def_name][1].append(op)
-#
-#     defs = dict([exp.replace(' ', '').split('=') for exp in macros.pop(defs_macro)[1]])
-#     return macros, defs
-
-
-# def preprocess(macros, output_file, stl_type=64):
-#     if stl_type:
-#         input_files = stl(stl_type) + input_files
-#
-#     macros = first_pass(code)
-#     commands = resolve_main_macro(macros)
-#
-#     open(output_file, 'w').write('\n'.join(commands))
 
 
 def main():

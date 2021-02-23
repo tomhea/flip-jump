@@ -26,28 +26,36 @@ id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
 number_re = r'[0-9a-fA-F]+'
 
 
+class Verbose(Enum):
+    Parse = 1
+    MacroSolve = 2
+    LabelDict = 3
+    LabelSolve = 4
+    Run = 5
+
+
 class OpType(Enum):
-    FlipJump = 1        # address, address
-    Label = 2           # ID
-    Macro = 3           # ID, address [address..]
-    Rep = 4             # address, ID, statements
-    BitSpecific = 5     # NUMBER, address
-    DDPad = 6           # NUMBER
-    DDFlipBy = 7        # address, address
-    DDFlipByDbit = 8    # address, address
-    DDVar = 9           # NUMBER, address
-    DDOutput = 10       # NUMBER
+    FlipJump = 1        # address, address              # Survives until (3) label resolve
+    BitSpecific = 2     # NUMBER, address               # Survives until (3) label resolve
+    DDFlipBy = 3        # address, address              # Survives until (3) label resolve  (at later
+    DDFlipByDbit = 4    # address, address              # Survives until (3) label resolve
+    DDVar = 5           # NUMBER, address               # Survives until (3) label resolve
+    Label = 6           # ID                            # Survives until (2) label dictionary
+    DDPad = 7           # NUMBER                        # Survives until (2) label dictionary
+    Macro = 8           # ID, address [address..]       # Survives until (1) macro resolve
+    Rep = 9             # address, ID, statements       # Survives until (1) macro resolve
+    DDOutput = 10       # NUMBER                        # Survives until (1) macro resolve
 
 
 class Op:
     def __init__(self, op_type, data, file, line):
-        self.op_type = op_type
+        self.type = op_type
         self.data = data
         self.file = file
         self.line = line
 
     def __str__(self):
-        return f'{f"{self.op_type}:"[7:]:10}    Data: {", ".join([str(d) for d in self.data])}    File: {self.file} (line {self.line})'
+        return f'{f"{self.type}:"[7:]:10}    Data: {", ".join([str(d) for d in self.data])}    File: {self.file} (line {self.line})'
 
 
 class AddrType(Enum):
@@ -58,20 +66,21 @@ class AddrType(Enum):
 
 
 class Address:
-    def __init__(self, base, index):
-        self.base_type = base[0]
-        self.base = base[1]
+    def __init__(self, addr_type, base, index):
+        self.type = addr_type
+        self.base = base
         self.index = index
 
     def __str__(self):
+        base_hex = hex(self.base)[2:] if type(self.base) is int else self.base
         if self.index == 0:
-            return f'{self.base}'
-        return f'{self.base}[{self.index}]'
+            return f'{base_hex}'
+        return f'{base_hex}[{hex(self.index)[2:]}]'
 
 
 def new_label(counter):
-    return Address((AddrType.ID, f'__label{next(counter)}'), 0)
+    return Address(AddrType.ID, f'__label{next(counter)}', 0)
 
 
-temp_address = Address((AddrType.ID, 'temp'), 0)
-next_address = Address((AddrType.SkipAfter, 0), 0)
+temp_address = Address(AddrType.ID, 'temp', 0)
+next_address = Address(AddrType.SkipAfter, 0, 0)

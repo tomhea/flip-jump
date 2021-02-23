@@ -74,9 +74,19 @@ class CalcParser(Parser):
     tokens = CalcLexer.tokens
     # debugfile = 'src/parser.out'
 
-    def __init__(self):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
         self.macros = {main_macro: [([], []), []]}
         self.defs = {}
+
+    def check_params(self, ids, macro_name):
+        for id in ids:
+            if id in self.defs:
+                error(f'parameter {id} in macro {macro_name[0]}({macro_name[1]}) is also defined as a constant variable (with value {self.defs[id]})')
+        for i1 in range(len(ids)):
+            for i2 in range(i1):
+                if ids[i1] == ids[i2]:
+                    error(f'parameter {ids[i1]} in macro {macro_name[0]}({macro_name[1]}) is declared twice!')
 
     def error(self, token):
         print(f'Syntax Error at file {curr_file} line {token.lineno}, token=({token.type}, {token.value})')
@@ -111,6 +121,7 @@ class CalcParser(Parser):
     def macro_def(self, p):
         params = p[2]
         name = (p[1], len(params[0]))
+        self.check_params(params[0] + params[1], name)
         statements = p[4]
         self.macros[name] = [params, statements]
         return None
@@ -141,6 +152,8 @@ class CalcParser(Parser):
 
     @_('line_statements line_statement')
     def line_statements(self, p):
+        if self.verbose:
+            print('\n'.join(str(_) for _ in p[1]))
         return p[0] + p[1]
 
     @_('empty')
@@ -221,7 +234,7 @@ class CalcParser(Parser):
 
     @_('ID ASSIGN address')
     def statement(self, p):
-        if p[2].base_type == AddrType.Number:
+        if p[2].type == AddrType.Number:
             self.defs[p[0]] = p[2].base + p[2].index
             return None
         error(f'No such variable at file {curr_file} line {p.lineno}:  {p[2].base}.')
@@ -232,11 +245,13 @@ class CalcParser(Parser):
 
     @_('REP address ID ID addresses')
     def statement(self, p):
-        return Op(OpType.Rep, (p[1], p[2], [Op(OpType.Macro, ((p[3], len(p[4])), *p[4]), curr_file, p.lineno)]), curr_file, p.lineno)
+        return Op(OpType.Rep, (p[1], p[2],
+                               [Op(OpType.Macro, ((p[3], len(p[4])), *p[4]), curr_file, p.lineno)]
+                               ), curr_file, p.lineno)
 
     @_('base_address address_brackets')     # or maybe just expression? no more [], just +-/*
     def address(self, p):
-        return Address(p[0], p[1])
+        return Address(*p[0], p[1])
 
     @_('SKIP_BEFORE NUMBER')
     def base_address(self, p):
@@ -283,10 +298,10 @@ class CalcParser(Parser):
         error(f'No such variable at file {curr_file} line {p.lineno}:  {p[0]}.')
 
 
-def parse_macro_tree(input_files):
+def parse_macro_tree(input_files, verbose=False):
     global curr_file, curr_text
     lexer = CalcLexer()
-    parser = CalcParser()
+    parser = CalcParser(verbose=verbose)
     for curr_file in input_files:
         if not isfile(curr_file):
             error(f"No such file {curr_file}.")

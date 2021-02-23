@@ -1,8 +1,9 @@
-from assembler import full_assemble
+from assembler import assemble
 import blm
 from readchar import readchar
 from tempfile import mkstemp
 import os
+from defs import *
 
 
 def run(input_file, defined_input=None, verbose=False):
@@ -65,14 +66,14 @@ def run(input_file, defined_input=None, verbose=False):
         ip = new_ip
 
 
-def assemble_and_run(input_files, preprocessed_file=None, output_file=None, defined_input=None, verbose=False):
+def assemble_and_run(input_files, preprocessed_file=None, output_file=None, defined_input=None, verbose=set()):
     temp_output_file, temp_fd = False, 0
     if output_file is None:
         temp_fd, output_file = mkstemp()
         temp_output_file = True
 
-    full_assemble(input_files, output_file, preprocessed_file=preprocessed_file, verbose=verbose)
-    run(output_file, defined_input=defined_input, verbose=verbose)
+    assemble(input_files, output_file, preprocessed_file=preprocessed_file, verbose=verbose)
+    run(output_file, defined_input=defined_input, verbose=Verbose.Run in verbose)
 
     if temp_output_file:
         os.close(temp_fd)
@@ -80,11 +81,11 @@ def assemble_and_run(input_files, preprocessed_file=None, output_file=None, defi
 
 def main():
     for test, _input in (('cat', "Hello World!\0"), ('ncat', ''.join(chr(255-ord(c)) for c in 'Flip Jump Rocks!\0')),
-                         ('testbit', ''), ('mathbit', ''), ('mathvec', ''), ('not', '')):
-        # if test != 'mathbit': continue
+                         ('testbit', ''), ('testbit_with_nops', ''), ('mathbit', ''), ('mathvec', ''), ('not', '')):
+
         print(f'running test {test}({_input}):')
         assemble_and_run([f'tests/{test}.fj'], preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
-                         output_file=f'tests/compiled/{test}.blm', defined_input=_input, verbose=False)
+                         output_file=f'tests/compiled/{test}.blm', defined_input=_input, verbose=set([]))
         print()
 
 
