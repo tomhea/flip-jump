@@ -1,5 +1,9 @@
 .startup
-.inc x
+
+//.rep n i
+//    x[i];
+//.end
+
 loop:;loop
 
 x:

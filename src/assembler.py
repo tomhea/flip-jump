@@ -6,11 +6,11 @@ from defs import *
 from parser import parse_macro_tree
 
 
-def resolve_skip_addresses(op, start_address, end_address):
+def resolve_skip_addresses(op, w, start_address, end_address):
     data = []
     for datum in op.data:
         if type(datum) is Address and datum.type in (AddrType.SkipAfter, AddrType.SkipBefore):
-            data.append(Address(AddrType.Number, datum.base,
+            data.append(Address(AddrType.Number, 2*w * datum.base,
                                 end_address + datum.index
                                 if datum.type == AddrType.SkipAfter
                                 else start_address - datum.index))
@@ -27,7 +27,7 @@ def label_dictionary_pass(ops, w, verbose=False):
 
     for op in ops:
         if op.type == OpType.DDPad:
-            padding_length = (-curr_address) % (op.data[0] * w)
+            padding_length = (-curr_address) % (op.data[0] * 2 * w)
             op = Op(OpType.BitSpecific, (padding_length, Address(AddrType.Number, 0, 0)), op.file, op.line)
 
         if op.type in {OpType.FlipJump, OpType.BitSpecific, OpType.DDFlipBy, OpType.DDFlipByDbit, OpType.DDVar}:
@@ -37,7 +37,7 @@ def label_dictionary_pass(ops, w, verbose=False):
             elif op.type == OpType.DDVar:
                 delta = op.data[0] * 2*w
             end_address = curr_address + delta
-            resolve_skip_addresses(op, curr_address, end_address)
+            resolve_skip_addresses(op, w, curr_address, end_address)
             curr_address = end_address
             if op.type in {OpType.DDFlipBy, OpType.DDFlipByDbit}:
                 op.data.append(end_address)

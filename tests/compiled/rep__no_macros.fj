@@ -1,0 +1,17 @@
+temp;400
+(IO)
+temp;io_handler
+(zero)
+temp;0
+(one)
+temp;80
+(temp)
+temp;>0
+temp;>0
+(io_handler)
+temp;0
+temp;0
+(loop)
+temp;loop
+(x)
+temp;0

@@ -23,22 +23,22 @@ dbit=47 // bit-distance from variable start to bit value (w+dww)
     .startup 0 0
 .end
 .def startup in0_handler in1_handler
-    000;040 : ;400         // code start
-  (IO)
-    080;0c0 : ;io_handler  // now points to io_handler
+    ;400            // 000;040 : code start
+  IO:
+    ;io_handler     // 080;0c0 : now points to io_handler
 
-  (zero)
-    100;140 : .bit0    // this variable is set to zero
-  (one)
-    180;1c0 : .bit1    // this variable is set to one
+  zero:
+    .bit0           // 100;140 : this variable is set to zero
+  one:
+    .bit1           // 180;1c0 : this variable is set to one
 
-  (temp)
-    200;240 : ;         // temp
-    280;2c0 : ;         // temp
+  temp:
+    ;               // 200;240 : temp
+    ;               // 280;2c0 : temp
 
-  (io_handler)
-    300;340 : ;in0_handler  // handler of reading 0
-    380;3c0 : ;in1_handler  // handler of reading 1
+  io_handler:
+    ;in0_handler    // 300;340 : handler of reading 0
+    ;in1_handler    // 380;3c0 : handler of reading 1
 
-    400;440 :           // start of code
+                    // 400;440 : start of code
 .end

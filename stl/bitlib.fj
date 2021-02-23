@@ -17,14 +17,14 @@
 
 .def output x $ label_ptr base_jump_label end
     .xor label_ptr x
-  (label_ptr)
+  label_ptr:
     ;l0
     ..pad 2
-  (base_jump_label)
+  base_jump_label:
     IO[0];end
     IO[1]
     .not label_ptr
-  (end)
+  end:
 .end
 
 
@@ -56,9 +56,28 @@
 .end
 
 
+// Unsafe for dst==src (equals .zero dst)
 .def mov dst src
     .zero dst
     .xor dst src
+.end
+
+.def safe_mov dst src $ __zero
+    .zero __zero
+    .xor __zero src
+    .zero dst
+    .xor dst __zero
+    .skip
+  __zero:
+    .bit0
+.end
+
+
+// ---------- Unconditional Jump
+
+
+.def skip
+    ;>1
 .end
 
 
@@ -68,29 +87,29 @@
 
 .def if x l0 l1 $ label_ptr base_jump_label
     .xor label_ptr x
-  (label_ptr)
+  label_ptr:
     ;base_jump_label
     ..pad 2
-  (base_jump_label)
+  base_jump_label:
     ;l0
     label_ptr[dbit];l1
 .end
 
 .def if1 x l1 $ end
     .if x end l1
-  (end)
+  end:
 .end
 
 .def if0 x l0 $ end
     .if x l0 end
-  (end)
+  end:
 .end
 
 
 .def cmp a b lt eq gt $ a_is1_label
     .if1 a a_is1_label
     .if b eq lt
-  (a_is1_label)
+  a_is1_label:
     .if b gt eq
 .end
 
@@ -107,10 +126,10 @@
     ..flip_by_dbit src[w] base_jump_label
     ;src
     ..pad 2
-  (base_jump_label)
+  base_jump_label:
     ;cleanup
     dst;cleanup
-  (cleanup)
+  cleanup:
     ..flip_by_dbit src[w] base_jump_label
 .end
 
@@ -118,14 +137,14 @@
 .def or dst src $ end
     .if0 src end
     .one dst
-  (end)
+  end:
 .end
 
 
 .def and dst src $ end
     .if1 src end
     .zero dst
-  (end)
+  end:
 .end
 
 
@@ -144,16 +163,17 @@
 .def inc_carry1 dst $ carry_label
     .inc dst carry_label
     ;carry_label[dw]
-  (carry_label)
+  carry_label:
     .bit1
 .end
 
+// Unsafe for dst==carry (but there is no reason in calling it that way)
 .def inc dst carry $ end
     .if0 carry end
     .not dst
     .if0 dst end
     .not carry
-  (end)
+  end:
 .end
 
 
@@ -176,19 +196,25 @@
 .def add_carry0 dst src $ carry_label
     .add dst src carry_label
     ;carry_label[dw]
-  (carry_label)
+  carry_label:
     .bit0
 .end
 .def add_carry1 dst src $ carry_label
     .add dst src carry_label
     ;carry_label[dw]
-  (carry_label)
+  carry_label:
     .bit1
 .end
-.def add dst src carry
-    .inc dst src
+
+// Unsafe for dst==carry (but there is no reason in calling it that way)
+.def add dst src carry $ temp_src
+    .mov temp_src src
+    .inc dst temp_src
     .inc dst carry
-    .or  dst carry
+    .or  carry temp_src
+    .skip
+  temp_src:
+    .bit0
 .end
 
 
