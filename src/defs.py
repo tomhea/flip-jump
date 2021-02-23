@@ -82,24 +82,23 @@ class Exp:
     def __init__(self, exp):
         self.val = exp
 
-    # returns True if evaluated to int
+    # replaces every string it can with its dictionary value, and evaluates anything it can.
+    # returns the list of unknown id's
     def eval(self, id_dict):
         if type(self.val) == tuple:
             e1, op, e2 = self.val
-            int1 = e1.eval(id_dict)
-            int2 = e2.eval(id_dict)
-            if int1 and int2:
+            res1 = e1.eval(id_dict)
+            res2 = e2.eval(id_dict)
+            if not res1 and not res2:
                 self.val = op(e1.val, e2.val)
-                return True
-            return False
-
+                return []
+            return res1 + res2
         elif type(self.val) == str:
             if self.val in id_dict:
                 self.val = id_dict[self.val]
-                return True
-            return False
-
-        return True
+                return []
+            return [self.val]
+        return []
 
     def __str__(self):
         if type(self.val) == tuple:
