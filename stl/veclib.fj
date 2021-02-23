@@ -15,10 +15,12 @@
 // ---------- Memory Manipulation:
 
 
-.def mov2 dst src
-    .mov dst src
-    .mov dst[dw] src[dw]
+.def mov n dst src
+    .rep n i
+        //.mov dst[dw*i] src[dw*i]
+    .end
 .end
+
 
 
 // ---------- Conditional Jump
@@ -28,6 +30,10 @@
     .cmp a[dw] b[dw] lt middle_check gt
   (middle_check)
     .cmp a b lt eq gt
+.end
+
+.def cmp n a b lt eq gt
+
 .end
 
 

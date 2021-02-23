@@ -24,7 +24,7 @@ def run(input_file, defined_input=None, verbose=False):
 
         f = mem.get_word(ip)
         if verbose:
-            print(f'{hex(ip)[2:]}:   {hex(f)[2:]}', end='; ')
+            print(f'{hex(ip)[2:].rjust(5)}:   {hex(f)[2:]}', end='; ')
 
         # handle output
         if OUT <= f <= OUT+1:
@@ -82,7 +82,8 @@ def assemble_and_run(input_files, preprocessed_file=None, output_file=None, defi
 def main():
     for test, _input in (('cat', "Hello World!\0"), ('ncat', ''.join(chr(255-ord(c)) for c in 'Flip Jump Rocks!\0')),
                          ('testbit', ''), ('testbit_with_nops', ''), ('mathbit', ''), ('mathvec', ''), ('not', '')):
-
+        # if test != 'testbit_with_nops':
+        #     continue
         print(f'running test {test}({_input}):')
         assemble_and_run([f'tests/{test}.fj'], preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
                          output_file=f'tests/compiled/{test}.blm', defined_input=_input, verbose=set([]))

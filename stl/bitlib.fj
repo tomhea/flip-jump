@@ -56,9 +56,28 @@
 .end
 
 
+// Unsafe for dst==src (equals .zero dst)
 .def mov dst src
     .zero dst
     .xor dst src
+.end
+
+.def safe_mov dst src $ __zero
+    .zero __zero
+    .xor __zero src
+    .zero dst
+    .xor dst __zero
+    .skip
+  (__zero)
+    .bit0
+.end
+
+
+// ---------- Unconditional Jump
+
+
+.def skip
+    ;>1
 .end
 
 
@@ -148,6 +167,7 @@
     .bit1
 .end
 
+// Unsafe for dst==carry (but there is no reason in calling it that way)
 .def inc dst carry $ end
     .if0 carry end
     .not dst
@@ -185,10 +205,16 @@
   (carry_label)
     .bit1
 .end
-.def add dst src carry
-    .inc dst src
+
+// Unsafe for dst==carry (but there is no reason in calling it that way)
+.def add dst src carry $ temp_src
+    .mov temp_src src
+    .inc dst temp_src
     .inc dst carry
-    .or  dst carry
+    .or  carry temp_src
+    .skip
+  (temp_src)
+    .bit0
 .end
 
 

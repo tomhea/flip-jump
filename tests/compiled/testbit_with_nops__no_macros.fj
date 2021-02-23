@@ -11,20 +11,55 @@ temp;>0
 (io_handler)
 temp;0
 temp;0
-..flip_by_dbit x[40] __label2
-temp;x
-..pad 2
-(__label2)
-temp;__label3
-__label0[47];__label3
-(__label3)
-..flip_by_dbit x[40] __label2
-(__label0)
-temp;__label1
+..flip_by_dbit __label0[40] __label1
+temp;__label0
 ..pad 2
 (__label1)
+temp;__label2
+__label0[47];__label2
+(__label2)
+..flip_by_dbit __label0[40] __label1
+..flip_by_dbit x[40] __label3
+temp;x
+..pad 2
+(__label3)
+temp;__label4
+__label0[47];__label4
+(__label4)
+..flip_by_dbit x[40] __label3
+..flip_by_dbit x[40] __label5
+temp;x
+..pad 2
+(__label5)
+temp;__label6
+x[47];__label6
+(__label6)
+..flip_by_dbit x[40] __label5
+..flip_by_dbit __label0[40] __label7
+temp;__label0
+..pad 2
+(__label7)
+temp;__label8
+x[47];__label8
+(__label8)
+..flip_by_dbit __label0[40] __label7
+temp;>1
+(__label0)
+temp;0
+..flip_by_dbit x[40] __label11
+temp;x
+..pad 2
+(__label11)
+temp;__label12
+__label9[47];__label12
+(__label12)
+..flip_by_dbit x[40] __label11
+(__label9)
+temp;__label10
+..pad 2
+(__label10)
 temp;l0
-__label0[47];l1
+__label9[47];l1
 (l0)
 IO;>0
 IO[1];>0
@@ -59,6 +94,7 @@ temp;cloop
 temp;dloop
 ..var 8 3
 5#3
+(bananas)
 IO;>0
 IO;>0
 IO[1];>0
@@ -67,118 +103,119 @@ IO[1];>0
 IO;>0
 IO[1];>0
 IO;>0
-..flip_by_dbit x[40] __label14
+..flip_by_dbit x[40] __label23
 temp;x
-..pad 2
-(__label14)
-temp;__label15
-__label12[47];__label15
-(__label15)
-..flip_by_dbit x[40] __label14
-(__label12)
-temp;__label13
-..pad 2
-(__label13)
-temp;l0
-__label12[47];l1
-..flip_by_dbit x[40] __label19
-temp;x
-..pad 2
-(__label19)
-temp;__label20
-__label17[47];__label20
-(__label20)
-..flip_by_dbit x[40] __label19
-(__label17)
-temp;__label18
-..pad 2
-(__label18)
-temp;l0
-__label17[47];l1
-..flip_by_dbit x[40] __label24
-temp;x
-..pad 2
-(__label24)
-temp;__label25
-__label22[47];__label25
-(__label25)
-..flip_by_dbit x[40] __label24
-(__label22)
-temp;__label23
 ..pad 2
 (__label23)
-temp;l0
-__label22[47];l1
-..flip_by_dbit x[40] __label29
-temp;x
+temp;__label24
+__label21[47];__label24
+(__label24)
+..flip_by_dbit x[40] __label23
+(__label21)
+temp;__label22
 ..pad 2
-(__label29)
-temp;__label30
-__label27[47];__label30
-(__label30)
-..flip_by_dbit x[40] __label29
-(__label27)
-temp;__label28
+(__label22)
+temp;l0
+__label21[47];l1
+..flip_by_dbit x[40] __label28
+temp;x
 ..pad 2
 (__label28)
-temp;l0
-__label27[47];l1
-..flip_by_dbit x[40] __label34
-temp;x
+temp;__label29
+__label26[47];__label29
+(__label29)
+..flip_by_dbit x[40] __label28
+(__label26)
+temp;__label27
 ..pad 2
-(__label34)
-temp;__label35
-__label32[47];__label35
-(__label35)
-..flip_by_dbit x[40] __label34
-(__label32)
-temp;__label33
+(__label27)
+temp;l0
+__label26[47];l1
+..flip_by_dbit x[40] __label33
+temp;x
 ..pad 2
 (__label33)
-temp;l0
-__label32[47];l1
-..flip_by_dbit x[40] __label39
-temp;x
+temp;__label34
+__label31[47];__label34
+(__label34)
+..flip_by_dbit x[40] __label33
+(__label31)
+temp;__label32
 ..pad 2
-(__label39)
-temp;__label40
-__label37[47];__label40
-(__label40)
-..flip_by_dbit x[40] __label39
-(__label37)
-temp;__label38
+(__label32)
+temp;l0
+__label31[47];l1
+..flip_by_dbit x[40] __label38
+temp;x
 ..pad 2
 (__label38)
-temp;l0
-__label37[47];l1
-..flip_by_dbit x[40] __label44
-temp;x
+temp;__label39
+__label36[47];__label39
+(__label39)
+..flip_by_dbit x[40] __label38
+(__label36)
+temp;__label37
 ..pad 2
-(__label44)
-temp;__label45
-__label42[47];__label45
-(__label45)
-..flip_by_dbit x[40] __label44
-(__label42)
-temp;__label43
+(__label37)
+temp;l0
+__label36[47];l1
+..flip_by_dbit x[40] __label43
+temp;x
 ..pad 2
 (__label43)
+temp;__label44
+__label41[47];__label44
+(__label44)
+..flip_by_dbit x[40] __label43
+(__label41)
+temp;__label42
+..pad 2
+(__label42)
 temp;l0
-__label42[47];l1
-..flip_by_dbit x[40] __label49
+__label41[47];l1
+..flip_by_dbit x[40] __label48
 temp;x
 ..pad 2
-(__label49)
-temp;__label50
-__label47[47];__label50
-(__label50)
-..flip_by_dbit x[40] __label49
-(__label47)
-temp;__label48
-..pad 2
 (__label48)
+temp;__label49
+__label46[47];__label49
+(__label49)
+..flip_by_dbit x[40] __label48
+(__label46)
+temp;__label47
+..pad 2
+(__label47)
 temp;l0
-__label47[47];l1
+__label46[47];l1
+..flip_by_dbit x[40] __label53
+temp;x
+..pad 2
+(__label53)
+temp;__label54
+__label51[47];__label54
+(__label54)
+..flip_by_dbit x[40] __label53
+(__label51)
+temp;__label52
+..pad 2
+(__label52)
+temp;l0
+__label51[47];l1
+..flip_by_dbit x[40] __label58
+temp;x
+..pad 2
+(__label58)
+temp;__label59
+__label56[47];__label59
+(__label59)
+..flip_by_dbit x[40] __label58
+(__label56)
+temp;__label57
+..pad 2
+(__label57)
+temp;l0
+__label56[47];l1
+(bans2)
 x[47];>0
 zero[47];>0
 x[47];>0

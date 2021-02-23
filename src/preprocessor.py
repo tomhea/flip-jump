@@ -23,7 +23,7 @@ def printable_address(address, start_label):
     if address.type == AddrType.SkipBefore:
         return f'<{address.base}{index}'
 
-    error('not suppose to ge here (1)')
+    error('not suppose to get here (1)')
 
     # using_line_labels
     if address.type == AddrType.SkipAfter:

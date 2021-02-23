@@ -249,17 +249,25 @@ class CalcParser(Parser):
                                [Op(OpType.Macro, ((p[3], len(p[4])), *p[4]), curr_file, p.lineno)]
                                ), curr_file, p.lineno)
 
-    @_('base_address address_brackets')     # or maybe just expression? no more [], just +-/*
+    @_('base_address address_brackets')
     def address(self, p):
         return Address(*p[0], p[1])
 
-    @_('SKIP_BEFORE NUMBER')
-    def base_address(self, p):
-        return AddrType.SkipBefore, p[1]
+    @_('skip_address address_brackets')
+    def address(self, p):
+        return Address(*p[0], p[1])
 
-    @_('SKIP_AFTER NUMBER')
-    def base_address(self, p):
-        return AddrType.SkipAfter, p[1]
+    @_('SKIP_BEFORE base_address')
+    def skip_address(self, p):
+        if p[1][0] != AddrType.Number:
+            error("After '<' must be a constant number.")
+        return AddrType.SkipBefore, p[1][1]
+
+    @_('SKIP_AFTER base_address')
+    def skip_address(self, p):
+        if p[1][0] != AddrType.Number:
+            error("After '>' must be a constant number.")
+        return AddrType.SkipAfter, p[1][1]
 
     @_('NUMBER')
     def base_address(self, p):
