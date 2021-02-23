@@ -2,7 +2,7 @@
 
     ;IO
 
-(in0)
+in0:
     IO[0];IO
-(in1)
+in1:
     IO[1];IO

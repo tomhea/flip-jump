@@ -1,14 +1,14 @@
 .startup
 .if x l0 l1
 
-(l0)
+l0:
     ..output 5A // 'Z'
     ;loop
-(l1)
+l1:
     ..output 31 // '1'
     ;loop
-(loop)
+loop:
     ;loop
 
-(x)
+x:
     .bit0   // bit0 => 'Z',  bit1 => '1'

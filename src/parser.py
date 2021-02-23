@@ -13,11 +13,11 @@ class CalcLexer(Lexer):
               ID, NUMBER, DOLLAR,
               MATH_OP, ASSIGN,
               LBRACKET, RBRACKET, LPAREN, RPAREN,
-              DOT, NL, SC,
+              DOT, NL, SC, COLON,
               SKIP_BEFORE, SKIP_AFTER, HASHTAG}
 
     ignore_ending_comment = r'//.*'
-    ignore_beginning_comment = r'.*:'
+    # ignore_beginning_comment = r'.*:'
 
     DEF = r'\.def'
     END = r'\.end'
@@ -41,6 +41,7 @@ class CalcLexer(Lexer):
     RBRACKET = r'\]'
     LPAREN = r'\('
     RPAREN = r'\)'
+    COLON = r'\:'
 
     # Punctuations
     DOT = r'\.'
@@ -72,7 +73,7 @@ class CalcLexer(Lexer):
 
 class CalcParser(Parser):
     tokens = CalcLexer.tokens
-    # debugfile = 'src/parser.out'
+    debugfile = 'src/parser.out'
 
     def __init__(self, verbose=False):
         self.verbose = verbose
@@ -113,9 +114,9 @@ class CalcParser(Parser):
     def definable_line_statement(self, p):
         return p[0]
 
-    @_('labels macro_def labels NL')
+    @_('labels macro_def NL')
     def definable_line_statement(self, p):
-        return p[0] + p[2]
+        return p[0]
 
     @_('DEF ID macro_params NL line_statements END')
     def macro_def(self, p):
@@ -160,13 +161,13 @@ class CalcParser(Parser):
     def line_statements(self, p):
         return []
 
-    @_('labels statement labels NL')
+    @_('labels statement NL')
     def line_statement(self, p):
         if p[1]:
             if p[1].line is None:
                 p[1].line = p.lineno
-            return p[0] + [p[1]] + p[2]
-        return p[0] + p[2]
+            return p[0] + [p[1]]
+        return p[0]
 
     @_('labels NL')
     def line_statement(self, p):
@@ -180,9 +181,9 @@ class CalcParser(Parser):
     def labels(self, p):
         return []
 
-    @_('LPAREN ID RPAREN')
+    @_('ID COLON')
     def label(self, p):
-        return Op(OpType.Label, (p[1],), curr_file, p.lineno)
+        return Op(OpType.Label, (p[0],), curr_file, p.lineno)
 
     @_('address')
     def statement(self, p):

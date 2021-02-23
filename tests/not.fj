@@ -1,6 +1,6 @@
 .startup
 .not x
-(loop);loop
+loop:;loop
 
-(x)
+x:
     .bit0

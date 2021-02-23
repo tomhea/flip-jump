@@ -28,7 +28,7 @@
 
 .def cmp2 a b lt eq gt $ middle_check
     .cmp a[dw] b[dw] lt middle_check gt
-  (middle_check)
+  middle_check:
     .cmp a b lt eq gt
 .end
 
@@ -82,7 +82,7 @@
     .shl2 x
     .mov x[dw] rol2_bit_label
     ;rol2_bit_label[dw]
-  (rol2_bit_label)
+  rol2_bit_label:
     .bit0
 .end
 
@@ -92,7 +92,7 @@
     .shr2 x
     .mov x ror2_bit_label
     ;ror2_bit_label[dw]
-  (ror2_bit_label)
+  ror2_bit_label:
     .bit0
 .end
 
@@ -108,7 +108,7 @@
 .def inc2_carry1 x $ carry_label
     .inc2 x carry_label
     ;carry_label[dw]
-  (carry_label)
+  carry_label:
     .bit1
 .end
 .def inc2 x carry
@@ -136,13 +136,13 @@
 .def add2_carry0 dst src $ carry_label
     .add2 dst src carry_label
     ;carry_label[dw]
-  (carry_label)
+  carry_label:
     .bit0
 .end
 .def add2_carry1 dst src $ carry_label
     .add2 dst src carry_label
     ;carry_label[dw]
-  (carry_label)
+  carry_label:
     .bit1
 .end
 .def add2 dst src carry
