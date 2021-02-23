@@ -1,172 +1,86 @@
-(__line_label0)
 temp;400
-(__line_label1)
 (IO)
-(__line_label2)
 temp;io_handler
-(__line_label3)
 (zero)
-(__line_label4)
 temp;0
-(__line_label5)
 (one)
-(__line_label6)
 temp;80
-(__line_label7)
 (temp)
-(__line_label8)
-temp;__line_label8[80]
-(__line_label9)
-temp;__line_label9[80]
-(__line_label10)
+temp;>0
+temp;>0
 (io_handler)
-(__line_label11)
 temp;x
-(__line_label12)
 temp;x
-(__line_label13)
 ..flip_by_dbit __label0[40] __label5
-(__line_label14)
 temp;__label0
-(__line_label15)
 ..pad 2
-(__line_label16)
 (__label5)
-(__line_label17)
 temp;__label6
-(__line_label18)
 __label3[47];__label6
-(__line_label19)
 (__label6)
-(__line_label20)
 ..flip_by_dbit __label0[40] __label5
-(__line_label21)
 (__label3)
-(__line_label22)
 temp;__label4
-(__line_label23)
 ..pad 2
-(__line_label24)
 (__label4)
-(__line_label25)
 temp;__label1
-(__line_label26)
 __label3[47];__label2
-(__line_label27)
 (__label2)
-(__line_label28)
-x[47];__line_label28[80]
-(__line_label29)
+x[47];>0
 ..flip_by_dbit x[40] __label10
-(__line_label30)
 temp;x
-(__line_label31)
 ..pad 2
-(__line_label32)
 (__label10)
-(__line_label33)
 temp;__label11
-(__line_label34)
 __label8[47];__label11
-(__line_label35)
 (__label11)
-(__line_label36)
 ..flip_by_dbit x[40] __label10
-(__line_label37)
 (__label8)
-(__line_label38)
 temp;__label9
-(__line_label39)
 ..pad 2
-(__line_label40)
 (__label9)
-(__line_label41)
 temp;__label1
-(__line_label42)
 __label8[47];__label7
-(__line_label43)
 (__label7)
-(__line_label44)
-__label0[47];__line_label44[80]
-(__line_label45)
+__label0[47];>0
 (__label1)
-(__line_label46)
 ..flip_by_dbit __label0[40] __label16
-(__line_label47)
 temp;__label0
-(__line_label48)
 ..pad 2
-(__line_label49)
 (__label16)
-(__line_label50)
 temp;__label17
-(__line_label51)
 __label14[47];__label17
-(__line_label52)
 (__label17)
-(__line_label53)
 ..flip_by_dbit __label0[40] __label16
-(__line_label54)
 (__label14)
-(__line_label55)
 temp;__label15
-(__line_label56)
 ..pad 2
-(__line_label57)
 (__label15)
-(__line_label58)
 temp;__label12
-(__line_label59)
 __label14[47];__label13
-(__line_label60)
 (__label13)
-(__line_label61)
-x[c7];__line_label61[80]
-(__line_label62)
+x[c7];>0
 ..flip_by_dbit x[c0] __label21
-(__line_label63)
 temp;x[80]
-(__line_label64)
 ..pad 2
-(__line_label65)
 (__label21)
-(__line_label66)
 temp;__label22
-(__line_label67)
 __label19[47];__label22
-(__line_label68)
 (__label22)
-(__line_label69)
 ..flip_by_dbit x[c0] __label21
-(__line_label70)
 (__label19)
-(__line_label71)
 temp;__label20
-(__line_label72)
 ..pad 2
-(__line_label73)
 (__label20)
-(__line_label74)
 temp;__label12
-(__line_label75)
 __label19[47];__label18
-(__line_label76)
 (__label18)
-(__line_label77)
-__label0[47];__line_label77[80]
-(__line_label78)
+__label0[47];>0
 (__label12)
-(__line_label79)
 temp;__label0[80]
-(__line_label80)
 (__label0)
-(__line_label81)
 temp;80
-(__line_label82)
 (loop)
-(__line_label83)
 temp;loop
-(__line_label84)
 (x)
-(__line_label85)
 ..var 2 0

@@ -79,6 +79,15 @@ class CalcParser(Parser):
         self.macros = {main_macro: [([], []), []]}
         self.defs = {}
 
+    def check_params(self, ids, macro_name):
+        for id in ids:
+            if id in self.defs:
+                error(f'parameter {id} in macro {macro_name[0]}({macro_name[1]}) is also defined as a constant variable (with value {self.defs[id]})')
+        for i1 in range(len(ids)):
+            for i2 in range(i1):
+                if ids[i1] == ids[i2]:
+                    error(f'parameter {ids[i1]} in macro {macro_name[0]}({macro_name[1]}) is declared twice!')
+
     def error(self, token):
         print(f'Syntax Error at file {curr_file} line {token.lineno}, token=({token.type}, {token.value})')
 
@@ -112,6 +121,7 @@ class CalcParser(Parser):
     def macro_def(self, p):
         params = p[2]
         name = (p[1], len(params[0]))
+        self.check_params(params[0] + params[1], name)
         statements = p[4]
         self.macros[name] = [params, statements]
         return None

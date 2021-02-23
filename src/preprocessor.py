@@ -17,6 +17,15 @@ def printable_address(address, start_label):
         return address.base + index
     if address.type == AddrType.Number:
         return hex(address.base)[2:] + index
+
+    if address.type == AddrType.SkipAfter:
+        return f'>{address.base}{index}'
+    if address.type == AddrType.SkipBefore:
+        return f'<{address.base}{index}'
+
+    error('not suppose to ge here (1)')
+
+    # using_line_labels
     if address.type == AddrType.SkipAfter:
         return f'{start_label}[{hex((2 + address.base)*w)[2:]}]{index}'
     if address.type == AddrType.SkipBefore:
@@ -28,7 +37,7 @@ def output_ops(ops, output_file):
     with open(output_file, 'w') as f:
         for op in ops:
             curr_label = f'__line_label{next(counter)}'
-            f.write(f'({curr_label})\n')
+            # f.write(f'({curr_label})\n')
             if op.type == OpType.FlipJump:
                 f.write(f'{printable_address(op.data[0], curr_label)};{printable_address(op.data[1], curr_label)}\n')
             elif op.type == OpType.Label:
@@ -45,8 +54,8 @@ def output_ops(ops, output_file):
                 f.write(f'..var {hex(op.data[0])[2:]} {printable_address(op.data[1], curr_label)}\n')
 
 
-def resolve_macros(macros, output_file=None, verbose=False):        # TODO handle verbose?
-    ops = resolve_macro_aux(macros, main_macro, [], count())
+def resolve_macros(macros, output_file=None, verbose=False):
+    ops = resolve_macro_aux(macros, main_macro, [], count(), verbose)
     if output_file:
         output_ops(ops, output_file)
     return ops
@@ -54,15 +63,12 @@ def resolve_macros(macros, output_file=None, verbose=False):        # TODO handl
 
 def fix_labels(op, params, args):
     new_data = []
-    print(op)
     for datum in op.data:
         if type(datum) is Address and datum.type == AddrType.ID and datum.base in params:
             arg_address = args[params.index(datum.base)]
             new_data.append(Address(arg_address.type, arg_address.base, datum.index + arg_address.index))
         elif op.type == OpType.Rep and type(datum) is list:
-            print('BEFORE: ' + '  '.join(str(_) for _ in datum))
             res = [Op(_op.type, fix_labels(_op, params, args), _op.file, _op.line) for _op in datum]
-            print(' AFTER: ' + '  '.join(str(_) for _ in res))
             new_data.append(res)
         elif op.type == OpType.Label and datum in params:
             new_data.append(args[params.index(datum)].base)
@@ -71,7 +77,7 @@ def fix_labels(op, params, args):
     return new_data
 
 
-def resolve_macro_aux(macros, macro_name, args, dollar_count):
+def resolve_macro_aux(macros, macro_name, args, dollar_count, verbose=False):
     commands = []
     if macro_name not in macros:
         error(f"macro '{macro_name}' isn't defined.")
@@ -80,11 +86,13 @@ def resolve_macro_aux(macros, macro_name, args, dollar_count):
     args += [new_label(dollar_count) for _ in dollar_params]    # dollar_args
     for op in ops:
         if type(op) is not Op:
-            print(type(op), op, ops)
+            error(type(op) + str(op) + '\n\n' + str(ops))
+        if verbose:
+            print(op)
         fixed_data = fix_labels(op, params, args)
         op = Op(op.type, fixed_data, op.file, op.line)
         if op.type == OpType.Macro:
-            commands += resolve_macro_aux(macros, op.data[0], list(op.data[1:]), dollar_count)
+            commands += resolve_macro_aux(macros, op.data[0], list(op.data[1:]), dollar_count, verbose)
         elif op.type == OpType.Rep:
             n, i_name, statements = op.data
             statements = list(statements)
@@ -94,7 +102,7 @@ def resolve_macro_aux(macros, macro_name, args, dollar_count):
             for i in range(times):
                 pseudo_macro_name = (new_label(dollar_count).base, 1)
                 macros[pseudo_macro_name] = (([i_name], []), statements)
-                commands += resolve_macro_aux(macros, pseudo_macro_name, [i], dollar_count)
+                commands += resolve_macro_aux(macros, pseudo_macro_name, [i], dollar_count, verbose)
         elif op.type == OpType.DDOutput:
             num = op.data[0]
             io_base = (AddrType.ID, 'IO')

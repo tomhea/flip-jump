@@ -11,15 +11,17 @@
 (loop)
     temp;
     temp
+    (cloop);cloop
     ..pad 2
     ..flip_by temp loop
     ..flip_by_dbit temp loop
 
-    (cloop);cloop
+    1#3
+    (dloop);dloop
     ..var 8 3
     5#3
     ..output 5c
-    y=3
+    dy=3
 
     .rep 7 i
     .end
@@ -32,8 +34,8 @@
         .temp_macro x zero
     .end
 
-.def temp_macro x y
-    .not x
+.def temp_macro g y
+    .not g
     .not y
 .end
 

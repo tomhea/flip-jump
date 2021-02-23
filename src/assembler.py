@@ -10,11 +10,10 @@ def resolve_skip_addresses(op, start_address, end_address):
     data = []
     for datum in op.data:
         if type(datum) is Address and datum.type in (AddrType.SkipAfter, AddrType.SkipBefore):
-            if datum.type == AddrType.SkipAfter:
-                data.append(Address(AddrType.Number, datum.base,
-                                    end_address + datum.index
-                                    if datum.type == AddrType.SkipAfter
-                                    else start_address - datum.index))
+            data.append(Address(AddrType.Number, datum.base,
+                                end_address + datum.index
+                                if datum.type == AddrType.SkipAfter
+                                else start_address - datum.index))
         else:
             data.append(datum)
     op.data = data
@@ -27,6 +26,10 @@ def label_dictionary_pass(ops, w, verbose=False):
     label_places = {}
 
     for op in ops:
+        if op.type == OpType.DDPad:
+            padding_length = (-curr_address) % (op.data[0] * w)
+            op = Op(OpType.BitSpecific, (padding_length, Address(AddrType.Number, 0, 0)), op.file, op.line)
+
         if op.type in {OpType.FlipJump, OpType.BitSpecific, OpType.DDFlipBy, OpType.DDFlipByDbit, OpType.DDVar}:
             delta = 2*w
             if op.type == OpType.BitSpecific:
@@ -50,8 +53,6 @@ def label_dictionary_pass(ops, w, verbose=False):
                 print(f'label added: "{label}" in {op.file} line {op.line}')
             labels[label] = curr_address
             label_places[label] = (op.file, op.line)
-        elif op.type == OpType.DDPad:
-            curr_address += (-curr_address) % (op.data[0] * w)
         else:
             error(f"Can't assemble this opcode - {str(op)}")
 
@@ -70,7 +71,7 @@ def resolve_address(op, addr, labels):
 
 
 def lsb_first_bin_array(int_value, bit_size):
-    return [int(c) for c in bin(int_value)[2:].zfill(bit_size)[-bit_size:]][::-1]
+    return [int(c) for c in bin(int_value & ((1 << bit_size) - 1))[2:].zfill(bit_size)[-bit_size:]][::-1][:bit_size]
 
 
 def write_flip_jump(bits, f, j, w):
@@ -102,10 +103,10 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   
                 next_op = last_address
                 for bit in flip_bits[1:-1]:
                     next_op += 2*w
-                    ops.append(Op(OpType.FlipJump, (Address(AddrType.Number, to_address + bit, 0),
+                    ops.append(Op(OpType.FlipJump, (Address(AddrType.Number, to_address, bit),
                                                     Address(AddrType.Number, next_op, 0)), op.file, op.line))
                 last_address = next_op + 2*w
-                ops.append(Op(OpType.FlipJump, (Address(AddrType.Number, to_address + flip_bits[-1], 0),
+                ops.append(Op(OpType.FlipJump, (Address(AddrType.Number, to_address, flip_bits[-1]),
                                                 Address(AddrType.Number, return_address, 0)), op.file, op.line))
         elif op.type == OpType.DDVar:
             n, v = op.data[0], resolve_address(op, op.data[1], labels)
@@ -138,10 +139,11 @@ def assemble(input_files, output_file, preprocessed_file=None, w=64, use_stl=Tru
 
 
 def main():
-    print('assembling')
-    for test_name in ('cat',):#, 'ncat', 'mathbit', 'not', 'testbit', 'mathvec'):
-        full_assemble([f'tests/{test_name}.fj'], f'tests/compiled/{test_name}.blm',
-                      preprocessed_file=f'tests/compiled/{test_name}__no_macros.fj')
+    pass
+    print('not assembling')
+    # for test_name in ('cat',):#, 'ncat', 'mathbit', 'not', 'testbit', 'mathvec'):
+    #     full_assemble([f'tests/{test_name}.fj'], f'tests/compiled/{test_name}.blm',
+    #                   preprocessed_file=f'tests/compiled/{test_name}__no_macros.fj')
 
 
 if __name__ == '__main__':

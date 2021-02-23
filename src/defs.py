@@ -72,9 +72,10 @@ class Address:
         self.index = index
 
     def __str__(self):
+        base_hex = hex(self.base)[2:] if type(self.base) is int else self.base
         if self.index == 0:
-            return f'{self.base}'
-        return f'{self.base}[{self.index}]'
+            return f'{base_hex}'
+        return f'{base_hex}[{hex(self.index)[2:]}]'
 
 
 def new_label(counter):
