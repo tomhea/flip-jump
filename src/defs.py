@@ -78,6 +78,36 @@ class Address:
         return f'{base_hex}[{hex(self.index)[2:]}]'
 
 
+class Exp:
+    def __init__(self, exp):
+        self.val = exp
+
+    # returns True if evaluated to int
+    def eval(self, id_dict):
+        if type(self.val) == tuple:
+            e1, op, e2 = self.val
+            int1 = e1.eval(id_dict)
+            int2 = e2.eval(id_dict)
+            if int1 and int2:
+                self.val = op(e1.val, e2.val)
+                return True
+            return False
+
+        elif type(self.val) == str:
+            if self.val in id_dict:
+                self.val = id_dict[self.val]
+                return True
+            return False
+
+        return True
+
+    def __str__(self):
+        if type(self.val) == tuple:
+            e1, op, e2 = self.val
+            return f'({str(e1)}{op}{str(e2)})'
+        return f'{self.val}'
+
+
 def new_label(counter):
     return Address(AddrType.ID, f'__label{next(counter)}', 0)
 
