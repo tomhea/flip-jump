@@ -1,4 +1,5 @@
 from enum import Enum
+from operator import mul, add, sub, floordiv
 
 
 main_macro = ('.__M_a_i_n__', 0)
@@ -35,16 +36,16 @@ class Verbose(Enum):
 
 
 class OpType(Enum):
-    FlipJump = 1        # address, address              # Survives until (3) label resolve
-    BitSpecific = 2     # NUMBER, address               # Survives until (3) label resolve
-    DDFlipBy = 3        # address, address              # Survives until (3) label resolve  (at later
-    DDFlipByDbit = 4    # address, address              # Survives until (3) label resolve
-    DDVar = 5           # NUMBER, address               # Survives until (3) label resolve
-    Label = 6           # ID                            # Survives until (2) label dictionary
-    DDPad = 7           # NUMBER                        # Survives until (2) label dictionary
-    Macro = 8           # ID, address [address..]       # Survives until (1) macro resolve
-    Rep = 9             # address, ID, statements       # Survives until (1) macro resolve
-    DDOutput = 10       # NUMBER                        # Survives until (1) macro resolve
+    FlipJump = 1        # expr, expr                # Survives until (3) label resolve
+    BitSpecific = 2     # expr, expr                # Survives until (3) label resolve
+    DDFlipBy = 3        # expr, expr                # Survives until (3) label resolve  (at later
+    DDFlipByDbit = 4    # expr, expr                # Survives until (3) label resolve
+    DDVar = 5           # expr, expr                # Survives until (3) label resolve
+    Label = 6           # ID                        # Survives until (2) label dictionary
+    DDPad = 7           # expr                      # Survives until (2) label dictionary
+    Macro = 8           # ID, expr [expr..]         # Survives until (1) macro resolve
+    Rep = 9             # expr, ID, statements      # Survives until (1) macro resolve
+    DDOutput = 10       # expr                      # Survives until (1) macro resolve
 
 
 class Op:
@@ -78,38 +79,56 @@ class Address:
         return f'{base_hex}[{hex(self.index)[2:]}]'
 
 
-class Exp:
-    def __init__(self, exp):
-        self.val = exp
+class Expr:
+    def __init__(self, expr):
+        self.val = expr
 
     # replaces every string it can with its dictionary value, and evaluates anything it can.
     # returns the list of unknown id's
-    def eval(self, id_dict):
-        if type(self.val) == tuple:
+    def eval(self, id_dict, file, line):
+        if self.is_tuple():
             e1, op, e2 = self.val
-            res1 = e1.eval(id_dict)
-            res2 = e2.eval(id_dict)
-            if not res1 and not res2:
-                self.val = op(e1.val, e2.val)
-                return []
-            return res1 + res2
-        elif type(self.val) == str:
+            res1 = e1.eval(id_dict, file, line)
+            res2 = e2.eval(id_dict, file, line)
+            if res1 or res2:
+                return res1 + res2
+            else:
+                try:
+                    self.val = op(e1.val, e2.val)
+                    return []
+                except ...:
+                    error(f'bad math operation: {str(self)} in file {file} (line {line})')
+        elif self.is_str():
             if self.val in id_dict:
-                self.val = id_dict[self.val]
+                self.val = id_dict[self.val].val
                 return []
             return [self.val]
         return []
 
+    def is_int(self):
+        return type(self.val) is int
+
+    def is_str(self):
+        return type(self.val) is str
+
+    def is_tuple(self):
+        return type(self.val) is tuple
+
     def __str__(self):
-        if type(self.val) == tuple:
+        if self.is_tuple():
             e1, op, e2 = self.val
             return f'({str(e1)}{op}{str(e2)})'
-        return f'{self.val}'
+        if self.is_str():
+            return self.val
+        if self.is_int():
+            return hex(self.val)[2:]
+        raise BaseException
+        error(f'bad expression: {self.val} (of type {type(self.val)})')
 
 
 def new_label(counter):
     return Address(AddrType.ID, f'__label{next(counter)}', 0)
 
 
-temp_address = Address(AddrType.ID, 'temp', 0)
-next_address = Address(AddrType.SkipAfter, 0, 0)
+temp_address = Expr('temp')
+next_address = Expr('>')

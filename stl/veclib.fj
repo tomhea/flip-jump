@@ -17,7 +17,7 @@
 
 .def mov n dst src
     .rep n i
-        //.mov dst[dw*i] src[dw*i]
+        //.mov dst+dw*i src+dw*i
     .end
 .end
 
@@ -27,7 +27,7 @@
 
 
 .def cmp2 a b lt eq gt $ middle_check
-    .cmp a[dw] b[dw] lt middle_check gt
+    .cmp a+dw b+dw lt middle_check gt
   middle_check:
     .cmp a b lt eq gt
 .end
@@ -43,36 +43,36 @@
 
 .def xor2 dst src
     .xor dst src
-    .xor dst[dw] src[dw]
+    .xor dst+dw src+dw
 .end
 
 
 .def or2 dst src
     .or dst src
-    .or dst[dw] src[dw]
+    .or dst+dw src+dw
 .end
 
 
 .def and2 dst src
     .and dst src
-    .and dst[dw] src[dw]
+    .and dst+dw src+dw
 .end
 
 
 .def not2 dst
     .not dst src
-    .not dst[dw] src[dw]
+    .not dst+dw src+dw
 .end
 
 
 .def shl2 x
-    .mov x x[dw]
-    .zero x[dw]
+    .mov x x+dw
+    .zero x+dw
 .end
 
 
 .def shr2 x
-    .mov x[dw] x
+    .mov x+dw x
     .zero x
 .end
 
@@ -80,18 +80,18 @@
 .def rol2 x $ rol2_bit_label
     .mov rol2_bit_label x
     .shl2 x
-    .mov x[dw] rol2_bit_label
-    ;rol2_bit_label[dw]
+    .mov x+dw rol2_bit_label
+    .skip
   rol2_bit_label:
     .bit0
 .end
 
 
 .def ror2 x $ ror2_bit_label
-    .mov ror2_bit_label x[dw]
+    .mov ror2_bit_label x+dw
     .shr2 x
     .mov x ror2_bit_label
-    ;ror2_bit_label[dw]
+    .skip
   ror2_bit_label:
     .bit0
 .end
@@ -107,13 +107,13 @@
 .end
 .def inc2_carry1 x $ carry_label
     .inc2 x carry_label
-    ;carry_label[dw]
+    .skip
   carry_label:
     .bit1
 .end
 .def inc2 x carry
     .inc x carry
-    .inc x[dw] carry
+    .inc x+dw carry
 .end
 
 
@@ -135,19 +135,19 @@
 .end
 .def add2_carry0 dst src $ carry_label
     .add2 dst src carry_label
-    ;carry_label[dw]
+    .skip
   carry_label:
     .bit0
 .end
 .def add2_carry1 dst src $ carry_label
     .add2 dst src carry_label
-    ;carry_label[dw]
+    .skip
   carry_label:
     .bit1
 .end
 .def add2 dst src carry
     .add dst src carry
-    .add dst[dw] src[dw] carry
+    .add dst+dw src+dw carry
 .end
 
 
