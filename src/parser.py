@@ -1,4 +1,5 @@
 from sly import Lexer, Parser
+from operator import mul, add, sub, floordiv
 from os.path import isfile
 from defs import *
 
@@ -10,10 +11,10 @@ class CalcLexer(Lexer):
     tokens = {DEF, END, REP,
               DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDVAR, DDOUTPUT,
               ID, NUMBER, DOLLAR,
+              MATH_OP, ASSIGN,
+              LBRACKET, RBRACKET, LPAREN, RPAREN,
               DOT, NL, SC, COLON,
-              NEXT, HASHTAG}
-
-    literals = {'=', '+', '-', '*', '/', '(', ')'}
+              SKIP_BEFORE, SKIP_AFTER, HASHTAG}
 
     ignore_ending_comment = r'//.*'
     # ignore_beginning_comment = r'.*:'
@@ -33,6 +34,13 @@ class CalcLexer(Lexer):
     NUMBER = number_re
     DOLLAR = r'\$'
 
+    MATH_OP = r'[+\-*/]'
+    ASSIGN = r'='
+
+    LBRACKET = r'\['
+    RBRACKET = r'\]'
+    LPAREN = r'\('
+    RPAREN = r'\)'
     COLON = r'\:'
 
     # Punctuations
@@ -40,10 +48,15 @@ class CalcLexer(Lexer):
     NL = r'[\r\n]'
     SC = r';'
 
-    NEXT = r'>'
+    SKIP_BEFORE = r'<'
+    SKIP_AFTER = r'>'
     HASHTAG = r'#'
 
     ignore = ' \t'
+
+    def MATH_OP(self, t):
+        t.value = {'*': mul, '+': add, '-': sub, '/': floordiv}[t.value]
+        return t
 
     def NUMBER(self, t):
         t.value = int(t.value, 16)
@@ -60,11 +73,6 @@ class CalcLexer(Lexer):
 
 class CalcParser(Parser):
     tokens = CalcLexer.tokens
-    precedence = (
-        ('left', '+', '-'),
-        ('left', '*', '/'),
-        # ('right', 'UMINUS'),
-    )
     debugfile = 'src/parser.out'
 
     def __init__(self, verbose=False):
@@ -119,13 +127,13 @@ class CalcParser(Parser):
         self.macros[name] = [params, statements]
         return None
 
-    # @_('addresses address')
-    # def addresses(self, p):
-    #     return p[0] + [p[1]]
-    #
-    # @_('empty')
-    # def addresses(self, p):
-    #     return []
+    @_('addresses address')
+    def addresses(self, p):
+        return p[0] + [p[1]]
+
+    @_('empty')
+    def addresses(self, p):
+        return []
 
     @_('ids')
     def macro_params(self, p):
@@ -177,19 +185,19 @@ class CalcParser(Parser):
     def label(self, p):
         return Op(OpType.Label, (p[0],), curr_file, p.lineno)
 
-    @_('expr')
+    @_('address')
     def statement(self, p):
         return Op(OpType.FlipJump, (p[0], next_address), curr_file, None)  # FIXME
 
-    @_('expr SC')
+    @_('address SC')
     def statement(self, p):
         return Op(OpType.FlipJump, (p[0], next_address), curr_file, p.lineno)
 
-    @_('expr SC expr')
+    @_('address SC address')
     def statement(self, p):
         return Op(OpType.FlipJump, (p[0], p[2]), curr_file, p.lineno)
 
-    @_('SC expr')
+    @_('SC address')
     def statement(self, p):
         return Op(OpType.FlipJump, (temp_address, p[1]), curr_file, p.lineno)
 
@@ -197,154 +205,106 @@ class CalcParser(Parser):
     def statement(self, p):
         return Op(OpType.FlipJump, (temp_address, next_address), curr_file, p.lineno)
 
-    @_('DOT ID expressions')
+    @_('DOT ID addresses')
     def statement(self, p):
         return Op(OpType.Macro, ((p[1], len(p[2])), *p[2]), curr_file, p.lineno)
 
-    @_('DDPAD expr')
+    @_('DDPAD NUMBER')
     def statement(self, p):
         return Op(OpType.DDPad, (p[1],), curr_file, p.lineno)
 
-    @_('DDFLIP_BY expr expr')
+    @_('DDFLIP_BY address address')
     def statement(self, p):
         return Op(OpType.DDFlipBy, (p[1], p[2]), curr_file, p.lineno)
 
-    @_('DDFLIP_BY_DBIT expr expr')
+    @_('DDFLIP_BY_DBIT address address')
     def statement(self, p):
         return Op(OpType.DDFlipByDbit, (p[1], p[2]), curr_file, p.lineno)
 
-    @_('DDVAR expr expr')
+    @_('DDVAR NUMBER address')
     def statement(self, p):
         return Op(OpType.DDVar, (p[1], p[2]), curr_file, p.lineno)
 
-    @_('DDOUTPUT expr')
+    @_('DDOUTPUT NUMBER')
     def statement(self, p):
-        return Op(OpType.DDOutput, (p[1],), curr_file, p.lineno)
+        return Op(OpType.DDOutput, (p[1] & 0xff,), curr_file, p.lineno)
 
-    @_('expr HASHTAG expr')
+    @_('NUMBER HASHTAG address')
     def statement(self, p):
         return Op(OpType.BitSpecific, (p[0], p[2]), curr_file, p.lineno)
 
-    @_('ID "=" expr')
+    @_('ID ASSIGN address')
     def statement(self, p):
-        if not p.expr.eval(self.defs, curr_file, p.lineno):
-            self.defs[p.ID] = p.expr
+        if p[2].type == AddrType.Number:
+            self.defs[p[0]] = p[2].base + p[2].index
             return None
-        error(f'Can\'t evaluate expression at file {curr_file} line {p.lineno}:  {str(p.expr)}.')
+        error(f'No such variable at file {curr_file} line {p.lineno}:  {p[2].base}.')
 
-    @_('REP expr ID NL line_statements END')
+    @_('REP address ID NL line_statements END')
     def statement(self, p):
-        return Op(OpType.Rep, (p.expr, p.ID, p.line_statements), curr_file, p.lineno)
+        return Op(OpType.Rep, (p[1], p[2], p[4]), curr_file, p.lineno)
 
-    @_('REP expr ID ID expressions')
+    @_('REP address ID ID addresses')
     def statement(self, p):
-        exps = p.expressions
-        return Op(OpType.Rep,
-                  (p.expr, p.ID0, [Op(OpType.Macro, ((p.ID1, len(exps)), *exps), curr_file, p.lineno)]),
-                  curr_file, p.lineno)
+        return Op(OpType.Rep, (p[1], p[2],
+                               [Op(OpType.Macro, ((p[3], len(p[4])), *p[4]), curr_file, p.lineno)]
+                               ), curr_file, p.lineno)
 
-    # @_('base_address address_brackets')
-    # def address(self, p):
-    #     return Address(*p[0], p[1])
-    #
-    # @_('skip_address address_brackets')
-    # def address(self, p):
-    #     return Address(*p[0], p[1])
-    #
-    # @_('SKIP_BEFORE base_address')
-    # def skip_address(self, p):
-    #     if p[1][0] != AddrType.Number:
-    #         error("After '<' must be a constant number.")
-    #     return AddrType.SkipBefore, p[1][1]
-    #
-    # @_('NEXT base_address')
-    # def skip_address(self, p):
-    #     if p[1][0] != AddrType.Number:
-    #         error("After '>' must be a constant number.")
-    #     return AddrType.SkipAfter, p[1][1]
-    #
-    # @_('NUMBER')
-    # def base_address(self, p):
-    #     return AddrType.Number, p[0]
-    #
-    # @_('ID')
-    # def base_address(self, p):
-    #     if p[0] in self.defs:
-    #         return AddrType.Number, self.defs[p[0]]
-    #     return AddrType.ID, p[0]
-    #
-    # @_('address_brackets address_bracket')
-    # def address_brackets(self, p):
-    #     return p[0] + p[1]
-    #
-    # @_('empty')
-    # def address_brackets(self, p):
-    #     return 0
-    #
-    # @_('LBRACKET num_id RBRACKET')
-    # def address_bracket(self, p):
-    #     return p[1]
-    #
-    # @_('LBRACKET num_id MATH_OP num_id RBRACKET')
-    # def address_bracket(self, p):
-    #     return p[2](p[1], p[3])
-    #
-    # @_('NUMBER')
-    # def num_id(self, p):
-    #     return p[0]
-    #
-    # @_('ID')
-    # def num_id(self, p):
-    #     if p[0] in self.defs:
-    #         return self.defs[p[0]]
-    #     error(f'No such variable at file {curr_file} line {p.lineno}:  {p[0]}.')
+    @_('base_address address_brackets')
+    def address(self, p):
+        return Address(*p[0], p[1])
 
-    @_('expressions expr')
-    def expressions(self, p):
-        return p.expressions + [p.expr]
+    @_('skip_address address_brackets')
+    def address(self, p):
+        return Address(*p[0], p[1])
 
-    @_('empty')
-    def expressions(self, p):
-        return []
+    @_('SKIP_BEFORE base_address')
+    def skip_address(self, p):
+        if p[1][0] != AddrType.Number:
+            error("After '<' must be a constant number.")
+        return AddrType.SkipBefore, p[1][1]
 
-    @_('expr "+" expr')
-    def expr(self, p):
-        return Expr((p.expr0, add, p.expr1))
-
-    @_('expr "-" expr')
-    def expr(self, p):
-        return Expr((p.expr0, sub, p.expr1))
-
-    @_('expr "*" expr')
-    def expr(self, p):
-        return Expr((p.expr0, mul, p.expr1))
-
-    @_('expr "/" expr')
-    def expr(self, p):
-        return Expr((p.expr0, div, p.expr1))
-
-    # # The shift/reduce conflict can be solved using "," between macro arguments.
-    # @_('"-" expr %prec UMINUS')
-    # def expr(self, p):
-    #     return Expr((Expr(0), sub, p.expr))
-
-    @_('"(" expr ")"')
-    def expr(self, p):
-        return p.expr
+    @_('SKIP_AFTER base_address')
+    def skip_address(self, p):
+        if p[1][0] != AddrType.Number:
+            error("After '>' must be a constant number.")
+        return AddrType.SkipAfter, p[1][1]
 
     @_('NUMBER')
-    def expr(self, p):
-        return Expr(p.NUMBER)
-
-    @_('NEXT')
-    def expr(self, p):
-        return Expr(p.NEXT)
+    def base_address(self, p):
+        return AddrType.Number, p[0]
 
     @_('ID')
-    def expr(self, p):
+    def base_address(self, p):
         if p[0] in self.defs:
-            return self.defs[p.ID]
-        return Expr(p.ID)
+            return AddrType.Number, self.defs[p[0]]
+        return AddrType.ID, p[0]
+
+    @_('address_brackets address_bracket')
+    def address_brackets(self, p):
+        return p[0] + p[1]
+
+    @_('empty')
+    def address_brackets(self, p):
+        return 0
+
+    @_('LBRACKET num_id RBRACKET')
+    def address_bracket(self, p):
+        return p[1]
+
+    @_('LBRACKET num_id MATH_OP num_id RBRACKET')
+    def address_bracket(self, p):
+        return p[2](p[1], p[3])
+
+    @_('NUMBER')
+    def num_id(self, p):
+        return p[0]
+
+    @_('ID')
+    def num_id(self, p):
+        if p[0] in self.defs:
+            return self.defs[p[0]]
+        error(f'No such variable at file {curr_file} line {p.lineno}:  {p[0]}.')
 
 
 def parse_macro_tree(input_files, verbose=False):

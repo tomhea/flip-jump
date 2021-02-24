@@ -1,7 +1,7 @@
 .startup
 
 //.rep n i
-//    x+i;
+//    x[i];
 //.end
 
 loop:;loop

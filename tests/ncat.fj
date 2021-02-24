@@ -3,6 +3,6 @@
     ;IO
 
 in0:
-    IO+1;IO
+    IO[1];IO
 in1:
-    IO+0;IO
+    IO[0];IO
