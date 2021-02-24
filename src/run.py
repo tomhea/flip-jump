@@ -82,11 +82,11 @@ def assemble_and_run(input_files, preprocessed_file=None, output_file=None, defi
 def main():
     for test, _input in (('cat', "Hello World!\0"), ('ncat', ''.join(chr(255-ord(c)) for c in 'Flip Jump Rocks!\0')),
                          ('testbit', ''), ('testbit_with_nops', ''), ('mathbit', ''), ('mathvec', ''), ('not', ''), ('rep', '')):
-        # if test != 'rep':
-        #     continue
+        if test != 'mathvec':
+            continue
         print(f'running test {test}({_input}):')
         assemble_and_run([f'tests/{test}.fj'], preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
-                         output_file=f'tests/compiled/{test}.blm', defined_input=_input, verbose=set([]))
+                         output_file=f'tests/compiled/{test}.blm', defined_input=_input, verbose=set([Verbose.Run]))
         print()
 
 

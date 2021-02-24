@@ -1,53 +1,53 @@
 temp;400
-(IO)
+IO:
 temp;io_handler
-(zero)
+zero:
 temp;0
-(one)
+one:
 temp;80
-(temp)
-temp;>0
-temp;>0
-(io_handler)
+temp:
+temp;>
+temp;>
+io_handler:
 temp;0
 temp;0
-..flip_by_dbit __label0[40] __label5
+..flip_by_dbit (__label0 add 40) __label5
 temp;__label0
 ..pad 2
-(__label5)
+base_jump_label:
 temp;__label6
-__label3[47];__label6
-(__label6)
-..flip_by_dbit __label0[40] __label5
-(__label3)
+(__label3 add 47);__label6
+cleanup:
+..flip_by_dbit (__label0 add 40) __label5
+label_ptr:
 temp;__label4
 ..pad 2
-(__label4)
+base_jump_label:
 temp;__label1
-__label3[47];__label2
-(__label2)
-x[47];>0
-..flip_by_dbit x[40] __label10
+(__label3 add 47);__label2
+end:
+(x add 47);>
+..flip_by_dbit (x add 40) __label10
 temp;x
 ..pad 2
-(__label10)
+base_jump_label:
 temp;__label11
-__label8[47];__label11
-(__label11)
-..flip_by_dbit x[40] __label10
-(__label8)
+(__label8 add 47);__label11
+cleanup:
+..flip_by_dbit (x add 40) __label10
+label_ptr:
 temp;__label9
 ..pad 2
-(__label9)
+base_jump_label:
 temp;__label1
-__label8[47];__label7
-(__label7)
-__label0[47];>0
-(__label1)
-temp;__label0[80]
-(__label0)
+(__label8 add 47);__label7
+end:
+(__label0 add 47);>
+end:
+temp;(> add 80)
+carry_label:
 temp;80
-(loop)
+loop:
 temp;loop
-(x)
+x:
 temp;0

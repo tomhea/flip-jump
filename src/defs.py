@@ -59,24 +59,24 @@ class Op:
         return f'{f"{self.type}:"[7:]:10}    Data: {", ".join([str(d) for d in self.data])}    File: {self.file} (line {self.line})'
 
 
-class AddrType(Enum):
-    ID = 1
-    Number = 2
-    SkipBefore = 3
-    SkipAfter = 4
-
-
-class Address:
-    def __init__(self, addr_type, base, index):
-        self.type = addr_type
-        self.base = base
-        self.index = index
-
-    def __str__(self):
-        base_hex = hex(self.base)[2:] if type(self.base) is int else self.base
-        if self.index == 0:
-            return f'{base_hex}'
-        return f'{base_hex}[{hex(self.index)[2:]}]'
+# class AddrType(Enum):
+#     ID = 1
+#     Number = 2
+#     SkipBefore = 3
+#     SkipAfter = 4
+#
+#
+# class Address:
+#     def __init__(self, addr_type, base, index):
+#         self.type = addr_type
+#         self.base = base
+#         self.index = index
+#
+#     def __str__(self):
+#         base_hex = hex(self.base)[2:] if type(self.base) is int else self.base
+#         if self.index == 0:
+#             return f'{base_hex}'
+#         return f'{base_hex}[{hex(self.index)[2:]}]'
 
 
 class Expr:
@@ -90,19 +90,19 @@ class Expr:
             e1, op, e2 = self.val
             res1 = e1.eval(id_dict, file, line)
             res2 = e2.eval(id_dict, file, line)
+            print(res1, res2)
             if res1 or res2:
                 return res1 + res2
             else:
                 try:
                     self.val = op(e1.val, e2.val)
                     return []
-                except ...:
-                    error(f'bad math operation: {str(self)} in file {file} (line {line})')
+                except BaseException as e:
+                    error(f'{repr(e)}. bad math operation: {str(self)} in file {file} (line {line})')
         elif self.is_str():
             if self.val in id_dict:
                 self.val = id_dict[self.val].val
-                return []
-            return [self.val]
+            return [self.val] if self.is_str() else []
         return []
 
     def is_int(self):
@@ -117,17 +117,16 @@ class Expr:
     def __str__(self):
         if self.is_tuple():
             e1, op, e2 = self.val
-            return f'({str(e1)}{op}{str(e2)})'
+            return f'({str(e1)} {op.__name__} {str(e2)})'
         if self.is_str():
             return self.val
         if self.is_int():
             return hex(self.val)[2:]
-        raise BaseException
         error(f'bad expression: {self.val} (of type {type(self.val)})')
 
 
 def new_label(counter):
-    return Address(AddrType.ID, f'__label{next(counter)}', 0)
+    return Expr(f'__label{next(counter)}')
 
 
 temp_address = Expr('temp')

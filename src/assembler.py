@@ -131,8 +131,8 @@ def assemble(input_files, output_file, preprocessed_file=None, w=64, use_stl=Tru
 
     macros = parse_macro_tree(input_files, verbose=Verbose.Parse in verbose)
     ops = resolve_macros(macros, output_file=preprocessed_file, verbose=Verbose.MacroSolve in verbose)
-    ops, labels, last_address = label_dictionary_pass(ops, w, verbose=Verbose.LabelDict in verbose)
-    labels_resolve(ops, labels, last_address, w, output_file, verbose=Verbose.LabelSolve in verbose)
+    # ops, labels, last_address = label_dictionary_pass(ops, w, verbose=Verbose.LabelDict in verbose)
+    # labels_resolve(ops, labels, last_address, w, output_file, verbose=Verbose.LabelSolve in verbose)
 
     if temp_preprocessed_file:
         os.close(temp_fd)

@@ -1,8 +1,8 @@
 .startup
 
-//.rep n i
-//    x+i;
-//.end
+.rep 7 i
+    x+i+i;
+.end
 
 loop:;loop
 

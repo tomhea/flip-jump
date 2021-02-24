@@ -1,18 +1,18 @@
 temp;400
-(IO)
+IO:
 temp;io_handler
-(zero)
+zero:
 temp;0
-(one)
+one:
 temp;80
-(temp)
-temp;>0
-temp;>0
-(io_handler)
+temp:
+temp;>
+temp;>
+io_handler:
 temp;in0
 temp;in1
 temp;IO
-(in0)
-IO[1];IO
-(in1)
-IO;IO
+in0:
+(IO add 1);IO
+in1:
+(IO add 0);IO

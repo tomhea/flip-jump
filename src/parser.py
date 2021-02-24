@@ -65,7 +65,7 @@ class CalcParser(Parser):
         ('left', '*', '/'),
         # ('right', 'UMINUS'),
     )
-    debugfile = 'src/parser.out'
+    # debugfile = 'src/parser.out'
 
     def __init__(self, verbose=False):
         self.verbose = verbose
@@ -104,40 +104,32 @@ class CalcParser(Parser):
 
     @_('line_statement')
     def definable_line_statement(self, p):
-        return p[0]
+        return p.line_statement
 
     @_('labels macro_def NL')
     def definable_line_statement(self, p):
-        return p[0]
+        return p.labels
 
     @_('DEF ID macro_params NL line_statements END')
     def macro_def(self, p):
-        params = p[2]
-        name = (p[1], len(params[0]))
+        params = p.macro_params
+        name = (p.ID, len(params[0]))
         self.check_params(params[0] + params[1], name)
-        statements = p[4]
+        statements = p.line_statements
         self.macros[name] = [params, statements]
         return None
 
-    # @_('addresses address')
-    # def addresses(self, p):
-    #     return p[0] + [p[1]]
-    #
-    # @_('empty')
-    # def addresses(self, p):
-    #     return []
-
     @_('ids')
     def macro_params(self, p):
-        return p[0], []
+        return p.ids, []
 
     @_('ids DOLLAR ids')
     def macro_params(self, p):
-        return p[0], p[2]
+        return p.ids0, p.ids1
 
     @_('ids ID')
     def ids(self, p):
-        return p[0] + [p[1]]
+        return p.ids + [p.ID]
 
     @_('empty')
     def ids(self, p):
@@ -146,8 +138,8 @@ class CalcParser(Parser):
     @_('line_statements line_statement')
     def line_statements(self, p):
         if self.verbose:
-            print('\n'.join(str(_) for _ in p[1]))
-        return p[0] + p[1]
+            print('\n'.join(str(_) for _ in p.line_statement))
+        return p.line_statements + p.line_statement
 
     @_('empty')
     def line_statements(self, p):
@@ -175,23 +167,23 @@ class CalcParser(Parser):
 
     @_('ID COLON')
     def label(self, p):
-        return Op(OpType.Label, (p[0],), curr_file, p.lineno)
+        return Op(OpType.Label, (p.ID,), curr_file, p.lineno)
 
     @_('expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (p[0], next_address), curr_file, None)  # FIXME
+        return Op(OpType.FlipJump, (p.expr, next_address), curr_file, None)  # FIXME
 
     @_('expr SC')
     def statement(self, p):
-        return Op(OpType.FlipJump, (p[0], next_address), curr_file, p.lineno)
+        return Op(OpType.FlipJump, (p.expr, next_address), curr_file, p.lineno)
 
     @_('expr SC expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (p[0], p[2]), curr_file, p.lineno)
+        return Op(OpType.FlipJump, (p.expr0, p.expr1), curr_file, p.lineno)
 
     @_('SC expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (temp_address, p[1]), curr_file, p.lineno)
+        return Op(OpType.FlipJump, (temp_address, p.expr), curr_file, p.lineno)
 
     @_('SC')
     def statement(self, p):
@@ -243,62 +235,6 @@ class CalcParser(Parser):
                   (p.expr, p.ID0, [Op(OpType.Macro, ((p.ID1, len(exps)), *exps), curr_file, p.lineno)]),
                   curr_file, p.lineno)
 
-    # @_('base_address address_brackets')
-    # def address(self, p):
-    #     return Address(*p[0], p[1])
-    #
-    # @_('skip_address address_brackets')
-    # def address(self, p):
-    #     return Address(*p[0], p[1])
-    #
-    # @_('SKIP_BEFORE base_address')
-    # def skip_address(self, p):
-    #     if p[1][0] != AddrType.Number:
-    #         error("After '<' must be a constant number.")
-    #     return AddrType.SkipBefore, p[1][1]
-    #
-    # @_('NEXT base_address')
-    # def skip_address(self, p):
-    #     if p[1][0] != AddrType.Number:
-    #         error("After '>' must be a constant number.")
-    #     return AddrType.SkipAfter, p[1][1]
-    #
-    # @_('NUMBER')
-    # def base_address(self, p):
-    #     return AddrType.Number, p[0]
-    #
-    # @_('ID')
-    # def base_address(self, p):
-    #     if p[0] in self.defs:
-    #         return AddrType.Number, self.defs[p[0]]
-    #     return AddrType.ID, p[0]
-    #
-    # @_('address_brackets address_bracket')
-    # def address_brackets(self, p):
-    #     return p[0] + p[1]
-    #
-    # @_('empty')
-    # def address_brackets(self, p):
-    #     return 0
-    #
-    # @_('LBRACKET num_id RBRACKET')
-    # def address_bracket(self, p):
-    #     return p[1]
-    #
-    # @_('LBRACKET num_id MATH_OP num_id RBRACKET')
-    # def address_bracket(self, p):
-    #     return p[2](p[1], p[3])
-    #
-    # @_('NUMBER')
-    # def num_id(self, p):
-    #     return p[0]
-    #
-    # @_('ID')
-    # def num_id(self, p):
-    #     if p[0] in self.defs:
-    #         return self.defs[p[0]]
-    #     error(f'No such variable at file {curr_file} line {p.lineno}:  {p[0]}.')
-
     @_('expressions expr')
     def expressions(self, p):
         return p.expressions + [p.expr]
@@ -342,7 +278,7 @@ class CalcParser(Parser):
 
     @_('ID')
     def expr(self, p):
-        if p[0] in self.defs:
+        if p.ID in self.defs:
             return self.defs[p.ID]
         return Expr(p.ID)
 
