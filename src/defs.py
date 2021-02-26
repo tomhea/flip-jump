@@ -126,9 +126,34 @@ class Expr:
         error(f'bad expression: {self.val} (of type {type(self.val)})')
 
 
+def eval_all(op, id_dict={}):
+    ids = []
+    for expr in op.data:
+        if type(expr) is Expr:
+            ids += expr.eval(id_dict, op.file, op.line)
+    return ids
+
+
+def id_swap(op, id_dict={}):
+    new_data = []
+    for datum in op.data:
+        if type(datum) is str and datum in id_dict:
+            swapped_label = id_dict[datum]
+            if not swapped_label.is_str():
+                error(f'Bad label swap (from {datum} to {swapped_label}) in {op}.')
+            new_data.append(swapped_label.val)
+        else:
+            new_data.append(datum)
+    op.data = tuple(new_data)
+
+
 def new_label(counter):
     return Expr(f'__label{next(counter)}')
 
 
-temp_address = Expr('temp')
-next_address = Expr('>')
+def temp_address() -> Expr:
+    return Expr('temp')
+
+
+def next_address() -> Expr:
+    return Expr('>')

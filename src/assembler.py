@@ -6,17 +6,10 @@ from defs import *
 from parser import parse_macro_tree
 
 
-def resolve_skip_addresses(op, w, start_address, end_address):
-    data = []
-    for datum in op.data:
-        if type(datum) is Address and datum.type in (AddrType.SkipAfter, AddrType.SkipBefore):
-            data.append(Address(AddrType.Number, 2*w * datum.base,
-                                end_address + datum.index
-                                if datum.type == AddrType.SkipAfter
-                                else start_address - datum.index))
-        else:
-            data.append(datum)
-    op.data = data
+def try_int(op, expr):
+    if expr.is_int():
+        return expr.val
+    error(f"Can't resolve the following name: {expr.eval({}, op.file, op.line)}.")
 
 
 def label_dictionary_pass(ops, w, verbose=False):
@@ -27,20 +20,20 @@ def label_dictionary_pass(ops, w, verbose=False):
 
     for op in ops:
         if op.type == OpType.DDPad:
-            padding_length = (-curr_address) % (op.data[0] * 2 * w)
-            op = Op(OpType.BitSpecific, (padding_length, Address(AddrType.Number, 0, 0)), op.file, op.line)
+            padding_length = (-curr_address) % (try_int(op, op.data[0]) * 2 * w)
+            op = Op(OpType.BitSpecific, (Expr(padding_length), Expr(0)), op.file, op.line)
 
         if op.type in {OpType.FlipJump, OpType.BitSpecific, OpType.DDFlipBy, OpType.DDFlipByDbit, OpType.DDVar}:
             delta = 2*w
             if op.type == OpType.BitSpecific:
-                delta = op.data[0]
+                delta = try_int(op, op.data[0])
             elif op.type == OpType.DDVar:
-                delta = op.data[0] * 2*w
+                delta = try_int(op, op.data[0]) * 2*w
             end_address = curr_address + delta
-            resolve_skip_addresses(op, w, curr_address, end_address)
+            eval_all(op, {'<': Expr(curr_address), '>': Expr(end_address)})
             curr_address = end_address
             if op.type in {OpType.DDFlipBy, OpType.DDFlipByDbit}:
-                op.data.append(end_address)
+                op.data += (Expr(end_address),)
             if verbose:
                 print(f'op added: {str(op)}')
             rem_ops.append(op)
@@ -51,23 +44,12 @@ def label_dictionary_pass(ops, w, verbose=False):
                 error(f'label declared twice - "{label}" on file {op.file} (line {op.line}) and file {other_file} (line {other_line})')
             if verbose:
                 print(f'label added: "{label}" in {op.file} line {op.line}')
-            labels[label] = curr_address
+            labels[label] = Expr(curr_address)
             label_places[label] = (op.file, op.line)
         else:
             error(f"Can't assemble this opcode - {str(op)}")
 
     return rem_ops, labels, curr_address
-
-
-def resolve_address(op, addr, labels):
-    if addr.type == AddrType.Number:
-        return addr.base + addr.index
-    if addr.type == AddrType.ID:
-        label = addr.base
-        if label not in labels:
-            error(f'label not found - "{str(addr)}", in op {str(op)}')
-        return labels[label] + addr.index
-    error(f'bad address/label - "{str(addr)}", in op {str(op)}')
 
 
 def lsb_first_bin_array(int_value, bit_size):
@@ -81,18 +63,22 @@ def write_flip_jump(bits, f, j, w):
 
 def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   # TODO handle verbose?
     bits = []
-    resolved_temp_address = labels[temp_address.base]
+    resolved_temp_address = labels['temp'].val
 
     for op in ops:
+        ids = eval_all(op, labels)
+        if ids:
+            error(f"Can't resolve the following names: {', '.join(ids)}.")
+        vals = [datum.val for datum in op.data]
+
         if op.type == OpType.FlipJump:
-            f, j = (resolve_address(op, op.data[i], labels) for i in (0, 1))
+            f, j = vals
             write_flip_jump(bits, f, j, w)
         elif op.type == OpType.BitSpecific:
-            n, v = op.data[0], resolve_address(op, op.data[1], labels)
+            n, v = vals
             bits += lsb_first_bin_array(v, n)
         elif op.type in (OpType.DDFlipBy, OpType.DDFlipByDbit):
-            to_address, by_address = (resolve_address(op, op.data[i], labels) for i in (0, 1))
-            return_address = op.data[2]
+            to_address, by_address, return_address = vals
             first_bit = 0 if op.type == OpType.DDFlipBy else w.bit_length() + 1
             flip_bits = [i for i in range(first_bit, w) if by_address & (1 << i)]
 
@@ -103,13 +89,11 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   
                 next_op = last_address
                 for bit in flip_bits[1:-1]:
                     next_op += 2*w
-                    ops.append(Op(OpType.FlipJump, (Address(AddrType.Number, to_address, bit),
-                                                    Address(AddrType.Number, next_op, 0)), op.file, op.line))
+                    ops.append(Op(OpType.FlipJump, (Expr(to_address+bit), Expr(next_op)), op.file, op.line))
                 last_address = next_op + 2*w
-                ops.append(Op(OpType.FlipJump, (Address(AddrType.Number, to_address, flip_bits[-1]),
-                                                Address(AddrType.Number, return_address, 0)), op.file, op.line))
+                ops.append(Op(OpType.FlipJump, (Expr(to_address + flip_bits[-1]), Expr(return_address)), op.file, op.line))
         elif op.type == OpType.DDVar:
-            n, v = op.data[0], resolve_address(op, op.data[1], labels)
+            n, v = vals
             for i in range(n):
                 write_flip_jump(bits, resolved_temp_address, 2*w if v & (1 << i) else 0, w)
         else:
@@ -131,8 +115,8 @@ def assemble(input_files, output_file, preprocessed_file=None, w=64, use_stl=Tru
 
     macros = parse_macro_tree(input_files, verbose=Verbose.Parse in verbose)
     ops = resolve_macros(macros, output_file=preprocessed_file, verbose=Verbose.MacroSolve in verbose)
-    # ops, labels, last_address = label_dictionary_pass(ops, w, verbose=Verbose.LabelDict in verbose)
-    # labels_resolve(ops, labels, last_address, w, output_file, verbose=Verbose.LabelSolve in verbose)
+    ops, labels, last_address = label_dictionary_pass(ops, w, verbose=Verbose.LabelDict in verbose)
+    labels_resolve(ops, labels, last_address, w, output_file, verbose=Verbose.LabelSolve in verbose)
 
     if temp_preprocessed_file:
         os.close(temp_fd)

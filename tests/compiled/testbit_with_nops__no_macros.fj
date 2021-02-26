@@ -1,262 +1,262 @@
-temp;400
+  temp;400
 IO:
-temp;io_handler
+  temp;io_handler
 zero:
-temp;0
+  temp;0
 one:
-temp;80
+  temp;80
 temp:
-temp;>
-temp;>
+  temp;>
+  temp;>
 io_handler:
-temp;0
-temp;0
-..flip_by_dbit (__label0 add 40) __label1
-temp;__label0
-..pad 2
-base_jump_label:
-temp;__label2
-(__label0 add 47);__label2
-cleanup:
-..flip_by_dbit (__label0 add 40) __label1
-..flip_by_dbit (x add 40) __label3
-temp;x
-..pad 2
-base_jump_label:
-temp;__label4
-(__label0 add 47);__label4
-cleanup:
-..flip_by_dbit (x add 40) __label3
-..flip_by_dbit (x add 40) __label5
-temp;x
-..pad 2
-base_jump_label:
-temp;__label6
-(x add 47);__label6
-cleanup:
-..flip_by_dbit (x add 40) __label5
-..flip_by_dbit (__label0 add 40) __label7
-temp;__label0
-..pad 2
-base_jump_label:
-temp;__label8
-(x add 47);__label8
-cleanup:
-..flip_by_dbit (__label0 add 40) __label7
-temp;(> add 80)
-__zero:
-temp;0
-..flip_by_dbit (x add 40) __label11
-temp;x
-..pad 2
-base_jump_label:
-temp;__label12
-(__label9 add 47);__label12
-cleanup:
-..flip_by_dbit (x add 40) __label11
-label_ptr:
-temp;__label10
-..pad 2
-base_jump_label:
-temp;l0
-(__label9 add 47);l1
+  temp;0
+  temp;0
+  ..flip_by_dbit (__label0 add 40) __label1
+  temp;__label0
+  ..pad 2
+__label1:
+  temp;__label2
+  (__label0 add 47);__label2
+__label2:
+  ..flip_by_dbit (__label0 add 40) __label1
+  ..flip_by_dbit (x add 40) __label3
+  temp;x
+  ..pad 2
+__label3:
+  temp;__label4
+  (__label0 add 47);__label4
+__label4:
+  ..flip_by_dbit (x add 40) __label3
+  ..flip_by_dbit (x add 40) __label5
+  temp;x
+  ..pad 2
+__label5:
+  temp;__label6
+  (x add 47);__label6
+__label6:
+  ..flip_by_dbit (x add 40) __label5
+  ..flip_by_dbit (__label0 add 40) __label7
+  temp;__label0
+  ..pad 2
+__label7:
+  temp;__label8
+  (x add 47);__label8
+__label8:
+  ..flip_by_dbit (__label0 add 40) __label7
+  temp;(> add 80)
+__label0:
+  temp;0
+  ..flip_by_dbit (x add 40) __label11
+  temp;x
+  ..pad 2
+__label11:
+  temp;__label12
+  (__label9 add 47);__label12
+__label12:
+  ..flip_by_dbit (x add 40) __label11
+__label9:
+  temp;__label10
+  ..pad 2
+__label10:
+  temp;l0
+  (__label9 add 47);l1
 l0:
-(IO add 0);>
-(IO add 1);>
-(IO add 0);>
-(IO add 1);>
-(IO add 1);>
-(IO add 0);>
-(IO add 1);>
-(IO add 0);>
-temp;loop
+  (IO add 0);>
+  (IO add 1);>
+  (IO add 0);>
+  (IO add 1);>
+  (IO add 1);>
+  (IO add 0);>
+  (IO add 1);>
+  (IO add 0);>
+  temp;loop
 l1:
-(IO add 1);>
-(IO add 0);>
-(IO add 0);>
-(IO add 0);>
-(IO add 1);>
-(IO add 1);>
-(IO add 0);>
-(IO add 0);>
-temp;>
-temp;loop
+  (IO add 1);>
+  (IO add 0);>
+  (IO add 0);>
+  (IO add 0);>
+  (IO add 1);>
+  (IO add 1);>
+  (IO add 0);>
+  (IO add 0);>
+  temp;>
+  temp;loop
 loop:
-temp;>
-temp;>
+  temp;>
+  temp;>
 cloop:
-temp;cloop
-..pad 2
-..flip_by temp loop
-..flip_by_dbit temp loop
-1#3
+  temp;cloop
+  ..pad 2
+  ..flip_by temp loop
+  ..flip_by_dbit temp loop
+  1#3
 dloop:
-temp;dloop
-..var 8 3
-5#3
+  temp;dloop
+  ..var 8 3
+  5#3
 bananas:
-(IO add 0);>
-(IO add 0);>
-(IO add 1);>
-(IO add 1);>
-(IO add 1);>
-(IO add 0);>
-(IO add 1);>
-(IO add 0);>
-..flip_by_dbit (x add 40) __label23
-temp;x
-..pad 2
-base_jump_label:
-temp;__label24
-(__label21 add 47);__label24
-cleanup:
-..flip_by_dbit (x add 40) __label23
-label_ptr:
-temp;__label22
-..pad 2
-base_jump_label:
-temp;l0
-(__label21 add 47);l1
-..flip_by_dbit (x add 40) __label28
-temp;x
-..pad 2
-base_jump_label:
-temp;__label29
-(__label26 add 47);__label29
-cleanup:
-..flip_by_dbit (x add 40) __label28
-label_ptr:
-temp;__label27
-..pad 2
-base_jump_label:
-temp;l0
-(__label26 add 47);l1
-..flip_by_dbit (x add 40) __label33
-temp;x
-..pad 2
-base_jump_label:
-temp;__label34
-(__label31 add 47);__label34
-cleanup:
-..flip_by_dbit (x add 40) __label33
-label_ptr:
-temp;__label32
-..pad 2
-base_jump_label:
-temp;l0
-(__label31 add 47);l1
-..flip_by_dbit (x add 40) __label38
-temp;x
-..pad 2
-base_jump_label:
-temp;__label39
-(__label36 add 47);__label39
-cleanup:
-..flip_by_dbit (x add 40) __label38
-label_ptr:
-temp;__label37
-..pad 2
-base_jump_label:
-temp;l0
-(__label36 add 47);l1
-..flip_by_dbit (x add 40) __label43
-temp;x
-..pad 2
-base_jump_label:
-temp;__label44
-(__label41 add 47);__label44
-cleanup:
-..flip_by_dbit (x add 40) __label43
-label_ptr:
-temp;__label42
-..pad 2
-base_jump_label:
-temp;l0
-(__label41 add 47);l1
-..flip_by_dbit (x add 40) __label48
-temp;x
-..pad 2
-base_jump_label:
-temp;__label49
-(__label46 add 47);__label49
-cleanup:
-..flip_by_dbit (x add 40) __label48
-label_ptr:
-temp;__label47
-..pad 2
-base_jump_label:
-temp;l0
-(__label46 add 47);l1
-..flip_by_dbit (x add 40) __label53
-temp;x
-..pad 2
-base_jump_label:
-temp;__label54
-(__label51 add 47);__label54
-cleanup:
-..flip_by_dbit (x add 40) __label53
-label_ptr:
-temp;__label52
-..pad 2
-base_jump_label:
-temp;l0
-(__label51 add 47);l1
-..flip_by_dbit (x add 40) __label58
-temp;x
-..pad 2
-base_jump_label:
-temp;__label59
-(__label56 add 47);__label59
-cleanup:
-..flip_by_dbit (x add 40) __label58
-label_ptr:
-temp;__label57
-..pad 2
-base_jump_label:
-temp;l0
-(__label56 add 47);l1
+  (IO add 0);>
+  (IO add 0);>
+  (IO add 1);>
+  (IO add 1);>
+  (IO add 1);>
+  (IO add 0);>
+  (IO add 1);>
+  (IO add 0);>
+  ..flip_by_dbit (x add 40) __label23
+  temp;x
+  ..pad 2
+__label23:
+  temp;__label24
+  (__label21 add 47);__label24
+__label24:
+  ..flip_by_dbit (x add 40) __label23
+__label21:
+  temp;__label22
+  ..pad 2
+__label22:
+  temp;l0
+  (__label21 add 47);l1
+  ..flip_by_dbit (x add 40) __label28
+  temp;x
+  ..pad 2
+__label28:
+  temp;__label29
+  (__label26 add 47);__label29
+__label29:
+  ..flip_by_dbit (x add 40) __label28
+__label26:
+  temp;__label27
+  ..pad 2
+__label27:
+  temp;l0
+  (__label26 add 47);l1
+  ..flip_by_dbit (x add 40) __label33
+  temp;x
+  ..pad 2
+__label33:
+  temp;__label34
+  (__label31 add 47);__label34
+__label34:
+  ..flip_by_dbit (x add 40) __label33
+__label31:
+  temp;__label32
+  ..pad 2
+__label32:
+  temp;l0
+  (__label31 add 47);l1
+  ..flip_by_dbit (x add 40) __label38
+  temp;x
+  ..pad 2
+__label38:
+  temp;__label39
+  (__label36 add 47);__label39
+__label39:
+  ..flip_by_dbit (x add 40) __label38
+__label36:
+  temp;__label37
+  ..pad 2
+__label37:
+  temp;l0
+  (__label36 add 47);l1
+  ..flip_by_dbit (x add 40) __label43
+  temp;x
+  ..pad 2
+__label43:
+  temp;__label44
+  (__label41 add 47);__label44
+__label44:
+  ..flip_by_dbit (x add 40) __label43
+__label41:
+  temp;__label42
+  ..pad 2
+__label42:
+  temp;l0
+  (__label41 add 47);l1
+  ..flip_by_dbit (x add 40) __label48
+  temp;x
+  ..pad 2
+__label48:
+  temp;__label49
+  (__label46 add 47);__label49
+__label49:
+  ..flip_by_dbit (x add 40) __label48
+__label46:
+  temp;__label47
+  ..pad 2
+__label47:
+  temp;l0
+  (__label46 add 47);l1
+  ..flip_by_dbit (x add 40) __label53
+  temp;x
+  ..pad 2
+__label53:
+  temp;__label54
+  (__label51 add 47);__label54
+__label54:
+  ..flip_by_dbit (x add 40) __label53
+__label51:
+  temp;__label52
+  ..pad 2
+__label52:
+  temp;l0
+  (__label51 add 47);l1
+  ..flip_by_dbit (x add 40) __label58
+  temp;x
+  ..pad 2
+__label58:
+  temp;__label59
+  (__label56 add 47);__label59
+__label59:
+  ..flip_by_dbit (x add 40) __label58
+__label56:
+  temp;__label57
+  ..pad 2
+__label57:
+  temp;l0
+  (__label56 add 47);l1
 bans2:
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
-(x add 47);>
-(zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
+  (x add 47);>
+  (zero add 47);>
 x:
-temp;0
+  temp;80

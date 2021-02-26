@@ -11,9 +11,9 @@ class CalcLexer(Lexer):
               DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDVAR, DDOUTPUT,
               ID, NUMBER, DOLLAR,
               DOT, NL, SC, COLON,
-              NEXT, HASHTAG}
+              HASHTAG}
 
-    literals = {'=', '+', '-', '*', '/', '(', ')'}
+    literals = {'=', '+', '-', '*', '/', '(', ')', '<', '>'}
 
     ignore_ending_comment = r'//.*'
     # ignore_beginning_comment = r'.*:'
@@ -40,7 +40,6 @@ class CalcLexer(Lexer):
     NL = r'[\r\n]'
     SC = r';'
 
-    NEXT = r'>'
     HASHTAG = r'#'
 
     ignore = ' \t'
@@ -171,11 +170,11 @@ class CalcParser(Parser):
 
     @_('expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (p.expr, next_address), curr_file, None)  # FIXME
+        return Op(OpType.FlipJump, (p.expr, next_address()), curr_file, None)  # FIXME
 
     @_('expr SC')
     def statement(self, p):
-        return Op(OpType.FlipJump, (p.expr, next_address), curr_file, p.lineno)
+        return Op(OpType.FlipJump, (p.expr, next_address()), curr_file, p.lineno)
 
     @_('expr SC expr')
     def statement(self, p):
@@ -183,11 +182,11 @@ class CalcParser(Parser):
 
     @_('SC expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (temp_address, p.expr), curr_file, p.lineno)
+        return Op(OpType.FlipJump, (temp_address(), p.expr), curr_file, p.lineno)
 
     @_('SC')
     def statement(self, p):
-        return Op(OpType.FlipJump, (temp_address, next_address), curr_file, p.lineno)
+        return Op(OpType.FlipJump, (temp_address(), next_address()), curr_file, p.lineno)
 
     @_('DOT ID expressions')
     def statement(self, p):
@@ -215,7 +214,7 @@ class CalcParser(Parser):
 
     @_('expr HASHTAG expr')
     def statement(self, p):
-        return Op(OpType.BitSpecific, (p[0], p[2]), curr_file, p.lineno)
+        return Op(OpType.BitSpecific, (p.expr0, p.expr1), curr_file, p.lineno)
 
     @_('ID "=" expr')
     def statement(self, p):
@@ -257,7 +256,7 @@ class CalcParser(Parser):
 
     @_('expr "/" expr')
     def expr(self, p):
-        return Expr((p.expr0, div, p.expr1))
+        return Expr((p.expr0, floordiv, p.expr1))
 
     # # The shift/reduce conflict can be solved using "," between macro arguments.
     # @_('"-" expr %prec UMINUS')
@@ -272,9 +271,13 @@ class CalcParser(Parser):
     def expr(self, p):
         return Expr(p.NUMBER)
 
-    @_('NEXT')
+    @_('">"')
     def expr(self, p):
-        return Expr(p.NEXT)
+        return Expr('>')
+
+    @_('"<"')
+    def expr(self, p):
+        return Expr('<')
 
     @_('ID')
     def expr(self, p):

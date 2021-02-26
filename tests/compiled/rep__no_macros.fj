@@ -1,24 +1,24 @@
-temp;400
+  temp;400
 IO:
-temp;io_handler
+  temp;io_handler
 zero:
-temp;0
+  temp;0
 one:
-temp;80
+  temp;80
 temp:
-temp;>
-temp;>
+  temp;>
+  temp;>
 io_handler:
-temp;0
-temp;0
-((x add 0) add 0);>
-((x add 1) add 1);>
-((x add 2) add 2);>
-((x add 3) add 3);>
-((x add 4) add 4);>
-((x add 5) add 5);>
-((x add 6) add 6);>
+  temp;0
+  temp;0
+  ((x add 0) add 0);>
+  ((x add 1) add 1);>
+  ((x add 2) add 2);>
+  ((x add 3) add 3);>
+  ((x add 4) add 4);>
+  ((x add 5) add 5);>
+  ((x add 6) add 6);>
 loop:
-temp;loop
+  temp;loop
 x:
-temp;0
+  temp;0

@@ -8,19 +8,19 @@ def output_ops(ops, output_file):
         for op in ops:
             eval_all(op)
             if op.type == OpType.FlipJump:
-                f.write(f'{op.data[0]};{op.data[1]}\n')
+                f.write(f'  {op.data[0]};{op.data[1]}\n')
             elif op.type == OpType.Label:
                 f.write(f'{op.data[0]}:\n')
             elif op.type == OpType.BitSpecific:
-                f.write(f'{op.data[0]}#{op.data[1]}\n')
+                f.write(f'  {op.data[0]}#{op.data[1]}\n')
             elif op.type == OpType.DDPad:
-                f.write(f'..pad {op.data[0]}\n')
+                f.write(f'  ..pad {op.data[0]}\n')
             elif op.type == OpType.DDFlipBy:
-                f.write(f'..flip_by {op.data[0]} {op.data[1]}\n')
+                f.write(f'  ..flip_by {op.data[0]} {op.data[1]}\n')
             elif op.type == OpType.DDFlipByDbit:
-                f.write(f'..flip_by_dbit {op.data[0]} {op.data[1]}\n')
+                f.write(f'  ..flip_by_dbit {op.data[0]} {op.data[1]}\n')
             elif op.type == OpType.DDVar:
-                f.write(f'..var {op.data[0]} {op.data[1]}\n')
+                f.write(f'  ..var {op.data[0]} {op.data[1]}\n')
 
 
 def resolve_macros(macros, output_file=None, verbose=False):
@@ -30,27 +30,25 @@ def resolve_macros(macros, output_file=None, verbose=False):
     return ops
 
 
-def eval_all(op, id_dict={}):
-    for expr in op.data:
-        if type(expr) is Expr:
-            expr.eval(id_dict, op.file, op.line)
-
-
 def resolve_macro_aux(macros, macro_name, args, rep_dict, dollar_count, verbose=False):
     commands = []
     if macro_name not in macros:
         error(f"macro '{macro_name}' isn't defined.")
     (params, dollar_params), ops = macros[macro_name]
-    id_dict = dict(list(zip(params + dollar_params, args + [new_label(dollar_count) for _ in dollar_params])))
+    id_dict = dict(zip(params, args))
+    for dp in dollar_params:
+        id_dict[dp] = new_label(dollar_count)
     for k in rep_dict:
         id_dict[k] = rep_dict[k]
+
     for op in ops:
         if type(op) is not Op:
             error(type(op) + str(op) + '\n\n' + str(ops))
         if verbose:
             print(op)
         op = deepcopy(op)
-        eval_all(op, id_dict=id_dict)
+        eval_all(op, id_dict)
+        id_swap(op, id_dict)
         if op.type == OpType.Macro:
             commands += resolve_macro_aux(macros, op.data[0], list(op.data[1:]), {}, dollar_count, verbose)
         elif op.type == OpType.Rep:
@@ -79,7 +77,7 @@ def resolve_macro_aux(macros, macro_name, args, rep_dict, dollar_count, verbose=
             num = c.val & 0xff
             for i in range(8):
                 commands.append(Op(OpType.FlipJump,
-                                   (Expr((Expr('IO'), add, Expr((num >> i) & 1))), next_address),
+                                   (Expr((Expr('IO'), add, Expr((num >> i) & 1))), next_address()),
                                    op.file, op.line))
         else:
             commands.append(op)
