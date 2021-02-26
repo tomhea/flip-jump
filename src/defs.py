@@ -90,7 +90,6 @@ class Expr:
             e1, op, e2 = self.val
             res1 = e1.eval(id_dict, file, line)
             res2 = e2.eval(id_dict, file, line)
-            print(res1, res2)
             if res1 or res2:
                 return res1 + res2
             else:
@@ -102,7 +101,9 @@ class Expr:
         elif self.is_str():
             if self.val in id_dict:
                 self.val = id_dict[self.val].val
-            return [self.val] if self.is_str() else []
+                return self.eval({}, file, line)
+            else:
+                return [self.val]
         return []
 
     def is_int(self):
