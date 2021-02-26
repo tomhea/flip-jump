@@ -1,51 +1,51 @@
-temp;400
-(IO)
-temp;io_handler
-(zero)
-temp;0
-(one)
-temp;80
-(temp)
-temp;>0
-temp;>0
-(io_handler)
-temp;0
-temp;0
-..flip_by_dbit x[40] __label2
-temp;x
-..pad 2
-(__label2)
-temp;__label3
-__label0[47];__label3
-(__label3)
-..flip_by_dbit x[40] __label2
-(__label0)
-temp;__label1
-..pad 2
-(__label1)
-temp;l0
-__label0[47];l1
-(l0)
-IO;>0
-IO[1];>0
-IO;>0
-IO[1];>0
-IO[1];>0
-IO;>0
-IO[1];>0
-IO;>0
-temp;loop
-(l1)
-IO[1];>0
-IO;>0
-IO;>0
-IO;>0
-IO[1];>0
-IO[1];>0
-IO;>0
-IO;>0
-temp;loop
-(loop)
-temp;loop
-(x)
-temp;0
+  temp;400
+IO:
+  temp;io_handler
+zero:
+  temp;0
+one:
+  temp;80
+temp:
+  temp;>
+  temp;>
+io_handler:
+  temp;0
+  temp;0
+  ..flip_by_dbit (x add 40) __label2
+  temp;x
+  ..pad 2
+__label2:
+  temp;__label3
+  (__label0 add 47);__label3
+__label3:
+  ..flip_by_dbit (x add 40) __label2
+__label0:
+  temp;__label1
+  ..pad 2
+__label1:
+  temp;l0
+  (__label0 add 47);l1
+l0:
+  (IO add 0);>
+  (IO add 1);>
+  (IO add 0);>
+  (IO add 1);>
+  (IO add 1);>
+  (IO add 0);>
+  (IO add 1);>
+  (IO add 0);>
+  temp;loop
+l1:
+  (IO add 1);>
+  (IO add 0);>
+  (IO add 0);>
+  (IO add 0);>
+  (IO add 1);>
+  (IO add 1);>
+  (IO add 0);>
+  (IO add 0);>
+  temp;loop
+loop:
+  temp;loop
+x:
+  temp;0
