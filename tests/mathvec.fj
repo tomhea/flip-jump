@@ -1,6 +1,6 @@
-.startup x x
-.inc2 x
-loop:;loop
+.startup
+.inc 2 x
+.loop
 
 x:
     ..var 2 0

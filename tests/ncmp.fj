@@ -1,0 +1,16 @@
+.startup 0 0
+n=4
+.cmp n a b lt eq gt
+
+lt:
+    ..output 0x4c
+    ;<
+eq:
+    ..output 0x45
+    ;<
+gt:
+    ..output 0x47
+    ;<
+
+a: ..var n 3
+b: ..var n 1

@@ -1,0 +1,7 @@
+.startup
+.and 8 a b
+.output_ascii a
+.loop
+
+a: ..var 8 0x35
+b: ..var 8 0x37

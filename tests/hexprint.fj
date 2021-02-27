@@ -1,0 +1,9 @@
+.startup
+.add 4 a b
+.hex2ascii c a
+.output_ascii c
+.loop
+
+a: ..var 4 0x2
+b: ..var 4 0x3
+c: ..var 8 0x0

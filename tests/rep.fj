@@ -4,7 +4,7 @@
     x+i+i;
 .end
 
-loop:;loop
+.loop
 
 x:
     .bit0

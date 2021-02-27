@@ -20,11 +20,14 @@ def smart_int16(num):
 def stl(xx):
     if xx not in (8, 16, 32, 64):
         error(f"no such stl: lib{xx}.fj")
-    return [f'stl/{lib}.fj' for lib in (f'lib{xx}', 'bitlib', 'veclib')]
+    return [f'stl/{lib}.fj' for lib in (f'lib{xx}', 'bitlib', 'veclib', 'iolib')]
 
 
 id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
-number_re = r'[0-9a-fA-F]+'
+hex_num = r'0[xX][0-9a-fA-F]+'
+bin_num = r'0[bB][01]+'
+dec_num = r'[0-9]+'
+number_re = rf'({bin_num})|({hex_num})|({dec_num})'
 
 
 class Verbose(Enum):

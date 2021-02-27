@@ -12,23 +12,6 @@
 
 
 
-// ---------- Input / Output:
-
-
-.def output x $ label_ptr base_jump_label end
-    .xor label_ptr x
-  label_ptr:
-    ;l0
-    ..pad 2
-  base_jump_label:
-    IO+0;end
-    IO+1
-    .not label_ptr
-  end:
-.end
-
-
-
 // ---------- Memory Variables:
 
 
@@ -63,13 +46,10 @@
 .end
 
 .def safe_mov dst src $ __zero
-    .zero __zero
-    .xor __zero src
+    .zero __bitlib_temp_bit
+    .xor __bitlib_temp_bit src
     .zero dst
-    .xor dst __zero
-    .skip
-  __zero:
-    .bit0
+    .xor dst __bitlib_temp_bit
 .end
 
 
@@ -78,6 +58,11 @@
 
 .def skip
     ;> + dw
+.end
+
+
+.def loop
+    ;<
 .end
 
 
@@ -157,18 +142,8 @@
 // ---------- Arithmetical Macros
 
 
-.def inc dst
-    .inc_carry1 dst
-.end
-.def inc_carry1 dst $ carry_label
-    .inc dst carry_label
-    .skip
-  carry_label:
-    .bit1
-.end
-
 // Unsafe for dst==carry (but there is no reason in calling it that way)
-.def inc dst carry $ end
+.def inc1 dst carry $ end
     .if0 carry end
     .not dst
     .if0 dst end
@@ -177,50 +152,10 @@
 .end
 
 
-.def dec x
-    .not x
-    .inc x
-    .not x
-.end
-
-
-.def neg x
-    .not x
-    .inc x
-.end
-
-
-.def add dst src
-    .add_carry0 dst src
-.end
-.def add_carry0 dst src $ carry_label
-    .add dst src carry_label
-    .skip
-  carry_label:
-    .bit0
-.end
-.def add_carry1 dst src $ carry_label
-    .add dst src carry_label
-    .skip
-  carry_label:
-    .bit1
-.end
-
 // Unsafe for dst==carry (but there is no reason in calling it that way)
-.def add dst src carry $ temp_src
-    .mov temp_src src
-    .inc dst temp_src
-    .inc dst carry
-    .or  carry temp_src
-    .skip
-  temp_src:
-    .bit0
+.def add1 dst src carry
+    .mov __bitlib_temp_bit src
+    .inc1 dst __bitlib_temp_bit
+    .inc1 dst carry
+    .or carry __bitlib_temp_bit
 .end
-
-
-.def sub dst src
-    .not src
-    .add_carry1 dst src
-    .not src
-.end
-
