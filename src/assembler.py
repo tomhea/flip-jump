@@ -9,7 +9,7 @@ from parser import parse_macro_tree
 def try_int(op, expr):
     if expr.is_int():
         return expr.val
-    error(f"Can't resolve the following name: {expr.eval({}, op.file, op.line)}.")
+    error(f"Can't resolve the following name: {expr.eval({}, op.file, op.line)} (in op={op}).")
 
 
 def label_dictionary_pass(ops, w, verbose=False):
@@ -63,12 +63,16 @@ def write_flip_jump(bits, f, j, w):
 
 def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   # TODO handle verbose?
     bits = []
+    if 'temp' not in labels:
+        temp_temp_address = (1 << w) - 1
+        print(f"Warning:  'temp' is not declared. It will be defined as {hex(temp_temp_address)[2:]}")
+        labels['temp'] = Expr(temp_temp_address)
     resolved_temp_address = labels['temp'].val
 
     for op in ops:
         ids = eval_all(op, labels)
         if ids:
-            error(f"Can't resolve the following names: {', '.join(ids)}.")
+            error(f"Can't resolve the following names: {', '.join(ids)} (in op {op}).")
         vals = [datum.val for datum in op.data]
 
         if op.type == OpType.FlipJump:

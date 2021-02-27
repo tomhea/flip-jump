@@ -2,13 +2,11 @@
 .if x l0 l1
 
 l0:
-    ..output 5A // 'Z'
-    ;loop
+    ..output 0x5A // 'Z'
+    .loop
 l1:
-    ..output 31 // '1'
-    ;loop
-loop:
-    ;loop
+    ..output 0x31 // '1'
+    .loop
 
 x:
     .bit0   // bit0 => 'Z',  bit1 => '1'

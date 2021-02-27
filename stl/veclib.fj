@@ -12,28 +12,39 @@
 // TODO - maybe create a script that will create all the versions?
 
 
+
 // ---------- Memory Manipulation:
 
 
+.def zero n x
+    .rep n i zero x+i*dw
+.end
+
+
+.def one n x
+    .rep n i one x+i*dw
+.end
+
+
 .def mov n dst src
-    .rep n i
-        //.mov dst+dw*i src+dw*i
-    .end
+    .rep n i mov dst+i*dw src+i*dw
+.end
+
+.def safe_mov n dst src
+    .rep n i safe_mov dst+i*dw src+i*dw
 .end
 
 
 
 // ---------- Conditional Jump
 
-
-.def cmp2 a b lt eq gt $ middle_check
-    .cmp a+dw b+dw lt middle_check gt
-  middle_check:
+.def cmp n a b lt eq gt
+    .rep n-1 i __cmp_next_eq a+(n-1-i)*dw b+(n-1-i)*dw lt gt
     .cmp a b lt eq gt
 .end
-
-.def cmp n a b lt eq gt
-
+.def __cmp_next_eq a b lt gt $ eq
+    .cmp a b lt eq gt
+  eq:
 .end
 
 
@@ -41,59 +52,49 @@
 // ---------- Logical Macros:
 
 
-.def xor2 dst src
-    .xor dst src
-    .xor dst+dw src+dw
+.def xor n dst src
+    .rep n i xor dst+dw*i src+dw*i
 .end
 
 
-.def or2 dst src
-    .or dst src
-    .or dst+dw src+dw
+.def or n dst src
+    .rep n i or dst+dw*i src+dw*i
 .end
 
 
-.def and2 dst src
-    .and dst src
-    .and dst+dw src+dw
+.def and n dst src
+    .rep n i and dst+dw*i src+dw*i
 .end
 
 
-.def not2 dst
-    .not dst src
-    .not dst+dw src+dw
+.def not n dst
+    .rep n i not dst+dw*i
 .end
 
 
-.def shl2 x
-    .mov x x+dw
-    .zero x+dw
+.def shl n x
+    .rep n-1 i mov x+i*dw x+(i+1)*dw
+    .zero x+(n-1)*dw
 .end
 
 
-.def shr2 x
-    .mov x+dw x
+.def shr n x
+    .rep n-1 i mov x+(i+1)*dw x+i*dw
     .zero x
 .end
 
 
-.def rol2 x $ rol2_bit_label
-    .mov rol2_bit_label x
-    .shl2 x
-    .mov x+dw rol2_bit_label
-    .skip
-  rol2_bit_label:
-    .bit0
+.def rol n x
+    .mov __veclib_temp_bit x
+    .rep n-1 i mov x+i*dw x+(i+1)*dw
+    .mov x+(n-1)*dw __veclib_temp_bit
 .end
 
 
-.def ror2 x $ ror2_bit_label
-    .mov ror2_bit_label x+dw
-    .shr2 x
-    .mov x ror2_bit_label
-    .skip
-  ror2_bit_label:
-    .bit0
+.def ror n x
+    .mov __veclib_temp_bit x+(n-1)*dw
+    .rep n-1 i mov x+(i+1)*dw x+i*dw
+    .mov x __veclib_temp_bit
 .end
 
 
@@ -102,58 +103,34 @@
 // carry is both input and output
 
 
-.def inc2 x
-    .inc2_carry1 x
-.end
-.def inc2_carry1 x $ carry_label
-    .inc2 x carry_label
-    .skip
-  carry_label:
-    .bit1
-.end
-.def inc2 x carry
-    .inc x carry
-    .inc x+dw carry
+.def inc n x
+    .one __veclib_temp_bit
+    .rep n i inc1 x+i*dw __veclib_temp_bit
 .end
 
 
-.def dec2 x
-    .not2 x
-    .inc2 x
-    .not2 x
+.def dec n x
+    .not n x
+    .inc n x
+    .not n x
 .end
 
 
-.def neg2 x
-    .not2 x
-    .inc2 x
+.def neg n x
+    .not n x
+    .inc n x
 .end
 
 
-.def add2 dst src
-    .add2_carry0 dst src
-.end
-.def add2_carry0 dst src $ carry_label
-    .add2 dst src carry_label
-    .skip
-  carry_label:
-    .bit0
-.end
-.def add2_carry1 dst src $ carry_label
-    .add2 dst src carry_label
-    .skip
-  carry_label:
-    .bit1
-.end
-.def add2 dst src carry
-    .add dst src carry
-    .add dst+dw src+dw carry
+.def add n dst src $ carry
+    .zero __veclib_temp_bit
+    .rep n i add1 dst+i*dw src+i*dw __veclib_temp_bit
 .end
 
 
-.def sub2 dst src
-    .not2 src
-    .add2_carry1 dst src
-    .not2 src
+.def sub n dst src
+    .not n src
+    .one __veclib_temp_bit
+    .rep n i add1 dst+i*dw src+i*dw __veclib_temp_bit
+    .not n src
 .end
-

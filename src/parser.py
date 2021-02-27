@@ -31,6 +31,7 @@ class CalcLexer(Lexer):
     # Tokens
     ID = id_re
     NUMBER = number_re
+
     DOLLAR = r'\$'
 
     COLON = r'\:'
@@ -45,7 +46,16 @@ class CalcLexer(Lexer):
     ignore = ' \t'
 
     def NUMBER(self, t):
-        t.value = int(t.value, 16)
+        n = t.value
+        if len(n) >= 2:
+            if n[1] in 'xX':
+                t.value = int(n, 16)
+            elif n[1] in 'bB':
+                t.value = int(n, 2)
+            else:
+                t.value = int(n)
+        else:
+            t.value = int(t.value)
         return t
 
     def NL(self, t):
@@ -85,7 +95,7 @@ class CalcParser(Parser):
 
     @_('definable_line_statements')
     def program(self, p):
-        self.macros[main_macro][1] += p[0]
+        self.macros[main_macro][1] += p.definable_line_statements
 
     @_('definable_line_statements definable_line_statement')
     def definable_line_statements(self, p):
@@ -146,19 +156,19 @@ class CalcParser(Parser):
 
     @_('labels statement NL')
     def line_statement(self, p):
-        if p[1]:
-            if p[1].line is None:
-                p[1].line = p.lineno
-            return p[0] + [p[1]]
-        return p[0]
+        if p.statement:
+            if p.statement.line is None:
+                p.statement.line = p.lineno
+            return p.labels + [p.statement]
+        return p.labels
 
     @_('labels NL')
     def line_statement(self, p):
-        return p[0]
+        return p.labels
 
     @_('labels label')
     def labels(self, p):
-        return p[0] + [p[1]]
+        return p.labels + [p.label]
 
     @_('empty')
     def labels(self, p):
@@ -190,27 +200,27 @@ class CalcParser(Parser):
 
     @_('DOT ID expressions')
     def statement(self, p):
-        return Op(OpType.Macro, ((p[1], len(p[2])), *p[2]), curr_file, p.lineno)
+        return Op(OpType.Macro, ((p.ID, len(p.expressions)), *p.expressions), curr_file, p.lineno)
 
     @_('DDPAD expr')
     def statement(self, p):
-        return Op(OpType.DDPad, (p[1],), curr_file, p.lineno)
+        return Op(OpType.DDPad, (p.expr,), curr_file, p.lineno)
 
     @_('DDFLIP_BY expr expr')
     def statement(self, p):
-        return Op(OpType.DDFlipBy, (p[1], p[2]), curr_file, p.lineno)
+        return Op(OpType.DDFlipBy, (p.expr0, p.expr1), curr_file, p.lineno)
 
     @_('DDFLIP_BY_DBIT expr expr')
     def statement(self, p):
-        return Op(OpType.DDFlipByDbit, (p[1], p[2]), curr_file, p.lineno)
+        return Op(OpType.DDFlipByDbit, (p.expr0, p.expr1), curr_file, p.lineno)
 
     @_('DDVAR expr expr')
     def statement(self, p):
-        return Op(OpType.DDVar, (p[1], p[2]), curr_file, p.lineno)
+        return Op(OpType.DDVar, (p.expr0, p.expr1), curr_file, p.lineno)
 
     @_('DDOUTPUT expr')
     def statement(self, p):
-        return Op(OpType.DDOutput, (p[1],), curr_file, p.lineno)
+        return Op(OpType.DDOutput, (p.expr,), curr_file, p.lineno)
 
     @_('expr HASHTAG expr')
     def statement(self, p):
