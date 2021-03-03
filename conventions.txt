@@ -56,22 +56,18 @@
     The .blm file format (uX is an unsigned X-bit little endian number):
 
     struct {
-        u8  mem_bits;
+        u16 mem_words;
+        u64 word_size;  // in bits
         u64 flags;
         u64 sector_num;
-        u8  default_bit; // 0/1 is default 0/1, otherwise default garbage
         struct sector {
-            u64 sector_start;   // in memory bits
-            u64 sector_length;  // in memory bits
-            u64 sector_pad;     // start writing at sector_start + sector_pad
-            u8  default_sector_bit;     // 0/1 is default 0/1, otherwise default garbage
-            u64 data_start;     // in the outer-struct.data bits
-            u64 data_length;    // in the outer-struct.data bits
-            u64 jumps;              // 0 for no jumps, 1 for 1 bit jump (writes data, advances 1 bit, write data again,..)
-            u64 jump_granularity;   // how many bits to write between jumps
+            u64 sector_start;   // in memory words (w-bits)
+            u64 data_start;     // in the outer-struct.data words (w-bits)
+            u64 data_length;    // in the outer-struct.data words (w-bits)
         } *sectors;             // sectors[sector_num]
         u8* data;               // the data
     } blm_file;     // Bit-Level Memory file
+
 
     ----------
 
