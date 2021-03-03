@@ -117,10 +117,21 @@ def assemble(input_files, output_file, preprocessed_file=None, w=64, use_stl=Tru
     if use_stl:
         input_files = stl(w) + input_files
 
+    start_time = time()
     macros = parse_macro_tree(input_files, verbose=Verbose.Parse in verbose)
+    print(f'  parsing time:        {time() - start_time:.3f}s')
+
+    start_time = time()
     ops = resolve_macros(macros, output_file=preprocessed_file, verbose=Verbose.MacroSolve in verbose)
+    print(f'  macro resolve time:  {time() - start_time:.3f}s')
+
+    start_time = time()
     ops, labels, last_address = label_dictionary_pass(ops, w, verbose=Verbose.LabelDict in verbose)
+    print(f'  labels pass time:    {time() - start_time:.3f}s')
+
+    start_time = time()
     labels_resolve(ops, labels, last_address, w, output_file, verbose=Verbose.LabelSolve in verbose)
+    print(f'  labels resolve time: {time() - start_time:.3f}s')
 
     if temp_preprocessed_file:
         os.close(temp_fd)

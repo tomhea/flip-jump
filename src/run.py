@@ -19,6 +19,8 @@ def run(input_file, defined_input=None, verbose=False):
     output_anything_yet = False
     ops_executed = 0
 
+    start_time = time()
+
     while True:
         ops_executed += 1
 
@@ -37,7 +39,7 @@ def run(input_file, defined_input=None, verbose=False):
                     print(chr(output_char), end='')
                 output_anything_yet = True
                 if output_char == 0:
-                    print(f'\nfinished by input ({ops_executed} ops executed)')
+                    print(f'\nfinished by input after {time()-start_time:.3f}s ({ops_executed} ops executed)')
                     break
                 output_char, output_size = 0, 0
 
@@ -61,7 +63,7 @@ def run(input_file, defined_input=None, verbose=False):
         if new_ip == ip and not ip <= f < ip+2*w:
             if output_anything_yet:
                 print()
-            print(f'finished by looping ({ops_executed} ops executed)')
+            print(f'finished by looping after {time()-start_time:.3f}s ({ops_executed} ops executed)')
             break       # infinite simple loop
         ip = new_ip
 
