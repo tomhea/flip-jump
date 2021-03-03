@@ -6,9 +6,13 @@ import os
 from defs import *
 
 
-def run(input_file, defined_input=None, verbose=False):
-    ip = 0
+def run(input_file, defined_input=None, verbose=False, time_verbose=False):
+    start_time = time()
     mem = blm.Reader(input_file)
+    if time_verbose:
+        print(f'  loading memory:  {time() - start_time:.3f}s')
+
+    ip = 0
     w = mem.w
     OUT = 2*w
     IN = 3*w + w.bit_length()     # 5w + dww
@@ -52,11 +56,11 @@ def run(input_file, defined_input=None, verbose=False):
                     input_char = ord(defined_input[0])
                     defined_input = defined_input[1:]
                 input_size = 8
-            mem[IN] = input_char & 1
+            mem.write_bit(IN, input_char & 1)
             input_char = input_char >> 1
             input_size -= 1
 
-        mem.flip(f)
+        mem.write_bit(f, 1-mem.read_bit(f))     # Flip!
         new_ip = mem.get_word(ip+w)
         if verbose:
             print(hex(new_ip)[2:])
@@ -65,7 +69,7 @@ def run(input_file, defined_input=None, verbose=False):
                 print()
             print(f'finished by looping after {time()-start_time:.3f}s ({ops_executed} ops executed)')
             break       # infinite simple loop
-        ip = new_ip
+        ip = new_ip     # Jump!
 
 
 def assemble_and_run(input_files, preprocessed_file=None, output_file=None, defined_input=None, verbose=set()):
@@ -75,7 +79,7 @@ def assemble_and_run(input_files, preprocessed_file=None, output_file=None, defi
         temp_output_file = True
 
     assemble(input_files, output_file, preprocessed_file=preprocessed_file, verbose=verbose)
-    run(output_file, defined_input=defined_input, verbose=Verbose.Run in verbose)
+    run(output_file, defined_input=defined_input, verbose=Verbose.Run in verbose, time_verbose=Verbose.Time in verbose)
 
     if temp_output_file:
         os.close(temp_fd)
