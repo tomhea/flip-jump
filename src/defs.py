@@ -1,5 +1,6 @@
 from enum import Enum
 from operator import mul, add, sub, floordiv
+from time import time
 
 
 main_macro = ('.__M_a_i_n__', 0)
