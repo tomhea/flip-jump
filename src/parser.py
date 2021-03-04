@@ -97,15 +97,21 @@ class CalcParser(Parser):
     def program(self, p):
         self.macros[main_macro][1] += p.definable_line_statements
 
-    @_('definable_line_statements definable_line_statement')
+    @_('definable_line_statements NL definable_line_statement')
     def definable_line_statements(self, p):
-        if p[1]:
-            return p[0] + p[1]
+        if p[2]:
+            return p[0] + p[2]
         return p[0]
 
-    @_('empty')
+    @_('definable_line_statement')
     def definable_line_statements(self, p):
+        if p[0]:
+            return p[0]
         return []
+
+    # @_('empty')
+    # def definable_line_statements(self, p):
+    #     return []
 
     @_('')
     def empty(self, p):
@@ -115,11 +121,11 @@ class CalcParser(Parser):
     def definable_line_statement(self, p):
         return p.line_statement
 
-    @_('labels macro_def NL')
+    @_('labels macro_def')
     def definable_line_statement(self, p):
         return p.labels
 
-    @_('DEF ID macro_params NL line_statements END')
+    @_('DEF ID macro_params line_statements NL END')
     def macro_def(self, p):
         params = p.macro_params
         name = (p.ID, len(params[0]))
@@ -144,7 +150,7 @@ class CalcParser(Parser):
     def ids(self, p):
         return []
 
-    @_('line_statements line_statement')
+    @_('line_statements NL line_statement')
     def line_statements(self, p):
         if self.verbose:
             print('\n'.join(str(_) for _ in p.line_statement))
@@ -154,15 +160,13 @@ class CalcParser(Parser):
     def line_statements(self, p):
         return []
 
-    @_('labels statement NL')
+    @_('labels statement')
     def line_statement(self, p):
         if p.statement:
-            if p.statement.line is None:
-                p.statement.line = p.lineno
             return p.labels + [p.statement]
         return p.labels
 
-    @_('labels NL')
+    @_('labels')
     def line_statement(self, p):
         return p.labels
 
@@ -178,9 +182,10 @@ class CalcParser(Parser):
     def label(self, p):
         return Op(OpType.Label, (p.ID,), curr_file, p.lineno)
 
-    @_('expr')
+    @_('_expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (p.expr, next_address()), curr_file, None)  # FIXME
+        expr, line = p._expr
+        return Op(OpType.FlipJump, (expr, next_address()), curr_file, line)
 
     @_('expr SC')
     def statement(self, p):
@@ -233,7 +238,7 @@ class CalcParser(Parser):
             return None
         error(f'Can\'t evaluate expression at file {curr_file} line {p.lineno}:  {str(p.expr)}.')
 
-    @_('REP expr ID NL line_statements END')
+    @_('REP expr ID line_statements NL END')
     def statement(self, p):
         return Op(OpType.Rep, (p.expr, p.ID, p.line_statements), curr_file, p.lineno)
 
@@ -252,48 +257,52 @@ class CalcParser(Parser):
     def expressions(self, p):
         return []
 
-    @_('expr "+" expr')
+    @_('_expr')
     def expr(self, p):
-        return Expr((p.expr0, add, p.expr1))
+        return p._expr[0]
 
-    @_('expr "-" expr')
-    def expr(self, p):
-        return Expr((p.expr0, sub, p.expr1))
+    @_('_expr "+" _expr')
+    def _expr(self, p):
+        return Expr((p._expr0[0], add, p._expr1[0])), p.lineno
 
-    @_('expr "*" expr')
-    def expr(self, p):
-        return Expr((p.expr0, mul, p.expr1))
+    @_('_expr "-" _expr')
+    def _expr(self, p):
+        return Expr((p._expr0[0], sub, p._expr1[0])), p.lineno
 
-    @_('expr "/" expr')
-    def expr(self, p):
-        return Expr((p.expr0, floordiv, p.expr1))
+    @_('_expr "*" _expr')
+    def _expr(self, p):
+        return Expr((p._expr0[0], mul, p._expr1[0])), p.lineno
+
+    @_('_expr "/" _expr')
+    def _expr(self, p):
+        return Expr((p._expr0[0], floordiv, p._expr1[0])), p.lineno
 
     # # The shift/reduce conflict can be solved using "," between macro arguments.
     # @_('"-" expr %prec UMINUS')
     # def expr(self, p):
     #     return Expr((Expr(0), sub, p.expr))
 
-    @_('"(" expr ")"')
-    def expr(self, p):
-        return p.expr
+    @_('"(" _expr ")"')
+    def _expr(self, p):
+        return p._expr
 
     @_('NUMBER')
-    def expr(self, p):
-        return Expr(p.NUMBER)
+    def _expr(self, p):
+        return Expr(p.NUMBER), p.lineno
 
     @_('">"')
-    def expr(self, p):
-        return Expr('>')
+    def _expr(self, p):
+        return Expr('>'), p.lineno
 
     @_('"<"')
-    def expr(self, p):
-        return Expr('<')
+    def _expr(self, p):
+        return Expr('<'), p.lineno
 
     @_('ID')
-    def expr(self, p):
+    def _expr(self, p):
         if p.ID in self.defs:
-            return self.defs[p.ID]
-        return Expr(p.ID)
+            return self.defs[p.ID], p.lineno
+        return Expr(p.ID), p.lineno
 
 
 def parse_macro_tree(input_files, verbose=False):
