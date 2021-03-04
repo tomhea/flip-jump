@@ -1,5 +1,5 @@
 from enum import Enum
-from operator import mul, add, sub, floordiv
+from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
 from time import time
 
 
@@ -25,10 +25,11 @@ def stl(xx):
 
 
 id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
-hex_num = r'0[xX][0-9a-fA-F]+'
 bin_num = r'0[bB][01]+'
+hex_num = r'0[xX][0-9a-fA-F]+'
+ascii_num = r"'[ -~]'"
 dec_num = r'[0-9]+'
-number_re = rf'({bin_num})|({hex_num})|({dec_num})'
+number_re = rf'({bin_num})|({hex_num})|{ascii_num}|({dec_num})'
 
 
 class Verbose(Enum):
@@ -92,14 +93,13 @@ class Expr:
     # returns the list of unknown id's
     def eval(self, id_dict, file, line):
         if self.is_tuple():
-            e1, op, e2 = self.val
-            res1 = e1.eval(id_dict, file, line)
-            res2 = e2.eval(id_dict, file, line)
-            if res1 or res2:
-                return res1 + res2
+            op, exps = self.val
+            res = [e.eval(id_dict, file, line) for e in exps]
+            if any(res):
+                return sum(res, start=[])
             else:
                 try:
-                    self.val = op(e1.val, e2.val)
+                    self.val = op(*[e.val for e in exps])
                     return []
                 except BaseException as e:
                     error(f'{repr(e)}. bad math operation: {str(self)} in file {file} (line {line})')
@@ -122,8 +122,13 @@ class Expr:
 
     def __str__(self):
         if self.is_tuple():
-            e1, op, e2 = self.val
-            return f'({str(e1)} {op.__name__} {str(e2)})'
+            op, exps = self.val
+            if len(exps) == 2:
+                e1, e2 = exps
+                return f'({str(e1)} {op.__name__} {str(e2)})'
+            else:
+                e1, e2, e3 = exps
+                return f'({str(e1)} ? {str(e2)} : {str(e3)})'
         if self.is_str():
             return self.val
         if self.is_int():
@@ -161,4 +166,4 @@ def temp_address() -> Expr:
 
 
 def next_address() -> Expr:
-    return Expr('>')
+    return Expr('$')

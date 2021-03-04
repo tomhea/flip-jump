@@ -30,7 +30,7 @@ def label_dictionary_pass(ops, w, verbose=False):
             elif op.type == OpType.DDVar:
                 delta = try_int(op, op.data[0]) * 2*w
             end_address = curr_address + delta
-            eval_all(op, {'<': Expr(curr_address), '>': Expr(end_address)})
+            eval_all(op, {'$': Expr(end_address)})
             curr_address = end_address
             if op.type in {OpType.DDFlipBy, OpType.DDFlipByDbit}:
                 op.data += (Expr(end_address),)

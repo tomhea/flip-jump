@@ -45,7 +45,7 @@
     .xor dst src
 .end
 
-.def safe_mov dst src $ __zero
+.def safe_mov dst src : __zero
     .zero __bitlib_temp_bit
     .xor __bitlib_temp_bit src
     .zero dst
@@ -57,12 +57,12 @@
 
 
 .def skip
-    ;> + dw
+    ;$ + dw
 .end
 
 
 .def loop
-    ;<
+    ;$ - dw
 .end
 
 
@@ -70,7 +70,7 @@
 // ---------- Conditional Jump
 
 
-.def if x l0 l1 $ label_ptr base_jump_label
+.def if x l0 l1 : label_ptr base_jump_label
     .xor label_ptr x
   label_ptr:
     ;base_jump_label
@@ -80,18 +80,18 @@
     label_ptr + dbit;l1
 .end
 
-.def if1 x l1 $ end
+.def if1 x l1 : end
     .if x end l1
   end:
 .end
 
-.def if0 x l0 $ end
+.def if0 x l0 : end
     .if x l0 end
   end:
 .end
 
 
-.def cmp a b lt eq gt $ a_is1_label
+.def cmp a b lt eq gt : a_is1_label
     .if1 a a_is1_label
     .if b eq lt
   a_is1_label:
@@ -107,7 +107,7 @@
     .naked_xor dst + dbit src
 .end
 
-.def naked_xor dst src $ base_jump_label cleanup
+.def naked_xor dst src : base_jump_label cleanup
     ..flip_by_dbit src+w base_jump_label
     ;src
     ..pad 2
@@ -119,14 +119,14 @@
 .end
 
 
-.def or dst src $ end
+.def or dst src : end
     .if0 src end
     .one dst
   end:
 .end
 
 
-.def and dst src $ end
+.def and dst src : end
     .if1 src end
     .zero dst
   end:
@@ -143,7 +143,7 @@
 
 
 // Unsafe for dst==carry (but there is no reason in calling it that way)
-.def inc1 dst carry $ end
+.def inc1 dst carry : end
     .if0 carry end
     .not dst
     .if0 dst end

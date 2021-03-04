@@ -42,7 +42,7 @@
     .rep n-1 i __cmp_next_eq a+(n-1-i)*dw b+(n-1-i)*dw lt gt
     .cmp a b lt eq gt
 .end
-.def __cmp_next_eq a b lt gt $ eq
+.def __cmp_next_eq a b lt gt : eq
     .cmp a b lt eq gt
   eq:
 .end
@@ -122,7 +122,7 @@
 .end
 
 
-.def add n dst src $ carry
+.def add n dst src : carry
     .zero __veclib_temp_bit
     .rep n i add1 dst+i*dw src+i*dw __veclib_temp_bit
 .end

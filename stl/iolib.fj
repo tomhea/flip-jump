@@ -19,7 +19,7 @@
 // ---------- Output:
 
 
-.def output x $ label_ptr base_jump_label end
+.def output x : label_ptr base_jump_label end
     .xor label_ptr x
   label_ptr:
     ;base_jump_label
@@ -55,7 +55,7 @@
 .end
 
 
-.def hex2ascii ascii hex $ dec_label hex_label nine4 end
+.def hex2ascii ascii hex : dec_label hex_label nine4 end
     .zero 8 ascii
     .cmp 4 hex nine4 dec_label dec_label hex_label
   dec_label:

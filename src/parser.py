@@ -9,11 +9,11 @@ global curr_file, curr_text
 class CalcLexer(Lexer):
     tokens = {DEF, END, REP,
               DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDVAR, DDOUTPUT,
-              ID, NUMBER, DOLLAR,
-              DOT, NL, SC, COLON,
+              ID, NUMBER, SHL, SHR,
+              DOT, NL, SC,
               HASHTAG}
 
-    literals = {'=', '+', '-', '*', '/', '(', ')', '<', '>'}
+    literals = {'=', '+', '-', '*', '/', '%', '(', ')', '$', '^', '|', '&', '?', ':'}
 
     ignore_ending_comment = r'//.*'
     # ignore_beginning_comment = r'.*:'
@@ -32,9 +32,8 @@ class CalcLexer(Lexer):
     ID = id_re
     NUMBER = number_re
 
-    DOLLAR = r'\$'
-
-    COLON = r'\:'
+    SHL = r'>>'
+    SHR = r'<<'
 
     # Punctuations
     DOT = r'\.'
@@ -48,7 +47,9 @@ class CalcLexer(Lexer):
     def NUMBER(self, t):
         n = t.value
         if len(n) >= 2:
-            if n[1] in 'xX':
+            if n[0] == "'":
+                t.value = ord(n[1])
+            elif n[1] in 'xX':
                 t.value = int(n, 16)
             elif n[1] in 'bB':
                 t.value = int(n, 2)
@@ -70,8 +71,13 @@ class CalcLexer(Lexer):
 class CalcParser(Parser):
     tokens = CalcLexer.tokens
     precedence = (
+        ('right', '?', ':'),
+        ('left', '|'),
+        ('left', '^'),
+        ('left', '&'),
+        ('left', SHL, SHR),
         ('left', '+', '-'),
-        ('left', '*', '/'),
+        ('left', '*', '/', '%'),
         # ('right', 'UMINUS'),
     )
     # debugfile = 'src/parser.out'
@@ -138,7 +144,7 @@ class CalcParser(Parser):
     def macro_params(self, p):
         return p.ids, []
 
-    @_('ids DOLLAR ids')
+    @_('ids ":" ids')
     def macro_params(self, p):
         return p.ids0, p.ids1
 
@@ -178,7 +184,7 @@ class CalcParser(Parser):
     def labels(self, p):
         return []
 
-    @_('ID COLON')
+    @_('ID ":"')
     def label(self, p):
         return Op(OpType.Label, (p.ID,), curr_file, p.lineno)
 
@@ -263,19 +269,47 @@ class CalcParser(Parser):
 
     @_('_expr "+" _expr')
     def _expr(self, p):
-        return Expr((p._expr0[0], add, p._expr1[0])), p.lineno
+        return Expr((add, (p._expr0[0], p._expr1[0]))), p.lineno
 
     @_('_expr "-" _expr')
     def _expr(self, p):
-        return Expr((p._expr0[0], sub, p._expr1[0])), p.lineno
+        return Expr((sub, (p._expr0[0], p._expr1[0]))), p.lineno
 
     @_('_expr "*" _expr')
     def _expr(self, p):
-        return Expr((p._expr0[0], mul, p._expr1[0])), p.lineno
+        return Expr((mul, (p._expr0[0], p._expr1[0]))), p.lineno
 
     @_('_expr "/" _expr')
     def _expr(self, p):
-        return Expr((p._expr0[0], floordiv, p._expr1[0])), p.lineno
+        return Expr((floordiv, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr "%" _expr')
+    def _expr(self, p):
+        return Expr((mod, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr SHL _expr')
+    def _expr(self, p):
+        return Expr((lshift, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr SHR _expr')
+    def _expr(self, p):
+        return Expr((rshift, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr "^" _expr')
+    def _expr(self, p):
+        return Expr((xor, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr "|" _expr')
+    def _expr(self, p):
+        return Expr((or_, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr "&" _expr')
+    def _expr(self, p):
+        return Expr((and_, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr "?" _expr ":" _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b, c: b if a else c, (p._expr0[0], p._expr1[0], p._expr2[0]))), p.lineno
 
     # # The shift/reduce conflict can be solved using "," between macro arguments.
     # @_('"-" expr %prec UMINUS')
@@ -290,13 +324,9 @@ class CalcParser(Parser):
     def _expr(self, p):
         return Expr(p.NUMBER), p.lineno
 
-    @_('">"')
+    @_('"$"')
     def _expr(self, p):
-        return Expr('>'), p.lineno
-
-    @_('"<"')
-    def _expr(self, p):
-        return Expr('<'), p.lineno
+        return Expr('$'), p.lineno
 
     @_('ID')
     def _expr(self, p):
