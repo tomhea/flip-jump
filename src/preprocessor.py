@@ -77,7 +77,7 @@ def resolve_macro_aux(macros, macro_name, args, rep_dict, dollar_count, verbose=
             num = c.val & 0xff
             for i in range(8):
                 commands.append(Op(OpType.FlipJump,
-                                   (Expr((Expr('IO'), add, Expr((num >> i) & 1))), next_address()),
+                                   (Expr((add, (Expr('IO'), Expr((num >> i) & 1)))), next_address()),
                                    op.file, op.line))
         else:
             commands.append(op)

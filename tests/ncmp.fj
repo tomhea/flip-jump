@@ -4,13 +4,13 @@ n=4
 
 lt:
     ..output 0x4c
-    ;<
+    .loop
 eq:
     ..output 0x45
-    ;<
+    .loop
 gt:
     ..output 0x47
-    ;<
+    .loop
 
 a: ..var n 3
 b: ..var n 1

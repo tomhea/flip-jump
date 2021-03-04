@@ -2,10 +2,10 @@
 .if x l0 l1
 
 l0:
-    ..output 0x5A // 'Z'
+    ..output 6 ? 'Z' : '0'
     .loop
 l1:
-    ..output 0x31 // '1'
+    ..output '1'
     .loop
 
 x:
