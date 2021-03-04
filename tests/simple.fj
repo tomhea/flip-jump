@@ -1,0 +1,7 @@
+.skip
+.not x
+.loop
+
+x:
+    .bit0
+temp: ;
