@@ -38,6 +38,7 @@
 
 // ---------- Conditional Jump
 
+
 .def cmp n a b lt eq gt
     .rep n-1 i __cmp_next_eq a+(n-1-i)*dw b+(n-1-i)*dw lt gt
     .cmp a b lt eq gt
@@ -45,6 +46,26 @@
 .def __cmp_next_eq a b lt gt : eq
     .cmp a b lt eq gt
   eq:
+.end
+
+
+.def if n x l0 l1
+    .rep n-1 i __if_next_l0 x+i*dw l1
+    .if x+(n-1)*dw l0 l1
+.end
+.def __if_next_l0 x l1 : l0
+    .if x l0 l1
+  l0:
+.end
+
+.def if0 n x l0 : end
+    .if n x l0 end
+  end:
+.end
+
+.def if1 n x l1 : end
+    .if n x end l1
+  end:
 .end
 
 
@@ -84,17 +105,21 @@
 .end
 
 
-.def rol n x
-    .mov __veclib_temp_bit x
+.def rol n x : temp_bit
+    .mov temp_bit x
     .rep n-1 i mov x+i*dw x+(i+1)*dw
-    .mov x+(n-1)*dw __veclib_temp_bit
+    .mov x+(n-1)*dw temp_bit
+  .skip
+  temp_bit: .bit0
 .end
 
 
-.def ror n x
-    .mov __veclib_temp_bit x+(n-1)*dw
+.def ror n x : temp_bit
+    .mov temp_bit x+(n-1)*dw
     .rep n-1 i mov x+(i+1)*dw x+i*dw
-    .mov x __veclib_temp_bit
+    .mov x temp_bit
+  .skip
+  temp_bit: .bit0
 .end
 
 
@@ -106,7 +131,7 @@
 .def inc n x : carry
     .one carry
     .rep n i inc1 x+i*dw carry
-    .skip
+  .skip
   carry: .bit0
 .end
 
@@ -125,14 +150,18 @@
 
 
 .def add n dst src : carry
-    .zero __veclib_temp_bit
-    .rep n i add1 dst+i*dw src+i*dw __veclib_temp_bit
+    .zero carry
+    .rep n i add1 dst+i*dw src+i*dw carry
+  .skip
+  carry: .bit0
 .end
 
 
 .def sub n dst src
     .not n src
-    .one __veclib_temp_bit
-    .rep n i add1 dst+i*dw src+i*dw __veclib_temp_bit
+    .one carry
+    .rep n i add1 dst+i*dw src+i*dw carry
     .not n src
+  .skip
+  carry: .bit0
 .end

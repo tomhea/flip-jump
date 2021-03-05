@@ -1,8 +1,12 @@
-.startup in0 in1
+    .startup
+start:
+    .input ascii
+    .if 8 ascii end print
+print:
+    .print ascii
+    ;start
+end:
+    .loop
 
-    ;IO
-
-in0:
-    IO+0;IO
-in1:
-    IO+1;IO
+ascii:
+    ..var 8 0

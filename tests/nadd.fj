@@ -1,6 +1,6 @@
 .startup
 .add 8 a b
-.output_ascii a
+.print a
 .loop
 
 a: ..var 8 '5'
