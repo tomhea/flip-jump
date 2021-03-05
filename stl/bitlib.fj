@@ -186,9 +186,11 @@
 
 
 // Unsafe for dst==carry (but there is no reason in calling it that way)
-.def add1 dst src carry
-    .mov __bitlib_temp_bit src
-    .inc1 dst __bitlib_temp_bit
+.def add1 dst src carry : _src
+    .mov _src src
+    .inc1 dst _src
     .inc1 dst carry
-    .or carry __bitlib_temp_bit
+    .or carry _src
+    .skip
+  _src: .bit0
 .end

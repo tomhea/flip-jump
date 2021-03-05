@@ -35,7 +35,7 @@ loop:
     bans2:
 
     .rep n j
-        .temp_macro x zero
+        .temp_macro x x
     .end
 
 .def temp_macro g y

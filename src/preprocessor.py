@@ -61,8 +61,8 @@ def resolve_macro_aux(macros, macro_name, args, rep_dict, dollar_count, verbose=
                 continue
             if i_name in rep_dict:
                 error(f'Rep index {i_name} is declared twice; maybe an inner rep. in file {op.file} line {op.line}.')
+            pseudo_macro_name = (new_label(dollar_count).val, 1)  # just moved outside (before) the for loop
             for i in range(times):
-                pseudo_macro_name = (new_label(dollar_count).val, 1)  # TODO move outside (before) the for loop
                 rep_dict[i_name] = Expr(i)
                 macros[pseudo_macro_name] = ((params, dollar_params), statements)
                 commands += resolve_macro_aux(macros, pseudo_macro_name, args, rep_dict, dollar_count, verbose)

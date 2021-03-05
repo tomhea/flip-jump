@@ -103,9 +103,11 @@
 // carry is both input and output
 
 
-.def inc n x
-    .one __veclib_temp_bit
-    .rep n i inc1 x+i*dw __veclib_temp_bit
+.def inc n x : carry
+    .one carry
+    .rep n i inc1 x+i*dw carry
+    .skip
+  carry: .bit0
 .end
 
 

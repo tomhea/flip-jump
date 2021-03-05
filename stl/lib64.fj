@@ -27,10 +27,10 @@ dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
   IO:
     ;__io_handler   // 080;0c0 : now points to io_handler
 
-  zero:
-    .bit0           // 100;140 : this variable is set to zero
-  one:
-    .bit1           // 180;1c0 : this variable is set to one
+//  zero:
+//    .bit0           // 100;140 : this variable is set to zero
+//  one:
+//    .bit1           // 180;1c0 : this variable is set to one
 
   temp:
     ;               // 200;240 : temp
@@ -40,8 +40,6 @@ dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
     ;in0_handler    // 300;340 : handler of reading 0
     ;in1_handler    // 380;3c0 : handler of reading 1
 
-  __bitlib_temp_bit:
-    .bit0           // 400;440 : bit for bitlib.fj's use.
   __veclib_temp_bit:
     .bit0           // 480;4c0 : bit for bitlib.fj's use.
 
