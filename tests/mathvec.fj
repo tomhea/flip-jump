@@ -4,3 +4,15 @@
 
 x:
     ..var 2 0
+
+
+//.startup
+//.one carry
+//.inc1 x carry
+//.inc1 x+dw carry
+//.loop
+//
+//x:
+//    ..var 2 0
+//carry:
+//    .bit1

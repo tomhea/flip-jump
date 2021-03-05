@@ -9,8 +9,8 @@ global curr_file, curr_text
 class CalcLexer(Lexer):
     tokens = {DEF, END, REP,
               DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDVAR, DDOUTPUT,
-              ID, NUMBER, SHL, SHR,
-              DOT, NL, SC,
+              DOT_ID, ID, NUMBER, SHL, SHR,
+              NL, SC,
               HASHTAG}
 
     literals = {'=', '+', '-', '*', '/', '%', '(', ')', '$', '^', '|', '&', '?', ':'}
@@ -18,9 +18,15 @@ class CalcLexer(Lexer):
     ignore_ending_comment = r'//.*'
     # ignore_beginning_comment = r'.*:'
 
-    DEF = r'\.def'
-    END = r'\.end'
-    REP = r'\.rep'
+    # Tokens
+    ID = id_re
+    NUMBER = number_re
+
+    DOT_ID = fr'\.({id_re})'
+    DOT_ID[r'.def'] = DEF
+    DOT_ID[r'.end'] = END
+    DOT_ID[r'.rep'] = REP
+
 
     DDPAD = r'\.\.pad'
     DDFLIP_BY_DBIT = r'\.\.flip_by_dbit'
@@ -28,15 +34,11 @@ class CalcLexer(Lexer):
     DDVAR = r'\.\.var'
     DDOUTPUT = r'\.\.output'
 
-    # Tokens
-    ID = id_re
-    NUMBER = number_re
-
-    SHL = r'>>'
-    SHR = r'<<'
+    SHL = r'<<'
+    SHR = r'>>'
 
     # Punctuations
-    DOT = r'\.'
+    # DOT = r'\.'
     NL = r'[\r\n]'
     SC = r';'
 
@@ -61,6 +63,10 @@ class CalcLexer(Lexer):
 
     def NL(self, t):
         self.lineno += 1
+        return t
+
+    def DOT_ID(self, t):
+        t.value = t.value[1:]
         return t
 
     def error(self, t):
@@ -209,9 +215,9 @@ class CalcParser(Parser):
     def statement(self, p):
         return Op(OpType.FlipJump, (temp_address(), next_address()), curr_file, p.lineno)
 
-    @_('DOT ID expressions')
+    @_('DOT_ID expressions')
     def statement(self, p):
-        return Op(OpType.Macro, ((p.ID, len(p.expressions)), *p.expressions), curr_file, p.lineno)
+        return Op(OpType.Macro, ((p.DOT_ID, len(p.expressions)), *p.expressions), curr_file, p.lineno)
 
     @_('DDPAD expr')
     def statement(self, p):

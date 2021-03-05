@@ -8,10 +8,10 @@
 // An opcode is:  F;L  F  ;L  or just  ;  (no F => F=temp;  no L => L=next)
 
 
-w    = 0x40     // memory and operands width
-dw   = 2 * w    // double word size
 ww   = 0x6      // w-width (log2(w))
 dww  = ww + 1   // double-w-width (log2(2w))
+w    = 1<<ww    // memory and operands width
+dw   = 2 * w    // double word size
 dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
 
 
@@ -20,31 +20,20 @@ dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
 
 
 .def startup
-    .startup 0 0
-.end
-.def startup in0_handler in1_handler
     ;code_start     // 000;040 : code start
   IO:
-    ;__io_handler   // 080;0c0 : now points to io_handler
-
-  zero:
-    .bit0           // 100;140 : this variable is set to zero
-  one:
-    .bit1           // 180;1c0 : this variable is set to one
+    ;0              // 080;0c0 : now points to io_handler
 
   temp:
-    ;               // 200;240 : temp
-    ;               // 280;2c0 : temp
-
-  __io_handler:
-    ;in0_handler    // 300;340 : handler of reading 0
-    ;in1_handler    // 380;3c0 : handler of reading 1
-
-  __bitlib_temp_bit:
-    .bit0           // 400;440 : bit for bitlib.fj's use.
-  __veclib_temp_bit:
-    .bit0           // 480;4c0 : bit for bitlib.fj's use.
+    ;               // 100;140 : temp
+    ;               // 180;1c0 : temp
 
   code_start:
-                    // 500;540 : start of code
+                    // 200;240 : start of code
+.end
+
+
+.def startup in0_handler in1_handler
+    .startup
+    .default_input in0_handler in1_handler
 .end

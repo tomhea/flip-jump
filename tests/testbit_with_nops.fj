@@ -1,5 +1,6 @@
 .startup
-.safe_mov x x
+.rep 10 i mov y z
+.mov x x
 .if x l0 l1
 
 l0:
@@ -34,7 +35,7 @@ loop:
     bans2:
 
     .rep n j
-        .temp_macro x zero
+        .temp_macro x x
     .end
 
 .def temp_macro g y
@@ -44,3 +45,6 @@ loop:
 
 x:
     .bit1   // bit0 => 'Z',  bit1 => '1'
+y: .bit1
+z: .bit1
+

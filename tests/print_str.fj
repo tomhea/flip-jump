@@ -1,0 +1,17 @@
+.startup
+
+.print_str 20 str
+.loop
+
+str:
+    ..var 8 'H'
+    ..var 8 'e'
+    ..var 8 'l'
+    ..var 8 'l'
+    ..var 8 'o'
+    ..var 8 ' '
+    ..var 8 'T'
+    ..var 8 'o'
+    ..var 8 'm'
+    ..var 8 '!'
+    ..var 8 0x0

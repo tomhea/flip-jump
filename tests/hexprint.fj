@@ -1,7 +1,7 @@
 .startup
 .add 4 a b
 .hex2ascii c a
-.output_ascii c
+.print c
 .loop
 
 a: ..var 4 0x2

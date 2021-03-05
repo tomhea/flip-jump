@@ -141,10 +141,13 @@ def eval_all(op, id_dict={}):
     for expr in op.data:
         if type(expr) is Expr:
             ids += expr.eval(id_dict, op.file, op.line)
+    if op.type == OpType.Rep:
+        for _op in op.data[2]:
+            ids += eval_all(_op, id_dict)
     return ids
 
 
-def id_swap(op, id_dict={}):
+def id_swap(op, id_dict):
     new_data = []
     for datum in op.data:
         if type(datum) is str and datum in id_dict:
