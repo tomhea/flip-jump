@@ -4,13 +4,26 @@ FlipJump is an Esoteric language, with 1 operation: <br>
 - Flip a bit, then (unconditionally) jump. <br>
 - The operation takes 2 memory words, then flips (inverts) the bit referenced by the first word, and jumps to the address (which is the second word). <br>
 
-This project supplies an **Assembler** and **Standard Library** to the language.
+This project supplies an **Macro Assembler** and **Standard Library** to the language.
 
 If you are intrigued with what can be done, and how to use the assembler / standard library, **Read *conventions.txt***. <br>
 
-Then get a good undertanding - follow the testbit.fj code, and follow the macros it uses (especialy the .test):
+### Hello, World!
 
+```c
+.startup
+
+.print_str 20 str       // prints the string (until the implicit '\0'), and at most 20 characters.
+.loop               // macro for ;$-dw - the run ends with a simple self-loop.
+                    // $ is the next op address, and dw is the flip-jump opcode size (Double-Word).
+
+str:
+    ..string "Hello, World!\n(:"
 ```
+
+Then get a good undertanding - follow the testbit.fj code, and follow the macros it uses (especialy the .if, which is based on the .xor):
+
+```c
 .startup        // taken from lib64.fj
 .if x l0 l1     // taken from bitlib.fj
 
@@ -19,11 +32,10 @@ l0:
     .loop
 l1:
     ..output '1'
-    .loop           // macro for ;$-dw - the run ends with a simple self-loop.
-                    // or by outputing '\0' (8 aligned and consecutive 0-bits)
+    .loop
 
 x:
-    .bit0   // bit0 => 'Z',  bit1 => '1'
+    .bit0           // bit0 => 'Z',  bit1 => '1'
 ```
 
 # How to run?
