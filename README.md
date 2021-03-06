@@ -12,19 +12,17 @@ Then get a good undertanding - follow the testbit.fj code, and follow the macros
 
 ```
 .startup        // taken from lib64.fj
-.test x l0 l1   // taken from bitlib.fj
+.if x l0 l1     // taken from bitlib.fj
 
-(l0)
-    ..output 5A // 'Z'	// syntactic-sugar for: do IO[bit] for bit in 01011010 (lsb to msb representation of 'Z'==5A)
-    ;loop
-(l1)
-    ..output 31 // '1'
-    ;loop
-(loop)
-    ;loop       // the run ends with a simple self-loop.
-                // or by outputing '\0' (8 aligned and consecutive 0-bits)
+l0:
+    ..output 'Z'    // syntactic-sugar for: do IO[bit] for bit in 01011010 (lsb to msb representation of 'Z'==5A)
+    .loop
+l1:
+    ..output '1'
+    .loop           // macro for ;$-dw - the run ends with a simple self-loop.
+                    // or by outputing '\0' (8 aligned and consecutive 0-bits)
 
-(x)
+x:
     .bit0   // bit0 => 'Z',  bit1 => '1'
 ```
 
