@@ -25,11 +25,24 @@ def stl(xx):
 
 
 id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
+
 bin_num = r'0[bB][01]+'
 hex_num = r'0[xX][0-9a-fA-F]+'
-ascii_num = r"'[ -~]'"
 dec_num = r'[0-9]+'
-number_re = rf'({bin_num})|({hex_num})|{ascii_num}|({dec_num})'
+
+char_escape_dict = {'a': 0x7, 'b': 0x8, 'e': 0x1b, 'f': 0xc, 'n': 0xa, 'r': 0xd, 't': 0x9, 'v': 0xb, '\\': 0x5c, "'": 0x27, '"': 0x22, '?': 0x3f}
+char = r'[ -~]|\\[abefnrtv\\\'\"\?]|\\[xX][0-9a-fA-F]{2}'
+
+number_re = rf'({bin_num})|({hex_num})|(\'({char})\')|({dec_num})'
+string_re = fr'\"({char})*\"'
+
+
+def handle_char(s):
+    if s[0] != '\\':
+        return ord(s[0]), 1
+    if s[1] in char_escape_dict:
+        return char_escape_dict[s[1]], 2
+    return int(s[2:4], 16), 4
 
 
 class Verbose(Enum):

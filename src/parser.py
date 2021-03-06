@@ -8,12 +8,12 @@ global curr_file, curr_text
 
 class CalcLexer(Lexer):
     tokens = {DEF, END, REP,
-              DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDVAR, DDOUTPUT,
-              DOT_ID, ID, NUMBER, SHL, SHR,
+              DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDVAR, DDSTRING, DDOUTPUT,
+              DOT_ID, ID, NUMBER, STRING, SHL, SHR,
               NL, SC,
               HASHTAG}
 
-    literals = {'=', '+', '-', '*', '/', '%', '(', ')', '$', '^', '|', '&', '?', ':'}
+    literals = {'=', '+', '-', '*', '/', '%', '(', ')', '$', '^', '|', '&', '?', ':', '"'}
 
     ignore_ending_comment = r'//.*'
     # ignore_beginning_comment = r'.*:'
@@ -21,6 +21,7 @@ class CalcLexer(Lexer):
     # Tokens
     ID = id_re
     NUMBER = number_re
+    STRING = string_re
 
     DOT_ID = fr'\.({id_re})'
     DOT_ID[r'.def'] = DEF
@@ -32,6 +33,7 @@ class CalcLexer(Lexer):
     DDFLIP_BY_DBIT = r'\.\.flip_by_dbit'
     DDFLIP_BY = r'\.\.flip_by'
     DDVAR = r'\.\.var'
+    DDSTRING = r'\.\.string'
     DDOUTPUT = r'\.\.output'
 
     SHL = r'<<'
@@ -50,7 +52,7 @@ class CalcLexer(Lexer):
         n = t.value
         if len(n) >= 2:
             if n[0] == "'":
-                t.value = ord(n[1])
+                t.value = handle_char(n[1:-1])[0]
             elif n[1] in 'xX':
                 t.value = int(n, 16)
             elif n[1] in 'bB':
@@ -59,6 +61,17 @@ class CalcLexer(Lexer):
                 t.value = int(n)
         else:
             t.value = int(t.value)
+        return t
+
+    def STRING(self, t):
+        chars = []
+        s = t.value[1:-1]
+        i = 0
+        while i < len(s):
+            val, length = handle_char(s[i:])
+            chars.append(val)
+            i += length
+        t.value = chars + [0]
         return t
 
     def NL(self, t):
@@ -234,6 +247,13 @@ class CalcParser(Parser):
     @_('DDVAR expr expr')
     def statement(self, p):
         return Op(OpType.DDVar, (p.expr0, p.expr1), curr_file, p.lineno)
+
+    @_('DDSTRING STRING')
+    def statement(self, p):
+        string_val = 0
+        for i, c in enumerate(p.STRING):
+            string_val |= c << (i * 8)
+        return Op(OpType.DDVar, (Expr(8 * len(p.STRING)), Expr(string_val)), curr_file, p.lineno)
 
     @_('DDOUTPUT expr')
     def statement(self, p):
