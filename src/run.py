@@ -88,7 +88,7 @@ def assemble_and_run(input_files, preprocessed_file=None, output_file=None, defi
 def main():
     for test, _input in (('cat', "Hello World!\0"), ('ncat', ''.join(chr(0xff-ord(c)) for c in 'Flip Jump Rocks!'+'\0')),
                          ('testbit', ''), ('testbit_with_nops', ''), ('mathbit', ''), ('mathvec', ''), ('not', ''),
-                         ('rep', ''), ('ncmp', ''), ('nadd', ''), ('hexprint', ''), ('simple', ''), ('print_str', '')):
+                         ('rep', ''), ('ncmp', ''), ('nadd', ''), ('hexprint', ''), ('simple', ''), ('hello_world', '')):
         # if test != 'testbit_with_nops':
         #     continue
         print(f'running test {test}({_input}):')

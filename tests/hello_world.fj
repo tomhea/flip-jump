@@ -1,0 +1,7 @@
+.startup
+
+.print_str 20 str
+.loop
+
+str:
+    ..string "Hello, World!\n(:"
