@@ -1,5 +1,7 @@
 .skip
+IO: ;
 .not x
+.output '0'+#0b111
 .loop
 
 x: .bit 0

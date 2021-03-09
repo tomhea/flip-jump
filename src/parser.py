@@ -302,7 +302,7 @@ class CalcParser(Parser):
 
     @_('"#" _expr')
     def _expr(self, p):
-        return Expr((lambda x: x.bit_length(), (p._expr0[0],))), p.lineno
+        return Expr((lambda x: x.bit_length(), (p._expr[0],))), p.lineno
 
     @_('_expr "/" _expr')
     def _expr(self, p):
