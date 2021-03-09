@@ -47,6 +47,14 @@
 // ---------- Output:
 
 
+
+.def output ascii
+    .rep 8 i
+        IO + ((ascii>>i)&1)
+    .end
+.end
+
+
 .def output_bit x : label_ptr base_jump_label end
     .xor label_ptr x
   label_ptr:

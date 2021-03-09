@@ -4,10 +4,10 @@
 .if x l0 l1
 
 l0:
-    ..output 0x5A // 'Z'
+    .output 0x5A // 'Z'
     ;loop
 l1:
-    ..output 0x10*3+1*3-4/2 // '1'
+    .output 0x10*3+1*3-4/2 // '1'
     ;
     temp;loop
 loop:
@@ -23,7 +23,7 @@ loop:
     .var 8 3
     [5]3
     bananas:
-    ..output 0x5c
+    .output 0x5c
     dy=3
 
     .rep 7 i

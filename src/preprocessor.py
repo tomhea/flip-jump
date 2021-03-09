@@ -73,15 +73,6 @@ def resolve_macro_aux(macros, macro_name, args, rep_dict, dollar_count, verbose=
                 del rep_dict[i_name]
             else:
                 error(f'Rep is used but {i_name} index is gone; maybe also declared elsewhere. in file {op.file} line {op.line}.')
-        elif op.type == OpType.DDOutput:
-            c = op.data[0]
-            if not c.is_int():
-                error(f'..output used without a number "{str(c)}" in file {op.file} line {op.line}.')
-            num = c.val & 0xff
-            for i in range(8):
-                commands.append(Op(OpType.FlipJump,
-                                   (Expr((add, (Expr('IO'), Expr((num >> i) & 1)))), next_address()),
-                                   op.file, op.line))
         else:
             commands.append(op)
     return commands

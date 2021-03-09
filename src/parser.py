@@ -8,7 +8,7 @@ global curr_file, curr_text
 
 class CalcLexer(Lexer):
     tokens = {DEF, END, REP,
-              DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDSTRING, DDOUTPUT,
+              DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDSTRING,
               DOT_ID, ID, NUMBER, STRING, SHL, SHR,
               NL, SC}
 
@@ -32,7 +32,6 @@ class CalcLexer(Lexer):
     DDFLIP_BY_DBIT = r'\.\.flip_by_dbit'
     DDFLIP_BY = r'\.\.flip_by'
     DDSTRING = r'\.\.string'
-    DDOUTPUT = r'\.\.output'
 
     SHL = r'<<'
     SHR = r'>>'
@@ -249,10 +248,6 @@ class CalcParser(Parser):
         for i, c in enumerate(p.STRING):
             string_val |= c << (i * 8)
         return Op(OpType.BitVar, (Expr(8 * len(p.STRING)), Expr(string_val)), curr_file, p.lineno)
-
-    @_('DDOUTPUT expr')
-    def statement(self, p):
-        return Op(OpType.DDOutput, (p.expr,), curr_file, p.lineno)
 
     @_('"[" expr "]" expr')
     def statement(self, p):

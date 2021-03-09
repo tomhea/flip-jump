@@ -3,13 +3,13 @@ n=4
 .cmp n a b lt eq gt
 
 lt:
-    ..output 0x4c
+    .output '<'
     .loop
 eq:
-    ..output 0x45
+    .output '='
     .loop
 gt:
-    ..output 0x47
+    .output '>'
     .loop
 
 a: .var n 3
