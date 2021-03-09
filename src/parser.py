@@ -9,13 +9,19 @@ global curr_file, curr_text
 class CalcLexer(Lexer):
     tokens = {DEF, END, REP,
               DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDSTRING,
-              DOT_ID, ID, NUMBER, STRING, SHL, SHR,
-              NL, SC}
+              DOT_ID, ID, NUMBER, STRING,
+              SHL, SHR, NL, SC}
 
-    literals = {'=', '+', '-', '*', '/', '%', '(', ')', '$', '^', '|', '&', '?', ':', '"', '#', '[', ']'}
+    literals = {'=', '+', '-', '*', '/', '%',
+                '(', ')',
+                '$',
+                '^', '|', '&',
+                '?', ':',
+                '"',
+                '#',
+                '[', ']'}
 
     ignore_ending_comment = r'//.*'
-    # ignore_beginning_comment = r'.*:'
 
     # Tokens
     ID = id_re
@@ -37,7 +43,6 @@ class CalcLexer(Lexer):
     SHR = r'>>'
 
     # Punctuations
-    # DOT = r'\.'
     NL = r'[\r\n]'
     SC = r';'
 
@@ -331,11 +336,6 @@ class CalcParser(Parser):
     def _expr(self, p):
         return Expr((lambda a, b, c: b if a else c, (p._expr0[0], p._expr1[0], p._expr2[0]))), p.lineno
 
-    # # The shift/reduce conflict can be solved using "," between macro arguments.
-    # @_('"-" expr %prec UMINUS')
-    # def expr(self, p):
-    #     return Expr((Expr(0), sub, p.expr))
-
     @_('"(" _expr ")"')
     def _expr(self, p):
         return p._expr
@@ -369,8 +369,4 @@ def parse_macro_tree(input_files, verbose=False):
 
 
 if __name__ == '__main__':
-    # for test in ('cat', 'mathbit', 'mathvec', 'ncat', 'not', 'testbit', 'testbit_with_nops'):
-    #     parse_macro_tree(stl(64) + [f'tests/{test}.fj'])
     macros = parse_macro_tree(stl(64) + ['tests/testbit.fj'])
-    # for macro in macros:
-    #     print(f'\n{macro}:\n  ' + '\n  '.join(str(state) for state in macros[macro][1]))
