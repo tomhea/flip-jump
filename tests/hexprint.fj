@@ -4,6 +4,6 @@
 .print c
 .loop
 
-a: ..var 4 0x2
-b: ..var 4 0x3
-c: ..var 8 0x0
+a: .var 4 0x2
+b: .var 4 0x3
+c: .var 8 0x0

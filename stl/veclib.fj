@@ -13,6 +13,15 @@
 
 
 
+// ---------- Memory Variables:
+
+
+.def var n value
+    .rep n i bit value&(1<<i)
+.end
+
+
+
 // ---------- Memory Manipulation:
 
 
@@ -110,7 +119,7 @@
     .rep n-1 i mov x+i*dw x+(i+1)*dw
     .mov x+(n-1)*dw temp_bit
   .skip
-  temp_bit: .bit0
+  temp_bit: .bit 0
 .end
 
 
@@ -119,7 +128,7 @@
     .rep n-1 i mov x+(i+1)*dw x+i*dw
     .mov x temp_bit
   .skip
-  temp_bit: .bit0
+  temp_bit: .bit 0
 .end
 
 
@@ -132,7 +141,7 @@
     .one carry
     .rep n i inc1 x+i*dw carry
   .skip
-  carry: .bit0
+  carry: .bit 0
 .end
 
 
@@ -153,7 +162,7 @@
     .zero carry
     .rep n i add1 dst+i*dw src+i*dw carry
   .skip
-  carry: .bit0
+  carry: .bit 0
 .end
 
 
@@ -163,5 +172,5 @@
     .rep n i add1 dst+i*dw src+i*dw carry
     .not n src
   .skip
-  carry: .bit0
+  carry: .bit 0
 .end

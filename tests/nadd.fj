@@ -3,5 +3,5 @@
 .print a
 .loop
 
-a: ..var 8 '5'
-b: ..var 8 0x02
+a: .var 8 '5'
+b: .var 8 0x02

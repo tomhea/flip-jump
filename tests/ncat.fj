@@ -10,4 +10,4 @@ end:
     .loop
 
 ascii:
-    ..var 8 0
+    .var 8 0

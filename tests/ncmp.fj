@@ -12,5 +12,5 @@ gt:
     ..output 0x47
     .loop
 
-a: ..var n 3
-b: ..var n 1
+a: .var n 3
+b: .var n 1

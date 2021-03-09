@@ -59,7 +59,7 @@ class OpType(Enum):
     BitSpecific = 2     # expr, expr                # Survives until (3) label resolve
     DDFlipBy = 3        # expr, expr                # Survives until (3) label resolve  (at later
     DDFlipByDbit = 4    # expr, expr                # Survives until (3) label resolve
-    DDVar = 5           # expr, expr                # Survives until (3) label resolve
+    BitVar = 5          # expr, expr                # Survives until (3) label resolve
     Label = 6           # ID                        # Survives until (2) label dictionary
     DDPad = 7           # expr                      # Survives until (2) label dictionary
     Macro = 8           # ID, expr [expr..]         # Survives until (1) macro resolve

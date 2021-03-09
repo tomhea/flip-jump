@@ -8,7 +8,7 @@ global curr_file, curr_text
 
 class CalcLexer(Lexer):
     tokens = {DEF, END, REP,
-              DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDVAR, DDSTRING, DDOUTPUT,
+              DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDSTRING, DDOUTPUT,
               DOT_ID, ID, NUMBER, STRING, SHL, SHR,
               NL, SC}
 
@@ -31,7 +31,6 @@ class CalcLexer(Lexer):
     DDPAD = r'\.\.pad'
     DDFLIP_BY_DBIT = r'\.\.flip_by_dbit'
     DDFLIP_BY = r'\.\.flip_by'
-    DDVAR = r'\.\.var'
     DDSTRING = r'\.\.string'
     DDOUTPUT = r'\.\.output'
 
@@ -101,8 +100,13 @@ class CalcParser(Parser):
 
     def __init__(self, verbose=False):
         self.verbose = verbose
-        self.macros = {main_macro: [([], []), []]}
+        self.macros = {main_macro: [([], []), [], (None, None)]}    # (params, quiet_params), statements, (curr_file, p.lineno)
         self.defs = {}
+
+    def check_macro_name(self, name, file, line):
+        if name in self.macros:
+            _, _, (other_file, other_line) = self.macros[name]
+            error(f'macro {name} is declared twice! in file {file} (line {line}) and in file {other_file} (line {other_file}).')
 
     def check_params(self, ids, macro_name):
         for id in ids:
@@ -132,10 +136,6 @@ class CalcParser(Parser):
             return p[0]
         return []
 
-    # @_('empty')
-    # def definable_line_statements(self, p):
-    #     return []
-
     @_('')
     def empty(self, p):
         return None
@@ -152,9 +152,10 @@ class CalcParser(Parser):
     def macro_def(self, p):
         params = p.macro_params
         name = (p.ID, len(params[0]))
+        self.check_macro_name(name, curr_file, p.lineno)
         self.check_params(params[0] + params[1], name)
         statements = p.line_statements
-        self.macros[name] = [params, statements]
+        self.macros[name] = [params, statements, (curr_file, p.lineno)]
         return None
 
     @_('ids')
@@ -242,16 +243,12 @@ class CalcParser(Parser):
     def statement(self, p):
         return Op(OpType.DDFlipByDbit, (p.expr0, p.expr1), curr_file, p.lineno)
 
-    @_('DDVAR expr expr')
-    def statement(self, p):
-        return Op(OpType.DDVar, (p.expr0, p.expr1), curr_file, p.lineno)
-
     @_('DDSTRING STRING')
     def statement(self, p):
         string_val = 0
         for i, c in enumerate(p.STRING):
             string_val |= c << (i * 8)
-        return Op(OpType.DDVar, (Expr(8 * len(p.STRING)), Expr(string_val)), curr_file, p.lineno)
+        return Op(OpType.BitVar, (Expr(8 * len(p.STRING)), Expr(string_val)), curr_file, p.lineno)
 
     @_('DDOUTPUT expr')
     def statement(self, p):

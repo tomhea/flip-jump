@@ -20,7 +20,7 @@ loop:
 
     [1]1
     dloop:;dloop
-    ..var 8 3
+    .var 8 3
     [5]3
     bananas:
     ..output 0x5c
@@ -43,8 +43,7 @@ loop:
     .not y
 .end
 
-x:
-    .bit1   // bit0 => 'Z',  bit1 => '1'
-y: .bit1
-z: .bit1
+x: .bit 1   // bit0 => 'Z',  bit1 => '1'
+y: .bit 1
+z: .bit 1
 

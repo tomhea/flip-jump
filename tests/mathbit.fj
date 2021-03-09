@@ -2,7 +2,5 @@
 .inc1 x carry
 .loop
 
-x:
-    .bit0
-carry:
-    .bit1
+x:     .bit 0
+carry: .bit 1

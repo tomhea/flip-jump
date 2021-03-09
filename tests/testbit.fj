@@ -9,4 +9,4 @@ l1:
     .loop
 
 x:
-    .bit0   // bit0 => 'Z',  bit1 => '1'
+    .bit 0   // bit0 => 'Z',  bit1 => '1'

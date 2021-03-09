@@ -27,12 +27,9 @@
 // ---------- Memory Variables:
 
 
-.def bit0
-    ;0
-.end
-
-.def bit1
-    ;dw
+.def bit value
+    [w]temp
+    [w](value ? dw : 0)
 .end
 
 
@@ -192,5 +189,5 @@
     .inc1 dst carry
     .or carry _src
     .skip
-  _src: .bit0
+  _src: .bit 0
 .end

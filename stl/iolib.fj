@@ -109,7 +109,7 @@
     .not ascii + 6*dw     // ascii = 0x40
     ;end
   nine4:
-    ..var 4 9
+    .var 4 9
   end:
     .xor 4 ascii hex
 .end
