@@ -23,11 +23,11 @@ def label_dictionary_pass(ops, w, verbose=False):
             padding_length = (-curr_address) % (try_int(op, op.data[0]) * 2 * w)
             op = Op(OpType.BitSpecific, (Expr(padding_length), Expr(0)), op.file, op.line)
 
-        if op.type in {OpType.FlipJump, OpType.BitSpecific, OpType.DDFlipBy, OpType.DDFlipByDbit, OpType.DDVar}:
+        if op.type in {OpType.FlipJump, OpType.BitSpecific, OpType.DDFlipBy, OpType.DDFlipByDbit, OpType.BitVar}:
             delta = 2*w
             if op.type == OpType.BitSpecific:
                 delta = try_int(op, op.data[0])
-            elif op.type == OpType.DDVar:
+            elif op.type == OpType.BitVar:
                 delta = try_int(op, op.data[0]) * 2*w
             end_address = curr_address + delta
             eval_all(op, {'$': Expr(end_address)})
@@ -96,7 +96,7 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   
                     ops.append(Op(OpType.FlipJump, (Expr(to_address+bit), Expr(next_op)), op.file, op.line))
                 last_address = next_op + 2*w
                 ops.append(Op(OpType.FlipJump, (Expr(to_address + flip_bits[-1]), Expr(return_address)), op.file, op.line))
-        elif op.type == OpType.DDVar:
+        elif op.type == OpType.BitVar:
             n, v = vals
             for i in range(n):
                 write_flip_jump(bits, resolved_temp_address, 2*w if v & (1 << i) else 0, w)

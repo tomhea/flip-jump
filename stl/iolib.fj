@@ -47,6 +47,14 @@
 // ---------- Output:
 
 
+
+.def output ascii
+    .rep 8 i
+        IO + ((ascii>>i)&1)
+    .end
+.end
+
+
 .def output_bit x : label_ptr base_jump_label end
     .xor label_ptr x
   label_ptr:
@@ -109,7 +117,7 @@
     .not ascii + 6*dw     // ascii = 0x40
     ;end
   nine4:
-    ..var 4 9
+    .var 4 9
   end:
     .xor 4 ascii hex
 .end

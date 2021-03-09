@@ -2,5 +2,4 @@
 .not x
 .loop
 
-x:
-    .bit0
+x: .bit 0

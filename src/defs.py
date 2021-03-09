@@ -57,14 +57,13 @@ class Verbose(Enum):
 class OpType(Enum):
     FlipJump = 1        # expr, expr                # Survives until (3) label resolve
     BitSpecific = 2     # expr, expr                # Survives until (3) label resolve
-    DDFlipBy = 3        # expr, expr                # Survives until (3) label resolve  (at later
+    DDFlipBy = 3        # expr, expr                # Survives until (3) label resolve
     DDFlipByDbit = 4    # expr, expr                # Survives until (3) label resolve
-    DDVar = 5           # expr, expr                # Survives until (3) label resolve
+    BitVar = 5          # expr, expr                # Survives until (3) label resolve
     Label = 6           # ID                        # Survives until (2) label dictionary
     DDPad = 7           # expr                      # Survives until (2) label dictionary
     Macro = 8           # ID, expr [expr..]         # Survives until (1) macro resolve
     Rep = 9             # expr, ID, statements      # Survives until (1) macro resolve
-    DDOutput = 10       # expr                      # Survives until (1) macro resolve
 
 
 class Op:
@@ -136,7 +135,10 @@ class Expr:
     def __str__(self):
         if self.is_tuple():
             op, exps = self.val
-            if len(exps) == 2:
+            if len(exps) == 1:
+                e1 = exps[0]
+                return f'(#{str(e1)})'
+            elif len(exps) == 2:
                 e1, e2 = exps
                 return f'({str(e1)} {op.__name__} {str(e2)})'
             else:
