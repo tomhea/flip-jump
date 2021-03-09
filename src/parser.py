@@ -10,10 +10,9 @@ class CalcLexer(Lexer):
     tokens = {DEF, END, REP,
               DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDVAR, DDSTRING, DDOUTPUT,
               DOT_ID, ID, NUMBER, STRING, SHL, SHR,
-              NL, SC,
-              HASHTAG}
+              NL, SC}
 
-    literals = {'=', '+', '-', '*', '/', '%', '(', ')', '$', '^', '|', '&', '?', ':', '"'}
+    literals = {'=', '+', '-', '*', '/', '%', '(', ')', '$', '^', '|', '&', '?', ':', '"', '#', '[', ']'}
 
     ignore_ending_comment = r'//.*'
     # ignore_beginning_comment = r'.*:'
@@ -43,8 +42,6 @@ class CalcLexer(Lexer):
     # DOT = r'\.'
     NL = r'[\r\n]'
     SC = r';'
-
-    HASHTAG = r'#'
 
     ignore = ' \t'
 
@@ -97,6 +94,7 @@ class CalcParser(Parser):
         ('left', SHL, SHR),
         ('left', '+', '-'),
         ('left', '*', '/', '%'),
+        ('right', '#'),
         # ('right', 'UMINUS'),
     )
     # debugfile = 'src/parser.out'
@@ -259,7 +257,7 @@ class CalcParser(Parser):
     def statement(self, p):
         return Op(OpType.DDOutput, (p.expr,), curr_file, p.lineno)
 
-    @_('expr HASHTAG expr')
+    @_('"[" expr "]" expr')
     def statement(self, p):
         return Op(OpType.BitSpecific, (p.expr0, p.expr1), curr_file, p.lineno)
 
@@ -304,6 +302,10 @@ class CalcParser(Parser):
     @_('_expr "*" _expr')
     def _expr(self, p):
         return Expr((mul, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('"#" _expr')
+    def _expr(self, p):
+        return Expr((lambda x: x.bit_length(), (p._expr0[0],))), p.lineno
 
     @_('_expr "/" _expr')
     def _expr(self, p):

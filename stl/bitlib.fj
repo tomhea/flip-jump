@@ -18,8 +18,8 @@
 
 
 .def comp_if expr l0 l1
-    w#temp
-    w#(expr ? l1 : l0)
+    [w]temp
+    [w](expr ? l1 : l0)
 .end
 
 

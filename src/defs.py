@@ -136,7 +136,10 @@ class Expr:
     def __str__(self):
         if self.is_tuple():
             op, exps = self.val
-            if len(exps) == 2:
+            if len(exps) == 1:
+                e1 = exps[0]
+                return f'(#{str(e1)})'
+            elif len(exps) == 2:
                 e1, e2 = exps
                 return f'({str(e1)} {op.__name__} {str(e2)})'
             else:
