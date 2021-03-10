@@ -21,7 +21,7 @@ def smart_int16(num):
 def stl(xx):
     if xx not in (8, 16, 32, 64):
         error(f"no such stl: lib{xx}.fj")
-    return [f'stl/{lib}.fj' for lib in (f'lib{xx}', 'bitlib', 'veclib', 'iolib')]
+    return [f'stl/{lib}.fj' for lib in (f'lib{xx}', 'bitlib', 'veclib', 'iolib', 'ptrlib')]
 
 
 id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -175,8 +175,11 @@ def id_swap(op, id_dict):
     op.data = tuple(new_data)
 
 
-def new_label(counter):
-    return Expr(f'__label{next(counter)}')
+def new_label(counter, name=''):
+    if name == '':
+        return Expr(f'__label{next(counter)}')
+    else:
+        return Expr(f'__label{next(counter)}_{name}')
 
 
 def temp_address() -> Expr:

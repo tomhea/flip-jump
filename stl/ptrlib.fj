@@ -1,0 +1,114 @@
+// Every line is (pointing) bananas!
+// Implementation of vector of bit-variables operations
+
+// should be assembled with both bitlib.fjm and (exactly one) libXX.fjm files
+// This file is independent of the bit-width, and uses the consts defined at libXX.fjm
+
+// Everything after // is ignored, everything before first : is ignored too, and every whitespace is ignored (besides new line)
+// An opcode is:  F;L  F  ;L  or just  ;  (no F => F=temp;  no L => L=next)
+
+
+
+// ---------- Init
+
+
+.def init_ptr
+    ..pad 1
+    __to_flip: 0;0
+    __to_jump:  ;0
+
+    __to_flip_var:        .var w 0
+    __to_flip_return_var: .var w 0
+    __to_jump_var:        .var w 0
+.end
+
+
+
+// ---------- Jump:
+
+
+// like:  ;*ptr
+// Complexity w(2phi+6)
+.def ptr_jump ptr
+    .bit_var_xor w __to_jump+w __to_jump_var __to_jump_var
+    .bit_var_xor w __to_jump+w __to_jump_var ptr
+    ;__to_jump
+.end
+
+
+
+// ---------- Flip:
+
+
+// like:  *ptr;
+// Complexity w(2phi+6)
+.def ptr_flip ptr : cleanup
+    ..flip_by __to_flip+w cleanup
+
+    .bit_var_xor w __to_flip __to_flip_var __to_flip_var
+    .bit_var_xor w __to_flip __to_flip_var ptr
+    ;__to_flip
+
+  cleanup:
+    ..flip_by __to_flip+w cleanup
+.end
+
+
+// like:  ..flip_by *ptr value
+// assumes *ptr is w-aligned, and value is 2dw-aligned
+// Complexity w(3phi+11)
+.def ptr_flip_by ptr value
+    .bit_var_xor w __to_flip __to_flip_var __to_flip_var
+    .bit_var_xor w __to_flip __to_flip_var ptr
+    .rep w i __advance_by_one_and_flip__ptr_flip_by (#(i^((i+1)%w))) (value>>i)&1
+.end
+.def __advance_by_one_and_flip__ptr_flip_by n do_flip : cleanup advance
+    .comp_if0 do_flip advance
+    ..flip_by __to_flip+w cleanup
+    ;__to_flip
+  cleanup:
+    ..flip_by __to_flip+w cleanup
+  advance:
+    .rep n i
+        __to_flip+i
+    .end
+.end
+
+
+
+// ---------- Xor
+
+
+// like:  .xor dst *ptr
+// assumes *ptr is dw-aligned, and value is 2dw-aligned
+// Complexity w(8phi+28)
+.def ptr_xor dst ptr
+    .ptr_naked_xor dst+dbit ptr
+.end
+.def ptr_naked_xor dst ptr : base_jump_label cleanup
+    .not ptr + dw*ww
+    .ptr_flip_by ptr base_jump_label
+    .not ptr + dw*ww
+
+    .ptr_jump ptr
+    ..pad 2
+  base_jump_label:
+    ;cleanup
+    dst
+
+  cleanup:
+    .not ptr + dw*ww
+    .ptr_flip_by ptr base_jump_label
+    .not ptr + dw*ww
+.end
+
+
+
+// ---------- Stack
+
+
+.def stack n
+    ..pad 1
+    sp:    .var w stack
+    stack: .var n 0
+.end

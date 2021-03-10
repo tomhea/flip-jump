@@ -8,9 +8,9 @@
 // An opcode is:  F;L  F  ;L  or just  ;  (no F => F=temp;  no L => L=next)
 
 
-ww   = 0x6      // w-width (log2(w))
-dww  = ww + 1   // double-w-width (log2(2w))
-w    = 1<<ww    // memory and operands width
+w    = 64       // memory and operands width
+dww  = #w       // double-w-width (log2(2w))
+ww   = dww-1    // w-width (log2(w))
 dw   = 2 * w    // double word size
 dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
 

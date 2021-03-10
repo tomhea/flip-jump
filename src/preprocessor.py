@@ -33,14 +33,15 @@ def resolve_macros(macros, output_file=None, verbose=False):
 def resolve_macro_aux(macros, macro_name, args, rep_dict, dollar_count, verbose=False, file=None, line=None):
     commands = []
     if macro_name not in macros:
+        macro_name = f'{macro_name[0]}({macro_name[1]})'
         if None in (file, line):
-            error(f"macro '{macro_name}' isn't defined.")
+            error(f"macro {macro_name} isn't defined.")
         else:
-            error(f"macro '{macro_name}' isn't defined. Used in file {file} (line {line}).")
+            error(f"macro {macro_name} isn't defined. Used in file {file} (line {line}).")
     (params, dollar_params), ops, _ = macros[macro_name]
     id_dict = dict(zip(params, args))
     for dp in dollar_params:
-        id_dict[dp] = new_label(dollar_count)
+        id_dict[dp] = new_label(dollar_count, dp)
     for k in rep_dict:
         id_dict[k] = rep_dict[k]
 

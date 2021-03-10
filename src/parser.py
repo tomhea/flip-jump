@@ -108,6 +108,8 @@ class CalcParser(Parser):
         self.defs = {}
 
     def check_macro_name(self, name, file, line):
+        if name[0] in ('def', 'end', 'rep'):
+            error(f'macro name can\'t be {name[0]}! in file {file} (line {line})')
         if name in self.macros:
             _, _, (other_file, other_line) = self.macros[name]
             error(f'macro {name} is declared twice! in file {file} (line {line}) and in file {other_file} (line {other_file}).')

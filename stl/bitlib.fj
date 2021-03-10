@@ -18,18 +18,25 @@
 
 
 .def comp_if expr l0 l1
-    [w]temp
-    [w](expr ? l1 : l0)
+    [dw] temp + ((expr ? l1 : l0) << w)
 .end
 
+.def comp_if0 expr l0 : l1
+    .comp_if expr l0 l1
+  l1:
+.end
+
+.def comp_if1 expr l1 : l0
+    .comp_if expr l0 l1
+  l0:
+.end
 
 
 // ---------- Memory Variables:
 
 
 .def bit value
-    [w]temp
-    [w](value ? dw : 0)
+    [dw] temp + ((value ? 1 : 0) << dbit)
 .end
 
 
@@ -143,7 +150,19 @@
     ..pad 2
   base_jump_label:
     ;cleanup
-    dst;cleanup
+    dst
+  cleanup:
+    ..flip_by_dbit src+w base_jump_label
+.end
+
+.def double_naked_xor dst1 dst2 src : base_jump_label cleanup
+    ..flip_by_dbit src+w base_jump_label
+    ;src
+    ..pad 2
+  base_jump_label:
+    ;cleanup
+    dst1
+    dst2
   cleanup:
     ..flip_by_dbit src+w base_jump_label
 .end

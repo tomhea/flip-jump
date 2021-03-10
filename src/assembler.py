@@ -140,6 +140,8 @@ def assemble(input_files, output_file, preprocessed_file=None, w=64, use_stl=Tru
     if temp_preprocessed_file:
         os.close(temp_fd)
 
+    return labels
+
 
 def main():
     pass
