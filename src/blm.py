@@ -20,9 +20,10 @@ struct {
 
 
 class Reader:
-    def __init__(self, input_file, slow_garbage_read=True):
+    def __init__(self, input_file, slow_garbage_read=True, stop_after_garbage=True):
         self.mem = {}   # memory words
         self.slow_garbage_read = slow_garbage_read
+        self.stop_after_garbage = stop_after_garbage
         self.n = None
         self.w = None
         self.default_table = []
@@ -49,7 +50,9 @@ class Reader:
         address &= ((1 << self.n) - 1)
         if address not in self.mem:
             garbage_val = randint(0, (1 << self.w) - 1)
-            print(f'Warning:  reading garbage word at mem[{address << self.w}] = {garbage_val}')
+            print(f'Warning:  reading garbage word at mem[{hex(address << self.w)[2:]}] = {hex(garbage_val)[2:]}')
+            if self.stop_after_garbage:
+                exit(1)
             if self.slow_garbage_read:
                 sleep(0.1)
             self.mem[address] = garbage_val
@@ -79,7 +82,7 @@ class Reader:
     def get_word(self, bit_address):
         address, bit = self.bit_address_decompose(bit_address)
         if bit == 0:
-            return self.mem[address]
+            return self[address]
         if address == ((1 << self.n) - 1):
             print(f'Warning:  Accessed outside of memory (beyond the last bit).')
         l, m = self[address], self[address+1]

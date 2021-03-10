@@ -17,7 +17,7 @@
 
 
 .def var n value
-    .rep n i bit value&(1<<i)
+    .rep n i bit (value>>i)&1
 .end
 
 
@@ -84,6 +84,11 @@
 
 .def xor n dst src
     .rep n i xor dst+dw*i src+dw*i
+.end
+
+
+.def bit_var_xor n bit var src
+    .rep n i double_naked_xor bit+i var+dbit+i*dw src+i*dw
 .end
 
 
