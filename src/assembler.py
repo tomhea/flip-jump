@@ -62,6 +62,8 @@ def write_flip_jump(bits, f, j, w):
 
 
 def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   # TODO handle verbose?
+    if last_address >= (1<<w):
+        error(f"Not enough space with the {w}-width.")
     bits = []
     if 'temp' not in labels:
         temp_temp_address = (1 << w) - 1
@@ -96,6 +98,8 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   
                     next_op += 2*w
                     ops.append(Op(OpType.FlipJump, (Expr(to_address+bit), Expr(next_op)), op.file, op.line))
                 last_address = next_op + 2*w
+                if last_address >= (1 << w):
+                    error(f"Not enough space with the {w}-width.")
                 ops.append(Op(OpType.FlipJump, (Expr(to_address + flip_bits[-1]), Expr(return_address)), op.file, op.line))
         elif op.type == OpType.BitVar:
             n, v = vals
@@ -109,17 +113,17 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   
     writer.write_to_file(output_file)
 
 
-def assemble(input_files, output_file, preprocessed_file=None, w=64, use_stl=True, verbose=set()):
+def assemble(input_files, output_file, w, preprocessed_file=None, use_stl=True, verbose=set()):
     temp_preprocessed_file, temp_fd = False, 0
     if preprocessed_file is None:
         temp_fd, preprocessed_file = mkstemp()
         temp_preprocessed_file = True
 
     if use_stl:
-        input_files = stl(w) + input_files
+        input_files = stl() + input_files
 
     start_time = time()
-    macros = parse_macro_tree(input_files, verbose=Verbose.Parse in verbose)
+    macros = parse_macro_tree(input_files, w, verbose=Verbose.Parse in verbose)
     if Verbose.Time in verbose:
         print(f'  parsing:         {time() - start_time:.3f}s')
 

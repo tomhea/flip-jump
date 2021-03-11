@@ -97,14 +97,14 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
         ip = new_ip     # Jump!
 
 
-def assemble_and_run(input_files, preprocessed_file=None, output_file=None, defined_input=None, verbose=set(),
+def assemble_and_run(input_files, w, preprocessed_file=None, output_file=None, defined_input=None, verbose=set(),
                      breakpoint_addresses=set(), breakpoint_labels=set(), breakpoint_any_labels=set()):
     temp_output_file, temp_fd = False, 0
     if output_file is None:
         temp_fd, output_file = mkstemp()
         temp_output_file = True
 
-    labels = assemble(input_files, output_file, preprocessed_file=preprocessed_file, verbose=verbose)
+    labels = assemble(input_files, output_file, w, preprocessed_file=preprocessed_file, verbose=verbose)
 
     # Handle breakpoints
     breakpoint_map = {ba: hex(ba) for ba in breakpoint_addresses}
@@ -140,15 +140,18 @@ def main():
         # if test != 'func':
         #     continue
         print(f'running test {test}({_input}):')
-        run_time, ops_executed, output = assemble_and_run([f'tests/{test}.fj'], preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
-                         output_file=f'tests/compiled/{test}.blm', defined_input=_input, verbose=set([
-                # Verbose.Time,
-                Verbose.PrintOutput,
-                # Verbose.Run,
-            ]),
-                         breakpoint_labels=set([
-                             # '__to_jump',
-                         ]))
+        run_time, ops_executed, output = assemble_and_run([f'tests/{test}.fj'], 64,
+                        preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
+                        output_file=f'tests/compiled/{test}.blm',
+                        defined_input=_input,
+                        verbose=set([
+                            # Verbose.Time,
+                            Verbose.PrintOutput,
+                            # Verbose.Run,
+                        ]),
+                        breakpoint_labels=set([
+                            # '__to_jump',
+                        ]))
         # print(output)
         print(f'finished by looping after {run_time:.3f}s ({ops_executed} ops executed)')
         print()

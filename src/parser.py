@@ -102,10 +102,10 @@ class CalcParser(Parser):
     )
     # debugfile = 'src/parser.out'
 
-    def __init__(self, verbose=False):
+    def __init__(self, w, verbose=False):
         self.verbose = verbose
         self.macros = {main_macro: [([], []), [], (None, None)]}    # (params, quiet_params), statements, (curr_file, p.lineno)
-        self.defs = {}
+        self.defs = {'w': Expr(w)}
 
     def check_macro_name(self, name, file, line):
         if name[0] in ('def', 'end', 'rep'):
@@ -357,10 +357,10 @@ class CalcParser(Parser):
         return Expr(p.ID), p.lineno
 
 
-def parse_macro_tree(input_files, verbose=False):
+def parse_macro_tree(input_files, w, verbose=False):
     global curr_file, curr_text
     lexer = CalcLexer()
-    parser = CalcParser(verbose=verbose)
+    parser = CalcParser(w, verbose=verbose)
     for curr_file in input_files:
         if not isfile(curr_file):
             error(f"No such file {curr_file}.")
@@ -368,7 +368,3 @@ def parse_macro_tree(input_files, verbose=False):
         parser.parse(lexer.tokenize(curr_text))
 
     return parser.macros
-
-
-if __name__ == '__main__':
-    macros = parse_macro_tree(stl(64) + ['tests/testbit.fj'])
