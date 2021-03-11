@@ -1,0 +1,168 @@
+.startup
+
+
+
+// As with the current variables, should print:
+// ABC
+// AB~CD~EF
+// ABCDE
+// ABCDEFGH-1
+// ABC abcdefg ABCD-0
+
+
+
+// Prints "ABC"
+test1:
+    .output 'A'
+    .call func1
+    .output 'C'
+    .output 10
+    ;test2
+
+func1:
+    .output 'B'
+    .return
+
+
+
+// Prints "AB~CD~EF"
+test2:
+    .output 'A'
+    .call func2a
+    .call func2b
+    .output 'F'
+    .output 10
+    ;test3
+
+func2a:
+    .output 'B'
+    .call func2c
+    .output 'C'
+    .return
+func2b:
+    .output 'D'
+    .call func2c
+    .output 'E'
+    .return
+func2c:
+    .output '~'
+    .return
+
+
+
+// Prints "ABCDE"
+test3:
+    .output 'A'
+    .push_bit x3
+    .output 'B'
+    .call func3
+    .output 'D'
+    .pop_bit x3
+    .output 'E'
+    .output 10
+    ;test4
+
+func3:
+    .output 'C'
+    .return
+
+
+
+// Prints "ABCDEFGH-" and then 0/1, the invert of x4
+test4:
+    .output 'A'
+    .push_bit x4
+    .output 'B'
+
+    .call func4
+
+    .output 'G'
+    .pop_res_bit x4
+    .output 'H'
+    .bin2ascii ascii x4
+    .output '-'
+    .print ascii
+
+    .output 10
+    ;test5
+
+func4:
+    .output 'C'
+    .mov w __func4_arg_ptr sp
+    .output 'D'
+    .dec_ptr __func4_arg_ptr
+    .output 'E'
+    .ptr_flip_dbit __func4_arg_ptr
+    .output 'F'
+    .return
+    __func4_arg_ptr: .var w 0
+
+
+
+// Prints "ABC abcdefg ABCD-", and then 0/1, the xor of x5,y5
+test5:
+    .output 'A'
+    .push_bit res5
+    .output 'B'
+    .push_bit x5
+    .output 'C'
+    .push_bit y5
+
+    .output ' '
+    .call func5
+    .output ' '
+
+    .output 'A'
+    .pop_bit y5
+    .output 'B'
+    .pop_bit x5
+    .output 'C'
+    .pop_res_bit res5
+    .output 'D'
+
+    .bin2ascii ascii res5
+    .output '-'
+    .print ascii
+
+    .output 10
+    .loop
+
+// res = arg0 xor arg1
+func5:
+    .zero __func5_res
+    .mov w __func5_arg_ptr sp
+    .output 'a'
+
+    .dec_ptr __func5_arg_ptr
+    .output 'b'
+    .xor_from_ptr __func5_res __func5_arg_ptr
+    .output 'c'
+    .dec_ptr __func5_arg_ptr
+    .output 'd'
+    .xor_from_ptr __func5_res __func5_arg_ptr
+    .output 'e'
+
+    .dec_ptr __func5_arg_ptr
+    .output 'f'
+    .xor_to_ptr __func5_arg_ptr __func5_res
+    .output 'g'
+
+    .return
+    __func5_res: .bit 0
+    __func5_arg_ptr: .var w 0
+
+
+
+x3: .bit 0
+
+x4: .bit 0
+
+x5:   .bit 1
+y5:   .bit 1
+res5: .bit 0
+
+
+ascii: .var 8 0
+
+.init_ptr
+.stack 10

@@ -10,11 +10,9 @@
 // Complexity note: phi is log2 of the total number of fj operations, counting ..flip_by* as one.
 
 
-// TODO - implement pointer dereference (read and write)
-
-
 
 // ---------- Compilation Time:
+// Complexity: 1
 
 
 .def comp_if expr l0 l1
@@ -32,7 +30,13 @@
 .end
 
 
+.def comp_flip_if bit expr
+    (expr ? bit : temp)
+.end
+
+
 // ---------- Memory Variables:
+// Size Complexity: 1
 
 
 .def bit value
@@ -44,11 +48,13 @@
 // ---------- Memory Manipulation:
 
 
+// Complexity: phi+2
 .def zero x
     .xor x x
 .end
 
 
+// Complexity: phi+3
 .def one x
     .zero x
     .not x
@@ -66,7 +72,7 @@
 
 
 // safe even for dst==src !
-// Complexity: 2phi + 5
+// Complexity: 2phi+5
 .def mov dst src : do_mov end
     .comp_if dst-src end do_mov
   do_mov:
@@ -76,7 +82,7 @@
 .end
 
 
-//Complexity: 2phi + 10
+//Complexity: 2phi+10
 .def swap a b : a0 a1 notnot end
     .if a a0 a1
     a0: .if b end flip
@@ -89,6 +95,7 @@
 
 
 // ---------- Unconditional Jump
+// Complexity: 1
 
 
 .def skip
@@ -127,6 +134,7 @@
 .end
 
 
+// Complexity: 2phi+8
 .def cmp a b lt eq gt : a_is1_label
     .if1 a a_is1_label
     .if b eq lt
@@ -155,6 +163,7 @@
     ..flip_by_dbit src+w base_jump_label
 .end
 
+// Complexity: phi+3
 .def double_naked_xor dst1 dst2 src : base_jump_label cleanup
     ..flip_by_dbit src+w base_jump_label
     ;src
@@ -168,6 +177,7 @@
 .end
 
 
+// Complexity: 2phi+7
 .def or dst src : end
     .if0 src end
     .one dst
@@ -175,6 +185,7 @@
 .end
 
 
+// Complexity: 2phi+6
 .def and dst src : end
     .if1 src end
     .zero dst
@@ -182,8 +193,9 @@
 .end
 
 
+// Complexity: 1
 .def not dst
-    dst + dbit;
+    dst + dbit
 .end
 
 
@@ -192,6 +204,7 @@
 
 
 // Unsafe for dst==carry (but there is no reason in calling it that way)
+// Complexity: 2phi+10
 .def inc1 dst carry : end
     .if0 carry end
     .not dst
@@ -202,6 +215,7 @@
 
 
 // Unsafe for dst==carry (but there is no reason in calling it that way)
+// Complexity: 8phi+33
 .def add1 dst src carry : _src
     .mov _src src
     .inc1 dst _src

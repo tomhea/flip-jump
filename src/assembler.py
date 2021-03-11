@@ -68,6 +68,7 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   
         print(f"Warning:  'temp' is not declared. It will be defined as {hex(temp_temp_address)[2:]}")
         labels['temp'] = Expr(temp_temp_address)
     resolved_temp_address = labels['temp'].val
+    labels['__flip_by_Garden'] = Expr(last_address)
 
     for op in ops:
         ids = eval_all(op, labels)

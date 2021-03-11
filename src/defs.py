@@ -52,6 +52,7 @@ class Verbose(Enum):
     LabelSolve = 4
     Run = 5
     Time = 6
+    PrintOutput = 7
 
 
 class OpType(Enum):

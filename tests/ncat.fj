@@ -1,9 +1,9 @@
     .startup
 start:
     .input ascii
+    .not 8 ascii
     .if 8 ascii end print
 print:
-    .not 8 ascii
     .print ascii
     ;start
 end:

@@ -1,5 +1,5 @@
 // Every line is (pointing) bananas!
-// Implementation of vector of bit-variables operations
+// Implementation of pointers (variables which represents a memory-place), stack and functions.
 
 // should be assembled with both bitlib.fjm and (exactly one) libXX.fjm files
 // This file is independent of the bit-width, and uses the consts defined at libXX.fjm
@@ -53,9 +53,34 @@
     ..flip_by __to_flip+w cleanup
 .end
 
+// like:  (*ptr)+dbit;
+// Assumes *ptr is dw-aligned
+// Complexity w(2phi+7)
+    // The comp_flip_if executes much less than w/2 operations.
+.def ptr_flip_dbit ptr
+//    .rep #dbit i comp_flip_if ptr+dbit+i*dw (dbit>>i)&1
+
+    .rep #dww i comp_flip_if ptr+dbit+i*dw (dww>>i)&1
+    .not ptr + ww*dw
+
+    .ptr_flip ptr
+
+    .rep #dww i comp_flip_if ptr+dbit+i*dw (dww>>i)&1
+    .not ptr + ww*dw
+
+//    .rep #dbit i comp_flip_if ptr+dbit+i*dw (dbit>>i)&1
+.end
+
+// Assumes *ptr is dw-aligned
+.def xor_to_ptr ptr bit : end
+    .if0 bit end
+    .ptr_flip_dbit ptr
+  end:
+.end
+
 
 // like:  ..flip_by *ptr value
-// assumes *ptr is w-aligned, and value is 2dw-aligned
+// Assumes *ptr is w-aligned, and value is 2dw-aligned
 // Complexity w(3phi+11)
 .def ptr_flip_by ptr value
     .bit_var_xor w __to_flip __to_flip_var __to_flip_var
@@ -74,21 +99,29 @@
     .end
 .end
 
+// Assumes *ptr is dw-aligned, and value is 2dw-aligned
+.def ptr_flip_by_2nd_word ptr value
+    .not ptr + dw*ww
+    .ptr_flip_by ptr value
+    .not ptr + dw*ww
+.end
+
 
 
 // ---------- Xor
 
 
 // like:  .xor dst *ptr
-// assumes *ptr is dw-aligned, and value is 2dw-aligned
+// assumes *ptr is dw-aligned
 // Complexity w(8phi+28)
-.def ptr_xor dst ptr
-    .ptr_naked_xor dst+dbit ptr
+.def xor_from_ptr dst ptr
+    .naked_xor_from_ptr dst+dbit ptr
 .end
-.def ptr_naked_xor dst ptr : base_jump_label cleanup
-    .not ptr + dw*ww
-    .ptr_flip_by ptr base_jump_label
-    .not ptr + dw*ww
+
+.def naked_xor_from_ptr dst ptr : base_jump_label cleanup
+//    .output '1'
+    .ptr_flip_by_2nd_word ptr base_jump_label
+//    .output '2'
 
     .ptr_jump ptr
     ..pad 2
@@ -97,9 +130,10 @@
     dst
 
   cleanup:
-    .not ptr + dw*ww
-    .ptr_flip_by ptr base_jump_label
-    .not ptr + dw*ww
+//    .output '3'
+    .ptr_flip_by_2nd_word ptr base_jump_label
+//    .output '4'
+
 .end
 
 
@@ -107,8 +141,79 @@
 // ---------- Stack
 
 
+// sp always points to the last pushed value (at start - to stack[-1])
 .def stack n
     ..pad 1
-    sp:    .var w stack
+    sp:    .var w stack-dw
     stack: .var n 0
+.end
+
+
+// Complexity w(2phi+10)
+.def inc_ptr ptr
+    .inc w-dww ptr+dww*dw
+.end
+
+
+// Complexity w(2phi+12)
+.def dec_ptr ptr
+    .dec w-dww ptr+dww*dw
+.end
+
+
+// Assumes address is 2dw-aligned
+// Complexity w(5phi+21)
+.def push_ret_address address
+    .inc_ptr sp
+    .ptr_flip_by_2nd_word sp address
+.end
+
+// Assumes address is 2dw-aligned
+// Complexity w(5phi+23)
+.def pop_ret_address address
+    .ptr_flip_by_2nd_word sp address
+    .dec_ptr sp
+.end
+
+
+// Complexity: w(4phi+17)
+.def push_bit bit
+    .inc_ptr sp
+    .xor_to_ptr sp bit
+.end
+
+// Assumes *sp==bit.
+// Complexity: w(4phi+19)
+.def pop_bit bit
+    .xor_to_ptr sp bit
+    .dec_ptr sp
+.end
+
+// Complexity: w(12phi+47)
+.def pop_res_bit bit
+    .zero bit
+    .xor_from_ptr bit sp
+    .pop_bit bit
+.end
+
+
+// ---------- Functions
+
+
+// Complexity w(5phi+21)
+    // the pop_ret_address is counted for the future return
+.def call address : return_label
+    .push_ret_address return_label
+    ;address
+
+    ..pad 2
+  return_label:
+    .pop_ret_address return_label
+.end
+
+
+// Complexity w(7phi+29)
+    // the last-call's pop_ret_address is counted for this return
+.def return
+    .ptr_jump sp
 .end

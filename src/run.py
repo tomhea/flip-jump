@@ -6,7 +6,8 @@ import os
 from defs import *
 
 
-def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verbose=False, single_step=False):
+def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verbose=False, output_verbose=False,
+        single_step=False, labels_dict={}):
     start_time = time()
     mem = blm.Reader(input_file)
     if time_verbose:
@@ -17,49 +18,58 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
     OUT = 2*w
     IN = 3*w + w.bit_length()     # 5w + dww
 
-    output_char, output_size = 0, 0
     input_char, input_size = 0, 0
+    output_char, output_size = 0, 0
+    output = ''
+
+    if 0 not in labels_dict:
+        labels_dict[0] = 'memory_start_0x0000'
 
     output_anything_yet = False
     ops_executed = 0
 
     start_time = time()
+    pause_time = 0
 
     while True:
-        if single_step:
-            print(f'\nAddress {hex(ip)[2:]}:')
+        if single_step or ip in breakpoints:
+            pause_time_start = time()
+            if ip in breakpoints:
+                print(f'\nBreakpoint {breakpoints[ip]}:')
+            else:
+                if ip in labels_dict:
+                    print(f'\nAddress {hex(ip)[2:]} ({labels_dict[ip]}):')
+                else:
+                    address_before = max([a for a in labels_dict if a <= ip])
+                    print(f'\nAddress {hex(ip)[2:]} ({labels_dict[address_before]} + {hex(ip - address_before)}):')
             print(f'  f: {hex(mem.get_word(ip))[2:]}\n  j: {hex(mem.get_word(ip + w))[2:]}')
             action = input(f's/S for single step, c/C to continue: ')
             if action in ['s', 'S']:
                 single_step = True
             if action in ['c', 'C']:
                 single_step = False
-        elif ip in breakpoints:
-            print(f'\nBreakpoint {breakpoints[ip]}:')
-            print(f'  f: {hex(mem.get_word(ip))[2:]}\n  j: {hex(mem.get_word(ip+w))[2:]}')
-            action = input(f's/S for single step, anything else to continue: ')
-            if action in ['s', 'S']:
-                single_step = True
+            pause_time += time() - pause_time_start
 
         ops_executed += 1
 
         f = mem.get_word(ip)
         if verbose:
-            print(f'{hex(ip)[2:].rjust(5)}:   {hex(f)[2:]}', end='; ')
+            print(f'{hex(ip)[2:].rjust(7)}:   {hex(f)[2:]}', end='; ')
 
         # handle output
         if OUT <= f <= OUT+1:
             output_char |= (f-OUT) << output_size
             output_size += 1
             if output_size == 8:
+                output += chr(output_char)
                 if verbose:
                     print(f'\n\n\nOutputed Char:  {chr(output_char)}\n\n\n', end='')
                 else:
                     print(chr(output_char), end='')
                 output_anything_yet = True
-                if output_char == 0:
-                    print(f'\nfinished by input after {time()-start_time:.3f}s ({ops_executed} ops executed)')
-                    break
+                # if output_char == 0:
+                #     print(f'\nfinished by input after {time()-start_time-pause_time:.3f}s ({ops_executed} ops executed)')
+                #     break
                 output_char, output_size = 0, 0
 
         # handle input
@@ -80,10 +90,10 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
         if verbose:
             print(hex(new_ip)[2:])
         if new_ip == ip and not ip <= f < ip+2*w:
-            if output_anything_yet:
+            if output_verbose and output_anything_yet:
                 print()
-            print(f'finished by looping after {time()-start_time:.3f}s ({ops_executed} ops executed)')
-            break       # infinite simple loop
+            run_time = time()-start_time-pause_time
+            return run_time, ops_executed, output       # infinite simple loop
         ip = new_ip     # Jump!
 
 
@@ -96,39 +106,51 @@ def assemble_and_run(input_files, preprocessed_file=None, output_file=None, defi
 
     labels = assemble(input_files, output_file, preprocessed_file=preprocessed_file, verbose=verbose)
 
-    breakpoint_map = {ba:hex(ba) for ba in breakpoint_addresses}
+    # Handle breakpoints
+    breakpoint_map = {ba: hex(ba) for ba in breakpoint_addresses}
     for bl in breakpoint_labels:
         if bl not in labels:
-            error(f'Breakpoint label {bl} can\'t be found!')
-        breakpoint_map[labels[bl].val] = bl
+            print(f'Warning:  Breakpoint label {bl} can\'t be found!')
+        else:
+            breakpoint_map[labels[bl].val] = bl
     for bal in breakpoint_any_labels:
         for label in labels:
             if bal in label:
                 breakpoint_map[labels[label].val] = f'{bal}@{label}'
 
-    run(output_file, defined_input=defined_input, verbose=Verbose.Run in verbose, time_verbose=Verbose.Time in verbose, breakpoints=breakpoint_map)
+    opposite_labels = {labels[label].val: label for label in labels}
+
+    run_time, ops_executed, output = run(output_file, defined_input=defined_input, verbose=Verbose.Run in verbose,
+                                         time_verbose=Verbose.Time in verbose, output_verbose=Verbose.PrintOutput,
+                                         breakpoints=breakpoint_map, labels_dict=opposite_labels)
 
     if temp_output_file:
         os.close(temp_fd)
+
+    return run_time, ops_executed, output
 
 
 def main():
     for test, _input in (('cat', "Hello World!\0"), ('ncat', ''.join(chr(0xff-ord(c)) for c in 'Flip Jump Rocks!'+'\0')),
                          ('testbit', ''), ('testbit_with_nops', ''), ('mathbit', ''), ('mathvec', ''), ('not', ''),
                          ('rep', ''), ('ncmp', ''), ('nadd', ''), ('hexprint', ''), ('simple', ''), ('hello_world', ''),
-                         ('ptr', '')):
-        # if test != 'ptr':
+                         ('ptr', ''), ('func', '')):
+        if test in ('func',):
+            continue
+        # if test != 'func':
         #     continue
         print(f'running test {test}({_input}):')
-        assemble_and_run([f'tests/{test}.fj'], preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
+        run_time, ops_executed, output = assemble_and_run([f'tests/{test}.fj'], preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
                          output_file=f'tests/compiled/{test}.blm', defined_input=_input, verbose=set([
                 # Verbose.Time,
+                Verbose.PrintOutput,
                 # Verbose.Run,
             ]),
                          breakpoint_labels=set([
                              # '__to_jump',
-                             # 'd3_var',
                          ]))
+        # print(output)
+        print(f'finished by looping after {run_time:.3f}s ({ops_executed} ops executed)')
         print()
 
 
