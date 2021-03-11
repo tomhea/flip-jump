@@ -1,4 +1,4 @@
-    .startup
+.startup
 start:
     .input ascii
     .not 8 ascii

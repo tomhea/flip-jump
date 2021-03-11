@@ -1,4 +1,4 @@
-// Every line is (64) bananas!
+// Every line is (running) bananas!
 // This file contains the 64bit-specific code
 
 // This file contains constants and labels used by other standard library files.
@@ -8,7 +8,7 @@
 // An opcode is:  F;L  F  ;L  or just  ;  (no F => F=temp;  no L => L=next)
 
 
-w    = 64       // memory and operands width
+// w = ??       // memory and operands width. Is defined at compile time.
 dww  = #w       // double-w-width (log2(2w))
 ww   = dww-1    // w-width (log2(w))
 dw   = 2 * w    // double word size

@@ -1,4 +1,4 @@
-    .startup
+.startup
 start:
     .input ascii
     .if 8 ascii end print
