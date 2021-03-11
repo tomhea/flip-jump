@@ -29,7 +29,7 @@ test2:
 
 test3:
     .zero d3_var
-    .ptr_xor d3_var p3
+    .xor_from_ptr d3_var p3
     .if d3_var d30 d31
     d30: .output 'F'
          .loop

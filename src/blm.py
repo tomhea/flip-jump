@@ -50,7 +50,7 @@ class Reader:
         address &= ((1 << self.n) - 1)
         if address not in self.mem:
             garbage_val = randint(0, (1 << self.w) - 1)
-            print(f'Warning:  reading garbage word at mem[{hex(address << self.w)[2:]}] = {hex(garbage_val)[2:]}')
+            print(f'\nWarning:  Reading garbage word at mem[{hex(address << self.w)[2:]}] = {hex(garbage_val)[2:]}')
             if self.stop_after_garbage:
                 exit(1)
             if self.slow_garbage_read:
@@ -84,7 +84,8 @@ class Reader:
         if bit == 0:
             return self[address]
         if address == ((1 << self.n) - 1):
-            print(f'Warning:  Accessed outside of memory (beyond the last bit).')
+            print(f'\nWarning:  Accessed outside of memory (beyond the last bit).')
+            exit(1)
         l, m = self[address], self[address+1]
         return ((l >> bit) | (m << (self.w - bit))) & ((1 << self.w) - 1)
 

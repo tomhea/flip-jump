@@ -33,11 +33,13 @@
 .end
 
 
+// Complexity: 16phi+32
 .def input dst
     .rep 8 i input_bit dst+i*dw
 .end
 
 
+// Complexity: n(16phi+32)
 .def input n dst
     .rep n i input dst+8*i*dw
 .end
@@ -48,6 +50,7 @@
 
 
 
+// Complexity: 8
 .def output ascii
     .rep 8 i
         IO + ((ascii>>i)&1)
@@ -55,6 +58,7 @@
 .end
 
 
+// Complexity phi+5
 .def output_bit x : label_ptr base_jump_label end
     .xor label_ptr x
   label_ptr:
@@ -68,17 +72,20 @@
 .end
 
 
+// Complexity 8phi+40
 .def print x
     .rep 8 i output_bit x+i*dw
 .end
 
 
+// Complexity n(8phi+40)
 .def print n x
     .rep n i print x+8*i*dw
 .end
 
 
 // print string of max size n.
+// Complexity min(n, len+1)*(16phi+72)
 .def print_str n x : loop
     .rep n i
         .if0 8 x+8*i*dw end
@@ -92,6 +99,7 @@
 // ---------- Casting:
 
 
+// Complexity 9phi+20
 .def bin2ascii ascii bin
     .zero 8 ascii
     .not 2 ascii + 4*dw   // ascii = 0x30
@@ -99,6 +107,7 @@
 .end
 
 
+// Complexity 12phi+26
 .def dec2ascii ascii dec
     .zero 8 ascii
     .not 2 ascii + 4*dw   // ascii = 0x30
@@ -106,18 +115,20 @@
 .end
 
 
+// Complexity 25phi+92
 .def hex2ascii ascii hex : dec_label hex_label nine4 end
     .zero 8 ascii
     .cmp 4 hex nine4 dec_label dec_label hex_label
   dec_label:
+    .xor ascii+3*dw hex+3*dw
     .not 2 ascii + 4*dw   // ascii = 0x30
     ;end
   hex_label:
-    .sub 4 hex nine4        // A-F is now 1-6
+    .dec 3 hex            // A-F is now 1-6
     .not ascii + 6*dw     // ascii = 0x40
     ;end
   nine4:
     .var 4 9
   end:
-    .xor 4 ascii hex
+    .xor 3 ascii hex
 .end

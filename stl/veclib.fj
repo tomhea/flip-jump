@@ -8,12 +8,9 @@
 // An opcode is:  F;L  F  ;L  or just  ;  (no F => F=temp;  no L => L=next)
 
 
-// TODO - implement every method 4,8,16,32,64 versions, and then implement pointer dereference (read and write)
-// TODO - maybe create a script that will create all the versions?
-
-
 
 // ---------- Memory Variables:
+// Size Complexity: n
 
 
 .def var n value
@@ -25,22 +22,21 @@
 // ---------- Memory Manipulation:
 
 
+// Complexity: n(phi+2)
 .def zero n x
     .rep n i zero x+i*dw
 .end
 
 
+// Complexity: n(phi+3)
 .def one n x
     .rep n i one x+i*dw
 .end
 
 
+// Complexity: n(2phi+5)
 .def mov n dst src
     .rep n i mov dst+i*dw src+i*dw
-.end
-
-.def safe_mov n dst src
-    .rep n i safe_mov dst+i*dw src+i*dw
 .end
 
 
@@ -48,6 +44,7 @@
 // ---------- Conditional Jump
 
 
+// Complexity: n(2phi+8)
 .def cmp n a b lt eq gt
     .rep n-1 i __cmp_next_eq a+(n-1-i)*dw b+(n-1-i)*dw lt gt
     .cmp a b lt eq gt
@@ -58,6 +55,7 @@
 .end
 
 
+// Complexity: n(phi+4)
 .def if n x l0 l1
     .rep n-1 i __if_next_l0 x+i*dw l1
     .if x+(n-1)*dw l0 l1
@@ -82,43 +80,51 @@
 // ---------- Logical Macros:
 
 
+// Complexity: n(phi+2)
 .def xor n dst src
     .rep n i xor dst+dw*i src+dw*i
 .end
 
 
+// Complexity: n(phi+3)
 .def bit_var_xor n bit var src
     .rep n i double_naked_xor bit+i var+dbit+i*dw src+i*dw
 .end
 
 
+// Complexity: n(2phi+7)
 .def or n dst src
     .rep n i or dst+dw*i src+dw*i
 .end
 
 
+// Complexity: n(2phi+6)
 .def and n dst src
     .rep n i and dst+dw*i src+dw*i
 .end
 
 
+// Complexity: n
 .def not n dst
     .rep n i not dst+dw*i
 .end
 
 
+// Complexity: n(2phi+5)
 .def shl n x
     .rep n-1 i mov x+i*dw x+(i+1)*dw
     .zero x+(n-1)*dw
 .end
 
 
+// Complexity: n(2phi+5)
 .def shr n x
     .rep n-1 i mov x+(i+1)*dw x+i*dw
     .zero x
 .end
 
 
+// Complexity: n(2phi+5)
 .def rol n x : temp_bit
     .mov temp_bit x
     .rep n-1 i mov x+i*dw x+(i+1)*dw
@@ -128,6 +134,7 @@
 .end
 
 
+// Complexity: n(2phi+5)
 .def ror n x : temp_bit
     .mov temp_bit x+(n-1)*dw
     .rep n-1 i mov x+(i+1)*dw x+i*dw
@@ -142,6 +149,7 @@
 // carry is both input and output
 
 
+// Complexity: n(2phi+10)
 .def inc n x : carry
     .one carry
     .rep n i inc1 x+i*dw carry
@@ -150,6 +158,7 @@
 .end
 
 
+// Complexity: n(2phi+12)
 .def dec n x
     .not n x
     .inc n x
@@ -157,20 +166,23 @@
 .end
 
 
+// Complexity: n(2phi+11)
 .def neg n x
     .not n x
     .inc n x
 .end
 
 
+// Complexity: n(8phi+33)
 .def add n dst src : carry
     .zero carry
     .rep n i add1 dst+i*dw src+i*dw carry
-  .skip
+    .skip
   carry: .bit 0
 .end
 
 
+// Complexity: n(8phi+35)
 .def sub n dst src
     .not n src
     .one carry
