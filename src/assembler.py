@@ -114,6 +114,9 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   
 
 
 def assemble(input_files, output_file, w, preprocessed_file=None, use_stl=True, verbose=set()):
+    if w not in (8, 16, 32, 64):
+        error(f'The width ({w}) must be one of (8, 16, 32, 64).')
+
     temp_preprocessed_file, temp_fd = False, 0
     if preprocessed_file is None:
         temp_fd, preprocessed_file = mkstemp()
