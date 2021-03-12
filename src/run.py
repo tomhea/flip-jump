@@ -134,18 +134,18 @@ def main():
     for test, _input in (('cat', "Hello World!\0"), ('ncat', ''.join(chr(0xff-ord(c)) for c in 'Flip Jump Rocks!'+'\0')),
                          ('testbit', ''), ('testbit_with_nops', ''), ('mathbit', ''), ('mathvec', ''), ('not', ''),
                          ('rep', ''), ('ncmp', ''), ('nadd', ''), ('hexprint', ''), ('simple', ''), ('hello_world', ''),
-                         ('ptr', ''), ('func', '')):
-        if test in ('func',):
-            continue
-        # if test != 'func':
+                         ('ptr', ''), ('func', ''), ('calc', 'a+2\n')):
+        # if test in ('func', 'calc'):
         #     continue
+        if test != 'calc':
+            continue
         print(f'running test {test}({_input}):')
         run_time, ops_executed, output = assemble_and_run([f'tests/{test}.fj'], 64,
                         preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
                         output_file=f'tests/compiled/{test}.blm',
                         defined_input=_input,
                         verbose=set([
-                            # Verbose.Time,
+                            Verbose.Time,
                             Verbose.PrintOutput,
                             # Verbose.Run,
                         ]),

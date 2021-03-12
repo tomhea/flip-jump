@@ -1,0 +1,27 @@
+.startup
+
+
+loop:
+    .input ascii
+    .ascii2hex error hex ascii
+    .hex2ascii ascii hex
+    .print ascii
+    .if0 error end
+    .output 'x'
+  end:
+    .loop
+
+
+
+ascii: .var 8 0
+error: .bit 0
+hex:   .var 4 0
+
+plus:  .var 8 '+'
+minus: .var 8 '-'
+
+end_line1: .var 8  0
+end_line2: .var 8 10
+
+.init_ptr
+.stack 20

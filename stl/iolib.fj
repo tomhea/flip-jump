@@ -96,7 +96,7 @@
 
 
 
-// ---------- Casting:
+// ---------- Casting to ascii:
 
 
 // Complexity 9phi+20
@@ -131,4 +131,91 @@
     .var 4 9
   end:
     .xor 3 ascii hex
+.end
+
+
+
+// ---------- Casting from ascii:
+
+
+// Complexity ...
+.def ascii2bin error bin ascii : half_bin return_error good end
+    .zero error
+    .zero bin
+
+    .cmp 7 ascii+dw half_bin return_error good return_error
+
+    return_error:
+        .not error
+        ;end
+
+    good:
+        .xor bin ascii
+        ;end
+
+    half_bin: .var 7 0x30>>1
+
+  end:
+.end
+
+
+// Complexity ...
+.def ascii2dec error dec ascii : half_dec return_error first_good good end
+    .zero error
+    .zero 4 dec
+
+    .cmp 4 ascii+4*dw half_dec return_error first_good return_error
+  first_good:
+    .cmp 4 ascii nine4 good good return_error
+
+    return_error:
+        .not error
+        ;end
+
+    good:
+        .xor 4 dec ascii
+        ;end
+
+    half_dec: .var 4 0x30>>4
+    nine4:    .var 4 9
+  end:
+.end
+
+
+// Complexity ...
+.def ascii2hex error hex ascii : half_hex return_error try_hex dec_first_good hex_first_good dec_good hex_good end
+    .zero error
+    .zero 4 hex
+
+    .cmp 4 ascii+4*dw half_dec try_big_hex dec_first_good try_big_hex
+
+  try_big_hex:
+    .cmp 5 ascii+3*dw half_big_hex    try_small_hex hex_first_good try_small_hex
+  try_small_hex:
+    .cmp 5 ascii+3*dw half_small_hex  return_error  hex_first_good return_error
+
+  dec_first_good:
+    .cmp 4 ascii nine4 dec_good dec_good return_error
+    dec_good:
+        .xor 4 hex ascii
+        ;end
+
+  hex_first_good:
+    .inc 3 ascii
+    .cmp 3 ascii two3 return_error hex_good hex_good
+    hex_good:
+        .xor 3 hex ascii
+        .not hex+3*dw
+        ;end
+
+    return_error:
+        .not error
+        ;end
+
+    half_dec:       .var 4 0x30>>4
+    half_big_hex:   .var 5 0x40>>3
+    half_small_hex: .var 5 0x60>>3
+    nine4:    .var 4 9
+    two3:     .var 3 2
+  end:
 .end
