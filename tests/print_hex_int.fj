@@ -1,0 +1,6 @@
+.startup
+
+.print_hex_int w a
+.loop
+
+a:  .var w 0-0xabcdef

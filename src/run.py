@@ -54,7 +54,7 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
 
         f = mem.get_word(ip)
         if verbose:
-            print(f'{hex(ip)[2:].rjust(7)}:   {hex(f)[2:]}', end='; ')
+            print(f'{hex(ip)[2:].rjust(7)}:   {hex(f)[2:]}', end='; ', flush=True)
 
         # handle output
         if OUT <= f <= OUT+1:
@@ -63,9 +63,9 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
             if output_size == 8:
                 output += chr(output_char)
                 if verbose:
-                    print(f'\n\n\nOutputed Char:  {chr(output_char)}\n\n\n', end='')
+                    print(f'\n\n\nOutputed Char:  {chr(output_char)}\n\n\n', end='', flush=True)
                 else:
-                    print(chr(output_char), end='')
+                    print(chr(output_char), end='', flush=True)
                 output_anything_yet = True
                 # if output_char == 0:
                 #     print(f'\nfinished by input after {time()-start_time-pause_time:.3f}s ({ops_executed} ops executed)')
@@ -76,10 +76,17 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
         if ip <= IN < ip+2*w:
             if input_size == 0:
                 if defined_input is None:
+                    pause_time_start = time()
                     input_char = ord(readchar())
-                else:
+                    pause_time += time() - pause_time_start
+                elif len(defined_input) > 0:
                     input_char = ord(defined_input[0])
                     defined_input = defined_input[1:]
+                else:
+                    if output_verbose and output_anything_yet:
+                        print()
+                    run_time = time() - start_time - pause_time
+                    return run_time, ops_executed, output, RunFinish.Input  # no more input
                 input_size = 8
             mem.write_bit(IN, input_char & 1)
             input_char = input_char >> 1
@@ -93,7 +100,7 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
             if output_verbose and output_anything_yet:
                 print()
             run_time = time()-start_time-pause_time
-            return run_time, ops_executed, output       # infinite simple loop
+            return run_time, ops_executed, output, RunFinish.Looping       # infinite simple loop
         ip = new_ip     # Jump!
 
 
@@ -120,27 +127,30 @@ def assemble_and_run(input_files, w, preprocessed_file=None, output_file=None, d
 
     opposite_labels = {labels[label].val: label for label in labels}
 
-    run_time, ops_executed, output = run(output_file, defined_input=defined_input, verbose=Verbose.Run in verbose,
+    run_time, ops_executed, output, finish_cause = run(output_file, defined_input=defined_input, verbose=Verbose.Run in verbose,
                                          time_verbose=Verbose.Time in verbose, output_verbose=Verbose.PrintOutput,
                                          breakpoints=breakpoint_map, labels_dict=opposite_labels)
 
     if temp_output_file:
         os.close(temp_fd)
 
-    return run_time, ops_executed, output
+    return run_time, ops_executed, output, finish_cause
 
 
 def main():
-    for test, _input in (('cat', "Hello World!\0"), ('ncat', ''.join(chr(0xff-ord(c)) for c in 'Flip Jump Rocks!'+'\0')),
+    for test, _input in (('cat', "Hello World!\0"), ('ncat', ''.join(chr(0xff-ord(c)) for c in 'Flip Jump Rocks!\0')),
                          ('testbit', ''), ('testbit_with_nops', ''), ('mathbit', ''), ('mathvec', ''), ('not', ''),
                          ('rep', ''), ('ncmp', ''), ('nadd', ''), ('hexprint', ''), ('simple', ''), ('hello_world', ''),
-                         ('ptr', ''), ('func', '')):
+                         ('ptr', ''), ('func', ''), ('print_hex_int', ''), ('calc', '82+8f\n152+23\n134\n6-15\n132-111\n1234+4321\n-67\nf+fff6\n1000b-f\nd0a0c0d0+0e0d000e\nq\n')):
         if test in ('func',):
             continue
-        # if test != 'func':
-        #     continue
+        # if test not in (
+        #         'calc',
+        #         'print_hex_int',
+                # ):
+            # continue
         print(f'running test {test}({_input}):')
-        run_time, ops_executed, output = assemble_and_run([f'tests/{test}.fj'], 64,
+        run_time, ops_executed, output, finish_cause = assemble_and_run([f'tests/{test}.fj'], 64,
                         preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
                         output_file=f'tests/compiled/{test}.blm',
                         defined_input=_input,
@@ -151,9 +161,12 @@ def main():
                         ]),
                         breakpoint_labels=set([
                             # '__to_jump',
+                        ]),
+                        breakpoint_any_labels=set([
+                            # 'gibly',
                         ]))
         # print(output)
-        print(f'finished by looping after {run_time:.3f}s ({ops_executed} ops executed)')
+        print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed} ops executed)')
         print()
 
 

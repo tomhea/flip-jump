@@ -96,7 +96,7 @@
 
 
 
-// ---------- Casting:
+// ---------- Casting to ascii:
 
 
 // Complexity 9phi+20
@@ -116,19 +116,149 @@
 
 
 // Complexity 25phi+92
-.def hex2ascii ascii hex : dec_label hex_label nine4 end
+.def hex2ascii ascii hex : dec_label hex_label nine4 end gibly
     .zero 8 ascii
+    .xor 3 ascii hex
+    gibly:
+    hex
     .cmp 4 hex nine4 dec_label dec_label hex_label
   dec_label:
     .xor ascii+3*dw hex+3*dw
-    .not 2 ascii + 4*dw   // ascii = 0x30
+    .not 2 ascii + 4*dw     // ascii = 0x30
     ;end
   hex_label:
-    .dec 3 hex            // A-F is now 1-6
-    .not ascii + 6*dw     // ascii = 0x40
+    .dec 3 ascii            // A-F is now 1-6
+    .not ascii + 6*dw       // ascii = 0x40
     ;end
   nine4:
     .var 4 9
   end:
-    .xor 3 ascii hex
+.end
+
+
+
+// ---------- Casting from ascii:
+
+
+// Complexity ...
+.def ascii2bin error bin ascii : half_bin return_error good end
+    .zero error
+    .zero bin
+
+    .cmp 7 ascii+dw half_bin return_error good return_error
+
+    return_error:
+        .not error
+        ;end
+
+    good:
+        .xor bin ascii
+        ;end
+
+    half_bin: .var 7 0x30>>1
+
+  end:
+.end
+
+
+// Complexity ...
+.def ascii2dec error dec ascii : half_dec return_error first_good good nine4 end
+    .zero error
+    .zero 4 dec
+
+    .cmp 4 ascii+4*dw half_dec return_error first_good return_error
+  first_good:
+    .cmp 4 ascii nine4 good good return_error
+
+    return_error:
+        .not error
+        ;end
+
+    good:
+        .xor 4 dec ascii
+        ;end
+
+    half_dec: .var 4 0x30>>4
+    nine4:    .var 4 9
+  end:
+.end
+
+
+// Complexity ...
+.def ascii2hex error hex ascii : half_dec half_big_hex half_small_hex return_error try_big_hex try_small_hex dec_first_good hex_first_good dec_good hex_good nine4 two3 end
+    .zero error
+    .zero 4 hex
+
+    .cmp 4 ascii+4*dw half_dec try_big_hex dec_first_good try_big_hex
+
+  try_big_hex:
+    .cmp 5 ascii+3*dw half_big_hex    try_small_hex hex_first_good try_small_hex
+  try_small_hex:
+    .cmp 5 ascii+3*dw half_small_hex  return_error  hex_first_good return_error
+
+  dec_first_good:
+    .cmp 4 ascii nine4 dec_good dec_good return_error
+    dec_good:
+        .xor 4 hex ascii
+        ;end
+
+  hex_first_good:
+    .inc 3 ascii
+    .cmp 3 ascii two3 return_error hex_good hex_good
+    hex_good:
+        .xor 3 hex ascii
+        .not hex+3*dw
+        ;end
+
+    return_error:
+        .not error
+        ;end
+
+    half_dec:       .var 4 0x30>>4
+    half_big_hex:   .var 5 0x40>>3
+    half_small_hex: .var 5 0x60>>3
+    nine4:    .var 4 9
+    two3:     .var 3 2
+  end:
+.end
+
+
+
+// ---------- Print_int
+
+
+// Assumes n divides by 4.
+.def print_hex_uint n x : printed_flag end
+    .zero printed_flag
+    .rep (n/4) i __print_hex_uint_char x+(n/4-1-i)*4*dw printed_flag
+
+    .if1 printed_flag end
+    .output '0'
+    ;end
+
+    printed_flag:   .bit 0
+  end:
+.end
+.def __print_hex_uint_char hex printed_flag : continue ascii end
+    .if1 4 hex continue
+    .if1 printed_flag continue
+    ;end
+
+  continue:
+    .one printed_flag
+    .hex2ascii ascii hex
+    .print ascii
+    ;end
+
+  ascii:    .var 8 0
+  end:
+.end
+
+
+.def print_hex_int n x : do_print
+    .if0 x+(n-1)*dw do_print
+    .output '-'
+    .neg n x
+  do_print:
+    .print_hex_uint n x
 .end
