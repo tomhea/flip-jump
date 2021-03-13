@@ -19,7 +19,7 @@ def smart_int16(num):
 
 
 def stl():
-    return [f'stl/{lib}.fj' for lib in (f'runlib', 'bitlib', 'veclib', 'iolib', 'ptrlib')]
+    return [f'stl/{lib}.fj' for lib in (f'runlib', 'bitlib', 'veclib', 'iolib', 'ptrlib', 'mathlib')]
 
 
 id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -28,11 +28,12 @@ bin_num = r'0[bB][01]+'
 hex_num = r'0[xX][0-9a-fA-F]+'
 dec_num = r'[0-9]+'
 
-char_escape_dict = {'a': 0x7, 'b': 0x8, 'e': 0x1b, 'f': 0xc, 'n': 0xa, 'r': 0xd, 't': 0x9, 'v': 0xb, '\\': 0x5c, "'": 0x27, '"': 0x22, '?': 0x3f}
-char = r'[ -~]|\\[abefnrtv\\\'\"\?]|\\[xX][0-9a-fA-F]{2}'
+char_escape_dict = {'0': 0x0, 'a': 0x7, 'b': 0x8, 'e': 0x1b, 'f': 0xc, 'n': 0xa, 'r': 0xd, 't': 0x9, 'v': 0xb, '\\': 0x5c, "'": 0x27, '"': 0x22, '?': 0x3f}
+escape_chars = ''.join(k for k in char_escape_dict)
+char = fr'[ -~]|\\[{escape_chars}]|\\[xX][0-9a-fA-F]{{2}}'
 
-number_re = rf'({bin_num})|({hex_num})|(\'({char})\')|({dec_num})'
-string_re = fr'\"({char})*\"'
+number_re = fr"({bin_num})|({hex_num})|('({char})')|({dec_num})"
+string_re = fr'"({char})*"'
 
 
 def handle_char(s):
@@ -51,6 +52,11 @@ class Verbose(Enum):
     Run = 5
     Time = 6
     PrintOutput = 7
+
+
+class RunFinish(Enum):
+    Looping = 'looping'
+    Input = 'input'
 
 
 class OpType(Enum):

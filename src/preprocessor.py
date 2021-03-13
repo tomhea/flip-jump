@@ -68,8 +68,8 @@ def resolve_macro_aux(macros, macro_name, args, rep_dict, dollar_count, verbose=
             pseudo_macro_name = (new_label(dollar_count).val, 1)  # just moved outside (before) the for loop
             for i in range(times):
                 rep_dict[i_name] = Expr(i)
-                macros[pseudo_macro_name] = ((params, dollar_params), statements, (op.file, op.line))
-                commands += resolve_macro_aux(macros, pseudo_macro_name, args, rep_dict, dollar_count, verbose, file=op.file, line=op.line)
+                macros[pseudo_macro_name] = (([], []), statements, (op.file, op.line))
+                commands += resolve_macro_aux(macros, pseudo_macro_name, [], rep_dict, dollar_count, verbose, file=op.file, line=op.line)
             if i_name in rep_dict:
                 del rep_dict[i_name]
             else:

@@ -116,21 +116,23 @@
 
 
 // Complexity 25phi+92
-.def hex2ascii ascii hex : dec_label hex_label nine4 end
+.def hex2ascii ascii hex : dec_label hex_label nine4 end gibly
     .zero 8 ascii
+    .xor 3 ascii hex
+    gibly:
+    hex
     .cmp 4 hex nine4 dec_label dec_label hex_label
   dec_label:
     .xor ascii+3*dw hex+3*dw
-    .not 2 ascii + 4*dw   // ascii = 0x30
+    .not 2 ascii + 4*dw     // ascii = 0x30
     ;end
   hex_label:
-    .dec 3 hex            // A-F is now 1-6
-    .not ascii + 6*dw     // ascii = 0x40
+    .dec 3 ascii            // A-F is now 1-6
+    .not ascii + 6*dw       // ascii = 0x40
     ;end
   nine4:
     .var 4 9
   end:
-    .xor 3 ascii hex
 .end
 
 
@@ -160,7 +162,7 @@
 
 
 // Complexity ...
-.def ascii2dec error dec ascii : half_dec return_error first_good good end
+.def ascii2dec error dec ascii : half_dec return_error first_good good nine4 end
     .zero error
     .zero 4 dec
 
@@ -183,7 +185,7 @@
 
 
 // Complexity ...
-.def ascii2hex error hex ascii : half_hex return_error try_hex dec_first_good hex_first_good dec_good hex_good end
+.def ascii2hex error hex ascii : half_dec half_big_hex half_small_hex return_error try_big_hex try_small_hex dec_first_good hex_first_good dec_good hex_good nine4 two3 end
     .zero error
     .zero 4 hex
 
@@ -218,4 +220,45 @@
     nine4:    .var 4 9
     two3:     .var 3 2
   end:
+.end
+
+
+
+// ---------- Print_int
+
+
+// Assumes n divides by 4.
+.def print_hex_uint n x : printed_flag end
+    .zero printed_flag
+    .rep (n/4) i __print_hex_uint_char x+(n/4-1-i)*4*dw printed_flag
+
+    .if1 printed_flag end
+    .output '0'
+    ;end
+
+    printed_flag:   .bit 0
+  end:
+.end
+.def __print_hex_uint_char hex printed_flag : continue ascii end
+    .if1 4 hex continue
+    .if1 printed_flag continue
+    ;end
+
+  continue:
+    .one printed_flag
+    .hex2ascii ascii hex
+    .print ascii
+    ;end
+
+  ascii:    .var 8 0
+  end:
+.end
+
+
+.def print_hex_int n x : do_print
+    .if0 x+(n-1)*dw do_print
+    .output '-'
+    .neg n x
+  do_print:
+    .print_hex_uint n x
 .end

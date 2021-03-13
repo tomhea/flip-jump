@@ -2,26 +2,149 @@
 
 
 loop:
-    .input ascii
-    .ascii2hex error hex ascii
-    .hex2ascii ascii hex
-    .print ascii
-    .if0 error end
-    .output 'x'
-  end:
+    .print 3 prompt_string
+    .getch
+    .check_quit finish before_start
+  before_start:
+    .line_ended loop finish start
+
+  start:
+    .remove_spaces
+    .insert_number a
+
+    .remove_spaces
+    .mov 8 op ascii
+    .line_ended do_print do_print advance
+    advance:    .getch
+
+    .remove_spaces
+    .insert_number b
+
+    .remove_spaces
+    .calc a op b
+    .if1 error err_loop
+
+  do_print:
+    .print_hex_int w a
+    .output '\n'
+
+    .line_ended loop finish finish
+
+  err_loop:
+    .print 8 err_string
+    .line_ended loop finish finish
+
+  finish:
     .loop
 
 
 
-ascii: .var 8 0
-error: .bit 0
-hex:   .var 4 0
+.def remove_spaces : main_loop try2 next_ascii end
+  main_loop:
+    .cmp 8 ascii space1 try2 next_ascii try2
+  try2:
+    .cmp 8 ascii space2 end next_ascii end
+  next_ascii:
+    .getch
+    ;main_loop
 
-plus:  .var 8 '+'
-minus: .var 8 '-'
+  end:
+.end
 
-end_line1: .var 8  0
-end_line2: .var 8 10
+
+
+.def insert_number x : main_loop end
+    .zero w x
+  main_loop:
+    .ascii2hex error hex ascii
+    .if1 error end
+    .shl w 4 x
+    .xor 4 x hex
+    .getch
+    ;main_loop
+
+  end:
+    .zero error
+.end
+
+
+
+.def calc a op b : add try_sub sub bad end
+    .zero error
+
+    .cmp 8 op plus  try_sub add try_sub
+  try_sub:
+    .cmp 8 op minus bad     sub bad
+  add:
+    .add w a b
+    ;end
+  sub:
+    .sub w a b
+    ;end
+  bad:
+    .one error
+  end:
+.end
+
+
+
+.def line_ended true end false : try_end_line_n
+    .if0 8 ascii end
+    .cmp 8 ascii end_line_r try_end_line_n true try_end_line_n
+  try_end_line_n:
+    .cmp 8 ascii end_line_n false true false
+.end
+
+
+
+.def check_quit true false : try_quit1 try_quit3 try_quit4
+    .cmp 8 ascii quit2 try_quit1 true try_quit3
+  try_quit1:
+    .cmp 8 ascii quit1 false true false
+  try_quit3:
+    .cmp 8 ascii quit3 false true try_quit4
+  try_quit4:
+    .cmp 8 ascii quit4 false true false
+.end
+
+
+
+.def getch : _r end
+    .input ascii
+    .print ascii
+    .cmp 8 ascii end_line_r end _r end
+  _r:
+    .output '\n'
+  end:
+.end
+
+
+
+op:     .var 8 0
+ascii:  .var 8 0
+error:  .bit 0
+hex:    .var 4 0
+
+a:  .var w 0
+b:  .var w 0
+
+plus:   .var 8 '+'
+minus:  .var 8 '-'
+
+eof:        .var 8 '\0'
+end_line_r: .var 8 '\r'
+end_line_n: .var 8 '\n'
+space1:     .var 8 ' '
+space2:     .var 8 '\t'
+
+quit1:     .var 8 'Q'
+quit2:     .var 8 'X'
+quit3:     .var 8 'q'
+quit4:     .var 8 'x'
+
+
+err_string:     ..string "\nError!\n"
+prompt_string:  ..string ">  "
 
 .init_ptr
 .stack 20
