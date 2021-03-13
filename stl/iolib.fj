@@ -262,3 +262,26 @@
   do_print:
     .print_hex_uint n x
 .end
+
+
+// Assumes n divides by 4.
+.def print_dec_uint n x : printed_flag end
+    .zero printed_flag
+    .rep (n/4) i __print_hex_uint_char x+(n/4-1-i)*4*dw printed_flag
+
+    .if1 printed_flag end
+    .output '0'
+    ;end
+
+    printed_flag:   .bit 0
+  end:
+.end
+
+
+.def print_dec_int n x : do_print
+    .if0 x+(n-1)*dw do_print
+    .output '-'
+    .neg n x
+  do_print:
+    .print_dec_uint n x
+.end

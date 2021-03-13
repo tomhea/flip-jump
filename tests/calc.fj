@@ -2,20 +2,29 @@
 
 
 loop:
+    .zero hex_used
     .print 3 prompt_string
     .getch
-    .check_quit finish before_start
+    .remove_spaces
+    .check_quit should_quit before_start
+  should_quit:
+    .getch
+    .remove_spaces
+    .line_ended finish finish before_start
   before_start:
-    .line_ended loop finish start
+    .line_ended loop_new_line finish start
+  loop_new_line:
+    .output '\n'
+    ;loop
 
   start:
-    .remove_spaces
     .insert_number a
 
     .remove_spaces
     .mov 8 op ascii
     .line_ended do_print do_print advance
-    advance:    .getch
+  advance:
+    .getch
 
     .remove_spaces
     .insert_number b
@@ -24,13 +33,23 @@ loop:
     .calc a op b
     .if1 error err_loop
 
+    .zero should_finish
+    .line_ended do_print mark_finish error
+  mark_finish:
+    .not should_finish
+
   do_print:
-    .print_hex_int w a
+    .output '\n'
+    .print_int a
     .output '\n'
 
-    .line_ended loop finish finish
+    .if should_finish loop finish
 
+  err_getch:
+    .getch
   err_loop:
+    .line_ended print_err print_err err_getch
+  print_err:
     .print 8 err_string
     .line_ended loop finish finish
 
@@ -53,15 +72,33 @@ loop:
 
 
 
-.def insert_number x : main_loop end
+.def insert_number x : check2 before_hex hex_loop before_dec dec_loop end
     .zero w x
-  main_loop:
+    .cmp 8 ascii hex_prefix1 check2   before_hex check2
+  check2:
+    .cmp 8 ascii hex_prefix2 dec_loop before_hex dec_loop
+
+  before_hex:
+    .getch
+    .one hex_used
+  hex_loop:
     .ascii2hex error hex ascii
     .if1 error end
     .shl w 4 x
     .xor 4 x hex
     .getch
-    ;main_loop
+    ;hex_loop
+
+  before_dec:
+    .zero w-4 t+4*dw
+  dec_loop:
+    .ascii2dec error dec ascii
+    .if1 error end
+    .mov 4 t dec
+    .mul10 w x
+    .add w x t
+    .getch
+    ;dec_loop
 
   end:
     .zero error
@@ -97,24 +134,34 @@ loop:
 
 
 
-.def check_quit true false : try_quit1 try_quit3 try_quit4
-    .cmp 8 ascii quit2 try_quit1 true try_quit3
+.def check_quit true false : try_quit1
+    .cmp 8 ascii quit2 try_quit1 true false
   try_quit1:
     .cmp 8 ascii quit1 false true false
-  try_quit3:
-    .cmp 8 ascii quit3 false true try_quit4
-  try_quit4:
-    .cmp 8 ascii quit4 false true false
 .end
 
 
 
-.def getch : _r end
+// does not print new-line
+.def getch : _r check_n do_print end
     .input ascii
+    .cmp 8 ascii end_line_r check_n  end check_n
+  check_n:
+    .cmp 8 ascii end_line_n do_print end do_print
+  do_print:
     .print ascii
-    .cmp 8 ascii end_line_r end _r end
-  _r:
-    .output '\n'
+  end:
+.end
+
+
+
+.def print_int x : print_hex print_dec end
+    .if1 hex_used print_hex
+    .print_dec_int w x
+    ;end
+  print_hex:
+    .print_hex_int w x
+
   end:
 .end
 
@@ -124,12 +171,19 @@ op:     .var 8 0
 ascii:  .var 8 0
 error:  .bit 0
 hex:    .var 4 0
+dec:    .var 4 0
+should_finish:  .bit 0
+hex_used:       .bit 0
 
 a:  .var w 0
 b:  .var w 0
+t:  .var w 0
 
 plus:   .var 8 '+'
 minus:  .var 8 '-'
+
+hex_prefix1:.var 8 'x'
+hex_prefix2:.var 8 'X'
 
 eof:        .var 8 '\0'
 end_line_r: .var 8 '\r'
@@ -138,9 +192,7 @@ space1:     .var 8 ' '
 space2:     .var 8 '\t'
 
 quit1:     .var 8 'Q'
-quit2:     .var 8 'X'
-quit3:     .var 8 'q'
-quit4:     .var 8 'x'
+quit2:     .var 8 'q'
 
 
 err_string:     ..string "\nError!\n"
