@@ -4,18 +4,26 @@
 loop:
     .print 3 prompt_string
     .getch
-    .check_quit finish before_start
+    .remove_spaces
+    .check_quit should_quit before_start
+  should_quit:
+    .getch
+    .remove_spaces
+    .line_ended finish finish before_start
   before_start:
-    .line_ended loop finish start
+    .line_ended loop_new_line finish start
+  loop_new_line:
+    .output '\n'
+    ;loop
 
   start:
-    .remove_spaces
     .insert_number a
 
     .remove_spaces
     .mov 8 op ascii
     .line_ended do_print do_print advance
-    advance:    .getch
+  advance:
+    .getch
 
     .remove_spaces
     .insert_number b
@@ -24,13 +32,23 @@ loop:
     .calc a op b
     .if1 error err_loop
 
+    .zero should_finish
+    .line_ended do_print mark_finish error
+  mark_finish:
+    .not should_finish
+
   do_print:
+    .output '\n'
     .print_hex_int w a
     .output '\n'
 
-    .line_ended loop finish finish
+    .if should_finish loop finish
 
+  err_getch:
+    .getch
   err_loop:
+    .line_ended print_err print_err err_getch
+  print_err:
     .print 8 err_string
     .line_ended loop finish finish
 
@@ -109,12 +127,14 @@ loop:
 
 
 
-.def getch : _r end
+// does not print new-line
+.def getch : _r check_n do_print end
     .input ascii
+    .cmp 8 ascii end_line_r check_n  end check_n
+  check_n:
+    .cmp 8 ascii end_line_n do_print end do_print
+  do_print:
     .print ascii
-    .cmp 8 ascii end_line_r end _r end
-  _r:
-    .output '\n'
   end:
 .end
 
@@ -124,6 +144,7 @@ op:     .var 8 0
 ascii:  .var 8 0
 error:  .bit 0
 hex:    .var 4 0
+should_finish:  .bit 0
 
 a:  .var w 0
 b:  .var w 0

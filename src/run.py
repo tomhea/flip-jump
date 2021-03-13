@@ -142,20 +142,20 @@ def main():
                          ('testbit', ''), ('testbit_with_nops', ''), ('mathbit', ''), ('mathvec', ''), ('not', ''),
                          ('rep', ''), ('ncmp', ''), ('nadd', ''), ('hexprint', ''), ('simple', ''), ('hello_world', ''),
                          ('ptr', ''), ('func', ''), ('print_hex_int', ''), ('calc', '82+8f\n152+23\n134\n6-15\n132-111\n1234+4321\n-67\nf+fff6\n1000b-f\nd0a0c0d0+0e0d000e\nq\n')):
-        if test in ('func',):
+        # if test in ('func',):
+        #     continue
+        if test not in (
+                'calc',
+                # 'print_hex_int',
+                ):
             continue
-        # if test not in (
-        #         'calc',
-        #         'print_hex_int',
-                # ):
-            # continue
         print(f'running test {test}({_input}):')
         run_time, ops_executed, output, finish_cause = assemble_and_run([f'tests/{test}.fj'], 64,
                         preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
                         output_file=f'tests/compiled/{test}.blm',
-                        defined_input=_input,
+                        defined_input=None,
                         verbose=set([
-                            # Verbose.Time,
+                            Verbose.Time,
                             Verbose.PrintOutput,
                             # Verbose.Run,
                         ]),
