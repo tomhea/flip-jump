@@ -2,8 +2,10 @@ import blm
 from preprocessor import resolve_macros
 from tempfile import mkstemp
 import os
+from os.path import isfile, getmtime
 from defs import *
 from parser import parse_macro_tree
+import pickle
 
 
 def try_int(op, expr):
@@ -113,17 +115,23 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   
     writer.write_to_file(output_file)
 
 
-def assemble(input_files, output_file, w, preprocessed_file=None, use_stl=True, verbose=set()):
+def assemble(input_files, output_file, w, preprocessed_file=None, debugging_file=None, use_stl=True, verbose=set()):
     if w not in (8, 16, 32, 64):
         error(f'The width ({w}) must be one of (8, 16, 32, 64).')
+
+    if use_stl:
+        input_files = stl() + input_files
+
+    # if assembled files are up to date
+    if debugging_file and isfile(output_file) and isfile(debugging_file):
+        if max(getmtime(infile) for infile in input_files) < min(getmtime(outfile) for outfile in (debugging_file, output_file)):
+            with open(debugging_file, 'rb') as f:
+                return pickle.load(f)
 
     temp_preprocessed_file, temp_fd = False, 0
     if preprocessed_file is None:
         temp_fd, preprocessed_file = mkstemp()
         temp_preprocessed_file = True
-
-    if use_stl:
-        input_files = stl() + input_files
 
     start_time = time()
     macros = parse_macro_tree(input_files, w, verbose=Verbose.Parse in verbose)
@@ -147,6 +155,12 @@ def assemble(input_files, output_file, w, preprocessed_file=None, use_stl=True, 
 
     if temp_preprocessed_file:
         os.close(temp_fd)
+
+    labels = {label: labels[label].val for label in labels}
+
+    if debugging_file:
+        with open(debugging_file, 'wb') as f:
+            pickle.dump(labels, f, pickle.HIGHEST_PROTOCOL)
 
     return labels
 
