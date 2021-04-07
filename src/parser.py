@@ -262,7 +262,7 @@ class CalcParser(Parser):
 
     @_('ID "=" expr')
     def statement(self, p):
-        if not p.expr.eval(self.defs, curr_file, p.lineno):
+        if not p.expr.expr.eval(self.defs, curr_file, p.lineno):     #TODO double-expr
             self.defs[p.ID] = p.expr
             return None
         error(f'Can\'t evaluate expression at file {curr_file} line {p.lineno}:  {str(p.expr)}.')
@@ -288,55 +288,84 @@ class CalcParser(Parser):
 
     @_('_expr')
     def expr(self, p):
-        return p._expr[0]
+        e, _, dicts = p._expr
+        _dict = {}
+        for d in dicts:
+            for k in d:
+                _dict[k] = d[k]
+        return DictExpr(e, _dict)
 
     @_('_expr "+" _expr')
     def _expr(self, p):
-        return Expr((add, (p._expr0[0], p._expr1[0]))), p.lineno
+        e0, _, d0 = p._expr0
+        e1, _, d1 = p._expr1
+        return Expr((add, (e0, e1))), p.lineno, d0+d1
 
     @_('_expr "-" _expr')
     def _expr(self, p):
-        return Expr((sub, (p._expr0[0], p._expr1[0]))), p.lineno
+        e0, _, d0 = p._expr0
+        e1, _, d1 = p._expr1
+        return Expr((sub, (e0, e1))), p.lineno, d0 + d1
 
     @_('_expr "*" _expr')
     def _expr(self, p):
-        return Expr((mul, (p._expr0[0], p._expr1[0]))), p.lineno
+        e0, _, d0 = p._expr0
+        e1, _, d1 = p._expr1
+        return Expr((mul, (e0, e1))), p.lineno, d0 + d1
 
     @_('"#" _expr')
     def _expr(self, p):
-        return Expr((lambda x: x.bit_length(), (p._expr[0],))), p.lineno
+        e, l, d = p._expr
+        return Expr((lambda x: x.bit_length(), (e,))), p.lineno, d
 
     @_('_expr "/" _expr')
     def _expr(self, p):
-        return Expr((floordiv, (p._expr0[0], p._expr1[0]))), p.lineno
+        e0, _, d0 = p._expr0
+        e1, _, d1 = p._expr1
+        return Expr((floordiv, (e0, e1))), p.lineno, d0 + d1
 
     @_('_expr "%" _expr')
     def _expr(self, p):
-        return Expr((mod, (p._expr0[0], p._expr1[0]))), p.lineno
+        e0, _, d0 = p._expr0
+        e1, _, d1 = p._expr1
+        return Expr((mod, (e0, e1))), p.lineno, d0 + d1
 
     @_('_expr SHL _expr')
     def _expr(self, p):
-        return Expr((lshift, (p._expr0[0], p._expr1[0]))), p.lineno
+        e0, _, d0 = p._expr0
+        e1, _, d1 = p._expr1
+        return Expr((lshift, (e0, e1))), p.lineno, d0 + d1
 
     @_('_expr SHR _expr')
     def _expr(self, p):
-        return Expr((rshift, (p._expr0[0], p._expr1[0]))), p.lineno
+        e0, _, d0 = p._expr0
+        e1, _, d1 = p._expr1
+        return Expr((rshift, (e0, e1))), p.lineno, d0 + d1
 
     @_('_expr "^" _expr')
     def _expr(self, p):
-        return Expr((xor, (p._expr0[0], p._expr1[0]))), p.lineno
+        e0, _, d0 = p._expr0
+        e1, _, d1 = p._expr1
+        return Expr((xor, (e0, e1))), p.lineno, d0 + d1
 
     @_('_expr "|" _expr')
     def _expr(self, p):
-        return Expr((or_, (p._expr0[0], p._expr1[0]))), p.lineno
+        e0, _, d0 = p._expr0
+        e1, _, d1 = p._expr1
+        return Expr((or_, (e0, e1))), p.lineno, d0 + d1
 
     @_('_expr "&" _expr')
     def _expr(self, p):
-        return Expr((and_, (p._expr0[0], p._expr1[0]))), p.lineno
+        e0, _, d0 = p._expr0
+        e1, _, d1 = p._expr1
+        return Expr((and_, (e0, e1))), p.lineno, d0 + d1
 
     @_('_expr "?" _expr ":" _expr')
     def _expr(self, p):
-        return Expr((lambda a, b, c: b if a else c, (p._expr0[0], p._expr1[0], p._expr2[0]))), p.lineno
+        e0, _, d0 = p._expr0
+        e1, _, d1 = p._expr1
+        e2, _, d2 = p._expr2
+        return Expr((lambda a, b, c: b if a else c, (e0, e1, e2))), p.lineno, d0+d1+d2
 
     @_('"(" _expr ")"')
     def _expr(self, p):
@@ -344,17 +373,18 @@ class CalcParser(Parser):
 
     @_('NUMBER')
     def _expr(self, p):
-        return Expr(p.NUMBER), p.lineno
+        return Expr(p.NUMBER), p.lineno, [{}]
 
     @_('"$"')
     def _expr(self, p):
-        return Expr('$'), p.lineno
+        return Expr('$'), p.lineno, [{}]
 
     @_('ID')
     def _expr(self, p):
         if p.ID in self.defs:
-            return self.defs[p.ID], p.lineno
-        return Expr(p.ID), p.lineno
+            return self.defs[p.ID], p.lineno, [{}]
+        e = Expr(p.ID)
+        return e, p.lineno, [{p.ID: e}]
 
 
 def parse_macro_tree(input_files, w, verbose=False):

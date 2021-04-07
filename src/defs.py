@@ -102,6 +102,32 @@ class Op:
 #         return f'{base_hex}[{hex(self.index)[2:]}]'
 
 
+def merge_dicts(d1, d2):
+    if len(d1) < len(d2):
+        d2, d1 = d1, d2
+    for k in d2:
+        d1[k] = d2[k]
+    return d1
+
+
+class DictExpr:
+    def __init__(self, expr, _dict):
+        self.expr = expr
+        self.dict = _dict
+
+    def eval(self, id_dict):
+        for k in id_dict:
+            if k in self.dict:
+                v, d = id_dict[k]
+                self.dict[k].val = v
+                if d:
+                    self.dict = merge_dicts(self.dict, d)
+
+    def eval(self, id_dict, file, line):
+        self.expr.eval(id_dict, file, line)
+        return self.expr
+
+
 class Expr:
     def __init__(self, expr):
         self.val = expr
@@ -111,7 +137,7 @@ class Expr:
     def eval(self, id_dict, file, line):
         if self.is_tuple():
             op, exps = self.val
-            res = [e.eval(id_dict, file, line) for e in exps]
+            res = [e.eval(id_dict, file, line) for e in exps]  #TODO double-expr
             if any(res):
                 return sum(res, start=[])
             else:
@@ -154,6 +180,15 @@ class Expr:
         if self.is_int():
             return hex(self.val)[2:]
         error(f'bad expression: {self.val} (of type {type(self.val)})')
+
+
+def dict_eval_all(op, id_dict):
+    for expr in op.data:
+        if type(expr) is DictExpr:
+            expr.eval(id_dict)
+    if op.type == OpType.Rep:
+        for _op in op.data[2]:
+            dict_eval_all(_op, id_dict)
 
 
 def eval_all(op, id_dict={}):
