@@ -154,7 +154,7 @@ def main():
                         preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
                         debugging_file=f'tests/compiled/{test}.fj_debug',
                         output_file=f'tests/compiled/{test}.blm',
-                        defined_input=_input,
+                        defined_input=None,
                         verbose=set([
                             Verbose.Time,
                             Verbose.PrintOutput,

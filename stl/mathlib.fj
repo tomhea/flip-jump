@@ -23,3 +23,51 @@
     twice:  .var n 0
   end:
 .end
+
+
+//Complexity n^2(13phi+47)
+.def mul_loop n dst src : start after_add src_copy res end
+    .zero n res
+    .mov n src_copy src
+
+  start:
+    .if0 src after_add
+    .add n res dst
+  after_add:
+    .shl n dst
+    .shr n src
+    .if1 n dst start
+    ;end
+
+  src_copy: .var n 0
+  res: .var n 0
+  end:
+    .mov n src src_copy
+    .mov n dst res
+.end
+
+
+//Complexity n^2(8phi+33)
+.def mul n dst src : shifted_src res end
+    .zero n res
+    .mov n shifted_src+dw*n src
+    .rep n i __mul_add_if n dst+i*dw res shifted_src+(n-i)*dw
+    .mov n dst res
+    ;end
+
+    shifted_src: .var 2*n 0
+    res: .var n 0
+  end:
+.end
+.def __mul_add_if n flag dst src: end
+    .if0 flag end
+    .add n dst src
+  end:
+.end
+
+
+
+// ---------- Divide:
+
+
+

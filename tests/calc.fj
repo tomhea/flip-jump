@@ -106,17 +106,28 @@ loop:
 
 
 
-.def calc a op b : add try_sub sub bad end
+.def calc a op b : add try_add try_sub try_mul sub bad end
     .zero error
 
+  try_add:
     .cmp 8 op plus  try_sub add try_sub
   try_sub:
-    .cmp 8 op minus bad     sub bad
+    .cmp 8 op minus try_mul sub try_mul
+  try_mul:
+    .cmp 8 op asterisk try_mul_loop mul try_mul_loop
+  try_mul_loop:
+    .cmp 8 op roof bad mul_loop bad
   add:
     .add w a b
     ;end
   sub:
     .sub w a b
+    ;end
+  mul:
+    .mul w a b
+    ;end
+  mul_loop:
+    .mul_loop w a b
     ;end
   bad:
     .one error
@@ -181,6 +192,10 @@ t:  .var w 0
 
 plus:   .var 8 '+'
 minus:  .var 8 '-'
+asterisk:   .var 8 '*'
+roof:   .var 8 '^'
+slash:  .var 8 '/'
+percentage: .var 8 '%'
 
 hex_prefix1:.var 8 'x'
 hex_prefix2:.var 8 'X'
