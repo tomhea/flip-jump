@@ -43,6 +43,10 @@
     [dw] temp + ((value ? 1 : 0) << dbit)
 .end
 
+.def bit
+    .bit 0
+.end
+
 
 
 // ---------- Memory Manipulation:

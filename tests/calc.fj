@@ -30,13 +30,15 @@ loop:
     .insert_number b
 
     .remove_spaces
+
+    .zero should_finish
+    .line_ended do_calc mark_finish err_loop
+  mark_finish:
+    .not should_finish
+  do_calc:
     .calc a op b
     .if1 error err_loop
 
-    .zero should_finish
-    .line_ended do_print mark_finish error
-  mark_finish:
-    .not should_finish
 
   do_print:
     .output '\n'
@@ -72,11 +74,17 @@ loop:
 
 
 
-.def insert_number x : check2 before_hex hex_loop before_dec dec_loop end
+.def insert_number x : check1 set_minus check2 before_hex hex_loop before_dec dec_loop minus_flag end after_minus
     .zero w x
-    .cmp 8 ascii hex_prefix1 check2   before_hex check2
+    .zero minus_flag
+    .cmp 8 ascii minus check1 set_minus check1
+  set_minus:
+    .getch
+    .not minus_flag
+  check1:
+    .cmp 8 ascii hex_prefix1 check2     before_hex check2
   check2:
-    .cmp 8 ascii hex_prefix2 dec_loop before_hex dec_loop
+    .cmp 8 ascii hex_prefix2 before_dec before_hex before_dec
 
   before_hex:
     .getch
@@ -100,23 +108,33 @@ loop:
     .getch
     ;dec_loop
 
+    minus_flag: .bit
   end:
+    .if0 minus_flag after_minus
+    .neg w x
+  after_minus:
     .zero error
 .end
 
 
 
-.def calc a op b : add try_add try_sub try_mul sub bad end
+.def calc a op b : try_add try_sub try_mul try_mul_loop try_div try_mod add sub mul mul_loop div_mod div mod bad div_mod_flag r q end
     .zero error
 
   try_add:
-    .cmp 8 op plus  try_sub add try_sub
+    .cmp 8 op plus     try_sub add try_sub
   try_sub:
-    .cmp 8 op minus try_mul sub try_mul
+    .cmp 8 op minus    try_mul sub try_mul
   try_mul:
     .cmp 8 op asterisk try_mul_loop mul try_mul_loop
   try_mul_loop:
-    .cmp 8 op roof bad mul_loop bad
+    .cmp 8 op roof     try_div mul_loop try_div
+  try_div:
+    .zero div_mod_flag
+    .cmp 8 op slash    try_mod div_mod try_mod
+  try_mod:
+    .not div_mod_flag
+    .cmp 8 op percentage bad div_mod bad
   add:
     .add w a b
     ;end
@@ -129,8 +147,22 @@ loop:
   mul_loop:
     .mul_loop w a b
     ;end
+  div_mod:
+    .idiv w a b q r
+    .if div_mod_flag div mod
+  div:
+    .mov w a q
+    ;end
+  mod:
+    .mov w a r
+    ;end
   bad:
     .one error
+    ;end
+
+    div_mod_flag: .bit
+    r: .var w
+    q: .var w
   end:
 .end
 

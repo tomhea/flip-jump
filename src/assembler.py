@@ -125,6 +125,8 @@ def assemble(input_files, output_file, w, preprocessed_file=None, debugging_file
     # if assembled files are up to date
     if debugging_file and isfile(output_file) and isfile(debugging_file):
         if max(getmtime(infile) for infile in input_files) < min(getmtime(outfile) for outfile in (debugging_file, output_file)):
+            if Verbose.Time in verbose:
+                print(f'  loading assembled data...')
             with open(debugging_file, 'rb') as f:
                 return pickle.load(f)
 
