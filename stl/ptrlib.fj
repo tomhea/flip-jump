@@ -119,9 +119,7 @@
 .end
 
 .def naked_xor_from_ptr dst ptr : base_jump_label cleanup
-//    .output '1'
     .ptr_flip_by_2nd_word ptr base_jump_label
-//    .output '2'
 
     .ptr_jump ptr
     ..pad 2
@@ -130,9 +128,7 @@
     dst
 
   cleanup:
-//    .output '3'
     .ptr_flip_by_2nd_word ptr base_jump_label
-//    .output '4'
 
 .end
 

@@ -8,9 +8,6 @@
 // An opcode is:  F;L  F  ;L  or just  ;  (no F => F=temp;  no L => L=next)
 
 
-// TODO - implement pointer dereference (read and write)
-
-
 
 // ---------- Input:
 
@@ -140,7 +137,7 @@
 // ---------- Casting from ascii:
 
 
-// Complexity ...
+// Complexity: 17phi+63
 .def ascii2bin error bin ascii : half_bin return_error good end
     .zero error
     .zero bin
@@ -161,7 +158,7 @@
 .end
 
 
-// Complexity ...
+// Complexity: 25phi+83
 .def ascii2dec error dec ascii : half_dec return_error first_good good nine4 end
     .zero error
     .zero 4 dec
@@ -184,7 +181,7 @@
 .end
 
 
-// Complexity ...
+// Complexity: 48phi+184
 .def ascii2hex error hex ascii : half_dec half_big_hex half_small_hex return_error try_big_hex try_small_hex dec_first_good hex_first_good dec_good hex_good nine4 two3 end
     .zero error
     .zero 4 hex
@@ -224,10 +221,11 @@
 
 
 
-// ---------- Print_int
+// ---------- Print Hex Int
 
 
 // Assumes n divides by 4.
+// Complexity: n(10phi+39)
 .def print_hex_uint n x : printed_flag end
     .zero printed_flag
     .rep (n/4) i __print_hex_uint_char x+(n/4-1-i)*4*dw printed_flag
@@ -239,6 +237,7 @@
     printed_flag:   .bit 0
   end:
 .end
+//Comp: 39phi+155
 .def __print_hex_uint_char hex printed_flag : continue ascii end
     .if1 4 hex continue
     .if1 printed_flag continue
@@ -264,16 +263,71 @@
 .end
 
 
-// Assumes n divides by 4.
-.def print_dec_uint n x : printed_flag end
+
+// ---------- Print Dec Int
+
+
+// Complexity: n^2(8phi+29) + nb(17phi+74)
+// Space Complexity: ~O(130n^2)
+.def print_dec_uint n x : printed_flag curr_ten tens val r end
     .zero printed_flag
-    .rep (n/4) i __print_hex_uint_char x+(n/4-1-i)*4*dw printed_flag
+
+    .zero n+4 curr_ten
+    .not curr_ten
+
+    .zero n+7 val
+    .xor n val x
+
+    .rep (n*28/93+2) i __print_dec_uint_put_pow_ten n+4 tens+i*(n+4)*dw curr_ten val
+
+    .rep (n*28/93+2) i __print_dec_uint_char n+4 val tens+(n*28/93+2-1-i)*(n+4)*dw printed_flag
 
     .if1 printed_flag end
     .output '0'
     ;end
 
-    printed_flag:   .bit 0
+    printed_flag:   .bit
+    curr_ten:       .var n+4
+    tens:           .var (n*28/93+2)*(n+4)      // 28/93 is very close from above to log10(2)
+    val:            .var n+7
+    r:              .var n
+  end:
+.end
+//Comp: n(18phi+60)
+.def __print_dec_uint_put_pow_ten n dst curr_ten top : put end
+    .zero n dst
+    .cmp n curr_ten top put put end
+  put:
+    .xor n dst curr_ten
+    .mul10 n curr_ten
+  end:
+.end
+//Comp: n(9phi+36) + 7b*(8phi+35)
+.def __print_dec_uint_char n v curr_ten printed_flag : do_print dec ascii end
+    .if0 n curr_ten end
+    .zero 4 dec
+    .rep 4 i __print_dec_uint_sub_curr_ten n v curr_ten dec 3-i
+
+    .if1 4 dec do_print
+    .if1 printed_flag do_print
+    ;end
+
+  do_print:
+    .one printed_flag
+    .dec2ascii ascii dec
+    .print ascii
+    ;end
+
+  dec:      .var 4
+  ascii:    .var 8
+  end:
+.end
+//Comp: worst: n(2phi+8) + 3.3b*(8phi+35),  avg: n(2phi+8) + 1.7b*(8phi+35)
+.def __print_dec_uint_sub_curr_ten n v curr_ten dec index : do_sub end
+    .cmp n v+index*dw curr_ten end do_sub do_sub
+  do_sub:
+    .sub n v+index*dw curr_ten
+    .not dec+index*dw
   end:
 .end
 

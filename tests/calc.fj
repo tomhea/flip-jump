@@ -149,6 +149,7 @@ loop:
     ;end
   div_mod:
     .idiv w a b q r
+    //.idiv_loop w a b q r
     .if div_mod_flag div mod
   div:
     .mov w a q
