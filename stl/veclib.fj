@@ -17,6 +17,9 @@
     .rep n i bit (value>>i)&1
 .end
 
+.def var n
+    .var n 0
+.end
 
 
 // ---------- Memory Manipulation:
@@ -193,7 +196,7 @@
 
 
 // Complexity: n(8phi+35)
-.def sub n dst src
+.def sub n dst src : carry
     .not n src
     .one carry
     .rep n i add1 dst+i*dw src+i*dw carry

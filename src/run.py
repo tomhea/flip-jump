@@ -104,14 +104,14 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
         ip = new_ip     # Jump!
 
 
-def assemble_and_run(input_files, w, preprocessed_file=None, output_file=None, defined_input=None, verbose=set(),
+def assemble_and_run(input_files, w, preprocessed_file=None, debugging_file=None, output_file=None, defined_input=None, verbose=set(),
                      breakpoint_addresses=set(), breakpoint_labels=set(), breakpoint_any_labels=set()):
     temp_output_file, temp_fd = False, 0
     if output_file is None:
         temp_fd, output_file = mkstemp()
         temp_output_file = True
 
-    labels = assemble(input_files, output_file, w, preprocessed_file=preprocessed_file, verbose=verbose)
+    labels = assemble(input_files, output_file, w, preprocessed_file=preprocessed_file, debugging_file=debugging_file, verbose=verbose)
 
     # Handle breakpoints
     breakpoint_map = {ba: hex(ba) for ba in breakpoint_addresses}
@@ -119,13 +119,13 @@ def assemble_and_run(input_files, w, preprocessed_file=None, output_file=None, d
         if bl not in labels:
             print(f'Warning:  Breakpoint label {bl} can\'t be found!')
         else:
-            breakpoint_map[labels[bl].val] = bl
+            breakpoint_map[labels[bl]] = bl
     for bal in breakpoint_any_labels:
         for label in labels:
             if bal in label:
-                breakpoint_map[labels[label].val] = f'{bal}@{label}'
+                breakpoint_map[labels[label]] = f'{bal}@{label}'
 
-    opposite_labels = {labels[label].val: label for label in labels}
+    opposite_labels = {labels[label]: label for label in labels}
 
     run_time, ops_executed, output, finish_cause = run(output_file, defined_input=defined_input, verbose=Verbose.Run in verbose,
                                          time_verbose=Verbose.Time in verbose, output_verbose=Verbose.PrintOutput,
@@ -141,17 +141,18 @@ def main():
     for test, _input in (('cat', "Hello World!\0"), ('ncat', ''.join(chr(0xff-ord(c)) for c in 'Flip Jump Rocks!\0')),
                          ('testbit', ''), ('testbit_with_nops', ''), ('mathbit', ''), ('mathvec', ''), ('not', ''),
                          ('rep', ''), ('ncmp', ''), ('nadd', ''), ('hexprint', ''), ('simple', ''), ('hello_world', ''),
-                         ('ptr', ''), ('func', ''), ('print_hex_int', ''), ('calc', '82+8f\n152+23\n134\n6-15\n132-111\n1234+4321\n-67\nf+fff6\n1000b-f\nd0a0c0d0+0e0d000e\nq\n')):
-        # if test in ('func',):
+                         ('ptr', ''), ('func', ''), ('print_hex_int', ''), ('calc', 'x82+x8f\nx152+x23\nx134\nx6-x15\nx132-x111\nx1234+x4321\n-x67\nxf+xfff6\nx1000b-xf\nxd0a0c0d0+x0e0d000e\nq\n')):
+        # if test in ('func', 'calc'):
         #     continue
         if test not in (
                 'calc',
-                # 'print_hex_int',
+        #         'print_hex_int',
                 ):
             continue
         print(f'running test {test}({_input}):')
         run_time, ops_executed, output, finish_cause = assemble_and_run([f'tests/{test}.fj'], 64,
                         preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
+                        debugging_file=f'tests/compiled/{test}.fj_debug',
                         output_file=f'tests/compiled/{test}.blm',
                         defined_input=None,
                         verbose=set([
