@@ -2,7 +2,10 @@ from assembler import assemble
 import blm
 from readchar import readchar
 from tempfile import mkstemp
-import os
+from os import mkdir, close
+
+from os.path import isfile, abspath, isdir
+import argparse
 from defs import *
 
 
@@ -104,14 +107,19 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
         ip = new_ip     # Jump!
 
 
-def assemble_and_run(input_files, w, preprocessed_file=None, debugging_file=None, output_file=None, defined_input=None, verbose=set(),
+def assemble_and_run(input_files, w, try_cached=True, use_stl=True, preprocessed_file=None, debugging_file=None,
+                     output_file=None, defined_input=None, verbose=set(), only_run=False,
                      breakpoint_addresses=set(), breakpoint_labels=set(), breakpoint_any_labels=set()):
     temp_output_file, temp_fd = False, 0
     if output_file is None:
         temp_fd, output_file = mkstemp()
         temp_output_file = True
 
-    labels = assemble(input_files, output_file, w, preprocessed_file=preprocessed_file, debugging_file=debugging_file, verbose=verbose)
+    labels = assemble(input_files, output_file, w, try_cached=try_cached, use_stl=use_stl, only_cache=only_run,
+                      preprocessed_file=preprocessed_file, debugging_file=debugging_file, verbose=verbose)
+
+    if not labels and (breakpoint_labels or breakpoint_addresses or breakpoint_any_labels):
+        print(f'Warning:  debugging labels can\'t be found!')
 
     # Handle breakpoints
     breakpoint_map = {ba: hex(ba) for ba in breakpoint_addresses}
@@ -132,12 +140,112 @@ def assemble_and_run(input_files, w, preprocessed_file=None, debugging_file=None
                                          breakpoints=breakpoint_map, labels_dict=opposite_labels)
 
     if temp_output_file:
-        os.close(temp_fd)
+        close(temp_fd)
 
     return run_time, ops_executed, output, finish_cause
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Assemble and Run FlipJump programs.')
+    parser.add_argument('file', help="the FlipJump file.", nargs='+')
+    action_group = parser.add_mutually_exclusive_group()
+    action_group.add_argument('-a', '--assemble', help="only assembles the (.fj) file", action='store_true')
+    action_group.add_argument('-r', '--run', help="only runs the (.blm) file", action='store_true')
+    parser.add_argument('-v', '--verbose', help="show assemble & run times", action='store_true')
+    parser.add_argument('-t', '--trace', help="trace the running opcodes.", action='store_true')
+    parser.add_argument('-w', '--width', help="specify memory-width. 64 by default",
+                        type=int, default=64)
+    parser.add_argument('-b', '--breakpoint', help="pause when reaching this label",
+                        default=[], action='append')
+    parser.add_argument('-B', '--any_breakpoint', help="pause when reaching any label containing this",
+                        default=[], action='append')
+    parser.add_argument('--no_cache', help="reassemble the file, don't use any cached results.", action='store_true')
+    parser.add_argument('--no_stl', help="don't assemble/link the standard library files.", action='store_true')
+    args = parser.parse_args()
+
+    if args.width < 8:
+        print('error: w should be at least 8.')
+        exit(1)
+    if args.width & (args.width-1):
+        print('error: w should be a power of 2.')
+        exit(1)
+
+    for file in args.file:
+        if not isfile(abspath(file)):
+            print(f'error: file {file} does not exist.')
+            exit(1)
+
+    file = abspath(args.file[0])
+
+    if file.endswith('.fj'):
+        fj_ext = True
+    elif file.endswith('.blm'):
+        fj_ext = False
+    else:
+        print(f'error: bad file extension.')
+        exit(1)
+
+    base_file_name = file.rsplit('.', 1)[0]
+    base_dir_name, file_name = base_file_name.rsplit('/', 1)
+
+    base_fj_dir = base_dir_name + '/__fj_compiled__'
+
+    if len(args.file) == 1 and abspath(args.file[0]).endswith('.blm'):
+        base_fj_dir = base_dir_name
+    elif not isdir(base_fj_dir):
+        mkdir(base_fj_dir)
+
+    preprocessed_file = f'{base_fj_dir}/{file_name}__no_macros.fj'
+    debugging_file = f'{base_fj_dir}/{file_name}.fj_debug'
+    output_file = f'{base_fj_dir}/{file_name}.blm'
+
+    verbose_set = {Verbose.PrintOutput}
+    if args.verbose:
+        verbose_set.add(Verbose.Time)
+    if args.trace:
+        verbose_set.add(Verbose.Run)
+
+    breakpoint_set = set(args.breakpoint)
+    breakpoint_any_set = set(args.any_breakpoint)
+
+    if args.assemble and not args.run:
+        for file in args.file:
+            file = abspath(file)
+            if not file.endswith('.fj'):
+                print(f'error: file {file} is not a .fj file.')
+                exit(1)
+        assemble(args.file, output_file, args.width, try_cached=not args.no_cache, use_stl=not args.no_stl,
+                 preprocessed_file=preprocessed_file, debugging_file=debugging_file, verbose=verbose_set)
+        exit()
+    elif args.run and not args.assemble:
+        if len(args.file) != 1:
+            print('specify just one file to run')
+        file = abspath(args.file[0])
+        if not file.endswith('.blm'):
+            print(f'error: file {file} is not a .blm file.')
+            exit(1)
+        args.file = []
+        output_file = file
+
+    run_time, ops_executed, output, finish_cause = \
+        assemble_and_run(args.file, args.width,
+                         try_cached=not args.no_cache,
+                         use_stl=not args.no_stl,
+                         only_run=args.run and not args.assemble,
+                         preprocessed_file=preprocessed_file,
+                         debugging_file=debugging_file,
+                         output_file=output_file,
+                         defined_input=None,
+                         verbose=verbose_set,
+                         breakpoint_labels=breakpoint_set,
+                         breakpoint_any_labels=breakpoint_any_set)
+    # print(output)
+    if args.verbose:
+        print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed} ops executed)')
+        print()
+
+    exit()
+
     for test, _input in (('cat', "Hello World!\0"), ('ncat', ''.join(chr(0xff-ord(c)) for c in 'Flip Jump Rocks!\0')),
                          ('testbit', ''), ('testbit_with_nops', ''), ('mathbit', ''), ('mathvec', ''), ('not', ''),
                          ('rep', ''), ('ncmp', ''), ('nadd', ''), ('hexprint', ''), ('simple', ''), ('hello_world', ''),
