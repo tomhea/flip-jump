@@ -204,7 +204,7 @@ loop:
     .print_dec_int w x
     ;end
   print_hex:
-    .print_hex_int w x
+    .print_hex_int w x 1
 
   end:
 .end

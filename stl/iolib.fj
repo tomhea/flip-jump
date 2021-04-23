@@ -226,7 +226,12 @@
 
 // Assumes n divides by 4.
 // Complexity: n(10phi+39)
-.def print_hex_uint n x : printed_flag end
+.def print_hex_uint n x print_x : after_print_x printed_flag end
+    .comp_if0 print_x after_print_x
+    .output '0'
+    .output 'x'
+  after_print_x:
+
     .zero printed_flag
     .rep (n/4) i __print_hex_uint_char x+(n/4-1-i)*4*dw printed_flag
 
@@ -254,12 +259,12 @@
 .end
 
 
-.def print_hex_int n x : do_print
+.def print_hex_int n x print_x : do_print
     .if0 x+(n-1)*dw do_print
     .output '-'
     .neg n x
   do_print:
-    .print_hex_uint n x
+    .print_hex_uint n x print_x
 .end
 
 
