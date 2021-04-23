@@ -115,16 +115,25 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   
     writer.write_to_file(output_file)
 
 
-def assemble(input_files, output_file, w, preprocessed_file=None, debugging_file=None, use_stl=True, verbose=set()):
+def assemble(input_files, output_file, w, try_cached=True, use_stl=True, only_cache=False,
+             preprocessed_file=None, debugging_file=None, verbose=set()):
     if w not in (8, 16, 32, 64):
         error(f'The width ({w}) must be one of (8, 16, 32, 64).')
+
+    if only_cache:
+        if isfile(debugging_file):
+            with open(debugging_file, 'rb') as f:
+                return pickle.load(f)
+        print(debugging_file)
+        return {}
 
     if use_stl:
         input_files = stl() + input_files
 
     # if assembled files are up to date
-    if debugging_file and isfile(output_file) and isfile(debugging_file):
-        if max(getmtime(infile) for infile in input_files) < min(getmtime(outfile) for outfile in (debugging_file, output_file)):
+    if try_cached and debugging_file and isfile(output_file) and isfile(debugging_file):
+        if max(getmtime(infile) for infile in input_files) \
+                < min(getmtime(outfile) for outfile in (debugging_file, output_file)):
             if Verbose.Time in verbose:
                 print(f'  loading assembled data...')
             with open(debugging_file, 'rb') as f:
