@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from assembler import assemble
 import blm
 from readchar import readchar
