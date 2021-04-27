@@ -63,7 +63,7 @@ def write_flip_jump(bits, f, j, w):
     bits += lsb_first_bin_array(j, w)
 
 
-def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   # TODO handle verbose?
+def labels_resolve(ops, labels, last_address, w, output_file, verbose=False, flags=0):   # TODO handle verbose?
     if last_address >= (1<<w):
         error(f"Not enough space with the {w}-width.")
     bits = []
@@ -110,34 +110,31 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False):   
         else:
             error(f"Can't resolve/assemble the next opcode - {str(op)}")
 
-    writer = blm.Writer(w, w)
+    writer = blm.Writer(w, w, flags=flags if flags else 0)
     writer.add_simple_sector_with_data(0, bits)
     writer.write_to_file(output_file)
 
 
-def assemble(input_files, output_file, w, try_cached=True, use_stl=True, only_cache=False,
+def assemble(input_files, output_file, w, flags=None,
              preprocessed_file=None, debugging_file=None, verbose=set()):
     if w not in (8, 16, 32, 64):
         error(f'The width ({w}) must be one of (8, 16, 32, 64).')
 
-    if only_cache:
-        if isfile(debugging_file):
-            with open(debugging_file, 'rb') as f:
-                return pickle.load(f)
-        print(debugging_file)
-        return {}
-
-    if use_stl:
-        input_files = stl() + input_files
+    # if only_cache:
+    #     if isfile(debugging_file):
+    #         with open(debugging_file, 'rb') as f:
+    #             return pickle.load(f)
+    #     print(debugging_file)
+    #     return {}
 
     # if assembled files are up to date
-    if try_cached and debugging_file and isfile(output_file) and isfile(debugging_file):
-        if max(getmtime(infile) for infile in input_files) \
-                < min(getmtime(outfile) for outfile in (debugging_file, output_file)):
-            if Verbose.Time in verbose:
-                print(f'  loading assembled data...')
-            with open(debugging_file, 'rb') as f:
-                return pickle.load(f)
+    # if try_cached and debugging_file and isfile(output_file) and isfile(debugging_file):
+    #     if max(getmtime(infile) for infile in input_files) \
+    #             < min(getmtime(outfile) for outfile in (debugging_file, output_file)):
+    #         if Verbose.Time in verbose:
+    #             print(f'  loading assembled data...')
+    #         with open(debugging_file, 'rb') as f:
+    #             return pickle.load(f)
 
     temp_preprocessed_file, temp_fd = False, 0
     if preprocessed_file is None:
@@ -160,7 +157,7 @@ def assemble(input_files, output_file, w, try_cached=True, use_stl=True, only_ca
         print(f'  labels pass:     {time() - start_time:.3f}s')
 
     start_time = time()
-    labels_resolve(ops, labels, last_address, w, output_file, verbose=Verbose.LabelSolve in verbose)
+    labels_resolve(ops, labels, last_address, w, output_file, verbose=Verbose.LabelSolve in verbose, flags=flags)
     if Verbose.Time in verbose:
         print(f'  labels resolve:  {time() - start_time:.3f}s')
 
