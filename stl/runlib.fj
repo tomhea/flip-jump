@@ -20,16 +20,16 @@ dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
 
 
 .def startup
-    ;code_start     // 000;040 : code start
+    ;code_start     // 0w;1w : code start
   IO:
-    ;0              // 080;0c0 : now points to io_handler
+    ;0              // 2w;3w : now points to io_handler
 
   temp:
-    ;               // 100;140 : temp
-    ;               // 180;1c0 : temp
+    ;               // 4w;5w : temp
+    ;               // 6w;7w : temp
 
   code_start:
-                    // 200;240 : start of code
+                    // 8w;9w : start of code
 .end
 
 

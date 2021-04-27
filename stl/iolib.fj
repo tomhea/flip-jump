@@ -1,5 +1,5 @@
 // Every line is (Input/Output of) bananas!
-// Implementation of single bit-variables operations
+// Implementation of input/output and casting operations
 
 // should be assembled with an (exactly one) libXX.fjm file
 // This file is independent of the bit-width, and uses the consts defined at libXX.fjm
