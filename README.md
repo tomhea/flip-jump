@@ -178,7 +178,7 @@ We successfully jumped to different addresses depends on the value of the said b
 In that way, we can *read* the value of such a bit-variable.
 
 This is very nice, but it only worked because we knew the address of branch_target in advance.<br>
-We usually don't, but it does resolved during assemble time.<br>
+We usually don't, but it is resolved during assemble time.<br>
 That's why the assembly language provides the next operation:
 
 ### flip_by
@@ -195,15 +195,15 @@ The addresses \[dw, 2\*dw] are reserved for IO.
     //TODO explain
 ```
 
-That's why the standart library runlib.fj defines the next macro:
-
+The runlib.fj standard library defines macros to make IO as simple as possible.
 
 
 ## Macros
-Macros are used to make our life easier. much easier.<br>
-We declare them once, and can use the as much as we want.
+Macros are used to make our life easier. much easier. We declare them once, and can use the as much as we want.
 
-It is important to say that macros can call other macros, and there are no macro-depth bounds.
+Using a macro is just as pasting its content at the used spot.
+
+It is important to say that macros can use other macros, and there are no macro-depth bounds.
 
 The syntax for defining macros is:
 
@@ -212,16 +212,19 @@ The syntax for defining macros is:
     // Macro body
 .end
 
+// for example:
 .def self_loop : loop_label       // No args, one temp label
     loop_label:
     ;loop_label
 .end
 ```
+The temp labels are being generated for every use of this macro.
 
 The syntax for using macros is:
 ```c
 .macro_name [arg ...]
 
+// for example:
 .self_loop
 ```
 
@@ -365,22 +368,22 @@ Note that all of these macros are already implemented in the standard library:
 Hello, World!
 ```
 
-- The first line will assemble your code with the standard library files (w=64 as bits default).
+- The first line will assemble your code (w=64 as bits default).
   - The --no-stl flag tells the assembler not to include the standard-library. It is not needed as we implemented the macros ourselves.
 - The second line will run your code.
 
 # Project Structure
 
-src (assembler source files):
+**src** (assembler source files):
   - parser.py       - pythonic lex/yacc parser.
   - preprocessor.py - unwind all macros and reps.
   - assembler.py    - assembles the macroless fj file.
-  - defs.py         - general classes/functions/constants.
-  - blm.py          - general read/write .blm (bit-level-memory) files.
+  - defs.py         - classes/functions/constants used throughout the project.
+  - blm.py          - read/write .blm (bit-level-memory) files.
   - fja.py          - the FlipJump Assembler script.
   - fji.py          - the FlipJump Interpreter script.
 
-stl (standard library files - macros):
+**stl** (standard library files - macros):
   - runlib.fj   - constants and initialization macros.
   - bitlib.fj   - macros for manipulating bits.
   - veclib.fj   - macros for manipulating bit vectors (i.e. numbers).
@@ -388,9 +391,11 @@ stl (standard library files - macros):
   - iolib.fj    - input/output macros, number casting.
   - ptrlib.fj   - pointers, stack and functions.
 
-tests (flipjump programs), for example:
+**tests** (flipjump programs), for example:
   - calc.fj
   - func.fj
   
 # Read More
-You can also read the *conventions.txt* file, and even start reading the bitlib.fj standard library file.
+Start by reading the *bitlib.fj* standard library file. It holds many of the flipjump magic.
+
+You can also write and run programs for yourself! It is just [that](#how-to-run) easy :)
