@@ -243,8 +243,8 @@ quit1:     .var 8 'Q'
 quit2:     .var 8 'q'
 
 
-err_string:     ..string "\nError!\n"
-prompt_string:  ..string ">  "
+err_string:     .string "\nError!\n"
+prompt_string:  .string ">  "
 
 .init_ptr
 .stack 20

@@ -17,7 +17,6 @@ loop:
     .loop
     ..pad 2
     ..flip_by temp loop
-    ..flip_by_dbit temp loop
 
     [1]1
     dloop:;dloop

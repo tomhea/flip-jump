@@ -37,3 +37,17 @@ dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
     .startup
     .default_input in0_handler in1_handler
 .end
+
+
+
+// ---------- Basic Functionality
+
+
+.def bit_pad x : pad_start
+  pad_start:
+    [(0-pad_start) % x] 0
+.end
+
+.def pad x
+    .bit_pad x*dw
+.end

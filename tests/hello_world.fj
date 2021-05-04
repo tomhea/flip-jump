@@ -4,4 +4,4 @@
 .loop
 
 str:
-    ..string "Hello, World!\n(:"
+    .string "Hello, World!\n(:"

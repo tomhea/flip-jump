@@ -8,7 +8,7 @@ global curr_file, curr_text
 
 class CalcLexer(Lexer):
     tokens = {DEF, END, REP,
-              DDPAD, DDFLIP_BY_DBIT, DDFLIP_BY, DDSTRING,
+              DDPAD, DDFLIP_BY,
               DOT_ID, ID, NUMBER, STRING,
               SHL, SHR, NL, SC}
 
@@ -35,9 +35,7 @@ class CalcLexer(Lexer):
 
 
     DDPAD = r'\.\.pad'
-    DDFLIP_BY_DBIT = r'\.\.flip_by_dbit'
     DDFLIP_BY = r'\.\.flip_by'
-    DDSTRING = r'\.\.string'
 
     SHL = r'<<'
     SHR = r'>>'
@@ -71,7 +69,7 @@ class CalcLexer(Lexer):
             val, length = handle_char(s[i:])
             chars.append(val)
             i += length
-        t.value = chars + [0]
+        t.value = sum(val << (i*8) for i, val in enumerate(chars))
         return t
 
     def NL(self, t):
@@ -245,17 +243,6 @@ class CalcParser(Parser):
     def statement(self, p):
         return Op(OpType.DDFlipBy, (p.expr0, p.expr1), curr_file, p.lineno)
 
-    @_('DDFLIP_BY_DBIT expr expr')
-    def statement(self, p):
-        return Op(OpType.DDFlipByDbit, (p.expr0, p.expr1), curr_file, p.lineno)
-
-    @_('DDSTRING STRING')
-    def statement(self, p):
-        string_val = 0
-        for i, c in enumerate(p.STRING):
-            string_val |= c << (i * 8)
-        return Op(OpType.BitVar, (Expr(8 * len(p.STRING)), Expr(string_val)), curr_file, p.lineno)
-
     @_('"[" expr "]" expr')
     def statement(self, p):
         return Op(OpType.BitSpecific, (p.expr0, p.expr1), curr_file, p.lineno)
@@ -345,6 +332,10 @@ class CalcParser(Parser):
     @_('NUMBER')
     def _expr(self, p):
         return Expr(p.NUMBER), p.lineno
+
+    @_('STRING')
+    def _expr(self, p):
+        return Expr(p.STRING), p.lineno
 
     @_('"$"')
     def _expr(self, p):

@@ -9,6 +9,15 @@
 
 
 
+// ---------- String:
+
+
+.def string str
+    .var (((#str)+15)>>3)<<3 str
+.end
+
+
+
 // ---------- Input:
 
 

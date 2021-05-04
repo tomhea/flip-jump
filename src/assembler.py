@@ -2,7 +2,6 @@ import blm
 from preprocessor import resolve_macros
 from tempfile import mkstemp
 import os
-from os.path import isfile, getmtime
 from defs import *
 from parser import parse_macro_tree
 import pickle
@@ -25,16 +24,14 @@ def label_dictionary_pass(ops, w, verbose=False):
             padding_length = (-curr_address) % (try_int(op, op.data[0]) * 2 * w)
             op = Op(OpType.BitSpecific, (Expr(padding_length), Expr(0)), op.file, op.line)
 
-        if op.type in {OpType.FlipJump, OpType.BitSpecific, OpType.DDFlipBy, OpType.DDFlipByDbit, OpType.BitVar}:
+        if op.type in {OpType.FlipJump, OpType.BitSpecific, OpType.DDFlipBy}:
             delta = 2*w
             if op.type == OpType.BitSpecific:
                 delta = try_int(op, op.data[0])
-            elif op.type == OpType.BitVar:
-                delta = try_int(op, op.data[0]) * 2*w
             end_address = curr_address + delta
             eval_all(op, {'$': Expr(end_address)})
             curr_address = end_address
-            if op.type in {OpType.DDFlipBy, OpType.DDFlipByDbit}:
+            if op.type == OpType.DDFlipBy:
                 op.data += (Expr(end_address),)
             if verbose:
                 print(f'op added: {str(op)}')
@@ -86,10 +83,9 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False, fla
         elif op.type == OpType.BitSpecific:
             n, v = vals
             bits += lsb_first_bin_array(v, n)
-        elif op.type in (OpType.DDFlipBy, OpType.DDFlipByDbit):
+        elif op.type == OpType.DDFlipBy:
             to_address, by_address, return_address = vals
-            first_bit = 0 if op.type == OpType.DDFlipBy else w.bit_length() + 1
-            flip_bits = [i for i in range(first_bit, w) if by_address & (1 << i)]
+            flip_bits = [i for i in range(w) if by_address & (1 << i)]
 
             if len(flip_bits) <= 1:
                 write_flip_jump(bits, to_address + flip_bits[0] if flip_bits else resolved_temp_address, return_address, w)
@@ -103,10 +99,6 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False, fla
                 if last_address >= (1 << w):
                     error(f"Not enough space with the {w}-width.")
                 ops.append(Op(OpType.FlipJump, (Expr(to_address + flip_bits[-1]), Expr(return_address)), op.file, op.line))
-        elif op.type == OpType.BitVar:
-            n, v = vals
-            for i in range(n):
-                write_flip_jump(bits, resolved_temp_address, 2*w if v & (1 << i) else 0, w)
         else:
             error(f"Can't resolve/assemble the next opcode - {str(op)}")
 

@@ -17,10 +17,6 @@ def output_ops(ops, output_file):
                 f.write(f'  ..pad {op.data[0]}\n')
             elif op.type == OpType.DDFlipBy:
                 f.write(f'  ..flip_by {op.data[0]} {op.data[1]}\n')
-            elif op.type == OpType.DDFlipByDbit:
-                f.write(f'  ..flip_by_dbit {op.data[0]} {op.data[1]}\n')
-            elif op.type == OpType.BitVar:
-                f.write(f'  ..var {op.data[0]} {op.data[1]}\n')
 
 
 def resolve_macros(macros, output_file=None, verbose=False):
