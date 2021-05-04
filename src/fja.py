@@ -17,7 +17,7 @@ def main():
     parser.add_argument('-f', '--flags', help="default running flags", type=int, default=0)
     parser.add_argument('-w', '--width', help="specify memory-width. 64 by default",
                         type=int, default=64, choices=[8, 16, 32, 64])
-    parser.add_argument('--no_stl', help="don't assemble/link the standard library files.", action='store_true')
+    parser.add_argument('--no-stl', help="don't assemble/link the standard library files.", action='store_true')
     args = parser.parse_args()
 
     if not args.no_stl:
