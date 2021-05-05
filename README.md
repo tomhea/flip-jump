@@ -188,21 +188,21 @@ That's why the assembly language provides the next operation:
 // The Word-Flip op is a special fj op.
 // It flip the bits in addresses [a, a+w) iff the corresponding bit in b (b's value) is set.
 
-// For example, for a==0x100, b=0x740 (0b01110100), the next blocks do the same thing:
+// For example, for a==0x100, b=0x740 (0b 0111 0100 0000), the next blocks do the same thing:
 
     .wflip a b
     
     .wflip 0x100 0x740
     
-    a+2;
-    a+4;
-    a+5;
     a+6;
+    a+8;
+    a+9;
+    a+10;
     
-    0x102;
-    0x104;
-    0x105;
     0x106;
+    0x108;
+    0x109;
+    0x10a;
     
 // This op is very useful if you want to set the jumping-part of another fj opcode to some address (and we know that it's zeroed before).
     // just do:  .wflip fj_op+w jump_address
@@ -212,16 +212,16 @@ That's why the assembly language provides the next operation:
 // Note that the assembler might choose to unwrap the .wflip op in more complicated ways, for optimization reasons.
 
 // This is some way of doing it (has the advantage of knowing in advance that .wflip takes 1 op-size in its local area):    
-    0x102;next_flips
+    0x106;next_flips
 next_op:
     
     // Many ops between...
     // ...
     
 next_flips:
-    0x104;
-    0x105;
-    0x106;next_op
+    0x108;
+    0x109;
+    0x10a;next_op
 ```
 
 
