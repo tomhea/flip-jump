@@ -19,7 +19,7 @@ def smart_int16(num):
 
 
 def stl():
-    return [f'stl/{lib}.fj' for lib in (f'runlib', 'bitlib', 'veclib', 'iolib', 'ptrlib', 'mathlib')]
+    return [f'../stl/{lib}.fj' for lib in (f'runlib', 'bitlib', 'veclib', 'iolib', 'ptrlib', 'mathlib')]
 
 
 id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -62,13 +62,10 @@ class RunFinish(Enum):
 class OpType(Enum):
     FlipJump = 1        # expr, expr                # Survives until (3) label resolve
     BitSpecific = 2     # expr, expr                # Survives until (3) label resolve
-    DDFlipBy = 3        # expr, expr                # Survives until (3) label resolve
-    DDFlipByDbit = 4    # expr, expr                # Survives until (3) label resolve
-    BitVar = 5          # expr, expr                # Survives until (3) label resolve
-    Label = 6           # ID                        # Survives until (2) label dictionary
-    DDPad = 7           # expr                      # Survives until (2) label dictionary
-    Macro = 8           # ID, expr [expr..]         # Survives until (1) macro resolve
-    Rep = 9             # expr, ID, statements      # Survives until (1) macro resolve
+    WordFlip = 3        # expr, expr                # Survives until (3) label resolve
+    Label = 4           # ID                        # Survives until (2) label dictionary
+    Macro = 5           # ID, expr [expr..]         # Survives until (1) macro resolve
+    Rep = 6             # expr, ID, statements      # Survives until (1) macro resolve
 
 
 class Op:
