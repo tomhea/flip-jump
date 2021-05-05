@@ -45,7 +45,7 @@ a_label:
 In many cases you won't need to specify both addresses.
 
 ```c
-100;    // Just flip: the  F;  syntax use the address of the following memory address as the jump-address.  
+100;    // Just flip: the  F;  syntax uses the address of the following memory address as the jump-address.  
         // It is identical to:  100;some_label
                          //     some_label:
         // It is also identical to:  100;$
@@ -64,8 +64,6 @@ In many cases you won't need to specify both addresses.
 ### More syntax options
 
 ```c
-..pad 4     // Fills the memory with 0's until it is 4-opcodes aligned.
-
 [len]value  // Put len-memory-bits with the value of 'value'.
 
 // The next two lines are identical to the 64-bit fj opcode 123;456
@@ -76,7 +74,9 @@ x = 13      // Declare constants
 y = x+4     
 
 a:
-x;a+y/2
+x;a+y/2     // Use constants/labels as numbers.
+
+.pad 4  // Fills the memory with 0's until it is 4-opcodes aligned (not in the basic syntax, but a very basic macro found in the standard library).
 
 // The assembly is initialized with one constant - w.
 // It is the memory-width (w=64 for 2^64 memory-bits), and the bit-width of every flip/jump adddress.
@@ -84,10 +84,10 @@ x;a+y/2
 ```
 
 ### Execution loop
-The flipjump cpu has a built-in width, and start executing from address 0.
+The flipjump CPU has a built-in width, and starts executing from address 0.
 It halts on a simple self-loop (jumps to itself, while not flipping itself).
 
-There are variants of the cpu, lets assume the simplest form:
+There are variants of the CPU, lets assume the simplest form:
 - The jump address is always w-aligned.
 - The operation doesn't flip bits in itself.
 
@@ -120,7 +120,7 @@ int fj8(u8 mem) {
 ```
 
 # But, why?
-Or in other words, can it do anything meaningfull?
+Or in other words, can it do anything meaningful?
 It turns out that it can, And much more than you'd think.
 
 ## Memory - how can we implement variables?
@@ -128,7 +128,7 @@ A bit can be built using 1 fj operation. Specifically,  ```;0```  or  ```;dw```<
 Here the magic happens. The flipjump operation inherently can't read. It also can't write.<br>
 All it knows is to flip a bit, and then jump. but where to?
 
-The flipjump hidden-power is exactly in this delicate point. It can jump to an already flipped address.<br>
+The flipjump hidden-power lies exactly in this delicate point. It can jump to an already flipped address.<br>
 In other words, it can execute an already modified code.<br>
 I based the main standard library functions, and the implementation of variables, on this exact point.
 
@@ -181,25 +181,105 @@ This is very nice, but it only worked because we knew the address of branch_targ
 We usually don't, but it is resolved during assemble time.<br>
 That's why the assembly language provides the next operation:
 
-### flip_by
+### wflip
 
 ```c
-    //TODO explain
+    .wflip a b
+// The Word-Flip op is a special fj op.
+// It flip the bits in addresses [a, a+w) iff the corresponding bit in b (b's value) is set.
+
+// For example, for a==0x100, b=0x740 (0b01110100), the next blocks do the same thing:
+
+    .wflip a b
+    
+    .wflip 0x100 0x740
+    
+    a+2;
+    a+4;
+    a+5;
+    a+6;
+    
+    0x102;
+    0x104;
+    0x105;
+    0x106;
+    
+// This op is very useful if you want to set the jumping-part of another fj opcode to some address (and we know that it's zeroed before).
+    // just do:  .wflip fj_op+w jump_address
+// Also - setting the jumping-part back to zero can be simply done by doing the same .wflip again:
+    // (because b xor b == 0).
+
+// Note that the assembler might choose to unwrap the .wflip op in more complicated ways, for optimization reasons.
+
+// This is some way of doing it (has the advantage of knowing in advance that .wflip takes 1 op-size in its local area):    
+    0x102;next_flips
+next_op:
+    
+    // Many ops between...
+    // ...
+    
+next_flips:
+    0x104;
+    0x105;
+    0x106;next_op
 ```
 
 
 ## Input / Output
-The addresses \[dw, 2\*dw] are reserved for IO.
+The addresses \[dw, 2\*dw) are reserved for IO.
+
+### Output
+Flipping the dw's   bit will output '0'.<br>
+Flipping the dw+1's bit will output '1'.<br>
 
 ```c
-    //TODO explain
+// For an ascii output - every 8 bits will generate (an lsb-first) byte, or an ascii-char.
+// The next code will output the letter 'T' (0b01010100):
+    dw;
+    dw;
+    dw+1;
+    dw;
+    dw+1;
+    dw;
+    dw+1;
+    dw;
+```
+    
+    
+### Input
+
+The next input bit is always loaded at address 3\*w + #w (3w+log(w)+1), when needed.<br>
+You can use this bit by jumping to a flip-jump opcode that contains it.<br>
+The best way is to jump to ;dw.<br>
+
+In that way - this bit will reflect either 0x0 or 0x80 in the jump-part of the flip-jump op.<br>
+If we ```.wflip dw some_padded_address``` before the ;dw - the dw-flip-jump-op will make a jump to ```some_padded_address``` / ```some_padded_address+0x80```, based on the input, just like [here](#memory---how-can-we-implement-variables).
+
+```c
+// For example:
+
+    .wflip dw+w padded_address  // we assume dw+w is 0.
+    ;dw
+
+.pad 2
+padded_address:
+    ;handle_0
+    ;handle_1
+
+handle_0:
+    .wflip dw+w padded_address  // we make sure dw+w stays 0.
+    // do some 0's stuff
+
+handle_1:
+    .wflip dw+w padded_address  // we make sure dw+w stays 0.
+    // do some 1's stuff
 ```
 
 The runlib.fj standard library defines macros to make IO as simple as possible.
 
 
 ## Macros
-Macros are used to make our life easier. much easier. We declare them once, and can use the as much as we want.
+Macros are used to make our life easier. much easier. We declare them once, and can use them as much as we want.
 
 Using a macro is just as pasting its content at the used spot.
 
@@ -279,7 +359,7 @@ byte:
 
 ## Repetitions
 
-The not8 macro seemed a bit.. repetative? There must be a better way of writing it.<br>
+The not8 macro seemed a bit.. repetitive? There must be a better way of writing it.<br>
 Well, there is.<br>
 The syntax for repetitions is:
 
@@ -352,7 +432,7 @@ byte:  .byte 84
     .end_loop
 ```
 
-The flipfump assembly supports a ```..string "Hello, World!"``` syntax for initializing a variable with a string value.<br>
+The flipfump assembly supports a ```.var "Hello, World!"``` syntax for initializing a variable with a string value (.var is defined in the standard library).<br>
 Look at tests/hello_world.fj program using print_str macro (stl/iolib.fj) for more info.
 
 Note that all of these macros are already implemented in the standard library:
@@ -369,7 +449,7 @@ Hello, World!
 ```
 
 - The first line will assemble your code (w=64 as bits default).
-  - The --no-stl flag tells the assembler not to include the standard-library. It is not needed as we implemented the macros ourselves.
+  - The --no-stl flag tells the assembler not to include the standard library. It is not needed as we implemented the macros ourselves.
 - The second line will run your code.
 
 # Project Structure
