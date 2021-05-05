@@ -121,7 +121,7 @@
     .xor label_ptr x
   label_ptr:
     ;base_jump_label
-    ..pad 2
+    .pad 2
   base_jump_label:
     ;l0
     label_ptr + dbit;l1
@@ -159,7 +159,7 @@
 .def naked_xor dst src : base_jump_label cleanup
     ..flip_by src+w base_jump_label
     ;src
-    ..pad 2
+    .pad 2
   base_jump_label:
     ;cleanup
     dst
@@ -171,7 +171,7 @@
 .def double_naked_xor dst1 dst2 src : base_jump_label cleanup
     ..flip_by src+w base_jump_label
     ;src
-    ..pad 2
+    .pad 2
   base_jump_label:
     ;cleanup
     dst1

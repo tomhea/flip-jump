@@ -13,7 +13,7 @@
 
 
 .def init_ptr
-    ..pad 1
+    .pad 1
     __to_flip: 0;0
     __to_jump:  ;0
 
@@ -122,7 +122,7 @@
     .ptr_flip_by_2nd_word ptr base_jump_label
 
     .ptr_jump ptr
-    ..pad 2
+    .pad 2
   base_jump_label:
     ;cleanup
     dst
@@ -139,7 +139,7 @@
 
 // sp always points to the last pushed value (at start - to stack[-1])
 .def stack n
-    ..pad 1
+    .pad 1
     sp:    .var w stack-dw
     stack: .var n 0
 .end
@@ -202,7 +202,7 @@
     .push_ret_address return_label
     ;address
 
-    ..pad 2
+    .pad 2
   return_label:
     .pop_ret_address return_label
 .end

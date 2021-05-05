@@ -8,7 +8,7 @@ global curr_file, curr_text
 
 class CalcLexer(Lexer):
     tokens = {DEF, END, REP,
-              DDPAD, DDFLIP_BY,
+              DDFLIP_BY,
               DOT_ID, ID, NUMBER, STRING,
               SHL, SHR, NL, SC}
 
@@ -34,7 +34,6 @@ class CalcLexer(Lexer):
     DOT_ID[r'.rep'] = REP
 
 
-    DDPAD = r'\.\.pad'
     DDFLIP_BY = r'\.\.flip_by'
 
     SHL = r'<<'
@@ -234,10 +233,6 @@ class CalcParser(Parser):
     @_('DOT_ID expressions')
     def statement(self, p):
         return Op(OpType.Macro, ((p.DOT_ID, len(p.expressions)), *p.expressions), curr_file, p.lineno)
-
-    @_('DDPAD expr')
-    def statement(self, p):
-        return Op(OpType.DDPad, (p.expr,), curr_file, p.lineno)
 
     @_('DDFLIP_BY expr expr')
     def statement(self, p):

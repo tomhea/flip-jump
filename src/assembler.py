@@ -20,13 +20,10 @@ def label_dictionary_pass(ops, w, verbose=False):
     label_places = {}
 
     for op in ops:
-        if op.type == OpType.DDPad:
-            padding_length = (-curr_address) % (try_int(op, op.data[0]) * 2 * w)
-            op = Op(OpType.BitSpecific, (Expr(padding_length), Expr(0)), op.file, op.line)
-
         if op.type in {OpType.FlipJump, OpType.BitSpecific, OpType.DDFlipBy}:
             delta = 2*w
             if op.type == OpType.BitSpecific:
+                eval_all(op, labels)
                 delta = try_int(op, op.data[0])
             end_address = curr_address + delta
             eval_all(op, {'$': Expr(end_address)})

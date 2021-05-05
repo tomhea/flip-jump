@@ -24,7 +24,7 @@
 .def default_input in0_handler in1_handler : io_handler end
     ..flip_by IO+w io_handler
     ;end
-    ..pad 2
+    .pad 2
   io_handler:
     ;in0_handler
     ;in1_handler
@@ -69,7 +69,7 @@
     .xor label_ptr x
   label_ptr:
     ;base_jump_label
-    ..pad 2
+    .pad 2
   base_jump_label:
     IO+0;end
     IO+1

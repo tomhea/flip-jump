@@ -15,7 +15,7 @@ loop:
     temp;
     temp
     .loop
-    ..pad 2
+    .pad 2
     ..flip_by temp loop
 
     [1]1
