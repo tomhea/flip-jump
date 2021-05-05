@@ -22,7 +22,7 @@
 
 
 .def default_input in0_handler in1_handler : io_handler end
-    ..flip_by IO+w io_handler
+    .wflip IO+w io_handler
     ;end
     .pad 2
   io_handler:

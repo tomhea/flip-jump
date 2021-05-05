@@ -16,7 +16,7 @@ loop:
     temp
     .loop
     .pad 2
-    ..flip_by temp loop
+    .wflip temp loop
 
     [1]1
     dloop:;dloop

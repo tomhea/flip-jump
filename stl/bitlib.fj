@@ -7,7 +7,7 @@
 // Everything after // is ignored, everything before first : is ignored too, and every whitespace is ignored (besides new line)
 // An opcode is:  F;L  F  ;L  or just  ;  (no F => F=temp;  no L => L=next)
 
-// Complexity note: phi is log2 of the total number of fj operations, counting ..flip_by* as one.
+// Complexity note: phi is log2 of the total number of fj operations, counting .wflip* as one.
 
 
 
@@ -157,19 +157,19 @@
 .end
 
 .def naked_xor dst src : base_jump_label cleanup
-    ..flip_by src+w base_jump_label
+    .wflip src+w base_jump_label
     ;src
     .pad 2
   base_jump_label:
     ;cleanup
     dst
   cleanup:
-    ..flip_by src+w base_jump_label
+    .wflip src+w base_jump_label
 .end
 
 // Complexity: phi+3
 .def double_naked_xor dst1 dst2 src : base_jump_label cleanup
-    ..flip_by src+w base_jump_label
+    .wflip src+w base_jump_label
     ;src
     .pad 2
   base_jump_label:
@@ -177,7 +177,7 @@
     dst1
     dst2
   cleanup:
-    ..flip_by src+w base_jump_label
+    .wflip src+w base_jump_label
 .end
 
 

@@ -43,14 +43,14 @@
 // like:  *ptr;
 // Complexity w(2phi+6)
 .def ptr_flip ptr : cleanup
-    ..flip_by __to_flip+w cleanup
+    .wflip __to_flip+w cleanup
 
     .bit_var_xor w __to_flip __to_flip_var __to_flip_var
     .bit_var_xor w __to_flip __to_flip_var ptr
     ;__to_flip
 
   cleanup:
-    ..flip_by __to_flip+w cleanup
+    .wflip __to_flip+w cleanup
 .end
 
 // like:  (*ptr)+dbit;
@@ -79,7 +79,7 @@
 .end
 
 
-// like:  ..flip_by *ptr value
+// like:  .wflip *ptr value
 // Assumes *ptr is w-aligned, and value is 2dw-aligned
 // Complexity w(3phi+11)
 .def ptr_flip_by ptr value
@@ -89,10 +89,10 @@
 .end
 .def __advance_by_one_and_flip__ptr_flip_by n do_flip : cleanup advance
     .comp_if0 do_flip advance
-    ..flip_by __to_flip+w cleanup
+    .wflip __to_flip+w cleanup
     ;__to_flip
   cleanup:
-    ..flip_by __to_flip+w cleanup
+    .wflip __to_flip+w cleanup
   advance:
     .rep n i
         __to_flip+i

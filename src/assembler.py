@@ -20,7 +20,7 @@ def label_dictionary_pass(ops, w, verbose=False):
     label_places = {}
 
     for op in ops:
-        if op.type in {OpType.FlipJump, OpType.BitSpecific, OpType.DDFlipBy}:
+        if op.type in {OpType.FlipJump, OpType.BitSpecific, OpType.WordFlip}:
             delta = 2*w
             if op.type == OpType.BitSpecific:
                 eval_all(op, labels)
@@ -28,7 +28,7 @@ def label_dictionary_pass(ops, w, verbose=False):
             end_address = curr_address + delta
             eval_all(op, {'$': Expr(end_address)})
             curr_address = end_address
-            if op.type == OpType.DDFlipBy:
+            if op.type == OpType.WordFlip:
                 op.data += (Expr(end_address),)
             if verbose:
                 print(f'op added: {str(op)}')
@@ -80,7 +80,7 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False, fla
         elif op.type == OpType.BitSpecific:
             n, v = vals
             bits += lsb_first_bin_array(v, n)
-        elif op.type == OpType.DDFlipBy:
+        elif op.type == OpType.WordFlip:
             to_address, by_address, return_address = vals
             flip_bits = [i for i in range(w) if by_address & (1 << i)]
 

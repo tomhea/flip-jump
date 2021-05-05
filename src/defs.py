@@ -62,7 +62,7 @@ class RunFinish(Enum):
 class OpType(Enum):
     FlipJump = 1        # expr, expr                # Survives until (3) label resolve
     BitSpecific = 2     # expr, expr                # Survives until (3) label resolve
-    DDFlipBy = 3        # expr, expr                # Survives until (3) label resolve
+    WordFlip = 3        # expr, expr                # Survives until (3) label resolve
     Label = 4           # ID                        # Survives until (2) label dictionary
     Macro = 5           # ID, expr [expr..]         # Survives until (1) macro resolve
     Rep = 6             # expr, ID, statements      # Survives until (1) macro resolve

@@ -7,8 +7,7 @@ global curr_file, curr_text
 
 
 class CalcLexer(Lexer):
-    tokens = {DEF, END, REP,
-              DDFLIP_BY,
+    tokens = {DEF, END, REP, WFLIP,
               DOT_ID, ID, NUMBER, STRING,
               SHL, SHR, NL, SC}
 
@@ -32,9 +31,7 @@ class CalcLexer(Lexer):
     DOT_ID[r'.def'] = DEF
     DOT_ID[r'.end'] = END
     DOT_ID[r'.rep'] = REP
-
-
-    DDFLIP_BY = r'\.\.flip_by'
+    DOT_ID[r'.wflip'] = WFLIP
 
     SHL = r'<<'
     SHR = r'>>'
@@ -234,9 +231,9 @@ class CalcParser(Parser):
     def statement(self, p):
         return Op(OpType.Macro, ((p.DOT_ID, len(p.expressions)), *p.expressions), curr_file, p.lineno)
 
-    @_('DDFLIP_BY expr expr')
+    @_('WFLIP expr expr')
     def statement(self, p):
-        return Op(OpType.DDFlipBy, (p.expr0, p.expr1), curr_file, p.lineno)
+        return Op(OpType.WordFlip, (p.expr0, p.expr1), curr_file, p.lineno)
 
     @_('"[" expr "]" expr')
     def statement(self, p):
