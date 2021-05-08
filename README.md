@@ -1,6 +1,6 @@
 # FlipJump
 
-FlipJump is an Esoteric language, with just 1 operation: <br>
+FlipJump is an Esoteric language ([esolangs page](https://esolangs.org/wiki/FlipJump)), with just 1 operation: <br>
 - Flip a bit, then (unconditionally) jump. <br>
 - The operation takes 2 memory words, then flips (inverts) the bit referenced by the first word, and jumps to the address referenced by the second word. <br>
 
