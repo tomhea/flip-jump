@@ -12,8 +12,8 @@ def main():
     parser.add_argument('file', help="the FlipJump file.", nargs='+')
     parser.add_argument('-s', '--silent', help="don't show assemble & run times", action='store_true')
     parser.add_argument('-o', '--outfile', help="output assembled file.", default="a.blm")
-    parser.add_argument('--no-macros', help="output no-macros file.", default="a__no_macros.fj")
-    parser.add_argument('-d', '--debug', help="output debug file (used for breakpoints).", default="a.fj_debug")
+    parser.add_argument('--no-macros', help="output no-macros file.")
+    parser.add_argument('-d', '--debug', help="output debug file (used for breakpoints).")
     parser.add_argument('-f', '--flags', help="default running flags", type=int, default=0)
     parser.add_argument('-w', '--width', help="specify memory-width. 64 by default",
                         type=int, default=64, choices=[8, 16, 32, 64])

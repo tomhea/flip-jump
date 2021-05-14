@@ -91,7 +91,7 @@
 
 // Complexity: n(phi+3)
 .def bit_var_xor n bit var src
-    .rep n i double_naked_xor bit+i var+dbit+i*dw src+i*dw
+    .rep n i double_exact_xor bit+i var+dbit+i*dw src+i*dw
 .end
 
 

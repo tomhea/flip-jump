@@ -55,17 +55,18 @@
 // ---------- Output:
 
 
+.def output_bit bit
+    IO + (bit ? 1 : 0)
+.end
 
 // Complexity: 8
 .def output ascii
-    .rep 8 i
-        IO + ((ascii>>i)&1)
-    .end
+    .rep 8 i output_bit (ascii>>i)&1
 .end
 
 
 // Complexity phi+5
-.def output_bit x : label_ptr base_jump_label end
+.def print_bit x : label_ptr base_jump_label end
     .xor label_ptr x
   label_ptr:
     ;base_jump_label
@@ -80,7 +81,7 @@
 
 // Complexity 8phi+40
 .def print x
-    .rep 8 i output_bit x+i*dw
+    .rep 8 i print_bit x+i*dw
 .end
 
 
@@ -93,13 +94,13 @@
 // print string of max size n.
 // Complexity min(n, len+1)*(16phi+72)
 .def print_str n x : loop
-    .rep n i
-        .if0 8 x+8*i*dw end
-        .print x+8*i*dw
-    .end
+    .rep n i __print_str_one_char x+8*i*dw end
   end:
 .end
-
+.def __print_str_one_char char end
+    .if0 8 char end
+    .print char
+.end
 
 
 // ---------- Casting to ascii:

@@ -153,10 +153,10 @@
 
 // Complexity: phi+2
 .def xor dst src
-    .naked_xor dst + dbit src
+    .exact_xor dst + dbit src
 .end
 
-.def naked_xor dst src : base_jump_label cleanup
+.def exact_xor dst src : base_jump_label cleanup
     .wflip src+w base_jump_label
     ;src
     .pad 2
@@ -168,7 +168,7 @@
 .end
 
 // Complexity: phi+3
-.def double_naked_xor dst1 dst2 src : base_jump_label cleanup
+.def double_exact_xor dst1 dst2 src : base_jump_label cleanup
     .wflip src+w base_jump_label
     ;src
     .pad 2
@@ -200,6 +200,10 @@
 // Complexity: 1
 .def not dst
     dst + dbit
+.end
+
+.def exact_not dst
+    dst
 .end
 
 

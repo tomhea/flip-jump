@@ -1,6 +1,7 @@
 from enum import Enum
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
 from time import time
+from pathlib import Path
 
 
 main_macro = ('.__M_a_i_n__', 0)
@@ -19,7 +20,9 @@ def smart_int16(num):
 
 
 def stl():
-    return [f'../stl/{lib}.fj' for lib in (f'runlib', 'bitlib', 'veclib', 'iolib', 'ptrlib', 'mathlib')]
+    path = Path(__file__).parent
+
+    return [str(path / f'../stl/{lib}.fj') for lib in (f'runlib', 'bitlib', 'veclib', 'iolib', 'ptrlib', 'mathlib')]
 
 
 id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -182,10 +185,6 @@ def new_label(counter, name=''):
         return Expr(f'__label{next(counter)}')
     else:
         return Expr(f'__label{next(counter)}_{name}')
-
-
-def temp_address() -> Expr:
-    return Expr('temp')
 
 
 def next_address() -> Expr:

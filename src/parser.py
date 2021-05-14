@@ -221,11 +221,11 @@ class CalcParser(Parser):
 
     @_('SC expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (temp_address(), p.expr), curr_file, p.lineno)
+        return Op(OpType.FlipJump, (Expr(0), p.expr), curr_file, p.lineno)
 
     @_('SC')
     def statement(self, p):
-        return Op(OpType.FlipJump, (temp_address(), next_address()), curr_file, p.lineno)
+        return Op(OpType.FlipJump, (Expr(0), next_address()), curr_file, p.lineno)
 
     @_('DOT_ID expressions')
     def statement(self, p):
@@ -245,10 +245,6 @@ class CalcParser(Parser):
             self.defs[p.ID] = p.expr
             return None
         error(f'Can\'t evaluate expression at file {curr_file} line {p.lineno}:  {str(p.expr)}.')
-
-    @_('REP expr ID line_statements NL END')
-    def statement(self, p):
-        return Op(OpType.Rep, (p.expr, p.ID, p.line_statements), curr_file, p.lineno)
 
     @_('REP expr ID ID expressions')
     def statement(self, p):
