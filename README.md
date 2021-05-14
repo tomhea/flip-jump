@@ -46,19 +46,18 @@ In many cases you won't need to specify both addresses.
 
 ```c
 100;    // Just flip: the  F;  syntax uses the address of the following memory address as the jump-address.  
-        // It is identical to:  100;some_label
-                         //     some_label:
-        // It is also identical to:  100;$
+        // It is identical to:  100;$
+        // It is also identical to:  100;some_label
+                              //     some_label:
+
 100     // You can also omit the semicolon
 
-;200    // Just jump: the  ;J  syntax looks for the 'temp' label and use it as the flip-address.
-        // It is identical to:  temp;200
-        //  If this label is not defined, using this syntax will result in assemble error (use of undefined label 'temp').
-        //  Of course it still flips the bit referenced by the 'temp' label.
+;200    // Just jump: the  ;J  syntax fills the flip-address with 0.
+        // It is identical to:  0;200
+        //  Of course it still flips the first bit in memory.
         
 ;       // you can also omit both the flip/jump addresses.
-        // It is identical to:  temp;some_label
-                        //      some_label:
+        // It is identical to:  0;$
 ```
 
 ### More syntax options
@@ -140,21 +139,20 @@ Follow the next example:
 
     ;code_start // {0} code starts at address 0
     ;
-temp:
     ;
     ;
 code_start:
 
 // {1} We can flip the address in the bit_a opcode by the branch_target address (0x400):
     bit_a+64+10;    // The +64 is to get to the 2nd word (the address word), and the +10 is to flip the bit corrospondig to 0x400.
-// {2} If we jump to execute the opcode in bit_a, it will flip 'temp' and then jump to the address written in it. 
+// {2} If we jump to execute the opcode in bit_a, it will flip address 0 and then jump to the address written in it. 
 //      So it will jump to 0x400, which is branch_target.
     ;bit_a
 
 try_second_bit:
 // {4} We will flip the address in the bit_b opcode by 0x400:
     bit_b+64+10;
-// {5} Now we jump to execute the opcode in bit_b. It will flip 'temp' and then jump to the address written in it. 
+// {5} Now we jump to execute the opcode in bit_b. It will flip address 0 and then jump to the address written in it. 
 //      So it will jump to 0x480 (was 0x80 from the start), which is second_branch_target.
     ;bit_b
 
@@ -337,9 +335,6 @@ dbit = w + #w
 
     ;code_start
     ;
-temp: 
-    ;
-    ;
 code_start:
     .not8 byte
 end: 
@@ -394,9 +389,6 @@ byte:  .byte 84
     ;code_start
   IO:
     ;0
-  temp:
-    ;
-    ;
   code_start:
 .end
 
