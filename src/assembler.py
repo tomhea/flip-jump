@@ -58,14 +58,9 @@ def write_flip_jump(bits, f, j, w):
 
 
 def labels_resolve(ops, labels, last_address, w, output_file, verbose=False, flags=0):   # TODO handle verbose?
-    if last_address >= (1<<w):
+    if last_address >= (1 << w):
         error(f"Not enough space with the {w}-width.")
     bits = []
-    if 'temp' not in labels:
-        temp_temp_address = (1 << w) - 1
-        print(f"Warning:  'temp' is not declared. It will be defined as {hex(temp_temp_address)[2:]}")
-        labels['temp'] = Expr(temp_temp_address)
-    resolved_temp_address = labels['temp'].val
     labels['__flip_by_Garden'] = Expr(last_address)
 
     for op in ops:
@@ -85,7 +80,7 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False, fla
             flip_bits = [i for i in range(w) if by_address & (1 << i)]
 
             if len(flip_bits) <= 1:
-                write_flip_jump(bits, to_address + flip_bits[0] if flip_bits else resolved_temp_address, return_address, w)
+                write_flip_jump(bits, to_address + flip_bits[0] if flip_bits else 0, return_address, w)
             else:
                 write_flip_jump(bits, to_address + flip_bits[0], last_address, w)
                 next_op = last_address

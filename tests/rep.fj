@@ -1,8 +1,6 @@
 .startup
 
-.rep 7 i
-    x+i+i;
-.end
+.rep 7 i exact_not x+i+i
 
 .loop
 
