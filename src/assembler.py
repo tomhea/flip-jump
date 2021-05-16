@@ -95,7 +95,7 @@ def labels_resolve(ops, labels, last_address, w, output_file, verbose=False, fla
             error(f"Can't resolve/assemble the next opcode - {str(op)}")
 
     writer = blm.Writer(w, w, flags=flags if flags else 0)
-    writer.add_simple_sector_with_data(0, bits)
+    writer.add_simple_segment_with_data(0, bits)
     writer.write_to_file(output_file)
 
 

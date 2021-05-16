@@ -8,12 +8,12 @@ struct {
         u16 mem_words;
         u64 word_size;  // in bits
         u64 flags;
-        u64 sector_num;
-        struct sector {
-            u64 sector_start;   // in memory words (w-bits)
+        u64 segment_num;
+        struct segment {
+            u64 segment_start;   // in memory words (w-bits)
             u64 data_start;     // in the outer-struct.data words (w-bits)
             u64 data_length;    // in the outer-struct.data words (w-bits)
-        } *sectors;             // sectors[sector_num]
+        } *segments;             // segments[segment_num]
         u8* data;               // the data
     } blm_file;     // Bit-Level Memory file
 """
@@ -28,16 +28,16 @@ class Reader:
         self.w = None
         self.default_table = []
 
-        self.sectors = []
+        self.segments = []
         self.data = []  # bytes
 
         with open(input_file, 'rb') as f:
-            self.w, self.n, self.flags, sector_num = unpack('<HQQQ', f.read(2+8+8+8))
-            self.sectors = [unpack('<QQQ', f.read(8+8+8)) for _ in range(sector_num)]
+            self.w, self.n, self.flags, segment_num = unpack('<HQQQ', f.read(2+8+8+8))
+            self.segments = [unpack('<QQQ', f.read(8+8+8)) for _ in range(segment_num)]
             self.data = [b for b in f.read()]
-            for sector_start, data_start, data_length in self.sectors:
+            for segment_start, data_start, data_length in self.segments:
                 for i in range(data_length):
-                    self.mem[sector_start + i] = self.data_word(data_start + i)
+                    self.mem[segment_start + i] = self.data_word(data_start + i)
 
     def data_word(self, i):
         res = 0
@@ -99,15 +99,15 @@ class Writer:
         if 1 << (self.word_size.bit_length() - 1) != self.word_size:
             raise ValueError(f"Word size {w} is not a power of 2")
         self.flags = flags & ((1 << 64) - 1)
-        self.sectors = []
+        self.segments = []
         self.data = []
 
     def write_to_file(self, output_file):
         with open(output_file, 'wb') as f:
-            f.write(pack('<HQQQ', self.mem_words, self.word_size, self.flags, len(self.sectors)))
+            f.write(pack('<HQQQ', self.mem_words, self.word_size, self.flags, len(self.segments)))
 
-            for sector in self.sectors:
-                f.write(pack('<QQQ', *sector))
+            for segment in self.segments:
+                f.write(pack('<QQQ', *segment))
 
             val, ind = 0, 0
             for datum in self.data:
@@ -116,8 +116,8 @@ class Writer:
                     f.write(pack('<B', val))
                     val = 0
 
-    def add_sector(self, sector_start, data_start, data_length):
-        self.sectors.append((sector_start, data_start, data_length))
+    def add_segment(self, segment_start, data_start, data_length):
+        self.segments.append((segment_start, data_start, data_length))
 
     def add_data(self, data):
         if len(data) % self.word_size != 0:
@@ -126,6 +126,6 @@ class Writer:
         self.data += data
         return start // self.word_size, len(data) // self.word_size
 
-    def add_simple_sector_with_data(self, sector_start, data):
+    def add_simple_segment_with_data(self, segment_start, data):
         data_start, data_length = self.add_data(data)
-        self.add_sector(sector_start, data_start, data_length)
+        self.add_segment(segment_start, data_start, data_length)

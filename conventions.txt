@@ -48,7 +48,7 @@
 1.  FlipJump compiled file & assembly
 
     There are three kinds of fj files:
-    .blm - Bit-Level Memory     - binary file containing the code in sectors
+    .blm - Bit-Level Memory     - binary file containing the code in segments
     .fj  - FlipJump assembly    - text file containing fj assembly with macros, and/or macros declarations.
 
     ----------
@@ -59,12 +59,12 @@
         u16 mem_words;
         u64 word_size;  // in bits
         u64 flags;
-        u64 sector_num;
-        struct sector {
-            u64 sector_start;   // in memory words (w-bits)
+        u64 segment_num;
+        struct segment {
+            u64 segment_start;   // in memory words (w-bits)
             u64 data_start;     // in the outer-struct.data words (w-bits)
             u64 data_length;    // in the outer-struct.data words (w-bits)
-        } *sectors;             // sectors[sector_num]
+        } *segments;             // segments[segment_num]
         u8* data;               // the data
     } blm_file;     // Bit-Level Memory file
 
