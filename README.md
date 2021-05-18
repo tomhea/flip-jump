@@ -251,7 +251,7 @@ You can use this bit by jumping to a flip-jump opcode that contains it.<br>
 The best way is to jump to ;dw.<br>
 
 In that way - this bit will reflect either 0x0 or 0x80 in the jump-part of the flip-jump op.<br>
-If we ```.wflip dw some_padded_address``` before the ;dw - the dw-flip-jump-op will make a jump to ```some_padded_address``` / ```some_padded_address+0x80```, based on the input, just like [here](#memory---how-can-we-implement-variables).
+If we ```.wflip dw+w some_padded_address``` before the ;dw - the dw-flip-jump-op will make a jump to ```some_padded_address``` / ```some_padded_address+0x80```, based on the input, just like [here](#memory---how-can-we-implement-variables).
 
 ```c
 // For example:
@@ -381,8 +381,27 @@ The byte decleration can be shortened as well:
 byte:  .byte 84
 ```
 
+## Segments
 
-### Hello, World!
+You can split your code into different segments in memory. 
+Your code implicitly starts at address 0 (like an implicit ```.segment 0```).
+
+```c
+// some code
+.segment 0x10000
+// some other code, will start at address 0x10000
+```
+
+Moreover, you can reserve a spot for 0-bits, without taking space in the assembled file.
+The .blm file supports segment-length > data-length. In that case the rest of the memory will be filled with zeros.
+
+```c
+.reserve 3*w    // reserves 3*w 0-bits.
+```
+
+Both ```.segment``` and ```.reserve``` must get w-aligned values.
+
+## Hello, World!
 
 ```c
 .def startup
