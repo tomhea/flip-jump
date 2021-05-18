@@ -16,7 +16,7 @@
 
 
 .def comp_if expr l0 l1
-    [dw] (expr ? l1 : l0) << w
+    ; expr ? l1 : l0
 .end
 
 .def comp_if0 expr l0 : l1
