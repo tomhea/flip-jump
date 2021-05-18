@@ -1,6 +1,4 @@
 from enum import Enum
-from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
-from time import time
 from pathlib import Path
 
 
@@ -62,13 +60,21 @@ class RunFinish(Enum):
     Input = 'input'
 
 
+class SegEntry(Enum):
+    StartAddress = 0
+    ReserveAddress = 1
+    WflipAddress = 2
+
+
 class OpType(Enum):
     FlipJump = 1        # expr, expr                # Survives until (3) label resolve
     BitSpecific = 2     # expr, expr                # Survives until (3) label resolve
     WordFlip = 3        # expr, expr                # Survives until (3) label resolve
-    Label = 4           # ID                        # Survives until (2) label dictionary
-    Macro = 5           # ID, expr [expr..]         # Survives until (1) macro resolve
-    Rep = 6             # expr, ID, statements      # Survives until (1) macro resolve
+    Segment = 4         # expr                      # Survives until (3) label resolve
+    Reserve = 5         # expr                      # Survives until (3) label resolve
+    Label = 6           # ID                        # Survives until (2) label dictionary
+    Macro = 7           # ID, expr [expr..]         # Survives until (1) macro resolve
+    Rep = 8             # expr, ID, statements      # Survives until (1) macro resolve
 
 
 class Op:
@@ -80,26 +86,6 @@ class Op:
 
     def __str__(self):
         return f'{f"{self.type}:"[7:]:10}    Data: {", ".join([str(d) for d in self.data])}    File: {self.file} (line {self.line})'
-
-
-# class AddrType(Enum):
-#     ID = 1
-#     Number = 2
-#     SkipBefore = 3
-#     SkipAfter = 4
-#
-#
-# class Address:
-#     def __init__(self, addr_type, base, index):
-#         self.type = addr_type
-#         self.base = base
-#         self.index = index
-#
-#     def __str__(self):
-#         base_hex = hex(self.base)[2:] if type(self.base) is int else self.base
-#         if self.index == 0:
-#             return f'{base_hex}'
-#         return f'{base_hex}[{hex(self.index)[2:]}]'
 
 
 class Expr:
@@ -185,6 +171,9 @@ def new_label(counter, name=''):
         return Expr(f'__label{next(counter)}')
     else:
         return Expr(f'__label{next(counter)}_{name}')
+
+
+wflip_start_label = '__wflip_area_start_'
 
 
 def next_address() -> Expr:

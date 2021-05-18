@@ -1,5 +1,6 @@
 from sly import Lexer, Parser
 from os.path import isfile
+from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
 from defs import *
 
 
@@ -7,7 +8,9 @@ global curr_file, curr_text
 
 
 class CalcLexer(Lexer):
-    tokens = {DEF, END, REP, WFLIP,
+    tokens = {DEF, END, REP,
+              WFLIP,
+              SEGMENT, RESERVE,
               DOT_ID, ID, NUMBER, STRING,
               SHL, SHR, NL, SC}
 
@@ -31,7 +34,11 @@ class CalcLexer(Lexer):
     DOT_ID[r'.def'] = DEF
     DOT_ID[r'.end'] = END
     DOT_ID[r'.rep'] = REP
+
     DOT_ID[r'.wflip'] = WFLIP
+
+    DOT_ID[r'.segment'] = SEGMENT
+    DOT_ID[r'.reserve'] = RESERVE
 
     SHL = r'<<'
     SHR = r'>>'
@@ -102,8 +109,8 @@ class CalcParser(Parser):
         self.defs = {'w': Expr(w)}
 
     def check_macro_name(self, name, file, line):
-        if name[0] in ('def', 'end', 'rep'):
-            error(f'macro name can\'t be {name[0]}! in file {file} (line {line})')
+        if f'.{name[0]}' in {'def', 'end', 'rep', 'wflip', 'segment', 'reserve'}:
+            error(f'macro name can\'t be {name[0]} (reserved name)! in file {file} (line {line})')
         if name in self.macros:
             _, _, (other_file, other_line) = self.macros[name]
             error(f'macro {name} is declared twice! in file {file} (line {line}) and in file {other_file} (line {other_file}).')
@@ -196,6 +203,8 @@ class CalcParser(Parser):
 
     @_('labels label')
     def labels(self, p):
+        if p.label.data[0].startswith(wflip_start_label):
+            error(f"can't use the reserved label prefix {wflip_start_label}")
         return p.labels + [p.label]
 
     @_('empty')
@@ -252,6 +261,14 @@ class CalcParser(Parser):
         return Op(OpType.Rep,
                   (p.expr, p.ID0, [Op(OpType.Macro, ((p.ID1, len(exps)), *exps), curr_file, p.lineno)]),
                   curr_file, p.lineno)
+
+    @_('SEGMENT expr')
+    def statement(self, p):
+        return Op(OpType.Segment, (p.expr,), curr_file, p.lineno)
+
+    @_('RESERVE expr')
+    def statement(self, p):
+        return Op(OpType.Reserve, (p.expr,), curr_file, p.lineno)
 
     @_('expressions expr')
     def expressions(self, p):
