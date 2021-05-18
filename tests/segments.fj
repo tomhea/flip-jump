@@ -1,0 +1,48 @@
+.startup
+
+X1 = 0x10000000
+X2 = 0x20000000
+X4 = 0x40000000
+
+.print 5 str_hi
+
+.input 4 X1
+.zero 20 X2
+.zero 20 num
+
+.rep 4 i more_digit 20 num X2 X1+8*dw*i
+
+;X4
+
+back:
+    .print 6 str_bye
+    ;end
+
+
+error: .bit
+
+str_hi: .string "Hi!\n"
+str_bye: .string "\nBye!\n"
+
+
+.def more_digit width num inter ascii
+    .shl width 4 num
+    .ascii2hex error inter ascii
+    .add width num inter
+.end
+
+
+.segment X1
+    .reserve dw*8*4
+.segment X2
+    .reserve dw*20
+.segment X4
+    .add 20 num num
+    .print_hex_int 20 num 1
+    ;back
+  end:
+    .loop
+
+  num:
+    .reserve dw*10
+    .reserve dw*10

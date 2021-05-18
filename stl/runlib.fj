@@ -5,7 +5,7 @@
 // There should only be one libXX.fjm used per project
 
 // Everything after // is ignored, everything before first : is ignored too, and every whitespace is ignored (besides new line)
-// An opcode is:  F;L  F  ;L  or just  ;  (no F => F=temp;  no L => L=next)
+// An opcode is:  F;L  F  ;L  or just  ;  (no F => F=0;  no L => L=next)
 
 
 // w = ??       // memory and operands width. Is defined at compile time.
@@ -20,7 +20,6 @@ dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
 
 
 .def startup
-  temp:
     ;code_start     // 0w;1w : code start
   IO:
     ;0              // 2w;3w : now points to io_handler

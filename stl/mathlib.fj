@@ -5,7 +5,7 @@
 // This file is independent of the bit-width, and uses the consts defined at libXX.fjm
 
 // Everything after // is ignored, everything before first : is ignored too, and every whitespace is ignored (besides new line)
-// An opcode is:  F;L  F  ;L  or just  ;  (no F => F=temp;  no L => L=next)
+// An opcode is:  F;L  F  ;L  or just  ;  (no F => F=0;  no L => L=next)
 
 
 

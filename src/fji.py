@@ -4,6 +4,7 @@ import blm
 from readchar import readchar
 
 from os.path import isfile, abspath
+from time import time
 import argparse
 from defs import *
 import pickle
@@ -38,7 +39,7 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
         if single_step or ip in breakpoints:
             pause_time_start = time()
             if ip in breakpoints:
-                print(f'\nBreakpoint {breakpoints[ip]}:')
+                print(f'\nBreakpoint {breakpoints[ip]} (Address {hex(ip)[2:]}):')
             else:
                 if ip in labels_dict:
                     print(f'\nAddress {hex(ip)[2:]} ({labels_dict[ip]}):')
@@ -156,15 +157,15 @@ def main():
     file = abspath(args.file)
     if not isfile(file):
         parser.error(f'file {file} does not exist.')
-    if not file.endswith('.blm'):
-        parser.error(f'file {file} is not a .blm file.')
+    # if not file.endswith('.blm'):
+    #     parser.error(f'file {file} is not a .blm file.')
 
     if args.debug:
         debug_file = abspath(args.debug)
         if not isfile(debug_file):
             parser.error(f'debug-file {debug_file} does not exist.')
-        if args.debug and not debug_file.endswith('.fj_debug'):
-            parser.error(f'debug-file {debug_file} is not a .fj_debug file.')
+        # if args.debug and not debug_file.endswith('.fj_debug'):
+        #     parser.error(f'debug-file {debug_file} is not a .fj_debug file.')
 
     verbose_set = {Verbose.PrintOutput}
     if not args.silent:
