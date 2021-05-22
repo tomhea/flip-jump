@@ -9,7 +9,7 @@ def output_ops(ops, output_file):
             eval_all(op)
             if op.type == OpType.FlipJump:
                 f.write(f'  {op.data[0]};{op.data[1]}\n')
-            elif op.type == OpType.BitSpecific:
+            elif op.type == OpType.WordsValue:
                 f.write(f'  [{op.data[0]}]{op.data[1]}\n')
             elif op.type == OpType.WordFlip:
                 f.write(f'  .wflip {op.data[0]} {op.data[1]}\n')

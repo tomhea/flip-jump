@@ -48,11 +48,11 @@ def label_dictionary_pass(ops, w, verbose=False):
 
             last_address_index += 1
             rem_ops.append(op)
-        elif op.type in {OpType.FlipJump, OpType.BitSpecific, OpType.WordFlip}:
+        elif op.type in {OpType.FlipJump, OpType.WordsValue, OpType.WordFlip}:
             delta = 2*w
-            if op.type == OpType.BitSpecific:
+            if op.type == OpType.WordsValue:
                 eval_all(op, labels)
-                delta = try_int(op, op.data[0])
+                delta = w * try_int(op, op.data[0])
             end_address = curr_address + delta
             eval_all(op, {'$': Expr(end_address)})
             curr_address = end_address
@@ -163,9 +163,9 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
         if op.type == OpType.FlipJump:
             f, j = vals
             write_flip_jump(bits, f, j, w)
-        elif op.type == OpType.BitSpecific:
+        elif op.type == OpType.WordsValue:
             n, v = vals
-            bits += lsb_first_bin_array(v, n)
+            bits += lsb_first_bin_array(v, w*n)
         elif op.type == OpType.Segment:
             segment_index += 2
             close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits, wflips)
