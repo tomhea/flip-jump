@@ -43,10 +43,15 @@ class Reader:
                 print(f'Error: bad magic code ({magic}, should be {fj_magic}).')
                 exit(1)
             self.segments = [unpack('<QQQQ', f.read(8+8+8+8)) for _ in range(segment_num)]
-            self.data = [b for b in f.read()]
+
+            read_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.w]
+            word_bytes_size = self.w // 8
+            file_data = f.read()
+            self.data = [unpack(read_tag, file_data[i:i+word_bytes_size])[0] for i in range(0, len(file_data), word_bytes_size)]
+
             for segment_start, segment_length, data_start, data_length in self.segments:
                 for i in range(data_length):
-                    self.mem[segment_start + i] = self.data_word(data_start + i)
+                    self.mem[segment_start + i] = self.data[data_start + i]
                 if segment_length > data_length:
                     if segment_length - data_length < reserved_dict_threshold:
                         for i in range(data_length, segment_length):
@@ -121,6 +126,8 @@ class Writer:
         self.data = []  # words array
 
     def write_to_file(self, output_file):
+        write_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
+
         with open(output_file, 'wb') as f:
             f.write(pack('<HHQQQ', fj_magic, self.mem_words, self.word_size, self.flags, len(self.segments)))
 
@@ -128,7 +135,7 @@ class Writer:
                 f.write(pack('<QQQQ', *segment))
 
             for datum in self.data:
-                f.write(pack(self.write_tag, datum))
+                f.write(pack(write_tag, datum))
 
     def add_segment(self, segment_start, segment_length, data_start, data_length):
         if segment_length < data_length:
