@@ -43,10 +43,15 @@ class Reader:
                 print(f'Error: bad magic code ({magic}, should be {fj_magic}).')
                 exit(1)
             self.segments = [unpack('<QQQQ', f.read(8+8+8+8)) for _ in range(segment_num)]
-            self.data = [b for b in f.read()]
+
+            read_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.w]
+            word_bytes_size = self.w // 8
+            file_data = f.read()
+            self.data = [unpack(read_tag, file_data[i:i+word_bytes_size])[0] for i in range(0, len(file_data), word_bytes_size)]
+
             for segment_start, segment_length, data_start, data_length in self.segments:
                 for i in range(data_length):
-                    self.mem[segment_start + i] = self.data_word(data_start + i)
+                    self.mem[segment_start + i] = self.data[data_start + i]
                 if segment_length > data_length:
                     if segment_length - data_length < reserved_dict_threshold:
                         for i in range(data_length, segment_length):
@@ -113,27 +118,24 @@ class Writer:
     def __init__(self, w, n, flags=0):
         self.mem_words = n
         self.word_size = w
-        if self.word_size & 7 != 0:
-            raise ValueError(f"Word size {w} doesn't divide by 8")
-        if 1 << (self.word_size.bit_length() - 1) != self.word_size:
-            raise ValueError(f"Word size {w} is not a power of 2")
+        if self.word_size not in (8, 16, 32, 64):
+            raise ValueError(f"Word size {w} is not in {{8, 16, 32, 64}}.")
+        self.write_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
         self.flags = flags & ((1 << 64) - 1)
         self.segments = []
-        self.data = []
+        self.data = []  # words array
 
     def write_to_file(self, output_file):
+        write_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
+
         with open(output_file, 'wb') as f:
             f.write(pack('<HHQQQ', fj_magic, self.mem_words, self.word_size, self.flags, len(self.segments)))
 
             for segment in self.segments:
                 f.write(pack('<QQQQ', *segment))
 
-            val, ind = 0, 0
             for datum in self.data:
-                val, ind = val | (datum << ind), (ind+1) % 8
-                if ind == 0:
-                    f.write(pack('<B', val))
-                    val = 0
+                f.write(pack(write_tag, datum))
 
     def add_segment(self, segment_start, segment_length, data_start, data_length):
         if segment_length < data_length:
@@ -141,11 +143,9 @@ class Writer:
         self.segments.append((segment_start, segment_length, data_start, data_length))
 
     def add_data(self, data):
-        if len(data) % self.word_size != 0:
-            data += [0] * (self.word_size - (len(data) % self.word_size))
         start = len(self.data)
         self.data += data
-        return start // self.word_size, len(data) // self.word_size
+        return start, len(data)
 
     def add_simple_segment_with_data(self, segment_start, data):
         data_start, data_length = self.add_data(data)

@@ -68,7 +68,7 @@ class SegEntry(Enum):
 
 class OpType(Enum):
     FlipJump = 1        # expr, expr                # Survives until (3) label resolve
-    BitSpecific = 2     # expr, expr                # Survives until (3) label resolve
+    WordsValue = 2      # expr, expr                # Survives until (3) label resolve
     WordFlip = 3        # expr, expr                # Survives until (3) label resolve
     Segment = 4         # expr                      # Survives until (3) label resolve
     Reserve = 5         # expr                      # Survives until (3) label resolve

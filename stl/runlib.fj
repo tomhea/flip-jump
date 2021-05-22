@@ -39,11 +39,11 @@ dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
 // ---------- Basic Functionality
 
 
-.def bit_pad x : pad_start
+.def word_pad x : pad_start
   pad_start:
-    [(0-pad_start) % x] 0
+    [(0-pad_start/w) % x] 0
 .end
 
 .def pad x
-    .bit_pad x*dw
+    .word_pad x*2
 .end
