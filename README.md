@@ -63,11 +63,11 @@ In many cases you won't need to specify both addresses.
 ### More syntax options
 
 ```c
-[len]value  // Put len-memory-bits with the value of 'value'.
+[len]value  // Put len-memory-words with the value of 'value'.
 
-// The next two lines are identical to the 64-bit fj opcode 123;456
-[64]123
-[60+4]460-4     
+// The next two lines are identical
+[2]123
+123;123 
 
 x = 13      // Declare constants
 y = x+4     
