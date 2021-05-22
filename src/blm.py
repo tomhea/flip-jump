@@ -113,13 +113,12 @@ class Writer:
     def __init__(self, w, n, flags=0):
         self.mem_words = n
         self.word_size = w
-        if self.word_size & 7 != 0:
-            raise ValueError(f"Word size {w} doesn't divide by 8")
-        if 1 << (self.word_size.bit_length() - 1) != self.word_size:
-            raise ValueError(f"Word size {w} is not a power of 2")
+        if self.word_size not in (8, 16, 32, 64):
+            raise ValueError(f"Word size {w} is not in {{8, 16, 32, 64}}.")
+        self.write_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
         self.flags = flags & ((1 << 64) - 1)
         self.segments = []
-        self.data = []
+        self.data = []  # words array
 
     def write_to_file(self, output_file):
         with open(output_file, 'wb') as f:
@@ -128,12 +127,8 @@ class Writer:
             for segment in self.segments:
                 f.write(pack('<QQQQ', *segment))
 
-            val, ind = 0, 0
             for datum in self.data:
-                val, ind = val | (datum << ind), (ind+1) % 8
-                if ind == 0:
-                    f.write(pack('<B', val))
-                    val = 0
+                f.write(pack(self.write_tag, datum))
 
     def add_segment(self, segment_start, segment_length, data_start, data_length):
         if segment_length < data_length:
@@ -141,11 +136,9 @@ class Writer:
         self.segments.append((segment_start, segment_length, data_start, data_length))
 
     def add_data(self, data):
-        if len(data) % self.word_size != 0:
-            data += [0] * (self.word_size - (len(data) % self.word_size))
         start = len(self.data)
         self.data += data
-        return start // self.word_size, len(data) // self.word_size
+        return start, len(data)
 
     def add_simple_segment_with_data(self, segment_start, data):
         data_start, data_length = self.add_data(data)

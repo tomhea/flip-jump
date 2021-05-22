@@ -101,7 +101,7 @@ def close_segment(w, segment_index, boundary_addresses, writer, first_address, l
     wflips.clear()
 
 
-def clean_segment_index(index, boundary_addresses):     # TODO
+def clean_segment_index(index, boundary_addresses):
     clean_index = 0
     for entry in boundary_addresses[:index]:
         if entry[0] == SegEntry.WflipAddress:
@@ -162,10 +162,10 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
 
         if op.type == OpType.FlipJump:
             f, j = vals
-            write_flip_jump(bits, f, j, w)
+            bits += [f, j]
         elif op.type == OpType.WordsValue:
             n, v = vals
-            bits += lsb_first_bin_array(v, w*n)
+            bits += [v] * n
         elif op.type == OpType.Segment:
             segment_index += 2
             close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits, wflips)
@@ -182,14 +182,18 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
             flip_bits = [i for i in range(w) if by_address & (1 << i)]
 
             if len(flip_bits) <= 1:
-                write_flip_jump(bits, to_address + flip_bits[0] if flip_bits else 0, return_address, w)
+                bits += [to_address + flip_bits[0] if flip_bits else 0,
+                         return_address]
             else:
-                write_flip_jump(bits, to_address + flip_bits[0], wflip_address, w)
+                bits += [to_address + flip_bits[0],
+                         wflip_address]
                 next_op = wflip_address
                 for bit in flip_bits[1:-1]:
                     next_op += 2*w
-                    write_flip_jump(wflips, to_address+bit, next_op, w)
-                write_flip_jump(wflips, to_address + flip_bits[-1], return_address, w)
+                    wflips += [to_address+bit,
+                               next_op]
+                wflips += [to_address + flip_bits[-1],
+                           return_address]
                 wflip_address = next_op + 2 * w
 
                 if wflip_address >= (1 << w):
