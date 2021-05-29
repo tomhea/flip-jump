@@ -1,4 +1,4 @@
-import blm
+import fjm
 from preprocessor import resolve_macros
 from tempfile import mkstemp
 import os
@@ -145,7 +145,7 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
     if max(e[1] for e in boundary_addresses) >= (1 << w):
         error(f"Not enough space with the {w}-width.")
 
-    writer = blm.Writer(w, w, flags=flags if flags else 0)
+    writer = fjm.Writer(w, w, flags=flags if flags else 0)
 
     bits = []
     wflips = []
@@ -267,7 +267,7 @@ def main():
     pass
     print('not assembling')
     # for test_name in ('cat',):#, 'ncat', 'mathbit', 'not', 'testbit', 'mathvec'):
-    #     full_assemble([f'tests/{test_name}.fj'], f'tests/compiled/{test_name}.blm',
+    #     full_assemble([f'tests/{test_name}.fj'], f'tests/compiled/{test_name}.fjm',
     #                   preprocessed_file=f'tests/compiled/{test_name}__no_macros.fj')
 
 

@@ -3,5 +3,3 @@
 
 # Show statistics for FlipJump files.
 *.fj  linguist-language=FlipJump
-*.fjm linguist-language=FlipJump
-

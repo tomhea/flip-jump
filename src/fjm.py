@@ -5,19 +5,19 @@ from time import sleep
 
 """
 struct {
-        u16 fj_magic;   // 'F' + 'J'<<8  (0x4a46)
-        u16 mem_words;
-        u64 word_size;  // in bits
-        u64 flags;
-        u64 segment_num;
-        struct segment {
-            u64 segment_start;  // in memory words (w-bits)
-            u64 segment_length; // in memory words (w-bits)
-            u64 data_start;     // in the outer-struct.data words (w-bits)
-            u64 data_length;    // in the outer-struct.data words (w-bits)
-        } *segments;             // segments[segment_num]
-        u8* data;               // the data
-    } blm_file;     // Bit-Level Memory file
+    u16 fj_magic;   // 'F' + 'J'<<8  (0x4a46)
+    u16 mem_words;
+    u64 word_size;  // in bits
+    u64 flags;
+    u64 segment_num;
+    struct segment {
+        u64 segment_start;  // in memory words (w-bits)
+        u64 segment_length; // in memory words (w-bits)
+        u64 data_start;     // in the outer-struct.data words (w-bits)
+        u64 data_length;    // in the outer-struct.data words (w-bits)
+    } *segments;             // segments[segment_num]
+    u8* data;               // the data
+} fjm_file;     // Flip-Jump Memory file
 """
 
 fj_magic = ord('F') + (ord('J') << 8)
@@ -40,7 +40,7 @@ class Reader:
         with open(input_file, 'rb') as f:
             magic, self.w, self.n, self.flags, segment_num = unpack('<HHQQQ', f.read(2+2+8+8+8))
             if magic != fj_magic:
-                print(f'Error: bad magic code ({magic}, should be {fj_magic}).')
+                print(f'Error: bad magic code ({hex(magic)}, should be {hex(fj_magic)}).')
                 exit(1)
             self.segments = [unpack('<QQQQ', f.read(8+8+8+8)) for _ in range(segment_num)]
 
@@ -58,13 +58,6 @@ class Reader:
                             self.mem[segment_start + i] = 0
                     else:
                         self.zeros_boundaries.append((segment_start + data_length, segment_start + segment_length))
-
-    def data_word(self, i):
-        res = 0
-        w_in_bytes = self.w >> 3
-        for j in range(w_in_bytes):
-            res |= self.data[i * w_in_bytes + j] << (j << 3)
-        return res
 
     def __getitem__(self, address):
         address &= ((1 << self.n) - 1)

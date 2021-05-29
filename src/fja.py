@@ -11,7 +11,7 @@ def main():
     parser = argparse.ArgumentParser(description='Assemble and Run FlipJump programs.')
     parser.add_argument('file', help="the FlipJump file.", nargs='+')
     parser.add_argument('-s', '--silent', help="don't show assemble & run times", action='store_true')
-    parser.add_argument('-o', '--outfile', help="output assembled file.", default="a.blm")
+    parser.add_argument('-o', '--outfile', help="output assembled file.", default="a.fjm")
     parser.add_argument('--no-macros', help="output no-macros file.")
     parser.add_argument('-d', '--debug', help="output debug file (used for breakpoints).")
     parser.add_argument('-f', '--flags', help="default running flags", type=int, default=0)
@@ -54,7 +54,7 @@ def main():
     #     run_time, ops_executed, output, finish_cause = assemble_and_run([f'tests/{test}.fj'], 64,
     #                     preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
     #                     debugging_file=f'tests/compiled/{test}.fj_debug',
-    #                     output_file=f'tests/compiled/{test}.blm',
+    #                     output_file=f'tests/compiled/{test}.fjm',
     #                     defined_input=None,
     #                     verbose=set([
     #                         Verbose.Time,
