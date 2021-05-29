@@ -393,7 +393,7 @@ Your code implicitly starts at address 0 (like an implicit ```.segment 0```).
 ```
 
 Moreover, you can reserve a spot for 0-bits, without taking space in the assembled file.
-The .blm file supports segment-length > data-length. In that case the rest of the memory will be filled with zeros.
+The .fjm file supports segment-length > data-length. In that case the rest of the memory will be filled with zeros.
 
 ```c
 .reserve 3*w    // reserves 3*w 0-bits.
@@ -454,8 +454,8 @@ Note that all of these macros are already implemented in the standard library:
 # How to run?
 
 ```bash
->>> fja.py hello.fj -o hello.blm --no-stl
->>> fji.py hello.blm
+>>> fja.py hello.fj -o hello.fjm --no-stl
+>>> fji.py hello.fjm
 Hello, World!
 ```
 
@@ -470,7 +470,7 @@ Hello, World!
   - preprocessor.py - unwind all macros and reps.
   - assembler.py    - assembles the macroless fj file.
   - defs.py         - classes/functions/constants used throughout the project.
-  - blm.py          - read/write .blm (bit-level-memory) files.
+  - fjm.py          - read/write .fjm (flip-jump-memory) files.
   - fja.py          - the FlipJump Assembler script.
   - fji.py          - the FlipJump Interpreter script.
 

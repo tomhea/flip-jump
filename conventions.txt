@@ -50,12 +50,12 @@
 1.  FlipJump compiled file & assembly
 
     There are three kinds of fj files:
-    .blm - Bit-Level Memory     - binary file containing the code in segments
+    .fjm - Flip-Jump Memory     - binary file containing the code in segments
     .fj  - FlipJump assembly    - text file containing fj assembly with macros, and/or macros declarations.
 
     ----------
 
-    The .blm file format (uX is an unsigned X-bit little endian number):
+    The .fjm file format (uX is an unsigned X-bit little endian number):
 
     struct {
         u16 fj_magic;   // 'F' + 'J'<<8  (0x4a46)
@@ -70,7 +70,7 @@
             u64 data_length;    // in the outer-struct.data words (w-bits)
         } *segments;             // segments[segment_num]
         u8* data;               // the data
-    } blm_file;     // Bit-Level Memory file
+    } fjm_file;     // Flip-Jump Memory file
 
     ----------
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import blm
+import fjm
 from readchar import readchar
 
 from os.path import isfile, abspath
@@ -13,7 +13,7 @@ import pickle
 def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verbose=False, output_verbose=False,
         single_step=False, labels_dict={}):
     start_time = time()
-    mem = blm.Reader(input_file)
+    mem = fjm.Reader(input_file)
     if time_verbose:
         print(f'  loading memory:  {time() - start_time:.3f}s')
 
@@ -157,8 +157,8 @@ def main():
     file = abspath(args.file)
     if not isfile(file):
         parser.error(f'file {file} does not exist.')
-    # if not file.endswith('.blm'):
-    #     parser.error(f'file {file} is not a .blm file.')
+    # if not file.endswith('.fjm'):
+    #     parser.error(f'file {file} is not a .fjm file.')
 
     if args.debug:
         debug_file = abspath(args.debug)
@@ -204,7 +204,7 @@ def main():
     #     run_time, ops_executed, output, finish_cause = assemble_and_run([f'tests/{test}.fj'], 64,
     #                     preprocessed_file=f'tests/compiled/{test}__no_macros.fj',
     #                     debugging_file=f'tests/compiled/{test}.fj_debug',
-    #                     output_file=f'tests/compiled/{test}.blm',
+    #                     output_file=f'tests/compiled/{test}.fjm',
     #                     defined_input=None,
     #                     verbose=set([
     #                         Verbose.Time,
