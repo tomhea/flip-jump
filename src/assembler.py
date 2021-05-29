@@ -145,7 +145,7 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
     if max(e[1] for e in boundary_addresses) >= (1 << w):
         error(f"Not enough space with the {w}-width.")
 
-    writer = fjm.Writer(w, w, flags=flags if flags else 0)
+    writer = fjm.Writer(w, flags=flags if flags else 0)
 
     bits = []
     wflips = []

@@ -59,8 +59,7 @@
 
     struct {
         u16 fj_magic;   // 'F' + 'J'<<8  (0x4a46)
-        u16 mem_words;
-        u64 word_size;  // in bits
+        u16 word_size;  // in bits
         u64 flags;
         u64 segment_num;
         struct segment {
