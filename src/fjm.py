@@ -6,8 +6,7 @@ from time import sleep
 """
 struct {
     u16 fj_magic;   // 'F' + 'J'<<8  (0x4a46)
-    u16 mem_words;
-    u64 word_size;  // in bits
+    u16 word_size;  // in bits
     u64 flags;
     u64 segment_num;
     struct segment {
@@ -29,7 +28,6 @@ class Reader:
         self.mem = {}   # memory words
         self.slow_garbage_read = slow_garbage_read
         self.stop_after_garbage = stop_after_garbage
-        self.n = None
         self.w = None
         self.default_table = []
         self.zeros_boundaries = []
@@ -38,7 +36,7 @@ class Reader:
         self.data = []  # bytes
 
         with open(input_file, 'rb') as f:
-            magic, self.w, self.n, self.flags, segment_num = unpack('<HHQQQ', f.read(2+2+8+8+8))
+            magic, self.w, self.flags, segment_num = unpack('<HHQQ', f.read(2+2+8+8))
             if magic != fj_magic:
                 print(f'Error: bad magic code ({hex(magic)}, should be {hex(fj_magic)}).')
                 exit(1)
@@ -60,7 +58,7 @@ class Reader:
                         self.zeros_boundaries.append((segment_start + data_length, segment_start + segment_length))
 
     def __getitem__(self, address):
-        address &= ((1 << self.n) - 1)
+        address &= ((1 << self.w) - 1)
         if address not in self.mem:
             for start, end in self.zeros_boundaries:
                 if start <= address < end:
@@ -76,12 +74,12 @@ class Reader:
         return self.mem[address]
 
     def __setitem__(self, address, value):
-        address &= ((1 << self.n) - 1)
+        address &= ((1 << self.w) - 1)
         value &= ((1 << self.w) - 1)
         self.mem[address] = value
 
     def bit_address_decompose(self, bit_address):
-        address = (bit_address >> (self.w.bit_length() - 1)) & ((1 << self.n) - 1)
+        address = (bit_address >> (self.w.bit_length() - 1)) & ((1 << self.w) - 1)
         bit = bit_address & (self.w - 1)
         return address, bit
 
@@ -100,7 +98,7 @@ class Reader:
         address, bit = self.bit_address_decompose(bit_address)
         if bit == 0:
             return self[address]
-        if address == ((1 << self.n) - 1):
+        if address == ((1 << self.w) - 1):
             print(f'\nWarning:  Accessed outside of memory (beyond the last bit).')
             exit(1)
         l, m = self[address], self[address+1]
@@ -108,8 +106,7 @@ class Reader:
 
 
 class Writer:
-    def __init__(self, w, n, flags=0):
-        self.mem_words = n
+    def __init__(self, w, flags=0):
         self.word_size = w
         if self.word_size not in (8, 16, 32, 64):
             raise ValueError(f"Word size {w} is not in {{8, 16, 32, 64}}.")
@@ -122,7 +119,7 @@ class Writer:
         write_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
 
         with open(output_file, 'wb') as f:
-            f.write(pack('<HHQQQ', fj_magic, self.mem_words, self.word_size, self.flags, len(self.segments)))
+            f.write(pack('<HHQQ', fj_magic, self.word_size, self.flags, len(self.segments)))
 
             for segment in self.segments:
                 f.write(pack('<QQQQ', *segment))

@@ -1,0 +1,6 @@
+[submodule "src/cpp_fji/include/parallel_hashmap"]
+	path = src/cpp_fji/include/parallel_hashmap
+	url = https://github.com/greg7mdp/parallel-hashmap
+[submodule "src/cpp_fji/include/argparse"]
+	path = src/cpp_fji/include/argparse
+	url = https://github.com/p-ranav/argparse
