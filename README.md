@@ -463,6 +463,13 @@ Hello, World!
   - The --no-stl flag tells the assembler not to include the standard library. It is not needed as we implemented the macros ourselves.
 - The second line will run your code.
 
+You can also use the faster (but still in developement) cpp-based interpreter (under src/cpp_fji):
+
+```bash
+>>> fji hello.fjm
+Hello, World!
+```
+
 # Project Structure
 
 **src** (assembler source files):
