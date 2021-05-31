@@ -16,7 +16,7 @@ void run(ifstream& file, istream& input, ostream& output, u64 fileFlags) {
     RunStatistics stats;
 
     while (true) {
-        if (ip % Aligned) {
+        if (ip % Aligned) { //  [[unlikely]]
             cerr << "Error: read from an unaligned address (ip=0x" << hex << ip << ")." << endl;
             exit(1);
         }
