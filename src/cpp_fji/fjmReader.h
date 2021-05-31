@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 #include <chrono>
+#include <exception>
 
 
 using namespace std;
@@ -64,6 +65,26 @@ class Mem {
     istream& input;
     ostream& output;
     u8 outCurr, outLen, inCurr, inLen;
+    static constexpr W w = sizeof(W) * 8;
+    static constexpr W inBit = w == 8 ? 4 : (w == 16 ? 5 : (w == 32 ? 6 : 7));
+
+
+    inline W getNotMappedWord(W addr, W wordAddr, W val=0) {
+        if constexpr (ZeroInit) {
+            mem[wordAddr] = val;
+            return val;
+        } else {
+            //TODO maybe prefetch hot spots.
+            for (const pair<W, W> zeroSeg : zeroSegments) {
+                if (zeroSeg.first <= wordAddr && wordAddr < zeroSeg.second) {
+                    mem[wordAddr] = val;
+                    return val;
+                }
+            }
+            cerr << "Error: read from an uninitialized address " << addr << "." << endl;
+            exit(1);
+        }
+    }
 
 public:
     Mem(ifstream& file, istream& input, ostream& output, u64 fileFlags = 0, u64 runFlags = 0, u64 zerosFillThreshold = 1024)
@@ -91,7 +112,7 @@ public:
             data.push_back(datum);
         }
 
-//        vector<W> data(istreambuf_iterator<W>(file), istreambuf_iterator<W>());
+//        vector<W> data(std::istreambuf_iterator<W>(file), std::istreambuf_iterator<W>());
 
 //    istreambuf_iterator<W> isbStart(file);
 //    istreambuf_iterator<W> isbStartData(isbStart + segmentNum*sizeof(Segment));
@@ -104,7 +125,7 @@ public:
         // Fill segments.
         for (const Segment& seg : segments) {
             for (u64 i = 0; i < seg.dataLen; i++)
-                mem[seg.segmentStart + i] = data[seg.dataStart + i];
+                mem[seg.segmentStart + i] = data.at(seg.dataStart + i);
             if (seg.segmentLen < seg.dataLen) {
                 cerr << "Error: segment-length is smaller than data-length:  " << seg.segmentLen << " < " << seg.dataLen << endl;
                 exit(1);
@@ -123,12 +144,10 @@ public:
     }
 
 
-    W read_word_check_input(W addr, RunStatistics& stats) {
+    inline W read_word_check_input(W addr, RunStatistics& stats) {
         W wordAddr = addr/(sizeof(W)*8);
 
         if (wordAddr < 4) {
-            W w = sizeof(W)*8;
-            W inBit = w == 8 ? 4 : (w == 16 ? 5 : (w == 32 ? 6 : 7));
             if (addr <= 3*w+inBit && 3*w+inBit < addr+w) {
                 if (inLen == 0) {
                     stats.stopTimer();
@@ -136,9 +155,15 @@ public:
                     stats.startTimer();
                     inLen = 8;
                 }
-                W word3 = mem[3];
-                if ((inCurr&1) ^ ((word3>>inBit)&1))
-                    mem[3] = word3 ^ (1 << inBit);
+
+                W is1 = inCurr & 1;
+                if (!mem.modify_if(3, [is1](W& val) {
+                    if (is1 ^ ((val>>inBit)&1))
+                        val ^= 1 << inBit;
+                })) {
+                    getNotMappedWord(3*w+inBit, 3, is1 ? 1 << inBit : 0);
+                }
+
                 inLen--;
                 inCurr>>=1;
             }
@@ -147,35 +172,17 @@ public:
     }
 
 
-    W read_word(W addr) {
-        W wordAddr = addr/(sizeof(W)*8);
-        W val;
-        if (mem.if_contains(wordAddr, [&val](W value) {val=value;})) {   //TODO maybe use if_contains_unsafe, OR maybe just use mem[] and catch errors.
+    inline W read_word(W addr) {
+        W wordAddr = addr/(sizeof(W)*8), val;
+        if (mem.if_contains_unsafe(wordAddr, [&val](W value) {val=value;}))
             return val;
-//            return mem[wordAddr];
-        } else {
-            if constexpr (ZeroInit) {
-                mem[wordAddr] = 0;
-                return 0;
-            } else {
-                //TODO maybe prefetch hot spots.
-                for (const pair<W, W> zeroSeg : zeroSegments) {
-                    if (zeroSeg.first <= wordAddr && wordAddr < zeroSeg.second) {
-                        mem[wordAddr] = 0;
-                        return 0;
-                    }
-                }
-                cerr << "Error: read from an uninitialized address " << addr << "." << endl;
-                exit(1);
-            }
-        }
+        else
+            return getNotMappedWord(addr, wordAddr);
     }
 
 
 
-    void flip_bit(W addr, RunStatistics& stats) {
-        W w = sizeof(W)*8;
-
+    inline void flip_bit(W addr, RunStatistics& stats) {
         if (addr <= 2*w+1 && addr >= 2*w) {
             if (addr == 2*w+1)
                 outCurr |= 1<<outLen;
@@ -189,7 +196,9 @@ public:
         } else {
             W wordAddr = addr / w;
             W bitMask = 1 << (addr % w);
-            mem[wordAddr] = read_word(addr) ^ bitMask;
+            if (!mem.modify_if(wordAddr, [bitMask](W& val) {val ^= bitMask;})) {
+                getNotMappedWord(addr, wordAddr, bitMask);
+            }
         }
     }
 };
