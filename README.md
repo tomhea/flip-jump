@@ -95,7 +95,7 @@ There are variants of the CPU, lets assume the simplest form:
 #define SELF_FLIP 2
 #define SUCCESS_FINISH 0
 
-int fj8(u8 mem) {
+int fj8(u8* mem) {
     u8 ip = 0;
 
     while (true) {
