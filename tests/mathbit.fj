@@ -1,6 +1,8 @@
-.startup
-.inc1 x carry
-.loop
+    .startup
+    .inc1 x carry
+    .loop
 
-x:     .bit 0
-carry: .bit 1
+  x:
+    .bit 0
+  carry:
+    .bit 1

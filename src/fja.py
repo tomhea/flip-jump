@@ -32,6 +32,8 @@ def main():
             error('the "file" argument should contain a folder path.')
         Path.mkdir(Path(args.file[0]) / 'compiled', exist_ok=True)
         for file in glob(join(args.file[0], '*fj')):
+            # if file in ('tests/calc.fj',):
+            #     continue
             print(f'compiling {Path(file).name}:')
             assemble([file] if args.no_stl else stl() + [file], (Path(args.file[0]) / 'compiled' / (Path(file).stem + '.fjm')),
                      args.width, flags=args.flags, verbose=verbose_set)

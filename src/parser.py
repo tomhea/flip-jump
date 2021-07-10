@@ -8,7 +8,8 @@ global curr_file, curr_text, error_occurred
 
 
 class FJLexer(Lexer):
-    tokens = {DEF, END, REP,
+    tokens = {#DEF, END,
+              REP,
               WFLIP,
               SEGMENT, RESERVE,
               DOT_ID, ID, NUMBER, STRING,
@@ -21,7 +22,9 @@ class FJLexer(Lexer):
                 '?', ':',
                 '"',
                 '#',
-                '[', ']'}
+                '[', ']',
+                '{', '}',
+                "@", ","}
 
     ignore_ending_comment = r'//.*'
 
@@ -31,8 +34,8 @@ class FJLexer(Lexer):
     STRING = string_re
 
     DOT_ID = fr'\.({id_re})'
-    DOT_ID[r'.def'] = DEF
-    DOT_ID[r'.end'] = END
+    # DOT_ID[r'.def'] = DEF
+    # DOT_ID[r'.end'] = END
     DOT_ID[r'.rep'] = REP
 
     DOT_ID[r'.wflip'] = WFLIP
@@ -129,7 +132,7 @@ class FJParser(Parser):
     def error(self, token):
         global error_occurred
         error_occurred = True
-        print(f'Syntax Error at file {curr_file} line {token.lineno}, token=({token.type}, {token.value})')
+        print(f'Syntax Error at file {curr_file} line {token.lineno}, token=("{token.type}", {token.value})')
 
     @_('definable_line_statements')
     def program(self, p):
@@ -155,11 +158,11 @@ class FJParser(Parser):
     def definable_line_statement(self, p):
         return p.line_statement
 
-    @_('labels macro_def')
+    @_('macro_def')
     def definable_line_statement(self, p):
-        return p.labels
+        return []
 
-    @_('DEF ID macro_params line_statements NL END')
+    @_('ID macro_params "{" NL line_statements NL "}"')
     def macro_def(self, p):
         params = p.macro_params
         name = (p.ID, len(params[0]))
@@ -169,51 +172,77 @@ class FJParser(Parser):
         self.macros[name] = [params, statements, (curr_file, p.lineno)]
         return None
 
+    @_('empty')
+    def macro_params(self, p):
+        return [], []
+
     @_('ids')
     def macro_params(self, p):
         return p.ids, []
 
-    @_('ids ":" ids')
+    @_('"@" ids')
+    def macro_params(self, p):
+        return [], p.ids
+
+    @_('ids "@" ids')
     def macro_params(self, p):
         return p.ids0, p.ids1
 
-    @_('ids ID')
+    @_('ids "," ID')
     def ids(self, p):
         return p.ids + [p.ID]
 
-    @_('empty')
+    @_('ID')
     def ids(self, p):
-        return []
+        return [p.ID]
 
     @_('line_statements NL line_statement')
     def line_statements(self, p):
-        if self.verbose:
-            print('\n'.join(str(_) for _ in p.line_statement))
         return p.line_statements + p.line_statement
 
-    @_('empty')
+    @_('line_statement')
     def line_statements(self, p):
+        return p.line_statement
+
+    # @_('empty')
+    # def line_statements(self, p):
+    #     return []
+
+    @_('empty')
+    def line_statement(self, p):
         return []
 
-    @_('labels statement')
+    @_('statement')
     def line_statement(self, p):
         if p.statement:
-            return p.labels + [p.statement]
-        return p.labels
-
-    @_('labels')
-    def line_statement(self, p):
-        return p.labels
-
-    @_('labels label')
-    def labels(self, p):
-        if p.label.data[0].startswith(wflip_start_label):
-            error(f"can't use the reserved label prefix {wflip_start_label}")
-        return p.labels + [p.label]
-
-    @_('empty')
-    def labels(self, p):
+            return [p.statement]
         return []
+
+    @_('label statement')
+    def line_statement(self, p):
+        if p.statement:
+            return [p.label, p.statement]
+        return [p.label]
+
+    @_('label')
+    def line_statement(self, p):
+        return [p.label]
+
+    # @_('label statement')
+    # def line_statement(self, p):
+    #     if p.statement:
+    #         return [p.label, p.statement]
+    #     return [p.label]
+
+    # @_('labels label')
+    # def labels(self, p):
+    #     if p.label.data[0].startswith(wflip_start_label):
+    #         error(f"can't use the reserved label prefix {wflip_start_label}")
+    #     return p.labels + [p.label]
+    #
+    # @_('empty')
+    # def labels(self, p):
+    #     return []
 
     @_('ID ":"')
     def label(self, p):

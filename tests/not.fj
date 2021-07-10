@@ -1,5 +1,6 @@
-.startup
-.not x
-.loop
+    .startup
+    .not x
+    .loop
 
-x: .bit 0
+  x:
+    .bit 0

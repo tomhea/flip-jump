@@ -1,7 +1,7 @@
-.startup
+    .startup
 
-.print_str 20 str
-.loop
+    .print_str 20 str
+    .loop
 
-str:
+  str:
     .string "Hello, World!\n(:"

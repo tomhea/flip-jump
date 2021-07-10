@@ -19,31 +19,31 @@ dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
 // ---------- Startup Code
 
 
-.def startup
+startup {
     ;code_start     // 0w;1w : code start
   IO:
     ;0              // 2w;3w : now points to io_handler
 
   code_start:
                     // 4w;5w : start of code
-.end
+}
 
 
-.def startup in0_handler in1_handler
+startup in0_handler, in1_handler {
     .startup
     .default_input in0_handler in1_handler
-.end
+}
 
 
 
 // ---------- Basic Functionality
 
 
-.def word_pad x : pad_start
+word_pad x @ pad_start {
   pad_start:
     [(0-pad_start/w) % x] 0
-.end
+}
 
-.def pad x
+pad x {
     .word_pad x*2
-.end
+}

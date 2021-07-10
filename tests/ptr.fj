@@ -3,16 +3,20 @@
 test0:
     .ptr_flip p0
     .if d0 d00 d01
-    d00: .output '0'
+    d00:
+         .output '0'
          ;test1
-    d01: .output '1'
+    d01:
+         .output '1'
          ;test1
 
 test1:
     .ptr_jump p1
-    jump_to6: .output '6'
+    jump_to6:
+              .output '6'
               ;test2
-    jump_to7: .output '7'
+    jump_to7:
+              .output '7'
               ;test2
 
 test2:
@@ -22,34 +26,48 @@ test2:
     base_jump_label2:
          ;p20
          ;p21
-    p20: .output 'N'
+    p20:
+         .output 'N'
          ;test3
-    p21: .output 'Y'
+    p21:
+         .output 'Y'
          ;test3
 
 test3:
     .zero d3_var
     .xor_from_ptr d3_var p3
     .if d3_var d30 d31
-    d30: .output 'F'
+    d30:
+         .output 'F'
          .loop
-    d31: .output 'T'
+    d31:
+         .output 'T'
          .loop
 
 
 
-.init_ptr
+    .init_ptr
 
-p0: .var w d0+dbit
-d0: .bit 0  // 0 => 1,  1 => 0
+  p0:
+    .var w d0+dbit
+  d0:
+    .bit 0  // 0 => 1,  1 => 0
 
-p1: .var w d1
-d1: ;jump_to7   // jump_to6 => 6, jump_to7 => 7
+  p1:
+    .var w d1
+  d1:
+    ;jump_to7   // jump_to6 => 6, jump_to7 => 7
 
-p2: .var w d2+w
-p2_jump: .var w d2
-d2: .bit 0  // 0 => N,  1 => Y
+  p2:
+    .var w d2+w
+  p2_jump:
+    .var w d2
+  d2:
+    .bit 0  // 0 => N,  1 => Y
 
-p3: .var w d3
-d3: .bit 1  // 0 => F,  1 => T
-d3_var: .bit 0
+  p3:
+    .var w d3
+  d3:
+    .bit 1  // 0 => F,  1 => T
+  d3_var:
+    .bit 0

@@ -13,21 +13,22 @@
 
 
 // Complexity n(14phi+48)
-.def mul10 n x : twice end
+mul10 n, x @ twice, end {
     .shl n x
     .mov n twice x
     .shl n 2 x
     .add n x twice
     ;end
 
-    twice:  .var n 0
+  twice:
+    .var n 0
   end:
-.end
+}
 
 
 // Complexity (b is the number of 1-bits in src):  n^2(6phi+18) + n*b(8phi+33)
 // Space Complexity:  ~O(90n)
-.def mul_loop n dst src : start after_add src_copy res end
+mul_loop n, dst, src @ start, after_add, src_copy, res, end {
     .zero n res
     .mov n src_copy src
 
@@ -41,39 +42,43 @@
     .if0 n src end          //Comp: n(phi+4)
     ;start
 
-  src_copy: .var n 0
-  res: .var n 0
+  src_copy:
+    .var n 0
+  res:
+    .var n 0
   end:
     .mov n src src_copy
     .mov n dst res
-.end
+}
 
 
 // Complexity (b is the number of 1-bits in src):  n*b(8phi+33)
 // Space Complexity:  ~O(40n^2)
-.def mul n dst src : shifted_src res end
+mul n, dst, src @ shifted_src, res, end {
     .zero n res
     .mov n shifted_src+dw*n src
     .rep n i __mul_add_if n dst+i*dw res shifted_src+(n-i)*dw
     .mov n dst res
     ;end
 
-    shifted_src: .var 2*n 0
-    res: .var n 0
+  shifted_src:
+    .var 2*n 0
+  res:
+    .var n 0
   end:
-.end
-.def __mul_add_if n flag dst src: end
+}
+__mul_add_if n, flag, dst, src @ end {
     .if0 flag end
     .add n dst src
   end:
-.end
+}
 
 
 
 // ---------- Divide:
 
 
-.def idiv n a b q r : negative_a negative_b one_negative neg_b_1 do_div neg_b_2 neg_ans end
+idiv n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
     .mov negative_a a+dw*(n-1)
     .mov negative_b b+dw*(n-1)
     .zero one_negative
@@ -99,16 +104,19 @@
     .neg n q
     ;end
 
-    negative_a: .bit 0
-    negative_b: .bit 0
-    one_negative: .bit 0
+  negative_a:
+    .bit 0
+  negative_b:
+    .bit 0
+  one_negative:
+    .bit 0
   end:
-.end
+}
 
 
 // Complexity: n^2(10phi+43)
 // Space Complexity:  ~O(50n^2)
-.def div n a b q r : Q R end
+div n, a, b, q, r @ Q, R, end {
     .if0 n b end
     .zero 2*n R
     .zero   n Q
@@ -119,22 +127,24 @@
     .mov n q Q
     ;end
 
-  R: .var 2*n 0
-  Q: .var   n 0
+  R:
+    .var 2*n 0
+  Q:
+    .var   n 0
   end:
-.end
-.def __div_step n N D R Q : do_sub end
+}
+__div_step n, N, D, R, Q @ do_sub, end {
     .xor R N
     .cmp n R D end do_sub do_sub
   do_sub:
     .sub n R D
     .not Q
   end:
-.end
+}
 
 
 
-.def idiv_loop n a b q r : negative_a negative_b one_negative neg_b_1 do_div neg_b_2 neg_ans end
+idiv_loop n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
     .mov negative_a a+dw*(n-1)
     .mov negative_b b+dw*(n-1)
     .zero one_negative
@@ -160,16 +170,19 @@
     .neg n q
     ;end
 
-    negative_a: .bit 0
-    negative_b: .bit 0
-    one_negative: .bit 0
+  negative_a:
+    .bit 0
+  negative_b:
+    .bit 0
+  one_negative:
+    .bit 0
   end:
-.end
+}
 
 
 // Complexity: n^2(18phi+64)
 // Space Complexity:  ~O(120n)
-.def div_loop n a b q r : loop do_sub loop_end after_loop A Q R i end
+div_loop n, a, b, q, r @ loop, do_sub, loop_end, after_loop, A, Q, R, i, end {
     .if0 n b end
     .zero n R
     .zero n Q
@@ -195,10 +208,14 @@
     .mov n q Q
     ;end
 
-  A: .var n
-  R: .var n
-  Q: .var n
-  i: .var n
+  A:
+    .var n
+  R:
+    .var n
+  Q:
+    .var n
+  i:
+    .var n
 
   end:
-.end
+}
