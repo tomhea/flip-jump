@@ -123,7 +123,7 @@
     .pad 2
   base_jump_label:
     ;cleanup
-    dst
+    dst;
 
   cleanup:
     .ptr_flip_by_2nd_word ptr base_jump_label

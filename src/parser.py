@@ -215,10 +215,10 @@ class CalcParser(Parser):
     def label(self, p):
         return Op(OpType.Label, (p.ID,), curr_file, p.lineno)
 
-    @_('_expr')
-    def statement(self, p):
-        expr, line = p._expr
-        return Op(OpType.FlipJump, (expr, next_address()), curr_file, line)
+    # @_('_expr')
+    # def statement(self, p):
+    #     expr, line = p._expr
+    #     return Op(OpType.FlipJump, (expr, next_address()), curr_file, line)
 
     @_('expr SC')
     def statement(self, p):

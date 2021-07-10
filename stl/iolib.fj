@@ -56,7 +56,7 @@
 
 
 .def output_bit bit
-    IO + (bit ? 1 : 0)
+    IO + (bit ? 1 : 0);
 .end
 
 // Complexity: 8
@@ -73,7 +73,7 @@
     .pad 2
   base_jump_label:
     IO+0;end
-    IO+1
+    IO+1;
     .not label_ptr
   end:
 .end
@@ -126,8 +126,7 @@
 .def hex2ascii ascii hex : dec_label hex_label nine4 end gibly
     .zero 8 ascii
     .xor 3 ascii hex
-    gibly:
-    hex
+    hex;
     .cmp 4 hex nine4 dec_label dec_label hex_label
   dec_label:
     .xor ascii+3*dw hex+3*dw

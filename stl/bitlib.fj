@@ -31,7 +31,7 @@
 
 
 .def comp_flip_if bit expr
-    (expr ? bit : 0)
+    (expr ? bit : 0);
 .end
 
 
@@ -162,7 +162,7 @@
     .pad 2
   base_jump_label:
     ;cleanup
-    dst
+    dst;
   cleanup:
     .wflip src+w base_jump_label
 .end
@@ -174,8 +174,8 @@
     .pad 2
   base_jump_label:
     ;cleanup
-    dst1
-    dst2
+    dst1;
+    dst2;
   cleanup:
     .wflip src+w base_jump_label
 .end
@@ -199,11 +199,11 @@
 
 // Complexity: 1
 .def not dst
-    dst + dbit
+    dst + dbit;
 .end
 
 .def exact_not dst
-    dst
+    dst;
 .end
 
 
