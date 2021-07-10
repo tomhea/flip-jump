@@ -13,34 +13,34 @@
 // Size Complexity: n
 
 
-.def var n value
+var n, value {
     .rep n i bit (value>>i)&1
-.end
+}
 
-.def var n
+var n {
     .var n 0
-.end
+}
 
 
 // ---------- Memory Manipulation:
 
 
 // Complexity: n(phi+2)
-.def zero n x
+zero n, x {
     .rep n i zero x+i*dw
-.end
+}
 
 
 // Complexity: n(phi+3)
-.def one n x
+one n, x {
     .rep n i one x+i*dw
-.end
+}
 
 
 // Complexity: n(2phi+5)
-.def mov n dst src
+mov n, dst, src {
     .rep n i mov dst+i*dw src+i*dw
-.end
+}
 
 
 
@@ -48,35 +48,35 @@
 
 
 // Complexity: n(2phi+8)
-.def cmp n a b lt eq gt
+cmp n, a, b, lt, eq, gt {
     .rep n-1 i __cmp_next_eq a+(n-1-i)*dw b+(n-1-i)*dw lt gt
     .cmp a b lt eq gt
-.end
-.def __cmp_next_eq a b lt gt : eq
+}
+__cmp_next_eq a, b, lt, gt @ eq {
     .cmp a b lt eq gt
   eq:
-.end
+}
 
 
 // Complexity: n(phi+4)
-.def if n x l0 l1
+if n, x, l0, l1 {
     .rep n-1 i __if_next_l0 x+i*dw l1
     .if x+(n-1)*dw l0 l1
-.end
-.def __if_next_l0 x l1 : l0
+}
+__if_next_l0 x, l1 @ l0 {
     .if x l0 l1
   l0:
-.end
+}
 
-.def if0 n x l0 : end
+if0 n, x, l0 @ end {
     .if n x l0 end
   end:
-.end
+}
 
-.def if1 n x l1 : end
+if1 n, x, l1 @ end {
     .if n x end l1
   end:
-.end
+}
 
 
 
@@ -84,77 +84,79 @@
 
 
 // Complexity: n(phi+2)
-.def xor n dst src
+xor n, dst, src {
     .rep n i xor dst+dw*i src+dw*i
-.end
+}
 
 
 // Complexity: n(phi+3)
-.def bit_var_xor n bit var src
+bit_var_xor n, bit, var, src {
     .rep n i double_exact_xor bit+i var+dbit+i*dw src+i*dw
-.end
+}
 
 
 // Complexity: n(2phi+7)
-.def or n dst src
+or n, dst, src {
     .rep n i or dst+dw*i src+dw*i
-.end
+}
 
 
 // Complexity: n(2phi+6)
-.def and n dst src
+and n, dst, src {
     .rep n i and dst+dw*i src+dw*i
-.end
+}
 
 
 // Complexity: n
-.def not n dst
+not n, dst {
     .rep n i not dst+dw*i
-.end
+}
 
 
 // Complexity: n(2phi+5)
-.def shr n x
+shr n, x {
     .shr n 1 x
-.end
+}
 
 // Complexity: n(2phi+5)
-.def shr n times x
+shr n, times, x {
     .rep n-times i mov x+i*dw x+(i+times)*dw
     .zero times x+(n-times)*dw
-.end
+}
 
 
 // Complexity: n(2phi+5)
-.def shl n x
+shl n, x {
     .shl n 1 x
-.end
+}
 
 // Complexity: n(2phi+5)
-.def shl n times x
+shl n, times, x {
     .rep n-times i mov x+(n-1-i)*dw x+(n-1-i-times)*dw
     .zero times x
-.end
+}
 
 
 // Complexity: n(2phi+5)
-.def ror n x : temp_bit
+ror n, x @ temp_bit {
     .mov temp_bit x
     .rep n-1 i mov x+i*dw x+(i+1)*dw
     .mov x+(n-1)*dw temp_bit
-  .skip
-  temp_bit: .bit 0
-.end
+    .skip
+  temp_bit:
+    .bit 0
+}
 
 
 // Complexity: n(2phi+5)
-.def rol n x : temp_bit
+rol n, x @ temp_bit {
     .mov temp_bit x+(n-1)*dw
     .rep n-1 i mov x+(n-1-i)*dw x+(n-1-i-1)*dw
     .mov x temp_bit
-  .skip
-  temp_bit: .bit 0
-.end
+    .skip
+  temp_bit:
+    .bit 0
+}
 
 
 
@@ -163,44 +165,47 @@
 
 
 // Complexity: n(2phi+10)
-.def inc n x : carry
+inc n, x @ carry {
     .one carry
     .rep n i inc1 x+i*dw carry
-  .skip
-  carry: .bit 0
-.end
+    .skip
+  carry:
+    .bit 0
+}
 
 
 // Complexity: n(2phi+12)
-.def dec n x
+dec n, x {
     .not n x
     .inc n x
     .not n x
-.end
+}
 
 
 // Complexity: n(2phi+11)
-.def neg n x
+neg n, x {
     .not n x
     .inc n x
-.end
+}
 
 
 // Complexity: n(8phi+33)
-.def add n dst src : carry
+add n, dst, src @ carry {
     .zero carry
     .rep n i add1 dst+i*dw src+i*dw carry
     .skip
-  carry: .bit 0
-.end
+  carry:
+    .bit 0
+}
 
 
 // Complexity: n(8phi+35)
-.def sub n dst src : carry
+sub n, dst, src @ carry {
     .not n src
     .one carry
     .rep n i add1 dst+i*dw src+i*dw carry
     .not n src
-  .skip
-  carry: .bit 0
-.end
+    .skip
+  carry:
+    .bit 0
+}

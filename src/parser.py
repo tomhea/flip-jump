@@ -4,11 +4,12 @@ from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and
 from defs import *
 
 
-global curr_file, curr_text
+global curr_file, curr_text, error_occurred
 
 
-class CalcLexer(Lexer):
-    tokens = {DEF, END, REP,
+class FJLexer(Lexer):
+    tokens = {#DEF, END,
+              REP,
               WFLIP,
               SEGMENT, RESERVE,
               DOT_ID, ID, NUMBER, STRING,
@@ -21,7 +22,9 @@ class CalcLexer(Lexer):
                 '?', ':',
                 '"',
                 '#',
-                '[', ']'}
+                '[', ']',
+                '{', '}',
+                "@", ","}
 
     ignore_ending_comment = r'//.*'
 
@@ -31,8 +34,8 @@ class CalcLexer(Lexer):
     STRING = string_re
 
     DOT_ID = fr'\.({id_re})'
-    DOT_ID[r'.def'] = DEF
-    DOT_ID[r'.end'] = END
+    # DOT_ID[r'.def'] = DEF
+    # DOT_ID[r'.end'] = END
     DOT_ID[r'.rep'] = REP
 
     DOT_ID[r'.wflip'] = WFLIP
@@ -84,12 +87,14 @@ class CalcLexer(Lexer):
         return t
 
     def error(self, t):
+        global error_occurred
+        error_occurred = True
         print(f"Lexing Error at file {curr_file} line {self.lineno}: {t.value[0]}")
         self.index += 1
 
 
-class CalcParser(Parser):
-    tokens = CalcLexer.tokens
+class FJParser(Parser):
+    tokens = FJLexer.tokens
     precedence = (
         ('right', '?', ':'),
         ('left', '|'),
@@ -125,7 +130,9 @@ class CalcParser(Parser):
                     error(f'parameter {ids[i1]} in macro {macro_name[0]}({macro_name[1]}) is declared twice!')
 
     def error(self, token):
-        print(f'Syntax Error at file {curr_file} line {token.lineno}, token=({token.type}, {token.value})')
+        global error_occurred
+        error_occurred = True
+        print(f'Syntax Error at file {curr_file} line {token.lineno}, token=("{token.type}", {token.value})')
 
     @_('definable_line_statements')
     def program(self, p):
@@ -151,11 +158,11 @@ class CalcParser(Parser):
     def definable_line_statement(self, p):
         return p.line_statement
 
-    @_('labels macro_def')
+    @_('macro_def')
     def definable_line_statement(self, p):
-        return p.labels
+        return []
 
-    @_('DEF ID macro_params line_statements NL END')
+    @_('ID macro_params "{" NL line_statements NL "}"')
     def macro_def(self, p):
         params = p.macro_params
         name = (p.ID, len(params[0]))
@@ -165,60 +172,86 @@ class CalcParser(Parser):
         self.macros[name] = [params, statements, (curr_file, p.lineno)]
         return None
 
+    @_('empty')
+    def macro_params(self, p):
+        return [], []
+
     @_('ids')
     def macro_params(self, p):
         return p.ids, []
 
-    @_('ids ":" ids')
+    @_('"@" ids')
+    def macro_params(self, p):
+        return [], p.ids
+
+    @_('ids "@" ids')
     def macro_params(self, p):
         return p.ids0, p.ids1
 
-    @_('ids ID')
+    @_('ids "," ID')
     def ids(self, p):
         return p.ids + [p.ID]
 
-    @_('empty')
+    @_('ID')
     def ids(self, p):
-        return []
+        return [p.ID]
 
     @_('line_statements NL line_statement')
     def line_statements(self, p):
-        if self.verbose:
-            print('\n'.join(str(_) for _ in p.line_statement))
         return p.line_statements + p.line_statement
 
-    @_('empty')
+    @_('line_statement')
     def line_statements(self, p):
+        return p.line_statement
+
+    # @_('empty')
+    # def line_statements(self, p):
+    #     return []
+
+    @_('empty')
+    def line_statement(self, p):
         return []
 
-    @_('labels statement')
+    @_('statement')
     def line_statement(self, p):
         if p.statement:
-            return p.labels + [p.statement]
-        return p.labels
-
-    @_('labels')
-    def line_statement(self, p):
-        return p.labels
-
-    @_('labels label')
-    def labels(self, p):
-        if p.label.data[0].startswith(wflip_start_label):
-            error(f"can't use the reserved label prefix {wflip_start_label}")
-        return p.labels + [p.label]
-
-    @_('empty')
-    def labels(self, p):
+            return [p.statement]
         return []
+
+    @_('label statement')
+    def line_statement(self, p):
+        if p.statement:
+            return [p.label, p.statement]
+        return [p.label]
+
+    @_('label')
+    def line_statement(self, p):
+        return [p.label]
+
+    # @_('label statement')
+    # def line_statement(self, p):
+    #     if p.statement:
+    #         return [p.label, p.statement]
+    #     return [p.label]
+
+    # @_('labels label')
+    # def labels(self, p):
+    #     if p.label.data[0].startswith(wflip_start_label):
+    #         error(f"can't use the reserved label prefix {wflip_start_label}")
+    #     return p.labels + [p.label]
+    #
+    # @_('empty')
+    # def labels(self, p):
+    #     return []
 
     @_('ID ":"')
     def label(self, p):
         return Op(OpType.Label, (p.ID,), curr_file, p.lineno)
 
-    @_('_expr')
-    def statement(self, p):
-        expr, line = p._expr
-        return Op(OpType.FlipJump, (expr, next_address()), curr_file, line)
+    # @_('_expr')
+    # def statement(self, p):
+    #     expr, line = p._expr
+    #     return Op(OpType.FlipJump, (expr, next_address()), curr_file, line)
 
     @_('expr SC')
     def statement(self, p):
@@ -354,13 +387,20 @@ class CalcParser(Parser):
 
 
 def parse_macro_tree(input_files, w, verbose=False):
-    global curr_file, curr_text
-    lexer = CalcLexer()
-    parser = CalcParser(w, verbose=verbose)
+    global curr_file, curr_text, error_occurred
+    error_occurred = False
+
+    lexer = FJLexer()
+    parser = FJParser(w, verbose=verbose)
     for curr_file in input_files:
         if not isfile(curr_file):
             error(f"No such file {curr_file}.")
         curr_text = open(curr_file, 'r').read()
-        parser.parse(lexer.tokenize(curr_text))
+        lex_res = lexer.tokenize(curr_text)
+        if error_occurred:
+            exit(1)
+        parser.parse(lex_res)
+        if error_occurred:
+            exit(1)
 
     return parser.macros

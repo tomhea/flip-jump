@@ -19,17 +19,20 @@ back:
     ;end
 
 
-error: .bit
+  error:
+    .bit
 
-str_hi: .string "Hi!\n"
-str_bye: .string "\nBye!\n"
+  str_hi:
+    .string "Hi!\n"
+  str_bye:
+    .string "\nBye!\n"
 
 
-.def more_digit width num inter ascii
+more_digit width, num, inter, ascii {
     .shl width 4 num
     .ascii2hex error inter ascii
     .add width num inter
-.end
+}
 
 
 .segment X1

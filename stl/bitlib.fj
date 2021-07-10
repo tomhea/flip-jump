@@ -15,37 +15,37 @@
 // Complexity: 1
 
 
-.def comp_if expr l0 l1
+comp_if expr, l0, l1 {
     ; expr ? l1 : l0
-.end
+}
 
-.def comp_if0 expr l0 : l1
+comp_if0 expr, l0 @ l1 {
     .comp_if expr l0 l1
   l1:
-.end
+}
 
-.def comp_if1 expr l1 : l0
+comp_if1 expr, l1 @ l0 {
     .comp_if expr l0 l1
   l0:
-.end
+}
 
 
-.def comp_flip_if bit expr
-    (expr ? bit : 0)
-.end
+comp_flip_if bit, expr {
+    (expr ? bit : 0);
+}
 
 
 // ---------- Memory Variables:
 // Size Complexity: 1
 
 
-.def bit value
+bit value {
     ; value ? dw : 0
-.end
+}
 
-.def bit
+bit {
     .bit 0
-.end
+}
 
 
 
@@ -53,48 +53,51 @@
 
 
 // Complexity: phi+2
-.def zero x
+zero x {
     .xor x x
-.end
+}
 
 
 // Complexity: phi+3
-.def one x
+one x {
     .zero x
     .not x
-.end
+}
 
 
 ////Complexity: 2phi + 9
-//.def __if_mov dst src : l0 l1 flip end
+//__if_mov dst src @ l0 l1 flip end {
 //    .if src l0 l1
 //    l0: .if dst end flip
 //    l1: .if dst flip end
 //    flip:   .not dst
 //    end:
-//.end
+//}
 
 
 // safe even for dst==src !
 // Complexity: 2phi+5
-.def mov dst src : do_mov end
+mov dst, src @ do_mov, end {
     .comp_if dst-src end do_mov
   do_mov:
     .zero dst
     .xor dst src
   end:
-.end
+}
 
 
 //Complexity: 2phi+10
-.def swap a b : a0 a1 notnot end
+swap a, b @ a0, a1, notnot, end {
     .if a a0 a1
-    a0: .if b end flip
-    a1: .if b flip end
-    notnot: .not a
-            .not b
-    end:
-.end
+  a0:
+    .if b end flip
+  a1:
+    .if b flip end
+  notnot:
+    .not a
+    .not b
+  end:
+}
 
 
 
@@ -102,14 +105,14 @@
 // Complexity: 1
 
 
-.def skip
+skip {
     ;$ + dw
-.end
+}
 
 
-.def loop
+loop {
     ;$ - dw
-.end
+}
 
 
 
@@ -117,7 +120,7 @@
 
 
 // Complexity: phi+4
-.def if x l0 l1 : label_ptr base_jump_label
+if x, l0, l1 @ label_ptr, base_jump_label {
     .xor label_ptr x
   label_ptr:
     ;base_jump_label
@@ -125,26 +128,26 @@
   base_jump_label:
     ;l0
     label_ptr + dbit;l1
-.end
+}
 
-.def if1 x l1 : end
+if1 x, l1 @ end {
     .if x end l1
   end:
-.end
+}
 
-.def if0 x l0 : end
+if0 x, l0 @ end {
     .if x l0 end
   end:
-.end
+}
 
 
 // Complexity: 2phi+8
-.def cmp a b lt eq gt : a_is1_label
+cmp a, b, lt, eq, gt @ a_is1_label {
     .if1 a a_is1_label
     .if b eq lt
   a_is1_label:
     .if b gt eq
-.end
+}
 
 
 
@@ -152,59 +155,59 @@
 
 
 // Complexity: phi+2
-.def xor dst src
+xor dst, src {
     .exact_xor dst + dbit src
-.end
+}
 
-.def exact_xor dst src : base_jump_label cleanup
+exact_xor dst, src @ base_jump_label, cleanup {
     .wflip src+w base_jump_label
     ;src
     .pad 2
   base_jump_label:
     ;cleanup
-    dst
+    dst;
   cleanup:
     .wflip src+w base_jump_label
-.end
+}
 
 // Complexity: phi+3
-.def double_exact_xor dst1 dst2 src : base_jump_label cleanup
+double_exact_xor dst1, dst2, src @ base_jump_label, cleanup {
     .wflip src+w base_jump_label
     ;src
     .pad 2
   base_jump_label:
     ;cleanup
-    dst1
-    dst2
+    dst1;
+    dst2;
   cleanup:
     .wflip src+w base_jump_label
-.end
+}
 
 
 // Complexity: 2phi+7
-.def or dst src : end
+or dst, src @ end {
     .if0 src end
     .one dst
   end:
-.end
+}
 
 
 // Complexity: 2phi+6
-.def and dst src : end
+and dst, src @ end {
     .if1 src end
     .zero dst
   end:
-.end
+}
 
 
 // Complexity: 1
-.def not dst
-    dst + dbit
-.end
+not dst {
+    dst + dbit;
+}
 
-.def exact_not dst
-    dst
-.end
+exact_not dst {
+    dst;
+}
 
 
 
@@ -213,22 +216,23 @@
 
 // Unsafe for dst==carry (but there is no reason in calling it that way)
 // Complexity: 2phi+10
-.def inc1 dst carry : end
+inc1 dst, carry @ end {
     .if0 carry end
     .not dst
     .if0 dst end
     .not carry
   end:
-.end
+}
 
 
 // Unsafe for dst==carry (but there is no reason in calling it that way)
 // Complexity: 8phi+33
-.def add1 dst src carry : _src
+add1 dst, src, carry @ _src {
     .mov _src src
     .inc1 dst _src
     .inc1 dst carry
     .or carry _src
     .skip
-  _src: .bit 0
-.end
+  _src:
+    .bit 0
+}

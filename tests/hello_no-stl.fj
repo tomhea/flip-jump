@@ -1,0 +1,37 @@
+startup {
+    ;code_start
+  IO:
+    ;0
+  code_start:
+}
+
+
+output_bit bit {
+    IO + bit;
+}
+output ascii {
+    .rep 8 i output_bit ((ascii>>i)&1)
+}
+
+end_loop @ loop_label {
+    loop_label:
+    ;loop_label
+}
+
+    .startup
+    
+    .output 'H'
+    .output 'e'
+    .output 'l'
+    .output 'l'
+    .output 'o'
+    .output ','
+    .output ' '
+    .output 'W'
+    .output 'o'
+    .output 'r'
+    .output 'l'
+    .output 'd'
+    .output '!'
+    
+    .end_loop

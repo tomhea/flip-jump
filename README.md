@@ -50,8 +50,6 @@ In many cases you won't need to specify both addresses.
         // It is also identical to:  100;some_label
                               //     some_label:
 
-100     // You can also omit the semicolon
-
 ;200    // Just jump: the  ;J  syntax fills the flip-address with 0.
         // It is identical to:  0;200
         //  Of course it still flips the first bit in memory.
@@ -123,7 +121,7 @@ Or in other words, can it do anything meaningful?
 It turns out that it can, And much more than you'd think.
 
 ## Memory - how can we implement variables?
-A bit can be built using 1 fj operation. Specifically,  ```;0```  or  ```;dw```<br>
+A bit can be built using 1 fj operation. Specifically, with  ```;0```  or  ```;dw```<br>
 Here the magic happens. The flipjump operation inherently can't read. It also can't write.<br>
 All it knows is to flip a bit, and then jump. but where to?
 
@@ -135,7 +133,7 @@ Follow the next example:
 
 ```c
 // Lets assume a 64 bits cpu, and that the label branch_target is evaluated to 0x400 (1<<10).
-// Follow the {1}, {2} numbers to follow the execution flow.
+// Follow the {0}, {1}, ... {9} numbers to follow the execution flow.
 
     ;code_start // {0} code starts at address 0
     ;
@@ -150,25 +148,25 @@ code_start:
     ;bit_a
 
 try_second_bit:
-// {4} We will flip the address in the bit_b opcode by 0x400:
+// {5} We will flip the address in the bit_b opcode by 0x400:
     bit_b+64+10;
-// {5} Now we jump to execute the opcode in bit_b. It will flip address 0 and then jump to the address written in it. 
+// {6} Now we jump to execute the opcode in bit_b. It will flip address 0 and then jump to the address written in it. 
 //      So it will jump to 0x480 (was 0x80 from the start), which is second_branch_target.
     ;bit_b
 
 
 branch_target:          // This is address 0x400
-    // {3} Now we get here, and then continue jumping.
+    // {4} Now we get here, and then continue jumping.
     ;try_second_bit
 second_branch_target:   // This is address 0x480
-    // {6} Another jump.
+    // {8} Another jump.
     ;end
 
 
-end:  ;end  // {7} The code will get here and then finish (self loop).
+end:  ;end  // {9} The code will get here and then finish (self loop).
 
-bit_a:  ;0
-bit_b:  ;0x80
+bit_a:  ;0      // {3} Jump to branch_target
+bit_b:  ;0x80   // {7} Jump to second_branch_target
 ```
 
 The same flip/jump combination on bit_a/bit_b did different things. <br>
@@ -286,15 +284,15 @@ It is important to say that macros can use other macros, and there are no macro-
 The syntax for defining macros is:
 
 ```c
-.def macro_name [arg ..] : [temp_label ..]
+macro_name [param1, param2, ...] @ [temp_label1, temp_label2, ...] {
     // Macro body
-.end
+}
 
 // for example:
-.def self_loop : loop_label       // No args, one temp label
+self_loop @ loop_label {       // No args, one temp label
     loop_label:
     ;loop_label
-.end
+}
 ```
 The temp labels are being generated for every use of this macro.
 
@@ -313,15 +311,15 @@ Follow the example below.
 dw = 2*w
 dbit = w + #w
 
-.def bit bin
+bit bin {
     ;(bin ? dw : 0)
-.end
+}
 
-.def not bit
+not bit {
     bit+dbit;
-.end
+}
 
-.def not8 var
+not8 var {
     .not var+0*dw
     .not var+1*dw
     .not var+2*dw
@@ -330,7 +328,7 @@ dbit = w + #w
     .not var+5*dw
     .not var+6*dw
     .not var+7*dw
-.end
+}
 
 
     ;code_start
@@ -366,17 +364,17 @@ It repeats the use of macro_name n-times, each time with (index) i=0, i=1 until 
 The above macro could be shortened to:
 
 ```c
-.def not8 var
+not8 var {
     .rep 8 i not var+i*dw
-.end
+}
 ```
 
 The byte decleration can be shortened as well:
 
 ```c
-.def byte val
+byte val {
     .rep 8 i bit (val>>i)&1
-.end
+}
 
 byte:  .byte 84
 ```
@@ -404,25 +402,25 @@ Both ```.segment``` and ```.reserve``` must get w-aligned values.
 ## Hello, World!
 
 ```c
-.def startup
+startup {
     ;code_start
   IO:
     ;0
   code_start:
-.end
+}
 
 
-.def output_bit bit
-    IO + bit
-.end
-.def output ascii
+output_bit bit {
+    IO + bit;
+}
+output ascii {
     .rep 8 i output_bit ((ascii>>i)&1)
-.end
+}
 
-.def end_loop : loop_label
+end_loop @ loop_label {
     loop_label:
     ;loop_label
-.end
+}
 
     .startup
     
@@ -472,7 +470,9 @@ Hello, World!
 
 # Project Structure
 
-**src** (assembler source files):
+**src** (assembler + interpreter source files):
+  - cpp_fji/        - the cpp interpreter (much faster, about 2Mfj/s).
+  - riscv2fj/       - translates a riscv-executable to an equivalent fj code.
   - parser.py       - pythonic lex/yacc parser.
   - preprocessor.py - unwind all macros and reps.
   - assembler.py    - assembles the macroless fj file.
@@ -490,8 +490,8 @@ Hello, World!
   - ptrlib.fj   - pointers, stack and functions.
 
 **tests** (flipjump programs), for example:
-  - calc.fj
-  - func.fj
+  - calc.fj     - command line 2 hex/dec calculator, ```a [+-*/%] b```.
+  - func.fj     - performs function calls and operations on stack.
   
 # Read More
 Start by reading the *bitlib.fj* standard library file. It holds many of the flipjump magic.

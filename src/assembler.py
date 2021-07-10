@@ -231,25 +231,29 @@ def assemble(input_files, output_file, w, flags=None,
         temp_fd, preprocessed_file = mkstemp()
         temp_preprocessed_file = True
 
+    print('  parsing:         ', end='', flush=True)
     start_time = time()
     macros = parse_macro_tree(input_files, w, verbose=Verbose.Parse in verbose)
     if Verbose.Time in verbose:
-        print(f'  parsing:         {time() - start_time:.3f}s')
+        print(f'{time() - start_time:.3f}s')
 
+    print('  macro resolve:   ', end='', flush=True)
     start_time = time()
     ops = resolve_macros(macros, output_file=preprocessed_file, verbose=Verbose.MacroSolve in verbose)
     if Verbose.Time in verbose:
-        print(f'  macro resolve:   {time() - start_time:.3f}s')
+        print(f'{time() - start_time:.3f}s')
 
+    print('  labels pass:     ', end='', flush=True)
     start_time = time()
     ops, labels, last_address = label_dictionary_pass(ops, w, verbose=Verbose.LabelDict in verbose)
     if Verbose.Time in verbose:
-        print(f'  labels pass:     {time() - start_time:.3f}s')
+        print(f'{time() - start_time:.3f}s')
 
+    print('  labels resolve:  ', end='', flush=True)
     start_time = time()
     labels_resolve(ops, labels, last_address, w, output_file, verbose=Verbose.LabelSolve in verbose, flags=flags)
     if Verbose.Time in verbose:
-        print(f'  labels resolve:  {time() - start_time:.3f}s')
+        print(f'{time() - start_time:.3f}s')
 
     if temp_preprocessed_file:
         os.close(temp_fd)
@@ -261,15 +265,3 @@ def assemble(input_files, output_file, w, flags=None,
             pickle.dump(labels, f, pickle.HIGHEST_PROTOCOL)
 
     return labels
-
-
-def main():
-    pass
-    print('not assembling')
-    # for test_name in ('cat',):#, 'ncat', 'mathbit', 'not', 'testbit', 'mathvec'):
-    #     full_assemble([f'tests/{test_name}.fj'], f'tests/compiled/{test_name}.fjm',
-    #                   preprocessed_file=f'tests/compiled/{test_name}__no_macros.fj')
-
-
-if __name__ == '__main__':
-    main()

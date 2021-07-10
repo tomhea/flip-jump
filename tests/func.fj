@@ -95,7 +95,8 @@ func4:
     .ptr_flip_dbit __func4_arg_ptr
     .output 'F'
     .return
-    __func4_arg_ptr: .var w 0
+  __func4_arg_ptr:
+    .var w 0
 
 
 
@@ -148,21 +149,29 @@ func5:
     .output 'g'
 
     .return
-    __func5_res: .bit 0
-    __func5_arg_ptr: .var w 0
+  __func5_res:
+    .bit 0
+  __func5_arg_ptr:
+    .var w 0
 
 
 
-x3: .bit 0
+  x3:
+    .bit 0
 
-x4: .bit 0
+  x4:
+    .bit 0
 
-x5:   .bit 1
-y5:   .bit 1
-res5: .bit 0
+  x5:
+    .bit 1
+  y5:
+    .bit 1
+  res5:
+    .bit 0
 
 
-ascii: .var 8 0
+  ascii:
+    .var 8 0
 
-.init_ptr
-.stack 10
+    .init_ptr
+    .stack 10
