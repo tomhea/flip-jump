@@ -4,10 +4,10 @@ from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and
 from defs import *
 
 
-global curr_file, curr_text
+global curr_file, curr_text, error_occurred
 
 
-class CalcLexer(Lexer):
+class FJLexer(Lexer):
     tokens = {DEF, END, REP,
               WFLIP,
               SEGMENT, RESERVE,
@@ -84,12 +84,14 @@ class CalcLexer(Lexer):
         return t
 
     def error(self, t):
+        global error_occurred
+        error_occurred = True
         print(f"Lexing Error at file {curr_file} line {self.lineno}: {t.value[0]}")
         self.index += 1
 
 
-class CalcParser(Parser):
-    tokens = CalcLexer.tokens
+class FJParser(Parser):
+    tokens = FJLexer.tokens
     precedence = (
         ('right', '?', ':'),
         ('left', '|'),
@@ -125,6 +127,8 @@ class CalcParser(Parser):
                     error(f'parameter {ids[i1]} in macro {macro_name[0]}({macro_name[1]}) is declared twice!')
 
     def error(self, token):
+        global error_occurred
+        error_occurred = True
         print(f'Syntax Error at file {curr_file} line {token.lineno}, token=({token.type}, {token.value})')
 
     @_('definable_line_statements')
@@ -354,13 +358,20 @@ class CalcParser(Parser):
 
 
 def parse_macro_tree(input_files, w, verbose=False):
-    global curr_file, curr_text
-    lexer = CalcLexer()
-    parser = CalcParser(w, verbose=verbose)
+    global curr_file, curr_text, error_occurred
+    error_occurred = False
+
+    lexer = FJLexer()
+    parser = FJParser(w, verbose=verbose)
     for curr_file in input_files:
         if not isfile(curr_file):
             error(f"No such file {curr_file}.")
         curr_text = open(curr_file, 'r').read()
-        parser.parse(lexer.tokenize(curr_text))
+        lex_res = lexer.tokenize(curr_text)
+        if error_occurred:
+            exit(1)
+        parser.parse(lex_res)
+        if error_occurred:
+            exit(1)
 
     return parser.macros
