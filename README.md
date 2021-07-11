@@ -1,6 +1,6 @@
 # FlipJump
 
-FlipJump is an Esoteric language ([esolangs page](https://esolangs.org/wiki/FlipJump)), with just 1 operation: <br>
+FlipJump is an Esoteric language ([FlipJump esolangs page](https://esolangs.org/wiki/FlipJump)), with just 1 operation: <br>
 - Flip a bit, then (unconditionally) jump. <br>
 - The operation takes 2 memory words, then flips (inverts) the bit referenced by the first word, and jumps to the address referenced by the second word. <br>
 
@@ -67,7 +67,7 @@ y = x+4
 a:
 x;a+y/2     // Use constants/labels as numbers.
 
-.pad 4  // Fills the memory with 0's until it is 4-opcodes aligned (not in the basic syntax, but a very basic macro found in the standard library).
+pad 4  // Fills the memory with 0's until it is 4-opcodes aligned (not in the basic syntax, but a very basic macro found in the standard library).
 
 // The assembly is initialized with one constant - w.
 // It is the memory-width (w=64 for 2^64 memory-bits), and the bit-width of every flip/jump adddress.
@@ -174,15 +174,15 @@ That's why the assembly language provides the next operation:
 ### wflip
 
 ```c
-    .wflip a b
+    wflip a, b
 // The Word-Flip op is a special fj op.
 // It flip the bits in addresses [a, a+w) iff the corresponding bit in b (b's value) is set.
 
 // For example, for a==0x100, b=0x740 (0b 0111 0100 0000), the next blocks do the same thing:
 
-    .wflip a b
+    wflip a, b
     
-    .wflip 0x100 0x740
+    wflip 0x100, 0x740
     
     a+6;
     a+8;
@@ -195,13 +195,13 @@ That's why the assembly language provides the next operation:
     0x10a;
     
 // This op is very useful if you want to set the jumping-part of another fj opcode to some address (and we know that it's zeroed before).
-    // just do:  .wflip fj_op+w jump_address
-// Also - setting the jumping-part back to zero can be simply done by doing the same .wflip again:
+    // just do:  wflip fj_op+w, jump_address
+// Also - setting the jumping-part back to zero can be simply done by doing the same wflip again:
     // (because b xor b == 0).
 
-// Note that the assembler might choose to unwrap the .wflip op in more complicated ways, for optimization reasons.
+// Note that the assembler might choose to unwrap the wflip op in more complicated ways, for optimization reasons.
 
-// This is some way of doing it (has the advantage of knowing in advance that .wflip takes 1 op-size in its local area):    
+// This is some way of doing it (has the advantage of knowing in advance that wflip takes 1 op-size in its local area):    
     0x106;next_flips
 next_op:
     
@@ -243,25 +243,25 @@ You can use this bit by jumping to a flip-jump opcode that contains it.<br>
 The best way is to jump to ;dw.<br>
 
 In that way - this bit will reflect either 0x0 or 0x80 in the jump-part of the flip-jump op.<br>
-If we ```.wflip dw+w some_padded_address``` before the ;dw - the dw-flip-jump-op will make a jump to ```some_padded_address``` / ```some_padded_address+0x80```, based on the input, just like [here](#memory---how-can-we-implement-variables).
+If we ```wflip dw+w, some_padded_address``` before the ;dw - the dw-flip-jump-op will make a jump to ```some_padded_address``` / ```some_padded_address+0x80```, based on the input, just like [here](#memory---how-can-we-implement-variables).
 
 ```c
 // For example:
 
-    .wflip dw+w padded_address  // we assume dw+w is 0.
+    wflip dw+w, padded_address  // we assume dw+w is 0.
     ;dw
 
-.pad 2
+pad 2
 padded_address:
     ;handle_0
     ;handle_1
 
 handle_0:
-    .wflip dw+w padded_address  // we make sure dw+w stays 0.
+    wflip dw+w, padded_address  // we make sure dw+w stays 0.
     // do some 0's stuff
 
 handle_1:
-    .wflip dw+w padded_address  // we make sure dw+w stays 0.
+    wflip dw+w, padded_address  // we make sure dw+w stays 0.
     // do some 1's stuff
 ```
 
@@ -278,12 +278,12 @@ It is important to say that macros can use other macros, and there are no macro-
 The syntax for defining macros is:
 
 ```c
-macro_name param1, param2, .. @ temp_label1, temp_label2, .. {
+def macro_name param1, param2, .. @ temp_label1, temp_label2, .. {
     // Macro body
 }
 
 // for example:
-self_loop @ loop_label {       // No args, one temp label
+def self_loop @ loop_label {       // No args, one temp label
     loop_label:
     ;loop_label
 }
@@ -292,10 +292,11 @@ The temp labels are being generated for every use of this macro.
 
 The syntax for using macros is:
 ```c
-.macro_name arg1 arg2 ..
+macro_name arg1, arg2, ..
 
 // for example:
-.self_loop
+self_loop
+xor dst, src
 ```
 
 
@@ -305,43 +306,43 @@ Follow the example below.
 dw = 2*w
 dbit = w + #w
 
-bit bin {
+def bit bin {
     ;(bin ? dw : 0)
 }
 
-not bit {
+def not bit {
     bit+dbit;
 }
 
-not8 var {
-    .not var+0*dw
-    .not var+1*dw
-    .not var+2*dw
-    .not var+3*dw
-    .not var+4*dw
-    .not var+5*dw
-    .not var+6*dw
-    .not var+7*dw
+def not8 var {
+    not var+0*dw
+    not var+1*dw
+    not var+2*dw
+    not var+3*dw
+    not var+4*dw
+    not var+5*dw
+    not var+6*dw
+    not var+7*dw
 }
 
 
     ;code_start
     ;
 code_start:
-    .not8 byte
+    not8 byte
 end: 
     ;end
 
 
 byte:
-    .bit 0
-    .bit 0
-    .bit 1
-    .bit 0
-    .bit 1
-    .bit 0
-    .bit 1
-    .bit 0
+    bit 0
+    bit 0
+    bit 1
+    bit 0
+    bit 1
+    bit 0
+    bit 1
+    bit 0
 ```
 
 ## Repetitions
@@ -351,7 +352,7 @@ Well, there is.<br>
 The syntax for repetitions is:
 
 ```c
-.rep n i macro_name macro_arg1 macro_arg2 ..
+rep(n, i) macro_name macro_arg1, macro_arg2, ..
 ```
 It repeats the use of macro_name n-times, each time with (index) i=0, i=1 until i=n-1 in the last time.
 *n* is an expression and may contain constants and labels of previous addresses.
@@ -359,29 +360,29 @@ It repeats the use of macro_name n-times, each time with (index) i=0, i=1 until 
 The above macro could be shortened to:
 
 ```c
-not8 var {
-    .rep 8 i not var+i*dw
+def not8 var {
+    rep(8, i) not var+i*dw
 }
 ```
 
 The byte decleration can be shortened as well:
 
 ```c
-byte val {
-    .rep 8 i bit (val>>i)&1
+def byte val {
+    rep(8, i) bit (val>>i)&1
 }
 
-byte:  .byte 84
+byte:  byte 84
 ```
 
 ## Segments
 
 You can split your code into different segments in memory. 
-Your code implicitly starts at address 0 (like an implicit ```.segment 0```).
+Your code implicitly starts at address 0 (like an implicit ```segment 0```).
 
 ```c
 // some code
-.segment 0x10000
+segment 0x10000
 // some other code, will start at address 0x10000
 ```
 
@@ -389,15 +390,17 @@ Moreover, you can reserve a spot for 0-bits, without taking space in the assembl
 The .fjm file supports segment-length > data-length. In that case the rest of the memory will be filled with zeros.
 
 ```c
-.reserve 3*w    // reserves 3*w 0-bits.
+reserve 3*w    // reserves 3*w 0-bits.
 ```
 
-Both ```.segment``` and ```.reserve``` must get w-aligned values.
+Both ```segment``` and ```reserve``` must get w-aligned values.
 
 ## Hello, World!
 
+A simple fj [hello-world](tests/hello_no-stl.fj) program, not using the standard library:
+
 ```c
-startup {
+def startup {
     ;code_start
   IO:
     ;0
@@ -405,39 +408,40 @@ startup {
 }
 
 
-output_bit bit {
+def output_bit bit {
     IO + bit;
 }
-output ascii {
-    .rep 8 i output_bit ((ascii>>i)&1)
+def output ascii {
+    rep(8, i) output_bit ((ascii>>i)&1)
 }
 
-end_loop @ loop_label {
+def end_loop @ loop_label {
     loop_label:
     ;loop_label
 }
 
-    .startup
+    startup
     
-    .output 'H'
-    .output 'e'
-    .output 'l'
-    .output 'l'
-    .output 'o'
-    .output ','
-    .output ' '
-    .output 'W'
-    .output 'o'
-    .output 'r'
-    .output 'l'
-    .output 'd'
-    .output '!'
+    output 'H'
+    output 'e'
+    output 'l'
+    output 'l'
+    output 'o'
+    output ','
+    output ' '
+    output 'W'
+    output 'o'
+    output 'r'
+    output 'l'
+    output 'd'
+    output '!'
     
-    .end_loop
+    end_loop
+
 ```
 
-The flipfump assembly supports a ```.var "Hello, World!"``` syntax for initializing a variable with a string value (.var is defined in the standard library).<br>
-Look at tests/hello_world.fj program using print_str macro (stl/iolib.fj) for more info.
+The flipfump assembly supports a ```string "Hello, World!"``` syntax for initializing a variable with a string value (```string``` is defined in the standard library).<br>
+Look at [tests/hello_world.fj](tests/hello_world.fj) program using print_str macro ([stl/iolib.fj](stl/iolib.fj)) for more info.
 
 Note that all of these macros are already implemented in the standard library:
 - startup  in runlib.fj
@@ -456,7 +460,7 @@ Hello, World!
   - The --no-stl flag tells the assembler not to include the standard library. It is not needed as we implemented the macros ourselves.
 - The second line will run your code.
 
-You can also use the faster (but still in developement) cpp-based interpreter (under src/cpp_fji):
+You can also use the faster (stable, but still in developement) cpp-based interpreter (under src/cpp_fji):
 
 ```bash
 >>> fji hello.fjm
@@ -489,6 +493,9 @@ Hello, World!
   - func.fj     - performs function calls and operations on stack.
   
 # Read More
-Start by reading the *bitlib.fj* standard library file. It holds many of the flipjump magic.
+
+A more detailed explanations and the specifications of the FlipJump assembly can be found in the [FlipJump esolangs page](https://esolangs.org/wiki/FlipJump).
+
+Start by reading the [bitlib.fj](src/bitlib.fj) standard library file. That's where the flipjump magic begins.
 
 You can also write and run programs for yourself! It is just [that](#how-to-run) easy :)

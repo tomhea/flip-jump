@@ -8,11 +8,10 @@ global curr_file, curr_text, error_occurred
 
 
 class FJLexer(Lexer):
-    tokens = {#DEF, END,
-              REP,
+    tokens = {DEF, REP,
               WFLIP,
               SEGMENT, RESERVE,
-              DOT_ID, ID, NUMBER, STRING,
+              ID, NUMBER, STRING,
               SHL, SHR, NL, SC}
 
     literals = {'=', '+', '-', '*', '/', '%',
@@ -32,15 +31,13 @@ class FJLexer(Lexer):
     NUMBER = number_re
     STRING = string_re
 
-    DOT_ID = fr'\.({id_re})'
-    # DOT_ID[r'.def'] = DEF
-    # DOT_ID[r'.end'] = END
-    DOT_ID[r'.rep'] = REP
+    ID[r'def'] = DEF
+    ID[r'rep'] = REP
 
-    DOT_ID[r'.wflip'] = WFLIP
+    ID[r'wflip'] = WFLIP
 
-    DOT_ID[r'.segment'] = SEGMENT
-    DOT_ID[r'.reserve'] = RESERVE
+    ID[r'segment'] = SEGMENT
+    ID[r'reserve'] = RESERVE
 
     SHL = r'<<'
     SHR = r'>>'
@@ -79,10 +76,6 @@ class FJLexer(Lexer):
 
     def NL(self, t):
         self.lineno += 1
-        return t
-
-    def DOT_ID(self, t):
-        t.value = t.value[1:]
         return t
 
     def error(self, t):
@@ -161,7 +154,7 @@ class FJParser(Parser):
     def definable_line_statement(self, p):
         return []
 
-    @_('ID macro_params "{" NL line_statements NL "}"')
+    @_('DEF ID macro_params "{" NL line_statements NL "}"')
     def macro_def(self, p):
         params = p.macro_params
         name = (p.ID, len(params[0]))
@@ -227,30 +220,9 @@ class FJParser(Parser):
     def line_statement(self, p):
         return [p.label]
 
-    # @_('label statement')
-    # def line_statement(self, p):
-    #     if p.statement:
-    #         return [p.label, p.statement]
-    #     return [p.label]
-
-    # @_('labels label')
-    # def labels(self, p):
-    #     if p.label.data[0].startswith(wflip_start_label):
-    #         error(f"can't use the reserved label prefix {wflip_start_label}")
-    #     return p.labels + [p.label]
-    #
-    # @_('empty')
-    # def labels(self, p):
-    #     return []
-
     @_('ID ":"')
     def label(self, p):
         return Op(OpType.Label, (p.ID,), curr_file, p.lineno)
-
-    # @_('_expr')
-    # def statement(self, p):
-    #     expr, line = p._expr
-    #     return Op(OpType.FlipJump, (expr, next_address()), curr_file, line)
 
     @_('expr SC')
     def statement(self, p):
@@ -268,11 +240,15 @@ class FJParser(Parser):
     def statement(self, p):
         return Op(OpType.FlipJump, (Expr(0), next_address()), curr_file, p.lineno)
 
-    @_('DOT_ID expressions')
+    @_('ID')
     def statement(self, p):
-        return Op(OpType.Macro, ((p.DOT_ID, len(p.expressions)), *p.expressions), curr_file, p.lineno)
+        return Op(OpType.Macro, ((p.ID, 0), ), curr_file, p.lineno)
 
-    @_('WFLIP expr expr')
+    @_('ID expressions')
+    def statement(self, p):
+        return Op(OpType.Macro, ((p.ID, len(p.expressions)), *p.expressions), curr_file, p.lineno)
+
+    @_('WFLIP expr "," expr')
     def statement(self, p):
         return Op(OpType.WordFlip, (p.expr0, p.expr1), curr_file, p.lineno)
 
@@ -283,11 +259,17 @@ class FJParser(Parser):
             return None
         error(f'Can\'t evaluate expression at file {curr_file} line {p.lineno}:  {str(p.expr)}.')
 
-    @_('REP expr ID ID expressions')
+    @_('REP "(" expr "," ID ")" ID')
+    def statement(self, p):
+        return Op(OpType.Rep,
+                  (p.expr, p.ID0, Op(OpType.Macro, ((p.ID1, 0), ), curr_file, p.lineno)),
+                  curr_file, p.lineno)
+
+    @_('REP "(" expr "," ID ")" ID expressions')
     def statement(self, p):
         exps = p.expressions
         return Op(OpType.Rep,
-                  (p.expr, p.ID0, [Op(OpType.Macro, ((p.ID1, len(exps)), *exps), curr_file, p.lineno)]),
+                  (p.expr, p.ID0, Op(OpType.Macro, ((p.ID1, len(exps)), *exps), curr_file, p.lineno)),
                   curr_file, p.lineno)
 
     @_('SEGMENT expr')
@@ -298,13 +280,13 @@ class FJParser(Parser):
     def statement(self, p):
         return Op(OpType.Reserve, (p.expr,), curr_file, p.lineno)
 
-    @_('expressions expr')
+    @_('expressions "," expr')
     def expressions(self, p):
         return p.expressions + [p.expr]
 
-    @_('empty')
+    @_('expr')
     def expressions(self, p):
-        return []
+        return [p.expr]
 
     @_('_expr')
     def expr(self, p):

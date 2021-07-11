@@ -1,20 +1,20 @@
-.startup
+    startup
 start:
-    .input ascii
-    .if0 8 ascii end
-    .cmp 8 ascii nl final_check end final_check
+    input ascii
+    if0 8, ascii, end
+    cmp 8, ascii, nl, final_check, end, final_check
   final_check:
-    .cmp 8 ascii cr print end print
+    cmp 8, ascii, cr, print, end, print
 print:
-    .print ascii
+    print ascii
     ;start
 end:
-    .loop
+    loop
 
 
 ascii:
-    .var 8 0
+    var 8, 0
 nl:
-    .var 8 '\n'
+    var 8, '\n'
 cr:
-    .var 8 '\r'
+    var 8, '\r'
