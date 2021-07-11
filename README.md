@@ -354,6 +354,7 @@ The syntax for repetitions is:
 .rep n i macro_name macro_arg1 macro_arg2 ..
 ```
 It repeats the use of macro_name n-times, each time with (index) i=0, i=1 until i=n-1 in the last time.
+*n* is an expression and may contain constants and labels of previous addresses.
 
 The above macro could be shortened to:
 
