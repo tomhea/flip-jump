@@ -1,6 +1,6 @@
 # FlipJump
 
-FlipJump is an Esoteric language ([esolangs page](https://esolangs.org/wiki/FlipJump)), with just 1 operation: <br>
+FlipJump is an Esoteric language ([FlipJump esolangs page](https://esolangs.org/wiki/FlipJump)), with just 1 operation: <br>
 - Flip a bit, then (unconditionally) jump. <br>
 - The operation takes 2 memory words, then flips (inverts) the bit referenced by the first word, and jumps to the address referenced by the second word. <br>
 
@@ -195,13 +195,13 @@ That's why the assembly language provides the next operation:
     0x10a;
     
 // This op is very useful if you want to set the jumping-part of another fj opcode to some address (and we know that it's zeroed before).
-    // just do:  .wflip fj_op+w jump_address
-// Also - setting the jumping-part back to zero can be simply done by doing the same .wflip again:
+    // just do:  wflip fj_op+w, jump_address
+// Also - setting the jumping-part back to zero can be simply done by doing the same wflip again:
     // (because b xor b == 0).
 
-// Note that the assembler might choose to unwrap the .wflip op in more complicated ways, for optimization reasons.
+// Note that the assembler might choose to unwrap the wflip op in more complicated ways, for optimization reasons.
 
-// This is some way of doing it (has the advantage of knowing in advance that .wflip takes 1 op-size in its local area):    
+// This is some way of doing it (has the advantage of knowing in advance that wflip takes 1 op-size in its local area):    
     0x106;next_flips
 next_op:
     
@@ -493,6 +493,9 @@ Hello, World!
   - func.fj     - performs function calls and operations on stack.
   
 # Read More
-Start by reading the *bitlib.fj* standard library file. That's where the flipjump magic starts.
+
+A more detailed explanations and the specifications of the FlipJump assembly can be found in the [FlipJump esolangs page](https://esolangs.org/wiki/FlipJump).
+
+Start by reading the [bitlib.fj](src/bitlib.fj) standard library file. That's where the flipjump magic begins.
 
 You can also write and run programs for yourself! It is just [that](#how-to-run) easy :)
