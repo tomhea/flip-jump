@@ -8,66 +8,6 @@ from parser import parse_macro_tree
 import pickle
 
 
-def label_dictionary_pass(ops, w, verbose=False):
-    curr_address = 0
-    rem_ops = []
-    labels = {}
-    label_places = {}
-    boundary_addresses = [(SegEntry.StartAddress, 0)]   # SegEntries
-    last_address_index = 0
-
-    for op in ops:
-        if op.type == OpType.Segment:
-            eval_all(op, labels)
-            value = try_int(op, op.data[0])
-            if value % w != 0:
-                error(f'.segment ops must have a w-aligned address. In {op}.')
-
-            boundary_addresses.append((SegEntry.WflipAddress, curr_address))
-            labels[f'{wflip_start_label}{last_address_index}'] = Expr(curr_address)
-            last_address_index += 1
-
-            curr_address = value
-            boundary_addresses.append((SegEntry.StartAddress, curr_address))
-            rem_ops.append(op)
-        elif op.type == OpType.Reserve:
-            eval_all(op, labels)
-            value = try_int(op, op.data[0])
-            if value % w != 0:
-                error(f'.reserve ops must have a w-aligned value. In {op}.')
-
-            curr_address += value
-            boundary_addresses.append((SegEntry.ReserveAddress, curr_address))
-            labels[f'{wflip_start_label}{last_address_index}'] = Expr(curr_address)
-
-            last_address_index += 1
-            rem_ops.append(op)
-        elif op.type in {OpType.FlipJump, OpType.WordFlip}:
-            delta = 2*w
-            end_address = curr_address + delta
-            eval_all(op, {'$': Expr(end_address)})
-            curr_address = end_address
-            if op.type == OpType.WordFlip:
-                op.data += (Expr(end_address),)
-            if verbose:
-                print(f'op added: {str(op)}')
-            rem_ops.append(op)
-        elif op.type == OpType.Label:
-            label = op.data[0]
-            if label in labels:
-                other_file, other_line = label_places[label]
-                error(f'label declared twice - "{label}" on file {op.file} (line {op.line}) and file {other_file} (line {other_line})')
-            if verbose:
-                print(f'label added: "{label}" in {op.file} line {op.line}')
-            labels[label] = Expr(curr_address)
-            label_places[label] = (op.file, op.line)
-        else:
-            error(f"Can't assemble this opcode - {str(op)}")
-
-    boundary_addresses.append((SegEntry.WflipAddress, curr_address))
-    return rem_ops, labels, boundary_addresses
-
-
 def lsb_first_bin_array(int_value, bit_size):
     return [int(c) for c in bin(int_value & ((1 << bit_size) - 1))[2:].zfill(bit_size)[-bit_size:]][::-1][:bit_size]
 

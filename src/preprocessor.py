@@ -10,7 +10,7 @@ def output_ops(ops, output_file):
             if op.type == OpType.FlipJump:
                 f.write(f'  {op.data[0]};{op.data[1]}\n')
             elif op.type == OpType.WordFlip:
-                f.write(f'  .wflip {op.data[0]} {op.data[1]}\n')
+                f.write(f'  wflip {op.data[0]}, {op.data[1]}\n')
             elif op.type == OpType.Label:
                 f.write(f'{op.data[0]}:\n')
 

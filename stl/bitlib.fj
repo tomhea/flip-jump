@@ -7,7 +7,7 @@
 // Everything after // is ignored, everything before first : is ignored too, and every whitespace is ignored (besides new line)
 // An opcode is:  F;L  F  ;L  or just  ;  (no F => F=0;  no L => L=next)
 
-// Complexity note: phi is log2 of the total number of fj operations, counting .wflip* as one.
+// Complexity note: phi is log2 of the total number of fj operations, counting wflip* as one op.
 
 
 

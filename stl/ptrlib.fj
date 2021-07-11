@@ -84,15 +84,15 @@ def xor_to_ptr ptr, bit @ end {
 }
 
 
-// like:  .wflip *ptr value
+// like:  wflip *ptr, value
 // Assumes *ptr is w-aligned, and value is 2dw-aligned
 // Complexity w(3phi+11)
-def ptr_flip_by ptr, value {
+def ptr_wflip ptr, value {
     bit_var_xor w, __to_flip, __to_flip_var, __to_flip_var
     bit_var_xor w, __to_flip, __to_flip_var, ptr
-    rep(w, i) __advance_by_one_and_flip__ptr_flip_by (#(i^((i+1)%w))), (value>>i)&1
+    rep(w, i) __advance_by_one_and_flip__ptr_wflip (#(i^((i+1)%w))), (value>>i)&1
 }
-def __advance_by_one_and_flip__ptr_flip_by n, do_flip @ cleanup, advance {
+def __advance_by_one_and_flip__ptr_wflip n, do_flip @ cleanup, advance {
     comp_if0 do_flip, advance
     wflip __to_flip+w, cleanup
     ;__to_flip
@@ -103,9 +103,9 @@ def __advance_by_one_and_flip__ptr_flip_by n, do_flip @ cleanup, advance {
 }
 
 // Assumes *ptr is dw-aligned, and value is 2dw-aligned
-def ptr_flip_by_2nd_word ptr, value {
+def ptr_wflip_2nd_word ptr, value {
     not ptr + dw*ww
-    ptr_flip_by ptr, value
+    ptr_wflip ptr, value
     not ptr + dw*ww
 }
 
@@ -122,7 +122,7 @@ def xor_from_ptr dst, ptr {
 }
 
 def exact_xor_from_ptr dst, ptr @ base_jump_label, cleanup {
-    ptr_flip_by_2nd_word ptr, base_jump_label
+    ptr_wflip_2nd_word ptr, base_jump_label
 
     ptr_jump ptr
     pad 2
@@ -131,7 +131,7 @@ def exact_xor_from_ptr dst, ptr @ base_jump_label, cleanup {
     dst;
 
   cleanup:
-    ptr_flip_by_2nd_word ptr, base_jump_label
+    ptr_wflip_2nd_word ptr, base_jump_label
 
 }
 
@@ -166,13 +166,13 @@ def dec_ptr ptr {
 // Complexity w(5phi+21)
 def push_ret_address address {
     inc_ptr sp
-    ptr_flip_by_2nd_word sp, address
+    ptr_wflip_2nd_word sp, address
 }
 
 // Assumes address is 2dw-aligned
 // Complexity w(5phi+23)
 def pop_ret_address address {
-    ptr_flip_by_2nd_word sp, address
+    ptr_wflip_2nd_word sp, address
     dec_ptr sp
 }
 
