@@ -61,12 +61,6 @@ In many cases you won't need to specify both addresses.
 ### More syntax options
 
 ```c
-[len]value  // Put len-memory-words with the value of 'value'.
-
-// The next two lines are identical
-[2]123
-123;123 
-
 x = 13      // Declare constants
 y = x+4     
 
@@ -284,7 +278,7 @@ It is important to say that macros can use other macros, and there are no macro-
 The syntax for defining macros is:
 
 ```c
-macro_name [param1, param2, ...] @ [temp_label1, temp_label2, ...] {
+macro_name param1, param2, .. @ temp_label1, temp_label2, .. {
     // Macro body
 }
 
@@ -298,7 +292,7 @@ The temp labels are being generated for every use of this macro.
 
 The syntax for using macros is:
 ```c
-.macro_name [arg ...]
+.macro_name arg1 arg2 ..
 
 // for example:
 .self_loop
@@ -357,7 +351,7 @@ Well, there is.<br>
 The syntax for repetitions is:
 
 ```c
-.rep n i macro_name [macro_arg ..]
+.rep n i macro_name macro_arg1 macro_arg2 ..
 ```
 It repeats the use of macro_name n-times, each time with (index) i=0, i=1 until i=n-1 in the last time.
 
