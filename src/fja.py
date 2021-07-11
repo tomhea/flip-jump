@@ -35,7 +35,9 @@ def main():
             # if file in ('tests/calc.fj',):
             #     continue
             print(f'compiling {Path(file).name}:')
-            assemble([file] if args.no_stl else stl() + [file], (Path(args.file[0]) / 'compiled' / (Path(file).stem + '.fjm')),
+            no_stl = args.no_stl or 'no-stl' in Path(file).stem
+            assemble([file] if no_stl else stl() + [file],
+                     (Path(args.file[0]) / 'compiled' / (Path(file).stem + '.fjm')),
                      args.width, flags=args.flags, verbose=verbose_set)
             print()
 

@@ -8,12 +8,6 @@ from parser import parse_macro_tree
 import pickle
 
 
-def try_int(op, expr):
-    if expr.is_int():
-        return expr.val
-    error(f"Can't resolve the following name: {expr.eval({}, op.file, op.line)} (in op={op}).")
-
-
 def label_dictionary_pass(ops, w, verbose=False):
     curr_address = 0
     rem_ops = []
@@ -48,11 +42,8 @@ def label_dictionary_pass(ops, w, verbose=False):
 
             last_address_index += 1
             rem_ops.append(op)
-        elif op.type in {OpType.FlipJump, OpType.WordsValue, OpType.WordFlip}:
+        elif op.type in {OpType.FlipJump, OpType.WordFlip}:
             delta = 2*w
-            if op.type == OpType.WordsValue:
-                eval_all(op, labels)
-                delta = w * try_int(op, op.data[0])
             end_address = curr_address + delta
             eval_all(op, {'$': Expr(end_address)})
             curr_address = end_address
@@ -163,9 +154,6 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
         if op.type == OpType.FlipJump:
             f, j = vals
             bits += [f, j]
-        elif op.type == OpType.WordsValue:
-            n, v = vals
-            bits += [v] * n
         elif op.type == OpType.Segment:
             segment_index += 2
             close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits, wflips)
@@ -239,19 +227,14 @@ def assemble(input_files, output_file, w, flags=None,
 
     print('  macro resolve:   ', end='', flush=True)
     start_time = time()
-    ops = resolve_macros(macros, output_file=preprocessed_file, verbose=Verbose.MacroSolve in verbose)
-    if Verbose.Time in verbose:
-        print(f'{time() - start_time:.3f}s')
-
-    print('  labels pass:     ', end='', flush=True)
-    start_time = time()
-    ops, labels, last_address = label_dictionary_pass(ops, w, verbose=Verbose.LabelDict in verbose)
+    ops, labels, boundary_addresses = resolve_macros(w, macros, output_file=preprocessed_file,
+                                                     verbose=Verbose.MacroSolve in verbose)
     if Verbose.Time in verbose:
         print(f'{time() - start_time:.3f}s')
 
     print('  labels resolve:  ', end='', flush=True)
     start_time = time()
-    labels_resolve(ops, labels, last_address, w, output_file, verbose=Verbose.LabelSolve in verbose, flags=flags)
+    labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Verbose.LabelSolve in verbose, flags=flags)
     if Verbose.Time in verbose:
         print(f'{time() - start_time:.3f}s')
 
