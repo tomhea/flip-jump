@@ -68,13 +68,12 @@ class SegEntry(Enum):
 
 class OpType(Enum):
     FlipJump = 1        # expr, expr                # Survives until (3) label resolve
-    WordsValue = 2      # expr, expr                # Survives until (3) label resolve
-    WordFlip = 3        # expr, expr                # Survives until (3) label resolve
-    Segment = 4         # expr                      # Survives until (3) label resolve
-    Reserve = 5         # expr                      # Survives until (3) label resolve
-    Label = 6           # ID                        # Survives until (2) label dictionary
-    Macro = 7           # ID, expr [expr..]         # Survives until (1) macro resolve
-    Rep = 8             # expr, ID, statements      # Survives until (1) macro resolve
+    WordFlip = 2        # expr, expr                # Survives until (3) label resolve
+    Segment = 3         # expr                      # Survives until (3) label resolve
+    Reserve = 4         # expr                      # Survives until (3) label resolve
+    Label = 5           # ID                        # Survives until (2) label dictionary
+    Macro = 6           # ID, expr [expr..]         # Survives until (1) macro resolve
+    Rep = 7             # expr, ID, statements      # Survives until (1) macro resolve
 
 
 class Op:

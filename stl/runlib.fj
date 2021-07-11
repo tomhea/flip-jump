@@ -39,11 +39,11 @@ startup in0_handler, in1_handler {
 // ---------- Basic Functionality
 
 
-word_pad x @ pad_start {
-  pad_start:
-    [(0-pad_start/w) % x] 0
+zero_op {
+    0;0
 }
 
-pad x {
-    .word_pad x*2
+pad x @ pad_start {
+  pad_start:
+    .rep (0-pad_start/(2*w))%x i zero_op
 }

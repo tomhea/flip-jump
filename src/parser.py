@@ -22,7 +22,6 @@ class FJLexer(Lexer):
                 '?', ':',
                 '"',
                 '#',
-                '[', ']',
                 '{', '}',
                 "@", ","}
 
@@ -276,10 +275,6 @@ class FJParser(Parser):
     @_('WFLIP expr expr')
     def statement(self, p):
         return Op(OpType.WordFlip, (p.expr0, p.expr1), curr_file, p.lineno)
-
-    @_('"[" expr "]" expr')
-    def statement(self, p):
-        return Op(OpType.WordsValue, (p.expr0, p.expr1), curr_file, p.lineno)
 
     @_('ID "=" expr')
     def statement(self, p):
