@@ -1,72 +1,72 @@
-.startup
+startup
 
 
 loop:
-    .zero hex_used
-    .print 3 prompt_string
-    .getch
-    .remove_spaces
-    .check_quit should_quit before_start
+    zero hex_used
+    print 3, prompt_string
+    getch
+    remove_spaces
+    check_quit should_quit, before_start
   should_quit:
-    .getch
-    .remove_spaces
-    .line_ended finish finish before_start
+    getch
+    remove_spaces
+    line_ended finish, finish, before_start
   before_start:
-    .line_ended loop_new_line finish start
+    line_ended loop_new_line, finish, start
   loop_new_line:
-    .output '\n'
+    output '\n'
     ;loop
 
   start:
-    .insert_number a
+    insert_number a
 
-    .remove_spaces
-    .mov 8 op ascii
-    .line_ended do_print do_print advance
+    remove_spaces
+    mov 8, op, ascii
+    line_ended do_print, do_print, advance
   advance:
-    .getch
+    getch
 
-    .remove_spaces
-    .insert_number b
+    remove_spaces
+    insert_number b
 
-    .remove_spaces
+    remove_spaces
 
-    .zero should_finish
-    .line_ended do_calc mark_finish err_loop
+    zero should_finish
+    line_ended do_calc, mark_finish, err_loop
   mark_finish:
-    .not should_finish
+    not should_finish
   do_calc:
-    .calc a op b
-    .if1 error err_loop
+    calc a, op, b
+    if1 error, err_loop
 
 
   do_print:
-    .output '\n'
-    .print_int a
-    .output '\n'
+    output '\n'
+    print_int a
+    output '\n'
 
-    .if should_finish loop finish
+    if should_finish, loop, finish
 
   err_getch:
-    .getch
+    getch
   err_loop:
-    .line_ended print_err print_err err_getch
+    line_ended print_err, print_err, err_getch
   print_err:
-    .print 8 err_string
-    .line_ended loop finish finish
+    print 8, err_string
+    line_ended loop, finish, finish
 
   finish:
-    .loop
+    loop
 
 
 
-remove_spaces @ main_loop, try2, next_ascii, end {
+def remove_spaces @ main_loop, try2, next_ascii, end {
   main_loop:
-    .cmp 8 ascii space1 try2 next_ascii try2
+    cmp 8, ascii, space1, try2, next_ascii, try2
   try2:
-    .cmp 8 ascii space2 end next_ascii end
+    cmp 8, ascii, space2, end, next_ascii, end
   next_ascii:
-    .getch
+    getch
     ;main_loop
 
   end:
@@ -74,181 +74,181 @@ remove_spaces @ main_loop, try2, next_ascii, end {
 
 
 
-insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_dec, dec_loop, minus_flag, end, after_minus {
-    .zero w x
-    .zero minus_flag
-    .cmp 8 ascii minus check1 set_minus check1
+def insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_dec, dec_loop, minus_flag, end, after_minus {
+    zero w, x
+    zero minus_flag
+    cmp 8, ascii, minus, check1, set_minus, check1
   set_minus:
-    .getch
-    .not minus_flag
+    getch
+    not minus_flag
   check1:
-    .cmp 8 ascii hex_prefix1 check2     before_hex check2
+    cmp 8, ascii, hex_prefix1, check2,     before_hex, check2
   check2:
-    .cmp 8 ascii hex_prefix2 before_dec before_hex before_dec
+    cmp 8, ascii, hex_prefix2, before_dec, before_hex, before_dec
 
   before_hex:
-    .getch
-    .one hex_used
+    getch
+    one hex_used
   hex_loop:
-    .ascii2hex error hex ascii
-    .if1 error end
-    .shl w 4 x
-    .xor 4 x hex
-    .getch
+    ascii2hex error, hex, ascii
+    if1 error, end
+    shl w, 4, x
+    xor 4, x, hex
+    getch
     ;hex_loop
 
   before_dec:
-    .zero w-4 t+4*dw
+    zero w-4, t+4*dw
   dec_loop:
-    .ascii2dec error dec ascii
-    .if1 error end
-    .mov 4 t dec
-    .mul10 w x
-    .add w x t
-    .getch
+    ascii2dec error, dec, ascii
+    if1 error, end
+    mov 4, t, dec
+    mul10 w, x
+    add w, x, t
+    getch
     ;dec_loop
 
   minus_flag:
-    .bit
+    bit
   end:
-    .if0 minus_flag after_minus
-    .neg w x
+    if0 minus_flag, after_minus
+    neg w, x
   after_minus:
-    .zero error
+    zero error
 }
 
 
 
-calc a, op, b @ try_add, try_sub, try_mul, try_mul_loop, try_div, try_mod, add, sub, mul, mul_loop, div_mod, div, mod, bad, div_mod_flag, r, q, end {
-    .zero error
+def calc a, op, b @ try_add, try_sub, try_mul, try_mul_loop, try_div, try_mod, add, sub, mul, mul_loop, div_mod, div, mod, bad, div_mod_flag, r, q, end {
+    zero error
 
   try_add:
-    .cmp 8 op plus     try_sub add try_sub
+    cmp 8, op, plus,     try_sub,      add, try_sub
   try_sub:
-    .cmp 8 op minus    try_mul sub try_mul
+    cmp 8, op, minus,    try_mul,      sub, try_mul
   try_mul:
-    .cmp 8 op asterisk try_mul_loop mul try_mul_loop
+    cmp 8, op, asterisk, try_mul_loop, mul, try_mul_loop
   try_mul_loop:
-    .cmp 8 op roof     try_div mul_loop try_div
+    cmp 8, op, roof,     try_div, mul_loop, try_div
   try_div:
-    .zero div_mod_flag
-    .cmp 8 op slash    try_mod div_mod try_mod
+    zero div_mod_flag
+    cmp 8, op, slash,    try_mod, div_mod,  try_mod
   try_mod:
-    .not div_mod_flag
-    .cmp 8 op percentage bad div_mod bad
+    not div_mod_flag
+    cmp 8, op, percentage, bad,   div_mod,   bad
   add:
-    .add w a b
+    add w, a, b
     ;end
   sub:
-    .sub w a b
+    sub w, a, b
     ;end
   mul:
-    .mul w a b
+    mul w, a, b
     ;end
   mul_loop:
-    .mul_loop w a b
+    mul_loop w, a, b
     ;end
   div_mod:
-    .idiv w a b q r
+    idiv w, a, b, q, r
     //.idiv_loop w a b q r
-    .if div_mod_flag div mod
+    if div_mod_flag, div, mod
   div:
-    .mov w a q
+    mov w, a, q
     ;end
   mod:
-    .mov w a r
+    mov w, a, r
     ;end
   bad:
-    .one error
+    one error
     ;end
 
   div_mod_flag:
-    .bit
+    bit
   r:
-    .var w
+    var w
   q:
-    .var w
+    var w
   end:
 }
 
 
 
-line_ended true, end, false @ try_end_line_n {
-    .if0 8 ascii end
-    .cmp 8 ascii end_line_r try_end_line_n true try_end_line_n
+def line_ended true, end, false @ try_end_line_n {
+    if0 8, ascii, end
+    cmp 8, ascii, end_line_r, try_end_line_n, true, try_end_line_n
   try_end_line_n:
-    .cmp 8 ascii end_line_n false true false
+    cmp 8, ascii, end_line_n, false, true, false
 }
 
 
 
-check_quit true, false @ try_quit1 {
-    .cmp 8 ascii quit2 try_quit1 true false
+def check_quit true, false @ try_quit1 {
+    cmp 8, ascii, quit2, try_quit1, true, false
   try_quit1:
-    .cmp 8 ascii quit1 false true false
+    cmp 8, ascii, quit1, false,     true, false
 }
 
 
 
 // does not print new-line
-getch @ _r, check_n, do_print, end {
-    .input ascii
-    .cmp 8 ascii end_line_r check_n  end check_n
+def getch @ _r, check_n, do_print, end {
+    input ascii
+    cmp 8, ascii, end_line_r, check_n,  end, check_n
   check_n:
-    .cmp 8 ascii end_line_n do_print end do_print
+    cmp 8, ascii, end_line_n, do_print, end, do_print
   do_print:
-    .print ascii
+    print ascii
   end:
 }
 
 
 
-print_int x @ print_hex, print_dec, end {
-    .if1 hex_used print_hex
-    .print_dec_int w x
+def print_int x @ print_hex, print_dec, end {
+    if1 hex_used, print_hex
+    print_dec_int w, x
     ;end
   print_hex:
-    .print_hex_int w x 1
+    print_hex_int w, x, 1
 
   end:
 }
 
 
 
-op:     .var 8 0
-ascii:  .var 8 0
-error:  .bit 0
-hex:    .var 4 0
-dec:    .var 4 0
-should_finish:  .bit 0
-hex_used:       .bit 0
+op:     var 8, 0
+ascii:  var 8, 0
+error:  bit 0
+hex:    var 4, 0
+dec:    var 4, 0
+should_finish:  bit 0
+hex_used:       bit 0
 
-a:  .var w 0
-b:  .var w 0
-t:  .var w 0
+a:  var w, 0
+b:  var w, 0
+t:  var w, 0
 
-plus:   .var 8 '+'
-minus:  .var 8 '-'
-asterisk:   .var 8 '*'
-roof:   .var 8 '^'
-slash:  .var 8 '/'
-percentage: .var 8 '%'
+plus:   var 8, '+'
+minus:  var 8, '-'
+asterisk:   var 8, '*'
+roof:   var 8, '^'
+slash:  var 8, '/'
+percentage: var 8, '%'
 
-hex_prefix1:.var 8 'x'
-hex_prefix2:.var 8 'X'
+hex_prefix1:var 8, 'x'
+hex_prefix2:var 8, 'X'
 
-eof:        .var 8 '\0'
-end_line_r: .var 8 '\r'
-end_line_n: .var 8 '\n'
-space1:     .var 8 ' '
-space2:     .var 8 '\t'
+eof:        var 8, '\0'
+end_line_r: var 8, '\r'
+end_line_n: var 8, '\n'
+space1:     var 8, ' '
+space2:     var 8, '\t'
 
-quit1:     .var 8 'Q'
-quit2:     .var 8 'q'
+quit1:     var 8, 'Q'
+quit2:     var 8, 'q'
 
 
-err_string:     .string "\nError!\n"
-prompt_string:  .string ">  "
+err_string:     string "\nError!\n"
+prompt_string:  string ">  "
 
-.init_ptr
-.stack 20
+init_ptr
+stack 20

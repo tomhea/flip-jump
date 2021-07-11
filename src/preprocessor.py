@@ -71,8 +71,7 @@ def resolve_macro_aux(w, macros, macro_name, args, rep_dict, dollar_count,
                                           verbose, file=op.file, line=op.line)
         elif op.type == OpType.Rep:
             eval_all(op, labels)
-            n, i_name, statements = op.data
-            statements = list(statements)
+            n, i_name, macro_call = op.data
             if not n.is_int():
                 error(f'Rep used without a number "{str(n)}" in file {op.file} line {op.line}.')
             times = n.val
@@ -82,8 +81,8 @@ def resolve_macro_aux(w, macros, macro_name, args, rep_dict, dollar_count,
                 error(f'Rep index {i_name} is declared twice; maybe an inner rep. in file {op.file} line {op.line}.')
             pseudo_macro_name = (new_label(dollar_count).val, 1)  # just moved outside (before) the for loop
             for i in range(times):
-                rep_dict[i_name] = Expr(i)
-                macros[pseudo_macro_name] = (([], []), statements, (op.file, op.line))
+                rep_dict[i_name] = Expr(i)  # TODO - call the macro_name directly, and do deepcopy(op) beforehand.
+                macros[pseudo_macro_name] = (([], []), [macro_call], (op.file, op.line))
                 commands += resolve_macro_aux(w, macros, pseudo_macro_name, [], rep_dict, dollar_count,
                                               labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
                                               verbose, file=op.file, line=op.line)

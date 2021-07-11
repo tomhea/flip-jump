@@ -1,18 +1,18 @@
-.startup 0 0
+startup 0, 0
 n=4
-.cmp n a b lt eq gt
+cmp n, a, b, lt, eq, gt
 
 lt:
-    .output '<'
-    .loop
+    output '<'
+    loop
 eq:
-    .output '='
-    .loop
+    output '='
+    loop
 gt:
-    .output '>'
-    .loop
+    output '>'
+    loop
 
   a:
-    .var n 3
+    var n, 3
   b:
-    .var n 1
+    var n, 1

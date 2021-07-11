@@ -15,22 +15,22 @@
 // Complexity: 1
 
 
-comp_if expr, l0, l1 {
+def comp_if expr, l0, l1 {
     ; expr ? l1 : l0
 }
 
-comp_if0 expr, l0 @ l1 {
-    .comp_if expr l0 l1
+def comp_if0 expr, l0 @ l1 {
+    comp_if expr, l0, l1
   l1:
 }
 
-comp_if1 expr, l1 @ l0 {
-    .comp_if expr l0 l1
+def comp_if1 expr, l1 @ l0 {
+    comp_if expr, l0, l1
   l0:
 }
 
 
-comp_flip_if bit, expr {
+def comp_flip_if bit, expr {
     (expr ? bit : 0);
 }
 
@@ -39,12 +39,12 @@ comp_flip_if bit, expr {
 // Size Complexity: 1
 
 
-bit value {
+def bit value {
     ; value ? dw : 0
 }
 
-bit {
-    .bit 0
+def bit {
+    bit 0
 }
 
 
@@ -53,15 +53,15 @@ bit {
 
 
 // Complexity: phi+2
-zero x {
-    .xor x x
+def zero x {
+    xor x, x
 }
 
 
 // Complexity: phi+3
-one x {
-    .zero x
-    .not x
+def one x {
+    zero x
+    not x
 }
 
 
@@ -77,25 +77,25 @@ one x {
 
 // safe even for dst==src !
 // Complexity: 2phi+5
-mov dst, src @ do_mov, end {
-    .comp_if dst-src end do_mov
+def mov dst, src @ do_mov, end {
+    comp_if dst-src, end, do_mov
   do_mov:
-    .zero dst
-    .xor dst src
+    zero dst
+    xor dst, src
   end:
 }
 
 
 //Complexity: 2phi+10
-swap a, b @ a0, a1, notnot, end {
-    .if a a0 a1
+def swap a, b @ a0, a1, notnot, end {
+    if a, a0, a1
   a0:
-    .if b end flip
+    if b, end, flip
   a1:
-    .if b flip end
+    if b, flip, end
   notnot:
-    .not a
-    .not b
+    not a
+    not b
   end:
 }
 
@@ -105,12 +105,12 @@ swap a, b @ a0, a1, notnot, end {
 // Complexity: 1
 
 
-skip {
+def skip {
     ;$ + dw
 }
 
 
-loop {
+def loop {
     ;$ - dw
 }
 
@@ -120,33 +120,33 @@ loop {
 
 
 // Complexity: phi+4
-if x, l0, l1 @ label_ptr, base_jump_label {
-    .xor label_ptr x
+def if x, l0, l1 @ label_ptr, base_jump_label {
+    xor label_ptr, x
   label_ptr:
     ;base_jump_label
-    .pad 2
+    pad 2
   base_jump_label:
     ;l0
     label_ptr + dbit;l1
 }
 
-if1 x, l1 @ end {
-    .if x end l1
+def if1 x, l1 @ end {
+    if x, end, l1
   end:
 }
 
-if0 x, l0 @ end {
-    .if x l0 end
+def if0 x, l0 @ end {
+    if x, l0, end
   end:
 }
 
 
 // Complexity: 2phi+8
-cmp a, b, lt, eq, gt @ a_is1_label {
-    .if1 a a_is1_label
-    .if b eq lt
+def cmp a, b, lt, eq, gt @ a_is1_label {
+    if1 a, a_is1_label
+    if b, eq, lt
   a_is1_label:
-    .if b gt eq
+    if b, gt, eq
 }
 
 
@@ -155,57 +155,57 @@ cmp a, b, lt, eq, gt @ a_is1_label {
 
 
 // Complexity: phi+2
-xor dst, src {
-    .exact_xor dst + dbit src
+def xor dst, src {
+    exact_xor dst + dbit, src
 }
 
-exact_xor dst, src @ base_jump_label, cleanup {
-    .wflip src+w base_jump_label
+def exact_xor dst, src @ base_jump_label, cleanup {
+    wflip src+w, base_jump_label
     ;src
-    .pad 2
+    pad 2
   base_jump_label:
     ;cleanup
     dst;
   cleanup:
-    .wflip src+w base_jump_label
+    wflip src+w, base_jump_label
 }
 
 // Complexity: phi+3
-double_exact_xor dst1, dst2, src @ base_jump_label, cleanup {
-    .wflip src+w base_jump_label
+def double_exact_xor dst1, dst2, src @ base_jump_label, cleanup {
+    wflip src+w, base_jump_label
     ;src
-    .pad 2
+    pad 2
   base_jump_label:
     ;cleanup
     dst1;
     dst2;
   cleanup:
-    .wflip src+w base_jump_label
+    wflip src+w, base_jump_label
 }
 
 
 // Complexity: 2phi+7
-or dst, src @ end {
-    .if0 src end
-    .one dst
+def or dst, src @ end {
+    if0 src, end
+    one dst
   end:
 }
 
 
 // Complexity: 2phi+6
-and dst, src @ end {
-    .if1 src end
-    .zero dst
+def and dst, src @ end {
+    if1 src, end
+    zero dst
   end:
 }
 
 
 // Complexity: 1
-not dst {
+def not dst {
     dst + dbit;
 }
 
-exact_not dst {
+def exact_not dst {
     dst;
 }
 
@@ -216,23 +216,23 @@ exact_not dst {
 
 // Unsafe for dst==carry (but there is no reason in calling it that way)
 // Complexity: 2phi+10
-inc1 dst, carry @ end {
-    .if0 carry end
-    .not dst
-    .if0 dst end
-    .not carry
+def inc1 dst, carry @ end {
+    if0 carry, end
+    not dst
+    if0 dst, end
+    not carry
   end:
 }
 
 
 // Unsafe for dst==carry (but there is no reason in calling it that way)
 // Complexity: 8phi+33
-add1 dst, src, carry @ _src {
-    .mov _src src
-    .inc1 dst _src
-    .inc1 dst carry
-    .or carry _src
-    .skip
+def add1 dst, src, carry @ _src {
+    mov _src, src
+    inc1 dst, _src
+    inc1 dst, carry
+    or carry, _src
+    skip
   _src:
-    .bit 0
+    bit
 }

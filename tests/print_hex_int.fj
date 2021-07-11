@@ -1,7 +1,7 @@
-    .startup
+    startup
 
-    .print_hex_int w a 1
-    .loop
+    print_hex_int w, a, 1
+    loop
 
   a:
-    .var w 0-0xabcdef
+    var w, 0-0xabcdef

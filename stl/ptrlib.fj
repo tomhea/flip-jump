@@ -12,19 +12,19 @@
 // ---------- Init
 
 
-init_ptr {
-    .pad 1
+def init_ptr {
+    pad 1
   __to_flip:
     0;0
   __to_jump:
     ;0
 
   __to_flip_var:
-    .var w 0
+    var w, 0
   __to_flip_return_var:
-    .var w 0
+    var w, 0
   __to_jump_var:
-    .var w 0
+    var w, 0
 }
 
 
@@ -34,9 +34,9 @@ init_ptr {
 
 // like:  ;*ptr
 // Complexity w(2phi+6)
-ptr_jump ptr {
-    .bit_var_xor w __to_jump+w __to_jump_var __to_jump_var
-    .bit_var_xor w __to_jump+w __to_jump_var ptr
+def ptr_jump ptr {
+    bit_var_xor w, __to_jump+w, __to_jump_var, __to_jump_var
+    bit_var_xor w, __to_jump+w, __to_jump_var, ptr
     ;__to_jump
 }
 
@@ -47,39 +47,39 @@ ptr_jump ptr {
 
 // like:  *ptr;
 // Complexity w(2phi+6)
-ptr_flip ptr @ cleanup {
-    .wflip __to_flip+w cleanup
+def ptr_flip ptr @ cleanup {
+    wflip __to_flip+w, cleanup
 
-    .bit_var_xor w __to_flip __to_flip_var __to_flip_var
-    .bit_var_xor w __to_flip __to_flip_var ptr
+    bit_var_xor w, __to_flip, __to_flip_var, __to_flip_var
+    bit_var_xor w, __to_flip, __to_flip_var, ptr
     ;__to_flip
 
   cleanup:
-    .wflip __to_flip+w cleanup
+    wflip __to_flip+w, cleanup
 }
 
 // like:  (*ptr)+dbit;
 // Assumes *ptr is dw-aligned
 // Complexity w(2phi+7)
     // The comp_flip_if executes much less than w/2 operations.
-ptr_flip_dbit ptr {
-//    .rep #dbit i comp_flip_if ptr+dbit+i*dw (dbit>>i)&1
+def ptr_flip_dbit ptr {
+//    rep(#dbit, i) comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
 
-    .rep #dww i comp_flip_if ptr+dbit+i*dw (dww>>i)&1
-    .not ptr + ww*dw
+    rep(#dww, i) comp_flip_if ptr+dbit+i*dw, (dww>>i)&1
+    not ptr + ww*dw
 
-    .ptr_flip ptr
+    ptr_flip ptr
 
-    .rep #dww i comp_flip_if ptr+dbit+i*dw (dww>>i)&1
-    .not ptr + ww*dw
+    rep(#dww, i) comp_flip_if ptr+dbit+i*dw, (dww>>i)&1
+    not ptr + ww*dw
 
-//    .rep #dbit i comp_flip_if ptr+dbit+i*dw (dbit>>i)&1
+//    rep(#dbit, i) comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
 }
 
 // Assumes *ptr is dw-aligned
-xor_to_ptr ptr, bit @ end {
-    .if0 bit end
-    .ptr_flip_dbit ptr
+def xor_to_ptr ptr, bit @ end {
+    if0 bit, end
+    ptr_flip_dbit ptr
   end:
 }
 
@@ -87,26 +87,26 @@ xor_to_ptr ptr, bit @ end {
 // like:  .wflip *ptr value
 // Assumes *ptr is w-aligned, and value is 2dw-aligned
 // Complexity w(3phi+11)
-ptr_flip_by ptr, value {
-    .bit_var_xor w __to_flip __to_flip_var __to_flip_var
-    .bit_var_xor w __to_flip __to_flip_var ptr
-    .rep w i __advance_by_one_and_flip__ptr_flip_by (#(i^((i+1)%w))) (value>>i)&1
+def ptr_flip_by ptr, value {
+    bit_var_xor w, __to_flip, __to_flip_var, __to_flip_var
+    bit_var_xor w, __to_flip, __to_flip_var, ptr
+    rep(w, i) __advance_by_one_and_flip__ptr_flip_by (#(i^((i+1)%w))), (value>>i)&1
 }
-__advance_by_one_and_flip__ptr_flip_by n, do_flip @ cleanup, advance {
-    .comp_if0 do_flip advance
-    .wflip __to_flip+w cleanup
+def __advance_by_one_and_flip__ptr_flip_by n, do_flip @ cleanup, advance {
+    comp_if0 do_flip, advance
+    wflip __to_flip+w, cleanup
     ;__to_flip
   cleanup:
-    .wflip __to_flip+w cleanup
+    wflip __to_flip+w, cleanup
   advance:
-    .rep n i exact_not __to_flip+i
+    rep(n, i) exact_not __to_flip+i
 }
 
 // Assumes *ptr is dw-aligned, and value is 2dw-aligned
-ptr_flip_by_2nd_word ptr, value {
-    .not ptr + dw*ww
-    .ptr_flip_by ptr value
-    .not ptr + dw*ww
+def ptr_flip_by_2nd_word ptr, value {
+    not ptr + dw*ww
+    ptr_flip_by ptr, value
+    not ptr + dw*ww
 }
 
 
@@ -117,21 +117,21 @@ ptr_flip_by_2nd_word ptr, value {
 // like:  .xor dst *ptr
 // assumes *ptr is dw-aligned
 // Complexity w(8phi+28)
-xor_from_ptr dst, ptr {
-    .exact_xor_from_ptr dst+dbit ptr
+def xor_from_ptr dst, ptr {
+    exact_xor_from_ptr dst+dbit, ptr
 }
 
-exact_xor_from_ptr dst, ptr @ base_jump_label, cleanup {
-    .ptr_flip_by_2nd_word ptr base_jump_label
+def exact_xor_from_ptr dst, ptr @ base_jump_label, cleanup {
+    ptr_flip_by_2nd_word ptr, base_jump_label
 
-    .ptr_jump ptr
-    .pad 2
+    ptr_jump ptr
+    pad 2
   base_jump_label:
     ;cleanup
     dst;
 
   cleanup:
-    .ptr_flip_by_2nd_word ptr base_jump_label
+    ptr_flip_by_2nd_word ptr, base_jump_label
 
 }
 
@@ -141,60 +141,60 @@ exact_xor_from_ptr dst, ptr @ base_jump_label, cleanup {
 
 
 // sp always points to the last pushed value (at start - to stack[-1])
-stack n {
-    .pad 1
+def stack n {
+    pad 1
   sp:
-    .var w stack-dw
+    var w, stack-dw
   stack:
-    .var n 0
+    var n, 0
 }
 
 
 // Complexity w(2phi+10)
-inc_ptr ptr {
-    .inc w-dww ptr+dww*dw
+def inc_ptr ptr {
+    inc w-dww, ptr+dww*dw
 }
 
 
 // Complexity w(2phi+12)
-dec_ptr ptr {
-    .dec w-dww ptr+dww*dw
+def dec_ptr ptr {
+    dec w-dww, ptr+dww*dw
 }
 
 
 // Assumes address is 2dw-aligned
 // Complexity w(5phi+21)
-push_ret_address address {
-    .inc_ptr sp
-    .ptr_flip_by_2nd_word sp address
+def push_ret_address address {
+    inc_ptr sp
+    ptr_flip_by_2nd_word sp, address
 }
 
 // Assumes address is 2dw-aligned
 // Complexity w(5phi+23)
-pop_ret_address address {
-    .ptr_flip_by_2nd_word sp address
-    .dec_ptr sp
+def pop_ret_address address {
+    ptr_flip_by_2nd_word sp, address
+    dec_ptr sp
 }
 
 
 // Complexity: w(4phi+17)
-push_bit bit {
-    .inc_ptr sp
-    .xor_to_ptr sp bit
+def push_bit bit {
+    inc_ptr sp
+    xor_to_ptr sp, bit
 }
 
 // Assumes *sp==bit.
 // Complexity: w(4phi+19)
-pop_bit bit {
-    .xor_to_ptr sp bit
-    .dec_ptr sp
+def pop_bit bit {
+    xor_to_ptr sp, bit
+    dec_ptr sp
 }
 
 // Complexity: w(12phi+47)
-pop_res_bit bit {
-    .zero bit
-    .xor_from_ptr bit sp
-    .pop_bit bit
+def pop_res_bit bit {
+    zero bit
+    xor_from_ptr bit, sp
+    pop_bit bit
 }
 
 
@@ -203,18 +203,18 @@ pop_res_bit bit {
 
 // Complexity w(5phi+21)
     // the pop_ret_address is counted for the future return
-call address @ return_label {
-    .push_ret_address return_label
+def call address @ return_label {
+    push_ret_address return_label
     ;address
 
-    .pad 2
+    pad 2
   return_label:
-    .pop_ret_address return_label
+    pop_ret_address return_label
 }
 
 
 // Complexity w(7phi+29)
     // the last-call's pop_ret_address is counted for this return
-return {
-    .ptr_jump sp
+def return {
+    ptr_jump sp
 }

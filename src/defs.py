@@ -66,14 +66,15 @@ class SegEntry(Enum):
     WflipAddress = 2
 
 
-class OpType(Enum):
-    FlipJump = 1        # expr, expr                # Survives until (3) label resolve
-    WordFlip = 2        # expr, expr                # Survives until (3) label resolve
-    Segment = 3         # expr                      # Survives until (3) label resolve
-    Reserve = 4         # expr                      # Survives until (3) label resolve
-    Label = 5           # ID                        # Survives until (2) label dictionary
+class OpType(Enum):     # op.data array content:
+
+    FlipJump = 1        # expr, expr                # Survives until (2) label resolve
+    WordFlip = 2        # expr, expr                # Survives until (2) label resolve
+    Segment = 3         # expr                      # Survives until (2) label resolve
+    Reserve = 4         # expr                      # Survives until (2) label resolve
+    Label = 5           # ID                        # Survives until (1) macro resolve
     Macro = 6           # ID, expr [expr..]         # Survives until (1) macro resolve
-    Rep = 7             # expr, ID, statements      # Survives until (1) macro resolve
+    Rep = 7             # expr, ID, macro_call      # Survives until (1) macro resolve
 
 
 class Op:
@@ -147,8 +148,8 @@ def eval_all(op, id_dict={}):
         if type(expr) is Expr:
             ids += expr.eval(id_dict, op.file, op.line)
     if op.type == OpType.Rep:
-        for _op in op.data[2]:
-            ids += eval_all(_op, id_dict)
+        macro_op = op.data[2]
+        ids += eval_all(macro_op, id_dict)
     return ids
 
 
