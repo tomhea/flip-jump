@@ -20,7 +20,7 @@ test1:
               ;test2
 
 test2:
-    ptr_flip_by p2, base_jump_label2
+    ptr_wflip p2, base_jump_label2
     ptr_jump p2_jump
     pad 2
     base_jump_label2:

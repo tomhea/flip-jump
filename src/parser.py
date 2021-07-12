@@ -96,7 +96,6 @@ class FJParser(Parser):
         ('left', '+', '-'),
         ('left', '*', '/', '%'),
         ('right', '#'),
-        # ('right', 'UMINUS'),
     )
     # debugfile = 'src/parser.out'
 
@@ -299,6 +298,10 @@ class FJParser(Parser):
     @_('_expr "-" _expr')
     def _expr(self, p):
         return Expr((sub, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('"(" "-" _expr ")"')
+    def _expr(self, p):
+        return Expr((sub, (Expr(0), p._expr[0]))), p.lineno
 
     @_('_expr "*" _expr')
     def _expr(self, p):
