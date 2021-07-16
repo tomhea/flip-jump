@@ -507,12 +507,25 @@ Hello, World!
   - The --no-stl flag tells the assembler not to include the standard library. It is not needed as we implemented the macros ourselves.
 - The second line will run your code.
 
+Moreover - you can run multiple test programs with defined input (.in file), and compare the outputs (with .out file):
+
+```bash
+>>> fji.py assembled/ --tests inout/
+...
+All tests passed! 100%
+```
+
+- The first path is the directory of the assembled .fjm test files.
+- The second path is the directory of the corresponding .in and .out files (same name as the test.fjm name, but with a different extension).
+- The tests will be run one at a time. For each bad test, a UNIX-like diff will be printed.
+
 You can also use the faster (stable, but still in developement) cpp-based interpreter (under src/cpp_fji):
 
 ```bash
 >>> fji hello.fjm
 Hello, World!
 ```
+
 
 # Project Structure
 
@@ -536,6 +549,8 @@ Hello, World!
   - ptrlib.fj   - pointers, stack and functions.
 
 **tests** (flipjump programs), for example:
+  - compiled/   - the designated dir for the assembled test/ files.
+  - inout/      - .in and .out files for each test in the folder above.
   - calc.fj     - command line 2 hex/dec calculator, ```a [+-*/%] b```.
   - func.fj     - performs function calls and operations on stack.
   
