@@ -4,11 +4,13 @@ X1 = 0x10000000
 X2 = 0x20000000
 X4 = 0x40000000
 
-print 5, str_hi
+print 4, str_hi
 
 input 4, X1
-zero 20, X2
-zero 20, num
+
+// both are already zeros because they are reserved:
+//zero 20, X2
+//zero 20, num
 
 rep(4, i) more_digit 20, num, X2, X1+8*dw*i
 

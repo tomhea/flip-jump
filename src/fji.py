@@ -2,6 +2,7 @@
 
 import fjm
 from readchar import readchar
+import difflib
 
 from os.path import isfile, abspath, isdir, join
 from glob import glob
@@ -69,14 +70,15 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
             output_size += 1
             if output_size == 8:
                 output += chr(output_char)
-                if verbose:
-                    for _ in range(3):
-                        print()
-                    print(f'Outputed Char:  {chr(output_char)}', end='', flush=True)
-                    for _ in range(3):
-                        print()
-                else:
-                    print(chr(output_char), end='', flush=True)
+                if output_verbose:
+                    if verbose:
+                        for _ in range(3):
+                            print()
+                        print(f'Outputed Char:  {chr(output_char)}', end='', flush=True)
+                        for _ in range(3):
+                            print()
+                    else:
+                        print(chr(output_char), end='', flush=True)
                 output_anything_yet = True
                 output_char, output_size = 0, 0
 
@@ -156,29 +158,63 @@ def main():
                         default=[], action='append')
     parser.add_argument('-B', '--any_breakpoint', help="pause when reaching any label containing this",
                         default=[], action='append')
-    parser.add_argument('--tests', help="run all .fjm files in the given folder (instead of specifying a file).",
-                        action='store_true')
+    parser.add_argument('--tests', help="run all .fjm files in the given folder (instead of specifying a file).")
     args = parser.parse_args()
 
-    verbose_set = {Verbose.PrintOutput}
+    verbose_set = set() if args.tests else {Verbose.PrintOutput}
     if not args.silent:
         verbose_set.add(Verbose.Time)
     if args.trace:
         verbose_set.add(Verbose.Run)
 
     if args.tests:
+        inout_dir = args.tests
+        failures = []
+        total = 0
         folder = abspath(args.file)
         if not isdir(folder):
             error('the "file" argument should contain a folder path.')
         for file in glob(join(folder, '*.fjm')):
+            total += 1
+            infile = abspath(str(Path(inout_dir) / f'{Path(file).stem}.in'))
+            outfile = abspath(str(Path(inout_dir) / f'{Path(file).stem}.out'))
+            if not isfile(infile):
+                print(f'test "{file}" missing an infile ("{infile}").')
+                failures.append(file)
+                continue
+            if not isfile(outfile):
+                print(f'test "{file}" missing an outfile ("{outfile}").')
+                failures.append(file)
+                continue
+
             print(f'running {Path(file).name}:')
+            with open(infile, 'r') as inf:
+                test_input = inf.read()
+            with open(outfile, 'r') as outf:
+                expected_output = outf.read()
             run_time, ops_executed, output, finish_cause = \
                 debug_and_run(file,
-                              defined_input=None,
+                              defined_input=test_input,
                               verbose=verbose_set)
+            if output != expected_output:
+                print(f'test "{file}" failed. here\'s the diff:')
+                print([ord(c) for c in output])
+                print(''.join(difflib.context_diff(output.splitlines(1), expected_output.splitlines(1),
+                                                   fromfile=file, tofile=outfile)))
+                failures.append(file)
+
             if not args.silent:
                 print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed} ops executed)')
             print()
+
+        print()
+        if len(failures) == 0:
+            print(f'All tests passed! 100%')
+        else:
+            print(f'{total-len(failures)}/{total} tests passed ({(total-len(failures))/total*100:.2f}%).')
+            print(f'Failed tests:')
+            for test in failures:
+                print(f'  {test}')
     else:
 
         file = abspath(args.file)
