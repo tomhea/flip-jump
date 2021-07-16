@@ -78,7 +78,7 @@ def one x {
 // safe even for dst==src !
 // Complexity: 2phi+5
 def mov dst, src @ do_mov, end {
-    comp_if dst-src, end, do_mov
+    comp_if1 dst==src, end
   do_mov:
     zero dst
     xor dst, src
@@ -90,9 +90,9 @@ def mov dst, src @ do_mov, end {
 def swap a, b @ a0, a1, notnot, end {
     if a, a0, a1
   a0:
-    if b, end, flip
+    if b, end, notnot
   a1:
-    if b, flip, end
+    if b, notnot, end
   notnot:
     not a
     not b

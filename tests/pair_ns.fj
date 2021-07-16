@@ -14,12 +14,12 @@ ns Pair {
     }
 
     def init this {
-        zero .first_len , this+.first
+        zero .first_len,  this+.first
         zero .second_len, this+.second
     }
 
     def add_first  this, val {
-        add .first_len , this+.first , val
+        add .first_len,  this+.first,  val
     }
 
     def add_second this, val {
@@ -33,15 +33,15 @@ ns Pair {
 
     def print this {
         output '('
-        print_hex_int w, this+.first , 1
+        print_hex_int .first_len,  this+.first,  1
         output ','
         output ' '
-        print_hex_int w, this+.second, 1
+        print_hex_int .second_len, this+.second, 1
         output ')'
     }
 
     def swap this {
-        swap
+        swap (.first_len < .second_len ? .first_len : .second_len), this+.first, this+.second
     }
 
     ns prints {
@@ -76,6 +76,10 @@ Pair.prints.print_two p1, p2
 
 .Pair.add p2, p1
 Pair.prints.print_two p1, p2
+
+Pair.swap p1
+Pair.print p1
+output '\n'
 
 loop
 

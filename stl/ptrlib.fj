@@ -63,17 +63,9 @@ def ptr_flip ptr @ cleanup {
 // Complexity w(2phi+7)
     // The comp_flip_if executes much less than w/2 operations.
 def ptr_flip_dbit ptr {
-//    rep(#dbit, i) comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
-
-    rep(#dww, i) comp_flip_if ptr+dbit+i*dw, (dww>>i)&1
-    not ptr + ww*dw
-
+    rep(#dbit, i) comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
     ptr_flip ptr
-
-    rep(#dww, i) comp_flip_if ptr+dbit+i*dw, (dww>>i)&1
-    not ptr + ww*dw
-
-//    rep(#dbit, i) comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
+    rep(#dbit, i) comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
 }
 
 // Assumes *ptr is dw-aligned

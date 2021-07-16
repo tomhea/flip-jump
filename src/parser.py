@@ -22,13 +22,16 @@ class FJLexer(Lexer):
     tokens = {NS, DEF, REP,
               WFLIP, SEGMENT, RESERVE,
               ID, DOT_ID, NUMBER, STRING,
-              SHL, SHR, NL, SC}
+              LE, GE, EQ, NEQ,
+              SHL, SHR,
+              NL, SC}
 
     literals = {'=', '+', '-', '*', '/', '%',
                 '(', ')',
                 '$',
                 '^', '|', '&',
                 '?', ':',
+                '<', '>'
                 '"',
                 '#',
                 '{', '}',
@@ -53,6 +56,12 @@ class FJLexer(Lexer):
 
     global reserved_names
     reserved_names = {DEF, REP, NS, WFLIP, SEGMENT, RESERVE}
+
+    LE = "<="
+    GE = ">="
+
+    EQ = "=="
+    NEQ = "!="
 
     SHL = r'<<'
     SHR = r'>>'
@@ -103,10 +112,13 @@ class FJLexer(Lexer):
 
 class FJParser(Parser):
     tokens = FJLexer.tokens
+    # TODO add Unary Minus (-), Unary Not (~). Maybe add logical or (||) and logical and (&&).
     precedence = (
         ('right', '?', ':'),
         ('left', '|'),
         ('left', '^'),
+        ('nonassoc', '<', '>', LE, GE),
+        ('left', EQ, NEQ),
         ('left', '&'),
         ('left', SHL, SHR),
         ('left', '+', '-'),
@@ -411,6 +423,30 @@ class FJParser(Parser):
     @_('_expr "?" _expr ":" _expr')
     def _expr(self, p):
         return Expr((lambda a, b, c: b if a else c, (p._expr0[0], p._expr1[0], p._expr2[0]))), p.lineno
+
+    @_('_expr "<" _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b: 1 if a < b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr ">" _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b: 1 if a > b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr LE _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b: 1 if a <= b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr GE _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b: 1 if a >= b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr EQ _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b: 1 if a == b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr NEQ _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b: 1 if a != b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
 
     @_('"(" _expr ")"')
     def _expr(self, p):
