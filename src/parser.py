@@ -341,7 +341,7 @@ class FJParser(Parser):
     def statement(self, p):
         id, lineno = p.id
         return Op(OpType.Rep,
-                  (p.expr, self.ns_full_name(p.ID), Op(OpType.Macro, ((id, 0), ), curr_file, lineno)),
+                  (p.expr, p.ID, Op(OpType.Macro, ((id, 0), ), curr_file, lineno)),
                   curr_file, p.lineno)
 
     @_('REP "(" expr "," ID ")" id expressions')
@@ -349,7 +349,7 @@ class FJParser(Parser):
         exps = p.expressions
         id, lineno = p.id
         return Op(OpType.Rep,
-                  (p.expr, self.ns_full_name(p.ID), Op(OpType.Macro, ((id, len(exps)), *exps), curr_file, lineno)),
+                  (p.expr, p.ID, Op(OpType.Macro, ((id, len(exps)), *exps), curr_file, lineno)),
                   curr_file, p.lineno)
 
     @_('SEGMENT expr')

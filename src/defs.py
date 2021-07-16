@@ -2,7 +2,7 @@ from enum import Enum
 from pathlib import Path
 
 
-main_macro = ('.__M_a_i_n__', 0)
+main_macro = ('', 0)
 
 
 def error(msg):
@@ -20,7 +20,7 @@ def smart_int16(num):
 
 
 def stl():
-    path = Path(__file__).parent
+    path = Path(__file__).parent    # relative address
 
     return [str(path / f'../stl/{lib}.fj') for lib in (f'runlib', 'bitlib', 'veclib', 'iolib', 'ptrlib', 'mathlib')]
 
@@ -183,12 +183,12 @@ def id_swap(op, id_dict):
 
 def new_label(counter, name=''):
     if name == '':
-        return Expr(f'__label{next(counter)}')
+        return Expr(f'_.label{next(counter)}')
     else:
-        return Expr(f'__label{next(counter)}_{name}')
+        return Expr(f'_.label{next(counter)}_{name}')
 
 
-wflip_start_label = '__wflip_area_start_'
+wflip_start_label = '_.wflip_area_start_'
 
 
 def next_address() -> Expr:

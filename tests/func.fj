@@ -88,7 +88,7 @@ test4:
 
 func4:
     output 'C'
-    mov w, __func4_arg_ptr, sp
+    get_sp __func4_arg_ptr
     output 'D'
     dec_ptr __func4_arg_ptr
     output 'E'
@@ -131,7 +131,7 @@ test5:
 // res = arg0 xor arg1
 func5:
     zero __func5_res
-    mov w, __func5_arg_ptr, sp
+    get_sp __func5_arg_ptr
     output 'a'
 
     dec_ptr __func5_arg_ptr

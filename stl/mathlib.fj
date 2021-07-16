@@ -58,7 +58,7 @@ def mul n, dst, src @ shifted_src, res, end {
     zero n, res
     zero n, shifted_src
     mov n, shifted_src+dw*n, src
-    rep(n, i) __mul_add_if n, dst+i*dw, res, shifted_src+(n-i)*dw
+    rep(n, i) _.mul_add_if n, dst+i*dw, res, shifted_src+(n-i)*dw
     mov n, dst, res
     ;end
 
@@ -68,10 +68,12 @@ def mul n, dst, src @ shifted_src, res, end {
     var n
   end:
 }
-def __mul_add_if n, flag, dst, src @ end {
-    if0 flag, end
-    add n, dst, src
-  end:
+ns _ {
+    def mul_add_if n, flag, dst, src @ end {
+        if0 flag, end
+        add n, dst, src
+      end:
+    }
 }
 
 
@@ -122,7 +124,7 @@ def div n, a, b, q, r @ Q, R, end {
     zero 2*n, R
     zero   n, Q
 
-    rep(n, i) __div_step n, a+(n-1-i)*dw, b, R+(n-1-i)*dw, Q+(n-1-i)*dw
+    rep(n, i) _.div_step n, a+(n-1-i)*dw, b, R+(n-1-i)*dw, Q+(n-1-i)*dw
 
     mov n, r, R
     mov n, q, Q
@@ -134,13 +136,15 @@ def div n, a, b, q, r @ Q, R, end {
     var   n
   end:
 }
-def __div_step n, N, D, R, Q @ do_sub, end {
-    xor R, N
-    cmp n, R, D, end, do_sub, do_sub
-  do_sub:
-    sub n, R, D
-    not Q
-  end:
+ns _ {
+    def div_step n, N, D, R, Q @ do_sub, end {
+        xor R, N
+        cmp n, R, D, end, do_sub, do_sub
+      do_sub:
+        sub n, R, D
+        not Q
+      end:
+    }
 }
 
 

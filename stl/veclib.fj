@@ -55,23 +55,27 @@ def swap n, a, b {
 
 // Complexity: n(2phi+8)
 def cmp n, a, b, lt, eq, gt {
-    rep(n-1, i) __cmp_next_eq a+(n-1-i)*dw, b+(n-1-i)*dw, lt, gt
+    rep(n-1, i) _.cmp_next_eq a+(n-1-i)*dw, b+(n-1-i)*dw, lt, gt
     cmp a, b, lt, eq, gt
 }
-def __cmp_next_eq a, b, lt, gt @ eq {
-    cmp a, b, lt, eq, gt
-  eq:
+ns _ {
+    def cmp_next_eq a, b, lt, gt @ eq {
+        cmp a, b, lt, eq, gt
+      eq:
+    }
 }
 
 
 // Complexity: n(phi+4)
 def if n, x, l0, l1 {
-    rep(n-1, i) __if_next_l0 x+i*dw, l1
+    rep(n-1, i) _.if_next_l0 x+i*dw, l1
     if x+(n-1)*dw, l0, l1
 }
-def __if_next_l0 x, l1 @ l0 {
-    if x, l0, l1
-  l0:
+ns _ {
+    def if_next_l0 x, l1 @ l0 {
+        if x, l0, l1
+      l0:
+    }
 }
 
 def if0 n, x, l0 @ end {
