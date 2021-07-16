@@ -4,21 +4,34 @@ from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and
 from defs import *
 
 
-global curr_file, curr_text, error_occurred
+global curr_file, curr_text, error_occurred, curr_namespace, reserved_names
+
+
+def syntax_error(line, msg=''):
+    global error_occurred
+    error_occurred = True
+    print()
+    if msg:
+        print(f"Syntax Error in file {curr_file} line {line}:")
+        print(f"  {msg}")
+    else:
+        print(f"Syntax Error in file {curr_file} line {line}")
 
 
 class FJLexer(Lexer):
-    tokens = {DEF, REP,
-              WFLIP,
-              SEGMENT, RESERVE,
-              ID, NUMBER, STRING,
-              SHL, SHR, NL, SC}
+    tokens = {NS, DEF, REP,
+              WFLIP, SEGMENT, RESERVE,
+              ID, DOT_ID, NUMBER, STRING,
+              LE, GE, EQ, NEQ,
+              SHL, SHR,
+              NL, SC}
 
     literals = {'=', '+', '-', '*', '/', '%',
                 '(', ')',
                 '$',
                 '^', '|', '&',
                 '?', ':',
+                '<', '>'
                 '"',
                 '#',
                 '{', '}',
@@ -27,17 +40,28 @@ class FJLexer(Lexer):
     ignore_ending_comment = r'//.*'
 
     # Tokens
+    DOT_ID = dot_id_re
     ID = id_re
     NUMBER = number_re
     STRING = string_re
 
     ID[r'def'] = DEF
     ID[r'rep'] = REP
+    ID[r'ns'] = NS
 
     ID[r'wflip'] = WFLIP
 
     ID[r'segment'] = SEGMENT
     ID[r'reserve'] = RESERVE
+
+    global reserved_names
+    reserved_names = {DEF, REP, NS, WFLIP, SEGMENT, RESERVE}
+
+    LE = "<="
+    GE = ">="
+
+    EQ = "=="
+    NEQ = "!="
 
     SHL = r'<<'
     SHR = r'>>'
@@ -81,16 +105,20 @@ class FJLexer(Lexer):
     def error(self, t):
         global error_occurred
         error_occurred = True
-        print(f"Lexing Error at file {curr_file} line {self.lineno}: {t.value[0]}")
+        print()
+        print(f"Lexing Error in file {curr_file} line {self.lineno}: {t.value[0]}")
         self.index += 1
 
 
 class FJParser(Parser):
     tokens = FJLexer.tokens
+    # TODO add Unary Minus (-), Unary Not (~). Maybe add logical or (||) and logical and (&&).
     precedence = (
         ('right', '?', ':'),
         ('left', '|'),
         ('left', '^'),
+        ('nonassoc', '<', '>', LE, GE),
+        ('left', EQ, NEQ),
         ('left', '&'),
         ('left', SHL, SHR),
         ('left', '+', '-'),
@@ -101,29 +129,58 @@ class FJParser(Parser):
 
     def __init__(self, w, verbose=False):
         self.verbose = verbose
-        self.macros = {main_macro: [([], []), [], (None, None)]}    # (params, quiet_params), statements, (curr_file, p.lineno)
         self.defs = {'w': Expr(w)}
 
-    def check_macro_name(self, name, file, line):
-        if f'.{name[0]}' in {'def', 'end', 'rep', 'wflip', 'segment', 'reserve'}:
-            error(f'macro name can\'t be {name[0]} (reserved name)! in file {file} (line {line})')
-        if name in self.macros:
-            _, _, (other_file, other_line) = self.macros[name]
-            error(f'macro {name} is declared twice! in file {file} (line {line}) and in file {other_file} (line {other_file}).')
+        # [(params, quiet_params), statements, (curr_file, p.lineno, ns_name)]
+        self.macros = {main_macro: [([], []), [], (None, None, '')]}
 
-    def check_params(self, ids, macro_name):
+    def check_macro_name(self, name, line):
+        global reserved_names
+        base_name = self.ns_to_base_name(name[0])
+        if base_name in reserved_names:
+            syntax_error(line, f'macro name can\'t be {name[0]} ({base_name} is a reserved name)!')
+        if name in self.macros:
+            _, _, (other_file, other_line, _) = self.macros[name]
+            syntax_error(line, f'macro {name} is declared twice! '
+                               f'also declared in file {other_file} (line {other_file}).')
+
+    def check_params(self, ids, macro_name, line):
         for id in ids:
             if id in self.defs:
-                error(f'parameter {id} in macro {macro_name[0]}({macro_name[1]}) is also defined as a constant variable (with value {self.defs[id]})')
+                syntax_error(line, f'parameter {id} in macro {macro_name[0]}({macro_name[1]}) '
+                                   f'is also defined as a constant variable (with value {self.defs[id]})')
         for i1 in range(len(ids)):
             for i2 in range(i1):
                 if ids[i1] == ids[i2]:
-                    error(f'parameter {ids[i1]} in macro {macro_name[0]}({macro_name[1]}) is declared twice!')
+                    syntax_error(line, f'parameter {ids[i1]} in macro {macro_name[0]}({macro_name[1]}) '
+                                       f'is declared twice!')
+
+    def ns_name(self):
+        return '.'.join(curr_namespace)
+
+    def ns_full_name(self, base_name):
+        return '.'.join(curr_namespace + [base_name])
+
+    def dot_id_to_ns_full_name(self, p):
+        base_name = p.DOT_ID
+        without_dots = base_name.lstrip('.')
+        if len(without_dots) == len(base_name):
+
+            return base_name
+        num_of_dots = len(base_name) - len(without_dots)
+        if num_of_dots - 1 > len(curr_namespace):
+            syntax_error(p.lineno, f'Used more leading dots than current namespace depth '
+                                   f'({num_of_dots}-1 > {len(curr_namespace)})')
+        return '.'.join(curr_namespace[:len(curr_namespace)-(num_of_dots-1)] + [without_dots])
+
+    def ns_to_base_name(self, name):
+        return name.split('.')[-1]
 
     def error(self, token):
         global error_occurred
         error_occurred = True
-        print(f'Syntax Error at file {curr_file} line {token.lineno}, token=("{token.type}", {token.value})')
+        print()
+        print(f'Syntax Error in file {curr_file} line {token.lineno}, token=("{token.type}", {token.value})')
 
     @_('definable_line_statements')
     def program(self, p):
@@ -131,14 +188,14 @@ class FJParser(Parser):
 
     @_('definable_line_statements NL definable_line_statement')
     def definable_line_statements(self, p):
-        if p[2]:
-            return p[0] + p[2]
-        return p[0]
+        if p.definable_line_statement:
+            return p.definable_line_statements + p.definable_line_statement
+        return p.definable_line_statements
 
     @_('definable_line_statement')
     def definable_line_statements(self, p):
-        if p[0]:
-            return p[0]
+        if p.definable_line_statement:
+            return p.definable_line_statement
         return []
 
     @_('')
@@ -153,14 +210,23 @@ class FJParser(Parser):
     def definable_line_statement(self, p):
         return []
 
+    @_('NS ID')
+    def namespace(self, p):
+        curr_namespace.append(p.ID)
+
+    @_('namespace "{" NL definable_line_statements NL "}"')
+    def definable_line_statement(self, p):
+        curr_namespace.pop()
+        return p.definable_line_statements
+
     @_('DEF ID macro_params "{" NL line_statements NL "}"')
     def macro_def(self, p):
         params = p.macro_params
-        name = (p.ID, len(params[0]))
-        self.check_macro_name(name, curr_file, p.lineno)
-        self.check_params(params[0] + params[1], name)
+        name = (self.ns_full_name(p.ID), len(params[0]))
+        self.check_macro_name(name, p.lineno)
+        self.check_params(params[0] + params[1], name, p.lineno)
         statements = p.line_statements
-        self.macros[name] = [params, statements, (curr_file, p.lineno)]
+        self.macros[name] = [params, statements, (curr_file, p.lineno, self.ns_name())]
         return None
 
     @_('empty')
@@ -221,7 +287,7 @@ class FJParser(Parser):
 
     @_('ID ":"')
     def label(self, p):
-        return Op(OpType.Label, (p.ID,), curr_file, p.lineno)
+        return Op(OpType.Label, (self.ns_full_name(p.ID),), curr_file, p.lineno)
 
     @_('expr SC')
     def statement(self, p):
@@ -240,12 +306,22 @@ class FJParser(Parser):
         return Op(OpType.FlipJump, (Expr(0), next_address()), curr_file, p.lineno)
 
     @_('ID')
-    def statement(self, p):
-        return Op(OpType.Macro, ((p.ID, 0), ), curr_file, p.lineno)
+    def id(self, p):
+        return p.ID, p.lineno
 
-    @_('ID expressions')
+    @_('DOT_ID')
+    def id(self, p):
+        return self.dot_id_to_ns_full_name(p), p.lineno
+
+    @_('id')
     def statement(self, p):
-        return Op(OpType.Macro, ((p.ID, len(p.expressions)), *p.expressions), curr_file, p.lineno)
+        macro_name, lineno = p.id
+        return Op(OpType.Macro, ((macro_name, 0), ), curr_file, lineno)
+
+    @_('id expressions')
+    def statement(self, p):
+        macro_name, lineno = p.id
+        return Op(OpType.Macro, ((macro_name, len(p.expressions)), *p.expressions), curr_file, lineno)
 
     @_('WFLIP expr "," expr')
     def statement(self, p):
@@ -253,22 +329,27 @@ class FJParser(Parser):
 
     @_('ID "=" expr')
     def statement(self, p):
+        name = self.ns_full_name(p.ID)
+        if name in self.defs:
+            syntax_error(p.lineno, f'Can\'t redeclare the variable "{name}".')
         if not p.expr.eval(self.defs, curr_file, p.lineno):
-            self.defs[p.ID] = p.expr
+            self.defs[name] = p.expr
             return None
-        error(f'Can\'t evaluate expression at file {curr_file} line {p.lineno}:  {str(p.expr)}.')
+        syntax_error(p.lineno, f'Can\'t evaluate expression:  {str(p.expr)}.')
 
-    @_('REP "(" expr "," ID ")" ID')
+    @_('REP "(" expr "," ID ")" id')
     def statement(self, p):
+        id, lineno = p.id
         return Op(OpType.Rep,
-                  (p.expr, p.ID0, Op(OpType.Macro, ((p.ID1, 0), ), curr_file, p.lineno)),
+                  (p.expr, p.ID, Op(OpType.Macro, ((id, 0), ), curr_file, lineno)),
                   curr_file, p.lineno)
 
-    @_('REP "(" expr "," ID ")" ID expressions')
+    @_('REP "(" expr "," ID ")" id expressions')
     def statement(self, p):
         exps = p.expressions
+        id, lineno = p.id
         return Op(OpType.Rep,
-                  (p.expr, p.ID0, Op(OpType.Macro, ((p.ID1, len(exps)), *exps), curr_file, p.lineno)),
+                  (p.expr, p.ID, Op(OpType.Macro, ((id, len(exps)), *exps), curr_file, lineno)),
                   curr_file, p.lineno)
 
     @_('SEGMENT expr')
@@ -343,6 +424,30 @@ class FJParser(Parser):
     def _expr(self, p):
         return Expr((lambda a, b, c: b if a else c, (p._expr0[0], p._expr1[0], p._expr2[0]))), p.lineno
 
+    @_('_expr "<" _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b: 1 if a < b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr ">" _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b: 1 if a > b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr LE _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b: 1 if a <= b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr GE _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b: 1 if a >= b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr EQ _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b: 1 if a == b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+
+    @_('_expr NEQ _expr')
+    def _expr(self, p):
+        return Expr((lambda a, b: 1 if a != b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+
     @_('"(" _expr ")"')
     def _expr(self, p):
         return p._expr
@@ -359,15 +464,23 @@ class FJParser(Parser):
     def _expr(self, p):
         return Expr('$'), p.lineno
 
-    @_('ID')
+    @_('id')
     def _expr(self, p):
-        if p.ID in self.defs:
-            return self.defs[p.ID], p.lineno
-        return Expr(p.ID), p.lineno
+        id, lineno = p.id
+        if id in self.defs:
+            return self.defs[id], lineno
+        return Expr(id), lineno
+
+
+def exit_if_errors():
+    if error_occurred:
+        print()
+        print(f'Errors found in file {curr_file}. Assembly stopped.')
+        exit(1)
 
 
 def parse_macro_tree(input_files, w, verbose=False):
-    global curr_file, curr_text, error_occurred
+    global curr_file, curr_text, error_occurred, curr_namespace
     error_occurred = False
 
     lexer = FJLexer()
@@ -376,11 +489,10 @@ def parse_macro_tree(input_files, w, verbose=False):
         if not isfile(curr_file):
             error(f"No such file {curr_file}.")
         curr_text = open(curr_file, 'r').read()
+        curr_namespace = []
         lex_res = lexer.tokenize(curr_text)
-        if error_occurred:
-            exit(1)
+        exit_if_errors()
         parser.parse(lex_res)
-        if error_occurred:
-            exit(1)
+        exit_if_errors()
 
     return parser.macros

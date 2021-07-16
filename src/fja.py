@@ -31,7 +31,7 @@ def main():
         if len(args.file) != 1 or not isdir(args.file[0]):
             error('the "file" argument should contain a folder path.')
         Path.mkdir(Path(args.file[0]) / 'compiled', exist_ok=True)
-        for file in glob(join(args.file[0], '*fj')):
+        for file in glob(join(args.file[0], '*.fj')):
             # if file in ('tests/calc.fj', ):    # heaviest test
             #     continue
             print(f'compiling {Path(file).name}:')

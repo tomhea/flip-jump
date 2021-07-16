@@ -375,6 +375,53 @@ def byte val {
 byte:  byte 84
 ```
 
+## Namespaces
+
+You can declare namespaces to make your work more organized.<br>
+Each variable, label, and macro definition you'll declare inside a namespace - will have the namespace prefix.<br>
+Accessing these definitions is done with the "namespace_name." prefix. inner accesses can be done with the "." prefix.<br>
+
+Nested namespaces are allowed (to any level), and relative access can be done with leading dots.<br>
+You can declare the same namespace more than once. It will append the things you write - right after the previous definitions.
+
+```c
+ns namespace_name {
+    ns nested_namespace {
+        // Access nested_namespace definitions with the "." prefix, namespace_name definitions with the ".." prefix, 
+        //  and so on (the number of leading dots, the number of namespaces to go upwords).
+    }
+    // A namespace can also contain code.
+}
+ns namespace_name {
+    // You can append things to an already defined namespace!
+}
+
+// For example:
+
+ns my_ns {
+    X = 7
+}
+ns my_ns {
+    def foo dst {
+        dst+.X;
+    }
+    ns inner_ns {
+        Y = 8
+        Z = .Y + ..X
+        def inner_foo dst {
+            ..foo dst+.Z
+        }
+    }
+}
+
+startup
+my_ns.foo v
+my_ns.inner_ns.inner_foo v
+v + my_ns.inner_ns.Z + 2*my_ns.X;
+loop: ;loop
+v: var w, 446
+```
+
 ## Segments
 
 You can split your code into different segments in memory. 

@@ -94,12 +94,14 @@ def print n, x {
 // print string of max size n.
 // Complexity min(n, len+1)*(16phi+72)
 def print_str n, x @ loop {
-    rep(n, i) __print_str_one_char x+8*i*dw, end
+    rep(n, i) _.print_str_one_char x+8*i*dw, end
   end:
 }
-def __print_str_one_char char, end {
-    if0 8, char, end
-    print char
+ns _ {
+    def print_str_one_char char, end {
+        if0 8, char, end
+        print char
+    }
 }
 
 
@@ -250,7 +252,7 @@ def print_hex_uint n, x, print_x @ after_print_x, printed_flag, end {
   after_print_x:
 
     zero printed_flag
-    rep(n/4, i) __print_hex_uint_char x+(n/4-1-i)*4*dw, printed_flag
+    rep(n/4, i) _.print_hex_uint_char x+(n/4-1-i)*4*dw, printed_flag
 
     if1 printed_flag, end
     output '0'
@@ -261,21 +263,24 @@ def print_hex_uint n, x, print_x @ after_print_x, printed_flag, end {
   end:
 }
 //Comp: 39phi+155
-def __print_hex_uint_char hex, printed_flag @ continue, ascii, end {
-    if1 4, hex, continue
-    if1 printed_flag, continue
-    ;end
+ns _ {
+    def print_hex_uint_char hex, printed_flag @ continue, ascii, end {
+        if1 4, hex, continue
+        if1 printed_flag, continue
+        ;end
 
-  continue:
-    one printed_flag
-    hex2ascii ascii, hex
-    print ascii
-    ;end
+      continue:
+        one printed_flag
+        hex2ascii ascii, hex
+        print ascii
+        ;end
 
-  ascii:
-    var 8
-  end:
+      ascii:
+        var 8
+      end:
+    }
 }
+
 
 
 def print_hex_int n, x, print_x @ do_print {
@@ -302,9 +307,9 @@ def print_dec_uint n, x @ printed_flag, curr_ten, tens, val, r, end {
     zero n+7, val
     xor n, val, x
 
-    rep(n*28/93+2, i) __print_dec_uint_put_pow_ten n+4, tens+i*(n+4)*dw, curr_ten, val
+    rep(n*28/93+2, i) _.print_dec_uint_put_pow_ten n+4, tens+i*(n+4)*dw, curr_ten, val
 
-    rep(n*28/93+2, i) __print_dec_uint_char n+4, val, tens+(n*28/93+2-1-i)*(n+4)*dw, printed_flag
+    rep(n*28/93+2, i) _.print_dec_uint_char n+4, val, tens+(n*28/93+2-1-i)*(n+4)*dw, printed_flag
 
     if1 printed_flag, end
     output '0'
@@ -322,45 +327,48 @@ def print_dec_uint n, x @ printed_flag, curr_ten, tens, val, r, end {
     var n
   end:
 }
-//Comp: n(18phi+60)
-def __print_dec_uint_put_pow_ten n, dst, curr_ten, top @ put, end {
-    zero n, dst
-    cmp n, curr_ten, top, put, put, end
-  put:
-    xor n, dst, curr_ten
-    mul10 n, curr_ten
-  end:
-}
-//Comp: n(9phi+36) + 7b*(8phi+35)
-def __print_dec_uint_char n, v, curr_ten, printed_flag @ do_print, dec, ascii, end {
-    if0 n, curr_ten, end
-    zero 4, dec
-    rep(4, i) __print_dec_uint_sub_curr_ten n, v, curr_ten, dec, 3-i
+ns _ {
+    //Comp: n(18phi+60)
+    def print_dec_uint_put_pow_ten n, dst, curr_ten, top @ put, end {
+        zero n, dst
+        cmp n, curr_ten, top, put, put, end
+      put:
+        xor n, dst, curr_ten
+        mul10 n, curr_ten
+      end:
+    }
+    //Comp: n(9phi+36) + 7b*(8phi+35)
+    def print_dec_uint_char n, v, curr_ten, printed_flag @ do_print, dec, ascii, end {
+        if0 n, curr_ten, end
+        zero 4, dec
+        rep(4, i) _.print_dec_uint_sub_curr_ten n, v, curr_ten, dec, 3-i
 
-    if1 4, dec, do_print
-    if1 printed_flag, do_print
-    ;end
+        if1 4, dec, do_print
+        if1 printed_flag, do_print
+        ;end
 
-  do_print:
-    one printed_flag
-    dec2ascii ascii, dec
-    print ascii
-    ;end
+      do_print:
+        one printed_flag
+        dec2ascii ascii, dec
+        print ascii
+        ;end
 
-  dec:
-    var 4
-  ascii:
-    var 8
-  end:
+      dec:
+        var 4
+      ascii:
+        var 8
+      end:
+    }
+    //Comp: worst: n(2phi+8) + 3.3b*(8phi+35),  avg: n(2phi+8) + 1.7b*(8phi+35)
+    def print_dec_uint_sub_curr_ten n, v, curr_ten, dec, index @ do_sub, end {
+        cmp n, v+index*dw, curr_ten, end, do_sub, do_sub
+      do_sub:
+        sub n, v+index*dw, curr_ten
+        not dec+index*dw
+      end:
+    }
 }
-//Comp: worst: n(2phi+8) + 3.3b*(8phi+35),  avg: n(2phi+8) + 1.7b*(8phi+35)
-def __print_dec_uint_sub_curr_ten n, v, curr_ten, dec, index @ do_sub, end {
-    cmp n, v+index*dw, curr_ten, end, do_sub, do_sub
-  do_sub:
-    sub n, v+index*dw, curr_ten
-    not dec+index*dw
-  end:
-}
+
 
 
 def print_dec_int n, x @ do_print {

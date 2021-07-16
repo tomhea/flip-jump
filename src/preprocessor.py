@@ -3,6 +3,20 @@ from defs import *
 from copy import deepcopy
 
 
+def macro_resolve_error(curr_tree, msg=''):
+    print()
+    if msg:
+        print(f"Macro Resolve Error:")
+        print(f"  {msg}")
+    else:
+        print(f"Macro Resolve Error.")
+
+    print(f"macro call trace:")
+    for i, trace_str in enumerate(curr_tree):
+        print(f'  {i}) {trace_str}')
+    error(1)
+
+
 def output_ops(ops, output_file):
     with open(output_file, 'w') as f:
         for op in ops:
@@ -23,7 +37,7 @@ def resolve_macros(w, macros, output_file=None, verbose=False):
     label_places = {}
     boundary_addresses = [(SegEntry.StartAddress, 0)]  # SegEntries
 
-    ops = resolve_macro_aux(w, macros, main_macro, [], {}, count(),
+    ops = resolve_macro_aux(w, [], macros, main_macro, [], {}, count(),
                             labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
                             verbose)
     if output_file:
@@ -39,64 +53,70 @@ def try_int(op, expr):
     error(f"Can't resolve the following name: {expr.eval({}, op.file, op.line)} (in op={op}).")
 
 
-def resolve_macro_aux(w, macros, macro_name, args, rep_dict, dollar_count,
+def resolve_macro_aux(w, curr_tree, macros, macro_name, args, rep_dict, dollar_count,
                       labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
                       verbose=False, file=None, line=None):
     commands = []
     if macro_name not in macros:
         macro_name = f'{macro_name[0]}({macro_name[1]})'
         if None in (file, line):
-            error(f"macro {macro_name} isn't defined.")
+            macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined.")
         else:
-            error(f"macro {macro_name} isn't defined. Used in file {file} (line {line}).")
-    (params, dollar_params), ops, _ = macros[macro_name]
+            macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined. Used in file {file} (line {line}).")
+    (params, dollar_params), ops, (_, _, ns_name) = macros[macro_name]
     id_dict = dict(zip(params, args))
     for dp in dollar_params:
         id_dict[dp] = new_label(dollar_count, dp)
     for k in rep_dict:
         id_dict[k] = rep_dict[k]
+    if ns_name:
+        for k in list(id_dict.keys()):
+            id_dict[f'{ns_name}.{k}'] = id_dict[k]
 
     for op in ops:
         # macro-resolve
         if type(op) is not Op:
-            error(type(op) + str(op) + '\n\n' + str(ops))
+            macro_resolve_error(curr_tree, f"bad op (not of Op type)! type {type(op)}, str {str(op)}.")
         if verbose:
             print(op)
         op = deepcopy(op)
         eval_all(op, id_dict)
         id_swap(op, id_dict)
         if op.type == OpType.Macro:
-            commands += resolve_macro_aux(w, macros, op.data[0], list(op.data[1:]), {}, dollar_count,
+            commands += resolve_macro_aux(w, curr_tree+[op.macro_trace_str()], macros, op.data[0], list(op.data[1:]), {}, dollar_count,
                                           labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
                                           verbose, file=op.file, line=op.line)
         elif op.type == OpType.Rep:
             eval_all(op, labels)
             n, i_name, macro_call = op.data
             if not n.is_int():
-                error(f'Rep used without a number "{str(n)}" in file {op.file} line {op.line}.')
+                macro_resolve_error(curr_tree, f'Rep used without a number "{str(n)}" '
+                                               f'in file {op.file} line {op.line}.')
             times = n.val
             if times == 0:
                 continue
             if i_name in rep_dict:
-                error(f'Rep index {i_name} is declared twice; maybe an inner rep. in file {op.file} line {op.line}.')
+                macro_resolve_error(curr_tree, f'Rep index {i_name} is declared twice; maybe an inner rep. '
+                                               f'in file {op.file} line {op.line}.')
             pseudo_macro_name = (new_label(dollar_count).val, 1)  # just moved outside (before) the for loop
             for i in range(times):
                 rep_dict[i_name] = Expr(i)  # TODO - call the macro_name directly, and do deepcopy(op) beforehand.
-                macros[pseudo_macro_name] = (([], []), [macro_call], (op.file, op.line))
-                commands += resolve_macro_aux(w, macros, pseudo_macro_name, [], rep_dict, dollar_count,
+                macros[pseudo_macro_name] = (([], []), [macro_call], (op.file, op.line, ns_name))
+                commands += resolve_macro_aux(w, curr_tree+[op.rep_trace_str(i, times)], macros, pseudo_macro_name, [], rep_dict, dollar_count,
                                               labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
                                               verbose, file=op.file, line=op.line)
             if i_name in rep_dict:
                 del rep_dict[i_name]
             else:
-                error(f'Rep is used but {i_name} index is gone; maybe also declared elsewhere. in file {op.file} line {op.line}.')
+                macro_resolve_error(curr_tree, f'Rep is used but {i_name} index is gone; maybe also declared elsewhere. '
+                                               f'in file {op.file} line {op.line}.')
 
         # labels_resolve
         elif op.type == OpType.Segment:
             eval_all(op, labels)
             value = try_int(op, op.data[0])
             if value % w != 0:
-                error(f'.segment ops must have a w-aligned address. In {op}.')
+                macro_resolve_error(curr_tree, f'segment ops must have a w-aligned address. In {op}.')
 
             boundary_addresses.append((SegEntry.WflipAddress, curr_address[0]))
             labels[f'{wflip_start_label}{last_address_index[0]}'] = Expr(curr_address[0])
@@ -109,7 +129,7 @@ def resolve_macro_aux(w, macros, macro_name, args, rep_dict, dollar_count,
             eval_all(op, labels)
             value = try_int(op, op.data[0])
             if value % w != 0:
-                error(f'.reserve ops must have a w-aligned value. In {op}.')
+                macro_resolve_error(curr_tree, f'reserve ops must have a w-aligned value. In {op}.')
 
             curr_address[0] += value
             boundary_addresses.append((SegEntry.ReserveAddress, curr_address[0]))
@@ -131,14 +151,14 @@ def resolve_macro_aux(w, macros, macro_name, args, rep_dict, dollar_count,
             label = op.data[0]
             if label in labels:
                 other_file, other_line = label_places[label]
-                error(
-                    f'label declared twice - "{label}" on file {op.file} (line {op.line}) and file {other_file} (line {other_line})')
+                macro_resolve_error(curr_tree, f'label declared twice - "{label}" on file {op.file} (line {op.line}) '
+                                               f'and file {other_file} (line {other_line})')
             if verbose:
                 print(f'label added: "{label}" in {op.file} line {op.line}')
             labels[label] = Expr(curr_address[0])
             label_places[label] = (op.file, op.line)
         else:
-            error(f"Can't assemble this opcode - {str(op)}")
+            macro_resolve_error(curr_tree, f"Can't assemble this opcode - {str(op)}")
 
     return commands
 

@@ -1,0 +1,89 @@
+ns Pair {
+    first = 0
+    first_len = w
+    second = .first_len*dw
+    second_len = w
+    size = .first_len + .second_len
+
+    def new name @ end {
+        .init name
+        ;end
+      name:
+        var .size
+      end:
+    }
+
+    def init this {
+        zero .first_len,  this+.first
+        zero .second_len, this+.second
+    }
+
+    def add_first  this, val {
+        add .first_len,  this+.first,  val
+    }
+
+    def add_second this, val {
+        add .second_len, this+.second, val
+    }
+
+    def add this, src {
+        .add_first  this, src+.first
+        .add_second this, src+.second
+    }
+
+    def print this {
+        output '('
+        print_hex_int .first_len,  this+.first,  1
+        output ','
+        output ' '
+        print_hex_int .second_len, this+.second, 1
+        output ')'
+    }
+
+    def swap this {
+        swap (.first_len < .second_len ? .first_len : .second_len), this+.first, this+.second
+    }
+
+    ns prints {
+        def print_two p1, p2 {
+            ..print p1
+            output ','
+            output ' '
+            output ' '
+            ..print p2
+            output '\n'
+        }
+    }
+}
+
+startup
+
+Pair.new p1
+Pair.new p2
+
+Pair.prints.print_two p1, p2
+
+Pair.add_first  p1, v08
+Pair.add_second p1, v02
+Pair.prints.print_two p1, p2
+
+Pair.add_first  p2, vAB
+.Pair.add_second p2, vCC
+Pair.prints.print_two p1, p2
+
+Pair.add p1, p2
+Pair.prints.print_two p1, p2
+
+.Pair.add p2, p1
+Pair.prints.print_two p1, p2
+
+Pair.swap p1
+Pair.print p1
+output '\n'
+
+loop
+
+v08: .var w, 0x08
+v02:  var w, 0x02
+vAB: .var w, 0xAB
+vCC:  var w, 0xCC

@@ -2,11 +2,13 @@ from enum import Enum
 from pathlib import Path
 
 
-main_macro = ('.__M_a_i_n__', 0)
+main_macro = ('', 0)
 
 
 def error(msg):
-    print(f'\nERROR: {msg}\n')
+    print()
+    print(f'ERROR: {msg}')
+    print()
     exit(1)
 
 
@@ -18,12 +20,13 @@ def smart_int16(num):
 
 
 def stl():
-    path = Path(__file__).parent
+    path = Path(__file__).parent    # relative address
 
     return [str(path / f'../stl/{lib}.fj') for lib in (f'runlib', 'bitlib', 'veclib', 'iolib', 'ptrlib', 'mathlib')]
 
 
 id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
+dot_id_re = fr'({id_re}|\.*)?(\.({id_re}))+'
 
 bin_num = r'0[bB][01]+'
 hex_num = r'0[xX][0-9a-fA-F]+'
@@ -86,6 +89,18 @@ class Op:
 
     def __str__(self):
         return f'{f"{self.type}:"[7:]:10}    Data: {", ".join([str(d) for d in self.data])}    File: {self.file} (line {self.line})'
+
+    def macro_trace_str(self):
+        assert self.type == OpType.Macro
+        macro_name, param_len = self.data[0]
+        return f'macro {macro_name}({param_len}) (File {self.file}, line {self.line})'
+
+    def rep_trace_str(self, iter_value, iter_times):
+        assert self.type == OpType.Rep
+        _, iter_name, macro = self.data
+        macro_name, param_len = macro.data[0]
+        return f'rep({iter_name}={iter_value}, out of 0..{iter_times-1}) ' \
+               f'macro {macro_name}({param_len})  (File {self.file}, line {self.line})'
 
 
 class Expr:
@@ -168,12 +183,12 @@ def id_swap(op, id_dict):
 
 def new_label(counter, name=''):
     if name == '':
-        return Expr(f'__label{next(counter)}')
+        return Expr(f'_.label{next(counter)}')
     else:
-        return Expr(f'__label{next(counter)}_{name}')
+        return Expr(f'_.label{next(counter)}_{name}')
 
 
-wflip_start_label = '__wflip_area_start_'
+wflip_start_label = '_.wflip_area_start_'
 
 
 def next_address() -> Expr:
