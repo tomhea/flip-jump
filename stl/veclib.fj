@@ -43,6 +43,12 @@ def mov n, dst, src {
 }
 
 
+// Complexity: n(2phi+10)
+def swap n, a, b {
+    rep(n, i) swap a+i*dw, b+i*dw
+}
+
+
 
 // ---------- Conditional Jump
 

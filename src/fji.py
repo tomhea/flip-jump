@@ -48,7 +48,8 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
                 else:
                     address_before = max([a for a in labels_dict if a <= ip])
                     print(f'\nAddress {hex(ip)[2:]} ({labels_dict[address_before]} + {hex(ip - address_before)}):')
-            print(f'  f: {hex(mem.get_word(ip))[2:]}\n  j: {hex(mem.get_word(ip + w))[2:]}')
+            print(f'  f: {hex(mem.get_word(ip))[2:]}')
+            print(f'  j: {hex(mem.get_word(ip + w))[2:]}')
             action = input(f's/S for single step, c/C to continue: ')
             if action in ['s', 'S']:
                 single_step = True
@@ -69,7 +70,11 @@ def run(input_file, breakpoints={}, defined_input=None, verbose=False, time_verb
             if output_size == 8:
                 output += chr(output_char)
                 if verbose:
-                    print(f'\n\n\nOutputed Char:  {chr(output_char)}\n\n\n', end='', flush=True)
+                    for _ in range(3):
+                        print()
+                    print(f'Outputed Char:  {chr(output_char)}', end='', flush=True)
+                    for _ in range(3):
+                        print()
                 else:
                     print(chr(output_char), end='', flush=True)
                 output_anything_yet = True
@@ -165,7 +170,7 @@ def main():
         folder = abspath(args.file)
         if not isdir(folder):
             error('the "file" argument should contain a folder path.')
-        for file in glob(join(folder, '*fjm')):
+        for file in glob(join(folder, '*.fjm')):
             print(f'running {Path(file).name}:')
             run_time, ops_executed, output, finish_cause = \
                 debug_and_run(file,
