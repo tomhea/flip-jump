@@ -209,7 +209,7 @@ def pop_res_bit bit {
 // ---------- Functions
 
 
-// Complexity w(5phi+21)
+// Complexity: w(5phi+21)
     // the pop_ret_address is counted for the future return
 def call address @ return_label {
     push_ret_address return_label
@@ -221,8 +221,58 @@ def call address @ return_label {
 }
 
 
-// Complexity w(7phi+29)
+// Complexity: w(7phi+29)
     // the last-call's pop_ret_address is counted for this return
 def return {
     ptr_jump _.sp
+}
+
+
+
+// ---------- Fast Call
+
+
+def fcall_init {
+    _.fcall_init
+}
+ns _ {
+    def fcall_init {
+        ret_addr1: bit 0
+        ret_addr2: bit 0
+        ret_addr3: bit 0
+    }
+}
+
+// Complexity: phi+1
+def fcall label, ret_reg @ ret {
+    wflip ret_reg+w, ret
+    ;label
+
+    pad 2
+  ret:
+    wflip ret_reg+w, ret
+}
+
+// Complexity: 1
+def fret ret_reg {
+    ;ret_reg
+}
+
+def fcall1 label {
+    fcall label, _.ret_addr1
+}
+def fcall2 label {
+    fcall label, _.ret_addr2
+}
+def fcall3 label {
+    fcall label, _.ret_addr3
+}
+def fret1 {
+    fret _.ret_addr1
+}
+def fret2 {
+    fret _.ret_addr2
+}
+def fret3 {
+    fret _.ret_addr3
 }

@@ -143,14 +143,14 @@ def calc a, op, b @ try_add, try_sub, try_mul, try_mul_loop, try_div, try_mod, a
     sub w, a, b
     ;end
   mul:
-    mul w, a, b
-    ;end
+//    mul w, a, b
+//    ;end
   mul_loop:
     mul_loop w, a, b
     ;end
   div_mod:
-    idiv w, a, b, q, r
-    //.idiv_loop w a b q r
+//    idiv w, a, b, q, r
+    idiv_loop w, a, b, q, r
     if div_mod_flag, div, mod
   div:
     mov w, a, q

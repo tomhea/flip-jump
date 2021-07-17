@@ -4,4 +4,4 @@
     loop
 
   a:
-    var w, (-0xabcdef)
+    var w, 0-0xabcdef
