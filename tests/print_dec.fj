@@ -1,0 +1,23 @@
+startup
+
+print_int v1
+print_int v2
+print_int v3
+loop
+
+
+v1: var w, 123456
+v2: var w, 0
+v3: var w, 0-123456
+ret_reg: 0;0
+
+def print_int v {
+    mov w, val, v
+    fcall print_int, ret_reg
+}
+
+print_int:
+    print_dec_int w, val
+    output '\n'
+    fret ret_reg
+    val: var w

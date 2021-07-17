@@ -26,6 +26,51 @@ def mul10 n, x @ twice, end {
 }
 
 
+// dst, src = src/10, src%10.
+// Complexity: n(5phi+23)
+def div10 n, dst, src @ zero, end {
+    zero n, dst
+    _.cmp_sub_10 zero, src+(n-4)*dw, dst+(n-4)*dw
+    rep(n-4, i) _.cmp_sub_10 src+(n-1-i)*dw, src+(n-5-i)*dw, dst+(n-5-i)*dw
+    ;end
+  zero: bit 0
+  end:
+}
+ns _ {
+    // if (val > 10) { val-=10; res=!res; },  (for val4:val[3,2,1,0] of length 5, and val <= 18).
+    // Complexity: 4phi+21
+    def cmp_sub_10 val4, val, res @ yes, no, _1xxxx, _1xx0x, _1xx1x, _01x1x {
+        if1 val4, _1xxxx
+        if0 val+3*dw, no
+        if1 val+  dw, _01x1x
+        if0 val+2*dw, no
+
+        not val+2*dw
+        not val+3*dw
+        ;yes
+
+      _01x1x:
+        not val+3*dw
+        ;yes
+
+      _1xxxx:
+        not val4
+        if val+dw, _1xx0x, _1xx1x
+      _1xx0x:
+        not val+2*dw
+        ;yes
+      _1xx1x:
+        not val+3*dw
+        ;yes
+
+      yes:
+        not val+dw
+        not res
+      no:
+    }
+}
+
+
 // Complexity (b is the number of 1-bits in src):  n^2(6phi+18) + n*b(8phi+33)
 // Space Complexity:  ~O(90n)
 def mul_loop n, dst, src @ start, after_add, src_copy, res, end {
