@@ -183,6 +183,12 @@ class FJParser(Parser):
         # externs = set([self.ns_full_name(p) for p in externs])
         # globals.update([self.ns_full_name(p) for p in globals])
 
+        unused_labels = params - labels_used.union(self.ns_to_base_name(l) for l in labels_declared)
+        if unused_labels:
+            syntax_warning(line, self.warning_as_errors,
+                           f"In macro {macro_name[0]}({macro_name[1]}):  "
+                           f"unused labels: {', '.join(unused_labels)}.")
+
         bad_declarations = labels_declared - set(self.ns_full_name(l) for l in externs.union(params))
         if bad_declarations:
             syntax_warning(line, self.warning_as_errors,
