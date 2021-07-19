@@ -60,7 +60,7 @@ loop:
 
 
 
-def remove_spaces @ main_loop, try2, next_ascii, end {
+def remove_spaces @ main_loop, try2, next_ascii, end < space1, ascii, space2 {
   main_loop:
     cmp 8, ascii, space1, try2, next_ascii, try2
   try2:
@@ -74,7 +74,7 @@ def remove_spaces @ main_loop, try2, next_ascii, end {
 
 
 
-def insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_dec, dec_loop, minus_flag, end, after_minus {
+def insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_dec, dec_loop, minus_flag, end, after_minus < dec, hex_prefix1, hex_prefix2, t, hex, minus, ascii, error, hex_used {
     zero w, x
     zero minus_flag
     cmp 8, ascii, minus, check1, set_minus, check1
@@ -119,7 +119,7 @@ def insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_de
 
 
 
-def calc a, op, b @ try_add, try_sub, try_mul, try_mul_loop, try_div, try_mod, add, sub, mul, mul_loop, div_mod, div, mod, bad, div_mod_flag, r, q, end {
+def calc a, op, b @ try_add, try_sub, try_mul, try_mul_loop, try_div, try_mod, add, sub, mul, mul_loop, div_mod, div, mod, bad, div_mod_flag, r, q, end < minus, asterisk, error, percentage, roof, slash, plus {
     zero error
 
   try_add:
@@ -173,7 +173,7 @@ def calc a, op, b @ try_add, try_sub, try_mul, try_mul_loop, try_div, try_mod, a
 
 
 
-def line_ended true, end, false @ try_end_line_n {
+def line_ended true, end, false @ try_end_line_n < end_line_r, end_line_n, ascii {
     if0 8, ascii, end
     cmp 8, ascii, end_line_r, try_end_line_n, true, try_end_line_n
   try_end_line_n:
@@ -182,7 +182,7 @@ def line_ended true, end, false @ try_end_line_n {
 
 
 
-def check_quit true, false @ try_quit1 {
+def check_quit true, false @ try_quit1 < ascii, quit1, quit2 {
     cmp 8, ascii, quit2, try_quit1, true, false
   try_quit1:
     cmp 8, ascii, quit1, false,     true, false
@@ -191,7 +191,7 @@ def check_quit true, false @ try_quit1 {
 
 
 // does not print new-line
-def getch @ _r, check_n, do_print, end {
+def getch @ check_n, do_print, end < end_line_r, end_line_n, ascii {
     input ascii
     cmp 8, ascii, end_line_r, check_n,  end, check_n
   check_n:
@@ -203,13 +203,12 @@ def getch @ _r, check_n, do_print, end {
 
 
 
-def print_int x @ print_hex, print_dec, end {
+def print_int x @ print_hex, end < hex_used {
     if1 hex_used, print_hex
     print_dec_int w, x
     ;end
   print_hex:
     print_hex_int w, x, 1
-
   end:
 }
 

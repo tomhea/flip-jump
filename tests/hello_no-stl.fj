@@ -1,4 +1,4 @@
-def startup {
+def startup @ code_start > IO {
     ;code_start
   IO:
     ;0
@@ -6,7 +6,7 @@ def startup {
 }
 
 
-def output_bit bit {
+def output_bit bit < IO {
     IO + bit;
 }
 def output ascii {

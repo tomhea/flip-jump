@@ -133,7 +133,7 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
     writer.write_to_file(output_file)
 
 
-def assemble(input_files, output_file, w, flags=None,
+def assemble(input_files, output_file, w, warning_as_errors, flags=None,
              preprocessed_file=None, debugging_file=None, verbose=set()):
     if w not in (8, 16, 32, 64):
         error(f'The width ({w}) must be one of (8, 16, 32, 64).')
@@ -161,7 +161,7 @@ def assemble(input_files, output_file, w, flags=None,
 
     print('  parsing:         ', end='', flush=True)
     start_time = time()
-    macros = parse_macro_tree(input_files, w, verbose=Verbose.Parse in verbose)
+    macros = parse_macro_tree(input_files, w, warning_as_errors, verbose=Verbose.Parse in verbose)
     if Verbose.Time in verbose:
         print(f'{time() - start_time:.3f}s')
 

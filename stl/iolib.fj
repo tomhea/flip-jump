@@ -21,7 +21,7 @@ def string str {
 // ---------- Input:
 
 
-def default_input in0_handler, in1_handler @ io_handler, end {
+def default_input in0_handler, in1_handler @ io_handler, end < IO {
     wflip IO+w, io_handler
     ;end
     pad 2
@@ -33,7 +33,7 @@ def default_input in0_handler, in1_handler @ io_handler, end {
 
 
 // Complexity: 2phi+4
-def input_bit dst {
+def input_bit dst < IO {
     zero dst
     xor dst, IO
 }
@@ -55,7 +55,7 @@ def input n, dst {
 // ---------- Output:
 
 
-def output_bit bit {
+def output_bit bit < IO {
     IO + (bit ? 1 : 0);
 }
 
@@ -66,7 +66,7 @@ def output ascii {
 
 
 // Complexity phi+5
-def print_bit x @ label_ptr, base_jump_label, end {
+def print_bit x @ label_ptr, base_jump_label, end < IO {
     xor label_ptr, x
   label_ptr:
     ;base_jump_label
@@ -93,7 +93,7 @@ def print n, x {
 
 // print string of max size n.
 // Complexity min(n, len+1)*(16phi+72)
-def print_str n, x @ loop {
+def print_str n, x @ end {
     rep(n, i) _.print_str_one_char x+8*i*dw, end
   end:
 }
@@ -427,7 +427,7 @@ ns _ {
         }
 
         // Complexity: 5phi+28
-        def print_char ascii4, char_flag @ print, end {
+        def print_char ascii4, char_flag @ end {
             if0 char_flag, end
             rep(4, i) print_bit ascii4+i*dw
             rep(4, i) output_bit (0x3>>i)&1

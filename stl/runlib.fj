@@ -19,7 +19,7 @@ dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
 // ---------- Startup Code
 
 
-def startup {
+def startup > IO, code_start {
     ;code_start     // 0w;1w : code start
   IO:
     ;0              // 2w;3w : now points to io_handler

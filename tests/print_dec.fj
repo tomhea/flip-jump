@@ -11,7 +11,7 @@ v2: var w, 0
 v3: var w, 0-123456
 ret_reg: 0;0
 
-def print_int v {
+def print_int v < ret_reg, val, print_int {
     mov w, val, v
     fcall print_int, ret_reg
 }
