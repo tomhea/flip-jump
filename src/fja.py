@@ -16,8 +16,9 @@ def main():
     parser.add_argument('--no-macros', help="output no-macros file.")
     parser.add_argument('-d', '--debug', help="output debug file (used for breakpoints).")
     parser.add_argument('-f', '--flags', help="default running flags", type=int, default=0)
-    parser.add_argument('-w', '--width', help="specify memory-width. 64 by default",
+    parser.add_argument('-w', '--width', help="specify memory-width. 64 by default.",
                         type=int, default=64, choices=[8, 16, 32, 64])
+    parser.add_argument('--Werror', help="make all warnings into errors.", action='store_true')
     parser.add_argument('--no-stl', help="don't assemble/link the standard library files.", action='store_true')
     parser.add_argument('--tests', help="compile all .fj files in the given folder (instead of specifying a file).",
                         action='store_true')
@@ -38,7 +39,7 @@ def main():
             no_stl = args.no_stl or 'no-stl' in Path(file).stem
             assemble([file] if no_stl else stl() + [file],
                      (Path(args.file[0]) / 'compiled' / (Path(file).stem + '.fjm')),
-                     args.width, flags=args.flags, verbose=verbose_set)
+                     args.width, args.Werror, flags=args.flags, verbose=verbose_set)
             print()
 
     else:
@@ -50,7 +51,7 @@ def main():
                 parser.error(f'file {file} is not a .fj file.')
             if not isfile(abspath(file)):
                 parser.error(f'file {file} does not exist.')
-        assemble(args.file, args.outfile, args.width, flags=args.flags,
+        assemble(args.file, args.outfile, args.width, args.Werror, flags=args.flags,
                  preprocessed_file=args.no_macros, debugging_file=args.debug, verbose=verbose_set)
 
 

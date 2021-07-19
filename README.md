@@ -278,7 +278,7 @@ It is important to say that macros can use other macros, and there are no macro-
 The syntax for defining macros is:
 
 ```c
-def macro_name param1, param2, .. @ temp_label1, temp_label2, .. {
+def macro_name param1, param2, .. @ temp_label1, temp_label2, .. < globals .. > externs .. {
     // Macro body
 }
 
@@ -344,6 +344,11 @@ byte:
     bit 1
     bit 0
 ```
+
+The macro bodies are checked for unused labels, and for uses of labels which weren't mentiond in param/local lists.<br>
+A warning will be issued for each of the above.<br>
+A label decleration won't cause a warning if it's mentioned in the *externs* list, even if not in the param/local lists.
+A label use won't cause a warning if it's mentioned in the *globals* list, even if not in the param/local lists.
 
 ## Repetitions
 
@@ -447,7 +452,7 @@ Both ```segment``` and ```reserve``` must get w-aligned values.
 A simple fj [hello-world](tests/hello_no-stl.fj) program, not using the standard library:
 
 ```c
-def startup {
+def startup @ code_start > IO  {
     ;code_start
   IO:
     ;0
@@ -455,7 +460,7 @@ def startup {
 }
 
 
-def output_bit bit {
+def output_bit bit < IO {
     IO + bit;
 }
 def output ascii {

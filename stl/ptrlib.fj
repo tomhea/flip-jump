@@ -17,7 +17,7 @@ def init_ptr {
 }
 
 ns _ {
-    def init_ptr {
+    def init_ptr > to_flip, to_jump, to_flip_var, to_flip_return_var, to_jump_var {
         pad 1
       to_flip:
         0;0
@@ -40,7 +40,7 @@ ns _ {
 
 // like:  ;*ptr
 // Complexity w(2phi+6)
-def ptr_jump ptr {
+def ptr_jump ptr < _.to_jump, _.to_jump_var {
     bit_var_xor w, _.to_jump+w, _.to_jump_var, _.to_jump_var
     bit_var_xor w, _.to_jump+w, _.to_jump_var, ptr
     ;_.to_jump
@@ -53,7 +53,7 @@ def ptr_jump ptr {
 
 // like:  *ptr;
 // Complexity w(2phi+6)
-def ptr_flip ptr @ cleanup {
+def ptr_flip ptr @ cleanup < _.to_flip, _.to_flip_var {
     wflip _.to_flip+w, cleanup
 
     bit_var_xor w, _.to_flip, _.to_flip_var, _.to_flip_var
@@ -85,18 +85,18 @@ def xor_to_ptr ptr, bit @ end {
 // like:  wflip *ptr, value
 // Assumes *ptr is w-aligned, and value is 2dw-aligned
 // Complexity w(3phi+11)
-def ptr_wflip ptr, value {
+def ptr_wflip ptr, value < _.to_flip, _.to_flip_var{
     bit_var_xor w, _.to_flip, _.to_flip_var, _.to_flip_var
     bit_var_xor w, _.to_flip, _.to_flip_var, ptr
     rep(w, i) _.advance_by_one_and_flip__ptr_wflip (#(i^((i+1)%w))), (value>>i)&1
 }
 ns _ {
-    def advance_by_one_and_flip__ptr_wflip n, do_flip @ cleanup, advance {
+    def advance_by_one_and_flip__ptr_wflip n, do_flip @ cleanup, advance < .to_flip {
         comp_if0 do_flip, advance
-        wflip _.to_flip+w, cleanup
+        wflip .to_flip+w, cleanup
         ;_.to_flip
       cleanup:
-        wflip _.to_flip+w, cleanup
+        wflip .to_flip+w, cleanup
       advance:
         rep(n, i) exact_not _.to_flip+i
     }
@@ -145,7 +145,7 @@ def stack n {
 }
 ns _ {
     // sp always points to the last pushed value (at start - to stack[-1])
-    def stack n {
+    def stack n > sp, stack{
         pad 1
       sp:
         var w, .stack-dw
@@ -153,7 +153,7 @@ ns _ {
         var n, 0
     }
 }
-def get_sp dst {
+def get_sp dst < _.sp {
     mov w, dst, _.sp
 }
 
@@ -172,34 +172,34 @@ def dec_ptr ptr {
 
 // Assumes address is 2dw-aligned
 // Complexity w(5phi+21)
-def push_ret_address address {
+def push_ret_address address < _.sp {
     inc_ptr _.sp
     ptr_wflip_2nd_word _.sp, address
 }
 
 // Assumes address is 2dw-aligned
 // Complexity w(5phi+23)
-def pop_ret_address address {
+def pop_ret_address address < _.sp {
     ptr_wflip_2nd_word _.sp, address
     dec_ptr _.sp
 }
 
 
 // Complexity: w(4phi+17)
-def push_bit bit {
+def push_bit bit < _.sp {
     inc_ptr _.sp
     xor_to_ptr _.sp, bit
 }
 
 // Assumes *sp==bit.
 // Complexity: w(4phi+19)
-def pop_bit bit {
+def pop_bit bit < _.sp {
     xor_to_ptr _.sp, bit
     dec_ptr _.sp
 }
 
 // Complexity: w(12phi+47)
-def pop_res_bit bit {
+def pop_res_bit bit < _.sp {
     zero bit
     xor_from_ptr bit, _.sp
     pop_bit bit
@@ -223,7 +223,7 @@ def call address @ return_label {
 
 // Complexity: w(7phi+29)
     // the last-call's pop_ret_address is counted for this return
-def return {
+def return < _.sp {
     ptr_jump _.sp
 }
 
@@ -236,7 +236,7 @@ def fcall_init {
     _.fcall_init
 }
 ns _ {
-    def fcall_init {
+    def fcall_init > ret_addr1, ret_addr2, ret_addr3 {
         ret_addr1: bit 0
         ret_addr2: bit 0
         ret_addr3: bit 0
@@ -258,21 +258,21 @@ def fret ret_reg {
     ;ret_reg
 }
 
-def fcall1 label {
+def fcall1 label < _.ret_addr1 {
     fcall label, _.ret_addr1
 }
-def fcall2 label {
+def fcall2 label < _.ret_addr2 {
     fcall label, _.ret_addr2
 }
-def fcall3 label {
+def fcall3 label < _.ret_addr3 {
     fcall label, _.ret_addr3
 }
-def fret1 {
+def fret1 < _.ret_addr1 {
     fret _.ret_addr1
 }
-def fret2 {
+def fret2 < _.ret_addr2 {
     fret _.ret_addr2
 }
-def fret3 {
+def fret3 < _.ret_addr3 {
     fret _.ret_addr3
 }

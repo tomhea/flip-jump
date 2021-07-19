@@ -18,6 +18,18 @@ def syntax_error(line, msg=''):
         print(f"Syntax Error in file {curr_file} line {line}")
 
 
+def syntax_warning(line, is_error, msg=''):
+    if is_error:
+        global error_occurred
+        error_occurred = True
+    print()
+    if msg:
+        print(f"Syntax Warning in file {curr_file} line {line}:")
+        print(f"  {msg}")
+    else:
+        print(f"Syntax Warning in file {curr_file} line {line}")
+
+
 class FJLexer(Lexer):
     tokens = {NS, DEF, REP,
               WFLIP, SEGMENT, RESERVE,
@@ -31,7 +43,7 @@ class FJLexer(Lexer):
                 '$',
                 '^', '|', '&',
                 '?', ':',
-                '<', '>'
+                '<', '>',
                 '"',
                 '#',
                 '{', '}',
@@ -127,9 +139,10 @@ class FJParser(Parser):
     )
     # debugfile = 'src/parser.out'
 
-    def __init__(self, w, verbose=False):
+    def __init__(self, w, warning_as_errors, verbose=False):
         self.verbose = verbose
         self.defs = {'w': Expr(w)}
+        self.warning_as_errors = warning_as_errors
 
         # [(params, quiet_params), statements, (curr_file, p.lineno, ns_name)]
         self.macros = {main_macro: [([], []), [], (None, None, '')]}
@@ -155,6 +168,40 @@ class FJParser(Parser):
                     syntax_error(line, f'parameter {ids[i1]} in macro {macro_name[0]}({macro_name[1]}) '
                                        f'is declared twice!')
 
+    def check_label_usage(self, labels_used, labels_declared, params, externs, globals, line, macro_name):
+        if globals & externs:
+            syntax_error(line, f"In macro {macro_name[0]}({macro_name[1]}):  "
+                               f"extern labels can't be global labels: " + ', '.join(globals & externs))
+        if globals & params:
+            syntax_error(line, f"In macro {macro_name[0]}({macro_name[1]}):  "
+                               f"extern labels can't be regular labels: " + ', '.join(globals & params))
+        if externs & params:
+            syntax_error(line, f"In macro {macro_name[0]}({macro_name[1]}):  "
+                               f"global labels can't be regular labels: " + ', '.join(externs & params))
+
+        # params.update([self.ns_full_name(p) for p in params])
+        # externs = set([self.ns_full_name(p) for p in externs])
+        # globals.update([self.ns_full_name(p) for p in globals])
+
+        unused_labels = params - labels_used.union(self.ns_to_base_name(l) for l in labels_declared)
+        if unused_labels:
+            syntax_warning(line, self.warning_as_errors,
+                           f"In macro {macro_name[0]}({macro_name[1]}):  "
+                           f"unused labels: {', '.join(unused_labels)}.")
+
+        bad_declarations = labels_declared - set(self.ns_full_name(l) for l in externs.union(params))
+        if bad_declarations:
+            syntax_warning(line, self.warning_as_errors,
+                           f"In macro {macro_name[0]}({macro_name[1]}):  "
+                           f"Declared a not extern/parameter label: {', '.join(bad_declarations)}.")
+
+        bad_uses = labels_used - globals - params - set(labels_declared) - {'$'}
+        if bad_uses:
+            # print('\nused:', labels_used, 'globals:', globals, 'params:', params)
+            syntax_warning(line, self.warning_as_errors,
+                           f"In macro {macro_name[0]}({macro_name[1]}):  "
+                           f"Used a not global/parameter/declared-extern label: {', '.join(bad_uses)}.")
+
     def ns_name(self):
         return '.'.join(curr_namespace)
 
@@ -165,7 +212,6 @@ class FJParser(Parser):
         base_name = p.DOT_ID
         without_dots = base_name.lstrip('.')
         if len(without_dots) == len(base_name):
-
             return base_name
         num_of_dots = len(base_name) - len(without_dots)
         if num_of_dots - 1 > len(curr_namespace):
@@ -221,36 +267,58 @@ class FJParser(Parser):
 
     @_('DEF ID macro_params "{" NL line_statements NL "}"')
     def macro_def(self, p):
-        params = p.macro_params
-        name = (self.ns_full_name(p.ID), len(params[0]))
+        params, local_params, global_params, extern_params = p.macro_params
+        name = (self.ns_full_name(p.ID), len(params))
         self.check_macro_name(name, p.lineno)
-        self.check_params(params[0] + params[1], name, p.lineno)
-        statements = p.line_statements
-        self.macros[name] = [params, statements, (curr_file, p.lineno, self.ns_name())]
+        self.check_params(params + local_params, name, p.lineno)
+        ops = p.line_statements
+        self.check_label_usage(*all_used_labels(ops), set(params + local_params), set(extern_params),
+                               set(global_params), p.lineno, name)
+        self.macros[name] = [(params, local_params), ops, (curr_file, p.lineno, self.ns_name())]
         return None
 
     @_('empty')
-    def macro_params(self, p):
-        return [], []
+    def maybe_ids(self, p):
+        return []
 
-    @_('ids')
-    def macro_params(self, p):
-        return p.ids, []
+    @_('IDs')
+    def maybe_ids(self, p):
+        return p.IDs
 
-    @_('"@" ids')
-    def macro_params(self, p):
-        return [], p.ids
+    @_('empty')
+    def maybe_local_ids(self, p):
+        return []
 
-    @_('ids "@" ids')
-    def macro_params(self, p):
-        return p.ids0, p.ids1
+    @_('"@" IDs')
+    def maybe_local_ids(self, p):
+        return p.IDs
 
-    @_('ids "," ID')
-    def ids(self, p):
-        return p.ids + [p.ID]
+    @_('empty')
+    def maybe_extern_ids(self, p):
+        return []
+
+    @_('empty')
+    def maybe_global_ids(self, p):
+        return []
+
+    @_('"<" ids')
+    def maybe_global_ids(self, p):
+        return p.ids
+
+    @_('">" IDs')
+    def maybe_extern_ids(self, p):
+        return p.IDs
+
+    @_('maybe_ids maybe_local_ids maybe_global_ids maybe_extern_ids')
+    def macro_params(self, p):
+        return p.maybe_ids, p.maybe_local_ids, p.maybe_global_ids, p.maybe_extern_ids
+
+    @_('IDs "," ID')
+    def IDs(self, p):
+        return p.IDs + [p.ID]
 
     @_('ID')
-    def ids(self, p):
+    def IDs(self, p):
         return [p.ID]
 
     @_('line_statements NL line_statement')
@@ -313,6 +381,14 @@ class FJParser(Parser):
     def id(self, p):
         return self.dot_id_to_ns_full_name(p), p.lineno
 
+    @_('ids "," id')
+    def ids(self, p):
+        return p.ids + [p.id[0]]
+
+    @_('id')
+    def ids(self, p):
+        return [p.id[0]]
+
     @_('id')
     def statement(self, p):
         macro_name, lineno = p.id
@@ -339,17 +415,17 @@ class FJParser(Parser):
 
     @_('REP "(" expr "," ID ")" id')
     def statement(self, p):
-        id, lineno = p.id
+        macro_name, lineno = p.id
         return Op(OpType.Rep,
-                  (p.expr, p.ID, Op(OpType.Macro, ((id, 0), ), curr_file, lineno)),
+                  (p.expr, p.ID, Op(OpType.Macro, ((macro_name, 0), ), curr_file, lineno)),
                   curr_file, p.lineno)
 
     @_('REP "(" expr "," ID ")" id expressions')
     def statement(self, p):
         exps = p.expressions
-        id, lineno = p.id
+        macro_name, lineno = p.id
         return Op(OpType.Rep,
-                  (p.expr, p.ID, Op(OpType.Macro, ((id, len(exps)), *exps), curr_file, lineno)),
+                  (p.expr, p.ID, Op(OpType.Macro, ((macro_name, len(exps)), *exps), curr_file, lineno)),
                   curr_file, p.lineno)
 
     @_('SEGMENT expr')
@@ -475,12 +551,12 @@ def exit_if_errors():
         exit(1)
 
 
-def parse_macro_tree(input_files, w, verbose=False):
+def parse_macro_tree(input_files, w, warning_as_errors, verbose=False):
     global curr_file, curr_text, error_occurred, curr_namespace
     error_occurred = False
 
     lexer = FJLexer()
-    parser = FJParser(w, verbose=verbose)
+    parser = FJParser(w, warning_as_errors, verbose=verbose)
     for curr_file in input_files:
         if not isfile(curr_file):
             error(f"No such file {curr_file}.")

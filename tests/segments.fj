@@ -30,7 +30,7 @@ back:
     string "\nBye!\n"
 
 
-def more_digit width, num, inter, ascii {
+def more_digit width, num, inter, ascii < error {
     shl width, 4, num
     ascii2hex error, inter, ascii
     add width, num, inter

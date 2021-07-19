@@ -26,7 +26,7 @@ def stl():
 
 
 id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
-dot_id_re = fr'({id_re}|\.*)?(\.({id_re}))+'
+dot_id_re = fr'(({id_re})|\.*)?(\.({id_re}))+'
 
 bin_num = r'0[bB][01]+'
 hex_num = r'0[xX][0-9a-fA-F]+'
@@ -166,6 +166,24 @@ def eval_all(op, id_dict={}):
         macro_op = op.data[2]
         ids += eval_all(macro_op, id_dict)
     return ids
+
+
+def all_used_labels(ops):
+    used_labels, declared_labels = set(), set()
+    for op in ops:
+        if op.type == OpType.Rep:
+            n, i, macro_call = op.data
+            used_labels.update(n.eval({}, op.file, op.line))
+            new_labels = set()
+            new_labels.update(*[e.eval({}, op.file, op.line) for e in macro_call.data[1:]])
+            used_labels.update(new_labels - {i})
+        elif op.type == OpType.Label:
+            declared_labels.add(op.data[0])
+        else:
+            for expr in op.data:
+                if type(expr) is Expr:
+                    used_labels.update(expr.eval({}, op.file, op.line))
+    return used_labels, declared_labels
 
 
 def id_swap(op, id_dict):
