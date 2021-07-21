@@ -1,6 +1,9 @@
 from itertools import count
 from defs import *
 from copy import deepcopy
+import collections
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 
 def macro_resolve_error(curr_tree, msg=''):
@@ -29,19 +32,66 @@ def output_ops(ops, output_file):
                 f.write(f'{op.data[0]}:\n')
 
 
-def resolve_macros(w, macros, output_file=None, verbose=False):
+def dict_pie_graph(d, total, min_main_thresh=0.05, min_secondary_thresh=0.02):
+    main_thresh = min_main_thresh * total
+    secondary_thresh = min_secondary_thresh * total
+    first_level = {}
+    second_level = collections.defaultdict(lambda: dict())
+    for k, v in d.items():
+        if ' => ' not in k:
+            if v < main_thresh:
+                continue
+            first_level[k] = v
+        else:
+            if v < secondary_thresh:
+                continue
+            k_split = k.split(' => ')
+            if len(k_split) != 2:
+                continue
+            parent, name = k_split
+            second_level[parent][name] = v
+
+    chosen = []
+    for k, v in sorted(first_level.items(), key=lambda x: x[1], reverse=True):
+        if len(second_level[k]) == 0:
+            chosen.append((k, v))
+        else:
+            for k2, v2 in sorted(second_level[k].items(), key=lambda x: x[1], reverse=True):
+                chosen.append((f"{k} => {k2}", v2))
+                v -= v2
+            if v >= secondary_thresh:
+                chosen.append((f"{k} others", v))
+
+    others = total - sum([v for l, v in chosen])
+    chosen.append(('all others', others))
+
+    fig = go.Figure(data=[go.Pie(labels=[l for l, v in chosen],
+                                 values=[v for l, v in chosen],
+                                 textinfo='label+percent'
+                                 )])
+    fig.show()
+
+    # plt.pie(d.values(), labels=d.keys(), autopct='%1.2f%%')
+    # plt.savefig(output_file)
+
+
+def resolve_macros(w, macros, output_file=None, show_statistics=False, verbose=False):
     curr_address = [0]
     rem_ops = []
     labels = {}
     last_address_index = [0]
     label_places = {}
     boundary_addresses = [(SegEntry.StartAddress, 0)]  # SegEntries
+    stat_dict = collections.defaultdict(lambda: 0)
 
-    ops = resolve_macro_aux(w, [], macros, main_macro, [], {}, count(),
+    ops = resolve_macro_aux(w, '', [], macros, main_macro, [], {}, count(), stat_dict,
                             labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
                             verbose)
     if output_file:
         output_ops(ops, output_file)
+
+    if show_statistics:
+        dict_pie_graph(dict(stat_dict), curr_address[0])
 
     boundary_addresses.append((SegEntry.WflipAddress, curr_address[0]))
     return rem_ops, labels, boundary_addresses
@@ -53,16 +103,19 @@ def try_int(op, expr):
     error(f"Can't resolve the following name: {expr.eval({}, op.file, op.line)} (in op={op}).")
 
 
-def resolve_macro_aux(w, curr_tree, macros, macro_name, args, rep_dict, dollar_count,
+def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_dict, dollar_count, stat_dict,
                       labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
                       verbose=False, file=None, line=None):
     commands = []
+    init_curr_address = curr_address[0]
+    this_curr_address = 0
     if macro_name not in macros:
         macro_name = f'{macro_name[0]}({macro_name[1]})'
         if None in (file, line):
             macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined.")
         else:
             macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined. Used in file {file} (line {line}).")
+    full_name = (f"{parent_name} => " if parent_name else "") + macro_name[0] + (f"({macro_name[1]})" if macro_name[0] else "")
     (params, dollar_params), ops, (_, _, ns_name) = macros[macro_name]
     id_dict = dict(zip(params, args))
     for dp in dollar_params:
@@ -83,7 +136,7 @@ def resolve_macro_aux(w, curr_tree, macros, macro_name, args, rep_dict, dollar_c
         eval_all(op, id_dict)
         id_swap(op, id_dict)
         if op.type == OpType.Macro:
-            commands += resolve_macro_aux(w, curr_tree+[op.macro_trace_str()], macros, op.data[0], list(op.data[1:]), {}, dollar_count,
+            commands += resolve_macro_aux(w, full_name, curr_tree+[op.macro_trace_str()], macros, op.data[0], list(op.data[1:]), {}, dollar_count, stat_dict,
                                           labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
                                           verbose, file=op.file, line=op.line)
         elif op.type == OpType.Rep:
@@ -102,7 +155,7 @@ def resolve_macro_aux(w, curr_tree, macros, macro_name, args, rep_dict, dollar_c
             for i in range(times):
                 rep_dict[i_name] = Expr(i)  # TODO - call the macro_name directly, and do deepcopy(op) beforehand.
                 macros[pseudo_macro_name] = (([], []), [macro_call], (op.file, op.line, ns_name))
-                commands += resolve_macro_aux(w, curr_tree+[op.rep_trace_str(i, times)], macros, pseudo_macro_name, [], rep_dict, dollar_count,
+                commands += resolve_macro_aux(w, full_name, curr_tree+[op.rep_trace_str(i, times)], macros, pseudo_macro_name, [], rep_dict, dollar_count, stat_dict,
                                               labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
                                               verbose, file=op.file, line=op.line)
             if i_name in rep_dict:
@@ -122,6 +175,7 @@ def resolve_macro_aux(w, curr_tree, macros, macro_name, args, rep_dict, dollar_c
             labels[f'{wflip_start_label}{last_address_index[0]}'] = Expr(curr_address[0])
             last_address_index[0] += 1
 
+            this_curr_address += value - curr_address[0]
             curr_address[0] = value
             boundary_addresses.append((SegEntry.StartAddress, curr_address[0]))
             rem_ops.append(op)
@@ -131,6 +185,7 @@ def resolve_macro_aux(w, curr_tree, macros, macro_name, args, rep_dict, dollar_c
             if value % w != 0:
                 macro_resolve_error(curr_tree, f'reserve ops must have a w-aligned value. In {op}.')
 
+            this_curr_address += value
             curr_address[0] += value
             boundary_addresses.append((SegEntry.ReserveAddress, curr_address[0]))
             labels[f'{wflip_start_label}{last_address_index[0]}'] = Expr(curr_address[0])
@@ -138,12 +193,11 @@ def resolve_macro_aux(w, curr_tree, macros, macro_name, args, rep_dict, dollar_c
             last_address_index[0] += 1
             rem_ops.append(op)
         elif op.type in {OpType.FlipJump, OpType.WordFlip}:
-            delta = 2 * w
-            end_address = curr_address[0] + delta
-            eval_all(op, {'$': Expr(end_address)})
-            curr_address[0] = end_address
+            this_curr_address += 2*w
+            curr_address[0] += 2*w
+            eval_all(op, {'$': Expr(curr_address[0])})
             if op.type == OpType.WordFlip:
-                op.data += (Expr(end_address),)
+                op.data += (Expr(curr_address[0]),)
             if verbose:
                 print(f'op added: {str(op)}')
             rem_ops.append(op)
@@ -160,14 +214,10 @@ def resolve_macro_aux(w, curr_tree, macros, macro_name, args, rep_dict, dollar_c
         else:
             macro_resolve_error(curr_tree, f"Can't assemble this opcode - {str(op)}")
 
+    # if len(curr_tree) == 1:
+    #     stat_dict[macro_name[0]] += curr_address[0] - init_curr_address
+    # stat_dict[macro_name[0]] += this_curr_address
+    if 1 <= len(curr_tree) <= 2:
+        stat_dict[full_name] += curr_address[0] - init_curr_address
     return commands
 
-
-def main():
-    print('preprocessing')
-    # for test_name in ('cat', 'ncat', 'mathbit', 'not', 'testbit', 'mathvec'):
-    #     preprocess([f'tests/{test_name}.fj'], f'tests/compiled/{test_name}__no_macros.fj')
-
-
-if __name__ == '__main__':
-    main()

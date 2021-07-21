@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--no-stl', help="don't assemble/link the standard library files.", action='store_true')
     parser.add_argument('--tests', help="compile all .fj files in the given folder (instead of specifying a file).",
                         action='store_true')
+    parser.add_argument('--stats', help="show macro usage statistics.", action='store_true')
     args = parser.parse_args()
 
     verbose_set = set()
@@ -30,7 +31,7 @@ def main():
 
     if args.tests:
         if len(args.file) != 1 or not isdir(args.file[0]):
-            error('the "file" argument should contain a folder path.')
+            parser.error('the "file" argument should contain a folder path.')
         Path.mkdir(Path(args.file[0]) / 'compiled', exist_ok=True)
         for file in glob(join(args.file[0], '*.fj')):
             # if file in ('tests/calc.fj', ):    # heaviest test
@@ -52,6 +53,7 @@ def main():
             if not isfile(abspath(file)):
                 parser.error(f'file {file} does not exist.')
         assemble(args.file, args.outfile, args.width, args.Werror, flags=args.flags,
+                 show_statistics=args.stats,
                  preprocessed_file=args.no_macros, debugging_file=args.debug, verbose=verbose_set)
 
 
