@@ -134,7 +134,7 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
 
 
 def assemble(input_files, output_file, w, warning_as_errors, flags=None,
-             preprocessed_file=None, debugging_file=None, verbose=set()):
+             show_statistics=False, preprocessed_file=None, debugging_file=None, verbose=set()):
     if w not in (8, 16, 32, 64):
         error(f'The width ({w}) must be one of (8, 16, 32, 64).')
 
@@ -168,6 +168,7 @@ def assemble(input_files, output_file, w, warning_as_errors, flags=None,
     print('  macro resolve:   ', end='', flush=True)
     start_time = time()
     ops, labels, boundary_addresses = resolve_macros(w, macros, output_file=preprocessed_file,
+                                                     show_statistics=show_statistics,
                                                      verbose=Verbose.MacroSolve in verbose)
     if Verbose.Time in verbose:
         print(f'{time() - start_time:.3f}s')
