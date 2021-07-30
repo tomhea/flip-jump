@@ -175,8 +175,10 @@ That's why the assembly language provides the next operation:
 
 ```c
     wflip a, b
-// The Word-Flip op is a special fj op.
-// It flip the bits in addresses [a, a+w) iff the corresponding bit in b (b's value) is set.
+// The Word-Flip op is a special fj-assembly op (it is composed of multiple fj-ops).
+// It flips the bits in addresses [a, a+w) iff the corresponding bit in b (b's value) is set.
+    wflip a, b, c
+// Same as the one before, but jumps to c in the end (instead of jumping to the next op).
 
 // For example, for a==0x100, b=0x740 (0b 0111 0100 0000), the next blocks do the same thing:
 
@@ -243,13 +245,12 @@ You can use this bit by jumping to a flip-jump opcode that contains it.<br>
 The best way is to jump to ;dw.<br>
 
 In that way - this bit will reflect either 0x0 or 0x80 in the jump-part of the flip-jump op.<br>
-If we ```wflip dw+w, some_padded_address``` before the ;dw - the dw-flip-jump-op will make a jump to ```some_padded_address``` / ```some_padded_address+0x80```, based on the input, just like [here](#memory---how-can-we-implement-variables).
+If we ```wflip dw+w, some_padded_address, dw``` - the dw-flip-jump-op will make a jump to ```some_padded_address``` / ```some_padded_address+0x80```, based on the input, just like [here](#memory---how-can-we-implement-variables).
 
 ```c
 // For example:
 
-    wflip dw+w, padded_address  // we assume dw+w is 0.
-    ;dw
+    wflip dw+w, padded_address, dw  // we assume dw+w is 0.
 
 pad 2
 padded_address:
