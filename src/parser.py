@@ -401,7 +401,11 @@ class FJParser(Parser):
 
     @_('WFLIP expr "," expr')
     def statement(self, p):
-        return Op(OpType.WordFlip, (p.expr0, p.expr1), curr_file, p.lineno)
+        return Op(OpType.WordFlip, (p.expr0, p.expr1, next_address()), curr_file, p.lineno)
+
+    @_('WFLIP expr "," expr "," expr')
+    def statement(self, p):
+        return Op(OpType.WordFlip, (p.expr0, p.expr1, p.expr2), curr_file, p.lineno)
 
     @_('ID "=" expr')
     def statement(self, p):
@@ -534,7 +538,7 @@ class FJParser(Parser):
 
     @_('"$"')
     def _expr(self, p):
-        return Expr('$'), p.lineno
+        return next_address(), p.lineno
 
     @_('id')
     def _expr(self, p):

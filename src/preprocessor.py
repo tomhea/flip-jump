@@ -27,7 +27,7 @@ def output_ops(ops, output_file):
             if op.type == OpType.FlipJump:
                 f.write(f'  {op.data[0]};{op.data[1]}\n')
             elif op.type == OpType.WordFlip:
-                f.write(f'  wflip {op.data[0]}, {op.data[1]}\n')
+                f.write(f'  wflip {op.data[0]}, {op.data[1]}, {op.data[2]}\n')
             elif op.type == OpType.Label:
                 f.write(f'{op.data[0]}:\n')
 
@@ -196,8 +196,6 @@ def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_d
             this_curr_address += 2*w
             curr_address[0] += 2*w
             eval_all(op, {'$': Expr(curr_address[0])})
-            if op.type == OpType.WordFlip:
-                op.data += (Expr(curr_address[0]),)
             if verbose:
                 print(f'op added: {str(op)}')
             rem_ops.append(op)
