@@ -105,6 +105,12 @@ def bit_var_xor n, bit, var, src {
 }
 
 
+// Complexity: n(phi+3)
+def xor_zero n, dst, src {
+    rep(n, i) xor_zero dst+dw*i, src+dw*i
+}
+
+
 // Complexity: n(2phi+7)
 def or n, dst, src {
     rep(n, i) or dst+dw*i, src+dw*i

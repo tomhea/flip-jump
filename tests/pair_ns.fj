@@ -1,9 +1,8 @@
 ns Pair {
     first = 0
-    first_len = w
-    second = .first_len*dw
-    second_len = w
-    size = .first_len + .second_len
+    len = w
+    second = .len*dw
+    size = .len * 2
 
     def new name @ end {
         .init name
@@ -14,16 +13,16 @@ ns Pair {
     }
 
     def init this {
-        zero .first_len,  this+.first
-        zero .second_len, this+.second
+        zero .len,  this+.first
+        zero .len, this+.second
     }
 
     def add_first  this, val {
-        add .first_len,  this+.first,  val
+        ._.add this+.first,  val
     }
 
     def add_second this, val {
-        add .second_len, this+.second, val
+        ._.add this+.second, val
     }
 
     def add this, src {
@@ -33,15 +32,55 @@ ns Pair {
 
     def print this {
         output '('
-        print_hex_int .first_len,  this+.first,  1
+        ._.print_hex_int this+.first
         output ','
         output ' '
-        print_hex_int .second_len, this+.second, 1
+        ._.print_hex_int this+.second
         output ')'
     }
 
+    def init {
+        ._.init
+    }
+
+    ns _ {
+        def add dst, src < .add, .ret_reg, .temp1, .temp2 {
+            xor ..len, .temp2, src
+            xor_zero ..len, .temp1, dst
+            fcall .add, .ret_reg
+            xor_zero ..len, dst, .temp1
+            zero ..len, .temp2
+        }
+
+
+        def print_hex_int val < .print_hex_int, .ret_reg, .temp1 {
+            xor ..len, .temp1, val
+            fcall .print_hex_int, .ret_reg
+            xor ..len, .temp1, val
+        }
+
+        def init @ data_end > add, print_hex_int, ret_reg, temp1, temp2 {
+            ;data_end
+
+            add:
+                add ..len, .temp1, .temp2
+                fret .ret_reg
+
+            print_hex_int:
+                print_hex_int ..len, .temp1, 1
+                fret .ret_reg
+
+            ret_reg: bit 0
+            temp1: var ..len, 0
+            temp2: var ..len, 0
+
+            data_end:
+        }
+
+    }
+
     def swap this {
-        swap (.first_len < .second_len ? .first_len : .second_len), this+.first, this+.second
+        swap .len, this+.first, this+.second
     }
 
     ns prints {
@@ -57,6 +96,8 @@ ns Pair {
 }
 
 startup
+
+Pair.init
 
 Pair.new p1
 Pair.new p2

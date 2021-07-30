@@ -72,7 +72,7 @@ class SegEntry(Enum):
 class OpType(Enum):     # op.data array content:
 
     FlipJump = 1        # expr, expr                # Survives until (2) label resolve
-    WordFlip = 2        # expr, expr                # Survives until (2) label resolve
+    WordFlip = 2        # expr, expr, expr          # Survives until (2) label resolve
     Segment = 3         # expr                      # Survives until (2) label resolve
     Reserve = 4         # expr                      # Survives until (2) label resolve
     Label = 5           # ID                        # Survives until (1) macro resolve

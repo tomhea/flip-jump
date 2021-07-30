@@ -93,8 +93,7 @@ def ptr_wflip ptr, value < _.to_flip, _.to_flip_var{
 ns _ {
     def advance_by_one_and_flip__ptr_wflip n, do_flip @ cleanup, advance < .to_flip {
         comp_if0 do_flip, advance
-        wflip .to_flip+w, cleanup
-        ;_.to_flip
+        wflip .to_flip+w, cleanup, _.to_flip
       cleanup:
         wflip .to_flip+w, cleanup
       advance:
@@ -245,9 +244,7 @@ ns _ {
 
 // Complexity: phi+1
 def fcall label, ret_reg @ ret {
-    wflip ret_reg+w, ret
-    ;label
-
+    wflip ret_reg+w, ret, label
     pad 2
   ret:
     wflip ret_reg+w, ret
