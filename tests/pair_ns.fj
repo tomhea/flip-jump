@@ -4,14 +4,6 @@ ns Pair {
     second = .len*dw
     size = .len * 2
 
-    def new name @ end {
-        .init name
-        ;end
-      name:
-        var .size
-      end:
-    }
-
     def init this {
         zero .len,  this+.first
         zero .len, this+.second
@@ -99,8 +91,8 @@ startup
 
 Pair.init
 
-Pair.new p1
-Pair.new p2
+Pair.init p1
+Pair.init p2
 
 Pair.prints.print_two p1, p2
 
@@ -123,6 +115,9 @@ Pair.print p1
 output '\n'
 
 loop
+
+p1: var Pair.size
+p2: var Pair.size
 
 v08: .var w, 0x08
 v02:  var w, 0x02
