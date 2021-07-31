@@ -167,6 +167,8 @@ The same flip/jump combination on bit_a/bit_b did different things. <br>
 We successfully jumped to different addresses depends on the value of the said bits.<br>
 In that way, we can *read* the value of such a bit-variable.
 
+In that same way, we can also implement hexadecimal and decimal variables in a single op (implemented in hexlib.fj & declib.fj).
+
 This is very nice, but it only worked because we knew the address of branch_target in advance.<br>
 We usually don't, but it is resolved during assemble time.<br>
 That's why the assembly language provides the next operation:
@@ -551,6 +553,8 @@ Hello, World!
   - bitlib.fj   - macros for manipulating bits.
   - veclib.fj   - macros for manipulating bit vectors (i.e. numbers).
   - mathlib.fj  - advanced math macros (mul/div).
+  - hexlib.fj   - macros for manipulating hexadecimal variables and vectors.
+  - declib.fj   - macros for manipulating decimal variables and vectors.
   - iolib.fj    - input/output macros, number casting.
   - ptrlib.fj   - pointers, stack and functions.
 
