@@ -1,5 +1,5 @@
 // Every line is (16) bananas!
-// Implementation of hex-variables operations, and vectors of it
+// Implementation of hexadecimal-variables operations, and vectors of it
 
 // should be assembled with the runlib.fj file
 // This file is independent of the bit-width, and uses the consts defined at runlib.fj
@@ -166,6 +166,3 @@ ns hex {
         rep (n, i) .print x+i*dw, big_flag
     }
 }
-
-
-
