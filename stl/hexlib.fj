@@ -1,0 +1,168 @@
+// Every line is (16) bananas!
+// Implementation of hexadecimal-variables operations, and vectors of it
+
+// should be assembled with the runlib.fj file
+// This file is independent of the bit-width, and uses the consts defined at runlib.fj
+
+// Everything after // is ignored, and every whitespace is ignored (besides new line)
+// An opcode is:  F;J  F;  ;J  or just  ;  (no F => F=0;  no J => J=next)
+
+// Complexity note: phi is log2 of the total number of fj operations, counting wflips as one op.
+// so 2 wflips with value=label (while label is padded with 2^n) causes phi-n space/time complexity
+
+
+
+// ---------- Memory Variables:
+// Size Complexity: 1
+
+
+def hex val {
+    ;(val > 0xf ? 0xf : (val < 0 ? 0 : val)) * dw
+}
+
+def hex {
+    hex 0
+}
+
+
+
+// ---------- Logical Macros:
+
+
+ns hex {
+
+    //  Time Complexity: phi
+    // Space Complexity: phi+27
+    def xor dst, src {
+        .exact_xor dst+dbit+3, dst+dbit+2, dst+dbit+1, dst+dbit+0, src
+    }
+
+    //  Time Complexity: n*phi
+    // Space Complexity: n*(phi+26)
+    def xor n, dst, src {
+        rep (n, i) .xor dst+i*dw, src+i*dw
+    }
+
+
+    //  Time Complexity: phi
+    // Space Complexity: phi+27
+    def exact_xor d3, d2, d1, d0, src @ switch, end {
+        wflip src+w, switch, src
+        pad 16
+      switch:
+          ;end          //  0
+        d0;end          //  1
+        d1;end          //  2
+        d1;switch+1*dw  //  3
+        d2;end          //  4
+        d2;switch+1*dw  //  5
+        d2;switch+2*dw  //  6
+        d2;switch+3*dw  //  7
+        d3;end          //  8
+        d3;switch+1*dw  //  9
+        d3;switch+2*dw  // 10
+        d3;switch+3*dw  // 11
+        d3;switch+4*dw  // 12
+        d3;switch+5*dw  // 13
+        d3;switch+6*dw  // 14
+        d3;switch+7*dw  // 15
+      end:
+        wflip src+w, switch
+    }
+}
+
+
+
+// ---------- Memory Manipulation:
+
+
+ns hex {
+
+    //  Time Complexity: phi
+    // Space Complexity: phi+27
+    def zero x {
+        .xor x, x
+    }
+
+    //  Time Complexity: n*phi
+    // Space Complexity: n*(phi+26)
+    def zero n, x {
+        rep (n, i) .zero x+i*dw
+    }
+}
+
+
+
+// ---------- IO
+
+
+ns hex {
+
+    //  Time Complexity: phi+4
+    // Space Complexity: phi+51  phi-4+15+16+24
+    def print hex, big_flag @ switch, print_0, print_2, print_4, print_6, print_8, print_a, print_b, print_d, print_f, end < IO {
+        wflip hex+w, switch, hex
+        pad 16
+      switch:
+        IO+0;print_0    //  0
+        IO+1;print_0    //  1
+        IO+0;print_2    //  2
+        IO+1;print_2    //  3
+        IO+0;print_4    //  4
+        IO+1;print_4    //  5
+        IO+0;print_6    //  6
+        IO+1;print_6    //  7
+        IO+0;print_8    //  8
+        IO+1;print_8    //  9
+
+        IO+1;print_a    //  a
+        IO+0;print_b    //  b
+        IO+1;print_b    //  c
+        IO+0;print_d    //  d
+        IO+1;print_d    //  e
+        IO+0;print_f    //  f
+
+      print_0:
+        IO+0;
+        IO+0;
+        IO+0;
+        IO+1;
+        IO+1;
+        IO+0;
+        IO+0;end
+      print_2:
+        IO+1;print_0+1*dw
+      print_4:
+        IO+0;
+        IO+1;print_0+2*dw
+      print_6:
+        IO+1;print_4+1*dw
+      print_8:
+        IO+0;
+        IO+0;
+        IO+1;print_0+3*dw
+      print_a:
+        IO+0;
+        IO+0;
+        IO+0;
+        IO+0;
+        IO+(big_flag ? 0 : 1);
+        IO+1;print_0+6*dw
+      print_b:
+        IO+1;print_a+1*dw
+      print_d:
+        IO+0;
+        IO+1;print_a+2*dw
+      print_f:
+        IO+1;print_d+1*dw
+
+      end:
+        wflip hex+w, switch
+    }
+
+    //  Time Complexity: phi+4
+    // Space Complexity: phi+42
+    def print n, x, big_flag {
+        rep (n, i) .print x+i*dw, big_flag
+    }
+}

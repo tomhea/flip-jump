@@ -23,11 +23,14 @@ def syntax_warning(line, is_error, msg=''):
         global error_occurred
         error_occurred = True
     print()
+    print(f"Syntax Warning in file {curr_file}", end="")
+    if line is not None:
+        print(f" line {line}", end="")
     if msg:
-        print(f"Syntax Warning in file {curr_file} line {line}:")
+        print(f":")
         print(f"  {msg}")
     else:
-        print(f"Syntax Warning in file {curr_file} line {line}")
+        print()
 
 
 class FJLexer(Lexer):
@@ -230,7 +233,15 @@ class FJParser(Parser):
 
     @_('definable_line_statements')
     def program(self, p):
-        self.macros[main_macro][1] += p.definable_line_statements
+        ops = p.definable_line_statements
+        self.macros[main_macro][1] = ops
+
+        labels_used, labels_declared = all_used_labels(ops)
+        bad_uses = labels_used - set(labels_declared) - {'$'}
+        if bad_uses:
+            syntax_warning(None, self.warning_as_errors,
+                           f"Outside of macros:  "
+                           f"Used a not declared label: {', '.join(bad_uses)}.")
 
     @_('definable_line_statements NL definable_line_statement')
     def definable_line_statements(self, p):

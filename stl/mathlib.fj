@@ -1,11 +1,16 @@
 // Every line is (advanced math) bananas!
 // Implementation of advanced math operation over bit-vectors
 
-// should be assembled with both bitlib.fjm and (exactly one) libXX.fjm files
-// This file is independent of the bit-width, and uses the consts defined at libXX.fjm
+// should be assembled with the bitlib.fj, veclib.fj and runlib.fj files
+// This file is independent of the bit-width, and uses the consts defined at runlib.fj
 
-// Everything after // is ignored, everything before first : is ignored too, and every whitespace is ignored (besides new line)
-// An opcode is:  F;L  F  ;L  or just  ;  (no F => F=0;  no L => L=next)
+// Everything after // is ignored, and every whitespace is ignored (besides new line)
+// An opcode is:  F;J  F;  ;J  or just  ;  (no F => F=0;  no J => J=next)
+
+// Complexity note: phi is log2 of the total number of fj operations, counting wflips as one op.
+// so 2 wflips with value=label (while label is padded with 2^n) causes phi-n space/time complexity
+
+// The complexities are not updated in this file (should be lower/faster).
 
 
 
