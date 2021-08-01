@@ -22,11 +22,46 @@ output '\n'
 hex.xor 16, vars, consts
 hex.print 16, vars, 0
 output '\n'
+output '\n'
+
+// xor_zero
+hex.xor_zero 16, vars2, vars
+hex.print 16, vars, 0
+output '\n'
+hex.print 16, vars2, 0
+output '\n'
+output '\n'
+
+// mov
+hex.mov 16, vars, vars2
+hex.print 16, vars, 0
+output '\n'
+hex.print 16, vars2, 0
+output '\n'
+output '\n'
+
+// set
+rep(16, i) hex.set vars+i*dw, 15-i
+hex.print 16, vars, 0
+output '\n'
+hex.print 16, vars2, 0
+output '\n'
+output '\n'
+
+// swap
+hex.swap 16, vars, vars2
+hex.print 16, vars, 0
+output '\n'
+hex.print 16, vars2, 0
+output '\n'
+output '\n'
+
 
 loop
 
 
 vars:   rep(16, j) hex j
+vars2:  rep(16, j) hex 0
 consts: rep(16, j) hex j
 
 def xor_all val < vars, consts {
