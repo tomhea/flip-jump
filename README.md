@@ -508,13 +508,23 @@ Note that all of these macros are already implemented in the standard library:
 # How to run?
 
 ```bash
+>>> fj.py hello.fj --no-stl
+Hello, World!
+```
+
+  - The --no-stl flag tells the assembler not to include the standard library. It is not needed as we implemented the macros ourselves.
+  - You can use the -o flag to save the assembled file for later use too.
+  - You can use the -t flag for testing the run with the expected outputs.
+
+You can also assemble and run separately:
+
+```bash
 >>> fja.py hello.fj -o hello.fjm --no-stl
 >>> fji.py hello.fjm
 Hello, World!
 ```
 
 - The first line will assemble your code (w=64 as bits default).
-  - The --no-stl flag tells the assembler not to include the standard library. It is not needed as we implemented the macros ourselves.
 - The second line will run your code.
 
 Moreover - you can run multiple test programs with defined input (.in file), and compare the outputs (with .out file):
