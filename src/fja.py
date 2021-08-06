@@ -9,9 +9,9 @@ from defs import *
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Assemble and Run FlipJump programs.')
+    parser = argparse.ArgumentParser(description='Assemble FlipJump programs.')
     parser.add_argument('file', help="the FlipJump files.", nargs='+')
-    parser.add_argument('-s', '--silent', help="don't show assemble & run times", action='store_true')
+    parser.add_argument('-s', '--silent', help="don't show assemble times", action='store_true')
     parser.add_argument('-o', '--outfile', help="output assembled file.", default="a.fjm")
     parser.add_argument('--no-macros', help="output no-macros file.")
     parser.add_argument('-d', '--debug', help="output debug file (used for breakpoints).")

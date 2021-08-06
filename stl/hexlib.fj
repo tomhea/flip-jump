@@ -138,6 +138,67 @@ ns hex {
       end:
         wflip src+w, switch
     }
+
+
+    // Complexity: 4
+    def not hex {
+        hex+dbit+0;
+        hex+dbit+1;
+        hex+dbit+2;
+        hex+dbit+3;
+    }
+
+    // Complexity: 4n
+    def not n, hex {
+        rep(n, i) .not hex+i*dw
+    }
+
+
+    //  Time Complexity: phi
+    // Space Complexity: 1.5phi+28
+    def inc1 hex, carry0, carry1 @ switch, end {
+        wflip hex+w, switch, hex
+        pad 16
+      switch:
+        hex+dbit+0;end          //  0
+        hex+dbit+1;switch+0*dw  //  1
+        hex+dbit+0;end          //  2
+        hex+dbit+2;switch+1*dw  //  3
+        hex+dbit+0;end          //  4
+        hex+dbit+1;switch+0*dw  //  5
+        hex+dbit+0;end          //  6
+        hex+dbit+3;switch+3*dw  //  7
+        hex+dbit+0;end          //  8
+        hex+dbit+1;switch+0*dw  //  9
+        hex+dbit+0;end          // 10
+        hex+dbit+2;switch+1*dw  // 11
+        hex+dbit+0;end          // 12
+        hex+dbit+1;switch+0*dw  // 13
+        hex+dbit+0;end          // 14
+        hex+dbit+3;             // 15
+        hex+dbit+2;
+        hex+dbit+1;
+        hex+dbit+0;
+        wflip hex+w, switch, carry1
+      end:
+        wflip hex+w, switch, carry0
+    }
+
+    //  Time Complexity: n*phi
+    // Space Complexity: n(1.5phi+23)
+    def inc n, hex @ end {
+        rep(n, i) .inc.step hex+i*dw, end
+      end:
+    }
+    ns inc {
+        def step hex, end @ next {
+            ..inc1 hex, end, next
+          next:
+        }
+    }
+
+
+
 }
 
 
