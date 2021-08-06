@@ -205,7 +205,9 @@ That's why the assembly language provides the next operation:
 
 // Note that the assembler might choose to unwrap the wflip op in more complicated ways, for optimization reasons.
 
-// This is some way of doing it (has the advantage of knowing in advance that wflip takes 1 op-size in its local area):    
+// The wflip op is considered to take 1 op-size in its local area (and if more ops needed - they will be in the end of the current segment).
+
+// This is some way of doing it (see, it has the advantage of knowing in advance that wflip takes 1 op-size in its local area):    
     0x106;next_flips
 next_op:
     
@@ -506,13 +508,23 @@ Note that all of these macros are already implemented in the standard library:
 # How to run?
 
 ```bash
+>>> fj.py hello.fj --no-stl
+Hello, World!
+```
+
+  - The --no-stl flag tells the assembler not to include the standard library. It is not needed as we implemented the macros ourselves.
+  - You can use the -o flag to save the assembled file for later use too.
+  - You can use the -t flag for testing the run with the expected outputs.
+
+You can also assemble and run separately:
+
+```bash
 >>> fja.py hello.fj -o hello.fjm --no-stl
 >>> fji.py hello.fjm
 Hello, World!
 ```
 
 - The first line will assemble your code (w=64 as bits default).
-  - The --no-stl flag tells the assembler not to include the standard library. It is not needed as we implemented the macros ourselves.
 - The second line will run your code.
 
 Moreover - you can run multiple test programs with defined input (.in file), and compare the outputs (with .out file):
@@ -543,10 +555,12 @@ Hello, World!
   - parser.py       - pythonic lex/yacc parser.
   - preprocessor.py - unwind all macros and reps.
   - assembler.py    - assembles the macroless fj file.
+  - run.py          - interpreter assembled fj files.
   - defs.py         - classes/functions/constants used throughout the project.
   - fjm.py          - read/write .fjm (flip-jump-memory) files.
   - fja.py          - the FlipJump Assembler script.
   - fji.py          - the FlipJump Interpreter script.
+  - fj.py           - the FlipJump Assembler & Interpreter script.
 
 **stl** (standard library files - macros):
   - runlib.fj   - constants and initialization macros.
@@ -568,6 +582,6 @@ Hello, World!
 
 A more detailed explanations and the specifications of the FlipJump assembly can be found in the [FlipJump esolangs page](https://esolangs.org/wiki/FlipJump).
 
-Start by reading the [bitlib.fj](src/bitlib.fj) standard library file. That's where the flipjump magic begins.
+Start by reading the [bitlib.fj](stl/bitlib.fj) standard library file. That's where the flipjump magic begins.
 
 You can also write and run programs for yourself! It is just [that](#how-to-run) easy :)

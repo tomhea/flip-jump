@@ -56,6 +56,31 @@ hex.print 16, vars2, 0
 output '\n'
 output '\n'
 
+// inc1
+rep(16, i) inc1_print_carry vars+i*dw
+output '\n'
+hex.print 16, vars, 0
+output '\n'
+output '\n'
+
+// inc, not
+hex.zero 16, vars
+hex.inc 16, vars
+hex.print 16, vars, 0
+output '\n'
+hex.set vars, 0xf
+hex.inc 16, vars
+hex.print 16, vars, 0
+output '\n'
+hex.zero 16, vars
+hex.not 16, vars
+hex.print 16, vars, 0
+output '\n'
+hex.inc 16, vars
+hex.print 16, vars, 0
+output '\n'
+output '\n'
+
 
 loop
 
@@ -68,4 +93,15 @@ def xor_all val < vars, consts {
     rep (16, i) hex.xor vars+i*dw, consts+val*dw
     hex.print 16, vars, 0
     output '\n'
+}
+
+def inc1_print_carry hex @ output0, output1, end {
+    hex.inc1 hex, output0, output1
+
+  output0:
+    output '0'
+    ;end
+  output1:
+    output '1'
+  end:
 }
