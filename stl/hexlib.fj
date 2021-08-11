@@ -10,6 +10,7 @@
 // Complexity note: phi is log2 of the total number of fj operations, counting wflips as one op.
 // so 2 wflips with value=label (while label is padded with 2^n) causes phi-n space/time complexity
 
+// Space complexity might not be exact
 
 
 // ---------- Memory Variables:
@@ -198,7 +199,57 @@ ns hex {
     }
 
 
+    //  Time Complexity: phi
+    // Space Complexity: 1.5phi+28
+    def dec1 hex, borrow0, borrow1 @ switch, borrow, end {
+        wflip hex+w, switch, hex
+        pad 16
+      switch:
+        hex+dbit+3;borrow       //  0
+        hex+dbit+0;end          //  1
+        hex+dbit+1;switch+1*dw  //  2
+        hex+dbit+0;end          //  3
+        hex+dbit+2;switch+2*dw  //  4
+        hex+dbit+0;end          //  5
+        hex+dbit+1;switch+1*dw  //  6
+        hex+dbit+0;end          //  7
+        hex+dbit+3;switch+4*dw  //  8
+        hex+dbit+0;end          //  9
+        hex+dbit+1;switch+1*dw  // 10
+        hex+dbit+0;end          // 11
+        hex+dbit+2;switch+2*dw  // 12
+        hex+dbit+0;end          // 13
+        hex+dbit+1;switch+1*dw  // 14
+        hex+dbit+0;end          // 15
+      borrow:
+        hex+dbit+2;
+        hex+dbit+1;
+        hex+dbit+0;
+        wflip hex+w, switch, borrow1
+      end:
+        wflip hex+w, switch, borrow0
+    }
 
+    //  Time Complexity: n*phi
+    // Space Complexity: n(1.5phi+23)
+    def dec n, hex @ end {
+        rep(n, i) .dec.step hex+i*dw, end
+      end:
+    }
+    ns dec {
+        def step hex, end @ next {
+            ..dec1 hex, end, next
+          next:
+        }
+    }
+
+
+    //  Time Complexity: n*(phi+4)
+    // Space Complexity: n(1.5phi+27)
+    def neg n, hex {
+        .not n, hex
+        .inc n, hex
+    }
 }
 
 
@@ -327,6 +378,6 @@ ns hex {
     //  Time Complexity: phi+4
     // Space Complexity: phi+42
     def print n, x, big_flag {
-        rep (n, i) .print x+i*dw, big_flag
+        rep (n, i) .print x+(n-1-i)*dw, big_flag
     }
 }

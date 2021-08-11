@@ -57,7 +57,8 @@ output '\n'
 output '\n'
 
 // inc1
-rep(16, i) inc1_print_carry vars+i*dw
+rep(16, i) inc1_print_carry vars+i*dw, vars2+i*dw
+hex.print 16, vars2, 0
 output '\n'
 hex.print 16, vars, 0
 output '\n'
@@ -81,6 +82,46 @@ hex.print 16, vars, 0
 output '\n'
 output '\n'
 
+// dec1
+hex.mov 16, vars, consts
+rep(16, i) dec1_print_borrow vars+i*dw, vars2+i*dw
+hex.print 16, vars2, 0
+output '\n'
+hex.print 16, vars, 0
+output '\n'
+output '\n'
+
+// dec
+hex.zero 16, vars
+hex.set vars, 2
+hex.dec 16, vars
+hex.print 16, vars, 0
+output '\n'
+hex.dec 16, vars
+hex.print 16, vars, 0
+output '\n'
+hex.dec 16, vars
+hex.print 16, vars, 0
+output '\n'
+hex.dec 16, vars
+hex.print 16, vars, 0
+output '\n'
+output '\n'
+
+// neg
+hex.zero 16, vars
+hex.neg 16, vars
+hex.print 16, vars, 0
+output '\n'
+hex.set vars+dw, 3
+hex.neg 16, vars
+hex.print 16, vars, 0
+output '\n'
+hex.neg 16, vars
+hex.print 16, vars, 0
+output '\n'
+output '\n'
+
 
 loop
 
@@ -95,13 +136,18 @@ def xor_all val < vars, consts {
     output '\n'
 }
 
-def inc1_print_carry hex @ output0, output1, end {
-    hex.inc1 hex, output0, output1
-
-  output0:
-    output '0'
-    ;end
+def inc1_print_carry hex, carry @ output1, end {
+    hex.zero carry
+    hex.inc1 hex, end, output1
   output1:
-    output '1'
+    carry+dbit;
+  end:
+}
+
+def dec1_print_borrow hex, borrow @ output1, end {
+    hex.zero borrow
+    hex.dec1 hex, end, output1
+  output1:
+    borrow+dbit;
   end:
 }
