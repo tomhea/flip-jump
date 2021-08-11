@@ -308,6 +308,49 @@ ns hex {
 
 
 
+// ---------- Conditional Jump
+
+
+ns hex {
+    def if_flags hex, flags, l0, l1 @ switch, end0, end1 {
+        wflip hex+w, switch, hex
+        pad 16
+      switch:
+        rep(16, i) comp_if (flags>>i)&1, end0, end1
+      end0:
+        wflip hex+w, switch, l0
+      end1:
+        wflip hex+w, switch, l1
+    }
+
+    def if hex, l0, l1 {
+        .if_flags hex, 0xfffe, l0, l1
+    }
+    def if0 hex, l0 @ l1 {
+        .if hex, l0, l1
+      l1:
+    }
+    def if1 hex, l1 @ l0 {
+        .if hex, l0, l1
+      l0:
+    }
+
+    def if n, hex, l0, l1 {
+        rep(n-1, i) .if1 hex+i*dw, l1
+        .if hex+(n-1)*dw, l0, l1
+    }
+    def if0 n, hex, l0 @ l1 {
+        .if n, hex, l0, l1
+      l1:
+    }
+    def if1 n, hex, l1 @ l0 {
+        .if n, hex, l0, l1
+      l0:
+    }
+}
+
+
+
 // ---------- IO
 
 
