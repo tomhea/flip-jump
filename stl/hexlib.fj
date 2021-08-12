@@ -312,6 +312,8 @@ ns hex {
 
 
 ns hex {
+    //  Time Complexity: phi
+    // Space Complexity: 1.5phi+25
     def if_flags hex, flags, l0, l1 @ switch, end0, end1 {
         wflip hex+w, switch, hex
         pad 16
@@ -323,6 +325,8 @@ ns hex {
         wflip hex+w, switch, l1
     }
 
+    //  Time Complexity: phi
+    // Space Complexity: 1.5phi+25
     def if hex, l0, l1 {
         .if_flags hex, 0xfffe, l0, l1
     }
@@ -335,6 +339,8 @@ ns hex {
       l0:
     }
 
+    //  Time Complexity: n*phi
+    // Space Complexity: n(1.5phi+23)
     def if n, hex, l0, l1 {
         rep(n-1, i) .if1 hex+i*dw, l1
         .if hex+(n-1)*dw, l0, l1
