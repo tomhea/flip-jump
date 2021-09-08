@@ -51,7 +51,7 @@ def input dst {
 
 // Complexity: n(16phi+32)
 def input n, dst {
-    rep(n, i) input dst+8*i*dw
+    rep(n, i) input dst+8*(n-1-i)*dw
 }
 
 

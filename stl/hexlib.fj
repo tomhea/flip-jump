@@ -429,4 +429,74 @@ ns hex {
     def print n, x, big_flag {
         rep (n, i) .print x+(n-1-i)*dw, big_flag
     }
+
+    //  Time Complexity: 2phi+7
+    // Space Complexity: 2phi+39
+    def input4 hex @ flip0, flip1, flip2, flip3, end < IO {
+        .zero hex
+        wflip IO+w, flip0, IO
+
+        pad 8
+      flip0:
+        IO+dbit+1;IO
+        hex+dbit+0;flip0
+      flip1:
+        IO+dbit+2;flip0
+        hex+dbit+1;flip1
+      flip2:
+        IO+dbit+1;IO
+        hex+dbit+2;flip2
+      flip3:
+        wflip IO+w, flip2, end
+        hex+dbit+3;flip3
+      end:
+    }
+
+    //  Time Complexity: 4phi+14
+    // Space Complexity: 4phi+70
+    def input_ascii hex0, hex1 {
+        .input4 hex0
+        .input4 hex1
+    }
+
+    //  Time Complexity: 6phi+14
+    // Space Complexity: 9.5phi+168
+    def input_hex hex, error @ try_dec, do_dec, do_hex, switch, finish_hex, upper, end {
+        .input_ascii hex, upper
+        .if_flags upper, (1<<4)|(1<<6), try_dec, do_hex
+      try_dec:
+        .if_flags upper, (1<<3), do_dec, error
+
+      do_dec:
+        .if_flags hex, (1<<10)-1, end, error
+
+      do_hex:
+        wflip hex+w, switch, hex
+
+      finish_hex:
+        hex+dbit+3;
+        wflip hex+w, switch, end
+
+        pad 16
+      switch:
+        ;error                  //  0
+        hex+dbit+1;switch+2*dw  //  1
+        hex+dbit+0;finish_hex   //  2
+        hex+dbit+2;switch+1*dw  //  3
+        hex+dbit+0;finish_hex   //  4
+        hex+dbit+1;switch+2*dw  //  5
+        hex+dbit+0;finish_hex   //  6
+        ;error                  //  7
+        ;error
+        ;error
+        ;error
+        ;error
+        ;error
+        ;error
+        ;error
+        ;error
+
+      upper: hex
+      end:
+    }
 }
