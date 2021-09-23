@@ -33,7 +33,8 @@ bin_num = r'0[bB][01]+'
 hex_num = r'0[xX][0-9a-fA-F]+'
 dec_num = r'[0-9]+'
 
-char_escape_dict = {'0': 0x0, 'a': 0x7, 'b': 0x8, 'e': 0x1b, 'f': 0xc, 'n': 0xa, 'r': 0xd, 't': 0x9, 'v': 0xb, '\\': 0x5c, "'": 0x27, '"': 0x22, '?': 0x3f}
+char_escape_dict = {'0': 0x0, 'a': 0x7, 'b': 0x8, 'e': 0x1b, 'f': 0xc, 'n': 0xa, 'r': 0xd, 't': 0x9, 'v': 0xb,
+                    '\\': 0x5c, "'": 0x27, '"': 0x22, '?': 0x3f}
 escape_chars = ''.join(k for k in char_escape_dict)
 char = fr'[ -~]|\\[{escape_chars}]|\\[xX][0-9a-fA-F]{{2}}'
 
@@ -62,6 +63,7 @@ class Verbose(Enum):
 class RunFinish(Enum):
     Looping = 'looping'
     Input = 'input'
+    NullIP = 'ip<2w'
 
 
 class SegEntry(Enum):
@@ -89,7 +91,8 @@ class Op:
         self.line = line
 
     def __str__(self):
-        return f'{f"{self.type}:"[7:]:10}    Data: {", ".join([str(d) for d in self.data])}    File: {self.file} (line {self.line})'
+        return f'{f"{self.type}:"[7:]:10}    Data: {", ".join([str(d) for d in self.data])}    ' \
+               f'File: {self.file} (line {self.line})'
 
     def macro_trace_str(self):
         assert self.type == OpType.Macro
@@ -158,7 +161,10 @@ class Expr:
         error(f'bad expression: {self.val} (of type {type(self.val)})')
 
 
-def eval_all(op, id_dict={}):
+def eval_all(op, id_dict=None):
+    if id_dict is None:
+        id_dict = {}
+
     ids = []
     for expr in op.data:
         if type(expr) is Expr:

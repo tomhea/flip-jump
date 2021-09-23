@@ -22,6 +22,9 @@ struct {
 fj_magic = ord('F') + (ord('J') << 8)
 reserved_dict_threshold = 1000
 
+header_struct_format = '<HHQQ'
+segment_struct_format = '<QQQQ'
+
 
 class Reader:
     def __init__(self, input_file, slow_garbage_read=True, stop_after_garbage=True):
@@ -36,16 +39,17 @@ class Reader:
         self.data = []  # bytes
 
         with open(input_file, 'rb') as f:
-            magic, self.w, self.flags, segment_num = unpack('<HHQQ', f.read(2+2+8+8))
+            magic, self.w, self.flags, segment_num = unpack(header_struct_format, f.read(2+2+8+8))
             if magic != fj_magic:
                 print(f'Error: bad magic code ({hex(magic)}, should be {hex(fj_magic)}).')
                 exit(1)
-            self.segments = [unpack('<QQQQ', f.read(8+8+8+8)) for _ in range(segment_num)]
+            self.segments = [unpack(segment_struct_format, f.read(8+8+8+8)) for _ in range(segment_num)]
 
             read_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.w]
             word_bytes_size = self.w // 8
             file_data = f.read()
-            self.data = [unpack(read_tag, file_data[i:i+word_bytes_size])[0] for i in range(0, len(file_data), word_bytes_size)]
+            self.data = [unpack(read_tag, file_data[i:i+word_bytes_size])[0]
+                         for i in range(0, len(file_data), word_bytes_size)]
 
             for segment_start, segment_length, data_start, data_length in self.segments:
                 for i in range(data_length):
@@ -119,10 +123,10 @@ class Writer:
         write_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
 
         with open(output_file, 'wb') as f:
-            f.write(pack('<HHQQ', fj_magic, self.word_size, self.flags, len(self.segments)))
+            f.write(pack(header_struct_format, fj_magic, self.word_size, self.flags, len(self.segments)))
 
             for segment in self.segments:
-                f.write(pack('<QQQQ', *segment))
+                f.write(pack(segment_struct_format, *segment))
 
             for datum in self.data:
                 f.write(pack(write_tag, datum))

@@ -1,5 +1,5 @@
 from sly import Lexer, Parser
-from os.path import isfile
+from os import path
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
 from defs import *
 
@@ -161,23 +161,23 @@ class FJParser(Parser):
                                f'also declared in file {other_file} (line {other_file}).')
 
     def check_params(self, ids, macro_name, line):
-        for id in ids:
-            if id in self.defs:
-                syntax_error(line, f'parameter {id} in macro {macro_name[0]}({macro_name[1]}) '
-                                   f'is also defined as a constant variable (with value {self.defs[id]})')
+        for param_id in ids:
+            if param_id in self.defs:
+                syntax_error(line, f'parameter {param_id} in macro {macro_name[0]}({macro_name[1]}) '
+                                   f'is also defined as a constant variable (with value {self.defs[param_id]})')
         for i1 in range(len(ids)):
             for i2 in range(i1):
                 if ids[i1] == ids[i2]:
                     syntax_error(line, f'parameter {ids[i1]} in macro {macro_name[0]}({macro_name[1]}) '
                                        f'is declared twice!')
 
-    def check_label_usage(self, labels_used, labels_declared, params, externs, globals, line, macro_name):
-        if globals & externs:
+    def check_label_usage(self, labels_used, labels_declared, params, externs, global_labels, line, macro_name):
+        if global_labels & externs:
             syntax_error(line, f"In macro {macro_name[0]}({macro_name[1]}):  "
-                               f"extern labels can't be global labels: " + ', '.join(globals & externs))
-        if globals & params:
+                               f"extern labels can't be global labels: " + ', '.join(global_labels & externs))
+        if global_labels & params:
             syntax_error(line, f"In macro {macro_name[0]}({macro_name[1]}):  "
-                               f"extern labels can't be regular labels: " + ', '.join(globals & params))
+                               f"extern labels can't be regular labels: " + ', '.join(global_labels & params))
         if externs & params:
             syntax_error(line, f"In macro {macro_name[0]}({macro_name[1]}):  "
                                f"global labels can't be regular labels: " + ', '.join(externs & params))
@@ -186,32 +186,35 @@ class FJParser(Parser):
         # externs = set([self.ns_full_name(p) for p in externs])
         # globals.update([self.ns_full_name(p) for p in globals])
 
-        unused_labels = params - labels_used.union(self.ns_to_base_name(l) for l in labels_declared)
+        unused_labels = params - labels_used.union(self.ns_to_base_name(label) for label in labels_declared)
         if unused_labels:
             syntax_warning(line, self.warning_as_errors,
                            f"In macro {macro_name[0]}({macro_name[1]}):  "
                            f"unused labels: {', '.join(unused_labels)}.")
 
-        bad_declarations = labels_declared - set(self.ns_full_name(l) for l in externs.union(params))
+        bad_declarations = labels_declared - set(self.ns_full_name(label) for label in externs.union(params))
         if bad_declarations:
             syntax_warning(line, self.warning_as_errors,
                            f"In macro {macro_name[0]}({macro_name[1]}):  "
                            f"Declared a not extern/parameter label: {', '.join(bad_declarations)}.")
 
-        bad_uses = labels_used - globals - params - set(labels_declared) - {'$'}
+        bad_uses = labels_used - global_labels - params - set(labels_declared) - {'$'}
         if bad_uses:
             # print('\nused:', labels_used, 'globals:', globals, 'params:', params)
             syntax_warning(line, self.warning_as_errors,
                            f"In macro {macro_name[0]}({macro_name[1]}):  "
                            f"Used a not global/parameter/declared-extern label: {', '.join(bad_uses)}.")
 
-    def ns_name(self):
+    @staticmethod
+    def ns_name():
         return '.'.join(curr_namespace)
 
-    def ns_full_name(self, base_name):
+    @staticmethod
+    def ns_full_name(base_name):
         return '.'.join(curr_namespace + [base_name])
 
-    def dot_id_to_ns_full_name(self, p):
+    @staticmethod
+    def dot_id_to_ns_full_name(p):
         base_name = p.DOT_ID
         without_dots = base_name.lstrip('.')
         if len(without_dots) == len(base_name):
@@ -222,7 +225,8 @@ class FJParser(Parser):
                                    f'({num_of_dots}-1 > {len(curr_namespace)})')
         return '.'.join(curr_namespace[:len(curr_namespace)-(num_of_dots-1)] + [without_dots])
 
-    def ns_to_base_name(self, name):
+    @staticmethod
+    def ns_to_base_name(name):
         return name.split('.')[-1]
 
     def error(self, token):
@@ -553,10 +557,10 @@ class FJParser(Parser):
 
     @_('id')
     def _expr(self, p):
-        id, lineno = p.id
-        if id in self.defs:
-            return self.defs[id], lineno
-        return Expr(id), lineno
+        id_str, lineno = p.id
+        if id_str in self.defs:
+            return self.defs[id_str], lineno
+        return Expr(id_str), lineno
 
 
 def exit_if_errors():
@@ -573,7 +577,7 @@ def parse_macro_tree(input_files, w, warning_as_errors, verbose=False):
     lexer = FJLexer()
     parser = FJParser(w, warning_as_errors, verbose=verbose)
     for curr_file in input_files:
-        if not isfile(curr_file):
+        if not path.isfile(curr_file):
             error(f"No such file {curr_file}.")
         curr_text = open(curr_file, 'r').read()
         curr_namespace = []

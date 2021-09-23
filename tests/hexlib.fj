@@ -262,6 +262,7 @@ def input8 hex < garbage {
 def input_hex_print_error @ hex, error, end {
     hex.input_hex hex, error
     hex.print hex, 0
+    ;end
 
   hex: hex
   error:
