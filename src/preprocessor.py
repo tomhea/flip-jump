@@ -2,8 +2,8 @@ from itertools import count
 from defs import *
 from copy import deepcopy
 import collections
-import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+# import matplotlib.pyplot as plt
 
 
 def macro_resolve_error(curr_tree, msg=''):
@@ -62,11 +62,11 @@ def dict_pie_graph(d, total, min_main_thresh=0.05, min_secondary_thresh=0.02):
             if v >= secondary_thresh:
                 chosen.append((f"{k} others", v))
 
-    others = total - sum([v for l, v in chosen])
+    others = total - sum([value for label, value in chosen])
     chosen.append(('all others', others))
 
-    fig = go.Figure(data=[go.Pie(labels=[l for l, v in chosen],
-                                 values=[v for l, v in chosen],
+    fig = go.Figure(data=[go.Pie(labels=[label for label, value in chosen],
+                                 values=[value for label, value in chosen],
                                  textinfo='label+percent'
                                  )])
     fig.show()
@@ -115,7 +115,8 @@ def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_d
             macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined.")
         else:
             macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined. Used in file {file} (line {line}).")
-    full_name = (f"{parent_name} => " if parent_name else "") + macro_name[0] + (f"({macro_name[1]})" if macro_name[0] else "")
+    full_name = (f"{parent_name} => " if parent_name else "") + macro_name[0] + (f"({macro_name[1]})" if macro_name[0]
+                                                                                 else "")
     (params, dollar_params), ops, (_, _, ns_name) = macros[macro_name]
     id_dict = dict(zip(params, args))
     for dp in dollar_params:
@@ -136,9 +137,10 @@ def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_d
         eval_all(op, id_dict)
         id_swap(op, id_dict)
         if op.type == OpType.Macro:
-            commands += resolve_macro_aux(w, full_name, curr_tree+[op.macro_trace_str()], macros, op.data[0], list(op.data[1:]), {}, dollar_count, stat_dict,
-                                          labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
-                                          verbose, file=op.file, line=op.line)
+            commands += resolve_macro_aux(w, full_name, curr_tree+[op.macro_trace_str()], macros, op.data[0],
+                                          list(op.data[1:]), {}, dollar_count, stat_dict,
+                                          labels, rem_ops, boundary_addresses, curr_address, last_address_index,
+                                          label_places, verbose, file=op.file, line=op.line)
         elif op.type == OpType.Rep:
             eval_all(op, labels)
             n, i_name, macro_call = op.data
@@ -155,14 +157,15 @@ def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_d
             for i in range(times):
                 rep_dict[i_name] = Expr(i)  # TODO - call the macro_name directly, and do deepcopy(op) beforehand.
                 macros[pseudo_macro_name] = (([], []), [macro_call], (op.file, op.line, ns_name))
-                commands += resolve_macro_aux(w, full_name, curr_tree+[op.rep_trace_str(i, times)], macros, pseudo_macro_name, [], rep_dict, dollar_count, stat_dict,
-                                              labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
-                                              verbose, file=op.file, line=op.line)
+                commands += resolve_macro_aux(w, full_name, curr_tree+[op.rep_trace_str(i, times)], macros,
+                                              pseudo_macro_name, [], rep_dict, dollar_count, stat_dict,
+                                              labels, rem_ops, boundary_addresses, curr_address, last_address_index,
+                                              label_places, verbose, file=op.file, line=op.line)
             if i_name in rep_dict:
                 del rep_dict[i_name]
             else:
-                macro_resolve_error(curr_tree, f'Rep is used but {i_name} index is gone; maybe also declared elsewhere. '
-                                               f'in file {op.file} line {op.line}.')
+                macro_resolve_error(curr_tree, f'Rep is used but {i_name} index is gone; maybe also declared elsewhere.'
+                                               f' in file {op.file} line {op.line}.')
 
         # labels_resolve
         elif op.type == OpType.Segment:
@@ -218,4 +221,3 @@ def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_d
     if 1 <= len(curr_tree) <= 2:
         stat_dict[full_name] += curr_address[0] - init_curr_address
     return commands
-

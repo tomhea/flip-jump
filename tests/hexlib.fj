@@ -203,12 +203,26 @@ output '\n'
 output '\n'
 
 
+// input4
+rep(16, i) input8 vars+i*dw
+hex.print 16, vars, 0
+input8 garbage
+output '\n'
+
+// input_hex
+rep(64, i) input_hex_print_error
+input8 garbage
+output '\n'
+output '\n'
+
+
 loop
 
 
 vars:   rep(16, j) hex j
 vars2:  rep(16, j) hex 0
 consts: rep(16, j) hex j
+garbage: hex
 
 def xor_all val < vars, consts {
     rep (16, i) hex.xor vars+i*dw, consts+val*dw
@@ -239,4 +253,19 @@ def print_if_flags hex_flags_val @ l0, l1, hex < IO {
     IO+0;l1+dw
   l1:
     output '1'
+}
+
+def input8 hex < garbage {
+    hex.input_ascii hex, garbage
+}
+
+def input_hex_print_error @ hex, error, end {
+    hex.input_hex hex, error
+    hex.print hex, 0
+    ;end
+
+  hex: hex
+  error:
+    output 'X'
+  end:
 }

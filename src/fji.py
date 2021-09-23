@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-from run import debug_and_run
+from fjm_run import debug_and_run
 
 from os.path import isfile, abspath, isdir, join
 from defs import *
 from glob import glob
 import argparse
+import difflib
 
 
 def main():
@@ -52,9 +53,9 @@ def main():
                 continue
 
             print(f'running {Path(file).name}:')
-            with open(infile, 'r') as inf:
+            with open(infile, 'r', encoding='utf-8') as inf:
                 test_input = inf.read()
-            with open(outfile, 'r') as outf:
+            with open(outfile, 'r', encoding='utf-8') as outf:
                 expected_output = outf.read()
             run_time, ops_executed, output, finish_cause = \
                 debug_and_run(file,
@@ -62,7 +63,7 @@ def main():
                               verbose=verbose_set)
             if output != expected_output:
                 print(f'test "{file}" failed. here\'s the diff:')
-                print(''.join(difflib.context_diff(output.splitlines(1), expected_output.splitlines(1),
+                print(''.join(difflib.context_diff(output.splitlines(1), expected_output.splitlines(True),
                                                    fromfile=file, tofile=outfile)))
                 failures.append(file)
 

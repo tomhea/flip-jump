@@ -4,7 +4,7 @@ from tempfile import mkstemp
 import os
 from time import time
 from defs import *
-from parser import parse_macro_tree
+from fj_parser import parse_macro_tree
 import pickle
 
 
@@ -59,7 +59,8 @@ def assert_none_crossing_segments(curr_segment_index, old_address, new_address, 
 
     if min_i is not None:
         error(f"Overlapping segments (address {hex(new_address)}): "
-              f"seg[{clean_segment_index(curr_segment_index, boundary_addresses)}]=({hex(boundary_addresses[curr_segment_index][1])}..) and "
+              f"seg[{clean_segment_index(curr_segment_index, boundary_addresses)}]"
+              f"=({hex(boundary_addresses[curr_segment_index][1])}..) and "
               f"seg[{clean_segment_index(min_i, boundary_addresses)}]=({hex(min_seg_start)}..)")
 
 
@@ -96,7 +97,8 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
             bits += [f, j]
         elif op.type == OpType.Segment:
             segment_index += 2
-            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits, wflips)
+            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits,
+                          wflips)
             last_start_seg_index = segment_index
             first_address = boundary_addresses[last_start_seg_index][1]
             wflip_address = boundary_addresses[get_next_wflip_entry_index(boundary_addresses, segment_index)][1]
@@ -134,7 +136,10 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
 
 
 def assemble(input_files, output_file, w, warning_as_errors, flags=None,
-             show_statistics=False, preprocessed_file=None, debugging_file=None, verbose=set()):
+             show_statistics=False, preprocessed_file=None, debugging_file=None, verbose=None):
+    if verbose is None:
+        verbose = set()
+
     if w not in (8, 16, 32, 64):
         error(f'The width ({w}) must be one of (8, 16, 32, 64).')
 

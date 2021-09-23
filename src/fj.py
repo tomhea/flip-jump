@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 from assembler import assemble
-from run import debug_and_run
+from fjm_run import debug_and_run
 
 import os
-from os.path import isfile, abspath, isdir, join
+from os.path import isfile, abspath
 import difflib
 from tempfile import mkstemp
 import argparse
@@ -17,7 +17,7 @@ def main():
     parser.add_argument('-s', '--silent', help="don't show assemble & run times", action='store_true')
     parser.add_argument('-o', '--outfile', help="output assembled file.")
     parser.add_argument('--no-macros', help="output no-macros file.")
-    parser.add_argument('-d', '--debug', help="debug file (used for breakpoints).", nargs='?', const=0)
+    parser.add_argument('-d', '--debug', help="debug file (used for breakpoints).", nargs='?', const=True)
     parser.add_argument('-f', '--flags', help="running flags", type=int, default=0)
     parser.add_argument('-w', '--width', help="specify memory-width. 64 by default.",
                         type=int, default=64, choices=[8, 16, 32, 64])
@@ -59,7 +59,11 @@ def main():
             parser.error(f'output file {args.outfile} is not a .fjm file.')
 
     temp_debug_file, temp_debug_fd = False, 0
-    if args.debug == 0:
+    if args.debug is None and (len(args.breakpoint) > 0 or len(args.any_breakpoint) > 0):
+        print(f"Warning - breakpoints are used but the debugging flag (-d) is not specified. "
+              f"Debugging data will be saved.")
+        args.debug = True
+    if args.debug is True:
         temp_debug_fd, args.debug = mkstemp()
         temp_debug_file = True
 
@@ -87,28 +91,28 @@ def main():
             outfile = f'{test}.out'
             if not isfile(infile):
                 print(f'test "{test}" missing an infile ("{infile}").')
-                failures.append(file)
+                failures.append(test)
                 continue
             if not isfile(outfile):
                 print(f'test "{test}" missing an outfile ("{outfile}").')
-                failures.append(file)
+                failures.append(test)
                 continue
 
-            print(f'running {Path(file).name}:')
-            with open(infile, 'r') as inf:
+            print(f'running {Path(test).name}:')
+            with open(infile, 'r', encoding='utf-8') as inf:
                 test_input = inf.read()
-            with open(outfile, 'r') as outf:
+            with open(outfile, 'r', encoding='utf-8') as outf:
                 expected_output = outf.read()
             run_time, ops_executed, output, finish_cause = \
                 debug_and_run(args.outfile,
                               defined_input=test_input,
                               verbose=verbose_set)
             if output != expected_output:
-                print(f'test "{file}" failed. here\'s the diff:')
-                print(''.join(difflib.context_diff(output.splitlines(1), expected_output.splitlines(1),
+                print(f'test "{test}" failed. here\'s the diff:')
+                print(''.join(difflib.context_diff(output.splitlines(1), expected_output.splitlines(True),
                                                    fromfile='assembled file' if temp_assembled_file else args.outfile,
                                                    tofile=outfile)))
-                failures.append(file)
+                failures.append(test)
 
             if not args.silent:
                 print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed} ops executed)')
