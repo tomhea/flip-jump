@@ -1,9 +1,9 @@
     startup
-    add 8, a, b
-    print a
+    bit.add 8, a, b
+    bit.print a
     loop
 
   a:
-    var 8, '5'
+    bit.vec 8, '5'
   b:
-    var 8, 0x02
+    bit.vec 8, 0x02

@@ -6,18 +6,18 @@ print_int v3
 loop
 
 
-v1: var w, 123456
-v2: var w, 0
-v3: var w, 0-123456
+v1: bit.vec w, 123456
+v2: bit.vec w, 0
+v3: bit.vec w, 0-123456
 ret_reg: 0;0
 
 def print_int v < ret_reg, val, print_int {
-    mov w, val, v
+    bit.mov w, val, v
     fcall print_int, ret_reg
 }
 
 print_int:
-    print_dec_int w, val
+    bit.print_dec_int w, val
     output '\n'
     fret ret_reg
-    val: var w
+    val: bit.vec w

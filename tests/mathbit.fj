@@ -1,5 +1,5 @@
     startup
-    inc1 x, carry
+    bit.inc1 x, carry
     loop
 
   x:

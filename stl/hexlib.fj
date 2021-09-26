@@ -26,6 +26,16 @@ def hex {
 }
 
 
+ns hex {
+    def vec n, value {
+        rep(n, i) hex (value>>(4*i))&0xf
+    }
+
+    def vec n {
+        rep(n, i) hex
+    }
+}
+
 
 // ---------- Logical Macros:
 
@@ -361,10 +371,69 @@ ns hex {
 
 
 ns hex {
+    def output hex @ switch, print_0, print_2, print_4, print_6, print_8, print_a, print_c, print_e, end < IO {
+        wflip hex+w, switch, hex
+        pad 16
+      switch:
+        IO+0;print_0    //  0
+        IO+1;print_0    //  1
+        IO+0;print_2    //  2
+        IO+1;print_2    //  3
+        IO+0;print_4    //  4
+        IO+1;print_4    //  5
+        IO+0;print_6    //  6
+        IO+1;print_6    //  7
+        IO+0;print_8    //  8
+        IO+1;print_8    //  9
+        IO+0;print_a    //  4
+        IO+1;print_a    //  5
+        IO+0;print_c    //  6
+        IO+1;print_c    //  7
+        IO+0;print_e    //  8
+        IO+1;print_e    //  9
+
+
+      print_0:
+        IO+0;
+        IO+0;
+        IO+0;end
+      print_2:
+        IO+1;print_0+1*dw
+      print_4:
+        IO+0;
+        IO+1;print_0+2*dw
+      print_6:
+        IO+1;print_4+1*dw
+      print_8:
+        IO+0;
+        IO+0;
+        IO+1;end
+      print_a:
+        IO+1;print_8+1*dw
+      print_c:
+        IO+0;
+        IO+1;print_8+2*dw
+      print_e:
+        IO+1;print_c+1*dw
+
+      end:
+        wflip hex+w, switch
+    }
+
+
+    def print x {
+        .output x
+        .output x+dw
+    }
+
+    def print n, x {
+        rep(n, i) .print x+2*i*dw
+    }
+
 
     //  Time Complexity: phi+4
     // Space Complexity: phi+51  phi-4+15+16+24
-    def print hex, big_flag @ switch, print_0, print_2, print_4, print_6, print_8, print_a, print_b, print_d, print_f, end < IO {
+    def print_as_digit hex, big_flag @ switch, print_0, print_2, print_4, print_6, print_8, print_a, print_b, print_d, print_f, end < IO {
         wflip hex+w, switch, hex
         pad 16
       switch:
@@ -426,13 +495,13 @@ ns hex {
 
     //  Time Complexity: phi+4
     // Space Complexity: phi+42
-    def print n, x, big_flag {
-        rep (n, i) .print x+(n-1-i)*dw, big_flag
+    def print_as_digit n, x, big_flag {
+        rep (n, i) .print_as_digit x+(n-1-i)*dw, big_flag
     }
 
     //  Time Complexity: 2phi+7
     // Space Complexity: 2phi+39
-    def input4 hex @ flip0, flip1, flip2, flip3, end < IO {
+    def input_hex hex @ flip0, flip1, flip2, flip3, end < IO {
         .zero hex
         wflip IO+w, flip0, IO
 
@@ -454,15 +523,23 @@ ns hex {
 
     //  Time Complexity: 4phi+14
     // Space Complexity: 4phi+70
-    def input_ascii hex0, hex1 {
-        .input4 hex0
-        .input4 hex1
+    def input x {
+        .input_hex x
+        .input_hex x+dw
     }
+
+    //  Time Complexity: n(4phi+14)
+    // Space Complexity: n(4phi+70)
+    def input n, x {
+        rep(n, i) .input x+2*i*dw
+    }
+
 
     //  Time Complexity: 6phi+14
     // Space Complexity: 9.5phi+168
-    def input_hex hex, error @ try_dec, do_dec, do_hex, switch, finish_hex, upper, end {
-        .input_ascii hex, upper
+    def input_as_hex hex, error @ try_dec, do_dec, do_hex, switch, finish_hex, upper, end {
+        .input_hex hex
+        .input_hex upper
         .if_flags upper, (1<<4)|(1<<6), try_dec, do_hex
       try_dec:
         .if_flags upper, (1<<3), error, do_dec

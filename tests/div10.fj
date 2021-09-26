@@ -1,17 +1,17 @@
 startup
 
 loop:
-print_hex_uint w, var, 1
+bit.print_hex_uint w, var, 1
 output ','
-div10 w, dst, var
-dec2ascii ascii, var
-print ascii
+bit.div10 w, dst, var
+bit.dec2ascii ascii, var
+bit.print ascii
 output '\n'
-mov w, var, dst
-if1 w, var, loop
+bit.mov w, var, dst
+bit.if1 w, var, loop
 loop
 
 
-var: var w, 1281 // (128, 12, 1)
-dst: var w
-ascii: var 8
+var: bit.vec w, 1281 // (128, 12, 1)
+dst: bit.vec w
+ascii: bit.vec 8

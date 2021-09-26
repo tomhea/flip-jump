@@ -1,7 +1,7 @@
 // Every line is (advanced math) bananas!
 // Implementation of advanced math operation over bit-vectors
 
-// should be assembled with the bitlib.fj, veclib.fj and runlib.fj files
+// should be assembled with both bitlib.fj and runlib.fj files
 // This file is independent of the bit-width, and uses the consts defined at runlib.fj
 
 // Everything after // is ignored, and every whitespace is ignored (besides new line)
@@ -17,260 +17,263 @@
 // ---------- Multiply:
 
 
-// Complexity n(14phi+48)
-def mul10 n, x @ twice, end {
-    shl n, x
-    mov n, twice, x
-    shl n, 2, x
-    add n, x, twice
-    ;end
+ns bit {
+    // Complexity n(14phi+48)
+    def mul10 n, x @ twice, end {
+        .shl n, x
+        .mov n, twice, x
+        .shl n, 2, x
+        .add n, x, twice
+        ;end
 
-  twice:
-    var n
-  end:
-}
-
-
-// dst, src = src/10, src%10.
-// Complexity: n(5phi+23)
-def div10 n, dst, src @ zero, end {
-    zero n, dst
-    _.cmp_sub_10 zero, src+(n-4)*dw, dst+(n-4)*dw
-    rep(n-4, i) _.cmp_sub_10 src+(n-1-i)*dw, src+(n-5-i)*dw, dst+(n-5-i)*dw
-    ;end
-  zero: bit 0
-  end:
-}
-ns _ {
-    // if (val > 10) { val-=10; res=!res; },  (for val4:val[3,2,1,0] of length 5, and val <= 18).
-    // Complexity: 4phi+21
-    def cmp_sub_10 val4, val, res @ yes, no, _1xxxx, _1xx0x, _1xx1x, _01x1x {
-        if1 val4, _1xxxx
-        if0 val+3*dw, no
-        if1 val+  dw, _01x1x
-        if0 val+2*dw, no
-
-        not val+2*dw
-        not val+3*dw
-        ;yes
-
-      _01x1x:
-        not val+3*dw
-        ;yes
-
-      _1xxxx:
-        not val4
-        if val+dw, _1xx0x, _1xx1x
-      _1xx0x:
-        not val+2*dw
-        ;yes
-      _1xx1x:
-        not val+3*dw
-        ;yes
-
-      yes:
-        not val+dw
-        not res
-      no:
-    }
-}
-
-
-// Complexity (b is the number of 1-bits in src):  n^2(6phi+18) + n*b(8phi+33)
-// Space Complexity:  ~O(90n)
-def mul_loop n, dst, src @ start, after_add, src_copy, res, end {
-    zero n, res
-    mov n, src_copy, src
-
-  start:
-    if0 src, after_add
-    add n, res, dst          //Comp: n(8phi+33)
-  after_add:
-    shl n, dst               //Comp: n(2phi+5)
-    shr n, src               //Comp: n(2phi+5)
-    if0 n, dst, end          //Comp: n(phi+4)
-    if0 n, src, end          //Comp: n(phi+4)
-    ;start
-
-  src_copy:
-    var n
-  res:
-    var n
-  end:
-    mov n, src, src_copy
-    mov n, dst, res
-}
-
-
-// Complexity (b is the number of 1-bits in src):  n*b(8phi+33)
-// Space Complexity:  ~O(40n^2)
-def mul n, dst, src @ shifted_src, res, end {
-    zero n, res
-    zero n, shifted_src
-    mov n, shifted_src+dw*n, src
-    rep(n, i) _.mul_add_if n, dst+i*dw, res, shifted_src+(n-i)*dw
-    mov n, dst, res
-    ;end
-
-  shifted_src:
-    var 2*n
-  res:
-    var n
-  end:
-}
-ns _ {
-    def mul_add_if n, flag, dst, src @ end {
-        if0 flag, end
-        add n, dst, src
+      twice:
+        .vec n
       end:
     }
-}
 
+
+    // dst, src = src/10, src%10.
+    // Complexity: n(5phi+23)
+    def div10 n, dst, src @ zero, end {
+        .zero n, dst
+        ._.cmp_sub_10 zero, src+(n-4)*dw, dst+(n-4)*dw
+        rep(n-4, i) ._.cmp_sub_10 src+(n-1-i)*dw, src+(n-5-i)*dw, dst+(n-5-i)*dw
+        ;end
+      zero: bit 0
+      end:
+    }
+    ns _ {
+        // if (val > 10) { val-=10; res=!res; },  (for val4:val[3,2,1,0] of length 5, and val <= 18).
+        // Complexity: 4phi+21
+        def cmp_sub_10 val4, val, res @ yes, no, _1xxxx, _1xx0x, _1xx1x, _01x1x {
+            ..if1 val4, _1xxxx
+            ..if0 val+3*dw, no
+            ..if1 val+  dw, _01x1x
+            ..if0 val+2*dw, no
+
+            ..not val+2*dw
+            ..not val+3*dw
+            ;yes
+
+          _01x1x:
+            ..not val+3*dw
+            ;yes
+
+          _1xxxx:
+            ..not val4
+            ..if val+dw, _1xx0x, _1xx1x
+          _1xx0x:
+            ..not val+2*dw
+            ;yes
+          _1xx1x:
+            ..not val+3*dw
+            ;yes
+
+          yes:
+            ..not val+dw
+            ..not res
+          no:
+        }
+    }
+
+
+    // Complexity (b is the number of 1-bits in src):  n^2(6phi+18) + n*b(8phi+33)
+    // Space Complexity:  ~O(90n)
+    def mul_loop n, dst, src @ start, after_add, src_copy, res, end {
+        .zero n, res
+        .mov n, src_copy, src
+
+      start:
+        .if0 src, after_add
+        .add n, res, dst          //Comp: n(8phi+33)
+      after_add:
+        .shl n, dst               //Comp: n(2phi+5)
+        .shr n, src               //Comp: n(2phi+5)
+        .if0 n, dst, end          //Comp: n(phi+4)
+        .if0 n, src, end          //Comp: n(phi+4)
+        ;start
+
+      src_copy:
+        .vec n
+      res:
+        .vec n
+      end:
+        .mov n, src, src_copy
+        .mov n, dst, res
+    }
+
+
+    // Complexity (b is the number of 1-bits in src):  n*b(8phi+33)
+    // Space Complexity:  ~O(40n^2)
+    def mul n, dst, src @ shifted_src, res, end {
+        .zero n, res
+        .zero n, shifted_src
+        .mov n, shifted_src+dw*n, src
+        rep(n, i) _.mul_add_if n, dst+i*dw, res, shifted_src+(n-i)*dw
+        .mov n, dst, res
+        ;end
+
+      shifted_src:
+        .vec 2*n
+      res:
+        .vec n
+      end:
+    }
+    ns _ {
+        def mul_add_if n, flag, dst, src @ end {
+            ..if0 flag, end
+            ..add n, dst, src
+          end:
+        }
+    }
+}
 
 
 // ---------- Divide:
 
 
-def idiv n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
-    mov negative_a, a+dw*(n-1)
-    mov negative_b, b+dw*(n-1)
-    zero one_negative
+ns bit {
+    def idiv n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
+        .mov negative_a, a+dw*(n-1)
+        .mov negative_b, b+dw*(n-1)
+        .zero one_negative
 
-    if0 negative_a, neg_b_1
-    not one_negative
-    neg n, a
-  neg_b_1:
-    if0 negative_b, do_div
-    not one_negative
-    neg n, b
-  do_div:
-    div n, a, b, q, r
+        .if0 negative_a, neg_b_1
+        .not one_negative
+        .neg n, a
+      neg_b_1:
+        .if0 negative_b, do_div
+        .not one_negative
+        .neg n, b
+      do_div:
+        .div n, a, b, q, r
 
-    if0 negative_a, neg_b_2
-    neg n, a
-    neg n, r
-  neg_b_2:
-    if0 negative_b, neg_ans
-    neg n, b
-  neg_ans:
-    if0 one_negative, end
-    neg n, q
-    ;end
+        .if0 negative_a, neg_b_2
+        .neg n, a
+        .neg n, r
+      neg_b_2:
+        .if0 negative_b, neg_ans
+        .neg n, b
+      neg_ans:
+        .if0 one_negative, end
+        .neg n, q
+        ;end
 
-  negative_a:
-    bit
-  negative_b:
-    bit
-  one_negative:
-    bit
-  end:
-}
-
-
-// Complexity: n^2(10phi+43)
-// Space Complexity:  ~O(50n^2)
-def div n, a, b, q, r @ Q, R, end {
-    if0 n, b, end
-    zero 2*n, R
-    zero   n, Q
-
-    rep(n, i) _.div_step n, a+(n-1-i)*dw, b, R+(n-1-i)*dw, Q+(n-1-i)*dw
-
-    mov n, r, R
-    mov n, q, Q
-    ;end
-
-  R:
-    var 2*n
-  Q:
-    var   n
-  end:
-}
-ns _ {
-    def div_step n, N, D, R, Q @ do_sub, end {
-        xor R, N
-        cmp n, R, D, end, do_sub, do_sub
-      do_sub:
-        sub n, R, D
-        not Q
+      negative_a:
+        bit
+      negative_b:
+        bit
+      one_negative:
+        bit
       end:
     }
-}
+
+
+    // Complexity: n^2(10phi+43)
+    // Space Complexity:  ~O(50n^2)
+    def div n, a, b, q, r @ Q, R, end {
+        .if0 n, b, end
+        .zero 2*n, R
+        .zero   n, Q
+
+        rep(n, i) _.div_step n, a+(n-1-i)*dw, b, R+(n-1-i)*dw, Q+(n-1-i)*dw
+
+        .mov n, r, R
+        .mov n, q, Q
+        ;end
+
+      R:
+        .vec 2*n
+      Q:
+        var   n
+      end:
+    }
+    ns _ {
+        def div_step n, N, D, R, Q @ do_sub, end {
+            ..xor R, N
+            ..cmp n, R, D, end, do_sub, do_sub
+          do_sub:
+            ..sub n, R, D
+            ..not Q
+          end:
+        }
+    }
 
 
 
-def idiv_loop n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
-    mov negative_a, a+dw*(n-1)
-    mov negative_b, b+dw*(n-1)
-    zero one_negative
+    def idiv_loop n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
+        .mov negative_a, a+dw*(n-1)
+        .mov negative_b, b+dw*(n-1)
+        .zero one_negative
 
-    if0 negative_a, neg_b_1
-    not one_negative
-    neg n, a
-  neg_b_1:
-    if0 negative_b, do_div
-    not one_negative
-    neg n, b
-  do_div:
-    div_loop n, a, b, q, r
+        .if0 negative_a, neg_b_1
+        .not one_negative
+        .neg n, a
+      neg_b_1:
+        .if0 negative_b, do_div
+        .not one_negative
+        .neg n, b
+      do_div:
+        .div_loop n, a, b, q, r
 
-    if0 negative_a, neg_b_2
-    neg n, a
-    neg n, r
-  neg_b_2:
-    if0 negative_b, neg_ans
-    neg n, b
-  neg_ans:
-    if0 one_negative, end
-    neg n, q
-    ;end
+        .if0 negative_a, neg_b_2
+        .neg n, a
+        .neg n, r
+      neg_b_2:
+        .if0 negative_b, neg_ans
+        .neg n, b
+      neg_ans:
+        .if0 one_negative, end
+        .neg n, q
+        ;end
 
-  negative_a:
-    bit
-  negative_b:
-    bit
-  one_negative:
-    bit
-  end:
-}
+      negative_a:
+        bit
+      negative_b:
+        bit
+      one_negative:
+        bit
+      end:
+    }
 
 
-// Complexity: n^2(18phi+64)
-// Space Complexity:  ~O(120n)
-def div_loop n, a, b, q, r @ loop, do_sub, loop_end, after_loop, A, Q, R, i, end {
-    if0 n, b, end
-    zero n, R
-    zero n, Q
-    mov n, A, a
-    zero n, i
-    not i+(n-1)*dw
+    // Complexity: n^2(18phi+64)
+    // Space Complexity:  ~O(120n)
+    def div_loop n, a, b, q, r @ loop, do_sub, loop_end, after_loop, A, Q, R, i, end {
+        .if0 n, b, end
+        .zero n, R
+        .zero n, Q
+        .mov n, A, a
+        .zero n, i
+        .not i+(n-1)*dw
 
-  loop:
-    if0 n, i, after_loop                 //Comp: n(phi+4)
-    shl n, R                            //Comp: n(2phi+5)
-    xor R, A+(n-1)*dw
-    cmp n, R, b, loop_end, do_sub, do_sub   //Comp: n(2phi+8)
-  do_sub:
-    sub n, R, b                          //Comp: n(8phi+35)
-    xor n, Q, i                          //Comp: n(phi+2)
-  loop_end:
-    shr n, i                            //Comp: n(2phi+5)
-    shl n, A                            //Comp: n(2phi+5)
-    ;loop
+      loop:
+        .if0 n, i, after_loop                 //Comp: n(phi+4)
+        .shl n, R                            //Comp: n(2phi+5)
+        .xor R, A+(n-1)*dw
+        .cmp n, R, b, loop_end, do_sub, do_sub   //Comp: n(2phi+8)
+      do_sub:
+        .sub n, R, b                          //Comp: n(8phi+35)
+        .xor n, Q, i                          //Comp: n(phi+2)
+      loop_end:
+        .shr n, i                            //Comp: n(2phi+5)
+        .shl n, A                            //Comp: n(2phi+5)
+        ;loop
 
-  after_loop:
-    mov n, r, R
-    mov n, q, Q
-    ;end
+      after_loop:
+        .mov n, r, R
+        .mov n, q, Q
+        ;end
 
-  A:
-    var n
-  R:
-    var n
-  Q:
-    var n
-  i:
-    var n
+      A:
+        .vec n
+      R:
+        .vec n
+      Q:
+        .vec n
+      i:
+        .vec n
 
-  end:
+      end:
+    }
 }

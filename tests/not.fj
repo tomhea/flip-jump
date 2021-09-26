@@ -1,5 +1,5 @@
     startup
-    not x
+    bit.not x
     loop
 
   x:

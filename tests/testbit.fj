@@ -1,5 +1,5 @@
 startup
-if x, l0, l1
+bit.if x, l0, l1
 
 l0:
     output 6 ? 'Z' : '0'

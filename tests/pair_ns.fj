@@ -5,8 +5,8 @@ ns Pair {
     size = .len * 2
 
     def init this {
-        zero .len,  this+.first
-        zero .len, this+.second
+        bit.zero .len,  this+.first
+        bit.zero .len, this+.second
     }
 
     def add_first  this, val {
@@ -37,34 +37,34 @@ ns Pair {
 
     ns _ {
         def add dst, src < .add, .ret_reg, .temp1, .temp2 {
-            xor ..len, .temp2, src
-            xor_zero ..len, .temp1, dst
+            bit.xor ..len, .temp2, src
+            bit.xor_zero ..len, .temp1, dst
             fcall .add, .ret_reg
-            xor_zero ..len, dst, .temp1
-            zero ..len, .temp2
+            bit.xor_zero ..len, dst, .temp1
+            bit.zero ..len, .temp2
         }
 
 
         def print_hex_int val < .print_hex_int, .ret_reg, .temp1 {
-            xor ..len, .temp1, val
+            bit.xor ..len, .temp1, val
             fcall .print_hex_int, .ret_reg
-            xor ..len, .temp1, val
+            bit.xor ..len, .temp1, val
         }
 
         def init @ data_end > add, print_hex_int, ret_reg, temp1, temp2 {
             ;data_end
 
             add:
-                add ..len, .temp1, .temp2
+                bit.add ..len, .temp1, .temp2
                 fret .ret_reg
 
             print_hex_int:
-                print_hex_int ..len, .temp1, 1
+                bit.print_hex_int ..len, .temp1, 1
                 fret .ret_reg
 
             ret_reg: bit 0
-            temp1: var ..len, 0
-            temp2: var ..len, 0
+            temp1: bit.vec ..len, 0
+            temp2: bit.vec ..len, 0
 
             data_end:
         }
@@ -72,7 +72,7 @@ ns Pair {
     }
 
     def swap this {
-        swap .len, this+.first, this+.second
+        bit.swap .len, this+.first, this+.second
     }
 
     ns prints {
@@ -116,10 +116,10 @@ output '\n'
 
 loop
 
-p1: var Pair.size
-p2: var Pair.size
+p1: bit.vec Pair.size
+p2: bit.vec Pair.size
 
-v08: .var w, 0x08
-v02:  var w, 0x02
-vAB: .var w, 0xAB
-vCC:  var w, 0xCC
+v08: .bit.vec w, 0x08
+v02:  bit.vec w, 0x02
+vAB: .bit.vec w, 0xAB
+vCC:  bit.vec w, 0xCC

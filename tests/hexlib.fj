@@ -1,9 +1,9 @@
 startup
 
 // prints
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
-hex.print 16, vars, 1
+hex.print_as_digit 16, vars, 1
 output '\n'
 output '\n'
 
@@ -14,80 +14,80 @@ output '\n'
 
 // zero
 hex.zero  16, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 output '\n'
 
 // xor (as vec) once again
 hex.xor 16, vars, consts
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 output '\n'
 
 // xor_zero
 hex.xor_zero 16, vars2, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
-hex.print 16, vars2, 0
+hex.print_as_digit 16, vars2, 0
 output '\n'
 output '\n'
 
 // mov
 hex.mov 16, vars, vars2
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
-hex.print 16, vars2, 0
+hex.print_as_digit 16, vars2, 0
 output '\n'
 output '\n'
 
 // set
 rep(16, i) hex.set vars+i*dw, 15-i
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
-hex.print 16, vars2, 0
+hex.print_as_digit 16, vars2, 0
 output '\n'
 output '\n'
 
 // swap
 hex.swap 16, vars, vars2
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
-hex.print 16, vars2, 0
+hex.print_as_digit 16, vars2, 0
 output '\n'
 output '\n'
 
 // inc1
 rep(16, i) inc1_print_carry vars+i*dw, vars2+i*dw
-hex.print 16, vars2, 0
+hex.print_as_digit 16, vars2, 0
 output '\n'
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 output '\n'
 
 // inc, not
 hex.zero 16, vars
 hex.inc 16, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 hex.set vars, 0xf
 hex.inc 16, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 hex.zero 16, vars
 hex.not 16, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 hex.inc 16, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 output '\n'
 
 // dec1
 hex.mov 16, vars, consts
 rep(16, i) dec1_print_borrow vars+i*dw, vars2+i*dw
-hex.print 16, vars2, 0
+hex.print_as_digit 16, vars2, 0
 output '\n'
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 output '\n'
 
@@ -95,30 +95,30 @@ output '\n'
 hex.zero 16, vars
 hex.set vars, 2
 hex.dec 16, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 hex.dec 16, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 hex.dec 16, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 hex.dec 16, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 output '\n'
 
 // neg
 hex.zero 16, vars
 hex.neg 16, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 hex.set vars+dw, 3
 hex.neg 16, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 hex.neg 16, vars
-hex.print 16, vars, 0
+hex.print_as_digit 16, vars, 0
 output '\n'
 output '\n'
 
@@ -203,15 +203,25 @@ output '\n'
 output '\n'
 
 
-// input4
-rep(16, i) input8 vars+i*dw
-hex.print 16, vars, 0
-input8 garbage
+// input_hex
+rep(16, i) input2hex vars+i*dw
+hex.print_as_digit 16, vars, 0
+input2hex garbage
 output '\n'
 
 // input_hex
 rep(64, i) input_hex_print_error
-input8 garbage
+input2hex garbage
+output '\n'
+output '\n'
+
+//input-print
+hex.input 16, vars
+hex.print 16, vars
+input2hex garbage
+output '\n'
+rep(11, i) cat_char
+input2hex garbage
 output '\n'
 output '\n'
 
@@ -220,13 +230,13 @@ loop
 
 
 vars:   rep(16, j) hex j
-vars2:  rep(16, j) hex 0
+vars2:  hex.vec 16, 0
 consts: rep(16, j) hex j
-garbage: hex
+garbage: hex.vec 2
 
 def xor_all val < vars, consts {
     rep (16, i) hex.xor vars+i*dw, consts+val*dw
-    hex.print 16, vars, 0
+    hex.print_as_digit 16, vars, 0
     output '\n'
 }
 
@@ -255,17 +265,26 @@ def print_if_flags hex_flags_val @ l0, l1, hex < IO {
     output '1'
 }
 
-def input8 hex < garbage {
-    hex.input_ascii hex, garbage
+def input2hex hex < garbage {
+    hex.input_hex hex
+    hex.input_hex garbage
 }
 
 def input_hex_print_error @ hex, error, end {
-    hex.input_hex hex, error
-    hex.print hex, 0
+    hex.input_as_hex hex, error
+    hex.print_as_digit hex, 0
     ;end
 
   hex: hex
   error:
     output 'X'
+  end:
+}
+
+def cat_char @ char, end {
+    hex.input char
+    hex.print char
+    ;end
+  char: hex.vec 2
   end:
 }

@@ -61,14 +61,20 @@ def main():
                 debug_and_run(file,
                               defined_input=test_input,
                               verbose=verbose_set)
+
+            if not args.silent:
+                print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed} ops executed)')
+
             if output != expected_output:
                 print(f'test "{file}" failed. here\'s the diff:')
                 print(''.join(difflib.context_diff(output.splitlines(1), expected_output.splitlines(True),
                                                    fromfile=file, tofile=outfile)))
                 failures.append(file)
 
-            if not args.silent:
-                print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed} ops executed)')
+            if finish_cause != RunFinish.Looping:
+                print(f'test "{file}" finished unexpectedly, with {finish_cause.value}.')
+                failures.append(file)
+
             print()
 
         print()

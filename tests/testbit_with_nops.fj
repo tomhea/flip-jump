@@ -1,8 +1,8 @@
 startup
 
-rep(10, i) mov y, z
-mov x, x
-if x, l0, l1
+rep(10, i) bit.mov y, z
+bit.mov x, x
+bit.if x, l0, l1
 
 l0:
     output 0x5A // 'Z'
@@ -20,20 +20,20 @@ loop:
 
   dloop:
     ;dloop
-    var 8, 3
+    bit.vec 8, 3
   bananas:
     output 0x5c
     dy=3
 
     n=15
-    rep(8, q) if x, l0, l1
+    rep(8, q) bit.if x, l0, l1
   bans2:
 
     rep(n, j) temp_macro x, x
 
 def temp_macro g, y {
-    not g
-    not y
+    bit.not g
+    bit.not y
 }
 
   x:

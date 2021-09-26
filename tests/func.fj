@@ -14,145 +14,145 @@ startup
 // Prints "ABC"
 test1:
     output 'A'
-    call func1
+    bit.call func1
     output 'C'
     output '\n'
     ;test2
 
 func1:
     output 'B'
-    return
+    bit.return
 
 
 
 // Prints "AB~CD~EF"
 test2:
     output 'A'
-    call func2a
-    call func2b
+    bit.call func2a
+    bit.call func2b
     output 'F'
     output '\n'
     ;test3
 
 func2a:
     output 'B'
-    call func2c
+    bit.call func2c
     output 'C'
-    return
+    bit.return
 func2b:
     output 'D'
-    call func2c
+    bit.call func2c
     output 'E'
-    return
+    bit.return
 func2c:
     output '~'
-    return
+    bit.return
 
 
 
 // Prints "ABCDE"
 test3:
     output 'A'
-    push_bit x3
+    bit.push x3
     output 'B'
-    call func3
+    bit.call func3
     output 'D'
-    pop_bit x3
+    bit.pop x3
     output 'E'
     output '\n'
     ;test4
 
 func3:
     output 'C'
-    return
+    bit.return
 
 
 
 // Prints "ABCDEFGH-" and then 0/1, the invert of x4
 test4:
     output 'A'
-    push_bit x4
+    bit.push x4
     output 'B'
 
-    call func4
+    bit.call func4
 
     output 'G'
-    pop_res_bit x4
+    bit.pop_res x4
     output 'H'
-    bin2ascii ascii, x4
+    bit.bin2ascii ascii, x4
     output '-'
-    print ascii
+    bit.print ascii
 
     output '\n'
     ;test5
 
 func4:
     output 'C'
-    get_sp __func4_arg_ptr
+    bit.get_sp __func4_arg_ptr
     output 'D'
-    dec_ptr __func4_arg_ptr
+    bit.dec_ptr __func4_arg_ptr
     output 'E'
-    ptr_flip_dbit __func4_arg_ptr
+    bit.ptr_flip_dbit __func4_arg_ptr
     output 'F'
-    return
+    bit.return
   __func4_arg_ptr:
-    var w, 0
+    bit.vec w, 0
 
 
 
 // Prints "ABC abcdefg ABCD-", and then 0/1, the xor of x5,y5
 test5:
     output 'A'
-    push_bit res5
+    bit.push res5
     output 'B'
-    push_bit x5
+    bit.push x5
     output 'C'
-    push_bit y5
+    bit.push y5
 
     output ' '
-    call func5
+    bit.call func5
     output ' '
 
     output 'A'
-    pop_bit y5
+    bit.pop y5
     output 'B'
-    pop_bit x5
+    bit.pop x5
     output 'C'
-    pop_res_bit res5
+    bit.pop_res res5
     output 'D'
 
-    bin2ascii ascii, res5
+    bit.bin2ascii ascii, res5
     output '-'
-    print ascii
+    bit.print ascii
 
     output '\n'
     loop
 
 // res = arg0 xor arg1
 func5:
-    zero __func5_res
-    get_sp __func5_arg_ptr
+    bit.zero __func5_res
+    bit.get_sp __func5_arg_ptr
     output 'a'
 
-    dec_ptr __func5_arg_ptr
+    bit.dec_ptr __func5_arg_ptr
     output 'b'
-    xor_from_ptr __func5_res, __func5_arg_ptr
+    bit.xor_from_ptr __func5_res, __func5_arg_ptr
     output 'c'
-    dec_ptr __func5_arg_ptr
+    bit.dec_ptr __func5_arg_ptr
     output 'd'
-    xor_from_ptr __func5_res, __func5_arg_ptr
+    bit.xor_from_ptr __func5_res, __func5_arg_ptr
     output 'e'
 
-    dec_ptr __func5_arg_ptr
+    bit.dec_ptr __func5_arg_ptr
     output 'f'
-    xor_to_ptr __func5_arg_ptr, __func5_res
+    bit.xor_to_ptr __func5_arg_ptr, __func5_res
     output 'g'
 
-    return
+    bit.return
   __func5_res:
     bit
   __func5_arg_ptr:
-    var w
+    bit.vec w
 
 
 
@@ -171,7 +171,7 @@ func5:
 
 
   ascii:
-    var 8
+    bit.vec 8
 
-    init_ptr
-    stack 10
+    bit.ptr_init
+    bit.stack 10

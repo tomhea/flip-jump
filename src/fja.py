@@ -34,8 +34,10 @@ def main():
             parser.error('the "file" argument should contain a folder path.')
         Path.mkdir(Path(args.file[0]) / 'compiled', exist_ok=True)
         for file in glob(join(args.file[0], '*.fj')):
-            # if file in ('tests/calc.fj', ):    # heaviest test
+
+            # if file not in (r'tests\calc.fj', r'tests\func.fj', r'tests\hexlib.fj'):
             #     continue
+
             print(f'compiling {Path(file).name}:')
             no_stl = args.no_stl or 'no-stl' in Path(file).stem
             assemble([file] if no_stl else stl() + [file],

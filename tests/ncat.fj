@@ -1,20 +1,20 @@
 startup
 start:
-    input ascii
-    if0 8, ascii, end
-    cmp 8, ascii, nl, final_check, end, final_check
+    bit.input ascii
+    bit.if0 8, ascii, end
+    bit.cmp 8, ascii, nl, final_check, end, final_check
   final_check:
-    cmp 8, ascii, cr, print, end, print
+    bit.cmp 8, ascii, cr, print, end, print
 print:
-    not 8, ascii
-    print ascii
+    bit.not 8, ascii
+    bit.print ascii
     ;start
 end:
     loop
 
 ascii:
-    var 8
+    bit.vec 8
 nl:
-    var 8, '\n'
+    bit.vec 8, '\n'
 cr:
-    var 8, '\r'
+    bit.vec 8, '\r'
