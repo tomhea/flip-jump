@@ -1,6 +1,6 @@
 startup 0, 0
 n=4
-cmp n, a, b, lt, eq, gt
+bit.cmp n, a, b, lt, eq, gt
 
 lt:
     output '<'
@@ -13,6 +13,6 @@ gt:
     loop
 
   a:
-    var n, 3
+    bit.vec n, 3
   b:
-    var n, 1
+    bit.vec n, 1

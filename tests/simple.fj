@@ -1,7 +1,7 @@
     skip
   IO:
     ;
-    not x
+    bit.not x
     output '0'+#0b111
     loop
 

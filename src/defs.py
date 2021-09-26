@@ -22,7 +22,7 @@ def smart_int16(num):
 def stl():
     path = Path(__file__).parent    # relative address
 
-    return [str(path / f'../stl/{lib}.fj') for lib in ('runlib', 'bitlib', 'veclib', 'iolib', 'ptrlib', 'mathlib',
+    return [str(path / f'../stl/{lib}.fj') for lib in ('runlib', 'bitlib', 'iolib', 'ptrlib', 'mathlib',
                                                        'hexlib', 'declib')]
 
 

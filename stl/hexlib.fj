@@ -26,6 +26,16 @@ def hex {
 }
 
 
+ns hex {
+    def vec n, value {
+        rep(n, i) hex (value>>(4*i))&0xf
+    }
+
+    def vec n {
+        rep(n, i) hex
+    }
+}
+
 
 // ---------- Logical Macros:
 

@@ -4,4 +4,4 @@
     loop
 
   a:
-    var w, 0-0xabcdef
+    bit.vec w, 0-0xabcdef

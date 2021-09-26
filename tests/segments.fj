@@ -6,7 +6,7 @@ X4 = 0x40000000
 
 print 4, str_hi
 
-input 4, X1
+bit.input 4, X1
 
 // both are already zeros because they are reserved:
 //zero 20, X2
@@ -25,15 +25,15 @@ back:
     bit
 
   str_hi:
-    string "Hi!\n"
+    str "Hi!\n"
   str_bye:
-    string "\nBye!\n"
+    str "\nBye!\n"
 
 
 def more_digit width, num, inter, ascii < error {
-    shl width, 4, num
+    bit.shl width, 4, num
     ascii2hex error, inter, ascii
-    add width, num, inter
+    bit.add width, num, inter
 }
 
 
@@ -42,7 +42,7 @@ segment X1
 segment X2
     reserve dw*20
 segment X4
-    add 20, num, num
+    bit.add 20, num, num
     print_hex_int 20, num, 1
     ;back
   end:

@@ -1,7 +1,7 @@
 // Every line is (Input/Output of) bananas!
 // Implementation of input/output and casting operations
 
-// should be assembled with the bitlib.fj, veclib.fj and runlib.fj files
+// should be assembled with both bitlib.fj and runlib.fj files
 // This file is independent of the bit-width, and uses the consts defined at runlib.fj
 
 // Everything after // is ignored, and every whitespace is ignored (besides new line)
@@ -17,8 +17,8 @@
 // ---------- String:
 
 
-def string str {
-    var (((#str)+15)>>3)<<3, str
+def str str {
+    bit.vec (((#str)+15)>>3)<<3, str
 }
 
 
@@ -36,22 +36,24 @@ def default_input in0_handler, in1_handler @ io_handler, end < IO {
 }
 
 
-// Complexity: 2phi+4
-def input_bit dst < IO {
-    zero dst
-    xor dst, IO
-}
+ns bit {
+    // Complexity: 2phi+4
+    def input_bit dst < IO {
+        .zero dst
+        .xor dst, IO
+    }
 
 
-// Complexity: 16phi+32
-def input dst {
-    rep(8, i) input_bit dst+i*dw
-}
+    // Complexity: 16phi+32
+    def input dst {
+        rep(8, i) .input_bit dst+i*dw
+    }
 
 
-// Complexity: n(16phi+32)
-def input n, dst {
-    rep(n, i) input dst+8*(n-1-i)*dw
+    // Complexity: n(16phi+32)
+    def input n, dst {
+        rep(n, i) .input dst+8*(n-1-i)*dw
+    }
 }
 
 
@@ -71,14 +73,14 @@ def output ascii {
 
 // Complexity phi+5
 def print_bit x @ label_ptr, base_jump_label, end < IO {
-    xor label_ptr, x
+    bit.xor label_ptr, x
   label_ptr:
     ;base_jump_label
     pad 2
   base_jump_label:
     IO+0;end
     IO+1;
-    not label_ptr
+    bit.not label_ptr
   end:
 }
 
@@ -103,7 +105,7 @@ def print_str n, x @ end {
 }
 ns _ {
     def print_str_one_char char, end {
-        if0 8, char, end
+        bit.if0 8, char, end
         print char
     }
 }
@@ -114,36 +116,36 @@ ns _ {
 
 // Complexity 9phi+20
 def bin2ascii ascii, bin {
-    zero 8, ascii
-    not 2, ascii + 4*dw   // ascii = 0x30
-    xor ascii, bin
+    bit.zero 8, ascii
+    bit.not 2, ascii + 4*dw   // ascii = 0x30
+    bit.xor ascii, bin
 }
 
 
 // Complexity 12phi+26
 def dec2ascii ascii, dec {
-    zero 8, ascii
-    not 2, ascii + 4*dw   // ascii = 0x30
-    xor 4, ascii, dec
+    bit.zero 8, ascii
+    bit.not 2, ascii + 4*dw   // ascii = 0x30
+    bit.xor 4, ascii, dec
 }
 
 
 // Complexity 25phi+92
 def hex2ascii ascii, hex @ dec_label, hex_label, nine4, end {
-    zero 8, ascii
-    xor 3, ascii, hex
+    bit.zero 8, ascii
+    bit.xor 3, ascii, hex
     hex;
-    cmp 4, hex, nine4, dec_label, dec_label, hex_label
+    bit.cmp 4, hex, nine4, dec_label, dec_label, hex_label
   dec_label:
-    xor ascii+3*dw, hex+3*dw
-    not 2, ascii + 4*dw     // ascii = 0x30
+    bit.xor ascii+3*dw, hex+3*dw
+    bit.not 2, ascii + 4*dw     // ascii = 0x30
     ;end
   hex_label:
-    dec 3, ascii            // A-F is now 1-6
-    not ascii + 6*dw       // ascii = 0x40
+    bit.dec 3, ascii            // A-F is now 1-6
+    bit.not ascii + 6*dw       // ascii = 0x40
     ;end
   nine4:
-    var 4, 9
+    bit.vec 4, 9
   end:
 }
 
@@ -154,21 +156,21 @@ def hex2ascii ascii, hex @ dec_label, hex_label, nine4, end {
 
 // Complexity: 17phi+63
 def ascii2bin error, bin, ascii @ half_bin, return_error, good, end {
-    zero error
-    zero bin
+    bit.zero error
+    bit.zero bin
 
-    cmp 7, ascii+dw, half_bin, return_error, good, return_error
+    bit.cmp 7, ascii+dw, half_bin, return_error, good, return_error
 
     return_error:
-        not error
+        bit.not error
         ;end
 
     good:
-        xor bin, ascii
+        bit.xor bin, ascii
         ;end
 
   half_bin:
-    var 7, 0x30>>1
+    bit.vec 7, 0x30>>1
 
   end:
 }
@@ -176,69 +178,69 @@ def ascii2bin error, bin, ascii @ half_bin, return_error, good, end {
 
 // Complexity: 25phi+83
 def ascii2dec error, dec, ascii @ half_dec, return_error, first_good, good, nine4, end {
-    zero error
-    zero 4, dec
+    bit.zero error
+    bit.zero 4, dec
 
-    cmp 4, ascii+4*dw, half_dec, return_error, first_good, return_error
+    bit.cmp 4, ascii+4*dw, half_dec, return_error, first_good, return_error
   first_good:
-    cmp 4, ascii, nine4, good, good, return_error
+    bit.cmp 4, ascii, nine4, good, good, return_error
 
     return_error:
-        not error
+        bit.not error
         ;end
 
     good:
-        xor 4, dec, ascii
+        bit.xor 4, dec, ascii
         ;end
 
   half_dec:
-    var 4, 0x30>>4
+    bit.vec 4, 0x30>>4
   nine4:
-    var 4, 9
+    bit.vec 4, 9
   end:
 }
 
 
 // Complexity: 48phi+184
 def ascii2hex error, hex, ascii @ half_dec, half_big_hex, half_small_hex, return_error, try_big_hex, try_small_hex, dec_first_good, hex_first_good, dec_good, hex_good, nine4, two3, end {
-    zero error
-    zero 4, hex
+    bit.zero error
+    bit.zero 4, hex
 
-    cmp 4, ascii+4*dw, half_dec, try_big_hex, dec_first_good, try_big_hex
+    bit.cmp 4, ascii+4*dw, half_dec, try_big_hex, dec_first_good, try_big_hex
 
   try_big_hex:
-    cmp 5, ascii+3*dw, half_big_hex,    try_small_hex, hex_first_good, try_small_hex
+    bit.cmp 5, ascii+3*dw, half_big_hex,    try_small_hex, hex_first_good, try_small_hex
   try_small_hex:
-    cmp 5, ascii+3*dw, half_small_hex,  return_error,  hex_first_good, return_error
+    bit.cmp 5, ascii+3*dw, half_small_hex,  return_error,  hex_first_good, return_error
 
   dec_first_good:
-    cmp 4, ascii, nine4, dec_good, dec_good, return_error
+    bit.cmp 4, ascii, nine4, dec_good, dec_good, return_error
     dec_good:
-        xor 4, hex, ascii
+        bit.xor 4, hex, ascii
         ;end
 
   hex_first_good:
-    inc 3, ascii
-    cmp 3, ascii, two3, return_error, hex_good, hex_good
+    bit.inc 3, ascii
+    bit.cmp 3, ascii, two3, return_error, hex_good, hex_good
     hex_good:
-        xor 3, hex, ascii
-        not hex+3*dw
+        bit.xor 3, hex, ascii
+        bit.not hex+3*dw
         ;end
 
     return_error:
-        not error
+        bit.not error
         ;end
 
   half_dec:
-    var 4, 0x30>>4
+    bit.vec 4, 0x30>>4
   half_big_hex:
-    var 5, 0x40>>3
+    bit.vec 5, 0x40>>3
   half_small_hex:
-    var 5, 0x60>>3
+    bit.vec 5, 0x60>>3
   nine4:
-    var 4, 9
+    bit.vec 4, 9
   two3:
-    var 3, 2
+    bit.vec 3, 2
   end:
 }
 
@@ -255,10 +257,10 @@ def print_hex_uint n, x, print_x @ after_print_x, printed_flag, end {
     output 'x'
   after_print_x:
 
-    zero printed_flag
+    bit.zero printed_flag
     rep(n/4, i) _.print_hex_uint_char x+(n/4-1-i)*4*dw, printed_flag
 
-    if1 printed_flag, end
+    bit.if1 printed_flag, end
     output '0'
     ;end
 
@@ -269,18 +271,18 @@ def print_hex_uint n, x, print_x @ after_print_x, printed_flag, end {
 //Comp: 39phi+155
 ns _ {
     def print_hex_uint_char hex, printed_flag @ continue, ascii, end {
-        if1 4, hex, continue
-        if1 printed_flag, continue
+        bit.if1 4, hex, continue
+        bit.if1 printed_flag, continue
         ;end
 
       continue:
-        one printed_flag
+        bit.one printed_flag
         hex2ascii ascii, hex
         print ascii
         ;end
 
       ascii:
-        var 8
+        bit.vec 8
       end:
     }
 }
@@ -288,9 +290,9 @@ ns _ {
 
 
 def print_hex_int n, x, print_x @ do_print {
-    if0 x+(n-1)*dw, do_print
+    bit.if0 x+(n-1)*dw, do_print
     output '-'
-    neg n, x
+    bit.neg n, x
   do_print:
     print_hex_uint n, x, print_x
 }
@@ -303,72 +305,72 @@ def print_hex_int n, x, print_x @ do_print {
 //// Complexity: n^2(8phi+29) + nb(17phi+74)
 //// Space Complexity: ~O(130n^2)
 //def print_dec_uint n, x @ printed_flag, curr_ten, tens, val, r, end {
-//    zero printed_flag
+//    bit.zero printed_flag
 //
-//    zero n+4, curr_ten
-//    not curr_ten
+//    bit.zero n+4, curr_ten
+//    bit.not curr_ten
 //
-//    zero n+7, val
-//    xor n, val, x
+//    bit.zero n+7, val
+//    bit.xor n, val, x
 //
 //    rep(n*28/93+2, i) _.print_dec_uint_put_pow_ten n+4, tens+i*(n+4)*dw, curr_ten, val
 //
 //    rep(n*28/93+2, i) _.print_dec_uint_char n+4, val, tens+(n*28/93+2-1-i)*(n+4)*dw, printed_flag
 //
-//    if1 printed_flag, end
+//    bit.if1 printed_flag, end
 //    output '0'
 //    ;end
 //
 //  printed_flag:
 //    bit
 //  curr_ten:
-//    var n+4
+//    bit.vec n+4
 //  tens:
-//    var (n*28/93+2)*(n+4)      // 28/93 is very close from above to log10(2)
+//    bit.vec (n*28/93+2)*(n+4)      // 28/93 is very close from above to log10(2)
 //  val:
-//    var n+7
+//    bit.vec n+7
 //  r:
-//    var n
+//    bit.vec n
 //  end:
 //}
 //ns _ {
 //    //Comp: n(18phi+60)
 //    def print_dec_uint_put_pow_ten n, dst, curr_ten, top @ put, end {
-//        zero n, dst
-//        cmp n, curr_ten, top, put, put, end
+//        bit.zero n, dst
+//        bit.cmp n, curr_ten, top, put, put, end
 //      put:
-//        xor n, dst, curr_ten
-//        mul10 n, curr_ten
+//        bit.xor n, dst, curr_ten
+//        bit.mul10 n, curr_ten
 //      end:
 //    }
 //    //Comp: n(9phi+36) + 7b*(8phi+35)
 //    def print_dec_uint_char n, v, curr_ten, printed_flag @ do_print, dec, ascii, end {
-//        if0 n, curr_ten, end
-//        zero 4, dec
+//        bit.if0 n, curr_ten, end
+//        bit.zero 4, dec
 //        rep(4, i) _.print_dec_uint_sub_curr_ten n, v, curr_ten, dec, 3-i
 //
-//        if1 4, dec, do_print
-//        if1 printed_flag, do_print
+//        bit.if1 4, dec, do_print
+//        bit.if1 printed_flag, do_print
 //        ;end
 //
 //      do_print:
-//        one printed_flag
+//        bit.one printed_flag
 //        dec2ascii ascii, dec
 //        print ascii
 //        ;end
 //
 //      dec:
-//        var 4
+//        bit.vec 4
 //      ascii:
-//        var 8
+//        bit.vec 8
 //      end:
 //    }
 //    //Comp: worst: n(2phi+8) + 3.3b*(8phi+35),  avg: n(2phi+8) + 1.7b*(8phi+35)
 //    def print_dec_uint_sub_curr_ten n, v, curr_ten, dec, index @ do_sub, end {
-//        cmp n, v+index*dw, curr_ten, end, do_sub, do_sub
+//        bit.cmp n, v+index*dw, curr_ten, end, do_sub, do_sub
 //      do_sub:
-//        sub n, v+index*dw, curr_ten
-//        not dec+index*dw
+//        bit.sub n, v+index*dw, curr_ten
+//        bit.not dec+index*dw
 //      end:
 //    }
 //}
@@ -376,9 +378,9 @@ def print_hex_int n, x, print_x @ do_print {
 //
 //
 //def print_dec_int n, x @ do_print {
-//    if0 x+(n-1)*dw, do_print
+//    bit.if0 x+(n-1)*dw, do_print
 //    output '-'
-//    neg n, x
+//    bit.neg n, x
 //  do_print:
 //    print_dec_uint n, x
 //}
@@ -387,11 +389,11 @@ def print_hex_int n, x, print_x @ do_print {
 // Time  Complexity: n^2(2phi+8)
 // Space Complexity: n(14phi+51)
 def print_dec_uint n, x @ start_printing, xor, end_xor, dst, src, print_buffer, print_buffer_flag, div10, zero_flag, ret_reg, end {
-    mov n, src, x
-    zero zero_flag
+    bit.mov n, src, x
+    bit.zero zero_flag
 
     // the next three takes ~ (28/93n)*(phi+2 + 11phi+27 + 5phi+28) = n(5.12phi+17.17) < n(6phi+17.5) space
-    zero n*28/93+1, print_buffer_flag   // all chars are off
+    bit.zero n*28/93+1, print_buffer_flag   // all chars are off
     rep(n*28/93+1, i) _.print_dec_uint.div10_step div10, xor, ret_reg, src, print_buffer+i*4*dw, print_buffer_flag+i*dw, zero_flag, start_printing
   start_printing:
     rep(n*28/93+1, i) _.print_dec_uint.print_char print_buffer+(n*28/93-i)*4*dw, print_buffer_flag+(n*28/93-i)*dw
@@ -399,20 +401,20 @@ def print_dec_uint n, x @ start_printing, xor, end_xor, dst, src, print_buffer, 
     ;end
 
   div10:
-    div10 n, dst, src
+    bit.div10 n, dst, src
     fret ret_reg
   xor:
-    xor n, src, dst     // TODO: can double_exact_xor and zero dst too - so to save the "zero n dst" inside the next div10 (save ~n/3(phi+1))
-    if1 n, dst, end_xor
-    not zero_flag
+    bit.xor n, src, dst     // TODO: can double_exact_xor and zero dst too - so to save the "zero n dst" inside the next div10 (save ~n/3(phi+1))
+    bit.if1 n, dst, end_xor
+    bit.not zero_flag
   end_xor:
     fret ret_reg
 
     // takes n(2+28/93*5) = 3.5n space
-    dst: var n
-    src: var n
-    print_buffer:      var (n*28/93+1)*4
-    print_buffer_flag: var  n*28/93+1
+    dst: bit.vec n
+    src: bit.vec n
+    print_buffer:      bit.vec (n*28/93+1)*4
+    print_buffer_flag: bit.vec  n*28/93+1
     zero_flag: bit
     ret_reg: 0;0
   end:
@@ -422,17 +424,17 @@ ns _ {
         // Time  Complexity: n(6phi+25)
         // Space Complexity: 11phi+27
         def div10_step div10, xor, ret_reg, src, ascii_res, char_flag, zero_flag, start_printing {
-            if1 zero_flag, start_printing
+            bit.if1 zero_flag, start_printing
             fcall div10, ret_reg
-            zero 4, ascii_res
-            rep(4, i) double_exact_xor ascii_res+dbit+i*dw, src+dbit+i*dw, src+i*dw
-            not char_flag
+            bit.zero 4, ascii_res
+            rep(4, i) bit.double_exact_xor ascii_res+dbit+i*dw, src+dbit+i*dw, src+i*dw
+            bit.not char_flag
             fcall xor, ret_reg
         }
 
         // Complexity: 5phi+28
         def print_char ascii4, char_flag @ end {
-            if0 char_flag, end
+            bit.if0 char_flag, end
             rep(4, i) print_bit ascii4+i*dw
             rep(4, i) output_bit (0x3>>i)&1
           end:
@@ -442,9 +444,9 @@ ns _ {
 
 
 def print_dec_int n, x @ do_print {
-    if0 x+(n-1)*dw, do_print
+    bit.if0 x+(n-1)*dw, do_print
     output '-'
-    neg n, x
+    bit.neg n, x
   do_print:
     print_dec_uint n, x
 }

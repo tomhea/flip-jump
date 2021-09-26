@@ -4,4 +4,4 @@
     loop
 
   str:
-    string "Hello, World!\n(:"
+    str "Hello, World!\n(:"

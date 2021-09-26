@@ -1,12 +1,12 @@
     startup
-    add 4, a, b
+    bit.add 4, a, b
     hex2ascii c, a
     print c
     loop
 
   a:
-    var 4, 0x5
+    bit.vec 4, 0x5
   b:
-    var 4, 0x7
+    bit.vec 4, 0x7
   c:
-    var 8
+    bit.vec 8

@@ -1,5 +1,5 @@
     startup
-    rep(7, i) exact_not x+i+i
+    rep(7, i) bit.exact_not x+i+i
     loop
 
   x:
