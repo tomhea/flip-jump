@@ -1,6 +1,6 @@
     startup
     bit.add 8, a, b
-    print a
+    bit.print a
     loop
 
   a:

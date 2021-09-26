@@ -1,6 +1,6 @@
     startup
 
-    print_hex_int w, a, 1
+    bit.print_hex_int w, a, 1
     loop
 
   a:

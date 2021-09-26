@@ -3,7 +3,7 @@ startup
 
 loop:
     bit.zero hex_used
-    print 3, prompt_string
+    bit.print 3, prompt_string
     getch
     remove_spaces
     check_quit should_quit, before_start
@@ -52,7 +52,7 @@ loop:
   err_loop:
     line_ended print_err, print_err, err_getch
   print_err:
-    print 8, err_string
+    bit.print 8, err_string
     line_ended loop, finish, finish
 
   finish:
@@ -90,7 +90,7 @@ def insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_de
     getch
     bit.one hex_used
   hex_loop:
-    ascii2hex error, hex, ascii
+    bit.ascii2hex error, hex, ascii
     bit.if1 error, end
     bit.shl w, 4, x
     bit.xor 4, x, hex
@@ -100,7 +100,7 @@ def insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_de
   before_dec:
     bit.zero w-4, t+4*dw
   dec_loop:
-    ascii2dec error, dec, ascii
+    bit.ascii2dec error, dec, ascii
     bit.if1 error, end
     bit.mov 4, t, dec
     bit.mul10 w, x
@@ -197,7 +197,7 @@ def getch @ check_n, do_print, end < end_line_r, end_line_n, ascii {
   check_n:
     bit.cmp 8, ascii, end_line_n, do_print, end, do_print
   do_print:
-    print ascii
+    bit.print ascii
   end:
 }
 
@@ -205,10 +205,10 @@ def getch @ check_n, do_print, end < end_line_r, end_line_n, ascii {
 
 def print_int x @ print_hex, end < hex_used {
     bit.if1 hex_used, print_hex
-    print_dec_int w, x
+    bit.print_dec_int w, x
     ;end
   print_hex:
-    print_hex_int w, x, 1
+    bit.print_hex_int w, x, 1
   end:
 }
 
@@ -246,8 +246,8 @@ quit1:     bit.vec 8, 'Q'
 quit2:     bit.vec 8, 'q'
 
 
-err_string:     str "\nError!\n"
-prompt_string:  str ">  "
+err_string:     bit.str "\nError!\n"
+prompt_string:  bit.str ">  "
 
 // bit.ptr_init
 // bit.stack 20

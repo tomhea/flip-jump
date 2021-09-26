@@ -4,7 +4,7 @@ X1 = 0x10000000
 X2 = 0x20000000
 X4 = 0x40000000
 
-print 4, str_hi
+bit.print 4, str_hi
 
 bit.input 4, X1
 
@@ -17,7 +17,7 @@ rep(4, i) more_digit 20, num, X2, X1+8*dw*i
 ;X4
 
 back:
-    print 6, str_bye
+    bit.print 6, str_bye
     ;end
 
 
@@ -25,14 +25,14 @@ back:
     bit
 
   str_hi:
-    str "Hi!\n"
+    bit.str "Hi!\n"
   str_bye:
-    str "\nBye!\n"
+    bit.str "\nBye!\n"
 
 
 def more_digit width, num, inter, ascii < error {
     bit.shl width, 4, num
-    ascii2hex error, inter, ascii
+    bit.ascii2hex error, inter, ascii
     bit.add width, num, inter
 }
 
@@ -43,7 +43,7 @@ segment X2
     reserve dw*20
 segment X4
     bit.add 20, num, num
-    print_hex_int 20, num, 1
+    bit.print_hex_int 20, num, 1
     ;back
   end:
     loop

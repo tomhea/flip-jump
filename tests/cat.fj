@@ -6,7 +6,7 @@ start:
   final_check:
     bit.cmp 8, ascii, cr, print, end, print
 print:
-    print ascii
+    bit.print ascii
     ;start
 end:
     loop

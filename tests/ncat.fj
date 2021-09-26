@@ -7,7 +7,7 @@ start:
     bit.cmp 8, ascii, cr, print, end, print
 print:
     bit.not 8, ascii
-    print ascii
+    bit.print ascii
     ;start
 end:
     loop

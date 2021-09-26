@@ -17,7 +17,7 @@ def print_int v < ret_reg, val, print_int {
 }
 
 print_int:
-    print_dec_int w, val
+    bit.print_dec_int w, val
     output '\n'
     fret ret_reg
     val: bit.vec w

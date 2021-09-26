@@ -1,7 +1,7 @@
     startup
     bit.add 4, a, b
-    hex2ascii c, a
-    print c
+    bit.hex2ascii c, a
+    bit.print c
     loop
 
   a:

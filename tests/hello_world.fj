@@ -1,7 +1,7 @@
     startup
 
-    print_str 20, str
+    bit.print_str 20, str
     loop
 
   str:
-    str "Hello, World!\n(:"
+    bit.str "Hello, World!\n(:"

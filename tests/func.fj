@@ -79,9 +79,9 @@ test4:
     output 'G'
     bit.pop_res x4
     output 'H'
-    bin2ascii ascii, x4
+    bit.bin2ascii ascii, x4
     output '-'
-    print ascii
+    bit.print ascii
 
     output '\n'
     ;test5
@@ -121,9 +121,9 @@ test5:
     bit.pop_res res5
     output 'D'
 
-    bin2ascii ascii, res5
+    bit.bin2ascii ascii, res5
     output '-'
-    print ascii
+    bit.print ascii
 
     output '\n'
     loop
