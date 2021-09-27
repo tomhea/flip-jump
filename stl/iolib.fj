@@ -118,6 +118,10 @@ ns bit {
         .output x
         rep(7, i) output_bit ('0'>>(i+1)) & 1
     }
+
+    def print_as_digit n, x {
+        rep(n, i) .print_as_digit x+(n-1-i)*dw
+    }
 }
 
 
@@ -256,6 +260,34 @@ ns bit {
         .vec 3, 2
       end:
     }
+}
+
+
+
+// ---------- Casting from bit
+
+
+def bit2hex hex, bit {
+    hex.zero hex
+    bit.xor hex, bit
+}
+
+def bit2hex n, hex, bit {
+    hex.zero (n+3)/4, hex
+    rep(n, i) bit.exact_xor hex+(i/4)*dw+dbit+(i%4), bit+i*dw
+}
+
+
+
+// ---------- Casting from hex
+
+
+def hex2bit bit, hex {
+    hex.exact_xor bit+3*dw+dbit, bit+2*dw+dbit, bit+dw+dbit, bit+dbit, hex
+}
+
+def hex2bit n, bit, hex {
+    rep(n, i) hex2bit bit+4*i*dw, hex+i*dw
 }
 
 
