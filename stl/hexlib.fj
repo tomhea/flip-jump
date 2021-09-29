@@ -363,6 +363,73 @@ ns hex {
         .if n, hex, l0, l1
       l0:
     }
+
+
+    //  Time Complexity: 3phi+12
+    // Space Complexity: 3phi+51
+    def cmp a, b, lt, eq, gt @ ret, _eq, _gt, real_ret, __lt, __eq, __gt, second_xor < .cmp.dst, ._.ret {
+        .xor .cmp.dst, a    // 1
+        ;second_xor
+
+
+        pad 4
+      ret:          // 4
+        wflip ._.ret+w, ret, real_ret   // 5
+        ._.ret+dbit  ;_eq
+        ._.ret+dbit+1;_gt
+
+      _eq:  real_ret+dbit  ;ret     // (4.5)
+      _gt:  real_ret+dbit+1;ret
+
+      real_ret:                     // 6
+        ;__lt
+
+        pad 4
+      __lt:                 ;lt     // 7 (and last)
+      __eq:  real_ret+dbit  ;eq
+      __gt:  real_ret+dbit+1;gt
+
+
+      second_xor:
+        .xor .cmp.dst+4, b              // 2
+        wflip ._.ret+w, ret, .cmp.dst   // 3
+    }
+
+    ns cmp {
+        def init @ clean, end < .._.ret > dst, switch {
+            ;end
+           dst: ;.switch
+
+             pad 256
+           switch:
+             rep(256, d) fj    ((d&0xf) > (d>>4)) ? .._.ret+dbit+1 : (((d&0xf) == (d>>4)) ? .._.ret+dbit : 0),    clean+d*dw
+
+           clean:
+             .._.clean_table .dst
+          end:
+        }
+    }
+}
+
+
+ns hex {
+    def init {
+        ._.init
+    }
+
+    ns _ {
+        def init @ end > ret {
+            ;end
+          ret: ;0
+          ..cmp.init
+          end:
+        }
+
+        def clean_table dst @ clean < .ret {
+          clean:
+            rep(256, d) fj    d==0?0: (dst+dbit+(#d)-1),    (d==((1<<(#d))>>1)) ? .ret : clean+(d^((1<<(#d))>>1))*dw
+        }
+    }
 }
 
 
