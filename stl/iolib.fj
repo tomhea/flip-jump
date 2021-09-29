@@ -28,15 +28,6 @@ ns bit {
 // ---------- Input:
 
 
-def default_input in0_handler, in1_handler @ io_handler, end < IO {
-    wflip IO+w, io_handler, end
-    pad 2
-  io_handler:
-    ;in0_handler
-    ;in1_handler
-  end:
-}
-
 
 ns bit {
     // Complexity: 2phi+4

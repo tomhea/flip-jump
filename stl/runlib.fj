@@ -55,3 +55,56 @@ def pad x @ pad_start {
   pad_start:
     rep((0-pad_start/(2*w))%x, i) zero_op
 }
+
+
+// ---------- Compilation Time:
+// Complexity: 1
+
+
+def comp_if expr, l0, l1 {
+    ; expr ? l1 : l0
+}
+
+def comp_if0 expr, l0 @ l1 {
+    comp_if expr, l0, l1
+  l1:
+}
+
+def comp_if1 expr, l1 @ l0 {
+    comp_if expr, l0, l1
+  l0:
+}
+
+
+def comp_flip_if bit, expr {
+    (expr ? bit : 0);
+}
+
+
+
+// ---------- Unconditional Jump
+// Complexity: 1
+
+
+def skip {
+    ;$ + dw
+}
+
+
+def loop {
+    ;$ - dw
+}
+
+
+
+// ---------- Input Handler
+
+
+def default_input in0_handler, in1_handler @ io_handler, end < IO {
+    wflip IO+w, io_handler, end
+    pad 2
+  io_handler:
+    ;in0_handler
+    ;in1_handler
+  end:
+}
