@@ -5,6 +5,11 @@ startup
 // cmp
 rep(256, i) test_cmp i&0xf, i>>4
 output '\n'
+
+// cmp n
+CMP_N = 0x012345 | (0x123456 << 32) | (0x333333 << 64) | (0x654321 << 96)
+rep(16, i) test_cmp_n 8, (CMP_N >> ((i&3)*32)) & ((1<<32)-1), (CMP_N >> ((i>>2)*32)) & ((1<<32)-1)
+output '\n'
 output '\n'
 
 
@@ -26,5 +31,23 @@ def test_cmp a, b @ lt, eq, gt, ah, bh, end {
     ;end
   ah: hex a
   bh: hex b
+  end:
+}
+
+
+def test_cmp_n n, a, b @ lt, eq, gt, ah, bh, end {
+    hex.cmp n, ah, bh, lt, eq, gt
+
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+  ah: hex.vec n, a
+  bh: hex.vec n, b
   end:
 }

@@ -395,7 +395,18 @@ ns hex {
         wflip ._.ret+w, ret, .cmp.dst   // 3
     }
 
+    def cmp n, a, b, lt, eq, gt {
+        rep(n-1, i) .cmp.cmp_eq_next a+(n-1-i)*dw, b+(n-1-i)*dw, lt, gt
+        .cmp a, b, lt, eq, gt
+    }
+
     ns cmp {
+        def cmp_eq_next a, b, lt, gt @ eq {
+            ..cmp a, b, lt, eq, gt
+          eq:
+        }
+
+        // Space Complexity: 512
         def init @ clean, end < .._.ret > dst, switch {
             ;end
            dst: ;.switch
@@ -418,6 +429,7 @@ ns hex {
     }
 
     ns _ {
+        // Space Complexity: 512
         def init @ end > ret {
             ;end
           ret: ;0
@@ -425,6 +437,7 @@ ns hex {
           end:
         }
 
+        // Space Complexity: 256
         def clean_table dst @ clean < .ret {
           clean:
             rep(256, d) fj    d==0?0: (dst+dbit+(#d)-1),    (d==((1<<(#d))>>1)) ? .ret : clean+(d^((1<<(#d))>>1))*dw
