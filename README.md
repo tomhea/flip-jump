@@ -1,15 +1,15 @@
 # FlipJump
 
-FlipJump is an Esoteric language ([FlipJump esolangs page](https://esolangs.org/wiki/FlipJump)), with just 1 operation: <br>
-- Flip a bit, then (unconditionally) jump. <br>
-- The operation takes 2 memory words, then flips (inverts) the bit referenced by the first word, and jumps to the address referenced by the second word. <br>
+FlipJump is an Esoteric language ([FlipJump esolangs page](https://esolangs.org/wiki/FlipJump)), with just 1 operation:  
+- Flip a bit, then (unconditionally) jump.  
+- The operation takes 2 memory words, then flips (inverts) the bit referenced by the first word, and jumps to the address referenced by the second word.  
 
 This project is both a **Macro Assembler** and a **Standard Library** to the language.
 
-## The flipjump assembly (The 1 opcode)
+## The FlipJump assembly (The 1 opcode)
 
 ```c
-// The flip-jump syntax:  F;j
+// The FlipJump syntax:  F;j
 100;200     // This opcode will flip the 100th bit in memory, and will jump to address 200.
 
 a:          // You can declare labels
@@ -24,10 +24,11 @@ c:
 temp + 2*(b-temp) - 13/4 ; temp & 0x67 + 0b00110   
     // You can use the labels (will be resolved to numbers at assemble-time) and many operations to make the flip/jump addresses:
     //  Mathmatical:  +- */% ()  
-    //  Logical:  &|^  operations
+    //  Bitwise:  &|^
+    //  Logical:  >==< (will be 0/1)
     //  Shifts  << >>
     //  C-like trinary operator  ?:
-    //  Bit-width operator  #  (minimal number of bits needed to store this number.  #x == log2(x)+1).
+    //  Bit-width operator  #  (minimal number of bits needed to store this number.  #x == log2(x)+1, #0==0).
     // Also you can use hexadecimal (0x) and binary (0b) numbers, and get the ascii value of chars ('A' == 0x41).
 
 b+'A';b+0x41    // The flip and jump addresses are identical in this line.
@@ -75,10 +76,10 @@ pad 4  // Fills the memory with 0's until it is 4-opcodes aligned (not in the ba
 ```
 
 ### Execution loop
-The flipjump CPU has a built-in width, and starts executing from address 0.
+The FlipJump CPU has a built-in width, and starts executing from address 0.
 It halts on a simple self-loop (jumps to itself, while not flipping itself).
 
-There are variants of the CPU, lets assume the simplest form:
+There are variants of the CPU, let's assume the simplest form:
 - The jump address is always w-aligned.
 - The operation doesn't flip bits in itself.
 
@@ -115,12 +116,12 @@ Or in other words, can it do anything meaningful?
 It turns out that it can, And much more than you'd think.
 
 ## Memory - how can we implement variables?
-A bit can be built using 1 fj operation. Specifically, with  ```;0```  or  ```;dw```<br>
-Here the magic happens. The flipjump operation inherently can't read. It also can't write.<br>
-All it knows is to flip a bit, and then jump. but where to?
+A bit can be built using 1 fj operation. Specifically, with  ```;0```  or  ```;dw```  
+Here the magic happens. The FlipJump operation inherently can't read. It also can't write.  
+All it knows is to flip a bit, and then jump. But where to?
 
-The flipjump hidden-power lies exactly in this delicate point. It can jump to an already flipped address.<br>
-In other words, it can execute an already modified code.<br>
+The FlipJump hidden-power lies exactly in this delicate point. It can jump to an already flipped address.  
+In other words, it can execute an already modified code.  
 I based the main standard library functions, and the implementation of variables, on this exact point.
 
 Follow the next example:
@@ -157,20 +158,22 @@ second_branch_target:   // This is address 0x480
     ;end
 
 
-end:  ;end  // {9} The code will get here and then finish (self loop).
+end:  ;end  // {9} The code will get here and then finish (self-loop).
 
 bit_a:  ;0      // {3} Jump to branch_target
 bit_b:  ;0x80   // {7} Jump to second_branch_target
 ```
 
-The same flip/jump combination on bit_a/bit_b did different things. <br>
-We successfully jumped to different addresses depends on the value of the said bits.<br>
-In that way, we can *read* the value of such a bit-variable.
+The same flip/jump combination on bit_a/bit_b did different things.  
+We successfully jumped to different addresses depends on the value of the said bits.  
+In that way, we can *read* the value of such a bit-variable.  
+Yep. By jumping to different addresses (based on the bit-variable's value) - we indeed, *read* its value.
 
-In that same way, we can also implement hexadecimal and decimal variables in a single op (implemented in hexlib.fj & declib.fj).
+In that same way, we can also implement hexadecimal and decimal variables in a single op (implemented in hexlib.fj & declib.fj).  
+Instead of two options (```;0```  or  ```;dw```) we will have a bit more (0dw,1dw,2dw,3dw,...,15dw / 0dw,1dw,2dw,3dw,...,9dw).
 
-This is very nice, but it only worked because we knew the address of branch_target in advance.<br>
-We usually don't, but it is resolved during assemble time.<br>
+This is very nice, but it only worked because we knew the address of branch_target in advance.  
+We usually don't, but it is resolved during assemble time.  
 That's why the assembly language provides the next operation:
 
 ### wflip
@@ -180,7 +183,7 @@ That's why the assembly language provides the next operation:
 // The Word-Flip op is a special fj-assembly op (it is composed of multiple fj-ops).
 // It flips the bits in addresses [a, a+w) iff the corresponding bit in b (b's value) is set.
     wflip a, b, c
-// Same as the one before, but jumps to c in the end (instead of jumping to the next op).
+// Same as the one before, but jumps to c at the end (instead of jumping to the next op).
 
 // For example, for a==0x100, b=0x740 (0b 0111 0100 0000), the next blocks do the same thing:
 
@@ -200,12 +203,12 @@ That's why the assembly language provides the next operation:
     
 // This op is very useful if you want to set the jumping-part of another fj opcode to some address (and we know that it's zeroed before).
     // just do:  wflip fj_op+w, jump_address
-// Also - setting the jumping-part back to zero can be simply done by doing the same wflip again:
+// Also - setting the jumping-part back to zero can be simply done by doing the same wflip again
     // (because b xor b == 0).
 
 // Note that the assembler might choose to unwrap the wflip op in more complicated ways, for optimization reasons.
 
-// The wflip op is considered to take 1 op-size in its local area (and if more ops needed - they will be in the end of the current segment).
+// The wflip op is promised to take 1 op-size in its local area (and if more ops are needed - they will be at the end of the current segment).
 
 // This is some way of doing it (see, it has the advantage of knowing in advance that wflip takes 1 op-size in its local area):    
     0x106;next_flips
@@ -225,8 +228,8 @@ next_flips:
 The addresses \[dw, 2\*dw) are reserved for IO.
 
 ### Output
-Flipping the dw's   bit will output '0'.<br>
-Flipping the dw+1's bit will output '1'.<br>
+Flipping the dw's   bit will output '0'.  
+Flipping the dw+1's bit will output '1'.  
 
 ```c
 // For an ascii output - every 8 bits will generate (an lsb-first) byte, or an ascii-char.
@@ -244,11 +247,11 @@ Flipping the dw+1's bit will output '1'.<br>
     
 ### Input
 
-The next input bit is always loaded at address 3\*w + #w (3w+log(w)+1), when needed.<br>
-You can use this bit by jumping to a flip-jump opcode that contains it.<br>
-The best way is to jump to ;dw.<br>
+The next input bit is always loaded at address 3w + #w (3w+log(w)+1), when needed.  
+You can use this bit by jumping to a flip-jump opcode that contains it.  
+The best way is to jump to ;dw.  
 
-In that way - this bit will reflect either 0x0 or 0x80 in the jump-part of the flip-jump op.<br>
+In that way - this bit will reflect either 0x0 or 0x80 in the jump-part of the flip-jump op.  
 If we ```wflip dw+w, some_padded_address, dw``` - the dw-flip-jump-op will make a jump to ```some_padded_address``` / ```some_padded_address+0x80```, based on the input, just like [here](#memory---how-can-we-implement-variables).
 
 ```c
@@ -270,16 +273,14 @@ handle_1:
     // do some 1's stuff
 ```
 
-The runlib.fj standard library defines macros to make IO as simple as possible.
+The iolib.fj standard library defines macros to make IO as simple as possible.
 
 
 ## Macros
-Macros are used to make our life easier. much easier. We declare them once, and can use them as much as we want.
+Macros are used to make our life easier. Much easier. We declare them once, and can use them as much as we want.  
 
-Using a macro is just as pasting its content at the used spot.
-
-It is important to say that macros can use other macros, and there are no macro-depth bounds.
-
+Using a macro is just as pasting its content at the used spot.  
+It is important to say that macros can use other macros, and there are no macro-depth bounds.  
 The syntax for defining macros is:
 
 ```c
@@ -293,9 +294,9 @@ def self_loop @ loop_label {       // No args, one temp label
     ;loop_label
 }
 ```
-The temp labels are being generated for every use of this macro.
-
+The temp labels are being generated for every use of this macro.  
 The syntax for using macros is:
+
 ```c
 macro_name arg1, arg2, ..
 
@@ -303,7 +304,6 @@ macro_name arg1, arg2, ..
 self_loop
 xor dst, src
 ```
-
 
 Follow the example below.
 
@@ -350,15 +350,15 @@ byte:
     bit 0
 ```
 
-The macro bodies are checked for unused labels, and for uses of labels which weren't mentiond in param/local lists.<br>
-A warning will be issued for each of the above.<br>
-A label decleration won't cause a warning if it's mentioned in the *externs* list, even if not in the param/local lists.
+The macro bodies are checked for unused labels, and for uses of labels that weren't mentioned in param/local lists.  
+A warning will be issued for each of the above.  
+A label declaration won't cause a warning if it's mentioned in the *externs* list, even if not in the param/local lists.  
 A label use won't cause a warning if it's mentioned in the *globals* list, even if not in the param/local lists.
 
 ## Repetitions
 
-The not8 macro seemed a bit.. repetitive? There must be a better way of writing it.<br>
-Well, there is.<br>
+The not8 macro seemed a bit.. repetitive? There must be a better way of writing it.  
+Well, there is.  
 The syntax for repetitions is:
 
 ```c
@@ -387,18 +387,18 @@ byte:  byte 84
 
 ## Namespaces
 
-You can declare namespaces to make your work more organized.<br>
-Each variable, label, and macro definition you'll declare inside a namespace - will have the namespace prefix.<br>
-Accessing these definitions is done with the "namespace_name." prefix. inner accesses can be done with the "." prefix.<br>
+You can declare namespaces to make your work more organized.  
+Each variable, label, and macro definition you'll declare inside a namespace - will have the namespace prefix.  
+Accessing these definitions is done with the "namespace_name." prefix. inner accesses can be done with the "." prefix.  
 
-Nested namespaces are allowed (to any level), and relative access can be done with leading dots.<br>
+Nested namespaces are allowed (to any level), and relative access can be done with leading dots.  
 You can declare the same namespace more than once. It will append the things you write - right after the previous definitions.
 
 ```c
 ns namespace_name {
     ns nested_namespace {
         // Access nested_namespace definitions with the "." prefix, namespace_name definitions with the ".." prefix, 
-        //  and so on (the number of leading dots, the number of namespaces to go upwords).
+        //  and so on (the number of leading dots, the number of namespaces to go upwords inc. the current).
     }
     // A namespace can also contain code.
 }
@@ -432,6 +432,11 @@ loop: ;loop
 v: var w, 446
 ```
 
+The standard library uses 3 main namespaces. The *bit*, *hex* and *dec* namespaces.  
+Each namespace offers many macros related to that variable type.  
+For example, the stl offers the bit.mov macro for moving bit-variables, hex.mov for moving hex-variables, and dec.mov for moving dec-variables.  
+The stl uses the _ namespace (and several _ inner namespaces) for its inner-macros, used only by the stl.
+
 ## Segments
 
 You can split your code into different segments in memory. 
@@ -443,8 +448,10 @@ segment 0x10000
 // some other code, will start at address 0x10000
 ```
 
-Moreover, you can reserve a spot for 0-bits, without taking space in the assembled file.
-The .fjm file supports segment-length > data-length. In that case the rest of the memory will be filled with zeros.
+The end of the previous segment will be followed by the fj ops needed to complete that segment's [wflip](#wflip) ops.
+
+Moreover, you can reserve a spot for 0-bits, without taking space in the assembled file.  
+The .fjm file supports segment-length > data-length. In that case, the rest of the memory will be filled with zeros.
 
 ```c
 reserve 3*w    // reserves 3*w 0-bits.
@@ -497,7 +504,7 @@ def end_loop @ loop_label {
 
 ```
 
-The flipfump assembly supports a ```string "Hello, World!"``` syntax for initializing a variable with a string value (```string``` is defined in the standard library).<br>
+The FlipJump assembly supports a ```str "Hello, World!"``` syntax for initializing a variable with a string value (```str``` is defined in iolib.fj)  
 Look at [tests/hello_world.fj](tests/hello_world.fj) program using print_str macro ([stl/iolib.fj](stl/iolib.fj)) for more info.
 
 Note that all of these macros are already implemented in the standard library:
@@ -512,7 +519,7 @@ Note that all of these macros are already implemented in the standard library:
 Hello, World!
 ```
 
-  - The --no-stl flag tells the assembler not to include the standard library. It is not needed as we implemented the macros ourselves.
+  - The --no-stl flag tells the assembler not to include the standard library. The flag is needed as we implemented the macros ourselves.
   - You can use the -o flag to save the assembled file for later use too.
   - You can use the -t flag for testing the run with the expected outputs.
 
@@ -537,9 +544,19 @@ All tests passed! 100%
 
 - The first path is the directory of the assembled .fjm test files.
 - The second path is the directory of the corresponding .in and .out files (same name as the test.fjm name, but with a different extension).
-- The tests will be run one at a time. For each bad test, a UNIX-like diff will be printed.
+- The tests will be run one at a time. For each failed test, a UNIX-like diff will be printed.
 
-You can also use the faster (stable, but still in developement) cpp-based interpreter (under src/cpp_fji):
+For example, you can test the entire FlipJump project (using all the tests in the tests/ dir) by:
+
+```bash
+>>> fja.py tests --tests
+...
+>>> fji.py tests/compiled --tests tests/inout
+...
+All tests passed! 100%
+```
+
+You can also use the faster (stable, but still in development) cpp-based interpreter (under src/cpp_fji):
 
 ```bash
 >>> fji hello.fjm
@@ -552,10 +569,10 @@ Hello, World!
 **src** (assembler + interpreter source files):
   - cpp_fji/        - the cpp interpreter (much faster, about 2Mfj/s).
   - riscv2fj/       - translates a riscv-executable to an equivalent fj code.
-  - parser.py       - pythonic lex/yacc parser.
+  - fj_parser.py    - pythonic lex/yacc parser.
   - preprocessor.py - unwind all macros and reps.
   - assembler.py    - assembles the macroless fj file.
-  - run.py          - interpreter assembled fj files.
+  - fjm_run.py      - interpreter assembled fj files.
   - defs.py         - classes/functions/constants used throughout the project.
   - fjm.py          - read/write .fjm (flip-jump-memory) files.
   - fja.py          - the FlipJump Assembler script.
@@ -564,24 +581,24 @@ Hello, World!
 
 **stl** (standard library files - macros):
   - runlib.fj   - constants and initialization macros.
-  - bitlib.fj   - macros for manipulating bits.
-  - veclib.fj   - macros for manipulating bit vectors (i.e. numbers).
+  - bitlib.fj   - macros for manipulating binary variables and vectors (i.e. numbers).
   - mathlib.fj  - advanced math macros (mul/div).
   - hexlib.fj   - macros for manipulating hexadecimal variables and vectors.
   - declib.fj   - macros for manipulating decimal variables and vectors.
-  - iolib.fj    - input/output macros, number casting.
+  - iolib.fj    - input/output macros, bit/hex/dec casting.
   - ptrlib.fj   - pointers, stack and functions.
 
-**tests** (flipjump programs), for example:
+**tests** (FlipJump programs), for example:
   - compiled/   - the designated dir for the assembled test/ files.
   - inout/      - .in and .out files for each test in the folder above.
   - calc.fj     - command line 2 hex/dec calculator, ```a [+-*/%] b```.
   - func.fj     - performs function calls and operations on stack.
+  - hexlib.fj   - tests the basic macros in stl/hexlib.fj.
   
 # Read More
 
-A more detailed explanations and the specifications of the FlipJump assembly can be found in the [FlipJump esolangs page](https://esolangs.org/wiki/FlipJump).
+More detailed explanation and the specifications of the FlipJump assembly can be found on the [FlipJump esolangs page](https://esolangs.org/wiki/FlipJump).
 
-Start by reading the [bitlib.fj](stl/bitlib.fj) standard library file. That's where the flipjump magic begins.
+Start by reading the [bitlib.fj](stl/bitlib.fj) standard library file. That's where the FlipJump magic begins.
 
 You can also write and run programs for yourself! It is just [that](#how-to-run) easy :)
