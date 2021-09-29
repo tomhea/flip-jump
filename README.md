@@ -398,7 +398,7 @@ You can declare the same namespace more than once. It will append the things you
 ns namespace_name {
     ns nested_namespace {
         // Access nested_namespace definitions with the "." prefix, namespace_name definitions with the ".." prefix, 
-        //  and so on (the number of leading dots, the number of namespaces to go upwords inc. the current).
+        //  and so on (the number of leading dots, the number of namespaces to go upwards inc. the current).
     }
     // A namespace can also contain code.
 }

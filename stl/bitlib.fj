@@ -14,30 +14,6 @@
 
 
 
-// ---------- Compilation Time:
-// Complexity: 1
-
-
-def comp_if expr, l0, l1 {
-    ; expr ? l1 : l0
-}
-
-def comp_if0 expr, l0 @ l1 {
-    comp_if expr, l0, l1
-  l1:
-}
-
-def comp_if1 expr, l1 @ l0 {
-    comp_if expr, l0, l1
-  l0:
-}
-
-
-def comp_flip_if bit, expr {
-    (expr ? bit : 0);
-}
-
-
 // ---------- Memory Variables:
 // Size Complexity: 1
 
@@ -133,20 +109,6 @@ ns bit {
     def swap n, a, b {
         rep(n, i) .swap a+i*dw, b+i*dw
     }
-}
-
-
-// ---------- Unconditional Jump
-// Complexity: 1
-
-
-def skip {
-    ;$ + dw
-}
-
-
-def loop {
-    ;$ - dw
 }
 
 
