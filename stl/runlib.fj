@@ -47,6 +47,10 @@ def zero_op {
     0;0
 }
 
+def fj f, j {
+    f;j
+}
+
 def pad x @ pad_start {
   pad_start:
     rep((0-pad_start/(2*w))%x, i) zero_op
