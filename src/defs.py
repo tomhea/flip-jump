@@ -1,8 +1,22 @@
 from enum import Enum
 from pathlib import Path
+from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
 
 
 main_macro = ('', 0)
+
+
+parsing_op2func = {'+': add, '-': sub, '*': mul, '/': floordiv, '%': mod, 
+                   '<<': lshift, '>>': rshift, '^': xor, '|': or_, '&': and_,
+                   '#': lambda x: x.bit_length(),
+                   '?:': lambda a, b, c: b if a else c,
+                   '<': lambda a, b: 1 if a < b else 0,
+                   '>': lambda a, b: 1 if a > b else 0,
+                   '<=': lambda a, b: 1 if a <= b else 0,
+                   '>=': lambda a, b: 1 if a >= b else 0,
+                   '==': lambda a, b: 1 if a == b else 0,
+                   '!=': lambda a, b: 1 if a != b else 0,
+                   }
 
 
 def error(msg):
@@ -121,10 +135,10 @@ class Expr:
                 return sum(res, start=[])
             else:
                 try:
-                    self.val = op(*[e.val for e in exps])
+                    self.val = parsing_op2func[op](*[e.val for e in exps])
                     return []
                 except BaseException as e:
-                    error(f'{repr(e)}. bad math operation: {str(self)} in file {file} (line {line})')
+                    error(f'{repr(e)}. bad math operation ({op}): {str(self)} in file {file} (line {line})')
         elif self.is_str():
             if self.val in id_dict:
                 self.val = id_dict[self.val].val
@@ -150,7 +164,7 @@ class Expr:
                 return f'(#{str(e1)})'
             elif len(exps) == 2:
                 e1, e2 = exps
-                return f'({str(e1)} {op.__name__} {str(e2)})'
+                return f'({str(e1)} {op} {str(e2)})'
             else:
                 e1, e2, e3 = exps
                 return f'({str(e1)} ? {str(e2)} : {str(e3)})'

@@ -1,6 +1,5 @@
 from sly import Lexer, Parser
 from os import path
-from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
 from defs import *
 
 
@@ -469,75 +468,129 @@ class FJParser(Parser):
 
     @_('_expr "+" _expr')
     def _expr(self, p):
-        return Expr((add, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(a + b), p.lineno
+        return Expr(('+', (a, b))), p.lineno
 
     @_('_expr "-" _expr')
     def _expr(self, p):
-        return Expr((sub, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(a - b), p.lineno
+        return Expr(('-', (a, b))), p.lineno
 
     @_('_expr "*" _expr')
     def _expr(self, p):
-        return Expr((mul, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(a * b), p.lineno
+        return Expr(('*', (a, b))), p.lineno
 
     @_('"#" _expr')
     def _expr(self, p):
-        return Expr((lambda x: x.bit_length(), (p._expr[0],))), p.lineno
+        a = p._expr[0]
+        if a is int:
+            return Expr(a.bit_length()), p.lineno
+        return Expr(('#', (a,))), p.lineno
 
     @_('_expr "/" _expr')
     def _expr(self, p):
-        return Expr((floordiv, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(a // b), p.lineno
+        return Expr(('/', (a, b))), p.lineno
 
     @_('_expr "%" _expr')
     def _expr(self, p):
-        return Expr((mod, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(a % b), p.lineno
+        return Expr(('%', (a, b))), p.lineno
 
     @_('_expr SHL _expr')
     def _expr(self, p):
-        return Expr((lshift, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(a << b), p.lineno
+        return Expr(('<<', (a, b))), p.lineno
 
     @_('_expr SHR _expr')
     def _expr(self, p):
-        return Expr((rshift, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(a >> b), p.lineno
+        return Expr(('>>', (a, b))), p.lineno
 
     @_('_expr "^" _expr')
     def _expr(self, p):
-        return Expr((xor, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(a ^ b), p.lineno
+        return Expr(('^', (a, b))), p.lineno
 
     @_('_expr "|" _expr')
     def _expr(self, p):
-        return Expr((or_, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(a | b), p.lineno
+        return Expr(('|', (a, b))), p.lineno
 
     @_('_expr "&" _expr')
     def _expr(self, p):
-        return Expr((and_, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(a & b), p.lineno
+        return Expr(('&', (a, b))), p.lineno
 
     @_('_expr "?" _expr ":" _expr')
     def _expr(self, p):
-        return Expr((lambda a, b, c: b if a else c, (p._expr0[0], p._expr1[0], p._expr2[0]))), p.lineno
+        a, b, c = p._expr0[0], p._expr1[0], p._expr2[0]
+        if a is int and b is int and c is int:
+            return Expr(b if a else c), p.lineno
+        return Expr(('?:', (a, b, c))), p.lineno
 
     @_('_expr "<" _expr')
     def _expr(self, p):
-        return Expr((lambda a, b: 1 if a < b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(1 if a < b else 0), p.lineno
+        return Expr(('<', (a, b))), p.lineno
 
     @_('_expr ">" _expr')
     def _expr(self, p):
-        return Expr((lambda a, b: 1 if a > b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(1 if a > b else 0), p.lineno
+        return Expr(('>', (a, b))), p.lineno
 
     @_('_expr LE _expr')
     def _expr(self, p):
-        return Expr((lambda a, b: 1 if a <= b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(1 if a <= b else 0), p.lineno
+        return Expr(('<=', (a, b))), p.lineno
 
     @_('_expr GE _expr')
     def _expr(self, p):
-        return Expr((lambda a, b: 1 if a >= b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(1 if a >= b else 0), p.lineno
+        return Expr(('>=', (a, b))), p.lineno
 
     @_('_expr EQ _expr')
     def _expr(self, p):
-        return Expr((lambda a, b: 1 if a == b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(1 if a == b else 0), p.lineno
+        return Expr(('==', (a, b))), p.lineno
 
     @_('_expr NEQ _expr')
     def _expr(self, p):
-        return Expr((lambda a, b: 1 if a != b else 0, (p._expr0[0], p._expr1[0]))), p.lineno
+        a, b = p._expr0[0], p._expr1[0]
+        if a is int and b is int:
+            return Expr(1 if a != b else 0), p.lineno
+        return Expr(('!=', (a, b))), p.lineno
 
     @_('"(" _expr ")"')
     def _expr(self, p):
