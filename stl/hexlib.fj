@@ -163,8 +163,15 @@ ns hex {
     def not n, hex {
         rep(n, i) .not hex+i*dw
     }
+}
 
 
+
+// ---------- Arithmetical Macros
+// carry is both input and output, and is saved in the 8th bit in hex.{add/sub}.dst
+
+
+ns hex {
     //  Time Complexity: phi
     // Space Complexity: 1.5phi+28
     def inc1 hex, carry0, carry1 @ switch, end {
@@ -259,6 +266,70 @@ ns hex {
     def neg n, hex {
         .not n, hex
         .inc n, hex
+    }
+
+
+    //  Time Complexity: 4phi+17
+    // Space Complexity: 4phi+96
+    def add dst, src @ ret < .add.dst, ._.ret, ._.res {
+        .xor .add.dst  , dst
+        .xor .add.dst+4, src
+        wflip ._.ret+w, ret, .add.dst
+      ret:
+        wflip ._.ret+w ,ret
+        .xor_zero dst, ._.res
+    }
+
+    //  Time Complexity: n(4phi+17)
+    // Space Complexity: n(4phi+96)
+    def add n, dst, src {
+        .add.clear_carry
+        rep(n, i) .add dst+i*dw, src+i*dw
+        .add.clear_carry
+    }
+
+    ns add {
+        def clear_carry @ ret < .._.ret, .dst, .._.res {
+            wflip .._.ret+w, ret, .dst
+          ret:
+            wflip .._.ret+w, ret
+            ..zero .._.res
+        }
+
+        def clear_carry c0, c1 @ ret < .._.ret, .dst, .._.res {
+            wflip .._.ret+w, ret, .dst
+          ret:
+            wflip .._.ret+w, ret
+            ..if0 .._.res, c0
+            .._.res+dbit; c1
+        }
+
+        def not_carry < .dst {
+            .dst+dbit+8;
+        }
+
+        def set_carry {
+            .clear_carry
+            .not_carry
+        }
+
+        // Space Complexity: 1024
+        def init @ switch0, switch1, flip_carry, clean, end < .._.res, .._.ret > dst {
+            ;end
+          dst: ;.switch0
+
+            pad 512
+          switch0:
+            rep(256, d) wflip_macro .._.res+w, ((((d&0xf)+(d>>4)  )&0xf)^(d&0xf))*dw, (((d&0xf)+(d>>4)   > 0xf) ? (flip_carry+d*dw) : (clean+d*dw))
+          switch1:
+            rep(256, d) wflip_macro .._.res+w, ((((d&0xf)+(d>>4)+1)&0xf)^(d&0xf))*dw, (((d&0xf)+(d>>4)+1 > 0xf) ? (clean+d*dw) : (flip_carry+d*dw))
+
+          flip_carry:
+            rep(256, i) fj .dst+dbit+8, clean+i*dw
+          clean:
+            .._.clean_table .dst
+          end:
+        }
     }
 }
 
@@ -407,16 +478,16 @@ ns hex {
         }
 
         // Space Complexity: 512
-        def init @ clean, end < .._.ret > dst, switch {
+        def init @ switch, clean, end < .._.ret > dst {
             ;end
-           dst: ;.switch
+          dst: ;.switch
 
-             pad 256
-           switch:
-             rep(256, d) fj    ((d&0xf) > (d>>4)) ? .._.ret+dbit+1 : (((d&0xf) == (d>>4)) ? .._.ret+dbit : 0),    clean+d*dw
+            pad 256
+          switch:
+            rep(256, d) fj    ((d&0xf) > (d>>4)) ? .._.ret+dbit+1 : (((d&0xf) == (d>>4)) ? .._.ret+dbit : 0),    clean+d*dw
 
-           clean:
-             .._.clean_table .dst
+          clean:
+            .._.clean_table .dst
           end:
         }
     }
@@ -430,10 +501,12 @@ ns hex {
 
     ns _ {
         // Space Complexity: 512
-        def init @ end > ret {
+        def init @ end > ret, res {
             ;end
           ret: ;0
+          res: hex
           ..cmp.init
+          ..add.init
           end:
         }
 

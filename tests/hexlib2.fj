@@ -13,6 +13,17 @@ output '\n'
 output '\n'
 
 
+// add
+rep(256, i) test_add i&0xf, i>>4
+output '\n'
+
+// add n
+ADD_N = 0x0000ffff800040a73dd06622dc0594c9e1b9b001
+rep(100, i) test_add_n 4, (ADD_N>>((i%10)*4)&0xf), (ADD_N>>((i/10))*4&0xf)
+output '\n'
+output '\n'
+
+
 loop
 hex.init
 
@@ -49,5 +60,58 @@ def test_cmp_n n, a, b @ lt, eq, gt, ah, bh, end {
     ;end
   ah: hex.vec n, a
   bh: hex.vec n, b
+  end:
+}
+
+
+def test_add a, b @ c0_1st, c1_1st, print_1st, c0_2nd, c1_2nd, print_2nd, ah_1st, bh, ah_2nd, end {
+    hex.add.clear_carry
+    hex.add ah_1st, bh
+    hex.add.clear_carry c0_1st, c1_1st
+  c0_1st:
+    output '0'
+    ;print_1st
+  c1_1st:
+    output '1'
+  print_1st:
+    hex.print_as_digit ah_1st, 0
+    output '-'
+
+    hex.add.not_carry
+    hex.add ah_2nd, bh
+    hex.add.clear_carry c0_2nd, c1_2nd
+  c0_2nd:
+    output '0'
+    ;print_2nd
+  c1_2nd:
+    output '1'
+  print_2nd:
+    hex.print_as_digit ah_2nd, 0
+    output ' '
+    ;end
+
+  ah_1st: hex a
+  ah_2nd: hex a
+  bh:     hex b
+  end:
+}
+
+def test_add_n n, a, b @ lt, eq, gt, ah, bh, ch, end {
+    hex.add n, ah, bh
+    hex.cmp n, ah, ch, lt, eq, gt
+    
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+    
+  ah: hex.vec n, a
+  bh: hex.vec n, b
+  ch: hex.vec n, a+b
   end:
 }

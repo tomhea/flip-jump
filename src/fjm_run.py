@@ -9,6 +9,17 @@ import easygui
 from defs import *
 
 
+def get_address_str(address, breakpoints, labels_dict):
+    if address in breakpoints:
+        return f'{hex(address)[2:]} ({breakpoints[address]})'
+    else:
+        if address in labels_dict:
+            return f'{hex(address)[2:]} ({labels_dict[address]})'
+        else:
+            address_before = max([a for a in labels_dict if a <= address])
+            return f'{hex(address)[2:]} ({labels_dict[address_before]} + {hex(address - address_before)})'
+
+
 def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_verbose=False, output_verbose=False,
         next_break=None, labels_dict=None):
     if labels_dict is None:
@@ -44,19 +55,11 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
     while True:
         if next_break == ops_executed or ip in breakpoints:
             pause_time_start = time()
-            if ip in breakpoints:
-                title = 'Breakpoint'
-                address = f'Address {hex(ip)[2:]} ({breakpoints[ip]})'
-            else:
-                title = 'Single Step'
-                if ip in labels_dict:
-                    address = f'Address {hex(ip)[2:]} ({labels_dict[ip]})'
-                else:
-                    address_before = max([a for a in labels_dict if a <= ip])
-                    address = f'Address {hex(ip)[2:]} ({labels_dict[address_before]} + {hex(ip - address_before)})'
-            flip = f'flip: {hex(mem.get_word(ip))[2:]}'
-            jump = f'jump: {hex(mem.get_word(ip + w))[2:]}'
-            button_body = f'{address}  ({ops_executed} ops executed):\n  {flip}.\n  {jump}.'
+            title = "Breakpoint" if ip in breakpoints else "Single Step"
+            address = get_address_str(ip, breakpoints, labels_dict)
+            flip = f'flip: {get_address_str(mem.get_word(ip), breakpoints, labels_dict)}'
+            jump = f'jump: {get_address_str(mem.get_word(ip + w), breakpoints, labels_dict)}'
+            button_body = f'Address {address}  ({ops_executed} ops executed):\n  {flip}.\n  {jump}.'
             print('  program break', end="")
             action = easygui.buttonbox(button_body, title, ['Single Step', 'Skip 10', 'Skip 100', 'Skip 1000',
                                                             'Continue', 'Continue All'])
