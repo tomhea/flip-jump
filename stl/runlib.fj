@@ -51,6 +51,14 @@ def fj f, j {
     f;j
 }
 
+def wflip_macro dst, val {
+    wflip dst, val
+}
+
+def wflip_macro dst, val, jmp_addr {
+    wflip dst, val, jmp_addr
+}
+
 def pad x @ pad_start {
   pad_start:
     rep((0-pad_start/(2*w))%x, i) zero_op
