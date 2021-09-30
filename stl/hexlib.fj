@@ -163,6 +163,64 @@ ns hex {
     def not n, hex {
         rep(n, i) .not hex+i*dw
     }
+    
+    
+    //  Time Complexity: 4phi+16
+    // Space Complexity: 4phi+96
+    def or dst, src < .or.dst {
+        ._.table_query dst, src, .or.dst
+    }
+    
+    //  Time Complexity: n(4phi+17)
+    // Space Complexity: n(4phi+96)
+    def or n, dst, src {
+        rep(n, i) .or dst+i*dw, src+i*dw
+    }
+
+    ns or {
+        // Space Complexity: 1024
+        def init @ switch, clean, end < .._.res, .._.ret > dst {
+            ;end
+          dst: ;.switch
+
+            pad 256
+          switch:
+            rep(256, d) wflip_macro .._.res+w, (((d&0xf)|(d>>4))^(d&0xf))*dw, clean+d*dw
+          
+          clean:
+            .._.clean_table .dst
+          end:
+        }
+    }
+    
+    
+    //  Time Complexity: 4phi+16
+    // Space Complexity: 4phi+96
+    def and dst, src < .and.dst {
+        ._.table_query dst, src, .and.dst
+    }
+    
+    //  Time Complexity: n(4phi+17)
+    // Space Complexity: n(4phi+96)
+    def and n, dst, src {
+        rep(n, i) .and dst+i*dw, src+i*dw
+    }
+
+    ns and {
+        // Space Complexity: 1024
+        def init @ switch, clean, end < .._.res, .._.ret > dst {
+            ;end
+          dst: ;.switch
+
+            pad 256
+          switch:
+            rep(256, d) wflip_macro .._.res+w, (((d&0xf)&(d>>4))^(d&0xf))*dw, clean+d*dw
+          
+          clean:
+            .._.clean_table .dst
+          end:
+        }
+    }
 }
 
 
@@ -271,13 +329,8 @@ ns hex {
 
     //  Time Complexity: 4phi+17
     // Space Complexity: 4phi+96
-    def add dst, src @ ret < .add.dst, ._.ret, ._.res {
-        .xor .add.dst  , dst
-        .xor .add.dst+4, src
-        wflip ._.ret+w, ret, .add.dst
-      ret:
-        wflip ._.ret+w ,ret
-        .xor_zero dst, ._.res
+    def add dst, src < .add.dst {
+        ._.table_query dst, src, .add.dst
     }
 
     //  Time Complexity: n(4phi+17)
@@ -323,6 +376,64 @@ ns hex {
             rep(256, d) wflip_macro .._.res+w, ((((d&0xf)+(d>>4)  )&0xf)^(d&0xf))*dw, (((d&0xf)+(d>>4)   > 0xf) ? (flip_carry+d*dw) : (clean+d*dw))
           switch1:
             rep(256, d) wflip_macro .._.res+w, ((((d&0xf)+(d>>4)+1)&0xf)^(d&0xf))*dw, (((d&0xf)+(d>>4)+1 > 0xf) ? (clean+d*dw) : (flip_carry+d*dw))
+
+          flip_carry:
+            rep(256, i) fj .dst+dbit+8, clean+i*dw
+          clean:
+            .._.clean_table .dst
+          end:
+        }
+    }
+    
+    
+    //  Time Complexity: 4phi+17
+    // Space Complexity: 4phi+96
+    def sub dst, src < .sub.dst {
+        ._.table_query dst, src, .sub.dst
+    }
+
+    //  Time Complexity: n(4phi+17)
+    // Space Complexity: n(4phi+96)
+    def sub n, dst, src {
+        .sub.clear_carry
+        rep(n, i) .sub dst+i*dw, src+i*dw
+        .sub.clear_carry
+    }
+
+    ns sub {
+        def clear_carry @ end {
+            .clear_carry end, end
+          end:
+        }
+
+        def clear_carry c0, c1 @ ret < .._.ret, .dst, .._.res {
+            wflip .._.ret+w, ret, .dst
+          ret:
+            wflip .._.ret+w, ret
+            ..if0 .._.res, c0
+            .not_carry
+            wflip .._.res+w, 0xf*dw, c1
+        }
+
+        def not_carry < .dst {
+            .dst+dbit+8;
+        }
+
+        def set_carry {
+            .clear_carry
+            .not_carry
+        }
+
+        // Space Complexity: 1024
+        def init @ switch0, switch1, flip_carry, clean, end < .._.res, .._.ret > dst {
+            ;end
+          dst: ;.switch0
+
+            pad 512
+          switch0:
+            rep(256, d) wflip_macro .._.res+w, ((((d&0xf)-(d>>4)  )&0xf)^(d&0xf))*dw, (((d&0xf)-(d>>4)   < 0) ? (flip_carry+d*dw) : (clean+d*dw))
+          switch1:
+            rep(256, d) wflip_macro .._.res+w, ((((d&0xf)-(d>>4)-1)&0xf)^(d&0xf))*dw, (((d&0xf)-(d>>4)-1 < 0) ? (clean+d*dw) : (flip_carry+d*dw))
 
           flip_carry:
             rep(256, i) fj .dst+dbit+8, clean+i*dw
@@ -507,6 +618,9 @@ ns hex {
           res: hex
           ..cmp.init
           ..add.init
+          ..sub.init
+          ..or.init
+          ..and.init
           end:
         }
 
@@ -514,6 +628,15 @@ ns hex {
         def clean_table dst @ clean < .ret {
           clean:
             rep(256, d) fj    d==0?0: (dst+dbit+(#d)-1),    (d==((1<<(#d))>>1)) ? .ret : clean+(d^((1<<(#d))>>1))*dw
+        }
+        
+        def table_query dst, src, dst_switch @ return < .ret, .res {
+            ..xor dst_switch  , dst
+            ..xor dst_switch+4, src
+            wflip .ret+w, return, dst_switch
+          return:
+            wflip .ret+w ,return
+            ..xor_zero dst, .res
         }
     }
 }
