@@ -129,6 +129,144 @@ ns bit {
 }
 
 
+
+ns hex {
+    //  Time Complexity: 5phi+32
+    // Space Complexity: 4phi+96
+    // .mul.add_carry_dst : res   +=   x * .mul.dst + .mul.add_carry_dst
+    def add_mul res, x @ ret < .mul.dst, .add.dst, .mul.ret, ._.res {
+        .xor .mul.dst+4, x
+        .xor .add.dst, res
+        wflip .mul.ret+w, ret, .mul.dst
+      ret:  // meanwhile - make phi+28 fj ops there
+        wflip .mul.ret+w, ret
+        .xor_zero res, ._.res
+    }
+
+    //  Time Complexity: n(5phi+32)
+    // Space Complexity: n(4phi+96)
+    // res[n] += a[n] * b[1]
+    def add_mul n, res, a, b < .mul.dst {
+        .clear_carry
+        .xor .mul.dst, b
+        rep(n, i) .add_mul res+i*dw, a+i*dw
+        .xor .mul.dst, b
+        .clear_carry
+    }
+
+    //  Time Complexity: n(n(shl_cost + shr_cost + phi) + b(5phi+32)), for b the minimum of #on-bits in a,b (b<n/2, e.g. for n=16, b=7).
+    //     (for n==b/2): n^2(shl_cost + shr_cost + 3.5phi+16)
+    // Space Complexity: n(7(phi+27) + 2*count_bits_cost + shl_cost + shr_cost + 1.5phi+23 + 4phi+96 + 2)
+    // res[n] = a[n] * b[n]
+    def mul n, res, a, b @ a_less_1bits, b_less_1bits, loop, after_add, dst, src, a_1bits, b_1bits, end {
+        .zero n, dst
+        .zero n, src
+        .zero n, res
+
+        // if a has less 1 bits - jump to a_less_1bits. else jump to b_less_1bits
+        .count_bits n, a_1bits, a
+        .count_bits n, b_1bits, b
+        .cmp ((#(n*4))+3)/4, a, b, a_less_1bits, a_less_1bits, b_less_1bits
+
+        a_less_1bits:
+        .xor n, dst, b
+        .xor n, src, a
+        ;loop
+
+        b_less_1bits:
+        .xor n, dst, a
+        .xor n, src, b
+
+
+      loop:
+        .if0 src, after_add
+        .add_mul n, res, dst, src
+      after_add:
+        .shl n, dst
+        .shr n, src
+        .if  n, src, end, loop      // can be replaced with #n-sized index decrement and check.
+
+
+      dst: hex.vec n
+      src: hex.vec n
+      a_1bits: hex.vec ((#(n*4))+3)/4
+      b_1bits: hex.vec ((#(n*4))+3)/4
+      end:
+    }
+
+    ns mul {
+        // Complexity: phi+1
+        def clear_carry @ return < .ret, .add_carry_dst {
+            wflip .ret+w, return
+            .add_carry_dst+dbit+9; .add_carry_dst
+          return:
+            wflip .ret+w, return
+        }
+
+        // Space Complexity: 1600
+        def init @ add_res, after_add,   switch_small_table, add_carry_small_table, set_carry_small_table, clean_small_table,   switch, set_carry_0, set_carry_1, clean,   add_carry, clean_add, clean_carry,   end < ..add.dst, .._.ret > ret, dst, add_carry_dst {
+            // general progression (after jumping to hex.mul.dst with value d):
+            //  dst           -> switch+d           (set lower4  mul result in add_carry_dst+4)                                                                     (5)
+            //  add_carry_dst -> add_carry+?        (set         add result in hex.add.dst  +4. sets dst to set_carry_{0/1}. sets add_carry_dst to clean_add)       (6)
+            //  add_carry_dst -> clean_add+?        (clears the all 8 bits of add_carry_dst.    sets add_carry_dst back to add_carry)                               (9)
+            //  dst           -> set_carry_{0/1}+d  (set higher4 mul result in add_carry_dst+0. sets dst to clean)                                                  (5)
+            //  add_res       -> dst-table+??       (set         add result in hex._.res    +0)                                                                     (phi-4)
+            //  dst           -> clean+d            (clears the higher4 bits of dst.            sets dst back to switch)                                            (6)
+            //  hex.mul.ret   -> ...                                                                                                                                (1)
+
+
+            ;end
+
+          ret: ;0
+          dst: ;switch
+
+          add_carry_dst: ;add_carry   // the 4-bit carry is in the lower 4bits in here
+
+
+          add_res:
+            wflip .._.ret+w, after_add, ..add.dst
+            pad 16
+          after_add:
+            wflip .._.ret+w, after_add, .dst
+
+
+            pad 16  // not really needed
+          switch_small_table:
+            rep(16, d) fj    (d==0)?0: (.add_carry_dst+dbit+(#d)+3),             (d==((1<<(#d))>>1)) ? .add_carry_dst  : switch_small_table   +(d^((1<<(#d))>>1))*dw
+          set_carry_small_table:
+            rep(16, d) fj    (d==0)?0: (.add_carry_dst+dbit+(#d)-1),             (d==((1<<(#d))>>1)) ? add_res         : set_carry_small_table+(d^((1<<(#d))>>1))*dw
+          add_carry_small_table:
+            rep(16, d) fj    (d==0) ? .add_carry_dst+dbit+8 : (..add.dst+dbit+(#d)+3),        (d==0) ? .add_carry_dst  : add_carry_small_table+(d^((1<<(#d))>>1))*dw
+          clean_small_table:
+            rep(16, d) fj    (d==0) ? .dst+dbit+9           : (     .dst+dbit+(#d)+3),        (d==0) ? .ret            : clean_small_table    +(d^((1<<(#d))>>1))*dw
+
+
+            pad 1024
+          switch:
+            rep(256, d) fj              0,    switch_small_table    + (((d&0xf)*(d>>4)) & 0xf) * dw
+          set_carry_0:
+            rep(256, d) fj    .dst+dbit+9,    set_carry_small_table +  (((d&0xf)*(d>>4)) >> 4) * dw
+          set_carry_1:
+            rep(256, d) fj    .dst+dbit+8,    set_carry_small_table + ((((d&0xf)*(d>>4)) >> 4)+1) * dw
+          clean:
+            rep(256, d) fj    .dst+dbit+8,    clean_small_table     +    (d>>4) * dw
+
+
+          // needs to be 1024-padded
+          add_carry:
+            rep(256, d) fj    .dst+dbit + (((d&0xf)+(d>>4) > 0xf) ? 9 : 8),    add_carry_small_table + (((d&0xf)+(d>>4)) & 0xf) * dw
+          clean_add:
+            rep(256, d) fj    (d==0) ? .add_carry_dst+dbit+8 : (.add_carry_dst+dbit+(#d)-1),    (d==0) ? .dst : clean_add  +(d^((1<<(#d))>>1))*dw
+          clean_carry:
+            rep( 16, d) fj    (d==0) ? .add_carry_dst+dbit+9 : (.add_carry_dst+dbit+(#d)-1),    (d==0) ? .dst : clean_carry+(d^((1<<(#d))>>1))*dw
+
+
+          end:
+        }
+    }
+}
+
+
 // ---------- Divide:
 
 

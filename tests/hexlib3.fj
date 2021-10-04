@@ -1,0 +1,16 @@
+start:
+startup
+
+
+// TODO - test mul
+output '\n'
+output '\n'
+
+
+// TODO - test div
+output '\n'
+output '\n'
+
+
+loop
+hex.init

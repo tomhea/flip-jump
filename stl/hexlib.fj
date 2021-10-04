@@ -221,6 +221,37 @@ ns hex {
           end:
         }
     }
+
+
+    def add_count_bits n, dst, x {
+        // TODO - might add 0,1,2,3, or 4 to dst (special-add, and then might inc)
+        .add n, dst, x  // this is just garbage
+    }
+
+    def count_bits n, dst, x {
+        .zero #n, dst
+        rep(n, i) add_count_bits ((#(n*4))+3)/4, dst, x+i*dw
+    }
+
+
+    //  Time Complexity: n(phi+4)
+    // Space Complexity: n(phi+42)
+    // shift left by 4bits (1hex)
+    def shl n, dst {
+        // TODO test
+        .zero dst+(n-1)*dw
+        rep(n-1, i) .xor_zero dst+(n-1-i)*dw, dst+(n-2-i)*dw
+    }
+
+
+    //  Time Complexity: n(phi+4)
+    // Space Complexity: n(phi+42)
+    // shift right by 4bits (1hex)
+    def shr n, dst {
+        // TODO test
+        .zero dst
+        rep(n-1, i) .xor_zero dst+i*dw, dst+(i+1)*dw
+    }
 }
 
 
@@ -621,13 +652,18 @@ ns hex {
           ..sub.init
           ..or.init
           ..and.init
+          ..mul.init
           end:
         }
 
-        // Space Complexity: 256
-        def clean_table dst @ clean < .ret {
+        def clean_table dst, ret @ clean {
           clean:
-            rep(256, d) fj    d==0?0: (dst+dbit+(#d)-1),    (d==((1<<(#d))>>1)) ? .ret : clean+(d^((1<<(#d))>>1))*dw
+            rep(256, d) fj    d==0?0: (dst+dbit+(#d)-1),    (d==((1<<(#d))>>1)) ? ret : clean+(d^((1<<(#d))>>1))*dw
+        }
+
+        // Space Complexity: 256
+        def clean_table dst < .ret {
+          .clean_table dst, .ret
         }
         
         def table_query dst, src, dst_switch @ return < .ret, .res {

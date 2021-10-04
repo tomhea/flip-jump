@@ -126,7 +126,7 @@ class FJLexer(Lexer):
 
 class FJParser(Parser):
     tokens = FJLexer.tokens
-    # TODO add Unary Minus (-), Unary Not (~). Maybe add logical or (||) and logical and (&&).
+    # TODO add Unary Minus (-), Unary Not (~). Maybe add logical or (||) and logical and (&&). Maybe handle power (**).
     precedence = (
         ('right', '?', ':'),
         ('left', '|'),
