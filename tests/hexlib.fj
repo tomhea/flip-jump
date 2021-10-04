@@ -215,13 +215,33 @@ input2hex garbage
 output '\n'
 output '\n'
 
-//input-print
+// input-print
 hex.input 16, vars
 hex.print 16, vars
 input2hex garbage
 output '\n'
 rep(11, i) cat_char
 input2hex garbage
+output '\n'
+output '\n'
+
+
+// shl
+ // TODO
+output '\n'
+
+// shr
+ // TODO
+output '\n'
+output '\n'
+
+
+// add_count_bits
+ // TODO
+output '\n'
+
+// count_bits
+ // TODO
 output '\n'
 output '\n'
 
