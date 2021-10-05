@@ -573,11 +573,25 @@ ns hex {
         rep(n, i) .mov dst+i*dw, src+i*dw
     }
 
+    // Complexity: 4 (avg. 2. #on-bits)
+    def xor_by hex, val {
+        wflip hex+w, (val > 0xf ? 0xf : (val < 0 ? 0 : val)) * dw
+    }
+
+    // Complexity: 4n (#on-bits)
+    def xor_by n, hex, val {
+        rep(n, i) .xor_by hex+i*dw, (val>>(4*i))&0xf
+    }
+
     //  Time Complexity: phi+4
     // Space Complexity: phi+31
     def set hex, val {
         .zero hex
-        wflip hex+w, (val > 0xf ? 0xf : (val < 0 ? 0 : val)) * dw
+        .xor_by hex, val
+    }
+
+    def set n, hex, val {
+        rep(n, i) .set hex+i*dw, (val>>(4*i))&0xf
     }
 
     //  Time Complexity: 3phi

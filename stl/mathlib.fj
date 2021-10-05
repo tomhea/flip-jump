@@ -147,11 +147,11 @@ ns hex {
     // Space Complexity: n(4phi+96)
     // res[n] += a[n] * b[1]
     def add_mul n, res, a, b < .mul.dst {
-        .clear_carry
+        .mul.clear_carry
         .xor .mul.dst, b
         rep(n, i) .add_mul res+i*dw, a+i*dw
         .xor .mul.dst, b
-        .clear_carry
+        .mul.clear_carry
     }
 
     //  Time Complexity: n(n(shl_cost + shr_cost + phi) + b(5phi+32)), for b the minimum of #on-bits in a,b (b<n/2, e.g. for n=16, b=7).
@@ -195,8 +195,9 @@ ns hex {
     }
 
     ns mul {
-        // Complexity: phi+1
+        // Complexity: 3phi+3
         def clear_carry @ return < .ret, .add_carry_dst {
+            ..add.clear_carry
             wflip .ret+w, return
             .add_carry_dst+dbit+9; .add_carry_dst
           return:

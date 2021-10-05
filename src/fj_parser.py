@@ -157,7 +157,7 @@ class FJParser(Parser):
         if name in self.macros:
             _, _, (other_file, other_line, _) = self.macros[name]
             syntax_error(line, f'macro {name} is declared twice! '
-                               f'also declared in file {other_file} (line {other_file}).')
+                               f'also declared in file {other_file} (line {line}).')
 
     def check_params(self, ids, macro_name, line):
         for param_id in ids:
@@ -239,12 +239,12 @@ class FJParser(Parser):
         ops = p.definable_line_statements
         self.macros[main_macro][1] = ops
 
-        labels_used, labels_declared = all_used_labels(ops)
-        bad_uses = labels_used - set(labels_declared) - {'$'}
-        if bad_uses:
-            syntax_warning(None, self.warning_as_errors,
-                           f"Outside of macros:  "
-                           f"Used a not declared label: {', '.join(bad_uses)}.")
+        # labels_used, labels_declared = all_used_labels(ops)
+        # bad_uses = labels_used - set(labels_declared) - {'$'}
+        # if bad_uses:
+        #     syntax_warning(None, self.warning_as_errors,
+        #                    f"Outside of macros:  "
+        #                    f"Used a not declared label: {', '.join(bad_uses)}.")
 
     @_('definable_line_statements NL definable_line_statement')
     def definable_line_statements(self, p):
