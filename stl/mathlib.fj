@@ -154,9 +154,9 @@ ns hex {
         .mul.clear_carry
     }
 
-    //  Time Complexity: n(n(shl_cost + shr_cost + phi) + b(5phi+32)), for b the minimum of #on-bits in a,b (b<n/2, e.g. for n=16, b=7).
-    //     (for n==b/2): n^2(shl_cost + shr_cost + 3.5phi+16)
-    // Space Complexity: n(7(phi+27) + 2*count_bits_cost + shl_cost + shr_cost + 1.5phi+23 + 4phi+96 + 2)
+    //  Time Complexity: n(n(3phi+8) + b(5phi+32)), for b the minimum of #on-bits in a,b (b<n/2, e.g. for n=16, b=7).
+    //     (for n==b/2): n^2(5.5phi+24)
+    // Space Complexity: n(#n(0.75phi+12) + 18.5phi+636)
     // res[n] = a[n] * b[n]
     def mul n, res, a, b @ a_less_1bits, b_less_1bits, loop, after_add, dst, src, a_1bits, b_1bits, end {
         .zero n, dst
