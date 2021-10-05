@@ -223,50 +223,68 @@ ns hex {
     }
 
 
-    //  Time Complexity: 9phi+19
-    // Space Complexity: n(1.5phi+23) + 8.5phi+182
+    //  Time Complexity: 2.13phi+2
+    // Space Complexity: n(1.5phi+23) + 2phi+121  (+padding)
     // dst[n] += x.#on-bits
-    def add_count_bits n, dst, x @ switch, do_add, do_inc, count, clean {
-        .zero count
-        wflip x+w, switch, x
+    def add_count_bits n, dst, x @ count_switch,  do_add,  add_switch, add4_switch,  xor_switch,  after_add, is_carry,  should_inc, do_inc,  clean {
+        wflip x+w, count_switch, x
 
         pad 16
-      switch:
+      count_switch:
         ;clean              //  0
-        count+dbit+0;do_add
-        count+dbit+0;do_add
-        count+dbit+1;do_add
-        count+dbit+0;do_add //  4
-        count+dbit+1;do_add
-        count+dbit+1;do_add
-        count+dbit+0;switch+dw
-        count+dbit+0;do_add //  8
-        count+dbit+1;do_add
-        count+dbit+1;do_add
-        count+dbit+0;switch+dw
-        count+dbit+1;do_add // 12
-        count+dbit+0;switch+dw
-        count+dbit+0;switch+dw
-        count+dbit+2;do_add
+        ;do_add
+        ;do_add
+        dst+dbit+4;do_add
+        ;do_add             //  4
+        dst+dbit+4;do_add
+        dst+dbit+4;do_add
+        dst+dbit+5;do_add
+        ;do_add             //  8
+        dst+dbit+4;do_add
+        dst+dbit+4;do_add
+        dst+dbit+5;do_add
+        dst+dbit+4;do_add   // 12
+        dst+dbit+5;do_add
+        dst+dbit+5;do_add
+        dst+dbit+5;count_switch+3*dw
 
       do_add:
-        .add dst, count
-        .add.clear_carry clean, do_inc
+        wflip dst+w, add_switch, dst
+
+        pad 64
+      add_switch:
+        rep(16, d) fj             0,    xor_switch+(d^(d+1))*dw
+        rep(16, d) fj    dst+dbit+4,    xor_switch+(d^(d+2))*dw
+        rep(16, d) fj    dst+dbit+5,    xor_switch+(d^(d+3))*dw
+        rep(16, d) fj    dst+dbit+5,    add4_switch+d*dw
+      add4_switch:
+        rep(16, d) fj    dst+dbit+4,    xor_switch+(d^(d+4))*dw
+
+        pad 32
+      xor_switch:
+        ._.clean_table 16, dst, after_add
+        rep(16, i) fj    is_carry+dbit,    xor_switch+i*dw
+
+      after_add:
+        wflip dst+w, add_switch, is_carry
+      is_carry: ;should_inc
+        pad 2
+      should_inc:
+        ;clean
+        is_carry+dbit;do_inc
       do_inc:
         .inc n-1, dst+dw
         ;clean
 
-      count: hex
-
       clean:
-        wflip x+w, switch
+        wflip x+w, count_switch
     }
 
-    //  Time Complexity: n(9phi+19)
-    // Space Complexity: n(#n(1.5phi+23) + 8.5phi+182)
+    //  Time Complexity: n(2.13phi+2)
+    // Space Complexity: n(#n(0.4phi+6) + 2phi+121)
     def count_bits n, dst, x {
-        .zero #n, dst
-        rep(n, i) add_count_bits ((#(n*4))+3)/4, dst, x+i*dw
+        .zero ((#(n*4))+3)/4, dst
+        rep(n, i) .add_count_bits ((#(n*4))+3)/4, dst, x+i*dw
     }
 
 
@@ -704,14 +722,20 @@ ns hex {
           end:
         }
 
-        def clean_table dst, ret @ clean {
+        // n should be a power of 2
+        def clean_table n, dst, ret @ clean {
           clean:
-            rep(256, d) fj    d==0?0: (dst+dbit+(#d)-1),    (d==((1<<(#d))>>1)) ? ret : clean+(d^((1<<(#d))>>1))*dw
+            rep(n, d) fj    d==0?0: (dst+dbit+(#d)-1),    (d==((1<<(#d))>>1)) ? ret : clean+(d^((1<<(#d))>>1))*dw
+        }
+
+        // Space Complexity: 256
+        def clean_table dst, ret {
+            .clean_table 256, dst, ret
         }
 
         // Space Complexity: 256
         def clean_table dst < .ret {
-          .clean_table dst, .ret
+            .clean_table dst, .ret
         }
         
         def table_query dst, src, dst_switch @ return < .ret, .res {

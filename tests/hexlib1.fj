@@ -226,26 +226,6 @@ output '\n'
 output '\n'
 
 
-// shl
- // TODO
-output '\n'
-
-// shr
- // TODO
-output '\n'
-output '\n'
-
-
-// add_count_bits
- // TODO
-output '\n'
-
-// count_bits
- // TODO
-output '\n'
-output '\n'
-
-
 loop
 
 
