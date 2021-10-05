@@ -63,6 +63,10 @@ def output ascii {
     rep(8, i) output_bit (ascii>>i)&1
 }
 
+def output_str str {
+    rep(((#str)+7)>>3, i) output (str>>(8*i))&0xff
+}
+
 
 ns bit {
     // Complexity phi+5

@@ -221,6 +221,89 @@ ns hex {
           end:
         }
     }
+
+
+    //  Time Complexity: 2.13phi+2
+    // Space Complexity: n(1.5phi+23) + 2phi+121  (+padding)
+    // dst[n] += x.#on-bits
+    def add_count_bits n, dst, x @ count_switch,  do_add,  add_switch, add4_switch,  xor_switch,  after_add, is_carry,  should_inc, do_inc,  clean {
+        wflip x+w, count_switch, x
+
+        pad 16
+      count_switch:
+        ;clean              //  0
+        ;do_add
+        ;do_add
+        dst+dbit+4;do_add
+        ;do_add             //  4
+        dst+dbit+4;do_add
+        dst+dbit+4;do_add
+        dst+dbit+5;do_add
+        ;do_add             //  8
+        dst+dbit+4;do_add
+        dst+dbit+4;do_add
+        dst+dbit+5;do_add
+        dst+dbit+4;do_add   // 12
+        dst+dbit+5;do_add
+        dst+dbit+5;do_add
+        dst+dbit+5;count_switch+3*dw
+
+      do_add:
+        wflip dst+w, add_switch, dst
+
+        pad 64
+      add_switch:
+        rep(16, d) fj             0,    xor_switch+(d^(d+1))*dw
+        rep(16, d) fj    dst+dbit+4,    xor_switch+(d^(d+2))*dw
+        rep(16, d) fj    dst+dbit+5,    xor_switch+(d^(d+3))*dw
+        rep(16, d) fj    dst+dbit+5,    add4_switch+d*dw
+      add4_switch:
+        rep(16, d) fj    dst+dbit+4,    xor_switch+(d^(d+4))*dw
+
+        pad 32
+      xor_switch:
+        ._.clean_table 16, dst, after_add
+        rep(16, i) fj    is_carry+dbit,    xor_switch+i*dw
+
+      after_add:
+        wflip dst+w, add_switch, is_carry
+      is_carry: ;should_inc
+        pad 2
+      should_inc:
+        ;clean
+        is_carry+dbit;do_inc
+      do_inc:
+        .inc n-1, dst+dw
+        ;clean
+
+      clean:
+        wflip x+w, count_switch
+    }
+
+    //  Time Complexity: n(2.13phi+2)
+    // Space Complexity: n(#n(0.4phi+6) + 2phi+121)
+    def count_bits n, dst, x {
+        .zero ((#(n*4))+3)/4, dst
+        rep(n, i) .add_count_bits ((#(n*4))+3)/4, dst, x+i*dw
+    }
+
+
+    //  Time Complexity: n(phi+4)
+    // Space Complexity: n(phi+42)
+    // shift left by 4bits (1hex)
+    def shl n, dst {
+        .zero dst+(n-1)*dw
+        rep(n-1, i) .xor_zero dst+(n-1-i)*dw, dst+(n-2-i)*dw
+    }
+
+
+    //  Time Complexity: n(phi+4)
+    // Space Complexity: n(phi+42)
+    // shift right by 4bits (1hex)
+    def shr n, dst {
+        .zero dst
+        rep(n-1, i) .xor_zero dst+i*dw, dst+(i+1)*dw
+    }
 }
 
 
@@ -260,7 +343,7 @@ ns hex {
         wflip hex+w, switch, carry0
     }
 
-    //  Time Complexity: n*phi
+    //  Time Complexity: 16/15*phi
     // Space Complexity: n(1.5phi+23)
     def inc n, hex @ end {
         rep(n, i) .inc.step hex+i*dw, end
@@ -319,7 +402,7 @@ ns hex {
     }
 
 
-    //  Time Complexity: n*(phi+4)
+    //  Time Complexity: 4n
     // Space Complexity: n(1.5phi+27)
     def neg n, hex {
         .not n, hex
@@ -342,6 +425,8 @@ ns hex {
     }
 
     ns add {
+        //  Time Complexity: 2phi+2
+        // Space Complexity: 2phi+27
         def clear_carry @ ret < .._.ret, .dst, .._.res {
             wflip .._.ret+w, ret, .dst
           ret:
@@ -349,6 +434,8 @@ ns hex {
             ..zero .._.res
         }
 
+        //  Time Complexity: 2phi+3
+        // Space Complexity: 2.5phi+26
         def clear_carry c0, c1 @ ret < .._.ret, .dst, .._.res {
             wflip .._.ret+w, ret, .dst
           ret:
@@ -357,10 +444,13 @@ ns hex {
             .._.res+dbit; c1
         }
 
+        // Complexity: 1
         def not_carry < .dst {
             .dst+dbit+8;
         }
 
+        //  Time Complexity: 2phi+3
+        // Space Complexity: 2phi+28
         def set_carry {
             .clear_carry
             .not_carry
@@ -401,11 +491,15 @@ ns hex {
     }
 
     ns sub {
+        //  Time Complexity: 2phi+14
+        // Space Complexity: 2.5phi+30
         def clear_carry @ end {
             .clear_carry end, end
           end:
         }
 
+        //  Time Complexity: 2phi+14
+        // Space Complexity: 2.5phi+30
         def clear_carry c0, c1 @ ret < .._.ret, .dst, .._.res {
             wflip .._.ret+w, ret, .dst
           ret:
@@ -415,10 +509,13 @@ ns hex {
             wflip .._.res+w, 0xf*dw, c1
         }
 
+        // Complexity: 1
         def not_carry < .dst {
             .dst+dbit+8;
         }
 
+        //  Time Complexity: 2phi+15
+        // Space Complexity: 2.5phi+31
         def set_carry {
             .clear_carry
             .not_carry
@@ -476,11 +573,25 @@ ns hex {
         rep(n, i) .mov dst+i*dw, src+i*dw
     }
 
+    // Complexity: 4 (avg. 2. #on-bits)
+    def xor_by hex, val {
+        wflip hex+w, (val > 0xf ? 0xf : (val < 0 ? 0 : val)) * dw
+    }
+
+    // Complexity: 4n (#on-bits)
+    def xor_by n, hex, val {
+        rep(n, i) .xor_by hex+i*dw, (val>>(4*i))&0xf
+    }
+
     //  Time Complexity: phi+4
     // Space Complexity: phi+31
     def set hex, val {
         .zero hex
-        wflip hex+w, (val > 0xf ? 0xf : (val < 0 ? 0 : val)) * dw
+        .xor_by hex, val
+    }
+
+    def set n, hex, val {
+        rep(n, i) .set hex+i*dw, (val>>(4*i))&0xf
     }
 
     //  Time Complexity: 3phi
@@ -621,13 +732,24 @@ ns hex {
           ..sub.init
           ..or.init
           ..and.init
+          ..mul.init
           end:
         }
 
-        // Space Complexity: 256
-        def clean_table dst @ clean < .ret {
+        // n should be a power of 2
+        def clean_table n, dst, ret @ clean {
           clean:
-            rep(256, d) fj    d==0?0: (dst+dbit+(#d)-1),    (d==((1<<(#d))>>1)) ? .ret : clean+(d^((1<<(#d))>>1))*dw
+            rep(n, d) fj    d==0?0: (dst+dbit+(#d)-1),    (d==((1<<(#d))>>1)) ? ret : clean+(d^((1<<(#d))>>1))*dw
+        }
+
+        // Space Complexity: 256
+        def clean_table dst, ret {
+            .clean_table 256, dst, ret
+        }
+
+        // Space Complexity: 256
+        def clean_table dst < .ret {
+            .clean_table dst, .ret
         }
         
         def table_query dst, src, dst_switch @ return < .ret, .res {

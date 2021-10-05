@@ -215,7 +215,7 @@ input2hex garbage
 output '\n'
 output '\n'
 
-//input-print
+// input-print
 hex.input 16, vars
 hex.print 16, vars
 input2hex garbage
