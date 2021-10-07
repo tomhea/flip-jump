@@ -35,7 +35,7 @@ def main():
         Path.mkdir(Path(args.file[0]) / 'compiled', exist_ok=True)
         for file in glob(join(args.file[0], '*.fj')):
 
-            # if file not in (r'tests\calc.fj', r'tests\func.fj', r'tests\hexlib.fj'):
+            # if file in (r'tests\calc.fj', r'tests\func.fj', r'tests\pair_ns.fj') or file.startswith(r'tests\hexlib-'):
             #     continue
 
             print(f'compiling {Path(file).name}:')
