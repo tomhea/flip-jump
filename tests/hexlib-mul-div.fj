@@ -63,51 +63,51 @@ add_mul_64:
 
 lt_print:
     output '\n'
-    hex.print_as_digit 16, ah, 0
+    hex.print_uint 16, ah, 1, 0
     output '*'
-    hex.print_as_digit 16, bh, 0
+    hex.print_uint 16, bh, 1, 0
     output '='
-    hex.print_as_digit 16, res, 0
+    hex.print_uint 16, res, 1, 0
     output '<'
-    hex.print_as_digit 16, ch, 0
+    hex.print_uint 16, ch, 1, 0
     output '\n'
     fret ret
 
 gt_print:
     output '\n'
-    hex.print_as_digit 16, ah, 0
+    hex.print_uint 16, ah, 1, 0
     output '*'
-    hex.print_as_digit 16, bh, 0
+    hex.print_uint 16, bh, 1, 0
     output '='
-    hex.print_as_digit 16, res, 0
+    hex.print_uint 16, res, 1, 0
     output '>'
-    hex.print_as_digit 16, ch, 0
+    hex.print_uint 16, ch, 1, 0
     output '\n'
     fret ret
 
 add_mul_lt_print:
     output '\n'
     output_str "old_res+"
-    hex.print_as_digit 16, ah, 0
+    hex.print_uint 16, ah, 1, 0
     output '*'
-    hex.print_as_digit 16, bh, 0
+    hex.print_uint 16, bh, 1, 0
     output '='
-    hex.print_as_digit 16, res, 0
+    hex.print_uint 16, res, 1, 0
     output '<'
-    hex.print_as_digit 16, ch, 0
+    hex.print_uint 16, ch, 1, 0
     output '\n'
     fret ret
 
 add_mul_gt_print:
     output '\n'
     output_str "old_res+"
-    hex.print_as_digit 16, ah, 0
+    hex.print_uint 16, ah, 1, 0
     output '*'
-    hex.print_as_digit 16, bh, 0
+    hex.print_uint 16, bh, 1, 0
     output '='
-    hex.print_as_digit 16, res, 0
+    hex.print_uint 16, res, 1, 0
     output '>'
-    hex.print_as_digit 16, ch, 0
+    hex.print_uint 16, ch, 1, 0
     output '\n'
     fret ret
 

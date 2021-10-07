@@ -13,6 +13,7 @@
 // Space complexity might not be exact
 
 
+
 // ---------- Memory Variables:
 // Size Complexity: 1
 
@@ -122,14 +123,6 @@ ns hex {
         d3;second_flip+13*dw    // 14
         d3;second_flip+14*dw    // 15
 
-        d3;end          //  8
-        d3;switch+1*dw  //  9
-        d3;switch+2*dw  // 10
-        d3;switch+3*dw  // 11
-        d3;switch+4*dw  // 12
-        d3;switch+5*dw  // 13
-        d3;switch+6*dw  // 14
-        d3;switch+7*dw  // 15
       second_flip:
         t0;end          //  1
         t1;end          //  2
@@ -560,14 +553,16 @@ ns hex {
         rep (n, i) .zero x+i*dw
     }
 
-    //  Time Complexity: 2phi
-    // Space Complexity: phi+53
-    def mov dst, src {
+    //  Time Complexity: 2phi+1
+    // Space Complexity: phi+54
+    def mov dst, src @ end {
+        comp_if1 dst==src, end
         .zero dst
         .xor dst, src
+      end:
     }
 
-    //  Time Complexity: n*(2phi)
+    //  Time Complexity: n*(2phi+1)
     // Space Complexity: n*(phi+52)
     def mov n, dst, src {
         rep(n, i) .mov dst+i*dw, src+i*dw
@@ -596,10 +591,12 @@ ns hex {
 
     //  Time Complexity: 3phi
     // Space Complexity: 3phi+79
-    def swap hex1, hex2 {
+    def swap hex1, hex2 @ end {
+        comp_if1 hex1==hex2, end
         .xor hex1, hex2
         .xor hex2, hex1
         .xor hex1, hex2
+      end:
     }
 
     //  Time Complexity: n*(3phi)
@@ -895,6 +892,54 @@ ns hex {
     // Space Complexity: phi+42
     def print_as_digit n, x, big_flag {
         rep (n, i) .print_as_digit x+(n-1-i)*dw, big_flag
+    }
+
+    //  Time Complexity: n(2phi+8)
+    // Space Complexity: n(3.5phi+72)
+    def print_uint n, x, x_prefix, big_flag @ after_prefix, printed_something, end {
+        bit.zero printed_something
+        comp_if0 x_prefix, after_prefix
+        output_str "0x"
+
+      after_prefix:
+        rep(n, i) .print_uint.print_digit x+(n-1-i)*dw, printed_something, big_flag
+        bit.if1 printed_something, end
+        output '0'
+        ;end
+
+      printed_something: bit
+      end:
+    }
+    ns print_uint {
+        //  Time Complexity: 2phi+8 (once: 3phi+9)
+        // Space Complexity: 3.5phi+72
+        def print_digit hex, printed_something, big_flag @ print, end {
+            bit.if1 printed_something, print
+            ..if0 hex, end
+            bit.not printed_something
+          print:
+            ..print_as_digit hex, big_flag
+          end:
+        }
+    }
+
+    //  Time Complexity: n(2phi+16)
+    // Space Complexity: n(6.5phi+126)
+    def print_int n, x, x_prefix, big_flag @ do_neg, print, neg, end {
+        bit.zero neg
+        .if_flags x+(n-1)*dw, 0xff00, print, do_neg
+      do_neg:
+        bit.not neg
+        .neg n, x
+        output '-'
+      print:
+        .print_uint n, x, x_prefix, big_flag
+        bit.if0 neg, end
+        .neg n, x
+        ;end
+
+      neg: bit
+      end:
     }
 
     //  Time Complexity: 2phi+7
