@@ -475,7 +475,7 @@ def startup @ code_start > IO  {
 def output_bit bit < IO {
     IO + bit;
 }
-def output ascii {
+def output_char ascii {
     rep(8, i) output_bit ((ascii>>i)&1)
 }
 
@@ -486,31 +486,32 @@ def end_loop @ loop_label {
 
     startup
     
-    output 'H'
-    output 'e'
-    output 'l'
-    output 'l'
-    output 'o'
-    output ','
-    output ' '
-    output 'W'
-    output 'o'
-    output 'r'
-    output 'l'
-    output 'd'
-    output '!'
+    output_char 'H'
+    output_char 'e'
+    output_char 'l'
+    output_char 'l'
+    output_char 'o'
+    output_char ','
+    output_char ' '
+    output_char 'W'
+    output_char 'o'
+    output_char 'r'
+    output_char 'l'
+    output_char 'd'
+    output_char '!'
     
     end_loop
 
 ```
 
 The FlipJump assembly supports a ```str "Hello, World!"``` syntax for initializing a variable with a string value (```str``` is defined in iolib.fj)  
-Look at [tests/hello_world.fj](tests/hello_world.fj) program using print_str macro ([stl/iolib.fj](stl/iolib.fj)) for more info.
+Look at [tests/hello_world.fj](tests/hello_world_with_str.fj) program using print_str macro ([stl/iolib.fj](stl/iolib.fj)) for more info.
 
 Note that all of these macros are already implemented in the standard library:
-- startup  in runlib.fj
-- end_loop in bitlib.fj (loop)
-- output   in iolib.fj
+- startup      in runlib.fj
+- end_loop     in bitlib.fj (loop)
+- output_char  in iolib.fj
+- output       in iolib.fj  (for printing string consts, e.g. output "Hello, World!")
 
 # How to run?
 

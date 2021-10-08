@@ -157,7 +157,7 @@ class FJParser(Parser):
         if name in self.macros:
             _, _, (other_file, other_line, _) = self.macros[name]
             syntax_error(line, f'macro {name} is declared twice! '
-                               f'also declared in file {other_file} (line {line}).')
+                               f'also declared in file {other_file} (line {other_line}).')
 
     def check_params(self, ids, macro_name, line):
         for param_id in ids:
@@ -618,9 +618,7 @@ class FJParser(Parser):
 
 def exit_if_errors():
     if error_occurred:
-        print()
-        print(f'Errors found in file {curr_file}. Assembly stopped.')
-        exit(1)
+        raise FJParsingException(f'Errors found in file {curr_file}. Assembly stopped.')
 
 
 def parse_macro_tree(input_files, w, warning_as_errors, verbose=False):
@@ -631,11 +629,13 @@ def parse_macro_tree(input_files, w, warning_as_errors, verbose=False):
     parser = FJParser(w, warning_as_errors, verbose=verbose)
     for curr_file in input_files:
         if not path.isfile(curr_file):
-            error(f"No such file {curr_file}.")
+            raise FJParsingException(f"No such file {curr_file}.")
         curr_text = open(curr_file, 'r').read()
         curr_namespace = []
+
         lex_res = lexer.tokenize(curr_text)
         exit_if_errors()
+
         parser.parse(lex_res)
         exit_if_errors()
 

@@ -48,6 +48,7 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
 
     output_anything_yet = False
     ops_executed = 0
+    flips_executed = 0
 
     start_time = time()
     pause_time = 0
@@ -81,11 +82,13 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
                 breakpoints.clear()
             pause_time += time() - pause_time_start
 
-        ops_executed += 1
-
         f = mem.get_word(ip)
         if verbose:
             print(f'{hex(ip)[2:].rjust(7)}:   {hex(f)[2:]}', end='; ', flush=True)
+
+        ops_executed += 1
+        if f >= 2*w:
+            flips_executed += 1
 
         # handle output
         if out_addr <= f <= out_addr+1:
@@ -119,7 +122,7 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
                     if output_verbose and output_anything_yet:
                         print()
                     run_time = time() - start_time - pause_time
-                    return run_time, ops_executed, output, RunFinish.Input  # no more input
+                    return run_time, ops_executed, flips_executed, output, RunFinish.Input  # no more input
                 input_size = 8
             mem.write_bit(in_addr, input_char & 1)
             input_char = input_char >> 1
@@ -129,16 +132,17 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
         new_ip = mem.get_word(ip+w)
         if verbose:
             print(hex(new_ip)[2:])
+
         if new_ip == ip and not ip <= f < ip+2*w:
             if output_verbose and output_anything_yet:
                 print()
             run_time = time()-start_time-pause_time
-            return run_time, ops_executed, output, RunFinish.Looping        # infinite simple loop
+            return run_time, ops_executed, flips_executed, output, RunFinish.Looping        # infinite simple loop
         if new_ip < 2*w:
             if output_verbose and output_anything_yet:
                 print()
             run_time = time() - start_time - pause_time
-            return run_time, ops_executed, output, RunFinish.NullIP         # null ip
+            return run_time, ops_executed, flips_executed, output, RunFinish.NullIP         # null ip
         ip = new_ip     # Jump!
 
 
@@ -178,10 +182,11 @@ def debug_and_run(input_file, debugging_file=None,
 
     opposite_labels = {labels[label]: label for label in labels}
 
-    run_time, ops_executed, output, finish_cause = run(input_file, defined_input=defined_input,
-                                                       verbose=Verbose.Run in verbose,
-                                                       time_verbose=Verbose.Time in verbose,
-                                                       output_verbose=Verbose.PrintOutput in verbose,
-                                                       breakpoints=breakpoint_map, labels_dict=opposite_labels)
+    run_time, ops_executed, flips_executed, output, finish_cause = run(
+        input_file, defined_input=defined_input,
+        verbose=Verbose.Run in verbose,
+        time_verbose=Verbose.Time in verbose,
+        output_verbose=Verbose.PrintOutput in verbose,
+        breakpoints=breakpoint_map, labels_dict=opposite_labels)
 
-    return run_time, ops_executed, output, finish_cause
+    return run_time, ops_executed, flips_executed, output, finish_cause

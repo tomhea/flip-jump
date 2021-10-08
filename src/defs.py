@@ -19,18 +19,39 @@ parsing_op2func = {'+': add, '-': sub, '*': mul, '/': floordiv, '%': mod,
                    }
 
 
-def error(msg):
-    print()
-    print(f'ERROR: {msg}')
-    print()
-    exit(1)
+class FJException(Exception):
+    pass
+
+
+class FJParsingException(FJException):
+    pass
+
+
+class FJPreprocessorException(FJException):
+    pass
+
+
+class FJExprException(FJException):
+    pass
+
+
+class FJAssemblerException(FJException):
+    pass
+
+
+class FJReadFjmException(FJException):
+    pass
+
+
+class FJWriteFjmException(FJException):
+    pass
 
 
 def smart_int16(num):
     try:
         return int(num, 16)
     except ...:
-        error(f'{num} is not a number!')
+        raise FJException(f'{num} is not a number!')
 
 
 def stl():
@@ -138,7 +159,7 @@ class Expr:
                     self.val = parsing_op2func[op](*[e.val for e in exps])
                     return []
                 except BaseException as e:
-                    error(f'{repr(e)}. bad math operation ({op}): {str(self)} in file {file} (line {line})')
+                    raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)} in file {file} (line {line})')
         elif self.is_str():
             if self.val in id_dict:
                 self.val = id_dict[self.val].val
@@ -172,7 +193,7 @@ class Expr:
             return self.val
         if self.is_int():
             return hex(self.val)[2:]
-        error(f'bad expression: {self.val} (of type {type(self.val)})')
+        raise FJExprException(f'bad expression: {self.val} (of type {type(self.val)})')
 
 
 def eval_all(op, id_dict=None):
@@ -213,7 +234,7 @@ def id_swap(op, id_dict):
         if type(datum) is str and datum in id_dict:
             swapped_label = id_dict[datum]
             if not swapped_label.is_str():
-                error(f'Bad label swap (from {datum} to {swapped_label}) in {op}.')
+                raise FJExprException(f'Bad label swap (from {datum} to {swapped_label}) in {op}.')
             new_data.append(swapped_label.val)
         else:
             new_data.append(datum)
