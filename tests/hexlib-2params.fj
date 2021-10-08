@@ -3,58 +3,58 @@ startup
 
 
 // cmp
+output "cmp:\n"
 rep(256, i) test_cmp i&0xf, i>>4
 output '\n'
 
 // cmp n
 CMP_N = 0x012345 | (0x123456 << 32) | (0x333333 << 64) | (0x654321 << 96)
 rep(16, i) test_cmp_n 8, (CMP_N >> ((i&3)*32)) & ((1<<32)-1), (CMP_N >> ((i>>2)*32)) & ((1<<32)-1)
-output '\n'
-output '\n'
+output "\n\n"
 
 
 // add
+output "add:\n"
 rep(256, i) test_add i&0xf, i>>4
 output '\n'
 
 // add n
 ADD_N = 0x0000ffff800040a73dd06622dc0594c9e1b9b001
 rep(100, i) test_add_n 4, (ADD_N>>((i%10)*4)&0xf), (ADD_N>>((i/10))*4&0xf)
-output '\n'
-output '\n'
+output "\n\n"
 
 
 // sub
+output "sub:\n"
 rep(256, i) test_sub i&0xf, i>>4
 output '\n'
 
 // sub n
 SUB_N = 0x0000ffff8000ada41d9d587f40027d6d07f2c898
 rep(100, i) test_sub_n 4, (SUB_N>>((i%10)*4)&0xf), (SUB_N>>((i/10))*4&0xf)
-output '\n'
-output '\n'
+output "\n\n"
 
 
 // or
+output "or:\n"
 rep(256, i) test_or i&0xf, i>>4
 output '\n'
 
 // or n
 OR_N = 0x0000ffff8000c47b5d8bbebfbe0bf47bc2600b85
 rep(100, i) test_or_n 4, (OR_N>>((i%10)*4)&0xf), (OR_N>>((i/10))*4&0xf)
-output '\n'
-output '\n'
+output "\n\n"
 
 
 // and
+output "and:\n"
 rep(256, i) test_and i&0xf, i>>4
 output '\n'
 
 // and n
 AND_N = 0x0000ffff8000b32cccc69dea2047c8e0ae1e5299
 rep(100, i) test_and_n 4, (AND_N>>((i%10)*4)&0xf), (AND_N>>((i/10))*4&0xf)
-output '\n'
-output '\n'
+output "\n\n"
 
 
 loop

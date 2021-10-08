@@ -1,70 +1,75 @@
+start:
 startup
 
+
 // prints
+output "prints:\n"
 hex.print_as_digit 16, vars, 0
 output '\n'
 hex.print_as_digit 16, vars, 1
-output '\n'
-output '\n'
+output "\n\n"
 
 
 // xor
+output "xor:\n"
 rep (16, val) xor_all val
 output '\n'
 
 // zero
+output "zero:\n"
 hex.zero  16, vars
 hex.print_as_digit 16, vars, 0
-output '\n'
-output '\n'
+output "\n\n"
 
 // xor (as vec) once again
+output "xor n:\n"
 hex.xor 16, vars, consts
 hex.print_as_digit 16, vars, 0
-output '\n'
-output '\n'
+output "\n\n"
 
 // xor_zero
+output "xor_zero:\n"
 hex.xor_zero 16, vars2, vars
 hex.print_as_digit 16, vars, 0
 output '\n'
 hex.print_as_digit 16, vars2, 0
-output '\n'
-output '\n'
+output "\n\n"
 
 // mov
+output "mov:\n"
 hex.mov 16, vars, vars2
 hex.print_as_digit 16, vars, 0
 output '\n'
 hex.print_as_digit 16, vars2, 0
-output '\n'
-output '\n'
+output "\n\n"
 
 // set
+output "set:\n"
 rep(16, i) hex.set vars+i*dw, 15-i
 hex.print_as_digit 16, vars, 0
 output '\n'
 hex.print_as_digit 16, vars2, 0
-output '\n'
-output '\n'
+output "\n\n"
 
 // swap
+output "swap:\n"
 hex.swap 16, vars, vars2
 hex.print_as_digit 16, vars, 0
 output '\n'
 hex.print_as_digit 16, vars2, 0
-output '\n'
-output '\n'
+output "\n\n"
+
 
 // inc1
+output "inc1:\n"
 rep(16, i) inc1_print_carry vars+i*dw, vars2+i*dw
 hex.print_as_digit 16, vars2, 0
 output '\n'
 hex.print_as_digit 16, vars, 0
-output '\n'
-output '\n'
+output "\n\n"
 
 // inc, not
+output "inc, not:\n"
 hex.zero 16, vars
 hex.inc 16, vars
 hex.print_as_digit 16, vars, 0
@@ -79,19 +84,20 @@ hex.print_as_digit 16, vars, 0
 output '\n'
 hex.inc 16, vars
 hex.print_as_digit 16, vars, 0
-output '\n'
-output '\n'
+output "\n\n"
+
 
 // dec1
+output "dec1:\n"
 hex.mov 16, vars, consts
 rep(16, i) dec1_print_borrow vars+i*dw, vars2+i*dw
 hex.print_as_digit 16, vars2, 0
 output '\n'
 hex.print_as_digit 16, vars, 0
-output '\n'
-output '\n'
+output "\n\n"
 
 // dec
+output "dec:\n"
 hex.zero 16, vars
 hex.set vars, 2
 hex.dec 16, vars
@@ -105,10 +111,11 @@ hex.print_as_digit 16, vars, 0
 output '\n'
 hex.dec 16, vars
 hex.print_as_digit 16, vars, 0
-output '\n'
-output '\n'
+output "\n\n"
+
 
 // neg
+output "neg:\n"
 hex.zero 16, vars
 hex.neg 16, vars
 hex.print_as_digit 16, vars, 0
@@ -119,19 +126,20 @@ hex.print_as_digit 16, vars, 0
 output '\n'
 hex.neg 16, vars
 hex.print_as_digit 16, vars, 0
-output '\n'
-output '\n'
+output "\n\n"
+
 
 // if_flags
+output "if_flags:\n"
 //                    ops = [(randint(0, 15), randint(0,(2**16)-1)) for _ in range(100)]
 // hexlib.out line:   for h, f in ops: print((f>>h)&1, end='')
 // IF_100_NUMS = hex(sum(h+f*16 << (i*20) for i, (h,f) in enumerate(ops)))
 IF_FLAGS_NUMS = 0x2098593d070776a83803ed025fcf2630b539677e0a51278ec3b572bfa969f37eb32fa5a27d38f4f1ba10d5900345ee5d4b50f0d9b73a3ef84d8cbd2258f5a9cdedd958464321a1be0a3d2ba53a12ff684678ccaeea178472da56b4559e3b6e1fb5afd9afc3d69a167c53a95b2516817ba4f9890ded69f06b8e4eae281a4968d57d836496ceea29b290de0a64f6352588dc27b156aa22acc8147ff6400f5d71cd956b7021d2175e2f44c5f78c7d2afc97dacc10e9f17d11206ab17f05ffaf20a7af40b9c09c305a72f0dd8782762922df18191171efd38c65b187350bbecbd27c62c480459289ce5599ceda69a776420065898f22b7cf640a898
 rep(100, i) print_if_flags (IF_FLAGS_NUMS>>(i*20))&((i<<20)-1)
-output '\n'
-output '\n'
+output "\n\n"
 
 // if
+output "if:\n"
 def print_if hex @ l0, l1 < IO {
     hex.if hex, l0, l1
     l0: IO+0;l1+dw
@@ -151,14 +159,17 @@ hex.zero vars
 print_if vars
 print_if0 vars
 print_if1 vars
+
 hex.set vars, 1
 print_if vars
 print_if0 vars
 print_if1 vars
+
 hex.set vars, 8
 print_if vars
 print_if0 vars
 print_if1 vars
+
 hex.set vars, 15
 print_if vars
 print_if0 vars
@@ -185,25 +196,48 @@ hex.zero 16, vars
 print_if_16 vars
 print_if0_16 vars
 print_if1_16 vars
+
 hex.set vars, 1
 print_if_16 vars
 print_if0_16 vars
 print_if1_16 vars
+
 hex.set vars, 0
 hex.set vars+7*dw, 4
 print_if_16 vars
 print_if0_16 vars
 print_if1_16 vars
+
 hex.zero 16, vars
 hex.not 16, vars
 print_if_16 vars
 print_if0_16 vars
 print_if1_16 vars
+output "\n\n"
+
+// sign
+output "sign:\n"
+def test_sign n, x @ neg, zpos, xh, end {
+    hex.sign n, xh, neg, zpos
+
+  neg:
+    output '-'
+    ;end
+  zpos:
+    output '+'
+    ;end
+
+  xh: hex.vec n, x
+  end:
+}
+rep( 16, i) test_sign 1, i
 output '\n'
-output '\n'
+rep(256, i) test_sign 2, i
+output "\n\n"
 
 
 // input_hex
+output "input_hex:\n"
 rep(16, i) input2hex vars+i*dw
 hex.print_as_digit 16, vars, 0
 input2hex garbage
@@ -212,30 +246,33 @@ output '\n'
 // input_hex
 rep(64, i) input_hex_print_error
 input2hex garbage
-output '\n'
-output '\n'
+output "\n\n"
 
 // input-print
+output "input-print:\n"
 hex.input 16, vars
 hex.print 16, vars
 input2hex garbage
 output '\n'
 rep(11, i) cat_char
 input2hex garbage
-output '\n'
-output '\n'
+output "\n\n"
 
 
 // print_uint
+output "print_uint:\n"
 rep(5, i) print_uint 16, positive+16*i*dw
 output '\n'
 
 // print_int
+output "print_int:\n"
 rep(9, i)  print_int 16, positive+16*i*dw
 output '\n'
 
 
 loop
+
+
 positive:
     hex.vec 16, 0x12345AF
     hex.vec 16, 0xDeadC0de
@@ -249,17 +286,18 @@ negative:
     hex.vec 16, (0      -0x0f0)&((1<<64)-1)
 
 
-
 vars:   rep(16, j) hex j
 vars2:  hex.vec 16, 0
 consts: rep(16, j) hex j
 garbage: hex.vec 2
+
 
 def xor_all val < vars, consts {
     rep (16, i) hex.xor vars+i*dw, consts+val*dw
     hex.print_as_digit 16, vars, 0
     output '\n'
 }
+
 
 def inc1_print_carry hex, carry @ output1, end {
     hex.zero carry
@@ -269,6 +307,7 @@ def inc1_print_carry hex, carry @ output1, end {
   end:
 }
 
+
 def dec1_print_borrow hex, borrow @ output1, end {
     hex.zero borrow
     hex.dec1 hex, end, output1
@@ -276,6 +315,7 @@ def dec1_print_borrow hex, borrow @ output1, end {
     borrow+dbit;
   end:
 }
+
 
 def print_if_flags hex_flags_val @ l0, l1, hex < IO {
     hex.if_flags hex, hex_flags_val>>4, l0, l1
@@ -286,10 +326,12 @@ def print_if_flags hex_flags_val @ l0, l1, hex < IO {
     output '1'
 }
 
+
 def input2hex hex < garbage {
     hex.input_hex hex
     hex.input_hex garbage
 }
+
 
 def input_hex_print_error @ hex, error, end {
     hex.input_as_hex hex, error
@@ -302,6 +344,7 @@ def input_hex_print_error @ hex, error, end {
   end:
 }
 
+
 def cat_char @ char, end {
     hex.input char
     hex.print char
@@ -310,24 +353,26 @@ def cat_char @ char, end {
   end:
 }
 
+
 def print_uint n, x {
     hex.print_uint n, x, 1, 0
-    output_str ", "
+    output ", "
     hex.print_uint n, x, 1, 1
-    output_str ", "
+    output ", "
     hex.print_uint n, x, 0, 0
-    output_str ", "
+    output ", "
     hex.print_uint n, x, 0, 1
-    output_str "\n"
+    output "\n"
 }
+
 
 def print_int n, x {
     hex.print_int n, x, 1, 0
-    output_str ", "
+    output ", "
     hex.print_int n, x, 1, 1
-    output_str ", "
+    output ", "
     hex.print_int n, x, 0, 0
-    output_str ", "
+    output ", "
     hex.print_int n, x, 0, 1
-    output_str "\n"
+    output "\n"
 }

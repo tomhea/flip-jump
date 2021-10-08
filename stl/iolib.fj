@@ -59,12 +59,12 @@ def output_bit bit < IO {
 }
 
 // Complexity: 8
-def output ascii {
+def output_char ascii {
     rep(8, i) output_bit (ascii>>i)&1
 }
 
-def output_str str {
-    rep(((#str)+7)>>3, i) output (str>>(8*i))&0xff
+def output str {
+    rep(((#str)+7)>>3, i) output_char (str>>(8*i))&0xff
 }
 
 

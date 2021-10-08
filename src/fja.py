@@ -4,6 +4,7 @@ from assembler import assemble
 
 from os.path import isfile, abspath, isdir, join
 from glob import glob
+import traceback
 import argparse
 from defs import *
 
@@ -33,17 +34,34 @@ def main():
         if len(args.file) != 1 or not isdir(args.file[0]):
             parser.error('the "file" argument should contain a folder path.')
         Path.mkdir(Path(args.file[0]) / 'compiled', exist_ok=True)
+        failures = []
+        total = 0
         for file in glob(join(args.file[0], '*.fj')):
 
             # if file in (r'tests\calc.fj', r'tests\func.fj', r'tests\pair_ns.fj') or file.startswith(r'tests\hexlib-'):
             #     continue
 
+            total += 1
             print(f'compiling {Path(file).name}:')
             no_stl = args.no_stl or 'no-stl' in Path(file).stem
-            assemble([file] if no_stl else stl() + [file],
-                     (Path(args.file[0]) / 'compiled' / (Path(file).stem + '.fjm')),
-                     args.width, args.Werror, flags=args.flags, verbose=verbose_set)
+            try:
+                assemble([file] if no_stl else stl() + [file],
+                         (Path(args.file[0]) / 'compiled' / (Path(file).stem + '.fjm')),
+                         args.width, args.Werror, flags=args.flags, verbose=verbose_set)
+            except FJException as e:
+                print()
+                print(e)
+                failures.append(file)
             print()
+
+        print()
+        if len(failures) == 0:
+            print(f'All tests compiled successfully! 100%')
+        else:
+            print(f'{total-len(failures)}/{total} tests compiled successfully ({(total-len(failures))/total*100:.2f}%).')
+            print(f'Failed compilations:')
+            for test in failures:
+                print(f'  {test}')
 
     else:
         if not args.no_stl:
@@ -54,9 +72,14 @@ def main():
                 parser.error(f'file {file} is not a .fj file.')
             if not isfile(abspath(file)):
                 parser.error(f'file {file} does not exist.')
-        assemble(args.file, args.outfile, args.width, args.Werror, flags=args.flags,
-                 show_statistics=args.stats,
-                 preprocessed_file=args.no_macros, debugging_file=args.debug, verbose=verbose_set)
+        try:
+            assemble(args.file, args.outfile, args.width, args.Werror, flags=args.flags,
+                     show_statistics=args.stats,
+                     preprocessed_file=args.no_macros, debugging_file=args.debug, verbose=verbose_set)
+        except FJException as e:
+            print()
+            print(e)
+            exit(1)
 
 
 if __name__ == '__main__':
