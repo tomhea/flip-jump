@@ -419,7 +419,9 @@ ns bit {
 
 
 ns hex {
-    def div n, nb, q, _r, _a, _b @ loop, after_loop,   do_cmp_sub_func, do_sub, jump_to_flip, flip_op,   r, b, a, i, ret,   end {
+    def div n, nb, q, _r, _a, _b, div0 @ loop, after_loop,   do_cmp_sub_func, do_sub, jump_to_flip, flip_op,   r, b, a, i, ret,   end {
+        .if0 nb, _b, div0
+
         .zero q
         .zero nb+1, r
 
@@ -447,10 +449,7 @@ ns hex {
         .shl_hex n, q
 
         .dec #n, i
-        .sign #n, i, 0, after_loop, loop
-
-      after_loop:
-        .mov nb, _r, r
+        .sign #n, i, after_loop, loop
 
       do_cmp_sub_func:
         hex.shr_bit nb+1, b
@@ -473,6 +472,8 @@ ns hex {
       i:  .vec #n
       ret: ;0
 
+      after_loop:
+        .mov nb, _r, r
       end:
     }
 }
