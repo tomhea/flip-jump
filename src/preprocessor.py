@@ -7,17 +7,10 @@ import plotly.graph_objects as go
 
 
 def macro_resolve_error(curr_tree, msg=''):
-    print()
-    if msg:
-        print(f"Macro Resolve Error:")
-        print(f"  {msg}")
-    else:
-        print(f"Macro Resolve Error.")
-
-    print(f"macro call trace:")
+    error_str = f"Macro Resolve Error" + (f':\n  {msg}' if msg else '.') + f'\nmacro call trace:\n'
     for i, trace_str in enumerate(curr_tree):
-        print(f'  {i}) {trace_str}')
-    error(1)
+        error_str += f'  {i}) {trace_str}\n'
+    raise FJPreprocessorException(error_str)
 
 
 def output_ops(ops, output_file):
@@ -100,7 +93,7 @@ def resolve_macros(w, macros, output_file=None, show_statistics=False, verbose=F
 def try_int(op, expr):
     if expr.is_int():
         return expr.val
-    error(f"Can't resolve the following name: {expr.eval({}, op.file, op.line)} (in op={op}).")
+    raise FJPreprocessorException(f"Can't resolve the following name: {expr.eval({}, op.file, op.line)} (in op={op}).")
 
 
 def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_dict, dollar_count, stat_dict,

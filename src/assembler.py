@@ -25,7 +25,7 @@ def close_segment(w, segment_index, boundary_addresses, writer, first_address, l
     data_start, data_length = writer.add_data(bits + wflips)
     segment_length = (last_address - first_address) // w
     if segment_length < data_length:
-        error(f'segment-length is smaller than data-length:  {segment_length} < {data_length}')
+        raise FJAssemblerException(f'segment-length is smaller than data-length:  {segment_length} < {data_length}')
     writer.add_segment(first_address // w, segment_length, data_start, data_length)
 
     bits.clear()
@@ -58,10 +58,10 @@ def assert_none_crossing_segments(curr_segment_index, old_address, new_address, 
                         min_seg_start = last_start
 
     if min_i is not None:
-        error(f"Overlapping segments (address {hex(new_address)}): "
-              f"seg[{clean_segment_index(curr_segment_index, boundary_addresses)}]"
-              f"=({hex(boundary_addresses[curr_segment_index][1])}..) and "
-              f"seg[{clean_segment_index(min_i, boundary_addresses)}]=({hex(min_seg_start)}..)")
+        raise FJAssemblerException(f"Overlapping segments (address {hex(new_address)}): "
+                                   f"seg[{clean_segment_index(curr_segment_index, boundary_addresses)}]"
+                                   f"=({hex(boundary_addresses[curr_segment_index][1])}..) and "
+                                   f"seg[{clean_segment_index(min_i, boundary_addresses)}]=({hex(min_seg_start)}..)")
 
 
 def get_next_wflip_entry_index(boundary_addresses, index):
@@ -69,13 +69,13 @@ def get_next_wflip_entry_index(boundary_addresses, index):
     while boundary_addresses[index][0] != SegEntry.WflipAddress:
         index += 1
         if index >= length:
-            error(f'No WflipAddress entry found in boundary_addresses.')
+            raise FJAssemblerException(f'No WflipAddress entry found in boundary_addresses.')
     return index
 
 
 def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=False, flags=0):   # TODO handle verbose?
     if max(e[1] for e in boundary_addresses) >= (1 << w):
-        error(f"Not enough space with the {w}-width.")
+        raise FJAssemblerException(f"Not enough space with the {w}-width.")
 
     writer = fjm.Writer(w, flags=flags if flags else 0)
 
@@ -89,7 +89,7 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
     for op in ops:
         ids = eval_all(op, labels)
         if ids:
-            error(f"Can't resolve the following names: {', '.join(ids)} (in op {op}).")
+            raise FJAssemblerException(f"Can't resolve the following names: {', '.join(ids)} (in op {op}).")
         vals = [datum.val for datum in op.data]
 
         if op.type == OpType.FlipJump:
@@ -127,9 +127,9 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
                 wflip_address = next_op + 2 * w
 
                 if wflip_address >= (1 << w):
-                    error(f"Not enough space with the {w}-width.")
+                    raise FJAssemblerException(f"Not enough space with the {w}-width.")
         else:
-            error(f"Can't resolve/assemble the next opcode - {str(op)}")
+            raise FJAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
 
     close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits, wflips)
     writer.write_to_file(output_file)
@@ -141,23 +141,7 @@ def assemble(input_files, output_file, w, warning_as_errors, flags=None,
         verbose = set()
 
     if w not in (8, 16, 32, 64):
-        error(f'The width ({w}) must be one of (8, 16, 32, 64).')
-
-    # if only_cache:
-    #     if isfile(debugging_file):
-    #         with open(debugging_file, 'rb') as f:
-    #             return pickle.load(f)
-    #     print(debugging_file)
-    #     return {}
-
-    # if assembled files are up to date
-    # if try_cached and debugging_file and isfile(output_file) and isfile(debugging_file):
-    #     if max(getmtime(infile) for infile in input_files) \
-    #             < min(getmtime(outfile) for outfile in (debugging_file, output_file)):
-    #         if Verbose.Time in verbose:
-    #             print(f'  loading assembled data...')
-    #         with open(debugging_file, 'rb') as f:
-    #             return pickle.load(f)
+        raise FJAssemblerException(f'The width ({w}) must be one of (8, 16, 32, 64).')
 
     temp_preprocessed_file, temp_fd = False, 0
     if preprocessed_file is None:

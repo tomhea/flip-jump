@@ -182,8 +182,8 @@ ns hex {
         .if0 src, after_add
         .add_mul n, res, dst, src
       after_add:
-        .shl n, dst
-        .shr n, src
+        .shl_hex n, dst
+        .shr_hex n, src
         .if  n, src, end, loop      // can be replaced with #n-sized index decrement and check.
 
 
@@ -416,3 +416,65 @@ ns bit {
       end:
     }
 }
+
+
+ns hex {
+    def div n, nb, q, _r, _a, _b, div0 @ loop, after_loop,   do_cmp_sub_func, do_sub, jump_to_flip, flip_op,   r, b, a, i, ret,   end {
+        .if0 nb, _b, div0
+
+        .zero q
+        .zero nb+1, r
+
+        .mov nb, b, _b
+        .mov  n, a, _a
+
+        .set #n, i, n-1
+
+      loop:
+        .shl_hex nb+1, b
+
+        .shl_hex n, r
+        .xor r, a+(n-1)*dw
+
+        fcall do_cmp_sub_func, ret
+        jump_to_flip+dbit+0;
+        fcall do_cmp_sub_func, ret
+        jump_to_flip+dbit+1;
+        fcall do_cmp_sub_func, ret
+        jump_to_flip+dbit+0;
+        fcall do_cmp_sub_func, ret
+        jump_to_flip+dbit+1;
+
+        .shl_hex n, a
+        .shl_hex n, q
+
+        .dec #n, i
+        .sign #n, i, after_loop, loop
+
+      do_cmp_sub_func:
+        hex.shr_bit nb+1, b
+        hex.cmp nb+1, r, b, ret, do_sub, do_sub
+      do_sub:
+        hex.sub nb+1, r, b
+
+      jump_to_flip:
+        ;flip_op
+        pad 4
+      flip_op:
+        q+dbit+0; ret
+        q+dbit+1; ret
+        q+dbit+3; ret
+        q+dbit+2; ret
+
+      r:  .vec nb+1
+      b:  .vec nb+1
+      a:  .vec n
+      i:  .vec #n
+      ret: ;0
+
+      after_loop:
+        .mov nb, _r, r
+      end:
+    }
+}
+

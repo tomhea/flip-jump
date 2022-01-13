@@ -4,6 +4,7 @@ from assembler import assemble
 from fjm_run import debug_and_run
 
 import os
+import struct
 from os.path import isfile, abspath
 import difflib
 from tempfile import mkstemp
@@ -67,9 +68,14 @@ def main():
         temp_debug_fd, args.debug = mkstemp()
         temp_debug_file = True
 
-    assemble(args.file, args.outfile, args.width, args.Werror, flags=args.flags,
-             show_statistics=args.stats,
-             preprocessed_file=args.no_macros, debugging_file=args.debug, verbose=verbose_set)
+    try:
+        assemble(args.file, args.outfile, args.width, args.Werror, flags=args.flags,
+                 show_statistics=args.stats,
+                 preprocessed_file=args.no_macros, debugging_file=args.debug, verbose=verbose_set)
+    except FJException as e:
+        print()
+        print(e)
+        exit(1)
 
     if temp_assembled_file:
         os.close(temp_assembled_fd)
@@ -90,11 +96,11 @@ def main():
             infile = f'{test}.in'
             outfile = f'{test}.out'
             if not isfile(infile):
-                print(f'test "{test}" missing an infile ("{infile}").')
+                print(f'test "{test}" missing an infile ("{infile}").\n')
                 failures.append(test)
                 continue
             if not isfile(outfile):
-                print(f'test "{test}" missing an outfile ("{outfile}").')
+                print(f'test "{test}" missing an outfile ("{outfile}").\n')
                 failures.append(test)
                 continue
 
@@ -103,19 +109,25 @@ def main():
                 test_input = inf.read()
             with open(outfile, 'r', encoding='utf-8') as outf:
                 expected_output = outf.read()
-            run_time, ops_executed, output, finish_cause = \
-                debug_and_run(args.outfile,
-                              defined_input=test_input,
-                              verbose=verbose_set)
-            if output != expected_output:
-                print(f'test "{test}" failed. here\'s the diff:')
-                print(''.join(difflib.context_diff(output.splitlines(1), expected_output.splitlines(True),
-                                                   fromfile='assembled file' if temp_assembled_file else args.outfile,
-                                                   tofile=outfile)))
+
+            try:
+                run_time, ops_executed, flips_executed, output, finish_cause = \
+                    debug_and_run(args.outfile,
+                                  defined_input=test_input,
+                                  verbose=verbose_set)
+                if output != expected_output:
+                    print(f'test "{test}" failed. here\'s the diff:')
+                    print(''.join(difflib.context_diff(output.splitlines(1), expected_output.splitlines(True),
+                                                       fromfile='assembled file' if temp_assembled_file else args.outfile,
+                                                       tofile=outfile)))
+                    failures.append(test)
+                    if not args.silent:
+                        print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed:,} ops executed, {flips_executed / ops_executed * 100:.2f}% flips)')
+            except FJReadFjmException as e:
+                print()
+                print(e)
                 failures.append(test)
 
-            if not args.silent:
-                print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed} ops executed)')
             print()
 
         print()
@@ -131,16 +143,20 @@ def main():
         breakpoint_set = set(args.breakpoint)
         breakpoint_any_set = set(args.any_breakpoint)
 
-        run_time, ops_executed, output, finish_cause = \
-            debug_and_run(args.outfile, debugging_file=args.debug,
-                          defined_input=None,
-                          verbose=verbose_set,
-                          breakpoint_labels=breakpoint_set,
-                          breakpoint_any_labels=breakpoint_any_set)
-
-        if not args.silent:
-            print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed} ops executed)')
+        try:
+            run_time, ops_executed, flips_executed, output, finish_cause = \
+                debug_and_run(args.outfile, debugging_file=args.debug,
+                              defined_input=None,
+                              verbose=verbose_set,
+                              breakpoint_labels=breakpoint_set,
+                              breakpoint_any_labels=breakpoint_any_set)
+            if not args.silent:
+                print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed:,} ops executed, {flips_executed / ops_executed * 100:.2f}% flips)')
+                print()
+        except FJReadFjmException as e:
             print()
+            print(e)
+            exit(1)
 
     if temp_debug_file:
         os.close(temp_debug_fd)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import struct
 
 from fjm_run import debug_and_run
 
@@ -38,17 +39,18 @@ def main():
         total = 0
         folder = abspath(args.file)
         if not isdir(folder):
-            error('the "file" argument should contain a folder path.')
+            print('Error: The "file" argument should contain a folder path.')
+            exit(1)
         for file in glob(join(folder, '*.fjm')):
             total += 1
             infile = abspath(str(Path(inout_dir) / f'{Path(file).stem}.in'))
             outfile = abspath(str(Path(inout_dir) / f'{Path(file).stem}.out'))
             if not isfile(infile):
-                print(f'test "{file}" missing an infile ("{infile}").')
+                print(f'test "{file}" missing an infile ("{infile}").\n')
                 failures.append(file)
                 continue
             if not isfile(outfile):
-                print(f'test "{file}" missing an outfile ("{outfile}").')
+                print(f'test "{file}" missing an outfile ("{outfile}").\n')
                 failures.append(file)
                 continue
 
@@ -57,22 +59,26 @@ def main():
                 test_input = inf.read()
             with open(outfile, 'r', encoding='utf-8') as outf:
                 expected_output = outf.read()
-            run_time, ops_executed, output, finish_cause = \
-                debug_and_run(file,
-                              defined_input=test_input,
-                              verbose=verbose_set)
 
-            if not args.silent:
-                print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed} ops executed)')
+            try:
+                run_time, ops_executed, flips_executed, output, finish_cause = \
+                    debug_and_run(file, defined_input=test_input, verbose=verbose_set)
 
-            if output != expected_output:
-                print(f'test "{file}" failed. here\'s the diff:')
-                print(''.join(difflib.context_diff(output.splitlines(1), expected_output.splitlines(True),
-                                                   fromfile=file, tofile=outfile)))
-                failures.append(file)
+                if not args.silent:
+                    print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed:,} ops executed, {flips_executed/ops_executed*100:.2f}% flips)')
 
-            if finish_cause != RunFinish.Looping:
-                print(f'test "{file}" finished unexpectedly, with {finish_cause.value}.')
+                if output != expected_output:
+                    print(f'test "{file}" failed. here\'s the diff:')
+                    print(''.join(difflib.context_diff(output.splitlines(1), expected_output.splitlines(True),
+                                                       fromfile=file, tofile=outfile)))
+                    failures.append(file)
+
+                if finish_cause != RunFinish.Looping:
+                    print(f'test "{file}" finished unexpectedly, with {finish_cause.value}.')
+                    failures.append(file)
+            except FJReadFjmException as e:
+                print()
+                print(e)
                 failures.append(file)
 
             print()
@@ -101,16 +107,21 @@ def main():
         breakpoint_set = set(args.breakpoint)
         breakpoint_any_set = set(args.any_breakpoint)
 
-        run_time, ops_executed, output, finish_cause = \
-            debug_and_run(file, debugging_file=args.debug,
-                          defined_input=None,
-                          verbose=verbose_set,
-                          breakpoint_labels=breakpoint_set,
-                          breakpoint_any_labels=breakpoint_any_set)
+        try:
+            run_time, ops_executed, flips_executed, output, finish_cause = \
+                debug_and_run(file, debugging_file=args.debug,
+                              defined_input=None,
+                              verbose=verbose_set,
+                              breakpoint_labels=breakpoint_set,
+                              breakpoint_any_labels=breakpoint_any_set)
 
-        if not args.silent:
-            print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed} ops executed)')
+            if not args.silent:
+                print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed:,} ops executed, {flips_executed/ops_executed*100:.2f}% flips)')
+                print()
+        except FJReadFjmException as e:
             print()
+            print(e)
+            exit(1)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,8 @@
+prints:
 fedcba9876543210
 FEDCBA9876543210
 
+xor:
 fedcba9876543210
 efcdab8967452301
 cdef89ab45670123
@@ -18,50 +20,87 @@ efcdab8967452301
 0123456789abcdef
 fedcba9876543210
 
+zero:
 0000000000000000
 
+xor n:
 fedcba9876543210
 
+xor_zero:
 0000000000000000
 fedcba9876543210
 
+mov:
 fedcba9876543210
 fedcba9876543210
 
+set:
 0123456789abcdef
 fedcba9876543210
 
+swap:
 fedcba9876543210
 0123456789abcdef
 
+inc1:
 1000000000000000
 0fedcba987654321
 
+inc, not:
 0000000000000001
 0000000000000010
 ffffffffffffffff
 0000000000000000
 
+dec1:
 0000000000000001
 edcba9876543210f
 
+dec:
 0000000000000001
 0000000000000000
 ffffffffffffffff
 fffffffffffffffe
 
+neg:
 0000000000000000
 ffffffffffffffd0
 0000000000000030
 
+if_flags:
 0111010110111111001101101100100100111000011101011000100100001100011010100100111100010000010000100110
 
+if:
 000111111111
 000111111111
 
+sign:
+++++++++--------
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--------------------------------------------------------------------------------------------------------------------------------
+
+input_hex:
 fedcba9876543210
 0123456789XXXXXXXabcdefXXXXXXXXXXXXXXXXXXXXXXXXXXabcdefXXXXXXXXX
 
+input-print:
 0123456789:;<=>?
 Flip, Jump!
+
+print_uint:
+0x12345af, 0x12345AF, 12345af, 12345AF
+0xdeadc0de, 0xDEADC0DE, deadc0de, DEADC0DE
+0x3, 0x3, 3, 3
+0xf0, 0xF0, f0, F0
+0x0, 0x0, 0, 0
+
+print_int:
+0x12345af, 0x12345AF, 12345af, 12345AF
+0xdeadc0de, 0xDEADC0DE, deadc0de, DEADC0DE
+0x3, 0x3, 3, 3
+0xf0, 0xF0, f0, F0
+0x0, 0x0, 0, 0
+-0x12345af, -0x12345AF, -12345af, -12345AF
+-0xdeadc0de, -0xDEADC0DE, -deadc0de, -DEADC0DE
+-0x3, -0x3, -3, -3
+-0xf0, -0xF0, -f0, -F0
 
