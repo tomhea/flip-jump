@@ -1,7 +1,7 @@
 import fjm
 
 from os import path
-from sys import stdin
+from sys import stdin, stdout
 from time import time
 import pickle
 import easygui
@@ -104,7 +104,8 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
                         for _ in range(3):
                             print()
                     else:
-                        print(chr(output_char), end='', flush=True)
+                        stdout.buffer.write(bytes([output_char]))
+                        stdout.flush()
                 output_anything_yet = True
                 output_char, output_size = 0, 0
 
@@ -134,12 +135,12 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
             print(hex(new_ip)[2:])
 
         if new_ip == ip and not ip <= f < ip+2*w:
-            if output_verbose and output_anything_yet:
+            if output_verbose and output_anything_yet and breakpoints:
                 print()
             run_time = time()-start_time-pause_time
             return run_time, ops_executed, flips_executed, output, RunFinish.Looping        # infinite simple loop
         if new_ip < 2*w:
-            if output_verbose and output_anything_yet:
+            if output_verbose and output_anything_yet and breakpoints:
                 print()
             run_time = time() - start_time - pause_time
             return run_time, ops_executed, flips_executed, output, RunFinish.NullIP         # null ip
