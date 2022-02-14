@@ -1,7 +1,7 @@
 import fjm
 
 from os import path
-from sys import stdin
+from sys import stdin, stdout
 from time import time
 import pickle
 import easygui
@@ -104,7 +104,8 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
                         for _ in range(3):
                             print()
                     else:
-                        print(chr(output_char), end='', flush=True)
+                        stdout.buffer.write(bytes([output_char]))
+                        stdout.flush()
                 output_anything_yet = True
                 output_char, output_size = 0, 0
 
