@@ -269,7 +269,8 @@ ns hex {
 
 
 // ---------- Divide:
-
+// q = a/b
+// r = a%b
 
 ns bit {
     def idiv n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
@@ -416,6 +417,7 @@ ns bit {
       end:
     }
 }
+
 
 
 ns hex {
