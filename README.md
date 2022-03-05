@@ -142,7 +142,11 @@ Hello, World!
   - calc.fj     - command line 2 hex/dec calculator, ```a [+-*/%] b```.
   - func.fj     - performs function calls and operations on stack.
   - hexlib.fj   - tests the basic macros in stl/hexlib.fj.
-  
+
+**fjms** (FlipJump Memory, compiled programs), for example:
+  - quine.fjm - a [quine](https://en.wikipedia.org/wiki/Quine_(computing)) by [lestrozi](https://github.com/lestrozi); prints itself.
+  - hello_world.fjm - prints "Hello, World!\n(:".
+
 # Read More
 
 A very extensive explanation can be found on the [github wiki page](https://github.com/tomhea/flip-jump/wiki/Learn-FlipJump).
