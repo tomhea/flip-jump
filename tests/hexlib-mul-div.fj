@@ -29,20 +29,27 @@ DIV_B2_NUM = 0x6e287f9d6d301a1d335442d41a1aed5cd0c66a3f69321d412d7b2ad5b09de6c0f
 DIV_B4_NUM = 0x35693c547f39bb78985939825165f49cd015a98a814eda69bd762e66e44f4f44915bc2df73f3a9a41ba3b82ea2d62a85ed4b9be039927eebfe932c86780fa3fa06477bec7b21a6ba527704eda18333a1da94a4dee4ab0865ba05e5bc78b11612b10f66b6128ea96ec120fc12ed6c64b1fc78387147e286347de4352f800e14b48be2acdbf0e1ee6153bcd5da831b5f975d693ffe911114a5a7a16867c87d55ecb6135e9fc0cff7683c99c66d970cf1b93d68a95f843714c809b6d131c9392cf79988461cd
 DIV_B8_NUM = 0x70b06b1281c825b68a90ebb74db2e604b7af1091374ea71f9700d06c69cc9f4528e0ce8cb927b9a6c38191bfe3ba2a7a846ab232a6f1bed5cce422495ffd7293d95bcdb3cca6b36912fe1ef9280de585b5b43dfffcf6a6e2e8589a9247bc9a61da78c73dc9f7720e2a5139dcb2d5294a9b816a90cfcac7688bf64f7e0e5e7f81bbf1eb9618da9d74e192e5796b2fff35b2f08fcb69522a01af6a7f4a1466719c9eb0650bc61294a7331a18952b59d9b6f7d1c68bd30962fed55cf6e396610666ab80f1404e9c6695721a69d5e9a3d60b9b0ec0e38d0663006f03e1a2cac891db7b749179001ee03f23999a53f6d3f5c00665a8e64e565ba972dab0d7ca848e56c7722707204421e8f622de3d3ec901dc3f510f7f43c5da7b364521da3e1ece71de150a8c5483c5ba0ddbb4cd31e3376145673113bd4c500a4838367dcb5955b5b0f377e0574fd6d668849b2c5944e5bc6ae6c23776be9cd85fdad7dd60ebed860daec0ab316b6e704c944548b1e48a3c9dfb8437cdf48184ca18c847e4abe2b19381ce80323483280ccd7ca2e
 //rep(50, i) test_div 4, 1, div4_1, (DIV_NUM>>(16*i+0))&((1<<16)-1), (DIV_B1_NUM>>( 4*i))&((1<< 4)-1)
-//output '\n'
+rep(50, i) output "0=="
+output '\n'
 //rep(30, i) test_div 4, 2, div4_2, (DIV_NUM>>(16*i+1))&((1<<16)-1), (DIV_B2_NUM>>( 8*i))&((1<< 8)-1)
-//output '\n'
+rep(30, i) output "0=="
+output '\n'
 //rep(20, i) test_div 4, 4, div4_4, (DIV_NUM>>(16*i+2))&((1<<16)-1), (DIV_B4_NUM>>(16*i))&((1<<16)-1)
-rep(100, i) output '='
-//output "\n\n"
+rep(20, i) output "0=="
+//rep(100, i) output '='
+output "\n\n"
 //rep(40, i) test_div 8, 1, div8_1, (DIV_NUM>>(64*i+3))&((1<<32)-1), (DIV_B1_NUM>>( 4*i + 50* 4))&((1<< 4)-1)
-//output '\n'
+rep(40, i) output "0=="
+output '\n'
 //rep(30, i) test_div 8, 2, div8_2, (DIV_NUM>>(64*i+4))&((1<<32)-1), (DIV_B2_NUM>>( 8*i + 50* 8))&((1<< 8)-1)
-//output '\n'
+rep(30, i) output "0=="
+output '\n'
 //rep(20, i) test_div 8, 4, div8_4, (DIV_NUM>>(64*i+5))&((1<<32)-1), (DIV_B4_NUM>>(16*i + 50*16))&((1<<16)-1)
-//output '\n'
+rep(20, i) output "0=="
+output '\n'
 //rep(10, i) test_div 8, 8, div8_8, (DIV_NUM>>(64*i+6))&((1<<32)-1), (DIV_B8_NUM>>(32*i + 50*32))&((1<<32)-1)
-rep(100, i) output '='
+rep(10, i) output "0=="
+//rep(100, i) output '='
 output "\n\n"
 
 
