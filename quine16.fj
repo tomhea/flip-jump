@@ -257,19 +257,19 @@ IO:
 
 b5:
 	// alternate b6 with b6_alt
-	wflip counter+1*dw+w, b6^b6_alt, b1xor
+	wflip counter+1*dw+w, b6^b6_alt, b5xor
 
 b6:
 	// alternate b7 with b7_alt
-	wflip counter+2*dw+w, b7^b7_alt, b2xor
+	wflip counter+2*dw+w, b7^b7_alt, b6xor
 
 b7:
 	// alternate b8 with b8_alt
-	wflip counter+3*dw+w, b8^b8_alt, b3xor
+	wflip counter+3*dw+w, b8^b8_alt, b7xor
 
 
 //////////////////////////////////////////////////
-b1xor:
+b5xor:
 	jmp_data+dbit+0;counter+1*dw
 //////////////////////////////////////////////////
 
@@ -283,21 +283,21 @@ jmp_loop:
 
 b8:
 	// alternate b9 with b9_alt
-	wflip counter+4*dw+w, b9^b9_alt, b4xor
+	wflip counter+4*dw+w, b9^b9_alt, b8xor
 
 //////////////////////////////////////////////////
-b2xor:
+b6xor:
 	jmp_data+dbit+1;counter+2*dw
 //////////////////////////////////////////////////
 
 b9:
 	// alternate b10 with b10_alt
-	wflip counter+5*dw+w, b10^b10_alt, b5xor
+	wflip counter+5*dw+w, b10^b10_alt, b9xor
 
 
 b10:
 	// alternate b11 with b11_alt
-	wflip counter+6*dw+w, b11^b11_alt, b6xor
+	wflip counter+6*dw+w, b11^b11_alt, b10xor
 
 
 b6_alt:
@@ -308,25 +308,25 @@ b14_alt:
 ;jmp_loop
 
 //////////////////////////////////////////////////
-b3xor:
+b7xor:
 	jmp_data+dbit+2;counter+3*dw
 //////////////////////////////////////////////////
 
 //////////////////////////////////////////////////
-b4xor:
+b8xor:
 	jmp_data+dbit+3;counter+4*dw
 //////////////////////////////////////////////////
 
 b11:
 	// alternate b12 with b12_alt
-	wflip counter+7*dw+w, b12^b12_alt, b7xor
+	wflip counter+7*dw+w, b12^b12_alt, b11xor
 
 b12:
 	// alternate b13 with b13_alt
-	wflip counter+8*dw+w, b13^b13_alt, b8xor
+	wflip counter+8*dw+w, b13^b13_alt, b12xor
 
 //////////////////////////////////////////////////
-b5xor:
+b9xor:
 	jmp_data+dbit+4;counter+5*dw
 //////////////////////////////////////////////////
 
@@ -337,22 +337,22 @@ halt:
 	dw+0;halt
 
 //////////////////////////////////////////////////
-b6xor:
+b10xor:
 	jmp_data+dbit+5;counter+6*dw
 //////////////////////////////////////////////////
 
 //////////////////////////////////////////////////
-b7xor:
+b11xor:
 	jmp_data+dbit+6;counter+7*dw
 //////////////////////////////////////////////////
 
 b13:
 	// alternate b14 with b14_alt
-	wflip counter+9*dw+w, b14^b14_alt, b9xor
+	wflip counter+9*dw+w, b14^b14_alt, b13xor
 
 
 //////////////////////////////////////////////////
-b8xor:
+b12xor:
 	jmp_data+dbit+7;counter+8*dw
 //////////////////////////////////////////////////
 
@@ -363,7 +363,7 @@ end:
 	wflip jmp_resume+w, end_1 ^ end_cont, digits+dw*0x5
 
 //////////////////////////////////////////////////
-b9xor:
+b13xor:
 	jmp_data+dbit+8;counter+9*dw
 //////////////////////////////////////////////////
 
