@@ -104,8 +104,8 @@
 // data:
 // ;digits + dw*0xB
 // ;digits + dw*0xA;
-// ;digits + dw*0xC;
 // ;digits + dw*0xD;
+// ;digits + dw*0xC;
 // ;end
 // 
 // Notice this is still wasteful in the sense that the first 16 bits of each op are unused.
@@ -113,8 +113,8 @@
 // So let's try to make it denser:
 // data:
 // 0              ;digits + dw*0xB
-// digits + dw*0xA;digits + dw*0xC
-// digits + dw*0xD;end
+// digits + dw*0xA;digits + dw*0xD
+// digits + dw*0xC;end
 // 
 // This doubles the amount of data we can store now if we increment our pointer to data
 // 16 bits at a time instead of 32 bits at a time.
@@ -122,7 +122,7 @@
 // one will be iterated as data[0], data[0]+w, data[1], data[1]+w, data[2].
 // 
 // The problem is that, when we process, for example, data[1], we'll not only jump to
-// (digits + dw*0xC) - which is what we intended - but we'll also have a side effect of flipping (digits + dw*0xA),
+// (digits + dw*0xD) - which is what we intended - but we'll also have a side effect of flipping (digits + dw*0xA),
 // which would mess our digits array.
 // 
 // The way I'm fixing this is to, before jumping to data[i] (or data[i]+w), flipping a bit of the first word, which
@@ -132,8 +132,8 @@
 //
 // data:
 // 0              ;flipping_area + dw*0xB	// <- notice it doesn't point to the digits array anymore
-// digits + dw*0xA;digits + dw*0xC
-// digits + dw*0xD;end
+// digits + dw*0xA;digits + dw*0xD
+// digits + dw*0xC;end
 // 
 // Now we're wasting 16 ops in flipping area (because it needs to be the same size as digits), but
 // not only it's worth it since we double the data density, there's also a trick to reuse this space later.
@@ -190,7 +190,7 @@
 // The way I initially did this was like (not tested):
 /////////////////////////////////////////////////////
 // inc:
-//	bit.not counter+0*dw;
+//	bit.not counter+0*dw
 //	wflip counter+0*dw+w, b4, counter+0*dw
 //
 // b4:
@@ -198,7 +198,7 @@
 //	;jmp_loop		// b4 is now 1, so no overflow
 //
 // handle_overflow_b4:
-// 	bit.not counter+1*dw;
+// 	bit.not counter+1*dw
 // 	wflip counter+1*dw+w, b5, counter+1*dw
 //
 // b5:
@@ -208,24 +208,27 @@
 // ...
 /////////////////////////////////////////////////////
 //
-// Notice that `;jmp_loop` repeats for every bit of our incrementer, so the way I managed
-// to optimize this was to actually make counter+i*dw to alternate pointing to the overflow-handler
-// (b1, b2, b3...) and pointing to the ";jmp_loop" (b1_alt, b2_alt, b3_alt...)
+// Notice that `;jmp_loop` repeats for every bit of our incrementer, and `b4` and `b5` just redirects
+// to handle_overflow_b4/5. The way I managed to optimize this was to actually make counter+i*dw
+// alternate pointing to the overflow-handler (named b4, b5, b6...) and pointing to the
+// `;jmp_loop` (b4_alt, b5_alt, b6_alt...)
 //
 // I had to place only one additional `;jmp_loop` in the code in order to ensure that all
-// wflips [`b1` <-> `b1_alt`], [`b2` <-> `b2_alt`], etc. were single-bit.
+// wflips [`b5` <-> `b5_alt`], [`b6` <-> `b6_alt`], etc. were single-bit.
 //
 //
 // ## Result
 // This 16-bits quine requires only 99 ops (2 of them are padding required to align
-// the most efficient position for `data`, considering it needs to be rewinded).
+// the most efficient position for `data`, considering it needs to be rewinded), plus
+// (99*4 + 52 bytes from the header) = 448 ops to store data.
+// This means its total size is 99+448 = 547 ops 
 //
 // I also managed to reuse 16-ops of the `flipping area` because knowing only 1 bit of each op is flipped,
 // the "jump" address can still be used (it doesn't get flipped). The only side effect is that bits 0 and
 // 1 might be flipped while jumping, but that's not an issue.
-//
-// I also managed to use the flip operand of this area, but doing so requires defining the flip operand
-// *incorrectly*, so it gets "fixed" (instead of being broken) in runtime while bits are flipped in this area.
+// The flip operand of this area was also used for some ops, but doing so required defining the flip
+// operand *incorrectly*, so it gets "fixed" (instead of being broken) in runtime while bits are flipped
+// in this area.
 //
 //
 // Finally, I had to align those labels such that the wflip between them be single-bit
