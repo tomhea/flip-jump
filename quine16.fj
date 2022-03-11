@@ -378,7 +378,7 @@ end_print_code_3:
 	// set jmp_data to start over
 
 	// can't use wflip here because it would create a wflip_area in the end
-	// wflip jmp_data+w, data ^ data_end, end_print_code_4
+	// wflip jmp_data+w, (data-0x10) ^ data_end, end_print_code_4
 	jmp_data+w+4;
 	jmp_data+w+5;
 	jmp_data+w+11;
