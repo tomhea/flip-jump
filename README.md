@@ -144,7 +144,7 @@ Hello, World!
   - hexlib.fj   - tests the basic macros in stl/hexlib.fj.
 
 **fjms** (FlipJump Memory, compiled programs), for example:
-  - quine.fjm - a [quine](https://en.wikipedia.org/wiki/Quine_(computing)) by [lestrozi](https://github.com/lestrozi); prints itself.
+  - quine16.fjm - a 16-bits [quine](https://en.wikipedia.org/wiki/Quine_(computing)) by [lestrozi](https://github.com/lestrozi); prints itself.
   - hello_world.fjm - prints "Hello, World!\n(:".
 
 # Read More
