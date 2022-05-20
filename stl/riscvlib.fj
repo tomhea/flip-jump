@@ -7,68 +7,96 @@
 // Everything after // is ignored, everything before first : is ignored too, and every whitespace is ignored (besides new line)
 // An opcode is:  F;L  F  ;L  or just  ;  (no F => F=0;  no L => L=next)
 
+// Complexity note: phi is log2 of the total number of fj operations, counting wflips as one op.
+// so 2 wflips with value=label (while label is padded with 2^n) causes phi-n space/time complexity
+
+// Space complexity might not be exact
+
 
 
 // ---------- Init:
 
 
-.def riscv_init
-    .registers_init
-    .structs_init
-    .functions_init
-.end
+ns riscv {
+    def init {
+        .regs.init
+        ._.structs_init
+        ._.functions_init
+    }
 
 
-.def register_init
-    __RV_x0:  __RV_Zero:         .var 32
-    __RV_x1:  __RV_ra:           .var 32
-    __RV_x2:  __RV_sp:           .var 32
-    __RV_x3:  __RV_gp:           .var 32
-    __RV_x4:  __RV_tp:           .var 32
+    ns _ {
+        def structs_init {
+            bit.ptr_init
+            bit.stack 10    // TODO why 10
+        }
+    
+        def functions_init {
+            // TODO
+        }
+    }
+    
+    ns regs {
+        def init {
+            .init_x0_to_x4
+            .init_x5_to_x7
+            .init_x8_to_x9
+            .init_x10_to_x17
+            .init_x18_to_x27
+            .init_x28_to_x31
+        }
 
-    __RV_x5:  __RV_t0:           .var 32
-    __RV_x6:  __RV_t1:           .var 32
-    __RV_x7:  __RV_t2:           .var 32
+        def init_x0_to_x4 > x0, zero, x1, ra, x2, sp, x3, gp, x4, tp {
+            x0:  zero:      hex.vec 8
+            x1:  ra:        hex.vec 8
+            x2:  sp:        hex.vec 8
+            x3:  gp:        hex.vec 8
+            x4:  tp:        hex.vec 8
+        }
 
-    __RV_x8:  __RV_s0: __RV_fp:  .var 32
-    __RV_x9:  __RV_s1:           .var 32
+        def init_x5_to_x7 > x5, t0, x6, t1, x7, t2 {
+            x5:  t0:        hex.vec 8
+            x6:  t1:        hex.vec 8
+            x7:  t2:        hex.vec 8
+        }
 
-    __RV_x10: __RV_a0:           .var 32
-    __RV_x11: __RV_a1:           .var 32
-    __RV_x12: __RV_a2:           .var 32
-    __RV_x13: __RV_a3:           .var 32
-    __RV_x14: __RV_a4:           .var 32
-    __RV_x15: __RV_a5:           .var 32
-    __RV_x16: __RV_a6:           .var 32
-    __RV_x17: __RV_a7:           .var 32
+        def init_x8_to_x9 > x8, s0, fp, x9 {
+            x8:  s0:  fp:   hex.vec 8
+            x9:  s1:        hex.vec 8
+        }
 
-    __RV_x18: __RV_s2:           .var 32
-    __RV_x19: __RV_s3:           .var 32
-    __RV_x20: __RV_s4:           .var 32
-    __RV_x21: __RV_s5:           .var 32
-    __RV_x22: __RV_s6:           .var 32
-    __RV_x23: __RV_s7:           .var 32
-    __RV_x24: __RV_s8:           .var 32
-    __RV_x25: __RV_s9:           .var 32
-    __RV_x26: __RV_s10:          .var 32
-    __RV_x27: __RV_s11:          .var 32
+        def init_x10_to_x17 > s1, x10, a0, x11, a1, x12, a2, x13, a3, x14, a4, x15, a5, x16, a6, x17, a7 {
+            x10: a0:        hex.vec 8
+            x11: a1:        hex.vec 8
+            x12: a2:        hex.vec 8
+            x13: a3:        hex.vec 8
+            x14: a4:        hex.vec 8
+            x15: a5:        hex.vec 8
+            x16: a6:        hex.vec 8
+            x17: a7:        hex.vec 8
+        }
 
-    __RV_x28: __RV_t3:           .var 32
-    __RV_x29: __RV_t4:           .var 32
-    __RV_x30: __RV_t5:           .var 32
-    __RV_x31: __RV_t6:           .var 32
-.end
+        def init_x18_to_x27 > x18, s2, x19, s3, x20, s4, x21, s5, x22, s6, x23, s7, x24, s8, x25, s9, x26, s10, x27, s11 {
+            x18: s2:        hex.vec 8
+            x19: s3:        hex.vec 8
+            x20: s4:        hex.vec 8
+            x21: s5:        hex.vec 8
+            x22: s6:        hex.vec 8
+            x23: s7:        hex.vec 8
+            x24: s8:        hex.vec 8
+            x25: s9:        hex.vec 8
+            x26: s10:       hex.vec 8
+            x27: s11:       hex.vec 8
+        }
 
-
-.def structs_init
-    .init_ptr
-    .stack 10*w
-.end
-
-
-.def functions_init
-
-.end
+        def init_x28_to_x31 > x28, t3, x29, t4, x30, t5, x31, t6 {
+            x28: t3:        hex.vec 8
+            x29: t4:        hex.vec 8
+            x30: t5:        hex.vec 8
+            x31: t6:        hex.vec 8
+        }
+    }
+}
 
 
 
