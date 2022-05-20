@@ -1,0 +1,1031 @@
+// $ python3 src/fja.py -w 16 quine16.fj -o quine16.fjm && python3 src/fji.py -s quine16.fjm >/tmp/output && diff quine16.fjm /tmp/output && echo "quine!"
+//
+// Author: Luis Fernando Estrozi ( https://github.com/lestrozi )
+//
+//
+// It's not always one can say they quite literally understand every bit of a program.
+//
+//
+// ## Quine
+// 
+// Quine is defined in Wikipedia as "a computer program which takes no input and produces a copy of its own source code as its only output".
+//
+// The definition of "source code" for FlipJump may be ambiguous, since what FlipJump defines is mainly an op (2 integers) that
+// can be represented as text with a separator, in binary, or many other formats.
+// 
+// I took the liberty to define a Quine for FlipJump as a binary (fjm) that prints itself (including the header struct).
+// 
+// First, create quine16.fjm from the source:
+// `$ python3 src/fja.py -w 16 quine16.fj -o quine16.fjm`
+//
+// Then the quine can be checked using:
+// `$ python3 fji.py -s quine16.fjm >output`
+// `$ diff quine16.fjm output`
+// 
+// 
+// ## How does it work?
+// 
+// This is a good starting point to understand how a quine can be done:
+// https://www.codingame.com/playgrounds/50485/brainfuck-part-7---quine-some-non-bf-quine-theory/welcome
+// 
+// In short, we need:
+// * A data section that will store the code
+// * A way to print the data section contents
+// * A way to print the data section as it is defined (because our code also contains the data section,
+//   we need to print it as part of the code)
+// 
+// A naive way to implement a quine in FJ would be to encode the bytes of the code 1 bit at a time, for
+// example, to encode 0xAB (0b1010 1011), we could do (lsb):
+// 
+// data:
+// ;digits + dw*1
+// ;digits + dw*1
+// ;digits + dw*0
+// ;digits + dw*1
+// ;digits + dw*0
+// ;digits + dw*1
+// ;digits + dw*0
+// ;digits + dw*1
+// ;end
+// 
+// Then we'd need a digits "array", such as:
+// 
+// digits:
+// dw+0;resume
+// dw+1;resume
+// 
+// And a pointer to the current position we're iterating of data:
+//
+// jmp_data:
+//	;data+0*w
+//   
+// (resume would point to code that increments the pointer to data at jmp_data and jumps to jmp_data)
+// 
+// This would be using an op (16 + 16 bits) to encode a single bit, which is very wasteful.
+// We could encode more bits, but the [digits] array needs to grow accordingly.
+//
+// For example, encoding 4 bits instead of 1:
+// data:
+// ;digits + dw*0xB
+// ;digits + dw*0xA
+// ;end
+// 
+// Adopting the notation label[i] to represent the address `label + i*dw`, our 
+// digits "array" needs to be 16 ops long: digits[0x0] to digits[0xF]. Notice also that
+// each of these addresses would need to print 4 bits now, not only a single bit.
+// 
+// I defined the digits array in a recursive-ish way:
+/////////////////////////////////////////////////////
+// def digit_jmp addr, i {
+//   dw + (i % 2); addr + ((i>>1) * dw)
+// }
+// 
+// digits:
+// rep(16, i) .digit_jmp p000, i
+// 
+// p000:
+// rep(8, i) .digit_jmp p00, i
+// 
+// p00:
+// rep(4, i) .digit_jmp p0, i
+// 
+// p0:
+// dw+0;jmp_resume
+// dw+1;jmp_resume
+/////////////////////////////////////////////////////
+// 
+// Here, the digits array has 16 entries that will print only the first (lsb) bit of
+// the 4 bits and jump to the appropriate p000[n] position to print the other 3 bits.
+// In this way, printing "0111" and "0110" becomes either, respectively:
+// * print 1; print 110
+// * print 0; print 110
+// 
+// Which means we can re-use the "print 110" for both.
+// 
+// 
+// After this detour about the digits array, let's get back to how data is being encoded.
+// Let's say we wanted to encode 0xAB and 0xCD, that's how we'd do:
+// data:
+// ;digits + dw*0xB
+// ;digits + dw*0xA;
+// ;digits + dw*0xD;
+// ;digits + dw*0xC;
+// ;end
+// 
+// Notice this is still wasteful in the sense that the first 16 bits of each op are unused.
+// 
+// So let's try to make it denser:
+// data:
+// 0              ;digits + dw*0xB		// data[0]
+// digits + dw*0xA;digits + dw*0xD		// data[1]
+// digits + dw*0xC;end				// data[2]
+// 
+// This doubles the amount of data we can store now if we increment our pointer to data
+// 16 bits at a time instead of 32 bits at a time.
+// While we'd iterate over the previous encoding as data[0], data[1], data[2], data[3], data[4]; this
+// one will be iterated as data[0], data[0]+w, data[1], data[1]+w, data[2].
+// 
+// The problem is that, when we process, for example, data[1], we'll not only jump to
+// (digits + dw*0xD) - which is what we intended - but we'll also have a side effect of flipping (digits + dw*0xA),
+// which would mess our digits array.
+// 
+// The way I'm fixing this is to, before jumping to data[i] (or data[i]+w), flipping a bit of the first word, which
+// redirects the flipping from digits to a designed flipping area, where bits can be safely flipped!
+// This is confusing, so let's use an example. If data has the values described above, before jumping
+// to data[0]+w, we'd have changed it to:
+//
+// data:
+// 0              ;flipping_area + dw*0xB	// <- notice it doesn't point to the digits array anymore
+// digits + dw*0xA;digits + dw*0xD
+// digits + dw*0xC;end
+// 
+// Now we're wasting 16 ops in flipping area (because it needs to be the same size as digits), but
+// not only it's worth it since we double the data density, there's also a trick to reuse this space later.
+// 
+// After all that explanation, here's an diagram of how printing the code works:
+// 
+//                       |
+//                       V
+//               +---------------+          +------------+
+//    +--------> | flip_data_bit | <--------| jmp_resume |
+//    |          +---------------+          +------------+
+//    |                  |                         ^
+//    |                  V                         |
+//    |           +------------+          +-----------------+
+//    |           | after_flip |          | digits + [char] |
+//    |           +------------+          +-----------------+
+//    |                  |                         ^
+//    |                  |                         |
+//    |         +--------+-------+                 |
+//    |         |                |                 |
+//    |         V                V                 |
+//    |      +-----+       +----------+            |
+//    +------| inc |       | jmp_data |------------+
+//           +-----+       +----------+
+//
+// `flip_data_bit` also alternates the next jump after `after_flip` between `jmp_data` and `inc` (see the fork above)
+//
+//  `flip_data_bit` -> `after_flip` -> `jmp_data` -> `digits` -> `jmp_resume`
+//        ^                                                            |
+//        |                                                            V
+//      `inc` <----------- `after_flip` (unflip!) <----------- `flip_data_bit`
+// 
+//
+// After we print the code, we need to print the data definition, which is pretty similar. We need to
+// rewind the pointer to data* and start printing again, but this time with some padding before and after.
+// * actually we need to rewind it 1 word earlier than data, because we also want to print
+// the first word of data.
+//
+// The shift from printing code to printing data is done by `end_print_code`.
+//
+// The way `inc` (used to increment the pointer to data) is implemented is also optimized.
+// Let's say jmp_data is pointing to data[0]. In the next iteration, we want it to point
+// to data[0]+w, so we just need to flip bit (jmp_data+dbit-1) (which is what `inc` does).
+//
+// This is what happens to jmp_data:
+//                                             V
+// Before:  0000 0000 0000 0000 ; 0000 1100 0110 0000  (0x0000; 0x0C60)
+//  After:  0000 0000 0000 0000 ; 0000 1100 0111 0000  (0x0000; 0x0C70)
+//                                             ^
+//
+// Easy. But the next iteration is more difficult, because flipping bit (jmp_data+dbit-1) overflows,
+// so we need to propagate the increment up to 10 bits before this one.
+//
+// The way I initially did this was like (not tested):
+/////////////////////////////////////////////////////
+// inc:
+//	bit.not counter+0*dw
+//	wflip counter+0*dw+w, b4, counter+0*dw
+//
+// b4:
+// 	;handle_overflow_b4
+//	;jmp_loop		// b4 is now 1, so no overflow
+//
+// handle_overflow_b4:
+// 	bit.not counter+1*dw
+// 	wflip counter+1*dw+w, b5, counter+1*dw
+//
+// b5:
+// 	;handle_overflow_b5
+//	;jmp_loop		// b5 is now 1, so no overflow
+//
+// ...
+/////////////////////////////////////////////////////
+//
+// Notice that `;jmp_loop` repeats for every bit of our incrementer, and `b4` and `b5` just redirects
+// to handle_overflow_b4/5. The way I managed to optimize this was to actually make counter[i]
+// alternate pointing to the overflow-handler (named b4, b5, b6...) and pointing to the
+// `;jmp_loop` (b4_alt, b5_alt, b6_alt...)
+//
+// I had to place only one additional `;jmp_loop` in the code in order to ensure that all
+// wflips [`b5` <-> `b5_alt`], [`b6` <-> `b6_alt`], etc. were single-bit.
+//
+//
+// ## Result
+// This 16-bits quine requires only 99 ops (2 of them are padding required to align
+// the most efficient position for `data`, considering it needs to be rewinded), plus
+// (99*4 + 52 bytes from the header) = 448 ops to store data.
+// This means its total size is 99+448 = 547 ops 
+//
+// I also managed to reuse 16-ops of the `flipping area` because knowing only 1 bit of each op is flipped,
+// the "jump" address can still be used (it doesn't get flipped). The only side effect is that bits 0x0000
+// and 0x0001 might be flipped while executing that op, but that's not an issue.
+// The flip operand of this area was also used for some ops, but doing so required defining the flip
+// operand *incorrectly*, so it gets "fixed" in runtime while bits are flipped in this area.
+//
+//
+// Finally, I had to align those labels such that the wflip between them be single-bit
+// (ie (label1 XOR label2) must be a power of 2)
+// [b5], 			[b5_alt]
+// [b6], 			[b6_alt]
+// [b7], 			[b7_alt]
+// [b8], 			[b8_alt]
+// [b9], 			[b9_alt]
+// [b10], 			[b10_alt]
+// [b11], 			[b11_alt]
+// [b12], 			[b12_alt]
+// [b13], 			[b13_alt]
+// [b14], 			[b14_alt]
+// [resume_print_data], 	[flip_data_bit]
+// [loop_print_data], 		[flip_data_bit]
+// [end], 			[end_print_code]
+// [end_1], 			[resume_print_data]
+// [end_1], 			[end_cont]
+// [print_dwsize_padding]+0x20,	[jmp_resume]
+// [print_data_padding]+0x20,	[jmp_resume]
+// [inc],			[jmp_data]
+//
+// [digits] must also be a multiple of 0x200
+//
+//
+// ## Future work
+// At first glance you could think this 2244 bytes (compiled) program is the smallest
+// possible quine for flip-jump, but it is not.
+// I already managed to make it less than 2000 bytes
+// (sha256: 6a5c528d0a4a5a79aa15cb12425e56afb84b06cb808fbcc9f0ac53c6d5110f73) and
+// I'm pretty sure it can still be improved, but those are small bruteforce marginal
+// gains that I'm not too interested in persuing at the moment.
+
+
+;flip_data_bit
+IO:
+;0
+
+b5:
+	// alternate b6 with b6_alt
+	wflip counter+1*dw+w, b6^b6_alt, b5xor
+
+b6:
+	// alternate b7 with b7_alt
+	wflip counter+2*dw+w, b7^b7_alt, b6xor
+
+b7:
+	// alternate b8 with b8_alt
+	wflip counter+3*dw+w, b8^b8_alt, b7xor
+
+
+//////////////////////////////////////////////////
+b5xor:
+	jmp_data+dbit+0;counter+1*dw
+//////////////////////////////////////////////////
+
+b5_alt:
+b7_alt:
+b8_alt:
+b11_alt:
+b13_alt:
+jmp_loop:
+	;flip_data_bit
+
+b8:
+	// alternate b9 with b9_alt
+	wflip counter+4*dw+w, b9^b9_alt, b8xor
+
+//////////////////////////////////////////////////
+b6xor:
+	jmp_data+dbit+1;counter+2*dw
+//////////////////////////////////////////////////
+
+b9:
+	// alternate b10 with b10_alt
+	wflip counter+5*dw+w, b10^b10_alt, b9xor
+
+
+b10:
+	// alternate b11 with b11_alt
+	wflip counter+6*dw+w, b11^b11_alt, b10xor
+
+
+b6_alt:
+b9_alt:
+b10_alt:
+b12_alt:
+b14_alt:
+;jmp_loop
+
+//////////////////////////////////////////////////
+b7xor:
+	jmp_data+dbit+2;counter+3*dw
+//////////////////////////////////////////////////
+
+//////////////////////////////////////////////////
+b8xor:
+	jmp_data+dbit+3;counter+4*dw
+//////////////////////////////////////////////////
+
+b11:
+	// alternate b12 with b12_alt
+	wflip counter+7*dw+w, b12^b12_alt, b11xor
+
+b12:
+	// alternate b13 with b13_alt
+	wflip counter+8*dw+w, b13^b13_alt, b12xor
+
+//////////////////////////////////////////////////
+b9xor:
+	jmp_data+dbit+4;counter+5*dw
+//////////////////////////////////////////////////
+
+end_cont:
+	dw+0;
+	dw+0;
+halt:
+	dw+0;halt
+
+//////////////////////////////////////////////////
+b10xor:
+	jmp_data+dbit+5;counter+6*dw
+//////////////////////////////////////////////////
+
+//////////////////////////////////////////////////
+b11xor:
+	jmp_data+dbit+6;counter+7*dw
+//////////////////////////////////////////////////
+
+b13:
+	// alternate b14 with b14_alt
+	wflip counter+9*dw+w, b14^b14_alt, b13xor
+
+
+//////////////////////////////////////////////////
+b12xor:
+	jmp_data+dbit+7;counter+8*dw
+//////////////////////////////////////////////////
+
+end:
+	// print 0x8 (using the digits array) and return to end_1
+	wflip jmp_resume+w, resume_print_data ^ end_1, digits+dw*0x8
+
+	end_1:
+	// print 0x5 (using the digits array) and return to end_cont
+	wflip jmp_resume+w, end_1 ^ end_cont, digits+dw*0x5
+
+//////////////////////////////////////////////////
+b13xor:
+	jmp_data+dbit+8;counter+9*dw
+//////////////////////////////////////////////////
+
+b14:
+	jmp_data+dbit+9;jmp_loop
+
+//////////////////////////////////////////////////
+end_print_code_3:
+	// set jmp_data to start over
+
+	// can't use wflip here because it would create a wflip_area in the end
+	// wflip jmp_data+w, (data-0x10) ^ data_end, end_print_code_4
+	jmp_data+w+4;
+	jmp_data+w+5;
+	jmp_data+w+11;
+	jmp_data+w+14;end_print_code_4
+//////////////////////////////////////////////////
+
+// 0x400
+//////////////////////////////////////////////////
+flip_area:
+	counter:
+		;((data>> 4)&1) ? b5_alt  : b5
+		;((data>> 5)&1) ? b6_alt  : b6
+		;((data>> 6)&1) ? b7_alt  : b7
+		;((data>> 7)&1) ? b8_alt  : b8
+		;((data>> 8)&1) ? b9_alt  : b9
+		;((data>> 9)&1) ? b10_alt : b10
+		;((data>>10)&1) ? b11_alt : b11
+		;((data>>11)&1) ? b12_alt : b12
+		;((data>>12)&1) ? b13_alt : b13
+		;((data>>13)&1) ? b14_alt : b14
+
+	// bits may have been flipped in this area, so if we know
+	// a bit would end up flipped when we reach end_print_code, we need to
+	// define it "unflipped" here
+
+end_print_code_4:
+	// set resume to resume (will be alternated to resume_print_data)
+	// 0xb60	resume_print_data
+	// 0xb100	flip_data_bit
+	(jmp_resume+w+6)^0x0;
+
+        // reset where "flip_data_bit" jump to
+	// 0xc00	inc
+	// 0xc20	jmp_data
+	(jmp_after_flip+w+5)^0x1;
+
+	// set jmp_loop to skip printing the padding word
+	// 0xb100	flip_data_bit
+	// 0xb80	loop_print_data
+	(jmp_loop+w+5)^0x0;
+
+	// set data_end to jump to end and start loop again
+	// 0x300	end
+	// 0xb00	end_print_code
+	(data_end+w+11)^0x1;jmp_loop
+
+	0;			// USE WITH CARE, MIGHT BE FLIPPED
+	0;			// USE WITH CARE, MIGHT BE FLIPPED
+//////////////////////////////////////////////////
+
+// 0x600
+//////////////////////////////////////////////////
+def digit_jmp addr, i {
+  dw + (i % 2); addr + ((i>>1) * dw)
+}
+
+digits:
+rep(16, i) .digit_jmp p000, i
+
+p000:
+rep(8, i) .digit_jmp p00, i
+
+p00:
+rep(4, i) .digit_jmp p0, i
+
+p0:
+dw+0;jmp_resume
+dw+1;jmp_resume
+//////////////////////////////////////////////////
+
+//////////////////////////////////////////////////
+end_print_code_1:
+	// 0xc60 - 0x10	(data - 0x10)
+	// 0x4460	data_end
+
+	// since the data pointer is pointing to the end (data_end), we need to bring it back
+	// to the beginning (data); actually, we bring it one word earlier because we want
+	// to print the first word of data (0x0)
+
+	// bits of (data ^ data_end (offset by -4)). Bit 14 shouldn't be flipped
+	wflip counter+(4-4)*dw+w, b5 ^ b5_alt, end_print_code_2		// alternate b5 with b5_alt
+//////////////////////////////////////////////////
+
+// 0x9E0
+print_dwsize_padding:
+	// dw+0;	// done before calling this method
+
+	zero_padding=0x0
+	// print 0x0 (using the digits array) and return to unflip_jump
+	p0+((zero_padding >> 4) & 1)*dw + dbit;digits+dw*zero_padding
+
+	unflip_jump:
+	// 0x2C0
+	p0+((zero_padding >> 4) & 1)*dw + dbit;flip_data_bit
+
+// 0xA20
+jmp_resume:
+	// saving an op by flipping counter*0*dw+w bit here before jumping to resume (which would always flip it)
+
+	// alternate b5 with b5_alt
+	wflip counter+0*dw+w, b5 ^ b5_alt, flip_data_bit
+
+// 0xA40
+print_data_padding:
+	// dw+1;	// done before calling this label 
+
+	// ((digits >> 10) & 0xF):
+	char2=0x1
+	p0+((char2 >> 4) & 1)*dw + dbit + 1;digits+dw*char2
+
+	// 0x320
+	dw+((digits >> 14) & 0x1);
+
+	dw+((digits >> 15) & 0x1);
+	p0+((char2 >> 4) & 1)*dw + dbit + 1;flip_data_bit
+
+	// ^ the operation above can probably be merged with the last operation
+	// in print_dwsize_padding if the flip word be a bit print (dw+0/1) that's used
+	// for both print_data_padding and print_dwsize_padding
+
+
+//////////////////////////////////////////////////
+end_print_code_2:
+	wflip counter+(5-4)*dw+w, b6 ^ b6_alt
+	wflip counter+(11-4)*dw+w, b12 ^ b12_alt, end_print_code_3
+//////////////////////////////////////////////////
+
+
+// 0xB00
+// end_print_code is spaghetti code because it's occupying the padding areas that were
+// left to align some labels
+end_print_code:
+	// we need to unflip data_end's data bits since we didn't go to "resume" after this cycle
+	data_end+w-7;end_print_code_1
+
+// 0xB20
+resume_print_data:
+	dw+((digits >> 9) & 0x1);print_data_padding
+
+// 0xB40
+loop_print_data:
+	dw+0;print_dwsize_padding
+
+// 0xB60
+flip_data_bit:
+	jmp_data+w+0;
+	jmp_data+w+3;
+
+	wflip jmp_after_flip+w, inc ^ jmp_data, jmp_data+w
+
+
+//////////////////////////////////////////////////
+after_flip:
+	jmp_data+w+0;
+
+	jmp_after_flip:
+	jmp_data+w+3;inc	// <- `inc` here will be alternated with `jmp_data` by flip_data_bit
+//////////////////////////////////////////////////
+
+
+// 0xc00
+//////////////////////////////////////////////////
+inc:
+	// counter+0 has already been flipped by jmp_resume
+	jmp_data+dbit-1;counter+0*dw
+////////////////////////////////////////////////////
+
+// 0xc20
+////////////////////////////////////////////////////
+// [jmp_data] will jump to data (flip 0; jump to data)
+// [jmp_data+w] will flip data and jump to after_flip, but
+// bits 0+3 needs to be set (and then unset) before using it that way
+// this is calculated as follow:
+// 0x400	flip_area
+// 0x600	digits
+// [flip_area] ^ [digits] = 0x200, which has the 9th bit set
+// 9 is 0b1001, so we need to flip those bits
+jmp_data:
+	;data+0*w
+
+	after_flip;digits+dw*0x0
+
+// 0xc60
+data:
+digits+dw*0x0;digits+dw*0x6
+digits+dw*0x4;digits+dw*0xa
+digits+dw*0x4;digits+dw*0x0
+digits+dw*0x1;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x8
+digits+dw*0x4;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x8
+digits+dw*0x4;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0xb
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x8
+digits+dw*0x3;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x6
+digits+dw*0x5;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x0;digits+dw*0x5
+digits+dw*0x7;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x8;digits+dw*0x1
+digits+dw*0x0;digits+dw*0x5
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0xb
+digits+dw*0x0;digits+dw*0x6
+digits+dw*0x9;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0x1
+digits+dw*0x0;digits+dw*0x6
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x4;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x5
+digits+dw*0xb;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x2
+digits+dw*0x0;digits+dw*0x8
+digits+dw*0xd;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x8;digits+dw*0x2
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xc;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x7
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x8
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x8;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x7
+digits+dw*0xf;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0x2
+digits+dw*0x0;digits+dw*0x9
+digits+dw*0x1;digits+dw*0x5
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xe;digits+dw*0x2
+digits+dw*0x0;digits+dw*0x9
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x4;digits+dw*0x2
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0x2
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0x2
+digits+dw*0x0;digits+dw*0xa
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xc;digits+dw*0x4
+digits+dw*0x0;digits+dw*0xb
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xe;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x9
+digits+dw*0x3;digits+dw*0x5
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x4;digits+dw*0x3
+digits+dw*0x0;digits+dw*0xc
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x5
+digits+dw*0x0;digits+dw*0xb
+digits+dw*0x3;digits+dw*0xa
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x7
+digits+dw*0x0;digits+dw*0x8
+digits+dw*0x3;digits+dw*0xa
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0x6
+digits+dw*0x0;digits+dw*0xd
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x5
+digits+dw*0x0;digits+dw*0xe
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xc;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x4
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0x3
+digits+dw*0x0;digits+dw*0x5
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xc;digits+dw*0x3
+digits+dw*0x0;digits+dw*0xb
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xe;digits+dw*0x3
+digits+dw*0x0;digits+dw*0xe
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x4;digits+dw*0x5
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x4;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0x1
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xc;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xe;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x1
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x4;digits+dw*0x1
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xc;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0x1
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xc;digits+dw*0x2
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0x3
+digits+dw*0x0;digits+dw*0x6
+digits+dw*0x3;digits+dw*0xa
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0x5
+digits+dw*0x0;digits+dw*0x4
+digits+dw*0xf;digits+dw*0xb
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x8;digits+dw*0x5
+digits+dw*0x0;digits+dw*0x5
+digits+dw*0xd;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0x5
+digits+dw*0x0;digits+dw*0xa
+digits+dw*0x7;digits+dw*0x4
+digits+dw*0x4;digits+dw*0x0
+digits+dw*0xc;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xe;digits+dw*0x5
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x6
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x4;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x4;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x8;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x8;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xc;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xc;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xe;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xe;digits+dw*0x8
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x4;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x4;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x8;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x8;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0xa
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0xa
+digits+dw*0x0;digits+dw*0x7
+digits+dw*0x1;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xc;digits+dw*0xa
+digits+dw*0x0;digits+dw*0x5
+digits+dw*0x9;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x6
+digits+dw*0x0;digits+dw*0x5
+digits+dw*0x9;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0xb
+digits+dw*0x0;digits+dw*0x7
+digits+dw*0x1;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0xb
+digits+dw*0x0;digits+dw*0x6
+digits+dw*0x9;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x6
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x8;digits+dw*0xa
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0xa
+digits+dw*0x0;digits+dw*0x6
+digits+dw*0x9;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0xb
+digits+dw*0x0;digits+dw*0x8
+digits+dw*0x3;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xe;digits+dw*0xa
+digits+dw*0x0;digits+dw*0x7
+digits+dw*0xf;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x8;digits+dw*0x3
+digits+dw*0x0;digits+dw*0x9
+digits+dw*0x6;digits+dw*0x4
+digits+dw*0x4;digits+dw*0x0
+digits+dw*0xc;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x1
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x4;digits+dw*0xa
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x2;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xe;digits+dw*0x9
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x8;digits+dw*0xb
+digits+dw*0x0;digits+dw*0x3
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xa;digits+dw*0xb
+digits+dw*0x0;digits+dw*0x5
+digits+dw*0xf;digits+dw*0xb
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xe;digits+dw*0xb
+digits+dw*0x0;digits+dw*0x3
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x4
+digits+dw*0x3;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x4
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x6;digits+dw*0xc
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0xc;digits+dw*0xb
+digits+dw*0x0;digits+dw*0x0
+digits+dw*0x0;digits+dw*0x6
+data_end:
+digits+dw*0x0;end_print_code
+

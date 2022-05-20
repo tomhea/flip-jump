@@ -1,5 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# Show statistics for FlipJump files.
-*.fj  linguist-language=FlipJump
+# Show statistics for FlipJump files (as Text files, until FlipJump is Supported).
+*.fj  linguist-language=Text

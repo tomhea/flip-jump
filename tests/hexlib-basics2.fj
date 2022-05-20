@@ -1,0 +1,198 @@
+start:
+startup
+
+
+// shl_bit
+output "shl_bit:\n"
+rep(256, i) test_shl_bit 2, i
+//rep(256, i) output '='
+output '\n'
+SHL_BIT_NUM = 0x5e3091155e7701d4b95e0bdd81e6158bb99d9153530facdd5a6633f23432093875702d2373830ebf73b4f354b080b2fa49a78d5c92ca7ba914117cc4b84fa48d65b2dd3e9cedc68ee6cf1c9101016e6515e01a94d46c39e76688933a80ffd6afeeaf38ee9a426d10d8ecd455dd59ffbe893cbb63078454c86d026aa6dd7d7c35b7a1ed05b4245dc3e503f231ae4fcc2c334d71817cae7ae17943bf12dbcfa4e7a6ca7e85902a8d3da9a816eb1d537e2161d6c1e87ba84bbe7ea11cf0d32c1f5ecc9d999ac47fb40fe59b9de0c10936408e2319d0c881f75c0c7356cd314599fa31b18f24edbb78d756bbeca7b9d113ca6982a0fb71a7bf0eb42bfc56cb3803b3c7d2cea06b4589d6410ade42771340c6d040cfd709f06d0f97536ebc071ea51319dde179407e6d3985a374009ffbb2b5bb1cd887da84dc9c7cf572eef4168f14b8e95a1e42c22aac01c085839f284391e6801d0c29cf9d6190349342d1cd9a33ee32245a52c83ed6ecea02d1d77c3637636d17c288cf79b431e81fe194da167823ca0670f5bea6088d4a6fe36000e4785ef68ad7572d30ae73dddb5725e946fc2161984e0748f157c595e4d263ba2d19d5a0a1e21051da1989cf22397a86ca5698c5710d39ec25baba0613c1a7a49a787261180fd5c3a452a55bd1adde08b50291a318c8eb61a2caecbcb4d8c252d2c70841ec3ee8d6f442ef4e02b4e440f5674f119d300737073ff8a99264010e2a8aba87d45d3f9502b076eb5dc8c7b2f793dca5c4c47e91550684e5cab2998283ba6a3c455fe37c32a5c3e4c3de176cdcbcb8f3cd068aa2d5b6ef949e4a16012184696d08e706cb6f77503b9a7adb708d16ce41daa9b9ea92dc2f98b78272470ddea3a36f838cc94531657ffecbb119088111d6f21384b4ac5af09a0dd5cc808f3d4b88bceff73cab106132c03d84542c3962f07b4965cfc8e1f5ce104946648cbfc5436d167af49c3a7c0b1717d1b5001b80049d59f7c714587d706c04dd687d4a74d665a8b1c98aaace93c978759d0204047d4a4662b60840b8f8c1b2a8db9ab663470545f7ac067489e3db368dd3e62c6dfecd1a0b5b0b646e62b68e68247b696a48e806413d35d1d59994c9b049e2b8
+rep(100, i) test_shl_bit 16, (SHL_BIT_NUM>>(64*i))&((1<<64)-1)
+//rep(100, i) output '='
+output "\n\n"
+
+
+// shr_bit
+output "shr_bit:\n"
+rep(256, i) test_shr_bit 2, i
+//rep(256, i) output '='
+output '\n'
+SHR_BIT_NUM = 0x7324285bae8ff63ac38c8717f943525011bc19efb9a7adda6c57a717ff701335b31cbc14d0f819e7e591667bd025064426e681c47b039e29ea7dcb67b7d8206ff075d7afd314bc6d6a3dbb19a0b277d00491e438f2a59fa871f2f77e96f047b7b4ecce08a9f721b7e48dc089ef42234d740ce852b64048c0a44c82b03223bf3c9f037c0c15026b8b2157944636505828df8215593ad5d5707789d2b8d4499511d543c0e63ee1e20230546c57c54e1c29ecf6e88b917b401d679869721ca436b5f02eb0d2401bd6f8bc9258e4406a7c49798177cb1cf10aeaf32236a5833d4961aa93b1b9c652c4a33651d66300d88841dfa3c37c9d361633b2c08c41df520c57d8c6af23d5464aab0665eec43370a2324f200d02893d614c500b29e5e7135f4700573e4076f061ef2bb69307e26dc1c317493f99899e8ccf941572188fd797da83160538ea6cb298dc01b047b082dd74ebdfcfdbdb57c209f57a84a830d3dec13a68f9f5b1468ef3a6b1b89a08c6d696f2259dab9d958201b98eab5bcbd7f0ab20c6d5ff78db71ce96528b386671726b610f915d562e6e7aaaa1441b14e2c3e683a6f851a26f721498c45bbeb8a2642d1827505a3adf1bb2ff06410e270e5ef74366cd009a50bcbea3d123bd290303924469b9990009d9cf6e7594fcbf2fbcf055f1f30696a94ade45245ad47fd02c2f54e74faf22ce45709d851824f45ea1581f8981ed4bc06f8dfe5a7e5570d19852e09d486f59c8e027801c32eafdc04a5bff94fe2b7f08141acfa2f6d2f3a0ae6aab07b4d98ebdd95beb544cede407232f7421b45a0472ca9ed8c8c379223383900b765b1356d922e08fcc4ec7b4c79593ecf807d2da23672a472be451a829f4ea60c90ca81858021f52ce967f9090d4e074936d828754952e37c82000a311d79e4158c2c83cc54d5cabc0d44fd7e3b0d1d4d798577995677ddf571d10f506339eb8aecbce54ce032b77c842cf382b82433a35e1b151d22b2784db4a5af66db9b4af0127e8173fd486ea7ec8da30903b335bd2255134eb6656b6737cfe97fef7db1bc5e9427d44e037cc7eaacfeda93bc9f84b342971e5b3b71633d978ee92d38cbb6a1625dbf9156a146d9cbbda0dea7c
+rep(100, i) test_shr_bit 16, (SHR_BIT_NUM>>(64*i))&((1<<64)-1)
+//rep(100, i) output '='
+output "\n\n"
+
+
+// shl_hex
+output "shl_hex:\n"
+rep(256, i) test_shl_hex 2, i
+//rep(256, i) output '='
+output '\n'
+SHL_HEX_NUM = 0x8f709d3be0bddec5f47a29c78ef3826f8720410088424fbb35e1db4e5741ef695493d5585259ff8ec0776881d06f813259ce23661f6cdd9278f226b195e45f57a4a1b7d90f4d1138d1ca6b3f0250d2133eba1306cf9206c42b6daa2daf2043ec5d29570feb16391b2f3b1735be54750cdeaaaae67a9e1614558eb37f4ebe1b0754c6b03abc75d9f30aecb5ce45a5982dd9ee989aed1bb14c5f8cd9f746a752cfff0ef87cfb6608a5af963db202549aad0eaa61ab6b580b5752effe88f960c219d45fa642195a0b9274704ff104a8fabfd59f6ecd72edd60e08b31020eedfbea19268e4a056457d28387857eab13013d9ef2c98de1e2622eeab9564a8d23edd4d1b86d8faaf99d46744362f57b85783c0d975d8cb3bd33c587ffaa5b3e764d311083ce8502ffae3248f799e8aac5827b5c9b2ca7b5897ec0179d2508e51fd6b5f5f0262096cc360d6e3d452cdce674f48e419f25060ddc28b40f29356bbf3c02f1035a9afe8ef217e9c92cf2b86a43098003f9a70b44c6e63ab064259c8816abca3ebb0d32af6124d948e12066337b94838b561582a380505379d324dc461a5146ee4e50fb4eb6fa09d9452c9b0131ae237f863ccb0c746fd4c8608a06b94f0f510463d7e507791679dbe3e1c5a98f7f362b2c157da3e470ff36c8dce1edba3039dd3605da5ac6be62d812e2fe3b6599aed7a4d029f7898a9b83a6a54fd4fb6735f114b27b644cc475cb07d5b8da31abc044db6e9d9e26736f330307f4f9d6b7e889dd48a5c5ec0c989c12a13603c9026c8be2492b01b6208a9e7309c3ed7ee134b4d3de36f43083b550d6c8d0abc9fecb111fc7a890a88aeb9baddde68a08bd915b161ed0f29eb55e93a1feb900eb5e9141dcc9f7de4e50a6894688fb427f67f302e820718f92888dbb21553bd8e0e2a97b40e2fdadf529767cdef0985e7891ddb7a6fae6568d7e5360e1ed4fda22dd67560c364e19fec11a40f6f96579c5fad9782f96118d1f4d79795e09bc30b64d83e5fb5843ff806468cc0db58baf863029c4637082e0a817ba24255b537cea5d8512064d9128c85b9409fda6211fd88833582a42f428d11f76f9fc9fc3e3ad89b5fedaf359a2bd8e9eca86644b3ad57b5
+rep(100, i) test_shl_hex 16, (SHL_HEX_NUM>>(64*i))&((1<<64)-1)
+//rep(100, i) output '='
+output "\n\n"
+
+
+// shr_hex
+output "shr_hex:\n"
+rep(256, i) test_shr_hex 2, i
+//rep(256, i) output '='
+output '\n'
+SHR_HEX_NUM = 0xcedd8a0a2bef4d7075011cd1a3f22bcb532755598562186d74c59705f1aebca79d4fd2a7962c01512a40c25f62c52cfe0c6ea07c3447ffbbd4146c7399ac497ed0d7789edb1316d6e16c20947891a2544301f2f7750cfdd04c5829221bf7a8f7cb2ca6a6bbdee078cb590a2d7ecd0c0523c9a558a4456994d2c9bb77849ede386e3b71c33c5b3b9c5d17f1ae11e8175471ae1b3903f4d1b8cfdd8ab86f952c946e6d19a7ba9a15bd29b6ece48321e6f0294674d8a24172ac14abd0a21fb829228333da3001ab60159b896112adee47cd26e919db289c05b59fd8deafc4dae3c12411d4b8f2e7d2ada861c2d527b2df7d9abbbd59f46f9f5516ddfb5065ea6dc4d6626d134f4dbbac19f707f07fdc3ceb6719a8bd6c53d5a7e5b016b7f47a0e45d0eab320ec82c11ad4aa9da78b2a60882247f034631ed4dbb3eebbe5ee096710b6cfb3182ffaa96db4c3f81d0d1c64bb399172b832ebef477e192d24c05fe6d641f2f662bea908bb8d7b8f7086915db542145569a614136f26e33657bdd85c477516f2027ee44c2e875df5d39733dd52f44274d61bfafde05010efb4025e0535213c0b48030f84ec88567c91ef44dde4753667ef3f323fd2ef04e2706d6ce953942f0ad12453e82038bd9c9c77ec0d294daad8ee83c594507872ef1f596460cac589374d2a56ceb89968d1d6ed48bf1fb0a24cc0a742e928c0339c71f8e08c446877ab4ba1aa23cbac8c42cd9185794077e6c4f33e39a55386b7f12ae35e172350f70320e588d88343811ef38a3e00399b524be5690672705bc8bc522e9d3150142e3e2ecc8834a9944238a562767d9be8634cf3ce5cdebb7d5f09fa932d3cc221d0878bfb0fb1e51cc9f2534fb024c75256c59c386c21ac4214aa134c4d1381eb02257abdf6557451403018402b22428c9c9e12720ae42569c5d08bf15d24d762160b4644e7ac024cd785a05e7d7f7ab217bc5b173aa1f7f4c6a188c7af5498b9c98475606235e1d7e3f9bb1d95622a6535145f4ded4208e59515746e0893ff43b8709f4a68926769ae434191be6d1c09c18c99862f0cae79457cdbbb869c2829d4ba4d4dba921b47226623c6e3604d754f46c78e95b08414f1ffb5e870fa4
+rep(100, i) test_shr_hex 16, (SHR_HEX_NUM>>(64*i))&((1<<64)-1)
+//rep(100, i) output '='
+output "\n\n"
+
+
+// add_count_bits
+output "count_bits:\n"
+rep(256, i) test_add_count_bits i&0xf, i>>4
+//rep(256, i) output '='
+output '\n'
+
+// count_bits
+CB_NUM = 0x1f4a245bbcb588e8a76ec9f10c25fd21aac218d91e9d6a6bd7965a99ec604d6f9a662865e3c1fd319a75eea0390d3a50f52a60bfdd890f79db7ab0bedc2bab04268d47d95069f296a32a4ef00aed76feecf3260bf6dcf0004fd0cb68df5cc6ebbe0f5636b58665b148d0d8fb4ebd7e2a68efffaf782ebabc1a66d0991dc02ac46b5e25d40cec197b90a4eafc67976da0091f7cac5a58d10a36817702a59e1371f3f64f2298135574768c139833bce2e7b250e9984b65164efe9c77fa1c7b55069c96be65e256bdb6c6087d915c839157df4f67f5feef7483bad6697d7afdda6317290f68febf4701e926b81ea180e5db274d202379cb68b436872060e966afc4e886e8fa7f39f5d31656937c3a6c03ab39b6f99b47a9520c63a69b42f5f38ef0e669d2fe749aa478bd80f5a055f08bd4e930bb5b03f00a48bda48498f83e567cc0dbd585bd3ca29b81cb29ab37d2e9997c07da8353675afe26936c39ba45be43db24a8042b4655c9d4e68a4ae4dd331dd7d10aba78697ff647e7c7f04e5ef7bd8001c0f2eac3ea1f8913940b822026d0f3d44269d61f2a9814d5af4d72550a0c8449d257c6fbf418aaba244af95b4266cba3a57b142977f341f68db4534cc6d47d4ed534c1a07c4b069cd3c913f88471a670a53ef3ac9af50cb0d28739ce7b53abc1e9b5f57d079b58e3403293df0c343386a1358de67b8ebe1c3fc761d6fdd7144676ee4aace3f96c3157a5823609328f34a5b93ca3a7bdf978c725ff8552252b6507b77dd4e356137e8664d1a4eda46cb8abf02c5978e763ea8bc430368c81666a5f468f413d920da5b718ca73161a3d4a85f78668bdac3546b22626267a98d0b653ce275a066b2faa25697eb229ab39c6c1f6581aa8cb68c7d4d57256c54b154f8314d533e349710da4c8054cc5fa3218d0d58cf8624275b92b9f3102e199c376e5258b1332b957c2192cc5c325410b5894510bd5d4470233a97479a0398039c971f468b7cbe0e364f1bf2ebb4c0ddb540bfc80dc1dfc3983e6fb979cbf9bd5631f0e051ece545a3fceb4c8876a5b72b77606d44f73c80111701c790be1c240e843cccda50ed9313c0be528848fd065d80e77428a90c002986c558629426c
+rep(100, i) test_count_bits_64 (CB_NUM>>(64*i))&((1<<64)-1)
+//rep(100, i) output '='
+output "\n\n"
+
+
+loop
+hex.init
+
+
+ah: hex.vec 1
+bh: hex.vec 2
+ch: hex.vec 2
+xh: hex.vec 16
+count: hex.vec 2
+
+
+ret: ;0
+
+add_count_bits_2:
+    hex.add_count_bits 2, bh, ah
+    fret ret
+
+count_bits_64:
+    hex.count_bits 16, count, xh
+    fret ret
+
+
+def test_add_count_bits dst, x @ lt, eq, gt, end < ah, bh, ch, add_count_bits_2, ret {
+    hex.set ah, x
+    hex.set 2, bh, dst
+    hex.set 2, ch, dst + ((x>>0)&1) + ((x>>1)&1) + ((x>>2)&1) + ((x>>3)&1)
+    fcall add_count_bits_2, ret
+    hex.cmp 2, bh, ch, lt, eq, gt
+
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+
+  end:
+}
+
+def test_count_bits_64 x @ lt, eq, gt, end < xh, count, ch, count_bits_64, ret {
+    hex.set 16, xh, x
+    hex.set 2, ch, ((x>>0)&1)+((x>>1)&1)+((x>>2)&1)+((x>>3)&1)+((x>>4)&1)+((x>>5)&1)+((x>>6)&1)+((x>>7)&1)+((x>>8)&1)+((x>>9)&1)+((x>>10)&1)+((x>>11)&1)+((x>>12)&1)+((x>>13)&1)+((x>>14)&1)+((x>>15)&1)+((x>>16)&1)+((x>>17)&1)+((x>>18)&1)+((x>>19)&1)+((x>>20)&1)+((x>>21)&1)+((x>>22)&1)+((x>>23)&1)+((x>>24)&1)+((x>>25)&1)+((x>>26)&1)+((x>>27)&1)+((x>>28)&1)+((x>>29)&1)+((x>>30)&1)+((x>>31)&1)+((x>>32)&1)+((x>>33)&1)+((x>>34)&1)+((x>>35)&1)+((x>>36)&1)+((x>>37)&1)+((x>>38)&1)+((x>>39)&1)+((x>>40)&1)+((x>>41)&1)+((x>>42)&1)+((x>>43)&1)+((x>>44)&1)+((x>>45)&1)+((x>>46)&1)+((x>>47)&1)+((x>>48)&1)+((x>>49)&1)+((x>>50)&1)+((x>>51)&1)+((x>>52)&1)+((x>>53)&1)+((x>>54)&1)+((x>>55)&1)+((x>>56)&1)+((x>>57)&1)+((x>>58)&1)+((x>>59)&1)+((x>>60)&1)+((x>>61)&1)+((x>>62)&1)+((x>>63)&1)
+    fcall count_bits_64, ret
+    hex.cmp 2, count, ch, lt, eq, gt
+
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+
+  end:
+}
+
+
+def test_shl_bit n, x @ lt, eq, gt, xh, ch, end {
+    hex.shl_bit n, xh
+    hex.cmp n, xh, ch, lt, eq, gt
+
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+
+  xh: hex.vec n, x
+  ch: hex.vec n, (x<<1)&((1<<(4*n))-1)
+  end:
+}
+
+def test_shr_bit n, x @ lt, eq, gt, xh, ch, end {
+    hex.shr_bit n, xh
+    hex.cmp n, xh, ch, lt, eq, gt
+
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+
+  xh: hex.vec n, x
+  ch: hex.vec n, (x>>1)&((1<<(4*n))-1)
+  end:
+}
+
+def test_shl_hex n, x @ lt, eq, gt, xh, ch, end {
+    hex.shl_hex n, xh
+    hex.cmp n, xh, ch, lt, eq, gt
+
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+
+  xh: hex.vec n, x
+  ch: hex.vec n, (x<<4)&((1<<(4*n))-1)
+  end:
+}
+
+def test_shr_hex n, x @ lt, eq, gt, xh, ch, end {
+    hex.shr_hex n, xh
+    hex.cmp n, xh, ch, lt, eq, gt
+
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+
+  xh: hex.vec n, x
+  ch: hex.vec n, (x>>4)&((1<<(4*n))-1)
+  end:
+}

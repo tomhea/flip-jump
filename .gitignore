@@ -1,3 +1,7 @@
+a.fjm
+
+lab/
+
 # IDE's
 .idea
 
@@ -169,5 +173,4 @@ dmypy.json
 
 # Executables
 *.exe
-*.out
 *.app

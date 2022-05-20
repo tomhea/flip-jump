@@ -1,5 +1,6 @@
-.startup
-.inc 2 x
-.loop
+    startup
+    bit.inc 2, x
+    loop
 
-x:  .var 2 0
+  x:
+    bit.vec 2, 0

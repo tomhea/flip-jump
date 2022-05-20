@@ -1,0 +1,273 @@
+start:
+startup
+
+
+// cmp
+output "cmp:\n"
+rep(256, i) test_cmp i&0xf, i>>4
+output '\n'
+
+// cmp n
+CMP_N = 0x012345 | (0x123456 << 32) | (0x333333 << 64) | (0x654321 << 96)
+rep(16, i) test_cmp_n 8, (CMP_N >> ((i&3)*32)) & ((1<<32)-1), (CMP_N >> ((i>>2)*32)) & ((1<<32)-1)
+output "\n\n"
+
+
+// add
+output "add:\n"
+rep(256, i) test_add i&0xf, i>>4
+output '\n'
+
+// add n
+ADD_N = 0x0000ffff800040a73dd06622dc0594c9e1b9b001
+rep(100, i) test_add_n 4, (ADD_N>>((i%10)*4)&0xf), (ADD_N>>((i/10))*4&0xf)
+output "\n\n"
+
+
+// sub
+output "sub:\n"
+rep(256, i) test_sub i&0xf, i>>4
+output '\n'
+
+// sub n
+SUB_N = 0x0000ffff8000ada41d9d587f40027d6d07f2c898
+rep(100, i) test_sub_n 4, (SUB_N>>((i%10)*4)&0xf), (SUB_N>>((i/10))*4&0xf)
+output "\n\n"
+
+
+// or
+output "or:\n"
+rep(256, i) test_or i&0xf, i>>4
+output '\n'
+
+// or n
+OR_N = 0x0000ffff8000c47b5d8bbebfbe0bf47bc2600b85
+rep(100, i) test_or_n 4, (OR_N>>((i%10)*4)&0xf), (OR_N>>((i/10))*4&0xf)
+output "\n\n"
+
+
+// and
+output "and:\n"
+rep(256, i) test_and i&0xf, i>>4
+output '\n'
+
+// and n
+AND_N = 0x0000ffff8000b32cccc69dea2047c8e0ae1e5299
+rep(100, i) test_and_n 4, (AND_N>>((i%10)*4)&0xf), (AND_N>>((i/10))*4&0xf)
+output "\n\n"
+
+
+loop
+hex.init
+
+
+def test_cmp a, b @ lt, eq, gt, ah, bh, end {
+    hex.cmp ah, bh, lt, eq, gt
+
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+  ah: hex a
+  bh: hex b
+  end:
+}
+
+
+def test_cmp_n n, a, b @ lt, eq, gt, ah, bh, end {
+    hex.cmp n, ah, bh, lt, eq, gt
+
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+  ah: hex.vec n, a
+  bh: hex.vec n, b
+  end:
+}
+
+
+def test_add a, b @ c0_1st, c1_1st, print_1st, c0_2nd, c1_2nd, print_2nd, ah_1st, bh, ah_2nd, end {
+    hex.add.clear_carry
+    hex.add ah_1st, bh
+    hex.add.clear_carry c0_1st, c1_1st
+  c0_1st:
+    output '0'
+    ;print_1st
+  c1_1st:
+    output '1'
+  print_1st:
+    hex.print_as_digit ah_1st, 0
+    output '-'
+
+    hex.add.not_carry
+    hex.add ah_2nd, bh
+    hex.add.clear_carry c0_2nd, c1_2nd
+  c0_2nd:
+    output '0'
+    ;print_2nd
+  c1_2nd:
+    output '1'
+  print_2nd:
+    hex.print_as_digit ah_2nd, 0
+    output ' '
+    ;end
+
+  ah_1st: hex a
+  ah_2nd: hex a
+  bh:     hex b
+  end:
+}
+
+def test_add_n n, a, b @ lt, eq, gt, ah, bh, ch, end {
+    hex.add n, ah, bh
+    hex.cmp n, ah, ch, lt, eq, gt
+    
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+    
+  ah: hex.vec n, a
+  bh: hex.vec n, b
+  ch: hex.vec n, a+b
+  end:
+}
+
+
+def test_sub a, b @ c0_1st, c1_1st, print_1st, c0_2nd, c1_2nd, print_2nd, ah_1st, bh, ah_2nd, end < hex.sub.dst {
+    hex.sub.clear_carry
+    hex.sub ah_1st, bh
+    hex.sub.clear_carry c0_1st, c1_1st
+  c0_1st:
+    output '0'
+    ;print_1st
+  c1_1st:
+    output 'f'
+  print_1st:
+    hex.print_as_digit ah_1st, 0
+    output '-'
+
+    hex.sub.not_carry
+    hex.sub ah_2nd, bh
+    hex.sub.clear_carry c0_2nd, c1_2nd
+  c0_2nd:
+    output '0'
+    ;print_2nd
+  c1_2nd:
+    output 'f'
+  print_2nd:
+    hex.print_as_digit ah_2nd, 0
+    output ' '
+    ;end
+
+  ah_1st: hex a
+  ah_2nd: hex a
+  bh:     hex b
+  end:
+}
+
+def test_sub_n n, a, b @ lt, eq, gt, ah, bh, ch, end {
+    hex.sub n, ah, bh
+    hex.cmp n, ah, ch, lt, eq, gt
+    
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+    
+  ah: hex.vec n, a
+  bh: hex.vec n, b
+  ch: hex.vec n, a-b
+  end:
+}
+
+
+def test_or a, b @ ah, ah_copy, bh, end {
+    hex.or ah, bh
+    hex.or bh, ah_copy
+    hex.print_as_digit ah, 0
+    hex.print_as_digit bh, 0
+    output ' '
+    ;end
+
+  ah:      hex a
+  ah_copy: hex a
+  bh:      hex b
+  end:
+}
+
+def test_or_n n, a, b @ lt, eq, gt, ah, bh, ch, end {
+    hex.or n, ah, bh
+    hex.cmp n, ah, ch, lt, eq, gt
+    
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+    
+  ah: hex.vec n, a
+  bh: hex.vec n, b
+  ch: hex.vec n, a|b
+  end:
+}
+
+
+def test_and a, b @ ah, ah_copy, bh, end {
+    hex.and ah, bh
+    hex.and bh, ah_copy
+    hex.print_as_digit ah, 0
+    hex.print_as_digit bh, 0
+    output ' '
+    ;end
+
+  ah:      hex a
+  ah_copy: hex a
+  bh:      hex b
+  end:
+}
+
+def test_and_n n, a, b @ lt, eq, gt, ah, bh, ch, end {
+    hex.and n, ah, bh
+    hex.cmp n, ah, ch, lt, eq, gt
+    
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+    
+  ah: hex.vec n, a
+  bh: hex.vec n, b
+  ch: hex.vec n, a&b
+  end:
+}

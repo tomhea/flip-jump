@@ -4,77 +4,8 @@ from tempfile import mkstemp
 import os
 from time import time
 from defs import *
-from parser import parse_macro_tree
+from fj_parser import parse_macro_tree
 import pickle
-
-
-def try_int(op, expr):
-    if expr.is_int():
-        return expr.val
-    error(f"Can't resolve the following name: {expr.eval({}, op.file, op.line)} (in op={op}).")
-
-
-def label_dictionary_pass(ops, w, verbose=False):
-    curr_address = 0
-    rem_ops = []
-    labels = {}
-    label_places = {}
-    boundary_addresses = [(SegEntry.StartAddress, 0)]   # SegEntries
-    last_address_index = 0
-
-    for op in ops:
-        if op.type == OpType.Segment:
-            eval_all(op, labels)
-            value = try_int(op, op.data[0])
-            if value % w != 0:
-                error(f'.segment ops must have a w-aligned address. In {op}.')
-
-            boundary_addresses.append((SegEntry.WflipAddress, curr_address))
-            labels[f'{wflip_start_label}{last_address_index}'] = Expr(curr_address)
-            last_address_index += 1
-
-            curr_address = value
-            boundary_addresses.append((SegEntry.StartAddress, curr_address))
-            rem_ops.append(op)
-        elif op.type == OpType.Reserve:
-            eval_all(op, labels)
-            value = try_int(op, op.data[0])
-            if value % w != 0:
-                error(f'.reserve ops must have a w-aligned value. In {op}.')
-
-            curr_address += value
-            boundary_addresses.append((SegEntry.ReserveAddress, curr_address))
-            labels[f'{wflip_start_label}{last_address_index}'] = Expr(curr_address)
-
-            last_address_index += 1
-            rem_ops.append(op)
-        elif op.type in {OpType.FlipJump, OpType.WordsValue, OpType.WordFlip}:
-            delta = 2*w
-            if op.type == OpType.WordsValue:
-                eval_all(op, labels)
-                delta = w * try_int(op, op.data[0])
-            end_address = curr_address + delta
-            eval_all(op, {'$': Expr(end_address)})
-            curr_address = end_address
-            if op.type == OpType.WordFlip:
-                op.data += (Expr(end_address),)
-            if verbose:
-                print(f'op added: {str(op)}')
-            rem_ops.append(op)
-        elif op.type == OpType.Label:
-            label = op.data[0]
-            if label in labels:
-                other_file, other_line = label_places[label]
-                error(f'label declared twice - "{label}" on file {op.file} (line {op.line}) and file {other_file} (line {other_line})')
-            if verbose:
-                print(f'label added: "{label}" in {op.file} line {op.line}')
-            labels[label] = Expr(curr_address)
-            label_places[label] = (op.file, op.line)
-        else:
-            error(f"Can't assemble this opcode - {str(op)}")
-
-    boundary_addresses.append((SegEntry.WflipAddress, curr_address))
-    return rem_ops, labels, boundary_addresses
 
 
 def lsb_first_bin_array(int_value, bit_size):
@@ -94,7 +25,7 @@ def close_segment(w, segment_index, boundary_addresses, writer, first_address, l
     data_start, data_length = writer.add_data(bits + wflips)
     segment_length = (last_address - first_address) // w
     if segment_length < data_length:
-        error(f'segment-length is smaller than data-length:  {segment_length} < {data_length}')
+        raise FJAssemblerException(f'segment-length is smaller than data-length:  {segment_length} < {data_length}')
     writer.add_segment(first_address // w, segment_length, data_start, data_length)
 
     bits.clear()
@@ -127,9 +58,10 @@ def assert_none_crossing_segments(curr_segment_index, old_address, new_address, 
                         min_seg_start = last_start
 
     if min_i is not None:
-        error(f"Overlapping segments (address {hex(new_address)}): "
-              f"seg[{clean_segment_index(curr_segment_index, boundary_addresses)}]=({hex(boundary_addresses[curr_segment_index][1])}..) and "
-              f"seg[{clean_segment_index(min_i, boundary_addresses)}]=({hex(min_seg_start)}..)")
+        raise FJAssemblerException(f"Overlapping segments (address {hex(new_address)}): "
+                                   f"seg[{clean_segment_index(curr_segment_index, boundary_addresses)}]"
+                                   f"=({hex(boundary_addresses[curr_segment_index][1])}..) and "
+                                   f"seg[{clean_segment_index(min_i, boundary_addresses)}]=({hex(min_seg_start)}..)")
 
 
 def get_next_wflip_entry_index(boundary_addresses, index):
@@ -137,13 +69,13 @@ def get_next_wflip_entry_index(boundary_addresses, index):
     while boundary_addresses[index][0] != SegEntry.WflipAddress:
         index += 1
         if index >= length:
-            error(f'No WflipAddress entry found in boundary_addresses.')
+            raise FJAssemblerException(f'No WflipAddress entry found in boundary_addresses.')
     return index
 
 
 def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=False, flags=0):   # TODO handle verbose?
     if max(e[1] for e in boundary_addresses) >= (1 << w):
-        error(f"Not enough space with the {w}-width.")
+        raise FJAssemblerException(f"Not enough space with the {w}-width.")
 
     writer = fjm.Writer(w, flags=flags if flags else 0)
 
@@ -157,18 +89,16 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
     for op in ops:
         ids = eval_all(op, labels)
         if ids:
-            error(f"Can't resolve the following names: {', '.join(ids)} (in op {op}).")
+            raise FJAssemblerException(f"Can't resolve the following names: {', '.join(ids)} (in op {op}).")
         vals = [datum.val for datum in op.data]
 
         if op.type == OpType.FlipJump:
             f, j = vals
             bits += [f, j]
-        elif op.type == OpType.WordsValue:
-            n, v = vals
-            bits += [v] * n
         elif op.type == OpType.Segment:
             segment_index += 2
-            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits, wflips)
+            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits,
+                          wflips)
             last_start_seg_index = segment_index
             first_address = boundary_addresses[last_start_seg_index][1]
             wflip_address = boundary_addresses[get_next_wflip_entry_index(boundary_addresses, segment_index)][1]
@@ -197,59 +127,46 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
                 wflip_address = next_op + 2 * w
 
                 if wflip_address >= (1 << w):
-                    error(f"Not enough space with the {w}-width.")
+                    raise FJAssemblerException(f"Not enough space with the {w}-width.")
         else:
-            error(f"Can't resolve/assemble the next opcode - {str(op)}")
+            raise FJAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
 
     close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits, wflips)
     writer.write_to_file(output_file)
 
 
-def assemble(input_files, output_file, w, flags=None,
-             preprocessed_file=None, debugging_file=None, verbose=set()):
+def assemble(input_files, output_file, w, warning_as_errors, flags=None,
+             show_statistics=False, preprocessed_file=None, debugging_file=None, verbose=None):
+    if verbose is None:
+        verbose = set()
+
     if w not in (8, 16, 32, 64):
-        error(f'The width ({w}) must be one of (8, 16, 32, 64).')
-
-    # if only_cache:
-    #     if isfile(debugging_file):
-    #         with open(debugging_file, 'rb') as f:
-    #             return pickle.load(f)
-    #     print(debugging_file)
-    #     return {}
-
-    # if assembled files are up to date
-    # if try_cached and debugging_file and isfile(output_file) and isfile(debugging_file):
-    #     if max(getmtime(infile) for infile in input_files) \
-    #             < min(getmtime(outfile) for outfile in (debugging_file, output_file)):
-    #         if Verbose.Time in verbose:
-    #             print(f'  loading assembled data...')
-    #         with open(debugging_file, 'rb') as f:
-    #             return pickle.load(f)
+        raise FJAssemblerException(f'The width ({w}) must be one of (8, 16, 32, 64).')
 
     temp_preprocessed_file, temp_fd = False, 0
     if preprocessed_file is None:
         temp_fd, preprocessed_file = mkstemp()
         temp_preprocessed_file = True
 
+    print('  parsing:         ', end='', flush=True)
     start_time = time()
-    macros = parse_macro_tree(input_files, w, verbose=Verbose.Parse in verbose)
+    macros = parse_macro_tree(input_files, w, warning_as_errors, verbose=Verbose.Parse in verbose)
     if Verbose.Time in verbose:
-        print(f'  parsing:         {time() - start_time:.3f}s')
+        print(f'{time() - start_time:.3f}s')
 
+    print('  macro resolve:   ', end='', flush=True)
     start_time = time()
-    ops = resolve_macros(macros, output_file=preprocessed_file, verbose=Verbose.MacroSolve in verbose)
+    ops, labels, boundary_addresses = resolve_macros(w, macros, output_file=preprocessed_file,
+                                                     show_statistics=show_statistics,
+                                                     verbose=Verbose.MacroSolve in verbose)
     if Verbose.Time in verbose:
-        print(f'  macro resolve:   {time() - start_time:.3f}s')
+        print(f'{time() - start_time:.3f}s')
 
+    print('  labels resolve:  ', end='', flush=True)
     start_time = time()
-    ops, labels, last_address = label_dictionary_pass(ops, w, verbose=Verbose.LabelDict in verbose)
+    labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Verbose.LabelSolve in verbose, flags=flags)
     if Verbose.Time in verbose:
-        print(f'  labels pass:     {time() - start_time:.3f}s')
-
-    start_time = time()
-    labels_resolve(ops, labels, last_address, w, output_file, verbose=Verbose.LabelSolve in verbose, flags=flags)
-    if Verbose.Time in verbose:
-        print(f'  labels resolve:  {time() - start_time:.3f}s')
+        print(f'{time() - start_time:.3f}s')
 
     if temp_preprocessed_file:
         os.close(temp_fd)
@@ -261,15 +178,3 @@ def assemble(input_files, output_file, w, flags=None,
             pickle.dump(labels, f, pickle.HIGHEST_PROTOCOL)
 
     return labels
-
-
-def main():
-    pass
-    print('not assembling')
-    # for test_name in ('cat',):#, 'ncat', 'mathbit', 'not', 'testbit', 'mathvec'):
-    #     full_assemble([f'tests/{test_name}.fj'], f'tests/compiled/{test_name}.fjm',
-    #                   preprocessed_file=f'tests/compiled/{test_name}__no_macros.fj')
-
-
-if __name__ == '__main__':
-    main()

@@ -3,8 +3,13 @@
 
 // This file contains constants and labels used by other standard library files.
 
-// Everything after // is ignored, everything before first : is ignored too, and every whitespace is ignored (besides new line)
-// An opcode is:  F;L  F  ;L  or just  ;  (no F => F=0;  no L => L=next)
+// Everything after // is ignored, and every whitespace is ignored (besides new line)
+// An opcode is:  F;J  F;  ;J  or just  ;  (no F => F=0;  no J => J=next)
+
+// Complexity note: phi is log2 of the total number of fj operations, counting wflips as one op.
+// so 2 wflips with value=label (while label is padded with 2^n) causes phi-n space/time complexity
+
+// The complexities are not updated in this file (should be lower/faster).
 
 
 // w = ??       // memory and operands width. Is defined at compile time.
@@ -18,31 +23,96 @@ dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
 // ---------- Startup Code
 
 
-.def startup
+def startup > IO, code_start {
     ;code_start     // 0w;1w : code start
   IO:
     ;0              // 2w;3w : now points to io_handler
 
   code_start:
                     // 4w;5w : start of code
-.end
+}
 
 
-.def startup in0_handler in1_handler
-    .startup
-    .default_input in0_handler in1_handler
-.end
+def startup in0_handler, in1_handler {
+    startup
+    default_input in0_handler, in1_handler
+}
 
 
 
 // ---------- Basic Functionality
 
 
-.def word_pad x : pad_start
-  pad_start:
-    [(0-pad_start/w) % x] 0
-.end
+def zero_op {
+    0;0
+}
 
-.def pad x
-    .word_pad x*2
-.end
+def fj f, j {
+    f;j
+}
+
+def wflip_macro dst, val {
+    wflip dst, val
+}
+
+def wflip_macro dst, val, jmp_addr {
+    wflip dst, val, jmp_addr
+}
+
+def pad x @ pad_start {
+  pad_start:
+    rep((0-pad_start/(2*w))%x, i) zero_op
+}
+
+
+// ---------- Compilation Time:
+// Complexity: 1
+
+
+def comp_if expr, l0, l1 {
+    ; expr ? l1 : l0
+}
+
+def comp_if0 expr, l0 @ l1 {
+    comp_if expr, l0, l1
+  l1:
+}
+
+def comp_if1 expr, l1 @ l0 {
+    comp_if expr, l0, l1
+  l0:
+}
+
+
+def comp_flip_if bit, expr {
+    (expr ? bit : 0);
+}
+
+
+
+// ---------- Unconditional Jump
+// Complexity: 1
+
+
+def skip {
+    ;$ + dw
+}
+
+
+def loop {
+    ;$ - dw
+}
+
+
+
+// ---------- Input Handler
+
+
+def default_input in0_handler, in1_handler @ io_handler, end < IO {
+    wflip IO+w, io_handler, end
+    pad 2
+  io_handler:
+    ;in0_handler
+    ;in1_handler
+  end:
+}

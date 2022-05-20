@@ -1,0 +1,36 @@
+startup
+
+bit2hex h, b0
+hex.print_as_digit h, 0
+bit2hex h, b1
+hex.print_as_digit h, 0
+output '\n'
+
+bit2hex 12, hex, bits
+//hex.print_as_digit hex+0*dw, 0
+//hex.print_as_digit hex+1*dw, 0
+//hex.print_as_digit hex+2*dw, 0
+hex.print_as_digit 3, hex, 0
+output '\n'
+output '\n'
+
+hex2bit 10, bits2, hex2
+hex.print_as_digit 10, hex2, 0
+output '\n'
+bit2hex 40, hex2, bits2
+bit.print_hex_uint 40, bits2, 0
+output '\n'
+bit.print_as_digit 40, bits2
+output '\n'
+
+loop
+
+
+b0: bit 0
+b1: bit 1
+h: hex
+bits: bit.vec 12, 0x123
+hex:  hex.vec 3
+
+hex2:  hex.vec 10, 0x123456
+bits2: bit.vec 40
