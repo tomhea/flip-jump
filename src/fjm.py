@@ -9,6 +9,8 @@ from defs import FJReadFjmException, FJWriteFjmException
 struct {
     u16 fj_magic;   // 'F' + 'J'<<8  (0x4a46)
     u16 word_size;  // in bits
+    u32 reserved;   // 0
+    u64 version;
     u64 flags;
     u64 segment_num;
     struct segment {
@@ -16,7 +18,7 @@ struct {
         u64 segment_length; // in memory words (w-bits)
         u64 data_start;     // in the outer-struct.data words (w-bits)
         u64 data_length;    // in the outer-struct.data words (w-bits)
-    } *segments;             // segments[segment_num]
+    } *segments;            // segments[segment_num]
     u8* data;               // the data
 } fjm_file;     // Flip-Jump Memory file
 """
@@ -24,8 +26,10 @@ struct {
 fj_magic = ord('F') + (ord('J') << 8)
 reserved_dict_threshold = 1000
 
-header_struct_format = '<HHQQ'
+header_struct_format = '<HHLQQQ'
 segment_struct_format = '<QQQQ'
+
+SUPPORTED_VERSIONS = {0: 'Normal'}
 
 
 class Reader:
@@ -42,9 +46,14 @@ class Reader:
 
         with open(input_file, 'rb') as f:
             try:
-                magic, self.w, self.flags, segment_num = unpack(header_struct_format, f.read(2+2+8+8))
+                magic, self.w, self.reserved, self.version, self.flags, segment_num =\
+                    unpack(header_struct_format, f.read(2+2+4+8+8+8))
                 if magic != fj_magic:
                     raise FJReadFjmException(f'Error: bad magic code ({hex(magic)}, should be {hex(fj_magic)}).')
+                if self.version not in SUPPORTED_VERSIONS:
+                    raise FJReadFjmException(f'Error: unsupported version ({self.version}, this program supports {str(SUPPORTED_VERSIONS)}).')
+                if self.reserved != 0:
+                    raise FJReadFjmException(f'Error: bad reserved value ({self.reserved}, should be 0).')
                 self.segments = [unpack(segment_struct_format, f.read(8+8+8+8)) for _ in range(segment_num)]
 
                 read_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.w]
@@ -123,11 +132,11 @@ class Writer:
         self.segments = []
         self.data = []  # words array
 
-    def write_to_file(self, output_file):
+    def write_to_file(self, output_file, version=0, reserved=0):
         write_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
 
         with open(output_file, 'wb') as f:
-            f.write(pack(header_struct_format, fj_magic, self.word_size, self.flags, len(self.segments)))
+            f.write(pack(header_struct_format, fj_magic, self.word_size, reserved, version, self.flags, len(self.segments)))
 
             for segment in self.segments:
                 f.write(pack(segment_struct_format, *segment))

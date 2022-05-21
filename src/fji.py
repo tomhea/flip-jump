@@ -55,9 +55,9 @@ def main():
                 continue
 
             print(f'running {Path(file).name}:')
-            with open(infile, 'r', encoding='utf-8') as inf:
+            with open(infile, 'rb') as inf:
                 test_input = inf.read()
-            with open(outfile, 'r', encoding='utf-8') as outf:
+            with open(outfile, 'rb') as outf:
                 expected_output = outf.read()
 
             try:
@@ -69,7 +69,7 @@ def main():
 
                 if output != expected_output:
                     print(f'test "{file}" failed. here\'s the diff:')
-                    print(''.join(difflib.context_diff(output.splitlines(1), expected_output.splitlines(True),
+                    print(''.join(difflib.context_diff(str(output).splitlines(True), str(expected_output).splitlines(True),
                                                        fromfile=file, tofile=outfile)))
                     failures.append(file)
 
