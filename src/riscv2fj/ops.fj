@@ -1,1742 +1,1746 @@
-__RV_MEM = 1<<(w-1)                      \\ start of memory
-__RV_JMP = __RV_MEM - (__RV_MEM / 32)    \\ start of jump table
-
-;__RV_ADDR_00400400                      \\ entry point
-.riscv_init                              \\ init registers, structs, functions
+ns riscv {
 
 
+MEM = 1<<(w-1)                      \\ start of memory
+JMP = __RV_MEM - (__RV_MEM / 32)    \\ start of jump table
 
-__RV_ADDR_00400000:
+;.ADDR_00400400                     \\ entry point
+.init                               \\ init registers, structs, functions
+
+
+
+ADDR_00400000:
     \\TODO not-implemented op 0x464c457f
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400004:
+ADDR_00400004:
     \\TODO not-implemented op 0x00010102
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400008:
+ADDR_00400008:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040000C:
+ADDR_0040000C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400010:
+ADDR_00400010:
     \\TODO not-implemented op 0x003e0002
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400014:
+ADDR_00400014:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400018:
+ADDR_00400018:
     \\TODO not-implemented op 0x00400400
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040001C:
+ADDR_0040001C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400020:
+ADDR_00400020:
     \\TODO not-implemented op 0x00000040
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400024:
+ADDR_00400024:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400028:
+ADDR_00400028:
     \\TODO not-implemented op 0x00001c30
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040002C:
+ADDR_0040002C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400030:
+ADDR_00400030:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400034:
+ADDR_00400034:
     \\TODO not-implemented op 0x00380040
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400038:
+ADDR_00400038:
     \\TODO not-implemented op 0x00400009
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040003C:
+ADDR_0040003C:
     \\TODO not-implemented op 0x0027002a
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400040:
+ADDR_00400040:
     \\TODO not-implemented op 0x00000006
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400044:
+ADDR_00400044:
     \\TODO not-implemented op 0x00000005
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400048:
+ADDR_00400048:
     \\TODO not-implemented op 0x00000040
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040004C:
+ADDR_0040004C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400050:
+ADDR_00400050:
     \\TODO not-implemented op 0x00400040
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400054:
+ADDR_00400054:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400058:
+ADDR_00400058:
     \\TODO not-implemented op 0x00400040
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040005C:
+ADDR_0040005C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400060:
+ADDR_00400060:
     \\TODO not-implemented op 0x000001f8
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400064:
+ADDR_00400064:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400068:
+ADDR_00400068:
     \\TODO not-implemented op 0x000001f8
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040006C:
+ADDR_0040006C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400070:
+ADDR_00400070:
     \\TODO not-implemented op 0x00000008
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400074:
+ADDR_00400074:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400078:
+ADDR_00400078:
     \\TODO not-implemented op 0x00000003
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040007C:
+ADDR_0040007C:
     \\TODO not-implemented op 0x00000004
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400080:
+ADDR_00400080:
     \\TODO not-implemented op 0x00000238
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400084:
+ADDR_00400084:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400088:
+ADDR_00400088:
     \\TODO not-implemented op 0x00400238
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040008C:
+ADDR_0040008C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400090:
+ADDR_00400090:
     \\TODO not-implemented op 0x00400238
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400094:
+ADDR_00400094:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400098:
+ADDR_00400098:
     \\TODO not-implemented op 0x0000001c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040009C:
+ADDR_0040009C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000A0:
+ADDR_004000A0:
     \\TODO not-implemented op 0x0000001c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000A4:
+ADDR_004000A4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000A8:
+ADDR_004000A8:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000AC:
+ADDR_004000AC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000B0:
+ADDR_004000B0:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000B4:
+ADDR_004000B4:
     \\TODO not-implemented op 0x00000005
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000B8:
+ADDR_004000B8:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000BC:
+ADDR_004000BC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000C0:
+ADDR_004000C0:
     \\TODO not-implemented op 0x00400000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000C4:
+ADDR_004000C4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000C8:
+ADDR_004000C8:
     \\TODO not-implemented op 0x00400000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000CC:
+ADDR_004000CC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000D0:
+ADDR_004000D0:
     \\TODO not-implemented op 0x000006c4
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000D4:
+ADDR_004000D4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000D8:
+ADDR_004000D8:
     \\TODO not-implemented op 0x000006c4
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000DC:
+ADDR_004000DC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000E0:
+ADDR_004000E0:
     \\TODO not-implemented op 0x00200000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000E4:
+ADDR_004000E4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000E8:
+ADDR_004000E8:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000EC:
+ADDR_004000EC:
     \\TODO not-implemented op 0x00000006
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000F0:
+ADDR_004000F0:
     \\TODO not-implemented op 0x00000e18
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000F4:
+ADDR_004000F4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000F8:
+ADDR_004000F8:
     \\TODO not-implemented op 0x00600e18
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004000FC:
+ADDR_004000FC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400100:
+ADDR_00400100:
     \\TODO not-implemented op 0x00600e18
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400104:
+ADDR_00400104:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400108:
+ADDR_00400108:
     \\TODO not-implemented op 0x00000204
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040010C:
+ADDR_0040010C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400110:
+ADDR_00400110:
     \\TODO not-implemented op 0x00000218
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400114:
+ADDR_00400114:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400118:
+ADDR_00400118:
     \\TODO not-implemented op 0x00200000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040011C:
+ADDR_0040011C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400120:
+ADDR_00400120:
     \\TODO not-implemented op 0x00000002
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400124:
+ADDR_00400124:
     \\TODO not-implemented op 0x00000006
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400128:
+ADDR_00400128:
     \\TODO not-implemented op 0x00000e40
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040012C:
+ADDR_0040012C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400130:
+ADDR_00400130:
     \\TODO not-implemented op 0x00600e40
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400134:
+ADDR_00400134:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400138:
+ADDR_00400138:
     \\TODO not-implemented op 0x00600e40
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040013C:
+ADDR_0040013C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400140:
+ADDR_00400140:
     \\TODO not-implemented op 0x000001a0
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400144:
+ADDR_00400144:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400148:
+ADDR_00400148:
     \\TODO not-implemented op 0x000001a0
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040014C:
+ADDR_0040014C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400150:
+ADDR_00400150:
     \\TODO not-implemented op 0x00000008
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400154:
+ADDR_00400154:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400158:
+ADDR_00400158:
     \\TODO not-implemented op 0x00000004
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040015C:
+ADDR_0040015C:
     \\TODO not-implemented op 0x00000004
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400160:
+ADDR_00400160:
     \\TODO not-implemented op 0x00000254
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400164:
+ADDR_00400164:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400168:
+ADDR_00400168:
     \\TODO not-implemented op 0x00400254
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040016C:
+ADDR_0040016C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400170:
+ADDR_00400170:
     \\TODO not-implemented op 0x00400254
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400174:
+ADDR_00400174:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400178:
+ADDR_00400178:
     \\TODO not-implemented op 0x0000005c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040017C:
+ADDR_0040017C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400180:
+ADDR_00400180:
     \\TODO not-implemented op 0x0000005c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400184:
+ADDR_00400184:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400188:
+ADDR_00400188:
     \\TODO not-implemented op 0x00000004
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040018C:
+ADDR_0040018C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400190:
+ADDR_00400190:
     \\TODO not-implemented op 0x6474e550
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400194:
+ADDR_00400194:
     \\TODO not-implemented op 0x00000004
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400198:
+ADDR_00400198:
     \\TODO not-implemented op 0x0000060c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040019C:
+ADDR_0040019C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001A0:
+ADDR_004001A0:
     \\TODO not-implemented op 0x0040060c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001A4:
+ADDR_004001A4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001A8:
+ADDR_004001A8:
     \\TODO not-implemented op 0x0040060c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001AC:
+ADDR_004001AC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001B0:
+ADDR_004001B0:
     \\TODO not-implemented op 0x00000024
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001B4:
+ADDR_004001B4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001B8:
+ADDR_004001B8:
     \\TODO not-implemented op 0x00000024
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001BC:
+ADDR_004001BC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001C0:
+ADDR_004001C0:
     \\TODO not-implemented op 0x00000004
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001C4:
+ADDR_004001C4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001C8:
+ADDR_004001C8:
     \\TODO not-implemented op 0x6474e551
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001CC:
+ADDR_004001CC:
     \\TODO not-implemented op 0x00000006
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001D0:
+ADDR_004001D0:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001D4:
+ADDR_004001D4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001D8:
+ADDR_004001D8:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001DC:
+ADDR_004001DC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001E0:
+ADDR_004001E0:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001E4:
+ADDR_004001E4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001E8:
+ADDR_004001E8:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001EC:
+ADDR_004001EC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001F0:
+ADDR_004001F0:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001F4:
+ADDR_004001F4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001F8:
+ADDR_004001F8:
     \\TODO not-implemented op 0x00000008
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004001FC:
+ADDR_004001FC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400200:
+ADDR_00400200:
     \\TODO not-implemented op 0x6474e552
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400204:
+ADDR_00400204:
     \\TODO not-implemented op 0x00000004
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400208:
+ADDR_00400208:
     \\TODO not-implemented op 0x00000e18
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040020C:
+ADDR_0040020C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400210:
+ADDR_00400210:
     \\TODO not-implemented op 0x00600e18
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400214:
+ADDR_00400214:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400218:
+ADDR_00400218:
     \\TODO not-implemented op 0x00600e18
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040021C:
+ADDR_0040021C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400220:
+ADDR_00400220:
     \\TODO not-implemented op 0x000001e8
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400224:
+ADDR_00400224:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400228:
+ADDR_00400228:
     \\TODO not-implemented op 0x000001e8
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040022C:
+ADDR_0040022C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400230:
+ADDR_00400230:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400234:
+ADDR_00400234:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400238:
+ADDR_00400238:
     \\TODO not-implemented op 0x62696c2f
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040023C:
+ADDR_0040023C:
     \\TODO not-implemented op 0x6c2f3436
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400240:
+ADDR_00400240:
     \\TODO not-implemented op 0x696c2d64
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400244:
+ADDR_00400244:
     \\TODO not-implemented op 0x2d78756e
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400248:
+ADDR_00400248:
     \\TODO not-implemented op 0x2d363878
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040024C:
+ADDR_0040024C:
     \\TODO not-implemented op 0x732e3436
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400250:
-    .RV_JAL __rv_x28 0x22802    \\ op 0x00322e6f
-    .zero 32 x0
+ADDR_00400250:
+    .jal .regs.x28 0x22802		\\ op 0x00322e6f
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400254:
+ADDR_00400254:
     \\TODO not-implemented op 0x00000004
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400258:
+ADDR_00400258:
     \\TODO not-implemented op 0x00000010
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040025C:
+ADDR_0040025C:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400260:
+ADDR_00400260:
     \\TODO not-implemented op 0x00554e47
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400264:
+ADDR_00400264:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400268:
+ADDR_00400268:
     \\TODO not-implemented op 0x00000002
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040026C:
+ADDR_0040026C:
     \\TODO not-implemented op 0x00000006
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400270:
+ADDR_00400270:
     \\TODO not-implemented op 0x00000004
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400274:
+ADDR_00400274:
     \\TODO not-implemented op 0x00000005
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400278:
+ADDR_00400278:
     \\TODO not-implemented op 0x00000004
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040027C:
+ADDR_0040027C:
     \\TODO not-implemented op 0x45537553
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400280:
+ADDR_00400280:
     \\TODO not-implemented op 0x45537553
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400284:
+ADDR_00400284:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400288:
+ADDR_00400288:
     \\TODO not-implemented op 0x020a0001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040028C:
+ADDR_0040028C:
     \\TODO not-implemented op 0x00000004
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400290:
+ADDR_00400290:
     \\TODO not-implemented op 0x00000014
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400294:
+ADDR_00400294:
     \\TODO not-implemented op 0x00000003
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400298:
+ADDR_00400298:
     \\TODO not-implemented op 0x00554e47
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040029C:
+ADDR_0040029C:
     \\TODO not-implemented op 0xa8cd508e
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002A0:
+ADDR_004002A0:
     \\TODO not-implemented op 0x499359e2
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002A4:
+ADDR_004002A4:
     \\TODO not-implemented op 0x2daac49a
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002A8:
+ADDR_004002A8:
     \\TODO not-implemented op 0x8df5ea8d
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002AC:
+ADDR_004002AC:
     \\TODO not-implemented op 0x7dd44909
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002B0:
+ADDR_004002B0:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002B4:
+ADDR_004002B4:
     \\TODO not-implemented op 0x00000003
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002B8:
+ADDR_004002B8:
     \\TODO not-implemented op 0x00000002
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002BC:
+ADDR_004002BC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002C0:
+ADDR_004002C0:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002C4:
+ADDR_004002C4:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002C8:
+ADDR_004002C8:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002CC:
+ADDR_004002CC:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002D0:
+ADDR_004002D0:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002D4:
+ADDR_004002D4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002D8:
+ADDR_004002D8:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002DC:
+ADDR_004002DC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002E0:
+ADDR_004002E0:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002E4:
+ADDR_004002E4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002E8:
+ADDR_004002E8:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002EC:
+ADDR_004002EC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002F0:
+ADDR_004002F0:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002F4:
+ADDR_004002F4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002F8:
+ADDR_004002F8:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004002FC:
+ADDR_004002FC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400300:
+ADDR_00400300:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400304:
+ADDR_00400304:
     \\TODO not-implemented op 0x00000020
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400308:
+ADDR_00400308:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040030C:
+ADDR_0040030C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400310:
+ADDR_00400310:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400314:
+ADDR_00400314:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400318:
+ADDR_00400318:
     \\TODO not-implemented op 0x0000001a
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040031C:
+ADDR_0040031C:
     \\TODO not-implemented op 0x00000012
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400320:
+ADDR_00400320:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400324:
+ADDR_00400324:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400328:
+ADDR_00400328:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040032C:
+ADDR_0040032C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400330:
+ADDR_00400330:
     \\TODO not-implemented op 0x675f5f00
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400334:
+ADDR_00400334:
     \\TODO not-implemented op 0x5f6e6f6d
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400338:
+ADDR_00400338:
     \\TODO not-implemented op 0x72617473
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040033C:
+ADDR_0040033C:
     \\TODO not-implemented op 0x005f5f74
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400340:
+ADDR_00400340:
     \\TODO not-implemented op 0x6362696c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400344:
+ADDR_00400344:
     \\TODO not-implemented op 0x2e6f732e
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400348:
+ADDR_00400348:
     \\TODO not-implemented op 0x5f5f0036
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040034C:
+ADDR_0040034C:
     \\TODO not-implemented op 0x6362696c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400350:
+ADDR_00400350:
     \\TODO not-implemented op 0x6174735f
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400354:
+ADDR_00400354:
     \\TODO not-implemented op 0x6d5f7472
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400358:
+ADDR_00400358:
     \\TODO not-implemented op 0x006e6961
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040035C:
+ADDR_0040035C:
     \\TODO not-implemented op 0x42494c47
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400360:
+ADDR_00400360:
     \\TODO not-implemented op 0x2e325f43
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400364:
+ADDR_00400364:
     \\TODO not-implemented op 0x00352e32
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400368:
+ADDR_00400368:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040036C:
+ADDR_0040036C:
     \\TODO not-implemented op 0x00000002
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400370:
+ADDR_00400370:
     \\TODO not-implemented op 0x00010001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400374:
+ADDR_00400374:
     \\TODO not-implemented op 0x00000010
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400378:
+ADDR_00400378:
     \\TODO not-implemented op 0x00000010
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040037C:
+ADDR_0040037C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400380:
+ADDR_00400380:
     \\TODO not-implemented op 0x09691a75
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400384:
+ADDR_00400384:
     \\TODO not-implemented op 0x00020000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400388:
+ADDR_00400388:
     \\TODO not-implemented op 0x0000002c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040038C:
+ADDR_0040038C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400390:
+ADDR_00400390:
     \\TODO not-implemented op 0x00600fe0
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400394:
+ADDR_00400394:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400398:
+ADDR_00400398:
     \\TODO not-implemented op 0x00000006
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040039C:
+ADDR_0040039C:
     \\TODO not-implemented op 0x00000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003A0:
+ADDR_004003A0:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003A4:
+ADDR_004003A4:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003A8:
+ADDR_004003A8:
     \\TODO not-implemented op 0x00601000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003AC:
+ADDR_004003AC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003B0:
+ADDR_004003B0:
     \\TODO not-implemented op 0x00000007
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003B4:
+ADDR_004003B4:
     \\TODO not-implemented op 0x00000002
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003B8:
+ADDR_004003B8:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003BC:
+ADDR_004003BC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003C0:
+ADDR_004003C0:
     \\TODO not-implemented op 0x08ec8348
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003C4:
+ADDR_004003C4:
     \\TODO not-implemented op 0x000063e8
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003C8:
+ADDR_004003C8:
     \\TODO not-implemented op 0x00f2e800
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003CC:
+ADDR_004003CC:
     \\TODO not-implemented op 0xede80000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003D0:
+ADDR_004003D0:
     \\TODO not-implemented op 0x48000001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003D4:
+ADDR_004003D4:
     \\TODO not-implemented op 0xc308c483
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003D8:
+ADDR_004003D8:
     \\TODO not-implemented op 0x0c1235ff
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003DC:
+ADDR_004003DC:
     \\TODO not-implemented op 0x25ff0020
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003E0:
+ADDR_004003E0:
     \\TODO not-implemented op 0x00200c14
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003E4:
+ADDR_004003E4:
     \\TODO not-implemented op 0x00401f0f
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003E8:
+ADDR_004003E8:
     \\TODO not-implemented op 0x0c1225ff
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003EC:
+ADDR_004003EC:
     \\TODO not-implemented op 0x00680020
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003F0:
+ADDR_004003F0:
     \\TODO not-implemented op 0xe9000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003F4:
+ADDR_004003F4:
     \\TODO not-implemented op 0xffffffe0
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003F8:
+ADDR_004003F8:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004003FC:
+ADDR_004003FC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400400:
+ADDR_00400400:
     \\TODO not-implemented op 0x8949ed31
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400404:
+ADDR_00400404:
     \\TODO not-implemented op 0x89485ed1
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400408:
+ADDR_00400408:
     \\TODO not-implemented op 0xe48348e2
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040040C:
+ADDR_0040040C:
     \\TODO not-implemented op 0x495450f0
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400410:
+ADDR_00400410:
     \\TODO not-implemented op 0x0520c0c7
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400414:
+ADDR_00400414:
     \\TODO not-implemented op 0xc7480040
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400418:
+ADDR_00400418:
     \\TODO not-implemented op 0x400530c1
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040041C:
+ADDR_0040041C:
     \\TODO not-implemented op 0xc7c74800
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400420:
+ADDR_00400420:
     \\TODO not-implemented op 0x004004ec
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400424:
+ADDR_00400424:
     \\TODO not-implemented op 0xffffbfe8
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400428:
+ADDR_00400428:
     \\TODO not-implemented op 0x9090f4ff
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040042C:
+ADDR_0040042C:
     \\TODO not-implemented op 0x08ec8348
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400430:
+ADDR_00400430:
     \\TODO not-implemented op 0xa9058b48
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400434:
+ADDR_00400434:
     \\TODO not-implemented op 0x4800200b
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400438:
+ADDR_00400438:
     \\TODO not-implemented op 0x0274c085
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040043C:
+ADDR_0040043C:
     \\TODO not-implemented op 0x8348d0ff
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400440:
+ADDR_00400440:
     \\TODO not-implemented op 0x90c308c4
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400444:
+ADDR_00400444:
     \\TODO not-implemented op 0x90909090
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400448:
+ADDR_00400448:
     \\TODO not-implemented op 0x90909090
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040044C:
+ADDR_0040044C:
     \\TODO not-implemented op 0x90909090
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400450:
+ADDR_00400450:
     \\TODO not-implemented op 0xe5894855
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400454:
+ADDR_00400454:
     \\TODO not-implemented op 0xec834853
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400458:
+ADDR_00400458:
     \\TODO not-implemented op 0xc03d8008
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040045C:
+ADDR_0040045C:
     \\TODO not-implemented op 0x0000200b
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400460:
+ADDR_00400460:
     \\TODO not-implemented op 0x30b84b75
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400464:
+ADDR_00400464:
     \\TODO not-implemented op 0x4800600e
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400468:
+ADDR_00400468:
     \\TODO not-implemented op 0x0bba158b
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040046C:
+ADDR_0040046C:
     \\TODO not-implemented op 0x2d480020
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400470:
+ADDR_00400470:
     \\TODO not-implemented op 0x00600e28
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400474:
+ADDR_00400474:
     \\TODO not-implemented op 0x03f8c148
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400478:
+ADDR_00400478:
     \\TODO not-implemented op 0xff588d48
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040047C:
+ADDR_0040047C:
     \\TODO not-implemented op 0x73da3948
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400480:
+ADDR_00400480:
     \\TODO not-implemented op 0x801f0f25
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400484:
+ADDR_00400484:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400488:
+ADDR_00400488:
     \\TODO not-implemented op 0x01428d48
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040048C:
+ADDR_0040048C:
     \\TODO not-implemented op 0x95058948
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400490:
+ADDR_00400490:
     \\TODO not-implemented op 0xff00200b
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400494:
+ADDR_00400494:
     \\TODO not-implemented op 0x0e28c514
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400498:
+ADDR_00400498:
     \\TODO not-implemented op 0x8b480060
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040049C:
+ADDR_0040049C:
     \\TODO not-implemented op 0x200b8715
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004A0:
+ADDR_004004A0:
     \\TODO not-implemented op 0xda394800
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004A4:
+ADDR_004004A4:
     \\TODO not-implemented op 0x05c6e272
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004A8:
+ADDR_004004A8:
     \\TODO not-implemented op 0x00200b73
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004AC:
+ADDR_004004AC:
     \\TODO not-implemented op 0xc4834801
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004B0:
+ADDR_004004B0:
     \\TODO not-implemented op 0xc3c95b08
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004B4:
+ADDR_004004B4:
     \\TODO not-implemented op 0x2e666666
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004B8:
+ADDR_004004B8:
     \\TODO not-implemented op 0x00841f0f
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004BC:
+ADDR_004004BC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004C0:
+ADDR_004004C0:
     \\TODO not-implemented op 0x3d834855
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004C4:
-    .RV_JAL __rv_x18 0x2    \\ op 0x0020096f
-    .zero 32 x0
+ADDR_004004C4:
+    .jal .regs.x18 0x2		\\ op 0x0020096f
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004C8:
+ADDR_004004C8:
     \\TODO not-implemented op 0xe5894800
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004CC:
+ADDR_004004CC:
     \\TODO not-implemented op 0x00b81a74
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004D0:
+ADDR_004004D0:
     \\TODO not-implemented op 0x48000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004D4:
+ADDR_004004D4:
     \\TODO not-implemented op 0x1074c085
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004D8:
+ADDR_004004D8:
     \\TODO not-implemented op 0x600e38bf
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004DC:
+ADDR_004004DC:
     \\TODO not-implemented op 0xc3894900
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004E0:
+ADDR_004004E0:
     \\TODO not-implemented op 0xe3ff41c9
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004E4:
+ADDR_004004E4:
     \\TODO not-implemented op 0x00401f0f
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004E8:
+ADDR_004004E8:
     \\TODO not-implemented op 0x9090c3c9
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004EC:
+ADDR_004004EC:
     \\TODO not-implemented op 0xe5894855
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004F0:
+ADDR_004004F0:
     \\TODO not-implemented op 0x48fc7d89
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004F4:
+ADDR_004004F4:
     \\TODO not-implemented op 0x48f07589
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004F8:
+ADDR_004004F8:
     \\TODO not-implemented op 0x89f0458b
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004004FC:
+ADDR_004004FC:
     \\TODO not-implemented op 0x15058bc2
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400500:
+ADDR_00400500:
     \\TODO not-implemented op 0x8d00200b
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400504:
+ADDR_00400504:
     \\TODO not-implemented op 0x05890204
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400508:
+ADDR_00400508:
     \\TODO not-implemented op 0x00200b0c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040050C:
+ADDR_0040050C:
     \\TODO not-implemented op 0x0b06058b
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400510:
+ADDR_00400510:
     \\TODO not-implemented op 0x45030020
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400514:
+ADDR_00400514:
     \\TODO not-implemented op 0x90c3c9fc
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400518:
+ADDR_00400518:
     \\TODO not-implemented op 0x90909090
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040051C:
+ADDR_0040051C:
     \\TODO not-implemented op 0x90909090
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400520:
+ADDR_00400520:
     \\TODO not-implemented op 0x6666c3f3
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400524:
+ADDR_00400524:
     \\TODO not-implemented op 0x2e666666
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400528:
+ADDR_00400528:
     \\TODO not-implemented op 0x00841f0f
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040052C:
+ADDR_0040052C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400530:
+ADDR_00400530:
     \\TODO not-implemented op 0x246c8948
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400534:
+ADDR_00400534:
     \\TODO not-implemented op 0x7c894cd8
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400538:
+ADDR_00400538:
     \\TODO not-implemented op 0x8d48f824
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040053C:
+ADDR_0040053C:
     \\TODO not-implemented op 0x2008d32d
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400540:
+ADDR_00400540:
     \\TODO not-implemented op 0x3d8d4c00
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400544:
+ADDR_00400544:
     \\TODO not-implemented op 0x002008cc
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400548:
+ADDR_00400548:
     \\TODO not-implemented op 0x2464894c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040054C:
+ADDR_0040054C:
     \\TODO not-implemented op 0x6c894ce0
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400550:
+ADDR_00400550:
     \\TODO not-implemented op 0x894ce824
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400554:
+ADDR_00400554:
     \\TODO not-implemented op 0x48f02474
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400558:
+ADDR_00400558:
     \\TODO not-implemented op 0xd0245c89
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040055C:
+ADDR_0040055C:
     \\TODO not-implemented op 0x38ec8348
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400560:
+ADDR_00400560:
     \\TODO not-implemented op 0x41fd294c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400564:
+ADDR_00400564:
     \\TODO not-implemented op 0x8949fe89
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400568:
+ADDR_00400568:
     \\TODO not-implemented op 0xfdc148f5
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040056C:
+ADDR_0040056C:
     \\TODO not-implemented op 0xd4894903
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400570:
+ADDR_00400570:
     \\TODO not-implemented op 0xfffe4be8
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400574:
+ADDR_00400574:
     \\TODO not-implemented op 0xed8548ff
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400578:
+ADDR_00400578:
     \\TODO not-implemented op 0xdb311c74
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040057C:
+ADDR_0040057C:
     \\TODO not-implemented op 0x00401f0f
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400580:
+ADDR_00400580:
     \\TODO not-implemented op 0x4ce2894c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400584:
+ADDR_00400584:
     \\TODO not-implemented op 0x8944ee89
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400588:
+ADDR_00400588:
     \\TODO not-implemented op 0x14ff41f7
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040058C:
+ADDR_0040058C:
     \\TODO not-implemented op 0xc38348df
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400590:
+ADDR_00400590:
     \\TODO not-implemented op 0xeb394801
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400594:
+ADDR_00400594:
     \\TODO not-implemented op 0x8b48ea72
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400598:
+ADDR_00400598:
     \\TODO not-implemented op 0x4808245c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040059C:
+ADDR_0040059C:
     \\TODO not-implemented op 0x10246c8b
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005A0:
+ADDR_004005A0:
     \\TODO not-implemented op 0x24648b4c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005A4:
+ADDR_004005A4:
     \\TODO not-implemented op 0x6c8b4c18
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005A8:
+ADDR_004005A8:
     \\TODO not-implemented op 0x8b4c2024
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005AC:
+ADDR_004005AC:
     \\TODO not-implemented op 0x4c282474
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005B0:
+ADDR_004005B0:
     \\TODO not-implemented op 0x30247c8b
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005B4:
+ADDR_004005B4:
     \\TODO not-implemented op 0x38c48348
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005B8:
+ADDR_004005B8:
     \\TODO not-implemented op 0x909090c3
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005BC:
+ADDR_004005BC:
     \\TODO not-implemented op 0x90909090
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005C0:
+ADDR_004005C0:
     \\TODO not-implemented op 0xe5894855
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005C4:
+ADDR_004005C4:
     \\TODO not-implemented op 0xec834853
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005C8:
+ADDR_004005C8:
     \\TODO not-implemented op 0x058b4808
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005CC:
+ADDR_004005CC:
     \\TODO not-implemented op 0x00200848
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005D0:
+ADDR_004005D0:
     \\TODO not-implemented op 0xfff88348
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005D4:
+ADDR_004005D4:
     \\TODO not-implemented op 0x18bb1974
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005D8:
+ADDR_004005D8:
     \\TODO not-implemented op 0x0f00600e
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005DC:
+ADDR_004005DC:
     \\TODO not-implemented op 0x0000441f
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005E0:
+ADDR_004005E0:
     \\TODO not-implemented op 0x08eb8348
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005E4:
+ADDR_004005E4:
     \\TODO not-implemented op 0x8b48d0ff
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005E8:
+ADDR_004005E8:
     \\TODO not-implemented op 0xf8834803
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005EC:
+ADDR_004005EC:
     \\TODO not-implemented op 0x48f175ff
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005F0:
+ADDR_004005F0:
     \\TODO not-implemented op 0x5b08c483
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005F4:
+ADDR_004005F4:
     \\TODO not-implemented op 0x9090c3c9
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005F8:
+ADDR_004005F8:
     \\TODO not-implemented op 0x08ec8348
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004005FC:
+ADDR_004005FC:
     \\TODO not-implemented op 0xfffe4fe8
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400600:
+ADDR_00400600:
     \\TODO not-implemented op 0xc48348ff
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400604:
+ADDR_00400604:
     \\TODO not-implemented op 0x0000c308
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400608:
+ADDR_00400608:
     \\TODO not-implemented op 0x00020001
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040060C:
+ADDR_0040060C:
     \\TODO not-implemented op 0x3b031b01
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400610:
+ADDR_00400610:
     \\TODO not-implemented op 0x00000020
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400614:
+ADDR_00400614:
     \\TODO not-implemented op 0x00000003
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400618:
+ADDR_00400618:
     \\TODO not-implemented op 0xfffffee0
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040061C:
+ADDR_0040061C:
     \\TODO not-implemented op 0x0000003c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400620:
+ADDR_00400620:
     \\TODO not-implemented op 0xffffff14
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400624:
+ADDR_00400624:
     \\TODO not-implemented op 0x00000074
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400628:
+ADDR_00400628:
     \\TODO not-implemented op 0xffffff24
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040062C:
+ADDR_0040062C:
     \\TODO not-implemented op 0x0000008c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400630:
+ADDR_00400630:
     \\TODO not-implemented op 0x00000014
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400634:
+ADDR_00400634:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400638:
+ADDR_00400638:
     \\TODO not-implemented op 0x00527a01
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040063C:
+ADDR_0040063C:
     \\TODO not-implemented op 0x01107801
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400640:
+ADDR_00400640:
     \\TODO not-implemented op 0x08070c03
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400644:
+ADDR_00400644:
     \\TODO not-implemented op 0x00000190
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400648:
+ADDR_00400648:
     \\TODO not-implemented op 0x0000001c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040064C:
+ADDR_0040064C:
     \\TODO not-implemented op 0x0000001c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400650:
+ADDR_00400650:
     \\TODO not-implemented op 0x004004ec
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400654:
+ADDR_00400654:
     \\TODO not-implemented op 0x0000002b
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400658:
+ADDR_00400658:
     \\TODO not-implemented op 0x100e4100
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040065C:
+ADDR_0040065C:
     \\TODO not-implemented op 0x0d430286
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400660:
+ADDR_00400660:
     \\TODO not-implemented op 0x00000006
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400664:
+ADDR_00400664:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400668:
+ADDR_00400668:
     \\TODO not-implemented op 0x00000014
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040066C:
+ADDR_0040066C:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400670:
+ADDR_00400670:
     \\TODO not-implemented op 0x00527a01
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400674:
+ADDR_00400674:
     \\TODO not-implemented op 0x01107801
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400678:
+ADDR_00400678:
     \\TODO not-implemented op 0x08070c1b
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040067C:
+ADDR_0040067C:
     \\TODO not-implemented op 0x00000190
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400680:
+ADDR_00400680:
     \\TODO not-implemented op 0x00000014
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400684:
+ADDR_00400684:
     \\TODO not-implemented op 0x0000001c
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400688:
+ADDR_00400688:
     \\TODO not-implemented op 0xfffffe98
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040068C:
+ADDR_0040068C:
     \\TODO not-implemented op 0x00000002
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400690:
+ADDR_00400690:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400694:
+ADDR_00400694:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_00400698:
+ADDR_00400698:
     \\TODO not-implemented op 0x00000024
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_0040069C:
+ADDR_0040069C:
     \\TODO not-implemented op 0x00000034
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004006A0:
+ADDR_004006A0:
     \\TODO not-implemented op 0xfffffe90
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004006A4:
+ADDR_004006A4:
     \\TODO not-implemented op 0x00000089
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004006A8:
+ADDR_004006A8:
     \\TODO not-implemented op 0x028f4a00
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004006AC:
+ADDR_004006AC:
     \\TODO not-implemented op 0x0e660686
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004006B0:
+ADDR_004006B0:
     \\TODO not-implemented op 0x8e078340
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004006B4:
+ADDR_004006B4:
     \\TODO not-implemented op 0x8c048d03
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004006B8:
+ADDR_004006B8:
     \\TODO not-implemented op 0x00000005
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004006BC:
+ADDR_004006BC:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
-__RV_ADDR_004006C0:
+ADDR_004006C0:
     \\TODO not-implemented op 0x00000000
-    .zero 32 x0
+    hex.zero 8 .regs.zero
 
 
 
+}

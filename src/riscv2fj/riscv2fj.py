@@ -1,4 +1,5 @@
 from elftools.elf.elffile import ELFFile
+from typing import TextIO, Iterator, Tuple
 
 
 RV_LUI = 0b0110111
@@ -27,140 +28,220 @@ RV_SH = 0b001
 RV_SW = 0b010
 
 
-def r_type(macro_name, op):
-    return f'    .{macro_name} __rv_x{(op >> 7) & 0x1f} __rv_x{(op >> 15) & 0x1f} __rv_x{(op >> 20) & 0x1f}    \\\\ op 0x{op:08x}\n'
+def register_name(register_index: int) -> str:
+    """
+    @param register_index: the 5 lsb will be used.
+    """
+    return f'.regs.x{register_index & 0x1f}'
 
 
-def i_type(macro_name, op):
+def get_hex_comment(op: int) -> str:
+    return f'\\\\ op 0x{op:08x}'
+
+
+def r_type(macro_name: str, op: int) -> str:
+    return f'    .{macro_name} {register_name(op >> 7)} {register_name(op >> 15)} {register_name(op >> 20)}'\
+           f'\t\t{get_hex_comment(op)}\n'
+
+
+def i_type(macro_name: str, op: int) -> str:
     imm = op >> 20
-    return f'    .{macro_name} __rv_x{(op >> 15) & 0x1f} 0x{imm:x}    \\\\ op 0x{op:08x}\n'
+    return f'    .{macro_name} {register_name(op >> 15)} 0x{imm:x}' \
+           f'\t\t{get_hex_comment(op)}\n'
 
 
-def s_type(macro_name, op):
+def s_type(macro_name: str, op: int) -> str:
     imm11_5 = op >> 25
     imm4_0 = (op >> 7) & 0x1f
     imm = (imm11_5 << 5) | (imm4_0 << 0)
-    return f'    .{macro_name} __rv_x{(op >> 15) & 0x1f} __rv_x{(op >> 20) & 0x1f} 0x{imm:x}    \\\\ op 0x{op:08x}\n'
+    return f'    .{macro_name} {register_name(op >> 15)} {register_name(op >> 20)} 0x{imm:x}' \
+           f'\t\t{get_hex_comment(op)}\n'
 
 
-def b_type(macro_name, op):
+def b_type(macro_name: str, op: int) -> str:
     imm12 = op >> 31
     imm10_5 = (op >> 25) & 0x3f
     imm4_1 = (op >> 8) & 0xf
     imm11 = (op >> 7) & 0x1
     imm = (imm12 << 12) | (imm10_5 << 5) | (imm4_1 << 1) | (imm11 << 11)
-    return f'    .{macro_name} __rv_x{(op >> 15) & 0x1f} __rv_x{(op >> 20) & 0x1f} 0x{imm:x}    \\\\ op 0x{op:08x}\n'
+    return f'    .{macro_name} {register_name(op >> 15)} {register_name(op >> 20)} 0x{imm:x}' \
+           f'\t\t{get_hex_comment(op)}\n'
 
 
-def u_type(macro_name, op):
+def u_type(macro_name: str, op: int) -> str:
     imm = op & 0xfffff000
-    return f'    .{macro_name} __rv_x{(op >> 7) & 0x1f} 0x{imm:x}    \\\\ op 0x{op:08x}\n'
+    return f'    .{macro_name} {register_name(op >> 7)} 0x{imm:x}' \
+           f'\t\t{get_hex_comment(op)}\n'
 
 
-def j_type(macro_name, op):
+def j_type(macro_name: str, op: int) -> str:
     imm20 = op >> 31
     imm10_1 = (op >> 21) & 0x3ff
     imm11 = (op >> 20) & 0x1
     imm_19_12 = (op >> 12) & 0xff
     imm = (imm20 << 20) | (imm10_1 << 1) | (imm11 << 11) | (imm_19_12 << 12)
-    return f'    .{macro_name} __rv_x{(op >> 7) & 0x1f} 0x{imm:x}    \\\\ op 0x{op:08x}\n'
+    return f'    .{macro_name} {register_name(op >> 7)} 0x{imm:x}' \
+           f'\t\t{get_hex_comment(op)}\n'
 
 
-def write_op(file, op):
-    opcode = op & 0x7f
-    funct3 = (op >> 12) & 7
-    funct7 = op >> 25
+def write_op(ops_file: TextIO, full_op: int) -> None:
+    opcode = full_op & 0x7f
+    funct3 = (full_op >> 12) & 7
+    funct7 = full_op >> 25
     x0_changed = False
 
     if opcode == RV_LUI:
-        file.write(u_type('RV_LUI', op))
+        ops_file.write(u_type('lui', full_op))
     elif opcode == RV_AUIPC:
-        file.write(u_type('RV_AUIPC', op))
+        ops_file.write(u_type('auipc', full_op))
     elif opcode == RV_JAL:
-        file.write(j_type('RV_JAL', op))
+        ops_file.write(j_type('jal', full_op))
     elif opcode == RV_JALR:
         if funct3 != 0:
-            file.write(f'    // ERROR - bad funct3 at RV_JALR op - 0x{op:08x}\n')
+            ops_file.write(f'    // ERROR - bad funct3 at jalr op - 0x{full_op:08x}\n')
         else:
-            file.write(i_type('RV_JALR', op))
+            ops_file.write(i_type('jalr', full_op))
 
     elif opcode == RV_B:
         if funct3 == RV_BEQ:
-            file.write(b_type('RV_BEQ', op))
+            ops_file.write(b_type('beq', full_op))
         elif funct3 == RV_BNE:
-            file.write(b_type('RV_BNE', op))
+            ops_file.write(b_type('bne', full_op))
         elif funct3 == RV_BLT:
-            file.write(b_type('RV_BLT', op))
+            ops_file.write(b_type('blt', full_op))
         elif funct3 == RV_BGE:
-            file.write(b_type('RV_BGE', op))
+            ops_file.write(b_type('bge', full_op))
         elif funct3 == RV_BLTU:
-            file.write(b_type('RV_BLTU', op))
+            ops_file.write(b_type('bltu', full_op))
         elif funct3 == RV_BGEU:
-            file.write(b_type('RV_BGEU', op))
+            ops_file.write(b_type('bgeu', full_op))
 
     else:
-        file.write(f'    \\\\TODO not-implemented op 0x{op:08x}\n')
+        ops_file.write(f'    \\\\TODO not-implemented op 0x{full_op:08x}\n')
         # TODO real ops here.
 
     x0_changed = True
     if x0_changed:
-        file.write('    .zero 32 x0\n')
+        ops_file.write('    hex.zero 8 .regs.zero\n')
+
+    ops_file.write('\n')
 
 
-def addr_label(addr):
-    return f'__RV_ADDR_{addr:08X}'
+def get_addr_label_name(addr: int) -> str:
+    return f'ADDR_{addr:08X}'
 
 
-def write_data(file, data, vaddr, reserved):
-    file.write(f'.segment __RV_MEM + 0x{vaddr:08x}*8*dw\n')
+def write_jump_to_addr_label(jmp_file: TextIO, addr: int) -> None:
+    jmp_file.write(f';.{get_addr_label_name(addr)}\n')
+
+
+def write_declare_addr_label(ops_file: TextIO, addr: int) -> None:
+    ops_file.write(f'{get_addr_label_name(addr)}:\n')
+
+
+def write_memory_data(mem_file: TextIO, data: bytes, virtual_address: int, reserved_bytes_size: int) -> None:
+    mem_file.write(f'segment .MEM + 0x{virtual_address:08x}*8*dw\n')
     for byte in data:
-        file.write(f'.var 8 {byte}\n')
-    if reserved > 0:
-        file.write(f'.reserve {reserved}*8*dw\n')
-    file.write(f'\n\n')
+        mem_file.write(f'hex.vec 2 {byte}\n')
+    if reserved_bytes_size > 0:
+        mem_file.write(f'reserve {reserved_bytes_size}*2*dw\n')
+    mem_file.write(f'\n\n')
 
 
-def write_text(ops_file, jmp_file, data, vaddr):
-    jmp_file.write(f'.segment __RV_JMP + 0x{vaddr:08x}/4*dw\n')
-    for i in range(0, len(data), 4):
-        op = int.from_bytes(data[i:i+4], 'little')
-        addr = vaddr + i
-        label = addr_label(addr)
-        jmp_file.write(f';{label}\n')
-        ops_file.write(f'{label}:\n')
+def ops_and_addr_iterator(data: bytes, virtual_address: int) -> Iterator[Tuple[int, int]]:
+    return ((int.from_bytes(data[i:i+4], 'little'), virtual_address + i)
+            for i in range(0, len(data), 4))
+
+
+def write_ops_and_jumps(ops_file: TextIO, jmp_file: TextIO, data: bytes, virtual_address: int) -> None:
+    jmp_file.write(f'segment .JMP + 0x{virtual_address:08x}/4*dw\n')
+    for op, addr in ops_and_addr_iterator(data, virtual_address):
+        write_jump_to_addr_label(jmp_file, addr)
+        write_declare_addr_label(ops_file, addr)
         write_op(ops_file, op)
-        ops_file.write(f'\n')
 
     jmp_file.write(f'\n\n')
     ops_file.write(f'\n\n')
 
 
-def riscv2fj(elf_path, mem_path, jmp_path, ops_path):
-    mem_fj = open(mem_path, 'w')
-    jmp_fj = open(jmp_path, 'w')
-    ops_fj = open(ops_path, 'w')
+def write_open_riscv_namespace(file: TextIO) -> None:
+    file.write(f"ns riscv {{\n\n\n")
 
-    with open(elf_path, 'rb') as f:
-        elf = ELFFile(f)
-        ops_fj.write(f"__RV_MEM = 1<<(w-1)                      \\\\ start of memory\n"
-                     f"__RV_JMP = __RV_MEM - (__RV_MEM / 32)    \\\\ start of jump table\n\n"
-                     f";{addr_label(elf['e_entry'])}                      \\\\ entry point\n"
-                     f".riscv_init                              \\\\ init registers, structs, functions\n\n\n\n")
 
-        for seg in elf.iter_segments():
-            if seg['p_type'] != 'PT_LOAD':
-                continue
+def write_init_riscv_ops(ops_file: TextIO, start_addr: int) -> None:
+    ops_file.write(f"MEM = 1<<(w-1)                      \\\\ start of memory\n"
+                   f"JMP = __RV_MEM - (__RV_MEM / 32)    \\\\ start of jump table\n\n"
+                   f";.{get_addr_label_name(start_addr)}                     \\\\ entry point\n"
+                   f".init                               \\\\ init registers, structs, functions\n\n\n\n")
 
-            flags, vaddr, filesz, memsz = seg['p_flags'], seg['p_vaddr'], seg['p_filesz'], seg['p_memsz']
-            data = seg.data()
-            if flags & 1:   # if execute flag is on
-                write_text(ops_fj, jmp_fj, data, vaddr)
-            write_data(mem_fj, data, vaddr, memsz - filesz)
 
-    mem_fj.close()
-    jmp_fj.close()
-    ops_fj.close()
+def write_close_riscv_namespace(file: TextIO) -> None:
+    file.write(f"}}\n")
+
+
+def is_loaded_to_memory(segment):
+    return segment['p_type'] == 'PT_LOAD'
+
+
+def is_segment_executable(segment):
+    return segment['p_flags'] & 1
+
+
+def get_virtual_start_address(segment):
+    return segment['p_vaddr']
+
+
+def get_reserved_byte_size(segment):
+    return segment['p_memsz'] - segment['p_filesz']
+
+
+def get_segment_data(segment) -> bytes:
+    return segment.data()
+
+
+def write_segment(mem_file: TextIO, jmp_file: TextIO, ops_file: TextIO, segment) -> None:
+    virtual_address = get_virtual_start_address(segment)
+    reserved_byte_size = get_reserved_byte_size(segment)
+    data = get_segment_data(segment)
+
+    if is_segment_executable(segment):
+        write_ops_and_jumps(ops_file, jmp_file, data, virtual_address)
+    write_memory_data(mem_file, data, virtual_address, reserved_byte_size)
+
+
+def get_start_address(elf: ELFFile) -> int:
+    return elf['e_entry']
+
+
+def write_file_prefixes(mem_file: TextIO, jmp_file: TextIO, ops_file: TextIO, elf: ELFFile) -> None:
+    for file in (mem_file, jmp_file, ops_file):
+        write_open_riscv_namespace(file)
+
+    write_init_riscv_ops(ops_file, get_start_address(elf))
+
+
+def write_file_suffixes(mem_file: TextIO, jmp_file: TextIO, ops_file: TextIO) -> None:
+    for file in (mem_file, jmp_file, ops_file):
+        write_close_riscv_namespace(file)
+
+
+def get_segments(elf: ELFFile) -> Iterator:
+    return elf.iter_segments()
+
+
+def create_fj_files_from_riscv_elf(elf_path, mem_path, jmp_path, ops_path):
+    with open(mem_path, 'w') as mem_file, open(jmp_path, 'w') as jmp_file, open(ops_path, 'w') as ops_file:
+        with open(elf_path, 'rb') as elf_file:
+            elf = ELFFile(elf_file)
+            write_file_prefixes(mem_file, jmp_file, ops_file, elf)
+
+            for segment in get_segments(elf):
+                if is_loaded_to_memory(segment):
+                    write_segment(mem_file, jmp_file, ops_file, segment)
+
+            write_file_suffixes(mem_file, jmp_file, ops_file)
 
 
 if __name__ == '__main__':
-    riscv2fj('sample_exe64.elf', 'mem.fj', 'jmp.fj', 'ops.fj')
+    create_fj_files_from_riscv_elf('sample_exe64.elf',
+                                   mem_path='mem.fj', jmp_path='jmp.fj', ops_path='ops.fj')
