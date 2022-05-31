@@ -60,9 +60,9 @@ class Reader:
         self.magic, self.w, self.version, self.segment_num = \
             unpack(header_base_format, fjm_file.read(header_base_size))
         if self.version == 0:
-            self.flags = self.reserved = 0
+            self.flags, self.reserved = 0, 0
         else:
-            self.flags = self.reserved = unpack(header_extension_format, fjm_file.read(header_extension_size))
+            self.flags, self.reserved = unpack(header_extension_format, fjm_file.read(header_extension_size))
 
     def _init_segments(self, fjm_file: BinaryIO) -> List[Tuple]:
         return [unpack(segment_format, fjm_file.read(segment_size)) for _ in range(self.segment_num)]

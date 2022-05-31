@@ -120,7 +120,7 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
                     input_char = stdin.buffer.read(1)[0]
                     pause_time += time() - pause_time_start
                 elif len(defined_input) > 0:
-                    input_char = defined_input[0]
+                    input_char = ord(defined_input[0])
                     defined_input = defined_input[1:]
                 else:
                     if output_verbose and output_anything_yet:

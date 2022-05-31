@@ -9,6 +9,8 @@ from glob import glob
 import argparse
 import difflib
 
+from tests import test_run_from_csv_file
+
 
 def main():
     parser = argparse.ArgumentParser(description='Run FlipJump programs.')
@@ -25,7 +27,15 @@ def main():
                                         "Expects an input/expected-output directory. "
                                         "Each *.fjm file will be tested with "
                                         "dir/*.in as input, and its output will be compared to dir/*.out.")
+    parser.add_argument('--csv_tests', help="run all fjm tests in given .csv file", nargs='+')
+
     args = parser.parse_args()
+
+    if args.csv_tests is not None:
+        for csv_file in args.csv_tests:
+            test_run_from_csv_file(csv_file)
+        print('\nFinished running all tests.')
+        exit()
 
     verbose_set = set() if args.tests else {Verbose.PrintOutput}
     if not args.silent:

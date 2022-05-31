@@ -1,10 +1,14 @@
 import pytest
 from pathlib import Path
 import csv
+import difflib
 
 import fjm_run
 import assembler
 import defs
+
+
+# TODO decide if raise/assert (pytest should handle it), or just print (so no-pytest could skip failed tests)
 
 
 CSV_TRUE = 'True'
@@ -38,13 +42,14 @@ def create_parent_directories(path: str):
 
 
 def test_compile(args: CompileTestArgs) -> None:
-    print(f'Start test {args.test_name}:')
+    print(f'Compiling test {args.test_name}:')
 
     create_parent_directories(args.fjm_out_path)
 
     assembler.assemble(args.fj_files, args.fjm_out_path, args.word_size,
                        version=args.version, flags=args.flags,
-                       warning_as_errors=args.warning_as_errors)
+                       warning_as_errors=args.warning_as_errors,
+                       verbose={defs.Verbose.Time})
 
 
 class RunTestArgs:
@@ -55,6 +60,7 @@ class RunTestArgs:
                  read_in_as_binary__str: str, read_out_as_binary__str: str):
         assert read_in_as_binary__str in CSV_BOOLEAN
         assert read_out_as_binary__str in CSV_BOOLEAN
+        self.read_out_as_binary = read_out_as_binary__str == CSV_TRUE
 
         self.test_name = test_name
         self.fjm_path = fjm_path
@@ -63,28 +69,43 @@ class RunTestArgs:
         self.out_file_path = out_file_path
 
         self.in_file_mode = 'rb' if read_in_as_binary__str == CSV_TRUE else 'r'
-        self.out_file_mode = 'rb' if read_out_as_binary__str == CSV_TRUE else 'r'
+        self.out_file_mode = 'rb' if self.read_out_as_binary else 'r'
+
+    def diff_output_with_expected(self, output: bytes):
+        with open(self.out_file_path, self.out_file_mode) as out_file:
+            expected_output = out_file.read()
+            if self.read_out_as_binary:
+                expected_output = expected_output.decode(encoding='raw_unicode_escape')
+            output = output.decode(encoding='raw_unicode_escape')
+            if output != expected_output:
+                print(f'test "{self.test_name}" failed. here\'s the diff:')
+                middle_newlines_padding = '\n\n'
+                print(''.join(difflib.context_diff((output + middle_newlines_padding).splitlines(True),
+                                                   (expected_output + middle_newlines_padding).splitlines(True),
+                                                   fromfile=self.fjm_path, tofile=self.out_file_path)))
 
 
 def test_same_input(args: RunTestArgs) -> None:
-    print(f'Start test {args.test_name}:')
+    print(f'Running test {args.test_name}:')
 
-    with open(args.in_file_path, args.in_file_mode) as in_file, \
-         open(args.out_file_path, args.out_file_mode) as out_file:
+    with open(args.in_file_path, args.in_file_mode) as in_file:
         test_input = in_file.read()
-        expected_output = out_file.read()
 
         run_time, ops_executed, flips_executed, output, finish_cause =\
-            fjm_run.run(args.fjm_path, defined_input=test_input)
+            fjm_run.run(args.fjm_path, defined_input=test_input, time_verbose=True)
+        print(f'finished by {finish_cause.value} after {run_time:.3f}s '
+              f'({ops_executed:,} ops executed, {flips_executed / ops_executed * 100:.2f}% flips)')
+
         assert finish_cause == defs.RunFinish.Looping
-        assert output == expected_output
+        args.diff_output_with_expected(output)
 
 
 def argument_line_iterator(csv_file_path: str, num_of_args: int):
     with open(csv_file_path, 'r') as csv_file:
-        for line in csv.reader(csv_file):
+        for line_index, line in enumerate(csv.reader(csv_file)):
             if line:
-                assert len(line) == num_of_args
+                assert len(line) == num_of_args, f'expects {num_of_args} args, got {len(line)} ' \
+                                                 f'(file {Path(csv_file_path).absolute()}, line {line_index + 1})'
                 yield map(str.strip, line)
 
 

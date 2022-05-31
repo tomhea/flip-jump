@@ -7,6 +7,7 @@ from glob import glob
 import traceback
 import argparse
 from defs import *
+from tests import test_compile_from_csv_file
 
 
 def main():
@@ -24,12 +25,19 @@ def main():
     parser.add_argument('--no-stl', help="don't assemble/link the standard library files.", action='store_true')
     parser.add_argument('--tests', help="compile all .fj files in the given folder (instead of specifying a file).",
                         action='store_true')
+    parser.add_argument('--csv_tests', help="compile all fj files in given .csv file", nargs='+')
     parser.add_argument('--stats', help="show macro usage statistics.", action='store_true')
     args = parser.parse_args()
 
     verbose_set = set()
     if not args.silent:
         verbose_set.add(Verbose.Time)
+
+    if args.csv_tests is not None:
+        for csv_file in args.csv_tests:
+            test_compile_from_csv_file(csv_file)
+        print('\nFinished compiling all tests.')
+        exit()
 
     if args.tests:
         if len(args.file) != 1 or not isdir(args.file[0]):

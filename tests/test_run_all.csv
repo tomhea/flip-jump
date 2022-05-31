@@ -1,1 +1,1 @@
-calc, compiled/calc.fjm, inout/calc.in,inout/calc.out, False,False
+calc, tests/compiled/calc.fjm, tests/inout/calc.in,tests/inout/calc.out, False,False
