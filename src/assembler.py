@@ -73,11 +73,10 @@ def get_next_wflip_entry_index(boundary_addresses, index):
     return index
 
 
-def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=False, flags=0):   # TODO handle verbose?
+def labels_resolve(ops, labels, boundary_addresses, w, writer,
+                   *, verbose=False):   # TODO handle verbose?
     if max(e[1] for e in boundary_addresses) >= (1 << w):
         raise FJAssemblerException(f"Not enough space with the {w}-width.")
-
-    writer = fjm.Writer(w, flags=flags if flags else 0)
 
     bits = []
     wflips = []
@@ -132,39 +131,49 @@ def labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Fals
             raise FJAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
 
     close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits, wflips)
-    writer.write_to_file(output_file)
 
 
-def assemble(input_files, output_file, w, warning_as_errors, flags=None,
+def assemble(input_files, output_file, w,
+             *, version=0, flags=0,
+             warning_as_errors=True,
              show_statistics=False, preprocessed_file=None, debugging_file=None, verbose=None):
     if verbose is None:
         verbose = set()
 
-    if w not in (8, 16, 32, 64):
-        raise FJAssemblerException(f'The width ({w}) must be one of (8, 16, 32, 64).')
+    writer = fjm.Writer(output_file, w, version=version, flags=flags)
 
     temp_preprocessed_file, temp_fd = False, 0
     if preprocessed_file is None:
         temp_fd, preprocessed_file = mkstemp()
         temp_preprocessed_file = True
 
-    print('  parsing:         ', end='', flush=True)
-    start_time = time()
+    if Verbose.Time in verbose:
+        print('  parsing:         ', end='', flush=True)
+        start_time = time()
     macros = parse_macro_tree(input_files, w, warning_as_errors, verbose=Verbose.Parse in verbose)
     if Verbose.Time in verbose:
         print(f'{time() - start_time:.3f}s')
 
-    print('  macro resolve:   ', end='', flush=True)
-    start_time = time()
+    if Verbose.Time in verbose:
+        print('  macro resolve:   ', end='', flush=True)
+        start_time = time()
     ops, labels, boundary_addresses = resolve_macros(w, macros, output_file=preprocessed_file,
                                                      show_statistics=show_statistics,
                                                      verbose=Verbose.MacroSolve in verbose)
     if Verbose.Time in verbose:
         print(f'{time() - start_time:.3f}s')
 
-    print('  labels resolve:  ', end='', flush=True)
-    start_time = time()
-    labels_resolve(ops, labels, boundary_addresses, w, output_file, verbose=Verbose.LabelSolve in verbose, flags=flags)
+    if Verbose.Time in verbose:
+        print('  labels resolve:  ', end='', flush=True)
+        start_time = time()
+    labels_resolve(ops, labels, boundary_addresses, w, writer, verbose=Verbose.LabelSolve in verbose)
+    if Verbose.Time in verbose:
+        print(f'{time() - start_time:.3f}s')
+
+    if Verbose.Time in verbose:
+        print('  create binary:   ', end='', flush=True)
+        start_time = time()
+    writer.write_to_file()
     if Verbose.Time in verbose:
         print(f'{time() - start_time:.3f}s')
 

@@ -1,0 +1,7 @@
+casting, tests/casting.fj,tests/compiled/casting.fjm, 64,1,0, True,True
+div10, tests/div10.fj,tests/compiled/div10.fjm, 64,1,0, True,True
+hello_world_with_str, tests/hello_world_with_str.fj,tests/compiled/hello_world_with_str.fjm, 64,1,0, True,True
+print_dec, tests/print_dec.fj,tests/compiled/print_dec.fjm, 64,1,0, True,True
+print_hex_int, tests/print_hex_int.fj,tests/compiled/print_hex_int.fjm, 64,1,0, True,True
+ptr, tests/ptr.fj,tests/compiled/ptr.fjm, 64,1,0, True,True
+segments, tests/segments.fj,tests/compiled/segments.fjm, 64,1,0, True,True

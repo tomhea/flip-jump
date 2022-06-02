@@ -4,9 +4,9 @@ from assembler import assemble
 
 from os.path import isfile, abspath, isdir, join
 from glob import glob
-import traceback
 import argparse
 from defs import *
+from src.tests import get_compile_tests_args_from_csv
 
 
 def main():
@@ -16,6 +16,7 @@ def main():
     parser.add_argument('-o', '--outfile', help="output assembled file.", default="a.fjm")
     parser.add_argument('--no-macros', help="output no-macros file.")
     parser.add_argument('-d', '--debug', help="output debug file (used for breakpoints).")
+    parser.add_argument('-v', '--version', help="fjm version", type=int, default=0)
     parser.add_argument('-f', '--flags', help="default running flags", type=int, default=0)
     parser.add_argument('-w', '--width', help="specify memory-width. 64 by default.",
                         type=int, default=64, choices=[8, 16, 32, 64])
@@ -23,12 +24,19 @@ def main():
     parser.add_argument('--no-stl', help="don't assemble/link the standard library files.", action='store_true')
     parser.add_argument('--tests', help="compile all .fj files in the given folder (instead of specifying a file).",
                         action='store_true')
+    parser.add_argument('--csv_tests', help="compile all fj files in given .csv file", nargs='+')
     parser.add_argument('--stats', help="show macro usage statistics.", action='store_true')
     args = parser.parse_args()
 
     verbose_set = set()
     if not args.silent:
         verbose_set.add(Verbose.Time)
+
+    if args.csv_tests is not None:
+        for csv_file in args.csv_tests:
+            get_compile_tests_args_from_csv(csv_file)
+        print('\nFinished compiling all tests.')
+        exit()
 
     if args.tests:
         if len(args.file) != 1 or not isdir(args.file[0]):
@@ -47,7 +55,10 @@ def main():
             try:
                 assemble([file] if no_stl else stl() + [file],
                          (Path(args.file[0]) / 'compiled' / (Path(file).stem + '.fjm')),
-                         args.width, args.Werror, flags=args.flags, verbose=verbose_set)
+                         args.width,
+                         version=args.version, flags=args.flags,
+                         warning_as_errors=args.Werror,
+                         verbose=verbose_set)
             except FJException as e:
                 print()
                 print(e)
@@ -73,9 +84,11 @@ def main():
             if not isfile(abspath(file)):
                 parser.error(f'file {file} does not exist.')
         try:
-            assemble(args.file, args.outfile, args.width, args.Werror, flags=args.flags,
-                     show_statistics=args.stats,
-                     preprocessed_file=args.no_macros, debugging_file=args.debug, verbose=verbose_set)
+            assemble(args.file, args.outfile, args.width,
+                     version=args.version, flags=args.flags,
+                     warning_as_errors=args.Werror,
+                     show_statistics=args.stats, verbose=verbose_set,
+                     preprocessed_file=args.no_macros, debugging_file=args.debug)
         except FJException as e:
             print()
             print(e)

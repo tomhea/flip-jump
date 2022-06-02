@@ -19,7 +19,8 @@ def main():
     parser.add_argument('-o', '--outfile', help="output assembled file.")
     parser.add_argument('--no-macros', help="output no-macros file.")
     parser.add_argument('-d', '--debug', help="debug file (used for breakpoints).", nargs='?', const=True)
-    parser.add_argument('-f', '--flags', help="running flags", type=int, default=0)
+    parser.add_argument('-v', '--version', help="fjm version", type=int, default=0)
+    parser.add_argument('-f', '--flags', help="default running flags", type=int, default=0)
     parser.add_argument('-w', '--width', help="specify memory-width. 64 by default.",
                         type=int, default=64, choices=[8, 16, 32, 64])
     parser.add_argument('--Werror', help="make all warnings into errors.", action='store_true')
@@ -69,9 +70,11 @@ def main():
         temp_debug_file = True
 
     try:
-        assemble(args.file, args.outfile, args.width, args.Werror, flags=args.flags,
-                 show_statistics=args.stats,
-                 preprocessed_file=args.no_macros, debugging_file=args.debug, verbose=verbose_set)
+        assemble(args.file, args.outfile, args.width,
+                 version=args.version, flags=args.flags,
+                 warning_as_errors=args.Werror,
+                 show_statistics=args.stats, verbose=verbose_set,
+                 preprocessed_file=args.no_macros, debugging_file=args.debug)
     except FJException as e:
         print()
         print(e)

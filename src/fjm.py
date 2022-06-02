@@ -60,9 +60,9 @@ class Reader:
         self.magic, self.w, self.version, self.segment_num = \
             unpack(header_base_format, fjm_file.read(header_base_size))
         if self.version == 0:
-            self.flags = self.reserved = 0
+            self.flags, self.reserved = 0, 0
         else:
-            self.flags = self.reserved = unpack(header_extension_format, fjm_file.read(header_extension_size))
+            self.flags, self.reserved = unpack(header_extension_format, fjm_file.read(header_extension_size))
 
     def _init_segments(self, fjm_file: BinaryIO) -> List[Tuple]:
         return [unpack(segment_format, fjm_file.read(segment_size)) for _ in range(self.segment_num)]
@@ -156,22 +156,29 @@ class Reader:
 
 
 class Writer:
-    def __init__(self, w, *, version=0, flags=0):
-        self.word_size = w
-        if self.word_size not in (8, 16, 32, 64):
+    def __init__(self, output_file, w, *, version=0, flags=0):
+        if w not in (8, 16, 32, 64):
             raise FJWriteFjmException(f"Word size {w} is not in {{8, 16, 32, 64}}.")
-        self.version = version & ((1 << 64) - 1)
-        self.flags = flags & ((1 << 64) - 1)
-        self.reserved = 0
-        if self.version == 0 and self.flags != 0:
+        if version < 0 or version >= 1 << 64:
+            raise FJWriteFjmException(f"version must be a 64bit positive number, not {version}")
+        if flags < 0 or flags >= 1 << 64:
+            raise FJWriteFjmException(f"flags must be a 64bit positive number, not {flags}")
+        if version == 0 and flags != 0:
             raise FJWriteFjmException(f"version 0 does not support the flags option")
+
+        self.output_file = output_file
+        self.word_size = w
+        self.version = version
+        self.flags = flags
+        self.reserved = 0
+
         self.segments = []
         self.data = []  # words array
 
-    def write_to_file(self, output_file):
+    def write_to_file(self):
         write_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
 
-        with open(output_file, 'wb') as f:
+        with open(self.output_file, 'wb') as f:
             f.write(pack(header_base_format, fj_magic, self.word_size, self.version, len(self.segments)))
             if self.version > 0:
                 f.write(pack(header_extension_format, self.flags, self.reserved))
