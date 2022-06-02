@@ -4,10 +4,9 @@ from assembler import assemble
 
 from os.path import isfile, abspath, isdir, join
 from glob import glob
-import traceback
 import argparse
 from defs import *
-from tests import test_compile_from_csv_file
+from src.tests import get_compile_tests_args_from_csv
 
 
 def main():
@@ -35,7 +34,7 @@ def main():
 
     if args.csv_tests is not None:
         for csv_file in args.csv_tests:
-            test_compile_from_csv_file(csv_file)
+            get_compile_tests_args_from_csv(csv_file)
         print('\nFinished compiling all tests.')
         exit()
 

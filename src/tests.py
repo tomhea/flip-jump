@@ -1,19 +1,29 @@
 import pytest
-from pathlib import Path
-import csv
-import difflib
 
-import fjm_run
+import csv
+from pathlib import Path
+from typing import List
+
 import assembler
 import defs
-
-
-# TODO decide if raise/assert (pytest should handle it), or just print (so no-pytest could skip failed tests)
+import fjm_run
 
 
 CSV_TRUE = 'True'
 CSV_FALSE = 'False'
 CSV_BOOLEAN = (CSV_TRUE, CSV_FALSE)
+
+
+CompileCSVs = {'fast': 'tests/test_compile_fast.csv',
+               'medium': 'tests/test_compile_medium.csv',
+               'slow': 'tests/test_compile_slow.csv',
+               'hexlib': 'tests/test_compile_hexlib.csv'}
+
+
+RunCSVs = {'fast': 'tests/test_run_fast.csv',
+           'medium': 'tests/test_run_medium.csv',
+           'slow': 'tests/test_run_slow.csv',
+           'hexlib': 'tests/test_run_hexlib.csv'}
 
 
 class CompileTestArgs:
@@ -36,19 +46,22 @@ class CompileTestArgs:
 
         self.warning_as_errors = warning_as_errors__str == CSV_TRUE
 
+    def __repr__(self) -> str:
+        return self.test_name
+
 
 def create_parent_directories(path: str):
     Path(path).absolute().parent.mkdir(parents=True, exist_ok=True)
 
 
-def test_compile(args: CompileTestArgs) -> None:
-    print(f'Compiling test {args.test_name}:')
+def test_compile(compile_args: CompileTestArgs) -> None:
+    print(f'Compiling test {compile_args.test_name}:')
 
-    create_parent_directories(args.fjm_out_path)
+    create_parent_directories(compile_args.fjm_out_path)
 
-    assembler.assemble(args.fj_files, args.fjm_out_path, args.word_size,
-                       version=args.version, flags=args.flags,
-                       warning_as_errors=args.warning_as_errors,
+    assembler.assemble(compile_args.fj_files, compile_args.fjm_out_path, compile_args.word_size,
+                       version=compile_args.version, flags=compile_args.flags,
+                       warning_as_errors=compile_args.warning_as_errors,
                        verbose={defs.Verbose.Time})
 
 
@@ -60,6 +73,7 @@ class RunTestArgs:
                  read_in_as_binary__str: str, read_out_as_binary__str: str):
         assert read_in_as_binary__str in CSV_BOOLEAN
         assert read_out_as_binary__str in CSV_BOOLEAN
+        self.read_in_as_binary = read_in_as_binary__str == CSV_TRUE
         self.read_out_as_binary = read_out_as_binary__str == CSV_TRUE
 
         self.test_name = test_name
@@ -68,36 +82,41 @@ class RunTestArgs:
         self.in_file_path = in_file_path
         self.out_file_path = out_file_path
 
-        self.in_file_mode = 'rb' if read_in_as_binary__str == CSV_TRUE else 'r'
-        self.out_file_mode = 'rb' if self.read_out_as_binary else 'r'
+    def get_defined_input(self) -> bytes:
+        if self.read_in_as_binary:
+            with open(self.in_file_path, 'rb') as in_f:
+                return in_f.read()
+        else:
+            with open(self.in_file_path, 'r') as in_f:
+                return in_f.read().encode()
 
-    def diff_output_with_expected(self, output: bytes):
-        with open(self.out_file_path, self.out_file_mode) as out_file:
-            expected_output = out_file.read()
-            if self.read_out_as_binary:
-                expected_output = expected_output.decode(encoding='raw_unicode_escape')
-            output = output.decode(encoding='raw_unicode_escape')
-            if output != expected_output:
-                print(f'test "{self.test_name}" failed. here\'s the diff:')
-                middle_newlines_padding = '\n\n'
-                print(''.join(difflib.context_diff((output + middle_newlines_padding).splitlines(True),
-                                                   (expected_output + middle_newlines_padding).splitlines(True),
-                                                   fromfile=self.fjm_path, tofile=self.out_file_path)))
+    def get_expected_output(self) -> str:
+        if self.read_out_as_binary:
+            with open(self.out_file_path, 'rb') as out_f:
+                return out_f.read().decode('raw_unicode_escape')
+        else:
+            with open(self.out_file_path, 'r') as out_f:
+                return out_f.read()
+
+    def __repr__(self) -> str:
+        return self.test_name
 
 
-def test_same_input(args: RunTestArgs) -> None:
-    print(f'Running test {args.test_name}:')
+def test_run(run_args: RunTestArgs) -> None:
+    print(f'Running test {run_args.test_name}:')
 
-    with open(args.in_file_path, args.in_file_mode) as in_file:
-        test_input = in_file.read()
+    run_time, ops_executed, flips_executed, output, finish_cause =\
+        fjm_run.run(run_args.fjm_path, defined_input=run_args.get_defined_input(), time_verbose=True)
 
-        run_time, ops_executed, flips_executed, output, finish_cause =\
-            fjm_run.run(args.fjm_path, defined_input=test_input, time_verbose=True)
-        print(f'finished by {finish_cause.value} after {run_time:.3f}s '
-              f'({ops_executed:,} ops executed, {flips_executed / ops_executed * 100:.2f}% flips)')
+    print(f'finished by {finish_cause.value} after {run_time:.3f}s '
+          f'({ops_executed:,} ops executed, {flips_executed / ops_executed * 100:.2f}% flips)')
 
-        assert finish_cause == defs.RunFinish.Looping
-        args.diff_output_with_expected(output)
+    expected_finish_cause = defs.RunFinish.Looping
+    assert finish_cause == expected_finish_cause
+
+    output = output.decode('raw_unicode_escape')
+    expected_output = run_args.get_expected_output()
+    assert output == expected_output
 
 
 def argument_line_iterator(csv_file_path: str, num_of_args: int):
@@ -109,11 +128,14 @@ def argument_line_iterator(csv_file_path: str, num_of_args: int):
                 yield map(str.strip, line)
 
 
-def test_compile_from_csv_file(csv_file_path: str):
-    for line in argument_line_iterator(csv_file_path, CompileTestArgs.num_of_args):
-        test_compile(CompileTestArgs(*line))
+# TODO maybe use pytest-dependency in the future,
+#  to assure that if both a run and compile are tested - the run won't run before the compile,
+#  and wil be skipped if compilation failed.
 
 
-def test_run_from_csv_file(csv_file_path: str):
-    for line in argument_line_iterator(csv_file_path, RunTestArgs.num_of_args):
-        test_same_input(RunTestArgs(*line))
+def get_compile_tests_args_from_csv(csv_file_path: str) -> List[CompileTestArgs]:
+    return [CompileTestArgs(*line) for line in argument_line_iterator(csv_file_path, CompileTestArgs.num_of_args)]
+
+
+def get_run_tests_args_from_csv(csv_file_path: str) -> List[RunTestArgs]:
+    return [RunTestArgs(*line) for line in argument_line_iterator(csv_file_path, RunTestArgs.num_of_args)]

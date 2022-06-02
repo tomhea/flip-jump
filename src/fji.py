@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import struct
 
 from fjm_run import debug_and_run
 
@@ -9,7 +8,7 @@ from glob import glob
 import argparse
 import difflib
 
-from tests import test_run_from_csv_file
+from src.tests import get_run_tests_args_from_csv
 
 
 def main():
@@ -33,7 +32,7 @@ def main():
 
     if args.csv_tests is not None:
         for csv_file in args.csv_tests:
-            test_run_from_csv_file(csv_file)
+            get_run_tests_args_from_csv(csv_file)
         print('\nFinished running all tests.')
         exit()
 

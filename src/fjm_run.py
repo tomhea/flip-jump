@@ -1,3 +1,5 @@
+from typing import Optional
+
 import fjm
 
 from os import path
@@ -20,7 +22,7 @@ def get_address_str(address, breakpoints, labels_dict):
             return f'{hex(address)[2:]} ({labels_dict[address_before]} + {hex(address - address_before)})'
 
 
-def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_verbose=False, output_verbose=False,
+def run(input_file, breakpoints=None, defined_input: Optional[bytes] = None, verbose=False, time_verbose=False, output_verbose=False,
         next_break=None, labels_dict=None):
     if labels_dict is None:
         labels_dict = {}
@@ -120,7 +122,7 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
                     input_char = stdin.buffer.read(1)[0]
                     pause_time += time() - pause_time_start
                 elif len(defined_input) > 0:
-                    input_char = ord(defined_input[0])
+                    input_char = defined_input[0]
                     defined_input = defined_input[1:]
                 else:
                     if output_verbose and output_anything_yet:
@@ -151,7 +153,7 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
 
 
 def debug_and_run(input_file, debugging_file=None,
-                  defined_input=None, verbose=None,
+                  defined_input: Optional[bytes] = None, verbose=None,
                   breakpoint_addresses=None, breakpoint_labels=None, breakpoint_any_labels=None):
     if breakpoint_any_labels is None:
         breakpoint_any_labels = set()
