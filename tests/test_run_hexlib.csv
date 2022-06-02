@@ -1,0 +1,4 @@
+hexlib-2params, tests/compiled/hexlib-2params.fjm, tests/inout/hexlib-2params.in,tests/inout/hexlib-2params.out, False,False
+hexlib-basics1, tests/compiled/hexlib-basics1.fjm, tests/inout/hexlib-basics1.in,tests/inout/hexlib-basics1.out, False,False
+hexlib-basics2, tests/compiled/hexlib-basics2.fjm, tests/inout/hexlib-basics2.in,tests/inout/hexlib-basics2.out, False,False
+hexlib-mul-div, tests/compiled/hexlib-mul-div.fjm, tests/inout/hexlib-mul-div.in,tests/inout/hexlib-mul-div.out, False,False

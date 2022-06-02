@@ -1,0 +1,4 @@
+hexlib-mul-div, tests/hexlib-mul-div.fj,tests/compiled/hexlib-mul-div.fjm, 64,1,0, True,True
+hexlib-basics1, tests/hexlib-basics1.fj,tests/compiled/hexlib-basics1.fjm, 64,1,0, True,True
+hexlib-2params, tests/hexlib-2params.fj,tests/compiled/hexlib-2params.fjm, 64,1,0, True,True
+hexlib-basics2, tests/hexlib-basics2.fj,tests/compiled/hexlib-basics2.fjm, 64,1,0, True,True

@@ -19,7 +19,8 @@ def main():
     parser.add_argument('-o', '--outfile', help="output assembled file.")
     parser.add_argument('--no-macros', help="output no-macros file.")
     parser.add_argument('-d', '--debug', help="debug file (used for breakpoints).", nargs='?', const=True)
-    parser.add_argument('-f', '--flags', help="running flags", type=int, default=0)
+    parser.add_argument('-v', '--version', help="fjm version", type=int, default=0)
+    parser.add_argument('-f', '--flags', help="default running flags", type=int, default=0)
     parser.add_argument('-w', '--width', help="specify memory-width. 64 by default.",
                         type=int, default=64, choices=[8, 16, 32, 64])
     parser.add_argument('--Werror', help="make all warnings into errors.", action='store_true')
@@ -69,9 +70,11 @@ def main():
         temp_debug_file = True
 
     try:
-        assemble(args.file, args.outfile, args.width, args.Werror, flags=args.flags,
-                 show_statistics=args.stats,
-                 preprocessed_file=args.no_macros, debugging_file=args.debug, verbose=verbose_set)
+        assemble(args.file, args.outfile, args.width,
+                 version=args.version, flags=args.flags,
+                 warning_as_errors=args.Werror,
+                 show_statistics=args.stats, verbose=verbose_set,
+                 preprocessed_file=args.no_macros, debugging_file=args.debug)
     except FJException as e:
         print()
         print(e)
@@ -105,9 +108,9 @@ def main():
                 continue
 
             print(f'running {Path(test).name}:')
-            with open(infile, 'r', encoding='utf-8') as inf:
+            with open(infile, 'rb') as inf:
                 test_input = inf.read()
-            with open(outfile, 'r', encoding='utf-8') as outf:
+            with open(outfile, 'rb') as outf:
                 expected_output = outf.read()
 
             try:
@@ -115,9 +118,10 @@ def main():
                     debug_and_run(args.outfile,
                                   defined_input=test_input,
                                   verbose=verbose_set)
-                if output != expected_output:
+
+                if bytes(output) != expected_output:
                     print(f'test "{test}" failed. here\'s the diff:')
-                    print(''.join(difflib.context_diff(output.splitlines(1), expected_output.splitlines(True),
+                    print(''.join(difflib.context_diff(str(output).splitlines(True), str(expected_output).splitlines(True),
                                                        fromfile='assembled file' if temp_assembled_file else args.outfile,
                                                        tofile=outfile)))
                     failures.append(test)

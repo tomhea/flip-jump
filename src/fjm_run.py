@@ -1,3 +1,5 @@
+from typing import Optional
+
 import fjm
 
 from os import path
@@ -20,7 +22,7 @@ def get_address_str(address, breakpoints, labels_dict):
             return f'{hex(address)[2:]} ({labels_dict[address_before]} + {hex(address - address_before)})'
 
 
-def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_verbose=False, output_verbose=False,
+def run(input_file, breakpoints=None, defined_input: Optional[bytes] = None, verbose=False, time_verbose=False, output_verbose=False,
         next_break=None, labels_dict=None):
     if labels_dict is None:
         labels_dict = {}
@@ -41,7 +43,7 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
 
     input_char, input_size = 0, 0
     output_char, output_size = 0, 0
-    output = ''
+    output = bytes()
 
     if 0 not in labels_dict:
         labels_dict[0] = 'memory_start_0x0000'
@@ -93,14 +95,17 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
         # handle output
         if out_addr <= f <= out_addr+1:
             output_char |= (f-out_addr) << output_size
+            output_byte = bytes([output_char])
             output_size += 1
             if output_size == 8:
-                output += chr(output_char)
+                output += output_byte
                 if output_verbose:
                     if verbose:
                         for _ in range(3):
                             print()
-                        print(f'Outputted Char:  {chr(output_char)}', end='', flush=True)
+                        print(f'Outputted Char:  ', end='')
+                        stdout.buffer.write(bytes([output_char]))
+                        stdout.flush()
                         for _ in range(3):
                             print()
                     else:
@@ -114,10 +119,10 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
             if input_size == 0:
                 if defined_input is None:
                     pause_time_start = time()
-                    input_char = ord(stdin.read(1))
+                    input_char = stdin.buffer.read(1)[0]
                     pause_time += time() - pause_time_start
                 elif len(defined_input) > 0:
-                    input_char = ord(defined_input[0])
+                    input_char = defined_input[0]
                     defined_input = defined_input[1:]
                 else:
                     if output_verbose and output_anything_yet:
@@ -148,7 +153,7 @@ def run(input_file, breakpoints=None, defined_input=None, verbose=False, time_ve
 
 
 def debug_and_run(input_file, debugging_file=None,
-                  defined_input=None, verbose=None,
+                  defined_input: Optional[bytes] = None, verbose=None,
                   breakpoint_addresses=None, breakpoint_labels=None, breakpoint_any_labels=None):
     if breakpoint_any_labels is None:
         breakpoint_any_labels = set()
