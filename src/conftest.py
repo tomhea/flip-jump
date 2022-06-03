@@ -6,23 +6,27 @@ from pathlib import Path
 from src.tests import CompileTestArgs, RunTestArgs
 
 
+# --- To Edit The Tests CSV Files ---
+#       edit the next variables:
+
 CompileCSVs = {
     'fast': 'tests/test_compile_fast.csv',
     'medium': 'tests/test_compile_medium.csv',
     'slow': 'tests/test_compile_slow.csv',
-    'hexlib': 'tests/test_compile_hexlib.csv'
+    'hexlib': 'tests/test_compile_hexlib.csv',
 }
-
 
 RunCSVs = {
     'fast': 'tests/test_run_fast.csv',
     'medium': 'tests/test_run_medium.csv',
     'slow': 'tests/test_run_slow.csv',
-    'hexlib': 'tests/test_run_hexlib.csv'
+    'hexlib': 'tests/test_run_hexlib.csv',
 }
 
-
+# The union of the CSV dicts keys, ordered by fast-to-slow
 TEST_TYPES = ('fast', 'medium', 'slow', 'hexlib')
+
+# --- End Of Tests CSV Files ---
 
 
 def argument_line_iterator(csv_file_path: str, num_of_args: int):
