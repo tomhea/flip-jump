@@ -1,4 +1,3 @@
-import pytest
 from src.tests import get_compile_tests_args_from_csv, get_run_tests_args_from_csv
 from src.tests import CompileCSVs, RunCSVs
 

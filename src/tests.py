@@ -1,5 +1,3 @@
-import pytest
-
 import csv
 from pathlib import Path
 from typing import List
