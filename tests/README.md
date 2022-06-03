@@ -2,7 +2,7 @@
 
 ## Run the tests:
 
-Run `python -m pytest src/tests.py --fast -s` for running the fast tests.<br>
+Run `pytest src --fast -v` for running the fast tests.<br>
 Add the `-k compile` / `-k run` for testing only the compilation / run.
 
 Replace the `--fast` with a combination of `--fast`, `--medium`, `slow`, `hexlib` to run tests of different speeds.
@@ -13,7 +13,7 @@ Use `--all` to run all the tests.
 The .csv files in this directory specify which tests to run (and what parameters to use). 
 
 To support more .csv files, update [src/conftest.py](../src/conftest.py).<br>
-The python test itself can be found on [src/tests.py](../src/tests.py).
+The python test itself can be found on [src/test_fj.py](../src/test_fj.py).
 
 To add a new test, first decide the csv it should be in.<br>
 The rule of thumb (for the sum of compile+run times, in seconds):

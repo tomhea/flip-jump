@@ -1,15 +1,14 @@
-#!/usr/bin/env python3
+import os
+from os.path import isfile, abspath
+from pathlib import Path
+from tempfile import mkstemp
+
+import argparse
+import difflib
 
 from assembler import assemble
 from fjm_run import debug_and_run
-
-import os
-import struct
-from os.path import isfile, abspath
-import difflib
-from tempfile import mkstemp
-import argparse
-from defs import *
+from defs import Verbose, FJReadFjmException, FJException, get_stl_paths
 
 
 def main():
@@ -44,7 +43,7 @@ def main():
         verbose_set.add(Verbose.Time)
 
     if not args.no_stl:
-        args.file = stl() + args.file
+        args.file = get_stl_paths() + args.file
     for file in args.file:
         file = abspath(file)
         if not file.endswith('.fj'):
@@ -110,11 +109,11 @@ def main():
             print(f'running {Path(test).name}:')
             with open(infile, 'rb') as inf:
                 test_input = inf.read()
-            with open(outfile, 'rb') as outf:
-                expected_output = outf.read()
+            with open(outfile, 'r') as outf:
+                expected_output = outf.read().encode()
 
             try:
-                run_time, ops_executed, flips_executed, output, finish_cause = \
+                run_time, ops_executed, flips_executed, output, termination_cause = \
                     debug_and_run(args.outfile,
                                   defined_input=test_input,
                                   verbose=verbose_set)
@@ -126,7 +125,7 @@ def main():
                                                        tofile=outfile)))
                     failures.append(test)
                     if not args.silent:
-                        print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed:,} ops executed, {flips_executed / ops_executed * 100:.2f}% flips)')
+                        print(f'finished by {termination_cause.value} after {run_time:.3f}s ({ops_executed:,} ops executed, {flips_executed / ops_executed * 100:.2f}% flips)')
             except FJReadFjmException as e:
                 print()
                 print(e)
@@ -148,14 +147,14 @@ def main():
         breakpoint_any_set = set(args.any_breakpoint)
 
         try:
-            run_time, ops_executed, flips_executed, output, finish_cause = \
+            run_time, ops_executed, flips_executed, output, termination_cause = \
                 debug_and_run(args.outfile, debugging_file=args.debug,
                               defined_input=None,
                               verbose=verbose_set,
                               breakpoint_labels=breakpoint_set,
                               breakpoint_any_labels=breakpoint_any_set)
             if not args.silent:
-                print(f'finished by {finish_cause.value} after {run_time:.3f}s ({ops_executed:,} ops executed, {flips_executed / ops_executed * 100:.2f}% flips)')
+                print(f'finished by {termination_cause.value} after {run_time:.3f}s ({ops_executed:,} ops executed, {flips_executed / ops_executed * 100:.2f}% flips)')
                 print()
         except FJReadFjmException as e:
             print()

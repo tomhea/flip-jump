@@ -1,9 +1,13 @@
-from itertools import count
-from defs import *
-from copy import deepcopy
 import collections
+from copy import deepcopy
+from itertools import count
+
 import plotly.graph_objects as go
 # import matplotlib.pyplot as plt
+
+from defs import main_macro, wflip_start_label, new_label, \
+    Op, OpType, SegmentEntry, Expr, FJPreprocessorException, \
+    eval_all, id_swap
 
 
 def macro_resolve_error(curr_tree, msg=''):
@@ -74,7 +78,7 @@ def resolve_macros(w, macros, output_file=None, show_statistics=False, verbose=F
     labels = {}
     last_address_index = [0]
     label_places = {}
-    boundary_addresses = [(SegEntry.StartAddress, 0)]  # SegEntries
+    boundary_addresses = [(SegmentEntry.StartAddress, 0)]  # SegEntries
     stat_dict = collections.defaultdict(lambda: 0)
 
     ops = resolve_macro_aux(w, '', [], macros, main_macro, [], {}, count(), stat_dict,
@@ -86,7 +90,7 @@ def resolve_macros(w, macros, output_file=None, show_statistics=False, verbose=F
     if show_statistics:
         dict_pie_graph(dict(stat_dict), curr_address[0])
 
-    boundary_addresses.append((SegEntry.WflipAddress, curr_address[0]))
+    boundary_addresses.append((SegmentEntry.WflipAddress, curr_address[0]))
     return rem_ops, labels, boundary_addresses
 
 
@@ -167,13 +171,13 @@ def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_d
             if value % w != 0:
                 macro_resolve_error(curr_tree, f'segment ops must have a w-aligned address. In {op}.')
 
-            boundary_addresses.append((SegEntry.WflipAddress, curr_address[0]))
+            boundary_addresses.append((SegmentEntry.WflipAddress, curr_address[0]))
             labels[f'{wflip_start_label}{last_address_index[0]}'] = Expr(curr_address[0])
             last_address_index[0] += 1
 
             this_curr_address += value - curr_address[0]
             curr_address[0] = value
-            boundary_addresses.append((SegEntry.StartAddress, curr_address[0]))
+            boundary_addresses.append((SegmentEntry.StartAddress, curr_address[0]))
             rem_ops.append(op)
         elif op.type == OpType.Reserve:
             eval_all(op, labels)
@@ -183,7 +187,7 @@ def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_d
 
             this_curr_address += value
             curr_address[0] += value
-            boundary_addresses.append((SegEntry.ReserveAddress, curr_address[0]))
+            boundary_addresses.append((SegmentEntry.ReserveAddress, curr_address[0]))
             labels[f'{wflip_start_label}{last_address_index[0]}'] = Expr(curr_address[0])
 
             last_address_index[0] += 1

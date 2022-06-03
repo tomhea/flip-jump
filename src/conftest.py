@@ -1,35 +1,29 @@
 import csv
-from typing import List
 from pathlib import Path
+from typing import List, Iterable
 
-# Don't remove the "src." from src.tests. It will break the Assertion-info on failed assertions in tests.
-from src.tests import CompileTestArgs, RunTestArgs
+import pytest
+
+# register_assert_rewrite must be called before the import (to see inf on failed assertions in tests).
+# FIXME find a better way
+pytest.register_assert_rewrite('tests')
+from test_fj import CompileTestArgs, RunTestArgs
 
 
 # --- To Edit The Tests CSV Files ---
-#       edit the next variables:
+#       edit the TEST_TYPES variable:
 
-CompileCSVs = {
-    'fast': 'tests/test_compile_fast.csv',
-    'medium': 'tests/test_compile_medium.csv',
-    'slow': 'tests/test_compile_slow.csv',
-    'hexlib': 'tests/test_compile_hexlib.csv',
-}
+TESTS_PATH = Path(__file__).parent.parent / 'tests'
 
-RunCSVs = {
-    'fast': 'tests/test_run_fast.csv',
-    'medium': 'tests/test_run_medium.csv',
-    'slow': 'tests/test_run_slow.csv',
-    'hexlib': 'tests/test_run_hexlib.csv',
-}
-
-# The union of the CSV dicts keys, ordered by fast-to-slow
 TEST_TYPES = ('fast', 'medium', 'slow', 'hexlib')
+
+CompileCSVs = {test_type: TESTS_PATH / f"test_compile_{test_type}.csv" for test_type in TEST_TYPES}
+RunCSVs = {test_type: TESTS_PATH / f"test_run_{test_type}.csv" for test_type in TEST_TYPES}
 
 # --- End Of Tests CSV Files ---
 
 
-def argument_line_iterator(csv_file_path: str, num_of_args: int):
+def argument_line_iterator(csv_file_path: Path, num_of_args: int) -> Iterable[List[str]]:
     with open(csv_file_path, 'r') as csv_file:
         for line_index, line in enumerate(csv.reader(csv_file)):
             if line:
@@ -43,21 +37,21 @@ def argument_line_iterator(csv_file_path: str, num_of_args: int):
 #  and wil be skipped if compilation failed.
 
 
-def get_compile_tests_args_from_csv(csv_file_path: str) -> List[CompileTestArgs]:
+def get_compile_tests_args_from_csv(csv_file_path: Path) -> List[CompileTestArgs]:
     return [CompileTestArgs(*line) for line in argument_line_iterator(csv_file_path, CompileTestArgs.num_of_args)]
 
 
-def get_run_tests_args_from_csv(csv_file_path: str) -> List[RunTestArgs]:
+def get_run_tests_args_from_csv(csv_file_path: Path) -> List[RunTestArgs]:
     return [RunTestArgs(*line) for line in argument_line_iterator(csv_file_path, RunTestArgs.num_of_args)]
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser) -> None:
     for test_type in TEST_TYPES:
         parser.addoption(f"--{test_type}", action="store_true", help=f"run {test_type} tests")
     parser.addoption(f"--all", action="store_true", help=f"run all tests")
 
 
-def pytest_generate_tests(metafunc):
+def pytest_generate_tests(metafunc) -> None:
     all_tests = metafunc.config.getoption('all')
 
     compile_tests = []

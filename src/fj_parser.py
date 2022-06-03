@@ -1,6 +1,11 @@
-from sly import Lexer, Parser
 from os import path
-from defs import *
+
+from sly import Lexer, Parser
+
+from defs import get_char_value_and_length, get_all_used_labels, \
+    main_macro, next_address, \
+    OpType, Op, Expr, FJParsingException, \
+    number_re, dot_id_re, id_re, string_re
 
 
 global curr_file, curr_text, error_occurred, curr_namespace, reserved_names
@@ -90,7 +95,7 @@ class FJLexer(Lexer):
         n = t.value
         if len(n) >= 2:
             if n[0] == "'":
-                t.value = handle_char(n[1:-1])[0]
+                t.value = get_char_value_and_length(n[1:-1])[0]
             elif n[1] in 'xX':
                 t.value = int(n, 16)
             elif n[1] in 'bB':
@@ -106,7 +111,7 @@ class FJLexer(Lexer):
         s = t.value[1:-1]
         i = 0
         while i < len(s):
-            val, length = handle_char(s[i:])
+            val, length = get_char_value_and_length(s[i:])
             chars.append(val)
             i += length
         t.value = sum(val << (i*8) for i, val in enumerate(chars))
@@ -286,7 +291,7 @@ class FJParser(Parser):
         self.check_macro_name(name, p.lineno)
         self.check_params(params + local_params, name, p.lineno)
         ops = p.line_statements
-        self.check_label_usage(*all_used_labels(ops), set(params + local_params), set(extern_params),
+        self.check_label_usage(*get_all_used_labels(ops), set(params + local_params), set(extern_params),
                                set(global_params), p.lineno, name)
         self.macros[name] = [(params, local_params), ops, (curr_file, p.lineno, self.ns_name())]
         return None
@@ -406,7 +411,7 @@ class FJParser(Parser):
     @_('id')
     def statement(self, p):
         macro_name, lineno = p.id
-        return Op(OpType.Macro, ((macro_name, 0), ), curr_file, lineno)
+        return Op(OpType.Macro, ((macro_name, 0),), curr_file, lineno)
 
     @_('id expressions')
     def statement(self, p):
@@ -435,7 +440,7 @@ class FJParser(Parser):
     def statement(self, p):
         macro_name, lineno = p.id
         return Op(OpType.Rep,
-                  (p.expr, p.ID, Op(OpType.Macro, ((macro_name, 0), ), curr_file, lineno)),
+                  (p.expr, p.ID, Op(OpType.Macro, ((macro_name, 0),), curr_file, lineno)),
                   curr_file, p.lineno)
 
     @_('REP "(" expr "," ID ")" id expressions')

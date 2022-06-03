@@ -6,6 +6,8 @@ from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and
 main_macro = ('', 0)
 
 
+# TODO use the op-strings (instead of the function) up-to the last point possible (to make deepcopy simpler)
+#  even better - use a Enum of MathOpType
 parsing_op2func = {'+': add, '-': sub, '*': mul, '/': floordiv, '%': mod, 
                    '<<': lshift, '>>': rshift, '^': xor, '|': or_, '&': and_,
                    '#': lambda x: x.bit_length(),
@@ -50,15 +52,15 @@ class FJWriteFjmException(FJException):
 def smart_int16(num):
     try:
         return int(num, 16)
-    except ...:
-        raise FJException(f'{num} is not a number!')
+    except ValueError as ve:
+        raise FJException(f'{num} is not a number!') from ve
 
 
-def stl():
-    path = Path(__file__).parent    # relative address
+def get_stl_paths():
+    stl_path = Path(__file__).parent.parent / 'stl'
+    ordered_stl_libs = ('runlib', 'bitlib', 'iolib', 'ptrlib', 'mathlib', 'hexlib', 'declib')
 
-    return [str(path / f'../stl/{lib}.fj') for lib in ('runlib', 'bitlib', 'iolib', 'ptrlib', 'mathlib',
-                                                       'hexlib', 'declib')]
+    return [stl_path / f'{lib}.fj' for lib in ordered_stl_libs]
 
 
 id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -77,7 +79,7 @@ number_re = fr"({bin_num})|({hex_num})|('({char})')|({dec_num})"
 string_re = fr'"({char})*"'
 
 
-def handle_char(s):
+def get_char_value_and_length(s):
     if s[0] != '\\':
         return ord(s[0]), 1
     if s[1] in char_escape_dict:
@@ -95,13 +97,13 @@ class Verbose(Enum):
     PrintOutput = 7
 
 
-class RunFinish(Enum):
+class TerminationCause(Enum):
     Looping = 'looping'
     Input = 'input'
     NullIP = 'ip<2w'
 
 
-class SegEntry(Enum):
+class SegmentEntry(Enum):
     StartAddress = 0
     ReserveAddress = 1
     WflipAddress = 2
@@ -210,7 +212,7 @@ def eval_all(op, id_dict=None):
     return ids
 
 
-def all_used_labels(ops):
+def get_all_used_labels(ops):
     used_labels, declared_labels = set(), set()
     for op in ops:
         if op.type == OpType.Rep:
