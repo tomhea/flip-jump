@@ -27,9 +27,9 @@ Then add a new line to the relevant compile-csv and run-csv files, according to 
 
 ### Compile CSVs format:
 
-test name | .fj path | out .fjm path | memory width | version | flags | use stl | treat warnings as errors
+test name | .fj paths | out .fjm path | memory width | version | flags | use stl | treat warnings as errors
 ---|---|---|---|---|---|---|---
-example_test | path/to/example.fj | path/to/compiled/example.fjm | 64 | 1 | 0 | True | True
+example_test | path/to/example_1.fj &#124; ... &#124; path/to/example_n.fj | path/to/compiled/example.fjm | 64 | 1 | 0 | True | True
 
 ### Run CSVs format:
 

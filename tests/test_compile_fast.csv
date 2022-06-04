@@ -14,3 +14,8 @@ rep, programs/rep.fj,tests/compiled/rep.fjm, 64,1,0, True,True
 simple, programs/simple.fj,tests/compiled/simple.fjm, 64,1,0, True,True
 testbit, programs/testbit.fj,tests/compiled/testbit.fjm, 64,1,0, True,True
 testbit_with_nops, programs/testbit_with_nops.fj,tests/compiled/testbit_with_nops.fjm, 64,1,0, True,True
+
+multi_comp_stl_bc, programs/multi_comp/defs.fj | programs/multi_comp/a.fj | programs/multi_comp/b.fj | programs/multi_comp/c.fj, tests/compiled/multi_comp_stl_bc.fjm, 64,1,0, True,True
+multi_comp_no_stl_bc, programs/multi_comp/defs.fj | programs/multi_comp/a_no_stl.fj | programs/multi_comp/b.fj | programs/multi_comp/c.fj, tests/compiled/multi_comp_no_stl_bc.fjm, 64,1,0, False,True
+multi_comp_stl_cb, programs/multi_comp/defs.fj | programs/multi_comp/a.fj | programs/multi_comp/c.fj | programs/multi_comp/b.fj, tests/compiled/multi_comp_stl_cb.fjm, 64,1,0, True,True
+multi_comp_no_stl_cb, programs/multi_comp/defs.fj | programs/multi_comp/a_no_stl.fj | programs/multi_comp/c.fj | programs/multi_comp/b.fj, tests/compiled/multi_comp_no_stl_cb.fjm, 64,1,0, False,True

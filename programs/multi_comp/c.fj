@@ -2,9 +2,9 @@ NL = '\n'
 
 
 def print_chars n, c {
-    rep(n, i) output c
+    rep(n, i) output_char c
 }
 
 def println {
-    output NL
+    output_char NL
 }

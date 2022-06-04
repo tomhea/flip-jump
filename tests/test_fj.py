@@ -16,7 +16,7 @@ ROOT_PATH = Path(__file__).parent.parent
 class CompileTestArgs:
     num_of_args = 8
 
-    def __init__(self, test_name: str, fj_path: str, fjm_out_path: str,
+    def __init__(self, test_name: str, fj_paths: str, fjm_out_path: str,
                  word_size__str: str, version__str: str, flags__str: str,
                  use_stl__str: str, warning_as_errors__str: str):
         assert use_stl__str in CSV_BOOLEAN
@@ -27,7 +27,9 @@ class CompileTestArgs:
         self.test_name = test_name
 
         included_files = get_stl_paths() if self.use_stl else []
-        self.fj_files = included_files + [ROOT_PATH / fj_path]
+        fj_paths_list = map(str.strip, fj_paths.split('|'))
+        fj_absolute_paths_list = [ROOT_PATH / fj_path for fj_path in fj_paths_list]
+        self.fj_files = included_files + fj_absolute_paths_list
 
         self.fjm_out_path = ROOT_PATH / fjm_out_path
 
