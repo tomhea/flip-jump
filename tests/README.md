@@ -9,6 +9,13 @@ Run with `--compile` / `--run` for testing only the compilation / the run.
 Add a combination of `--fast`, `--medium`, `--slow`, `--hexlib` to run tests of different types.<br>
 Use `--all` to run all the tests. The default (no type flags) means `--fast`.
 
+### Filter tests by their name 
+Multiple flags will take the union of the relevant tests.
+ * `--name n1 n2` only run tests with these names.
+ * `--contains n1 n2` only run tests containing one of these names.
+ * `--startswith n1 n2` only run tests starting with one of these names.
+ * `--endswith n1 n2` only run tests ending with one of these names.
+
 ## Add your tests:
 
 The .csv files in this directory specify which tests to run (and what parameters to use). 
