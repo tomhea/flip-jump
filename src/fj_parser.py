@@ -242,7 +242,7 @@ class FJParser(Parser):
     @_('definable_line_statements')
     def program(self, p):
         ops = p.definable_line_statements
-        self.macros[main_macro][1] = ops
+        self.macros[main_macro][1].extend(ops)
 
         # labels_used, labels_declared = all_used_labels(ops)
         # bad_uses = labels_used - set(labels_declared) - {'$'}
