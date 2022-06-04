@@ -1,7 +1,7 @@
 import csv
 import json
 from pathlib import Path
-from typing import List, Iterable
+from typing import List, Iterable, Callable, Tuple
 
 import pytest
 
@@ -16,7 +16,14 @@ with open(TESTS_PATH / 'conf.json', 'r') as tests_json:
     TESTS_OPTIONS = json.load(tests_json)
 
 TEST_TYPES = TESTS_OPTIONS['ordered_speed_list']
+assert TEST_TYPES
 DEFAULT_TYPE = TESTS_OPTIONS['default_type']
+assert DEFAULT_TYPE in TEST_TYPES
+
+ALL_FLAG = 'all'
+COMPILE_FLAG = 'compile'
+RUN_FLAG = 'run'
+SAVED_KEYWORDS = {ALL_FLAG, COMPILE_FLAG, RUN_FLAG}
 
 
 def argument_line_iterator(csv_file_path: Path, num_of_args: int) -> Iterable[List[str]]:
@@ -42,36 +49,55 @@ def get_run_tests_args_from_csv(csv_file_path: Path) -> List[RunTestArgs]:
 
 
 def pytest_addoption(parser) -> None:
-    assert 'all' not in TEST_TYPES
+    colliding_keywords = set(TEST_TYPES) & SAVED_KEYWORDS
+    assert not colliding_keywords
+
     for test_type in TEST_TYPES:
         parser.addoption(f"--{test_type}", action="store_true", help=f"run {test_type} tests")
-    parser.addoption(f"--all", action="store_true", help=f"run all tests")
+    parser.addoption(f"--{ALL_FLAG}", action="store_true", help=f"run all tests")
+
+    parser.addoption(f"--{COMPILE_FLAG}", action='store_true', help='only test compiling .fj files')
+    parser.addoption(f"--{RUN_FLAG}", action='store_true', help='only test running .fjm files')
 
 
-def pytest_generate_tests(metafunc) -> None:
-    compiles_csvs = {test_type: TESTS_PATH / f"test_compile_{test_type}.csv" for test_type in TEST_TYPES}
-    run_csvs = {test_type: TESTS_PATH / f"test_run_{test_type}.csv" for test_type in TEST_TYPES}
+def get_test_compile_run(get_option: Callable[[str], bool]) -> Tuple[bool, bool]:
+    check_compile_tests = get_option(COMPILE_FLAG)
+    check_run_tests = get_option(RUN_FLAG)
 
-    def get_option(opt):
-        return metafunc.config.getoption(opt)
+    if check_compile_tests or check_run_tests:
+        return check_compile_tests, check_run_tests
+    return True, True
 
-    if get_option('all'):
+
+def get_types_to_run(get_option: Callable[[str], bool]) -> List[str]:
+    if get_option(ALL_FLAG):
         types_to_run = list(TEST_TYPES)
     else:
         types_to_run = list(filter(get_option, TEST_TYPES))
         if not types_to_run:
             types_to_run = [DEFAULT_TYPE]
+    return types_to_run
 
-    compile_tests = []
+
+def pytest_generate_tests(metafunc) -> None:
+    def get_option(opt):
+        return metafunc.config.getoption(opt)
+
+    check_compile_tests, check_run_tests = get_test_compile_run(get_option)
+    types_to_run = get_types_to_run(get_option)
+
     if "compile_args" in metafunc.fixturenames:
-        for test_type in types_to_run:
-            if test_type in compiles_csvs:
+        compile_tests = []
+        if check_compile_tests:
+            compiles_csvs = {test_type: TESTS_PATH / f"test_compile_{test_type}.csv" for test_type in types_to_run}
+            for test_type in types_to_run:
                 compile_tests.extend(get_compile_tests_args_from_csv(compiles_csvs[test_type]))
         metafunc.parametrize("compile_args", compile_tests, ids=repr)
 
-    run_tests = []
     if "run_args" in metafunc.fixturenames:
-        for test_type in types_to_run:
-            if test_type in run_csvs:
+        run_tests = []
+        if check_run_tests:
+            run_csvs = {test_type: TESTS_PATH / f"test_run_{test_type}.csv" for test_type in types_to_run}
+            for test_type in types_to_run:
                 run_tests.extend(get_run_tests_args_from_csv(run_csvs[test_type]))
         metafunc.parametrize("run_args", run_tests, ids=repr)

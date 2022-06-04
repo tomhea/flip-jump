@@ -2,10 +2,11 @@
 
 ## Run the tests:
 
-Run `pytest src -v` for running the fast tests.<br>
-Add the `-k compile` / `-k run` for testing only the compilation / run.
+run `pytest src/` from the project's directory.
 
-Add a combination of `--fast`, `--medium`, `--slow`, `--hexlib` to run tests of different types.<br>
+Run with `--compile` / `--run` for testing only the compilation / the run.
+
+Add a combination of `--fast`, `--medium`, `--slow`, `--hexlib` to run tests of different types.
 Use `--all` to run all the tests. The default (no type flags) means `--fast`.
 
 ## Add your tests:
