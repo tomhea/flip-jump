@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 from pathlib import Path
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
@@ -56,11 +57,13 @@ def smart_int16(num):
         raise FJException(f'{num} is not a number!') from ve
 
 
-def get_stl_paths():
-    stl_path = Path(__file__).parent.parent / 'stl'
-    ordered_stl_libs = ('runlib', 'bitlib', 'iolib', 'ptrlib', 'mathlib', 'hexlib', 'declib')
+STL_PATH = Path(__file__).parent.parent / 'stl'
+with open(STL_PATH / 'conf.json', 'r') as stl_json:
+    STL_OPTIONS = json.load(stl_json)
 
-    return [stl_path / f'{lib}.fj' for lib in ordered_stl_libs]
+
+def get_stl_paths():
+    return [STL_PATH / f'{lib}.fj' for lib in STL_OPTIONS['all']]
 
 
 id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'

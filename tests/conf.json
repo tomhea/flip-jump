@@ -1,0 +1,9 @@
+{
+  "default_type": "fast",
+  "ordered_speed_list": [
+    "fast",
+    "medium",
+    "slow",
+    "hexlib"
+  ]
+}
