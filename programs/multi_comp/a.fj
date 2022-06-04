@@ -1,0 +1,11 @@
+startup
+
+
+get_aaaaN
+
+print_aaaa aaaaN
+print_chars N, 'T'
+
+println
+
+loop

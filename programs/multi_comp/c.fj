@@ -1,0 +1,10 @@
+NL = '\n'
+
+
+def print_chars n, c {
+    rep(n, i) output c
+}
+
+def println {
+    output NL
+}
