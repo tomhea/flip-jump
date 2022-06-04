@@ -2,19 +2,19 @@
 
 ## Run the tests:
 
-run `pytest src/` from the project's directory.
+run `pytest` to run the fast tests.
 
 Run with `--compile` / `--run` for testing only the compilation / the run.
 
-Add a combination of `--fast`, `--medium`, `--slow`, `--hexlib` to run tests of different types.
+Add a combination of `--fast`, `--medium`, `--slow`, `--hexlib` to run tests of different types.<br>
 Use `--all` to run all the tests. The default (no type flags) means `--fast`.
 
 ## Add your tests:
 
 The .csv files in this directory specify which tests to run (and what parameters to use). 
 
-To support more .csv files, update [tests/conf.json](conf.json).<br>
-The python test itself can be found on [src/test_fj.py](../src/test_fj.py) (and [src/conftest.py](../src/conftest.py)).
+To support more .csv files, update [conf.json](conf.json).<br>
+The python test itself can be found on [test_fj.py](test_fj.py) (and [conftest.py](conftest.py)).
 
 To add a new test, first choose the relevant csv file.<br>
 The rule of thumb (for the sum of compile+run times, in seconds):

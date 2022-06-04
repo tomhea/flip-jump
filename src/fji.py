@@ -49,7 +49,7 @@ def main():
                           breakpoint_any_labels=breakpoint_any_set)
 
         if not args.silent:
-            print(f'finished by {termination_cause.value} after {run_time:.3f}s ({ops_executed:,} ops executed, {flips_executed/ops_executed*100:.2f}% flips)')
+            print(f'finished by {termination_cause} after {run_time:.3f}s ({ops_executed:,} ops executed, {flips_executed/ops_executed*100:.2f}% flips)')
             print()
     except FJReadFjmException as e:
         print()

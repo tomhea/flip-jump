@@ -3,15 +3,10 @@ import json
 from pathlib import Path
 from typing import List, Iterable, Callable, Tuple
 
-import pytest
-
-# register_assert_rewrite must be called before the import (to see inf on failed assertions in tests).
-# FIXME find a better way, as what if test_fj was imported before..
-pytest.register_assert_rewrite('tests')
-from test_fj import CompileTestArgs, RunTestArgs
+from tests.test_fj import CompileTestArgs, RunTestArgs
 
 
-TESTS_PATH = Path(__file__).parent.parent / 'tests'
+TESTS_PATH = Path(__file__).parent
 with open(TESTS_PATH / 'conf.json', 'r') as tests_json:
     TESTS_OPTIONS = json.load(tests_json)
 

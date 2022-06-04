@@ -1,5 +1,5 @@
 import json
-from enum import Enum
+from enum import IntEnum    # IntEnum equality works between files.
 from pathlib import Path
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
 
@@ -8,7 +8,6 @@ main_macro = ('', 0)
 
 
 # TODO use the op-strings (instead of the function) up-to the last point possible (to make deepcopy simpler)
-#  even better - use a Enum of MathOpType
 parsing_op2func = {'+': add, '-': sub, '*': mul, '/': floordiv, '%': mod, 
                    '<<': lshift, '>>': rshift, '^': xor, '|': or_, '&': and_,
                    '#': lambda x: x.bit_length(),
@@ -90,7 +89,7 @@ def get_char_value_and_length(s):
     return int(s[2:4], 16), 4
 
 
-class Verbose(Enum):
+class Verbose(IntEnum):
     Parse = 1
     MacroSolve = 2
     LabelDict = 3
@@ -100,19 +99,22 @@ class Verbose(Enum):
     PrintOutput = 7
 
 
-class TerminationCause(Enum):
-    Looping = 'looping'
-    Input = 'input'
-    NullIP = 'ip<2w'
+class TerminationCause(IntEnum):
+    Looping = 0
+    Input = 1
+    NullIP = 2
+
+    def __str__(self):
+        return ['looping', 'input', 'ip<2w'][self.value]
 
 
-class SegmentEntry(Enum):
+class SegmentEntry(IntEnum):
     StartAddress = 0
     ReserveAddress = 1
     WflipAddress = 2
 
 
-class OpType(Enum):     # op.data array content:
+class OpType(IntEnum):  # op.data array content:
 
     FlipJump = 1        # expr, expr                # Survives until (2) label resolve
     WordFlip = 2        # expr, expr, expr          # Survives until (2) label resolve

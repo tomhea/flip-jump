@@ -1,8 +1,8 @@
 from pathlib import Path
 
-import assembler
-import fjm_run
-from defs import TerminationCause, Verbose, get_stl_paths
+from src import assembler
+from src import fjm_run
+from src.defs import TerminationCause, Verbose, get_stl_paths
 
 
 CSV_TRUE = 'True'
@@ -97,7 +97,7 @@ def test_run(run_args: RunTestArgs) -> None:
     run_time, ops_executed, flips_executed, output, termination_cause =\
         fjm_run.run(run_args.fjm_path, defined_input=run_args.get_defined_input(), time_verbose=True)
 
-    print(f'finished by {termination_cause.value} after {run_time:.3f}s '
+    print(f'finished by {termination_cause} after {run_time:.3f}s '
           f'({ops_executed:,} ops executed, {flips_executed / ops_executed * 100:.2f}% flips)')
 
     expected_termination_cause = TerminationCause.Looping
