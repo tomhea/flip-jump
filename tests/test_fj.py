@@ -1,3 +1,5 @@
+from queue import Queue
+from threading import Lock
 from pathlib import Path
 
 from src import assembler
@@ -13,12 +15,23 @@ CSV_BOOLEAN = (CSV_TRUE, CSV_FALSE)
 ROOT_PATH = Path(__file__).parent.parent
 
 
+compile_test_finish_lock = Lock()
+finished_compile_tests_queue = Queue()
+
+
 class CompileTestArgs:
+    """
+    Arguments class for a compile test
+    """
+
     num_of_args = 8
 
     def __init__(self, test_name: str, fj_paths: str, fjm_out_path: str,
                  word_size__str: str, version__str: str, flags__str: str,
                  use_stl__str: str, warning_as_errors__str: str):
+        """
+        handling a line.split() from a csv file
+        """
         assert use_stl__str in CSV_BOOLEAN
         assert warning_as_errors__str in CSV_BOOLEAN
         self.use_stl = use_stl__str == CSV_TRUE
@@ -41,11 +54,19 @@ class CompileTestArgs:
         return self.test_name
 
 
-def create_parent_directories(path: Path):
+def create_parent_directories(path: Path) -> None:
+    """
+    create all directories so that this path will be a valid path.
+    @param path: the path
+    """
     path.absolute().parent.mkdir(parents=True, exist_ok=True)
 
 
 def test_compile(compile_args: CompileTestArgs) -> None:
+    """
+    test that the compilation is successful.
+    @param compile_args: the test's arguments
+    """
     print(f'Compiling test {compile_args.test_name}:')
 
     create_parent_directories(compile_args.fjm_out_path)
@@ -57,11 +78,18 @@ def test_compile(compile_args: CompileTestArgs) -> None:
 
 
 class RunTestArgs:
+    """
+    Arguments class for a run test
+    """
+
     num_of_args = 6
 
     def __init__(self, test_name: str, fjm_path: str,
                  in_file_path: str, out_file_path: str,
                  read_in_as_binary__str: str, read_out_as_binary__str: str):
+        """
+        handling a line.split() from a csv file
+        """
         assert read_in_as_binary__str in CSV_BOOLEAN
         assert read_out_as_binary__str in CSV_BOOLEAN
         self.read_in_as_binary = read_in_as_binary__str == CSV_TRUE
@@ -74,6 +102,10 @@ class RunTestArgs:
         self.out_file_path = ROOT_PATH / out_file_path
 
     def get_defined_input(self) -> bytes:
+        """
+        get input from the input file.
+        @return: bytes of the input-file's content
+        """
         if self.read_in_as_binary:
             with open(self.in_file_path, 'rb') as in_f:
                 return in_f.read()
@@ -82,6 +114,10 @@ class RunTestArgs:
                 return in_f.read().encode()
 
     def get_expected_output(self) -> str:
+        """
+        get expected output from the output file.
+        @return: string of the output-file's content
+        """
         if self.read_out_as_binary:
             with open(self.out_file_path, 'rb') as out_f:
                 return out_f.read().decode('raw_unicode_escape')
@@ -94,6 +130,10 @@ class RunTestArgs:
 
 
 def test_run(run_args: RunTestArgs) -> None:
+    """
+    Run the test, assert finished by looping, and compare the output with the output-file.
+    @param run_args: the test's arguments
+    """
     print(f'Running test {run_args.test_name}:')
 
     run_time, ops_executed, flips_executed, output, termination_cause =\

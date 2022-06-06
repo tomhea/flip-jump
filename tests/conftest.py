@@ -1,9 +1,22 @@
 import csv
 import json
+from os import environ
+from queue import Queue
+from threading import Lock
 from pathlib import Path
-from typing import List, Iterable, Callable, Tuple, Optional
+from typing import List, Iterable, Callable, Tuple, Optional, Any
+
+import pytest
 
 from tests.test_fj import CompileTestArgs, RunTestArgs
+
+
+build_tests_lock = Lock()
+build_tests_queue = Queue()
+
+
+COMPILE_ARGUMENTS_FIXTURE = "compile_args"
+RUN_ARGUMENTS_FIXTURE = "run_args"
 
 
 TESTS_PATH = Path(__file__).parent
@@ -14,6 +27,11 @@ TEST_TYPES = TESTS_OPTIONS['ordered_speed_list']
 assert TEST_TYPES
 DEFAULT_TYPE = TESTS_OPTIONS['default_type']
 assert DEFAULT_TYPE in TEST_TYPES
+
+
+COMPILE_ORDER_INDEX = 1
+RUN_ORDER_INDEX = 2
+
 
 ALL_FLAG = 'all'
 COMPILE_FLAG = 'compile'
@@ -26,7 +44,21 @@ SAVED_KEYWORDS = {ALL_FLAG, COMPILE_FLAG, RUN_FLAG,
                   NAME_EXACT_FLAG, NAME_CONTAINS_FLAG, NAME_STARTSWITH_FLAG, NAME_ENDSWITH_FLAG}
 
 
+def is_parallel_active() -> bool:
+    """
+    check if parallel is used - xdist works and uses >1 workers.
+    @return: is parallel used
+    """
+    return int(environ.get('PYTEST_XDIST_WORKER_COUNT', default='0')) > 1
+
+
 def argument_line_iterator(csv_file_path: Path, num_of_args: int) -> Iterable[List[str]]:
+    """
+    Iterate over the lines (with exact number of parameters)
+    @param csv_file_path: the csv file
+    @param num_of_args: right number of arguments per line
+    @return: the iterator
+    """
     with open(csv_file_path, 'r') as csv_file:
         for line_index, line in enumerate(csv.reader(csv_file)):
             if line:
@@ -35,20 +67,41 @@ def argument_line_iterator(csv_file_path: Path, num_of_args: int) -> Iterable[Li
                 yield map(str.strip, line)
 
 
-# TODO maybe use pytest-dependency in the future,
-#  to assure that if both a run and compile are tested - the run won't run before the compile,
-#  and wil be skipped if compilation failed.
+def get_compile_tests_params_from_csv(csv_file_path: Path) -> List:
+    """
+    read the compile-tests from the csv
+    @param csv_file_path: read tests from this csv
+    @return: the list of pytest.params(CompileTestArgs, )
+    """
+    params = []
+
+    for line in argument_line_iterator(csv_file_path, CompileTestArgs.num_of_args):
+        args = CompileTestArgs(*line)
+        params.append(pytest.param(args, marks=pytest.mark.run(order=COMPILE_ORDER_INDEX)))
+
+    return params
 
 
-def get_compile_tests_args_from_csv(csv_file_path: Path) -> List[CompileTestArgs]:
-    return [CompileTestArgs(*line) for line in argument_line_iterator(csv_file_path, CompileTestArgs.num_of_args)]
+def get_run_tests_params_from_csv(csv_file_path: Path) -> List:
+    """
+    read the run-tests from the csv
+    @param csv_file_path: read tests from this csv
+    @return: the list of pytest.params(RunTestArgs, depends=)
+    """
+    params = []
 
+    for line in argument_line_iterator(csv_file_path, RunTestArgs.num_of_args):
+        args = RunTestArgs(*line)
+        params.append(pytest.param(args, marks=pytest.mark.run(order=RUN_ORDER_INDEX)))
 
-def get_run_tests_args_from_csv(csv_file_path: Path) -> List[RunTestArgs]:
-    return [RunTestArgs(*line) for line in argument_line_iterator(csv_file_path, RunTestArgs.num_of_args)]
+    return params
 
 
 def pytest_addoption(parser) -> None:
+    """
+    add the costume flags to pytest
+    @param parser: the parser
+    """
     colliding_keywords = set(TEST_TYPES) & SAVED_KEYWORDS
     assert not colliding_keywords
 
@@ -70,15 +123,32 @@ def pytest_addoption(parser) -> None:
 
 
 def get_test_compile_run(get_option: Callable[[str], bool]) -> Tuple[bool, bool]:
+    """
+    assess whether to run the compile-tests, and whether to run the run-tests.
+    exit pytest if running in parallel both compile and run.
+    @param get_option: function that returns the flags values
+    @return: (test_compile, test_run) booleans
+    """
     check_compile_tests = get_option(COMPILE_FLAG)
     check_run_tests = get_option(RUN_FLAG)
 
-    if check_compile_tests or check_run_tests:
-        return check_compile_tests, check_run_tests
-    return True, True
+    if not check_compile_tests and not check_run_tests:
+        check_compile_tests, check_run_tests = True, True
+
+    if check_compile_tests and check_run_tests and is_parallel_active():
+        pytest.exit("Can't run both compile and run (both --compile --run flags / none of them) "
+                    "in parallel (-n auto/number>1), "
+                    "as the run tests depends on the compile tests")
+
+    return check_compile_tests, check_run_tests
 
 
-def get_types_to_run(get_option: Callable[[str], bool]) -> List[str]:
+def get_test_types_to_run(get_option: Callable[[str], bool]) -> List[str]:
+    """
+    get the test types to run.
+    @param get_option: function that returns the flags values
+    @return: list of the test types to run
+    """
     if get_option(ALL_FLAG):
         types_to_run = list(TEST_TYPES)
     else:
@@ -89,7 +159,17 @@ def get_types_to_run(get_option: Callable[[str], bool]) -> List[str]:
 
 
 def is_test_name_ok(name: str, exact: Optional[List[str]], contains: Optional[List[str]],
-                    startswith: Optional[List[str]], endswith: Optional[List[str]]):
+                    startswith: Optional[List[str]], endswith: Optional[List[str]]) -> bool:
+    """
+    Check whether this test should be run (by the test's name).
+    True if at least one of the checks below succeeds (checked if not None).
+    @param name: the test name
+    @param exact: list of strings that the test name should be in it
+    @param contains: list of strings that the test name should contain one of them
+    @param startswith: list of strings that the test name should start by one of them
+    @param endswith: list of strings that the test name should end by one of them
+    @return: will this test run?
+    """
     if exact is not None:
         for option in exact:
             if name == option:
@@ -114,6 +194,12 @@ def is_test_name_ok(name: str, exact: Optional[List[str]], contains: Optional[Li
 
 
 def filter_by_test_name(tests_args: List, get_option: Callable[[str], Optional[List[str]]]) -> List:
+    """
+    filter the test list by the test names (and the namings flags)
+    @param tests_args: the tests
+    @param get_option: function that returns the flags values
+    @return: the filtered test list
+    """
     exact = get_option(NAME_EXACT_FLAG)
     contains = get_option(NAME_CONTAINS_FLAG)
     startswith = get_option(NAME_STARTSWITH_FLAG)
@@ -126,30 +212,63 @@ def filter_by_test_name(tests_args: List, get_option: Callable[[str], Optional[L
 
 
 def pytest_generate_tests(metafunc) -> None:
+    """
+    gather the tests from the csvs, and parametrize the compile-tests and run-tests fixtures with it.
+    @param metafunc: enables to get-flags, parametrize-fixtures
+    """
     def get_option(opt):
         return metafunc.config.getoption(opt)
 
+    compile_tests, run_tests = get_tests_from_csvs_execute_once(get_option)
+
+    if COMPILE_ARGUMENTS_FIXTURE in metafunc.fixturenames:
+        metafunc.parametrize(COMPILE_ARGUMENTS_FIXTURE, compile_tests, ids=repr)
+
+    if RUN_ARGUMENTS_FIXTURE in metafunc.fixturenames:
+        metafunc.parametrize(RUN_ARGUMENTS_FIXTURE, run_tests, ids=repr)
+
+
+def get_tests_from_csvs_execute_once(get_option: Callable[[str], Any]) -> Tuple[List, List]:
+    """
+    get the tests from the csv.
+    if more than 1 worker - only one worker will do the work, and distribute the result to the other workers.
+    @param get_option: function that returns the flags values
+    @return: the tests
+    """
+    if not is_parallel_active():
+        return get_tests_from_csvs(get_option)
+
+    with build_tests_lock:
+        if build_tests_queue.empty():
+            tests = get_tests_from_csvs(get_option)
+        else:
+            tests = build_tests_queue.get()
+        build_tests_queue.put(tests)
+        return tests
+
+
+def get_tests_from_csvs(get_option: Callable[[str], Any]) -> Tuple[List, List]:
+    """
+    get the tests from the csv.
+    @param get_option: function that returns the flags values
+    @return: the tests
+    """
     check_compile_tests, check_run_tests = get_test_compile_run(get_option)
-    types_to_run = get_types_to_run(get_option)
 
-    if "compile_args" in metafunc.fixturenames:
-        compile_tests = []
-        if check_compile_tests:
-            compiles_csvs = {test_type: TESTS_PATH / f"test_compile_{test_type}.csv" for test_type in types_to_run}
-            for test_type in types_to_run:
-                compile_tests.extend(get_compile_tests_args_from_csv(compiles_csvs[test_type]))
+    types_to_run = get_test_types_to_run(get_option)
 
-        compile_tests = filter_by_test_name(compile_tests, get_option)
+    compile_tests = []
+    if check_compile_tests:
+        compiles_csvs = {test_type: TESTS_PATH / f"test_compile_{test_type}.csv" for test_type in types_to_run}
+        for test_type in types_to_run:
+            compile_tests.extend(get_compile_tests_params_from_csv(compiles_csvs[test_type]))
+    compile_tests = filter_by_test_name(compile_tests, get_option)
 
-        metafunc.parametrize("compile_args", compile_tests, ids=repr)
+    run_tests = []
+    if check_run_tests:
+        run_csvs = {test_type: TESTS_PATH / f"test_run_{test_type}.csv" for test_type in types_to_run}
+        for test_type in types_to_run:
+            run_tests.extend(get_run_tests_params_from_csv(run_csvs[test_type]))
+    run_tests = filter_by_test_name(run_tests, get_option)
 
-    if "run_args" in metafunc.fixturenames:
-        run_tests = []
-        if check_run_tests:
-            run_csvs = {test_type: TESTS_PATH / f"test_run_{test_type}.csv" for test_type in types_to_run}
-            for test_type in types_to_run:
-                run_tests.extend(get_run_tests_args_from_csv(run_csvs[test_type]))
-
-        run_tests = filter_by_test_name(run_tests, get_option)
-
-        metafunc.parametrize("run_args", run_tests, ids=repr)
+    return compile_tests, run_tests

@@ -9,8 +9,12 @@ Run with `--compile` / `--run` for testing only the compilation / the run.
 Add a combination of `--fast`, `--medium`, `--slow`, `--hexlib` to run tests of different types.<br>
 Use `--all` to run all the tests. The default (no type flags) means `--fast`.
 
+You can run the tests parallel with `-n auto` (using [xdist](https://github.com/pytest-dev/pytest-xdist)).<br>
+note that this option is only allowed while using exactly one of `--compile` / `--run`.<br>
+You can execute the `test_parallel` / `test_parallel.bat` to run parallel compile, and afterwords parallel run, with the given flags.
+
 ### Filter tests by their name 
-Multiple flags will take the union of the relevant tests.
+Using the next tests together will take the union of the relevant tests.
  * `--name n1 n2` only run tests with these names.
  * `--contains n1 n2` only run tests containing one of these names.
  * `--startswith n1 n2` only run tests starting with one of these names.
