@@ -1,6 +1,0 @@
-    startup
-    bit.inc 2, x
-    loop
-
-  x:
-    bit.vec 2, 0

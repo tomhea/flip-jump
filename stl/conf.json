@@ -1,0 +1,11 @@
+{
+  "all": [
+    "runlib",
+    "bitlib",
+    "iolib",
+    "ptrlib",
+    "mathlib",
+    "hexlib",
+    "declib"
+  ]
+}

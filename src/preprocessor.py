@@ -1,9 +1,12 @@
-from itertools import count
-from defs import *
-from copy import deepcopy
 import collections
+from copy import deepcopy
+from itertools import count
+
 import plotly.graph_objects as go
-# import matplotlib.pyplot as plt
+
+from defs import main_macro, wflip_start_label, new_label, \
+    Op, OpType, SegmentEntry, Expr, FJPreprocessorException, \
+    eval_all, id_swap
 
 
 def macro_resolve_error(curr_tree, msg=''):
@@ -23,6 +26,19 @@ def output_ops(ops, output_file):
                 f.write(f'  wflip {op.data[0]}, {op.data[1]}, {op.data[2]}\n')
             elif op.type == OpType.Label:
                 f.write(f'{op.data[0]}:\n')
+
+
+def clean_name_for_pie_graph(macro_name: str):
+    if '_rep_' not in macro_name:
+        return macro_name
+
+    try:
+        rep_count = macro_name.split('_')[3]
+        inner_macro = macro_name.split("'")[1]
+        arg_count = macro_name.split(', ')[1].split(')')[0]
+        return f"{inner_macro}({arg_count})*{rep_count}"
+    except IndexError:
+        return macro_name
 
 
 def dict_pie_graph(d, total, min_main_thresh=0.05, min_secondary_thresh=0.02):
@@ -46,14 +62,16 @@ def dict_pie_graph(d, total, min_main_thresh=0.05, min_secondary_thresh=0.02):
 
     chosen = []
     for k, v in sorted(first_level.items(), key=lambda x: x[1], reverse=True):
+        k_name = clean_name_for_pie_graph(k)
         if len(second_level[k]) == 0:
-            chosen.append((k, v))
+            chosen.append((k_name, v))
         else:
             for k2, v2 in sorted(second_level[k].items(), key=lambda x: x[1], reverse=True):
-                chosen.append((f"{k} => {k2}", v2))
+                k2_name = clean_name_for_pie_graph(k2)
+                chosen.append((f"{k_name} => {k2_name}", v2))
                 v -= v2
             if v >= secondary_thresh:
-                chosen.append((f"{k} others", v))
+                chosen.append((f"{k_name} others", v))
 
     others = total - sum([value for label, value in chosen])
     chosen.append(('all others', others))
@@ -64,9 +82,6 @@ def dict_pie_graph(d, total, min_main_thresh=0.05, min_secondary_thresh=0.02):
                                  )])
     fig.show()
 
-    # plt.pie(d.values(), labels=d.keys(), autopct='%1.2f%%')
-    # plt.savefig(output_file)
-
 
 def resolve_macros(w, macros, output_file=None, show_statistics=False, verbose=False):
     curr_address = [0]
@@ -74,7 +89,7 @@ def resolve_macros(w, macros, output_file=None, show_statistics=False, verbose=F
     labels = {}
     last_address_index = [0]
     label_places = {}
-    boundary_addresses = [(SegEntry.StartAddress, 0)]  # SegEntries
+    boundary_addresses = [(SegmentEntry.StartAddress, 0)]  # SegEntries
     stat_dict = collections.defaultdict(lambda: 0)
 
     ops = resolve_macro_aux(w, '', [], macros, main_macro, [], {}, count(), stat_dict,
@@ -86,7 +101,7 @@ def resolve_macros(w, macros, output_file=None, show_statistics=False, verbose=F
     if show_statistics:
         dict_pie_graph(dict(stat_dict), curr_address[0])
 
-    boundary_addresses.append((SegEntry.WflipAddress, curr_address[0]))
+    boundary_addresses.append((SegmentEntry.WflipAddress, curr_address[0]))
     return rem_ops, labels, boundary_addresses
 
 
@@ -146,7 +161,8 @@ def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_d
             if i_name in rep_dict:
                 macro_resolve_error(curr_tree, f'Rep index {i_name} is declared twice; maybe an inner rep. '
                                                f'in file {op.file} line {op.line}.')
-            pseudo_macro_name = (new_label(dollar_count).val, 1)  # just moved outside (before) the for loop
+            macro_name = macro_call.data[0]
+            pseudo_macro_name = (new_label(dollar_count, f'rep_{times}_{macro_name}').val, 1)  # just moved outside (before) the for loop
             for i in range(times):
                 rep_dict[i_name] = Expr(i)  # TODO - call the macro_name directly, and do deepcopy(op) beforehand.
                 macros[pseudo_macro_name] = (([], []), [macro_call], (op.file, op.line, ns_name))
@@ -167,13 +183,13 @@ def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_d
             if value % w != 0:
                 macro_resolve_error(curr_tree, f'segment ops must have a w-aligned address. In {op}.')
 
-            boundary_addresses.append((SegEntry.WflipAddress, curr_address[0]))
+            boundary_addresses.append((SegmentEntry.WflipAddress, curr_address[0]))
             labels[f'{wflip_start_label}{last_address_index[0]}'] = Expr(curr_address[0])
             last_address_index[0] += 1
 
             this_curr_address += value - curr_address[0]
             curr_address[0] = value
-            boundary_addresses.append((SegEntry.StartAddress, curr_address[0]))
+            boundary_addresses.append((SegmentEntry.StartAddress, curr_address[0]))
             rem_ops.append(op)
         elif op.type == OpType.Reserve:
             eval_all(op, labels)
@@ -183,7 +199,7 @@ def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_d
 
             this_curr_address += value
             curr_address[0] += value
-            boundary_addresses.append((SegEntry.ReserveAddress, curr_address[0]))
+            boundary_addresses.append((SegmentEntry.ReserveAddress, curr_address[0]))
             labels[f'{wflip_start_label}{last_address_index[0]}'] = Expr(curr_address[0])
 
             last_address_index[0] += 1

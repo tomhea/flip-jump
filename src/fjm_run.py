@@ -1,14 +1,18 @@
-from typing import Optional
-
-import fjm
-
-from os import path
-from sys import stdin, stdout
-from time import time
 import pickle
+from os import path
+from time import time
+from sys import stdin, stdout
+from typing import Optional, List
+
 import easygui
 
-from defs import *
+import fjm
+from defs import Verbose, TerminationCause
+
+
+def display_message_box_and_get_answer(msg: str, title: str, choices: List[str]) -> str:
+    # TODO deprecated warning. use another gui (tkinter? seems not so simple)
+    return easygui.buttonbox(msg, title, choices)
 
 
 def get_address_str(address, breakpoints, labels_dict):
@@ -62,10 +66,11 @@ def run(input_file, breakpoints=None, defined_input: Optional[bytes] = None, ver
             address = get_address_str(ip, breakpoints, labels_dict)
             flip = f'flip: {get_address_str(mem.get_word(ip), breakpoints, labels_dict)}'
             jump = f'jump: {get_address_str(mem.get_word(ip + w), breakpoints, labels_dict)}'
-            button_body = f'Address {address}  ({ops_executed} ops executed):\n  {flip}.\n  {jump}.'
-            print('  program break', end="")
-            action = easygui.buttonbox(button_body, title, ['Single Step', 'Skip 10', 'Skip 100', 'Skip 1000',
-                                                            'Continue', 'Continue All'])
+            body = f'Address {address}  ({ops_executed} ops executed):\n  {flip}.\n  {jump}.'
+            actions = ['Single Step', 'Skip 10', 'Skip 100', 'Skip 1000', 'Continue', 'Continue All']
+            print('  program break', end="", flush=True)
+            action = display_message_box_and_get_answer(body, title, actions)
+
             if action is None:
                 action = 'Continue All'
             print(f': {action}')
@@ -128,7 +133,7 @@ def run(input_file, breakpoints=None, defined_input: Optional[bytes] = None, ver
                     if output_verbose and output_anything_yet:
                         print()
                     run_time = time() - start_time - pause_time
-                    return run_time, ops_executed, flips_executed, output, RunFinish.Input  # no more input
+                    return run_time, ops_executed, flips_executed, output, TerminationCause.Input  # no more input
                 input_size = 8
             mem.write_bit(in_addr, input_char & 1)
             input_char = input_char >> 1
@@ -143,12 +148,12 @@ def run(input_file, breakpoints=None, defined_input: Optional[bytes] = None, ver
             if output_verbose and output_anything_yet and breakpoints:
                 print()
             run_time = time()-start_time-pause_time
-            return run_time, ops_executed, flips_executed, output, RunFinish.Looping        # infinite simple loop
+            return run_time, ops_executed, flips_executed, output, TerminationCause.Looping        # infinite simple loop
         if new_ip < 2*w:
             if output_verbose and output_anything_yet and breakpoints:
                 print()
             run_time = time() - start_time - pause_time
-            return run_time, ops_executed, flips_executed, output, RunFinish.NullIP         # null ip
+            return run_time, ops_executed, flips_executed, output, TerminationCause.NullIP         # null ip
         ip = new_ip     # Jump!
 
 
@@ -188,11 +193,11 @@ def debug_and_run(input_file, debugging_file=None,
 
     opposite_labels = {labels[label]: label for label in labels}
 
-    run_time, ops_executed, flips_executed, output, finish_cause = run(
+    run_time, ops_executed, flips_executed, output, termination_cause = run(
         input_file, defined_input=defined_input,
         verbose=Verbose.Run in verbose,
         time_verbose=Verbose.Time in verbose,
         output_verbose=Verbose.PrintOutput in verbose,
         breakpoints=breakpoint_map, labels_dict=opposite_labels)
 
-    return run_time, ops_executed, flips_executed, output, finish_cause
+    return run_time, ops_executed, flips_executed, output, termination_cause
