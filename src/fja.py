@@ -1,6 +1,5 @@
-from os.path import isfile, abspath
-
 import argparse
+from os.path import isfile, abspath
 
 from assembler import assemble
 from defs import Verbose, FJException, get_stl_paths

@@ -1,10 +1,7 @@
 import os
-from os.path import isfile, abspath
-from pathlib import Path
-from tempfile import mkstemp
-
 import argparse
-import difflib
+from os.path import isfile, abspath
+from tempfile import mkstemp
 
 from assembler import assemble
 from fjm_run import debug_and_run

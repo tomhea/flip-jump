@@ -1,6 +1,6 @@
+import argparse
 from os.path import isfile, abspath
 
-import argparse
 
 from fjm_run import debug_and_run
 from defs import Verbose, FJReadFjmException
