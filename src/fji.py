@@ -20,7 +20,7 @@ def main():
 
     args = parser.parse_args()
 
-    verbose_set = set() if args.tests else {Verbose.PrintOutput}
+    verbose_set = {Verbose.PrintOutput}
     if not args.silent:
         verbose_set.add(Verbose.Time)
     if args.trace:
