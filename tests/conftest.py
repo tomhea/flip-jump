@@ -143,16 +143,18 @@ def get_test_compile_run(get_option: Callable[[str], bool]) -> Tuple[bool, bool]
     return check_compile_tests, check_run_tests
 
 
-def get_test_types_to_run(get_option: Callable[[str], bool]) -> List[str]:
+def get_test_types_to_run__heavy_first(get_option: Callable[[str], bool]) -> List[str]:
     """
-    get the test types to run.
+    get the test types to run (ordered, heavy tests first).
     @param get_option: function that returns the flags values
     @return: list of the test types to run
     """
+    test_types_heavy_first = TEST_TYPES[::-1]
+
     if get_option(ALL_FLAG):
-        types_to_run = list(TEST_TYPES)
+        types_to_run = list(test_types_heavy_first)
     else:
-        types_to_run = list(filter(get_option, TEST_TYPES))
+        types_to_run = list(filter(get_option, test_types_heavy_first))
         if not types_to_run:
             types_to_run = [DEFAULT_TYPE]
     return types_to_run
@@ -219,18 +221,18 @@ def pytest_generate_tests(metafunc) -> None:
     def get_option(opt):
         return metafunc.config.getoption(opt)
 
-    compile_tests, run_tests = get_tests_from_csvs_execute_once(get_option)
+    compile_tests__heavy_first, run_tests__heavy_first = get_tests_from_csvs__heavy_first__execute_once(get_option)
 
     if COMPILE_ARGUMENTS_FIXTURE in metafunc.fixturenames:
-        metafunc.parametrize(COMPILE_ARGUMENTS_FIXTURE, compile_tests, ids=repr)
+        metafunc.parametrize(COMPILE_ARGUMENTS_FIXTURE, compile_tests__heavy_first, ids=repr)
 
     if RUN_ARGUMENTS_FIXTURE in metafunc.fixturenames:
-        metafunc.parametrize(RUN_ARGUMENTS_FIXTURE, run_tests, ids=repr)
+        metafunc.parametrize(RUN_ARGUMENTS_FIXTURE, run_tests__heavy_first, ids=repr)
 
 
-def get_tests_from_csvs_execute_once(get_option: Callable[[str], Any]) -> Tuple[List, List]:
+def get_tests_from_csvs__heavy_first__execute_once(get_option: Callable[[str], Any]) -> Tuple[List, List]:
     """
-    get the tests from the csv.
+    get the tests from the csv. heavy first.
     if more than 1 worker - only one worker will do the work, and distribute the result to the other workers.
     @param get_option: function that returns the flags values
     @return: the tests
@@ -249,25 +251,27 @@ def get_tests_from_csvs_execute_once(get_option: Callable[[str], Any]) -> Tuple[
 
 def get_tests_from_csvs(get_option: Callable[[str], Any]) -> Tuple[List, List]:
     """
-    get the tests from the csv.
+    get the tests from the csv. heavy first.
     @param get_option: function that returns the flags values
     @return: the tests
     """
     check_compile_tests, check_run_tests = get_test_compile_run(get_option)
 
-    types_to_run = get_test_types_to_run(get_option)
+    types_to_run__heavy_first = get_test_types_to_run__heavy_first(get_option)
 
     compile_tests = []
     if check_compile_tests:
-        compiles_csvs = {test_type: TESTS_PATH / f"test_compile_{test_type}.csv" for test_type in types_to_run}
-        for test_type in types_to_run:
+        compiles_csvs = {test_type: TESTS_PATH / f"test_compile_{test_type}.csv"
+                         for test_type in types_to_run__heavy_first}
+        for test_type in types_to_run__heavy_first:
             compile_tests.extend(get_compile_tests_params_from_csv(compiles_csvs[test_type]))
     compile_tests = filter_by_test_name(compile_tests, get_option)
 
     run_tests = []
     if check_run_tests:
-        run_csvs = {test_type: TESTS_PATH / f"test_run_{test_type}.csv" for test_type in types_to_run}
-        for test_type in types_to_run:
+        run_csvs = {test_type: TESTS_PATH / f"test_run_{test_type}.csv"
+                    for test_type in types_to_run__heavy_first}
+        for test_type in types_to_run__heavy_first:
             run_tests.extend(get_run_tests_params_from_csv(run_csvs[test_type]))
     run_tests = filter_by_test_name(run_tests, get_option)
 
