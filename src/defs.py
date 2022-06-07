@@ -248,7 +248,7 @@ def id_swap(op, id_dict):
     op.data = tuple(new_data)
 
 
-def new_label(counter, name=''):
+def new_label(counter, name):
     if name == '':
         return Expr(f'_.label{next(counter)}')
     else:
