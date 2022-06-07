@@ -1,11 +1,12 @@
-import fjm
-from preprocessor import resolve_macros
-from tempfile import mkstemp
 import os
-from time import time
-from defs import *
-from fj_parser import parse_macro_tree
 import pickle
+from time import time
+from tempfile import mkstemp
+
+import fjm
+from fj_parser import parse_macro_tree
+from preprocessor import resolve_macros
+from defs import eval_all, Verbose, SegmentEntry, FJAssemblerException, OpType
 
 
 def lsb_first_bin_array(int_value, bit_size):
@@ -35,7 +36,7 @@ def close_segment(w, segment_index, boundary_addresses, writer, first_address, l
 def clean_segment_index(index, boundary_addresses):
     clean_index = 0
     for entry in boundary_addresses[:index]:
-        if entry[0] == SegEntry.WflipAddress:
+        if entry[0] == SegmentEntry.WflipAddress:
             clean_index += 1
     return clean_index
 
@@ -47,10 +48,10 @@ def assert_none_crossing_segments(curr_segment_index, old_address, new_address, 
     last_start = None
     last_start_i = None
     for i, entry in enumerate(boundary_addresses):
-        if entry[0] == SegEntry.StartAddress:
+        if entry[0] == SegmentEntry.StartAddress:
             last_start = entry[1]
             last_start_i = i
-        if entry[0] == SegEntry.WflipAddress:
+        if entry[0] == SegmentEntry.WflipAddress:
             if entry[1] != last_start:
                 if old_address < last_start < new_address:
                     if min_i is None or min_seg_start > last_start:
@@ -66,7 +67,7 @@ def assert_none_crossing_segments(curr_segment_index, old_address, new_address, 
 
 def get_next_wflip_entry_index(boundary_addresses, index):
     length = len(boundary_addresses)
-    while boundary_addresses[index][0] != SegEntry.WflipAddress:
+    while boundary_addresses[index][0] != SegmentEntry.WflipAddress:
         index += 1
         if index >= length:
             raise FJAssemblerException(f'No WflipAddress entry found in boundary_addresses.')

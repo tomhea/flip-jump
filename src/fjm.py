@@ -2,8 +2,10 @@ import struct
 from struct import pack, unpack
 from random import randint
 from time import sleep
+from typing import BinaryIO, List, Tuple
+
 from defs import FJReadFjmException, FJWriteFjmException
-from typing import BinaryIO, List, Tuple, Any
+
 
 """
 struct {
@@ -24,6 +26,7 @@ struct {
     u8* data;               // the data
 } fjm_file;     // Flip-Jump Memory file
 """
+
 
 fj_magic = ord('F') + (ord('J') << 8)
 reserved_dict_threshold = 1000

@@ -1,12 +1,8 @@
-#!/usr/bin/env python3
+import argparse
+from os.path import isfile, abspath
 
 from assembler import assemble
-
-from os.path import isfile, abspath, isdir, join
-from glob import glob
-import argparse
-from defs import *
-from src.tests import get_compile_tests_args_from_csv
+from defs import Verbose, FJException, get_stl_paths
 
 
 def main():
@@ -22,9 +18,6 @@ def main():
                         type=int, default=64, choices=[8, 16, 32, 64])
     parser.add_argument('--Werror', help="make all warnings into errors.", action='store_true')
     parser.add_argument('--no-stl', help="don't assemble/link the standard library files.", action='store_true')
-    parser.add_argument('--tests', help="compile all .fj files in the given folder (instead of specifying a file).",
-                        action='store_true')
-    parser.add_argument('--csv_tests', help="compile all fj files in given .csv file", nargs='+')
     parser.add_argument('--stats', help="show macro usage statistics.", action='store_true')
     args = parser.parse_args()
 
@@ -32,67 +25,24 @@ def main():
     if not args.silent:
         verbose_set.add(Verbose.Time)
 
-    if args.csv_tests is not None:
-        for csv_file in args.csv_tests:
-            get_compile_tests_args_from_csv(csv_file)
-        print('\nFinished compiling all tests.')
-        exit()
-
-    if args.tests:
-        if len(args.file) != 1 or not isdir(args.file[0]):
-            parser.error('the "file" argument should contain a folder path.')
-        Path.mkdir(Path(args.file[0]) / 'compiled', exist_ok=True)
-        failures = []
-        total = 0
-        for file in glob(join(args.file[0], '*.fj')):
-
-            # if file in (r'tests\calc.fj', r'tests\func.fj', r'tests\pair_ns.fj') or file.startswith(r'tests\hexlib-'):
-            #     continue
-
-            total += 1
-            print(f'compiling {Path(file).name}:')
-            no_stl = args.no_stl or 'no-stl' in Path(file).stem
-            try:
-                assemble([file] if no_stl else stl() + [file],
-                         (Path(args.file[0]) / 'compiled' / (Path(file).stem + '.fjm')),
-                         args.width,
-                         version=args.version, flags=args.flags,
-                         warning_as_errors=args.Werror,
-                         verbose=verbose_set)
-            except FJException as e:
-                print()
-                print(e)
-                failures.append(file)
-            print()
-
+    if not args.no_stl:
+        args.file = get_stl_paths() + args.file
+    for file in args.file:
+        file = abspath(file)
+        if not file.endswith('.fj'):
+            parser.error(f'file {file} is not a .fj file.')
+        if not isfile(abspath(file)):
+            parser.error(f'file {file} does not exist.')
+    try:
+        assemble(args.file, args.outfile, args.width,
+                 version=args.version, flags=args.flags,
+                 warning_as_errors=args.Werror,
+                 show_statistics=args.stats, verbose=verbose_set,
+                 preprocessed_file=args.no_macros, debugging_file=args.debug)
+    except FJException as e:
         print()
-        if len(failures) == 0:
-            print(f'All tests compiled successfully! 100%')
-        else:
-            print(f'{total-len(failures)}/{total} tests compiled successfully ({(total-len(failures))/total*100:.2f}%).')
-            print(f'Failed compilations:')
-            for test in failures:
-                print(f'  {test}')
-
-    else:
-        if not args.no_stl:
-            args.file = stl() + args.file
-        for file in args.file:
-            file = abspath(file)
-            if not file.endswith('.fj'):
-                parser.error(f'file {file} is not a .fj file.')
-            if not isfile(abspath(file)):
-                parser.error(f'file {file} does not exist.')
-        try:
-            assemble(args.file, args.outfile, args.width,
-                     version=args.version, flags=args.flags,
-                     warning_as_errors=args.Werror,
-                     show_statistics=args.stats, verbose=verbose_set,
-                     preprocessed_file=args.no_macros, debugging_file=args.debug)
-        except FJException as e:
-            print()
-            print(e)
-            exit(1)
+        print(e)
+        exit(1)
 
 
 if __name__ == '__main__':

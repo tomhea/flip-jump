@@ -1,4 +1,5 @@
-from enum import Enum
+import json
+from enum import IntEnum    # IntEnum equality works between files.
 from pathlib import Path
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
 
@@ -6,6 +7,7 @@ from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and
 main_macro = ('', 0)
 
 
+# TODO use the op-strings (instead of the function) up-to the last point possible (to make deepcopy simpler)
 parsing_op2func = {'+': add, '-': sub, '*': mul, '/': floordiv, '%': mod, 
                    '<<': lshift, '>>': rshift, '^': xor, '|': or_, '&': and_,
                    '#': lambda x: x.bit_length(),
@@ -50,15 +52,17 @@ class FJWriteFjmException(FJException):
 def smart_int16(num):
     try:
         return int(num, 16)
-    except ...:
-        raise FJException(f'{num} is not a number!')
+    except ValueError as ve:
+        raise FJException(f'{num} is not a number!') from ve
 
 
-def stl():
-    path = Path(__file__).parent    # relative address
+STL_PATH = Path(__file__).parent.parent / 'stl'
+with open(STL_PATH / 'conf.json', 'r') as stl_json:
+    STL_OPTIONS = json.load(stl_json)
 
-    return [str(path / f'../stl/{lib}.fj') for lib in ('runlib', 'bitlib', 'iolib', 'ptrlib', 'mathlib',
-                                                       'hexlib', 'declib')]
+
+def get_stl_paths():
+    return [STL_PATH / f'{lib}.fj' for lib in STL_OPTIONS['all']]
 
 
 id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -77,7 +81,7 @@ number_re = fr"({bin_num})|({hex_num})|('({char})')|({dec_num})"
 string_re = fr'"({char})*"'
 
 
-def handle_char(s):
+def get_char_value_and_length(s):
     if s[0] != '\\':
         return ord(s[0]), 1
     if s[1] in char_escape_dict:
@@ -85,7 +89,7 @@ def handle_char(s):
     return int(s[2:4], 16), 4
 
 
-class Verbose(Enum):
+class Verbose(IntEnum):
     Parse = 1
     MacroSolve = 2
     LabelDict = 3
@@ -95,19 +99,22 @@ class Verbose(Enum):
     PrintOutput = 7
 
 
-class RunFinish(Enum):
-    Looping = 'looping'
-    Input = 'input'
-    NullIP = 'ip<2w'
+class TerminationCause(IntEnum):
+    Looping = 0
+    Input = 1
+    NullIP = 2
+
+    def __str__(self):
+        return ['looping', 'input', 'ip<2w'][self.value]
 
 
-class SegEntry(Enum):
+class SegmentEntry(IntEnum):
     StartAddress = 0
     ReserveAddress = 1
     WflipAddress = 2
 
 
-class OpType(Enum):     # op.data array content:
+class OpType(IntEnum):  # op.data array content:
 
     FlipJump = 1        # expr, expr                # Survives until (2) label resolve
     WordFlip = 2        # expr, expr, expr          # Survives until (2) label resolve
@@ -210,7 +217,7 @@ def eval_all(op, id_dict=None):
     return ids
 
 
-def all_used_labels(ops):
+def get_all_used_labels(ops):
     used_labels, declared_labels = set(), set()
     for op in ops:
         if op.type == OpType.Rep:
@@ -241,7 +248,7 @@ def id_swap(op, id_dict):
     op.data = tuple(new_data)
 
 
-def new_label(counter, name=''):
+def new_label(counter, name):
     if name == '':
         return Expr(f'_.label{next(counter)}')
     else:

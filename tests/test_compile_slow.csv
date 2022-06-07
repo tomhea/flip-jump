@@ -1,3 +1,3 @@
-calc, tests/calc.fj,tests/compiled/calc.fjm, 64,1,0, True,True
-func, tests/func.fj,tests/compiled/func.fjm, 64,1,0, True,True
-pair_ns, tests/pair_ns.fj,tests/compiled/pair_ns.fjm, 64,1,0, True,True
+calc, programs/calc.fj,tests/compiled/calc.fjm, 64,1,0, True,True
+func, programs/func.fj,tests/compiled/func.fjm, 64,1,0, True,True
+pair_ns, programs/pair_ns.fj,tests/compiled/pair_ns.fjm, 64,1,0, True,True

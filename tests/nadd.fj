@@ -1,9 +1,0 @@
-    startup
-    bit.add 8, a, b
-    bit.print a
-    loop
-
-  a:
-    bit.vec 8, '5'
-  b:
-    bit.vec 8, 0x02

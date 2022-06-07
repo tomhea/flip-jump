@@ -1,0 +1,3 @@
+def print_aaaa n {
+    print_chars n, 'a'
+}

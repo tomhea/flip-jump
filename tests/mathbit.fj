@@ -1,8 +1,0 @@
-    startup
-    bit.inc1 x, carry
-    loop
-
-  x:
-    bit 0
-  carry:
-    bit 1

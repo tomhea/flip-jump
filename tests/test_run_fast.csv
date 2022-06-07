@@ -14,3 +14,8 @@ rep, tests/compiled/rep.fjm, tests/inout/rep.in,tests/inout/rep.out, False,False
 simple, tests/compiled/simple.fjm, tests/inout/simple.in,tests/inout/simple.out, False,False
 testbit, tests/compiled/testbit.fjm, tests/inout/testbit.in,tests/inout/testbit.out, False,False
 testbit_with_nops, tests/compiled/testbit_with_nops.fjm, tests/inout/testbit_with_nops.in,tests/inout/testbit_with_nops.out, False,False
+
+multi_comp_stl_bc, tests/compiled/multi_comp_stl_bc.fjm, tests/inout/multi_comp.in,tests/inout/multi_comp.out, False, False
+multi_comp_no_stl_bc, tests/compiled/multi_comp_no_stl_bc.fjm, tests/inout/multi_comp.in,tests/inout/multi_comp.out, False, False
+multi_comp_stl_cb, tests/compiled/multi_comp_stl_cb.fjm, tests/inout/multi_comp.in,tests/inout/multi_comp.out, False, False
+multi_comp_no_stl_cb, tests/compiled/multi_comp_no_stl_cb.fjm, tests/inout/multi_comp.in,tests/inout/multi_comp.out, False, False

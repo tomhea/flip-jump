@@ -1,0 +1,45 @@
+startup
+
+rep(10, i) bit.mov y, z
+bit.mov x, x
+bit.if x, l0, l1
+
+l0:
+    output 0x5A // 'Z'
+    ;loop
+l1:
+    output 0x10*3+1*3-4/2 // '1'
+    ;
+    ;loop
+loop:
+    ;
+
+    loop
+    pad 2
+    wflip l1, loop
+
+  dloop:
+    ;dloop
+    bit.vec 8, 3
+  bananas:
+    output 0x5c
+    dy=3
+
+    n=15
+    rep(8, q) bit.if x, l0, l1
+  bans2:
+
+    rep(n, j) temp_macro x, x
+
+def temp_macro g, y {
+    bit.not g
+    bit.not y
+}
+
+  x:
+    bit 1   // bit0 => 'Z',  bit1 => '1'
+  y:
+    bit 1
+  z:
+    bit 1
+

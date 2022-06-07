@@ -1,0 +1,6 @@
+    startup
+    bit.not x
+    loop
+
+  x:
+    bit 0
