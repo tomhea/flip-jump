@@ -41,7 +41,8 @@ NAME_CONTAINS_FLAG = 'contains'
 NAME_STARTSWITH_FLAG = 'startswith'
 NAME_ENDSWITH_FLAG = 'endswith'
 SAVED_KEYWORDS = {ALL_FLAG, COMPILE_FLAG, RUN_FLAG,
-                  NAME_EXACT_FLAG, NAME_CONTAINS_FLAG, NAME_STARTSWITH_FLAG, NAME_ENDSWITH_FLAG}
+                  NAME_EXACT_FLAG, NAME_CONTAINS_FLAG,
+                  NAME_STARTSWITH_FLAG, NAME_ENDSWITH_FLAG}
 
 
 def is_parallel_active() -> bool:
@@ -210,7 +211,8 @@ def filter_by_test_name(tests_args: List, get_option: Callable[[str], Optional[L
     if all(filter_list is None for filter_list in (exact, contains, startswith, endswith)):
         return tests_args
 
-    return [args for args in tests_args if is_test_name_ok(args.test_name, exact, contains, startswith, endswith)]
+    return [args for args in tests_args if
+            is_test_name_ok(args.values[0].test_name, exact, contains, startswith, endswith)]
 
 
 def pytest_generate_tests(metafunc) -> None:
@@ -265,7 +267,7 @@ def get_tests_from_csvs(get_option: Callable[[str], Any]) -> Tuple[List, List]:
                          for test_type in types_to_run__heavy_first}
         for test_type in types_to_run__heavy_first:
             compile_tests.extend(get_compile_tests_params_from_csv(compiles_csvs[test_type]))
-    compile_tests = filter_by_test_name(compile_tests, get_option)
+        compile_tests = filter_by_test_name(compile_tests, get_option)
 
     run_tests = []
     if check_run_tests:
@@ -273,6 +275,6 @@ def get_tests_from_csvs(get_option: Callable[[str], Any]) -> Tuple[List, List]:
                     for test_type in types_to_run__heavy_first}
         for test_type in types_to_run__heavy_first:
             run_tests.extend(get_run_tests_params_from_csv(run_csvs[test_type]))
-    run_tests = filter_by_test_name(run_tests, get_option)
+        run_tests = filter_by_test_name(run_tests, get_option)
 
     return compile_tests, run_tests
