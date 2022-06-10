@@ -1,0 +1,23 @@
+startup
+
+Pair.init
+
+Pair.init p1
+Pair.init p2
+
+
+Pair.add_first  p1, v08
+Pair.add_second p1, v02
+
+
+Pair.swap p1
+Pair.print p1
+output '\n'
+loop
+
+
+p1: bit.vec Pair.size
+p2: bit.vec Pair.size
+
+v08: .bit.vec w, 0x08
+v02:  bit.vec w, 0x02

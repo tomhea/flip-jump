@@ -1,0 +1,14 @@
+startup
+
+Pair.init
+
+Pair.init p1
+Pair.init p2
+
+
+Pair.prints.print_two p1, p2
+loop
+
+
+p1: bit.vec Pair.size
+p2: bit.vec Pair.size
