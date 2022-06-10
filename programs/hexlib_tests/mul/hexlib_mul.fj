@@ -1,0 +1,99 @@
+startup
+;end_of_mul
+
+
+hex.init
+
+
+ah:      hex.vec 16
+bh:      hex.vec 16
+res:     hex.vec 16
+old_res: hex.vec 16
+ch:      hex.vec 16
+
+
+ret: ;0
+
+zero_all_5:
+    hex.zero 16, ah
+    hex.zero 16, bh
+    hex.zero 16, ch
+    hex.zero 16, res
+    hex.zero 16, old_res
+    fret ret
+
+
+lt_print:
+    output '\n'
+    hex.print_uint 16, ah, 1, 0
+    output " * "
+    hex.print_uint 16, bh, 1, 0
+    output " = "
+    hex.print_uint 16, res, 1, 0
+    output " < "
+    hex.print_uint 16, ch, 1, 0
+    output '\n'
+    fret ret
+
+gt_print:
+    output '\n'
+    hex.print_uint 16, ah, 1, 0
+    output " * "
+    hex.print_uint 16, bh, 1, 0
+    output " = "
+    hex.print_uint 16, res, 1, 0
+    output " > "
+    hex.print_uint 16, ch, 1, 0
+    output '\n'
+    fret ret
+
+add_mul_lt_print:
+    output '\n'
+    hex.print_uint 16, old_res, 1, 0
+    output " + "
+    hex.print_uint 16, ah, 1, 0
+    output " * "
+    hex.print_uint 16, bh, 1, 0
+    output " = "
+    hex.print_uint 16, res, 1, 0
+    output " < "
+    hex.print_uint 16, ch, 1, 0
+    output '\n'
+    fret ret
+
+add_mul_gt_print:
+    output '\n'
+    hex.print_uint 16, old_res, 1, 0
+    output " + "
+    hex.print_uint 16, ah, 1, 0
+    output " * "
+    hex.print_uint 16, bh, 1, 0
+    output " = "
+    hex.print_uint 16, res, 1, 0
+    output " > "
+    hex.print_uint 16, ch, 1, 0
+    output '\n'
+    fret ret
+
+
+def test_mul n, mul_label, a, b @ lt, eq, gt,  end < ah, bh, res, ch, ret, lt_print, gt_print {
+    hex.set n, ah, a
+    hex.set n, bh, b
+    hex.set n, ch, (a*b)&((1<<(4*n))-1)
+    fcall mul_label, ret
+    hex.cmp n, res, ch, lt, eq, gt
+
+  lt:
+    fcall lt_print, ret
+    ;end
+  eq:
+    output "=\n"
+    ;end
+  gt:
+    fcall gt_print, ret
+    ;end
+  end:
+}
+
+
+end_of_mul:

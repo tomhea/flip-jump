@@ -1,0 +1,35 @@
+ADD_MUL_NUM = 0xbbb50e8ebbd61577ecc1cdd7359fa44d0440c64c13bebfbe8b1fbdb86bf42ba739f7a6a552468efc8d8d14e4cbce583e5634f87e86268e08bd4b43c027f44a99dcc76eeaa640a7d292b5eb0ab110575a837f2eb5b901614f76ebe7f5661d7fb1599db48dac93f4c7da44b9710a4535bd5023f9c2d6843bdeb38e84f9e7893cea2bbc0b4f81312687937a66b47d3c01eba20b400dfc4c
+
+
+Flag8b = ((1<<8)-1)
+rep(50, i) test_add_mul_8 (ADD_MUL_NUM>>((3*i+2)*8))&Flag8b, (ADD_MUL_NUM>>((3*i+1)*8))&Flag8b, (ADD_MUL_NUM>>((3*i)*8))&Flag8b
+
+loop
+
+
+add_mul_8:
+    hex.add_mul 2, res, ah, bh
+    fret ret
+
+def test_add_mul_8 r, a, b @ lt, eq, gt,  end < ah, bh, res, old_res, ch, ret, add_mul_lt_print, add_mul_gt_print, add_mul_8, zero_all_5 {
+    fcall zero_all_5, ret
+    hex.xor_by 2, ah,  a
+    hex.xor_by 2, bh,  b
+    hex.xor_by 2, res, r
+    hex.xor_by 2, old_res, r
+    hex.xor_by 2, ch, (r+a*b)&((1<<8)-1)
+    fcall add_mul_8, ret
+    hex.cmp 2, res, ch, lt, eq, gt
+
+  lt:
+    fcall add_mul_lt_print, ret
+    ;end
+  eq:
+    output "=\n"
+    ;end
+  gt:
+    fcall add_mul_gt_print, ret
+    ;end
+  end:
+}
+
