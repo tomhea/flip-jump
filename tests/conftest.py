@@ -56,9 +56,10 @@ def is_parallel_active() -> bool:
 def argument_line_iterator(csv_file_path: Path, num_of_args: int) -> Iterable[List[str]]:
     """
     Iterate over the lines (with exact number of parameters)
+    @note a line is a stripped argument list
     @param csv_file_path: the csv file
     @param num_of_args: right number of arguments per line
-    @return: the iterator
+    @return: the line iterator
     """
     with open(csv_file_path, 'r') as csv_file:
         for line_index, line in enumerate(csv.reader(csv_file)):

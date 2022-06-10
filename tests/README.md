@@ -42,8 +42,12 @@ test name | .fj paths | out .fjm path | memory width | version | flags | use stl
 ---|---|---|---|---|---|---|---
 example_test | path/to/example_1.fj &#124; ... &#124; path/to/example_n.fj | path/to/compiled/example.fjm | 64 | 1 | 0 | True | True
 
+Note that you can specify a single file, or a '|' separated list of files in the .fj paths cell. In case of a list, they will be compiled in the inserted order.
+
 ### Run CSVs format:
 
 test name | .fjm path | input file path | output file path | is input a binary file | is output a binary file
 ---|---|---|---|---|--- 
 example_test | path/to/compiled/example.fjm | path/to/inputs/example.in | path/to/outputs/example.out | False | False
+
+Note that you can also emit specifying a file in the input/output cell, and leave it empty. In that case an empty input/output will be used.

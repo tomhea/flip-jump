@@ -11,12 +11,12 @@ calc10, tests/compiled/calc.fjm, tests/inout/calc_tests/calc10.in,tests/inout/ca
 calc_empty, tests/compiled/calc.fjm, tests/inout/calc_tests/calc_empty.in,tests/inout/calc_tests/calc_empty.out, False,False
 calc_many, tests/compiled/calc.fjm, tests/inout/calc_tests/calc_many.in,tests/inout/calc_tests/calc_many.out, False,False
 
-func1, tests/compiled/func_tests/func1.fjm, tests/inout/func_tests/func.in,tests/inout/func_tests/func1.out, False,False
-func2, tests/compiled/func_tests/func2.fjm, tests/inout/func_tests/func.in,tests/inout/func_tests/func2.out, False,False
-func3, tests/compiled/func_tests/func3.fjm, tests/inout/func_tests/func.in,tests/inout/func_tests/func3.out, False,False
-func4, tests/compiled/func_tests/func4.fjm, tests/inout/func_tests/func.in,tests/inout/func_tests/func4.out, False,False
-func5, tests/compiled/func_tests/func5.fjm, tests/inout/func_tests/func.in,tests/inout/func_tests/func5.out, False,False
+func1, tests/compiled/func_tests/func1.fjm, ,tests/inout/func_tests/func1.out, False,False
+func2, tests/compiled/func_tests/func2.fjm, ,tests/inout/func_tests/func2.out, False,False
+func3, tests/compiled/func_tests/func3.fjm, ,tests/inout/func_tests/func3.out, False,False
+func4, tests/compiled/func_tests/func4.fjm, ,tests/inout/func_tests/func4.out, False,False
+func5, tests/compiled/func_tests/func5.fjm, ,tests/inout/func_tests/func5.out, False,False
 
-pair_ns1, tests/compiled/pair_ns_tests/test1.fjm, tests/inout/pair_ns_tests/pair_ns.in,tests/inout/pair_ns_tests/pair_ns1.out, False,False
-pair_ns2, tests/compiled/pair_ns_tests/test2.fjm, tests/inout/pair_ns_tests/pair_ns.in,tests/inout/pair_ns_tests/pair_ns2.out, False,False
-pair_ns3, tests/compiled/pair_ns_tests/test3.fjm, tests/inout/pair_ns_tests/pair_ns.in,tests/inout/pair_ns_tests/pair_ns3.out, False,False
+pair_ns1, tests/compiled/pair_ns_tests/test1.fjm, ,tests/inout/pair_ns_tests/pair_ns1.out, False,False
+pair_ns2, tests/compiled/pair_ns_tests/test2.fjm, ,tests/inout/pair_ns_tests/pair_ns2.out, False,False
+pair_ns3, tests/compiled/pair_ns_tests/test3.fjm, ,tests/inout/pair_ns_tests/pair_ns3.out, False,False
