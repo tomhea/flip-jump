@@ -421,6 +421,7 @@ ns bit {
 
 
 ns hex {
+    // TODO - hex.div fails tests. for example, 0xc3 / 0xe fails.
     def div n, nb, q, _r, _a, _b, div0 @ loop, after_loop,   do_cmp_sub_func, do_sub, jump_to_flip, flip_op,   r, b, a, i, ret,   end {
         .if0 nb, _b, div0
 

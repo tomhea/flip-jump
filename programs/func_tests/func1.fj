@@ -1,0 +1,19 @@
+startup
+
+
+// Prints "ABC"
+test1:
+    output 'A'
+    bit.call func1
+    output 'C'
+
+    output '\n'
+    loop
+
+func1:
+    output 'B'
+    bit.return
+
+
+bit.ptr_init
+bit.stack 10

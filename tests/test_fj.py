@@ -88,7 +88,7 @@ class RunTestArgs:
                  in_file_path: str, out_file_path: str,
                  read_in_as_binary__str: str, read_out_as_binary__str: str):
         """
-        handling a line.split() from a csv file
+        @note handling a line.split() (each is stripped) from a csv file
         """
         assert read_in_as_binary__str in CSV_BOOLEAN
         assert read_out_as_binary__str in CSV_BOOLEAN
@@ -98,14 +98,24 @@ class RunTestArgs:
         self.test_name = test_name
         self.fjm_path = ROOT_PATH / fjm_path
 
-        self.in_file_path = ROOT_PATH / in_file_path
-        self.out_file_path = ROOT_PATH / out_file_path
+        if in_file_path:
+            self.in_file_path = ROOT_PATH / in_file_path
+        else:
+            self.in_file_path = None
+
+        if out_file_path:
+            self.out_file_path = ROOT_PATH / out_file_path
+        else:
+            self.out_file_path = None
 
     def get_defined_input(self) -> bytes:
         """
         get input from the input file.
         @return: bytes of the input-file's content
         """
+        if not self.in_file_path:
+            return b''
+
         if self.read_in_as_binary:
             with open(self.in_file_path, 'rb') as in_f:
                 return in_f.read()
@@ -118,6 +128,9 @@ class RunTestArgs:
         get expected output from the output file.
         @return: string of the output-file's content
         """
+        if not self.out_file_path:
+            return ''
+
         if self.read_out_as_binary:
             with open(self.out_file_path, 'rb') as out_f:
                 return out_f.read().decode('raw_unicode_escape')
