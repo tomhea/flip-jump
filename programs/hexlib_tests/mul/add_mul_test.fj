@@ -1,5 +1,11 @@
 startup
-;end_of_mul
+
+HexSize = NumSize / 4
+Flag = ((1<<NumSize)-1)
+BlockSize = 2*NumSize + 4
+rep(Repetitions, i) test_add_mul (Data>>(BlockSize*i))&Flag, (Data>>(BlockSize*i + NumSize))&Flag, (Data>>(BlockSize*i + 2*NumSize))&0xf
+
+loop
 
 
 hex.init
@@ -11,8 +17,8 @@ res:     hex.vec 16
 old_res: hex.vec 16
 ch:      hex.vec 16
 
-
 ret: ;0
+
 
 zero_all_5:
     hex.zero 16, ah
@@ -20,31 +26,6 @@ zero_all_5:
     hex.zero 16, ch
     hex.zero 16, res
     hex.zero 16, old_res
-    fret ret
-
-
-lt_print:
-    output '\n'
-    hex.print_uint 16, ah, 1, 0
-    output " * "
-    hex.print_uint 16, bh, 1, 0
-    output " = "
-    hex.print_uint 16, res, 1, 0
-    output " < "
-    hex.print_uint 16, ch, 1, 0
-    output '\n'
-    fret ret
-
-gt_print:
-    output '\n'
-    hex.print_uint 16, ah, 1, 0
-    output " * "
-    hex.print_uint 16, bh, 1, 0
-    output " = "
-    hex.print_uint 16, res, 1, 0
-    output " > "
-    hex.print_uint 16, ch, 1, 0
-    output '\n'
     fret ret
 
 add_mul_lt_print:
@@ -76,24 +57,29 @@ add_mul_gt_print:
     fret ret
 
 
-def test_mul n, mul_label, a, b @ lt, eq, gt,  end < ah, bh, res, ch, ret, lt_print, gt_print {
-    hex.set n, ah, a
-    hex.set n, bh, b
-    hex.set n, ch, (a*b)&((1<<(4*n))-1)
-    fcall mul_label, ret
-    hex.cmp n, res, ch, lt, eq, gt
+add_mul:
+    hex.add_mul HexSize, res, ah, bh
+    fret ret
+
+def test_add_mul r, a, b @ lt, eq, gt,  end < ah, bh, res, old_res, ch, ret, add_mul_lt_print, add_mul_gt_print, add_mul, zero_all_5 {
+    fcall zero_all_5, ret
+    hex.xor_by HexSize, ah,  a
+    hex.xor_by HexSize, bh,  b
+    hex.xor_by HexSize, res, r
+    hex.xor_by HexSize, old_res, r
+    hex.xor_by HexSize, ch, (r+a*b)&Flag
+    fcall add_mul, ret
+    hex.cmp HexSize, res, ch, lt, eq, gt
 
   lt:
-    fcall lt_print, ret
+    fcall add_mul_lt_print, ret
     ;end
   eq:
     output "=\n"
     ;end
   gt:
-    fcall gt_print, ret
+    fcall add_mul_gt_print, ret
     ;end
   end:
 }
 
-
-end_of_mul:

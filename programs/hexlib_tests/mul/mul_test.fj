@@ -1,0 +1,73 @@
+startup
+
+HexSize = NumSize / 4
+Flag = (1<<NumSize)-1
+BlockSize = 2*NumSize
+rep(Repetitions, i) test_mul HexSize, (Data>>(BlockSize*i))&Flag, (Data>>(BlockSize*i+NumSize))&Flag
+
+loop
+
+
+hex.init
+
+
+ah:      hex.vec 16
+bh:      hex.vec 16
+res:     hex.vec 16
+old_res: hex.vec 16
+ch:      hex.vec 16
+
+ret: ;0
+
+
+lt_print:
+    output '\n'
+    hex.print_uint 16, ah, 1, 0
+    output " * "
+    hex.print_uint 16, bh, 1, 0
+    output " = "
+    hex.print_uint 16, res, 1, 0
+    output " < "
+    hex.print_uint 16, ch, 1, 0
+    output '\n'
+    fret ret
+
+gt_print:
+    output '\n'
+    hex.print_uint 16, ah, 1, 0
+    output " * "
+    hex.print_uint 16, bh, 1, 0
+    output " = "
+    hex.print_uint 16, res, 1, 0
+    output " > "
+    hex.print_uint 16, ch, 1, 0
+    output '\n'
+    fret ret
+
+
+mul:
+    hex.mul HexSize, res, ah, bh
+    fret ret
+
+
+def test_mul n, a, b @ lt, eq, gt,  end < ah, bh, res, ch, ret, lt_print, gt_print, mul {
+    hex.set n, ah, a
+    hex.set n, bh, b
+    hex.set n, ch, (a*b)&((1<<(4*n))-1)
+    fcall mul, ret
+    hex.cmp n, res, ch, lt, eq, gt
+
+  lt:
+    fcall lt_print, ret
+    ;end
+  eq:
+    output "=\n"
+    ;end
+  gt:
+    fcall gt_print, ret
+    ;end
+  end:
+}
+
+
+end_of_mul:
