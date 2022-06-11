@@ -1,0 +1,30 @@
+startup
+
+
+// Prints "AB~CD~EF"
+test2:
+    output 'A'
+    bit.call func2a
+    bit.call func2b
+    output 'F'
+
+    output '\n'
+    loop
+
+func2a:
+    output 'B'
+    bit.call func2c
+    output 'C'
+    bit.return
+func2b:
+    output 'D'
+    bit.call func2c
+    output 'E'
+    bit.return
+func2c:
+    output '~'
+    bit.return
+
+
+bit.ptr_init
+bit.stack 10

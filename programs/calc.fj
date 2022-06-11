@@ -56,6 +56,7 @@ loop:
     line_ended loop, finish, finish
 
   finish:
+    output '\n'
     loop
 
 

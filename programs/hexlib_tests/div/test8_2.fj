@@ -1,0 +1,8 @@
+rep(30, i) test_div 8, 2, div8_2, (DIV_NUM>>(64*i+4))&((1<<32)-1), (DIV_B2_NUM>>( 8*i + 50* 8))&((1<< 8)-1)
+
+loop
+
+
+div8_2:
+    hex.div 8, 2, res, mod, ah, bh, div0
+    fret ret

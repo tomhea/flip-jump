@@ -1,0 +1,43 @@
+startup
+
+
+// Prints "ABCDEFGH-" and then 0/1, the invert of x4
+test4:
+    output 'A'
+    bit.push x4
+    output 'B'
+
+    bit.call func4
+
+    output 'G'
+    bit.pop_res x4
+    output 'H'
+    bit.bin2ascii ascii, x4
+    output '-'
+    bit.print ascii
+
+    output '\n'
+    loop
+
+func4:
+    output 'C'
+    bit.get_sp __func4_arg_ptr
+    output 'D'
+    bit.dec_ptr __func4_arg_ptr
+    output 'E'
+    bit.ptr_flip_dbit __func4_arg_ptr
+    output 'F'
+    bit.return
+  __func4_arg_ptr:
+    bit.vec w, 0
+
+
+
+x4:
+    bit 0
+
+ascii:
+    bit.vec 8
+
+bit.ptr_init
+bit.stack 10
