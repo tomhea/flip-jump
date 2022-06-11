@@ -70,7 +70,7 @@ def test_div n, nb, div_label, a, b @ neq_div, eq_div,  cmp_mod,  neq_mod, eq_mo
     fcall neq_div_print, ret
     ;cmp_mod
   eq_div:
-    output '='
+    output "="
     ;cmp_mod
 
   cmp_mod:
@@ -80,10 +80,11 @@ def test_div n, nb, div_label, a, b @ neq_div, eq_div,  cmp_mod,  neq_mod, eq_mo
     fcall neq_mod_print, ret
     ;end
   eq_mod:
-    output '='
+    output "="
     ;end
 
   end:
+    output "\n"
 }
 
 

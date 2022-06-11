@@ -1,8 +1,8 @@
-hexlib-2params, tests/compiled/hexlib-2params.fjm, tests/inout/hexlib-2params.in,tests/inout/hexlib-2params.out, False,False
+hexlib-basics1, tests/compiled/hexlib_tests/basics1/hexlib-basics1.fjm, tests/inout/hexlib_tests/basics1/input.in,tests/inout/hexlib_tests/basics1/hexlib-basics1.out, False,False
 
-hexlib-basics1, tests/compiled/hexlib-basics1.fjm, tests/inout/hexlib-basics1.in,tests/inout/hexlib-basics1.out, False,False
+hexlib-basics2, tests/compiled/hexlib_tests/basics2/hexlib-basics2.fjm, ,tests/inout/hexlib_tests/basics2/hexlib-basics2.out, False,False
 
-hexlib-basics2, tests/compiled/hexlib-basics2.fjm, tests/inout/hexlib-basics2.in,tests/inout/hexlib-basics2.out, False,False
+hexlib-2params, tests/compiled/hexlib_tests/2params/hexlib-2params.fjm, ,tests/inout/hexlib_tests/2params/hexlib-2params.out, False,False
 
 hexlib-add-mul-4, tests/compiled/hexlib_tests/mul/add_mul4.fjm, ,tests/inout/hexlib_tests/mul/add_mul4.out, False,False
 hexlib-add-mul-8, tests/compiled/hexlib_tests/mul/add_mul8.fjm, ,tests/inout/hexlib_tests/mul/add_mul8.out, False,False

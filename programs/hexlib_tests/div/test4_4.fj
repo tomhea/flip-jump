@@ -1,5 +1,4 @@
-//rep(20, i) test_div 4, 4, div4_4, (DIV_NUM>>(16*i+2))&((1<<16)-1), (DIV_B4_NUM>>(16*i))&((1<<16)-1)
-rep(20, i) output "0==\n"
+rep(20, i) test_div 4, 4, div4_4, (DIV_NUM>>(16*i+2))&((1<<16)-1), (DIV_B4_NUM>>(16*i))&((1<<16)-1)
 
 loop
 

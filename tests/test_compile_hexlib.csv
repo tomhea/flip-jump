@@ -1,8 +1,8 @@
-hexlib-basics1, programs/hexlib-basics1.fj,tests/compiled/hexlib-basics1.fjm, 64,1,0, True,True
+hexlib-basics1, programs/hexlib_tests/basics1/hexlib-basics1.fj,tests/compiled/hexlib_tests/basics1/hexlib-basics1.fjm, 64,1,0, True,True
 
-hexlib-2params, programs/hexlib-2params.fj,tests/compiled/hexlib-2params.fjm, 64,1,0, True,True
+hexlib-basics2, programs/hexlib_tests/basics2/hexlib-basics2.fj,tests/compiled/hexlib_tests/basics2/hexlib-basics2.fjm, 64,1,0, True,True
 
-hexlib-basics2, programs/hexlib-basics2.fj,tests/compiled/hexlib-basics2.fjm, 64,1,0, True,True
+hexlib-2params, programs/hexlib_tests/2params/hexlib-2params.fj,tests/compiled/hexlib_tests/2params/hexlib-2params.fjm, 64,1,0, True,True
 
 hexlib-add-mul-4, programs/hexlib_tests/mul/hexlib_mul.fj | programs/hexlib_tests/mul/add_mul4.fj,tests/compiled/hexlib_tests/mul/add_mul4.fjm, 64,1,0, True,True
 hexlib-add-mul-8, programs/hexlib_tests/mul/hexlib_mul.fj | programs/hexlib_tests/mul/add_mul8.fj,tests/compiled/hexlib_tests/mul/add_mul8.fjm, 64,1,0, True,True
