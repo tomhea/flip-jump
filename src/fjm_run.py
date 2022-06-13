@@ -1,8 +1,8 @@
 import pickle
 from os import path
 from time import time
-from sys import stdin, stdout
 from typing import Optional, List
+from basicio import BasicIO
 
 import easygui
 
@@ -27,7 +27,17 @@ def get_address_str(address, breakpoints, labels_dict):
 
 
 def run(input_file, breakpoints=None, defined_input: Optional[bytes] = None, verbose=False, time_verbose=False, output_verbose=False,
-        next_break=None, labels_dict=None):
+        next_break=None, labels_dict=None, attachedDevices=[]):
+
+    basicIO = BasicIO(defined_input, output_verbose, verbose)
+    allDevices = [basicIO] + attachedDevices
+
+    def getDevice(n):
+        if not attachedDevices:
+            n = 0
+
+        return allDevices[n]
+
     if labels_dict is None:
         labels_dict = {}
     if breakpoints is None:
@@ -44,20 +54,16 @@ def run(input_file, breakpoints=None, defined_input: Optional[bytes] = None, ver
     w = mem.w
     out_addr = 2*w
     in_addr = 3*w + w.bit_length()     # 3w + dww
-
-    input_char, input_size = 0, 0
-    output_char, output_size = 0, 0
-    output = bytes()
+    device_addr = 4*w
 
     if 0 not in labels_dict:
         labels_dict[0] = 'memory_start_0x0000'
 
-    output_anything_yet = False
     ops_executed = 0
     flips_executed = 0
 
-    start_time = time()
     pause_time = 0
+    start_time = time()
 
     while True:
         if next_break == ops_executed or ip in breakpoints:
@@ -99,45 +105,18 @@ def run(input_file, breakpoints=None, defined_input: Optional[bytes] = None, ver
 
         # handle output
         if out_addr <= f <= out_addr+1:
-            output_char |= (f-out_addr) << output_size
-            output_byte = bytes([output_char])
-            output_size += 1
-            if output_size == 8:
-                output += output_byte
-                if output_verbose:
-                    if verbose:
-                        for _ in range(3):
-                            print()
-                        print(f'Outputted Char:  ', end='')
-                        stdout.buffer.write(bytes([output_char]))
-                        stdout.flush()
-                        for _ in range(3):
-                            print()
-                    else:
-                        stdout.buffer.write(bytes([output_char]))
-                        stdout.flush()
-                output_anything_yet = True
-                output_char, output_size = 0, 0
+            device = mem.get_word(device_addr)
+            getDevice(device).writeBit(f-out_addr)
 
         # handle input
         if ip <= in_addr < ip+2*w:
-            if input_size == 0:
-                if defined_input is None:
-                    pause_time_start = time()
-                    input_char = stdin.buffer.read(1)[0]
-                    pause_time += time() - pause_time_start
-                elif len(defined_input) > 0:
-                    input_char = defined_input[0]
-                    defined_input = defined_input[1:]
-                else:
-                    if output_verbose and output_anything_yet:
-                        print()
-                    run_time = time() - start_time - pause_time
-                    return run_time, ops_executed, flips_executed, output, TerminationCause.Input  # no more input
-                input_size = 8
-            mem.write_bit(in_addr, input_char & 1)
-            input_char = input_char >> 1
-            input_size -= 1
+            device = mem.get_word(device_addr)
+            try:
+                mem.write_bit(in_addr, getDevice(device).readBit())
+            except BasicIO.NoMoreInputException:
+                run_time = time() - start_time - pause_time
+                return run_time, ops_executed, flips_executed, basicIO.output, TerminationCause.Input  # no more input
+
 
         mem.write_bit(f, 1-mem.read_bit(f))     # Flip!
         new_ip = mem.get_word(ip+w)
@@ -145,15 +124,15 @@ def run(input_file, breakpoints=None, defined_input: Optional[bytes] = None, ver
             print(hex(new_ip)[2:])
 
         if new_ip == ip and not ip <= f < ip+2*w:
-            if output_verbose and output_anything_yet and breakpoints:
+            if output_verbose and basicIO.output_anything_yet and breakpoints:
                 print()
-            run_time = time()-start_time-pause_time
-            return run_time, ops_executed, flips_executed, output, TerminationCause.Looping        # infinite simple loop
+            run_time = time() - start_time - pause_time - basicIO.pause_time
+            return run_time, ops_executed, flips_executed, basicIO.output, TerminationCause.Looping        # infinite simple loop
         if new_ip < 2*w:
-            if output_verbose and output_anything_yet and breakpoints:
+            if output_verbose and basicIO.output_anything_yet and breakpoints:
                 print()
-            run_time = time() - start_time - pause_time
-            return run_time, ops_executed, flips_executed, output, TerminationCause.NullIP         # null ip
+            run_time = time() - start_time - pause_time - basicIO.pause_time
+            return run_time, ops_executed, flips_executed, basicIO.output, TerminationCause.NullIP         # null ip
         ip = new_ip     # Jump!
 
 
