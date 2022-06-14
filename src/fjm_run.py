@@ -114,7 +114,7 @@ def run(input_file, breakpoints=None, defined_input: Optional[bytes] = None, ver
             try:
                 mem.write_bit(in_addr, getDevice(device).readBit())
             except BasicIO.NoMoreInputException:
-                run_time = time() - start_time - pause_time
+                run_time = time() - start_time - pause_time - basicIO.pause_time
                 return run_time, ops_executed, flips_executed, basicIO.output, TerminationCause.Input  # no more input
 
 
