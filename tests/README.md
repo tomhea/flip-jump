@@ -13,6 +13,8 @@ You can run the tests parallel with `-n auto` (using [xdist](https://github.com/
 note that this option is only allowed while using exactly one of `--compile` / `--run`.<br>
 You can execute the `test_parallel` / `test_parallel.bat` to run parallel compile, and afterwords parallel run, with the given flags.
 
+Please note that the 7 `hexlib-div-*` tests currently fail.
+
 ### Filter tests by their name 
 Using the next tests together will take the union of the relevant tests.
  * `--name n1 n2` only run tests with these names.
