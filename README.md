@@ -12,7 +12,7 @@ This project is a **Macro Assembler**, an **Interpreter** and a **Tested Standar
 
 ## Hello, World!
 
-A simple fj [hello-world](programs/hello_no-stl.fj) program, not using the standard library:
+A simple fj [hello-world](programs/print_tests/hello_no-stl.fj) program, not using the standard library:
 
 ```c
 def startup @ code_start > IO  {
@@ -56,7 +56,7 @@ def end_loop @ loop_label {
 ```
 
 The FlipJump assembly supports a ```"Hello, World!"``` syntax for initializing a variable with a string value.
-Look at the [hello_world.fj](programs/hello_world.fj) program for more info.
+Look at the [hello_world.fj](programs/print_tests/hello_world.fj) program for more info.
 
 Note that all of these macros are already implemented in the standard library:
 - startup      in [runlib.fj](stl/runlib.fj)
@@ -133,14 +133,14 @@ other branches:
   - conf.json   - standard library list file.
 
 **[programs](programs)** (FlipJump programs), for example:
-  - hello_world.fj  - prints hello world :)
-  - calc.fj     - command line 2 hex/dec calculator, ```a [+-*/%] b```.
-  - func.fj     - performs function calls and operations on stack.
-  - hexlib-*.fj - tests the macros in stl/hexlib.fj.
-  - quine16.fj  - a 16-bits quine by [lestrozi](https://github.com/lestrozi); prints itself.
-  - pair_ns.fj  - simulating the concept of a Class using a namespace.
-  - print_dec.fj    - prints binary variables as decimals.
-  - multi_comp  - simulates a big project
+  - [hello_world.fj](programs/print_tests/hello_world.fj)  - prints hello world :)
+  - [calc.fj](programs/calc.fj)     - command line calculator for 2 hex/dec numbers: ```a [+-*/%] b```.
+  - [func_tests/](programs/func_tests)     - performs function calls and operations on stack.
+  - [hexlib_tests/](programs/hexlib_tests)   - tests for the macros in stl/hexlib.fj.
+  - [quine16.fj](programs/quine16.fj)  - a 16-bits quine by [lestrozi](https://github.com/lestrozi); prints itself.
+  - [pair_ns.fj](programs/concept_checks/pair_ns.fj)  - simulating the concept of a Class using a namespace.
+  - [print_dec.fj](programs/print_tests/print_dec.fj)    - prints binary variables as decimals.
+  - [multi_comp/](programs/multi_comp) - simulates a big project (compilation of multiple files).
 
 **[tests](tests)** (FlipJump programs), for example:
   - compiled/   - the designated directory for the assembled tests files.

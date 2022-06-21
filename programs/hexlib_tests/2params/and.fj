@@ -1,0 +1,23 @@
+startup
+
+rep(256, i) test_and i&0xf, i>>4
+
+loop
+
+
+hex.init
+
+
+def test_and a, b @ ah, ah_copy, bh, end {
+    hex.and ah, bh
+    hex.and bh, ah_copy
+    hex.print_as_digit ah, 0
+    hex.print_as_digit bh, 0
+    output '\n'
+    ;end
+
+  ah:      hex a
+  ah_copy: hex a
+  bh:      hex b
+  end:
+}

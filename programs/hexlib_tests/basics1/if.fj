@@ -1,0 +1,116 @@
+startup
+
+
+// if_flags
+output "if_flags:\n"
+//                    ops = [(randint(0, 15), randint(0,(2**16)-1)) for _ in range(100)]
+// hexlib.out line:   for h, f in ops: print((f>>h)&1, end='')
+// IF_100_NUMS = hex(sum(h+f*16 << (i*20) for i, (h,f) in enumerate(ops)))
+IF_FLAGS_NUMS = 0x2098593d070776a83803ed025fcf2630b539677e0a51278ec3b572bfa969f37eb32fa5a27d38f4f1ba10d5900345ee5d4b50f0d9b73a3ef84d8cbd2258f5a9cdedd958464321a1be0a3d2ba53a12ff684678ccaeea178472da56b4559e3b6e1fb5afd9afc3d69a167c53a95b2516817ba4f9890ded69f06b8e4eae281a4968d57d836496ceea29b290de0a64f6352588dc27b156aa22acc8147ff6400f5d71cd956b7021d2175e2f44c5f78c7d2afc97dacc10e9f17d11206ab17f05ffaf20a7af40b9c09c305a72f0dd8782762922df18191171efd38c65b187350bbecbd27c62c480459289ce5599ceda69a776420065898f22b7cf640a898
+rep(100, i) print_if_flags (IF_FLAGS_NUMS>>(i*20))&((i<<20)-1)
+output "\n\n"
+
+
+// if
+output "if:\n"
+
+hex.zero vars
+print_if vars
+print_if0 vars
+print_if1 vars
+output '\n'
+
+hex.set vars, 1
+print_if vars
+print_if0 vars
+print_if1 vars
+output '\n'
+
+hex.set vars, 8
+print_if vars
+print_if0 vars
+print_if1 vars
+output '\n'
+
+hex.set vars, 15
+print_if vars
+print_if0 vars
+print_if1 vars
+output "\n\n"
+
+
+// if n
+
+hex.zero 16, vars
+print_if_16 vars
+print_if0_16 vars
+print_if1_16 vars
+output '\n'
+
+hex.set vars, 1
+print_if_16 vars
+print_if0_16 vars
+print_if1_16 vars
+output '\n'
+
+hex.set vars, 0
+hex.set vars+7*dw, 4
+print_if_16 vars
+print_if0_16 vars
+print_if1_16 vars
+output '\n'
+
+hex.zero 16, vars
+hex.not 16, vars
+print_if_16 vars
+print_if0_16 vars
+print_if1_16 vars
+output "\n\n"
+
+
+loop
+
+
+vars:   hex.vec 16
+
+
+def print_if_flags hex_flags_val @ l0, l1, hex < IO {
+    hex.if_flags hex, hex_flags_val>>4, l0, l1
+  hex: hex hex_flags_val & 0xf
+  l0:
+    IO+0;l1+dw
+  l1:
+    output '1'
+}
+
+def print_if hex @ l0, l1 < IO {
+    hex.if hex, l0, l1
+    l0: IO+0;l1+dw
+    l1: output '1'
+}
+def print_if0 hex @ l0 < IO {
+    hex.if0 hex, l0
+    IO+1;l0+dw
+    l0: output '0'
+}
+def print_if1 hex @ l1 < IO {
+    hex.if1 hex, l1
+    IO+0;l1+dw
+    l1: output '1'
+}
+
+def print_if_16 hex @ l0, l1 < IO {
+    hex.if 16, hex, l0, l1
+    l0: IO+0;l1+dw
+    l1: output '1'
+}
+def print_if0_16 hex @ l0 < IO {
+    hex.if0 16, hex, l0
+    IO+1;l0+dw
+    l0: output '0'
+}
+def print_if1_16 hex @ l1 < IO {
+    hex.if1 16, hex, l1
+    IO+0;l1+dw
+    l1: output '1'
+}

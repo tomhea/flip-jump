@@ -1,0 +1,8 @@
+startup
+
+rep(256, i) test_shl_hex 2, i
+
+loop
+
+
+hex.init
