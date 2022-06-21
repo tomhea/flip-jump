@@ -1,0 +1,27 @@
+startup
+
+rep(256, i) test_cmp i&0xf, i>>4
+
+loop
+
+
+hex.init
+
+
+def test_cmp a, b @ lt, eq, gt, ah, bh, end {
+    hex.cmp ah, bh, lt, eq, gt
+
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+  ah: hex a
+  bh: hex b
+  end:
+    output '\n'
+}

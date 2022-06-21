@@ -2,7 +2,16 @@ hexlib-basics1, tests/compiled/hexlib_tests/basics1/hexlib-basics1.fjm, tests/in
 
 hexlib-basics2, tests/compiled/hexlib_tests/basics2/hexlib-basics2.fjm, ,tests/inout/hexlib_tests/basics2/hexlib-basics2.out, False,False
 
-hexlib-2params, tests/compiled/hexlib_tests/2params/hexlib-2params.fjm, ,tests/inout/hexlib_tests/2params/hexlib-2params.out, False,False
+hexlib-cmp, tests/compiled/hexlib_tests/2params/cmp.fjm, ,tests/inout/hexlib_tests/2params/cmp.out, False,False
+hexlib-cmp_n, tests/compiled/hexlib_tests/2params/cmp_n.fjm, ,tests/inout/hexlib_tests/2params/cmp_n.out, False,False
+hexlib-add, tests/compiled/hexlib_tests/2params/add.fjm, ,tests/inout/hexlib_tests/2params/add.out, False,False
+hexlib-add_n, tests/compiled/hexlib_tests/2params/add_n.fjm, ,tests/inout/hexlib_tests/2params/100equals.out, False,False
+hexlib-sub, tests/compiled/hexlib_tests/2params/sub.fjm, ,tests/inout/hexlib_tests/2params/sub.out, False,False
+hexlib-sub_n, tests/compiled/hexlib_tests/2params/sub_n.fjm, ,tests/inout/hexlib_tests/2params/100equals.out, False,False
+hexlib-or, tests/compiled/hexlib_tests/2params/or.fjm, ,tests/inout/hexlib_tests/2params/or.out, False,False
+hexlib-or_n, tests/compiled/hexlib_tests/2params/or_n.fjm, ,tests/inout/hexlib_tests/2params/100equals.out, False,False
+hexlib-and, tests/compiled/hexlib_tests/2params/and.fjm, ,tests/inout/hexlib_tests/2params/and.out, False,False
+hexlib-and_n, tests/compiled/hexlib_tests/2params/and_n.fjm, ,tests/inout/hexlib_tests/2params/100equals.out, False,False
 
 hexlib-add-mul-4, tests/compiled/hexlib_tests/mul/add_mul4.fjm, ,tests/inout/hexlib_tests/mul/add_mul4.out, False,False
 hexlib-add-mul-8, tests/compiled/hexlib_tests/mul/add_mul8.fjm, ,tests/inout/hexlib_tests/mul/add_mul8.out, False,False
