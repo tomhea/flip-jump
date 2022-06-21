@@ -7,9 +7,6 @@ hex.print_as_digit h, 0
 output '\n'
 
 bit2hex 12, hex, bits
-//hex.print_as_digit hex+0*dw, 0
-//hex.print_as_digit hex+1*dw, 0
-//hex.print_as_digit hex+2*dw, 0
 hex.print_as_digit 3, hex, 0
 output '\n'
 output '\n'

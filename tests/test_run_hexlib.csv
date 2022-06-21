@@ -1,8 +1,31 @@
-hexlib-basics1, tests/compiled/hexlib_tests/basics1/hexlib-basics1.fjm, tests/inout/hexlib_tests/basics1/input.in,tests/inout/hexlib_tests/basics1/hexlib-basics1.out, False,False
+hexlib-print_as_digit, tests/compiled/hexlib_tests/basics1/print_as_digit.fjm, ,tests/inout/hexlib_tests/basics1/print_as_digit.out, False,False
+hexlib-input, tests/compiled/hexlib_tests/basics1/input.fjm, tests/inout/hexlib_tests/basics1/input.in,tests/inout/hexlib_tests/basics1/input.out, False,False
+hexlib-basic_memory, tests/compiled/hexlib_tests/basics1/basic_memory.fjm, ,tests/inout/hexlib_tests/basics1/basic_memory.out, False,False
+hexlib-basic_math, tests/compiled/hexlib_tests/basics1/basic_math.fjm, ,tests/inout/hexlib_tests/basics1/basic_math.out, False,False
+hexlib-if, tests/compiled/hexlib_tests/basics1/if.fjm, ,tests/inout/hexlib_tests/basics1/if.out, False,False
+hexlib-print_int, tests/compiled/hexlib_tests/basics1/print_int.fjm, ,tests/inout/hexlib_tests/basics1/print_int.out, False,False
 
-hexlib-basics2, tests/compiled/hexlib_tests/basics2/hexlib-basics2.fjm, ,tests/inout/hexlib_tests/basics2/hexlib-basics2.out, False,False
+hexlib-add_count_bits, tests/compiled/hexlib_tests/basics2/add_count_bits.fjm, ,tests/inout/hexlib_tests/basics2/256equals.out, False,False
+hexlib-count_bits, tests/compiled/hexlib_tests/basics2/count_bits.fjm, ,tests/inout/hexlib_tests/basics2/100equals.out, False,False
+hexlib-shl_bit, tests/compiled/hexlib_tests/basics2/shl_bit.fjm, ,tests/inout/hexlib_tests/basics2/256equals.out, False,False
+hexlib-shl_bit_n, tests/compiled/hexlib_tests/basics2/shl_bit_n.fjm, ,tests/inout/hexlib_tests/basics2/25equals.out, False,False
+hexlib-shr_bit, tests/compiled/hexlib_tests/basics2/shr_bit.fjm, ,tests/inout/hexlib_tests/basics2/256equals.out, False,False
+hexlib-shr_bit_n, tests/compiled/hexlib_tests/basics2/shr_bit_n.fjm, ,tests/inout/hexlib_tests/basics2/25equals.out, False,False
+hexlib-shl_hex, tests/compiled/hexlib_tests/basics2/shl_hex.fjm, ,tests/inout/hexlib_tests/basics2/256equals.out, False,False
+hexlib-shl_hex_n, tests/compiled/hexlib_tests/basics2/shl_hex_n.fjm, ,tests/inout/hexlib_tests/basics2/25equals.out, False,False
+hexlib-shr_hex, tests/compiled/hexlib_tests/basics2/shr_hex.fjm, ,tests/inout/hexlib_tests/basics2/256equals.out, False,False
+hexlib-shr_hex_n, tests/compiled/hexlib_tests/basics2/shr_hex_n.fjm, ,tests/inout/hexlib_tests/basics2/25equals.out, False,False
 
-hexlib-2params, tests/compiled/hexlib_tests/2params/hexlib-2params.fjm, ,tests/inout/hexlib_tests/2params/hexlib-2params.out, False,False
+hexlib-cmp, tests/compiled/hexlib_tests/2params/cmp.fjm, ,tests/inout/hexlib_tests/2params/cmp.out, False,False
+hexlib-cmp_n, tests/compiled/hexlib_tests/2params/cmp_n.fjm, ,tests/inout/hexlib_tests/2params/cmp_n.out, False,False
+hexlib-add, tests/compiled/hexlib_tests/2params/add.fjm, ,tests/inout/hexlib_tests/2params/add.out, False,False
+hexlib-add_n, tests/compiled/hexlib_tests/2params/add_n.fjm, ,tests/inout/hexlib_tests/2params/100equals.out, False,False
+hexlib-sub, tests/compiled/hexlib_tests/2params/sub.fjm, ,tests/inout/hexlib_tests/2params/sub.out, False,False
+hexlib-sub_n, tests/compiled/hexlib_tests/2params/sub_n.fjm, ,tests/inout/hexlib_tests/2params/100equals.out, False,False
+hexlib-or, tests/compiled/hexlib_tests/2params/or.fjm, ,tests/inout/hexlib_tests/2params/or.out, False,False
+hexlib-or_n, tests/compiled/hexlib_tests/2params/or_n.fjm, ,tests/inout/hexlib_tests/2params/100equals.out, False,False
+hexlib-and, tests/compiled/hexlib_tests/2params/and.fjm, ,tests/inout/hexlib_tests/2params/and.out, False,False
+hexlib-and_n, tests/compiled/hexlib_tests/2params/and_n.fjm, ,tests/inout/hexlib_tests/2params/100equals.out, False,False
 
 hexlib-add-mul-4, tests/compiled/hexlib_tests/mul/add_mul4.fjm, ,tests/inout/hexlib_tests/mul/add_mul4.out, False,False
 hexlib-add-mul-8, tests/compiled/hexlib_tests/mul/add_mul8.fjm, ,tests/inout/hexlib_tests/mul/add_mul8.out, False,False

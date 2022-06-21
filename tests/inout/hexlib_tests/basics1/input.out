@@ -1,0 +1,8 @@
+input_hex:
+fedcba9876543210
+0123456789XXXXXXXabcdefXXXXXXXXXXXXXXXXXXXXXXXXXXabcdefXXXXXXXXX
+
+input-print:
+0123456789:;<=>?
+Flip, Jump!
+

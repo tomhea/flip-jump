@@ -1,0 +1,57 @@
+startup
+
+
+// input_hex
+output "input_hex:\n"
+rep(16, i) input2hex input+i*dw
+hex.print_as_digit 16, input, 0
+input2hex garbage
+output '\n'
+
+// input_hex
+rep(64, i) input_hex_print_error
+input2hex garbage
+output "\n\n"
+
+
+// input-print
+output "input-print:\n"
+hex.input 16, input
+hex.print 16, input
+input2hex garbage
+output '\n'
+rep(11, i) cat_char
+input2hex garbage
+output "\n\n"
+
+
+loop
+
+
+input:   hex.vec 16*2
+garbage: hex.vec 2
+
+
+def input2hex hex < garbage {
+    hex.input_hex hex
+    hex.input_hex garbage
+}
+
+def input_hex_print_error @ hex, error, end {
+    hex.input_as_hex hex, error
+    hex.print_as_digit hex, 0
+    ;end
+
+  hex: hex
+  error:
+    output 'X'
+  end:
+}
+
+def cat_char @ char, end {
+    hex.input char
+    hex.print char
+    ;end
+  char: hex.vec 2
+  end:
+}
