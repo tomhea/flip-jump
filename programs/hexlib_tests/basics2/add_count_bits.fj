@@ -1,0 +1,42 @@
+startup
+
+rep(256, i) test_add_count_bits i&0xf, i>>4
+
+loop
+
+
+hex.init
+
+
+ah: hex.vec 1
+bh: hex.vec 2
+ch: hex.vec 2
+
+
+ret: ;0
+
+add_count_bits_2:
+    hex.add_count_bits 2, bh, ah
+    fret ret
+
+
+def test_add_count_bits dst, x @ lt, eq, gt, end < ah, bh, ch, add_count_bits_2, ret {
+    hex.set ah, x
+    hex.set 2, bh, dst
+    hex.set 2, ch, dst + ((x>>0)&1) + ((x>>1)&1) + ((x>>2)&1) + ((x>>3)&1)
+    fcall add_count_bits_2, ret
+    hex.cmp 2, bh, ch, lt, eq, gt
+
+  lt:
+    output '<'
+    ;end
+  eq:
+    output '='
+    ;end
+  gt:
+    output '>'
+    ;end
+
+  end:
+    output '\n'
+}

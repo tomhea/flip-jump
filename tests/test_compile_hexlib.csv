@@ -5,7 +5,16 @@ hexlib-basic_math, programs/hexlib_tests/basics1/basic_math.fj,tests/compiled/he
 hexlib-if, programs/hexlib_tests/basics1/if.fj,tests/compiled/hexlib_tests/basics1/if.fjm, 64,1,0, True,True
 hexlib-print_int, programs/hexlib_tests/basics1/print_int.fj,tests/compiled/hexlib_tests/basics1/print_int.fjm, 64,1,0, True,True
 
-hexlib-basics2, programs/hexlib_tests/basics2/hexlib-basics2.fj,tests/compiled/hexlib_tests/basics2/hexlib-basics2.fjm, 64,1,0, True,True
+hexlib-add_count_bits, programs/hexlib_tests/basics2/add_count_bits.fj, tests/compiled/hexlib_tests/basics2/add_count_bits.fjm, 64,1,0, True,True
+hexlib-count_bits, programs/hexlib_tests/basics2/count_bits.fj, tests/compiled/hexlib_tests/basics2/count_bits.fjm, 64,1,0, True,True
+hexlib-shl_bit, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shl_bit.fj, tests/compiled/hexlib_tests/basics2/shl_bit.fjm, 64,1,0, True,True
+hexlib-shl_bit_n, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shl_bit_n.fj, tests/compiled/hexlib_tests/basics2/shl_bit_n.fjm, 64,1,0, True,True
+hexlib-shr_bit, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shr_bit.fj, tests/compiled/hexlib_tests/basics2/shr_bit.fjm, 64,1,0, True,True
+hexlib-shr_bit_n, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shr_bit_n.fj, tests/compiled/hexlib_tests/basics2/shr_bit_n.fjm, 64,1,0, True,True
+hexlib-shl_hex, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shl_hex.fj, tests/compiled/hexlib_tests/basics2/shl_hex.fjm, 64,1,0, True,True
+hexlib-shl_hex_n, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shl_hex_n.fj, tests/compiled/hexlib_tests/basics2/shl_hex_n.fjm, 64,1,0, True,True
+hexlib-shr_hex, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shr_hex.fj, tests/compiled/hexlib_tests/basics2/shr_hex.fjm, 64,1,0, True,True
+hexlib-shr_hex_n, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shr_hex_n.fj, tests/compiled/hexlib_tests/basics2/shr_hex_n.fjm, 64,1,0, True,True
 
 hexlib-cmp, programs/hexlib_tests/2params/cmp.fj,tests/compiled/hexlib_tests/2params/cmp.fjm, 64,1,0, True,True
 hexlib-cmp_n, programs/hexlib_tests/2params/cmp_n.fj,tests/compiled/hexlib_tests/2params/cmp_n.fjm, 64,1,0, True,True

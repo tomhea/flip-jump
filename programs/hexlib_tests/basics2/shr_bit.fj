@@ -1,0 +1,8 @@
+startup
+
+rep(256, i) test_shr_bit 2, i
+
+loop
+
+
+hex.init
