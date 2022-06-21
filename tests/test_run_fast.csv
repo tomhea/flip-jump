@@ -1,21 +1,21 @@
-cat, tests/compiled/cat.fjm, tests/inout/cat.in,tests/inout/cat.out, False,False
-hello_no-stl, tests/compiled/hello_no-stl.fjm, ,tests/inout/hello_no-stl.out, False,False
-hello_world, tests/compiled/hello_world.fjm, ,tests/inout/hello_world.out, False,False
-hexprint, tests/compiled/hexprint.fjm, ,tests/inout/hexprint.out, False,False
-mathbit, tests/compiled/mathbit.fjm, ,, False,False
-mathvec, tests/compiled/mathvec.fjm, ,, False,False
-nadd, tests/compiled/nadd.fjm, ,tests/inout/nadd.out, False,False
-ncat, tests/compiled/ncat.fjm, tests/inout/ncat.in,tests/inout/ncat.out, True,True
-ncmp, tests/compiled/ncmp.fjm, ,tests/inout/ncmp.out, False,False
-not, tests/compiled/not.fjm, ,, False,False
-print_as_digit, tests/compiled/print_as_digit.fjm, ,tests/inout/print_as_digit.out, False,False
+cat, tests/compiled/print_tests/cat.fjm, tests/inout/print_tests/cat.in,tests/inout/print_tests/cat.out, False,False
+hello_no-stl, tests/compiled/print_tests/hello_no-stl.fjm, ,tests/inout/print_tests/hello_no-stl.out, False,False
+hello_world, tests/compiled/print_tests/hello_world.fjm, ,tests/inout/print_tests/hello_world.out, False,False
+hexprint, tests/compiled/print_tests/hexprint.fjm, ,tests/inout/print_tests/hexprint.out, False,False
+mathbit, tests/compiled/sanity_checks/mathbit.fjm, ,, False,False
+mathvec, tests/compiled/sanity_checks/mathvec.fjm, ,, False,False
+nadd, tests/compiled/simple_math_checks/nadd.fjm, ,tests/inout/simple_math_checks/nadd.out, False,False
+ncat, tests/compiled/print_tests/ncat.fjm, tests/inout/print_tests/ncat.in,tests/inout/print_tests/ncat.out, True,True
+ncmp, tests/compiled/simple_math_checks/ncmp.fjm, ,tests/inout/simple_math_checks/ncmp.out, False,False
+not, tests/compiled/sanity_checks/not.fjm, ,, False,False
+print_as_digit, tests/compiled/print_tests/print_as_digit.fjm, ,tests/inout/print_tests/print_as_digit.out, False,False
 quine16, tests/compiled/quine16.fjm, ,tests/compiled/quine16.fjm, True,True
-rep, tests/compiled/rep.fjm, ,, False,False
-simple, tests/compiled/simple.fjm, ,tests/inout/simple.out, False,False
-testbit, tests/compiled/testbit.fjm, ,tests/inout/testbit.out, False,False
-testbit_with_nops, tests/compiled/testbit_with_nops.fjm, ,tests/inout/testbit_with_nops.out, False,False
+rep, tests/compiled/sanity_checks/rep.fjm, ,, False,False
+simple, tests/compiled/sanity_checks/simple.fjm, ,tests/inout/sanity_checks/simple.out, False,False
+testbit, tests/compiled/sanity_checks/testbit.fjm, ,tests/inout/sanity_checks/testbit.out, False,False
+testbit_with_nops, tests/compiled/sanity_checks/testbit_with_nops.fjm, ,tests/inout/sanity_checks/testbit_with_nops.out, False,False
 
-multi_comp_stl_bc, tests/compiled/multi_comp_stl_bc.fjm, ,tests/inout/multi_comp.out, False, False
-multi_comp_no_stl_bc, tests/compiled/multi_comp_no_stl_bc.fjm, ,tests/inout/multi_comp.out, False, False
-multi_comp_stl_cb, tests/compiled/multi_comp_stl_cb.fjm, ,tests/inout/multi_comp.out, False, False
-multi_comp_no_stl_cb, tests/compiled/multi_comp_no_stl_cb.fjm, ,tests/inout/multi_comp.out, False, False
+multi_comp_stl_bc, tests/compiled/multi_comp/multi_comp_stl_bc.fjm, ,tests/inout/multi_comp/multi_comp.out, False, False
+multi_comp_no_stl_bc, tests/compiled/multi_comp/multi_comp_no_stl_bc.fjm, ,tests/inout/multi_comp/multi_comp.out, False, False
+multi_comp_stl_cb, tests/compiled/multi_comp/multi_comp_stl_cb.fjm, ,tests/inout/multi_comp/multi_comp.out, False, False
+multi_comp_no_stl_cb, tests/compiled/multi_comp/multi_comp_no_stl_cb.fjm, ,tests/inout/multi_comp/multi_comp.out, False, False
