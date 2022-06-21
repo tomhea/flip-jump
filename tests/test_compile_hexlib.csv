@@ -1,4 +1,9 @@
-hexlib-basics1, programs/hexlib_tests/basics1/hexlib-basics1.fj,tests/compiled/hexlib_tests/basics1/hexlib-basics1.fjm, 64,1,0, True,True
+hexlib-print_as_digit, programs/hexlib_tests/basics1/print_as_digit.fj,tests/compiled/hexlib_tests/basics1/print_as_digit.fjm, 64,1,0, True,True
+hexlib-input, programs/hexlib_tests/basics1/input.fj,tests/compiled/hexlib_tests/basics1/input.fjm, 64,1,0, True,True
+hexlib-basic_memory, programs/hexlib_tests/basics1/basic_memory.fj,tests/compiled/hexlib_tests/basics1/basic_memory.fjm, 64,1,0, True,True
+hexlib-basic_math, programs/hexlib_tests/basics1/basic_math.fj,tests/compiled/hexlib_tests/basics1/basic_math.fjm, 64,1,0, True,True
+hexlib-if, programs/hexlib_tests/basics1/if.fj,tests/compiled/hexlib_tests/basics1/if.fjm, 64,1,0, True,True
+hexlib-print_int, programs/hexlib_tests/basics1/print_int.fj,tests/compiled/hexlib_tests/basics1/print_int.fjm, 64,1,0, True,True
 
 hexlib-basics2, programs/hexlib_tests/basics2/hexlib-basics2.fj,tests/compiled/hexlib_tests/basics2/hexlib-basics2.fjm, 64,1,0, True,True
 

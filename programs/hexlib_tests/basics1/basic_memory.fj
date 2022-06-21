@@ -1,0 +1,64 @@
+startup
+
+// xor
+output "xor:\n"
+rep (16, val) xor_all val
+output '\n'
+
+// zero
+output "zero:\n"
+hex.zero  16, vars
+hex.print_as_digit 16, vars, 0
+output "\n\n"
+
+// xor (as vec) once again
+output "xor n:\n"
+hex.xor 16, vars, consts
+hex.print_as_digit 16, vars, 0
+output "\n\n"
+
+// xor_zero
+output "xor_zero:\n"
+hex.xor_zero 16, vars2, vars
+hex.print_as_digit 16, vars, 0
+output '\n'
+hex.print_as_digit 16, vars2, 0
+output "\n\n"
+
+// mov
+output "mov:\n"
+hex.mov 16, vars, vars2
+hex.print_as_digit 16, vars, 0
+output '\n'
+hex.print_as_digit 16, vars2, 0
+output "\n\n"
+
+// set
+output "set:\n"
+rep(16, i) hex.set vars+i*dw, 15-i
+hex.print_as_digit 16, vars, 0
+output '\n'
+hex.print_as_digit 16, vars2, 0
+output "\n\n"
+
+// swap
+output "swap:\n"
+hex.swap 16, vars, vars2
+hex.print_as_digit 16, vars, 0
+output '\n'
+hex.print_as_digit 16, vars2, 0
+output "\n\n"
+
+loop
+
+
+vars:   rep(16, j) hex j
+vars2:  hex.vec 16, 0
+consts: rep(16, j) hex j
+
+
+def xor_all val < vars, consts {
+    rep (16, i) hex.xor vars+i*dw, consts+val*dw
+    hex.print_as_digit 16, vars, 0
+    output '\n'
+}

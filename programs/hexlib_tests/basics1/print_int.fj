@@ -1,0 +1,51 @@
+startup
+
+
+// print_uint
+output "print_uint:\n"
+rep(5, i) print_uint 16, positive+16*i*dw
+output '\n'
+
+// print_int
+output "print_int:\n"
+rep(9, i)  print_int 16, positive+16*i*dw
+output '\n'
+
+
+loop
+
+
+positive:
+    hex.vec 16, 0x12345AF
+    hex.vec 16, 0xDeadC0de
+    hex.vec 16, 0x3
+    hex.vec 16, 0x0f0
+    hex.vec 16, 0x0
+negative:
+    hex.vec 16, (0  -0x12345AF)&((1<<64)-1)
+    hex.vec 16, (0 -0xDeadC0de)&((1<<64)-1)
+    hex.vec 16, (0        -0x3)&((1<<64)-1)
+    hex.vec 16, (0      -0x0f0)&((1<<64)-1)
+
+
+def print_uint n, x {
+    hex.print_uint n, x, 1, 0
+    output ", "
+    hex.print_uint n, x, 1, 1
+    output ", "
+    hex.print_uint n, x, 0, 0
+    output ", "
+    hex.print_uint n, x, 0, 1
+    output "\n"
+}
+
+def print_int n, x {
+    hex.print_int n, x, 1, 0
+    output ", "
+    hex.print_int n, x, 1, 1
+    output ", "
+    hex.print_int n, x, 0, 0
+    output ", "
+    hex.print_int n, x, 0, 1
+    output "\n"
+}

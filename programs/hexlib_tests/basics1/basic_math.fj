@@ -1,0 +1,119 @@
+startup
+
+
+// inc1
+output "inc1:\n"
+rep(16, i) inc1_print_carry vars+i*dw, vars2+i*dw
+hex.print_as_digit 16, vars2, 0
+output '\n'
+hex.print_as_digit 16, vars, 0
+output "\n\n"
+
+// inc, not
+output "inc, not:\n"
+hex.zero 16, vars
+hex.inc 16, vars
+hex.print_as_digit 16, vars, 0
+output '\n'
+hex.set vars, 0xf
+hex.inc 16, vars
+hex.print_as_digit 16, vars, 0
+output '\n'
+hex.zero 16, vars
+hex.not 16, vars
+hex.print_as_digit 16, vars, 0
+output '\n'
+hex.inc 16, vars
+hex.print_as_digit 16, vars, 0
+output "\n\n"
+
+
+// dec1
+output "dec1:\n"
+hex.mov 16, vars, consts
+rep(16, i) dec1_print_borrow vars+i*dw, vars2+i*dw
+hex.print_as_digit 16, vars2, 0
+output '\n'
+hex.print_as_digit 16, vars, 0
+output "\n\n"
+
+// dec
+output "dec:\n"
+hex.zero 16, vars
+hex.set vars, 2
+hex.dec 16, vars
+hex.print_as_digit 16, vars, 0
+output '\n'
+hex.dec 16, vars
+hex.print_as_digit 16, vars, 0
+output '\n'
+hex.dec 16, vars
+hex.print_as_digit 16, vars, 0
+output '\n'
+hex.dec 16, vars
+hex.print_as_digit 16, vars, 0
+output "\n\n"
+
+
+// neg
+output "neg:\n"
+hex.zero 16, vars
+hex.neg 16, vars
+hex.print_as_digit 16, vars, 0
+output '\n'
+hex.set vars+dw, 3
+hex.neg 16, vars
+hex.print_as_digit 16, vars, 0
+output '\n'
+hex.neg 16, vars
+hex.print_as_digit 16, vars, 0
+output "\n\n"
+
+
+// sign
+output "sign:\n"
+rep( 16, i) test_sign 1, i
+output '\n'
+rep(256, i) test_sign 2, i
+output "\n\n"
+
+
+loop
+
+
+vars:   rep(16, j) hex j
+vars2:  rep(16, j) hex 15-j
+consts: rep(16, j) hex j
+
+
+def inc1_print_carry hex, carry @ output1, end {
+    hex.zero carry
+    hex.inc1 hex, end, output1
+  output1:
+    carry+dbit;
+  end:
+}
+
+
+def dec1_print_borrow hex, borrow @ output1, end {
+    hex.zero borrow
+    hex.dec1 hex, end, output1
+  output1:
+    borrow+dbit;
+  end:
+}
+
+
+def test_sign n, x @ neg, zpos, xh, end {
+    hex.sign n, xh, neg, zpos
+
+  neg:
+    output '-'
+    ;end
+  zpos:
+    output '+'
+    ;end
+
+  xh: hex.vec n, x
+  end:
+}

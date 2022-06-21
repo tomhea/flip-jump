@@ -1,4 +1,9 @@
-hexlib-basics1, tests/compiled/hexlib_tests/basics1/hexlib-basics1.fjm, tests/inout/hexlib_tests/basics1/input.in,tests/inout/hexlib_tests/basics1/hexlib-basics1.out, False,False
+hexlib-print_as_digit, tests/compiled/hexlib_tests/basics1/print_as_digit.fjm, ,tests/inout/hexlib_tests/basics1/print_as_digit.out, False,False
+hexlib-input, tests/compiled/hexlib_tests/basics1/input.fjm, tests/inout/hexlib_tests/basics1/input.in,tests/inout/hexlib_tests/basics1/input.out, False,False
+hexlib-basic_memory, tests/compiled/hexlib_tests/basics1/basic_memory.fjm, ,tests/inout/hexlib_tests/basics1/basic_memory.out, False,False
+hexlib-basic_math, tests/compiled/hexlib_tests/basics1/basic_math.fjm, ,tests/inout/hexlib_tests/basics1/basic_math.out, False,False
+hexlib-if, tests/compiled/hexlib_tests/basics1/if.fjm, ,tests/inout/hexlib_tests/basics1/if.out, False,False
+hexlib-print_int, tests/compiled/hexlib_tests/basics1/print_int.fjm, ,tests/inout/hexlib_tests/basics1/print_int.out, False,False
 
 hexlib-basics2, tests/compiled/hexlib_tests/basics2/hexlib-basics2.fjm, ,tests/inout/hexlib_tests/basics2/hexlib-basics2.out, False,False
 
