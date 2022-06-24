@@ -149,15 +149,15 @@ def test_run(run_args: RunTestArgs) -> None:
     """
     print(f'Running test {run_args.test_name}:')
 
-    run_time, ops_executed, flips_executed, output, termination_cause =\
-        fjm_run.run(run_args.fjm_path, defined_input=run_args.get_defined_input(), time_verbose=True)
+    termination_statistics = fjm_run.run(run_args.fjm_path,
+                                         defined_input=run_args.get_defined_input(),
+                                         time_verbose=True)
 
-    print(f'finished by {termination_cause} after {run_time:.3f}s '
-          f'({ops_executed:,} ops executed, {flips_executed / ops_executed * 100:.2f}% flips)')
+    print(termination_statistics)
 
     expected_termination_cause = TerminationCause.Looping
-    assert termination_cause == expected_termination_cause
+    assert termination_statistics.termination_cause == expected_termination_cause
 
-    output = output.decode('raw_unicode_escape')
+    output = termination_statistics.standard_output.decode('raw_unicode_escape')
     expected_output = run_args.get_expected_output()
     assert output == expected_output

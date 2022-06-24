@@ -1,4 +1,5 @@
 import struct
+from pathlib import Path
 from struct import pack, unpack
 from random import randint
 from time import sleep
@@ -45,7 +46,7 @@ SUPPORTED_VERSIONS = {0: 'Normal', 1: 'Full'}
 
 
 class Reader:
-    def __init__(self, input_file, *, slow_garbage_read=True, stop_after_garbage=True):
+    def __init__(self, input_file: Path, *, slow_garbage_read: bool = True, stop_after_garbage: bool = True):
         self.slow_garbage_read = slow_garbage_read
         self.stop_after_garbage = stop_after_garbage
 

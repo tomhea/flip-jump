@@ -41,7 +41,7 @@ def main():
     breakpoint_any_set = set(args.any_breakpoint)
 
     try:
-        run_time, ops_executed, flips_executed, output, termination_cause = \
+        termination_statistics = \
             debug_and_run(file, debugging_file=args.debug,
                           defined_input=None,
                           verbose=verbose_set,
@@ -49,8 +49,7 @@ def main():
                           breakpoint_any_labels=breakpoint_any_set)
 
         if not args.silent:
-            print(f'finished by {termination_cause} after {run_time:.3f}s ({ops_executed:,} ops executed, {flips_executed/ops_executed*100:.2f}% flips)')
-            print()
+            print(termination_statistics)
     except FJReadFjmException as e:
         print()
         print(e)
