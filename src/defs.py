@@ -2,7 +2,7 @@ import json
 from enum import IntEnum    # IntEnum equality works between files.
 from pathlib import Path
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
-
+from time import time
 
 main_macro = ('', 0)
 
@@ -112,6 +112,21 @@ class SegmentEntry(IntEnum):
     StartAddress = 0
     ReserveAddress = 1
     WflipAddress = 2
+
+
+class PrintTimer:
+    def __init__(self, init_message: str, *, print_time: bool = True):
+        self.init_message = init_message
+        self.print_time = print_time
+
+    def __enter__(self):
+        if self.print_time:
+            self.start_time = time()
+            print(self.init_message, end='', flush=True)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.print_time:
+            print(f'{time() - self.start_time:.3f}s')
 
 
 class OpType(IntEnum):  # op.data array content:

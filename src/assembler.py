@@ -6,7 +6,7 @@ from tempfile import mkstemp
 import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
-from defs import eval_all, Verbose, SegmentEntry, FJAssemblerException, OpType
+from defs import eval_all, Verbose, SegmentEntry, FJAssemblerException, OpType, PrintTimer
 
 
 def lsb_first_bin_array(int_value, bit_size):
@@ -148,35 +148,21 @@ def assemble(input_files, output_file, w,
         temp_fd, preprocessed_file = mkstemp()
         temp_preprocessed_file = True
 
-    if Verbose.Time in verbose:
-        print('  parsing:         ', end='', flush=True)
-        start_time = time()
-    macros = parse_macro_tree(input_files, w, warning_as_errors, verbose=Verbose.Parse in verbose)
-    if Verbose.Time in verbose:
-        print(f'{time() - start_time:.3f}s')
+    time_verbose = Verbose.Time in verbose
 
-    if Verbose.Time in verbose:
-        print('  macro resolve:   ', end='', flush=True)
-        start_time = time()
-    ops, labels, boundary_addresses = resolve_macros(w, macros, output_file=preprocessed_file,
-                                                     show_statistics=show_statistics,
-                                                     verbose=Verbose.MacroSolve in verbose)
-    if Verbose.Time in verbose:
-        print(f'{time() - start_time:.3f}s')
+    with PrintTimer('  parsing:         ', print_time=time_verbose):
+        macros = parse_macro_tree(input_files, w, warning_as_errors, verbose=Verbose.Parse in verbose)
 
-    if Verbose.Time in verbose:
-        print('  labels resolve:  ', end='', flush=True)
-        start_time = time()
-    labels_resolve(ops, labels, boundary_addresses, w, writer, verbose=Verbose.LabelSolve in verbose)
-    if Verbose.Time in verbose:
-        print(f'{time() - start_time:.3f}s')
+    with PrintTimer('  macro resolve:   ', print_time=time_verbose):
+        ops, labels, boundary_addresses = resolve_macros(w, macros, output_file=preprocessed_file,
+                                                         show_statistics=show_statistics,
+                                                         verbose=Verbose.MacroSolve in verbose)
 
-    if Verbose.Time in verbose:
-        print('  create binary:   ', end='', flush=True)
-        start_time = time()
-    writer.write_to_file()
-    if Verbose.Time in verbose:
-        print(f'{time() - start_time:.3f}s')
+    with PrintTimer('  labels resolve:  ', print_time=time_verbose):
+        labels_resolve(ops, labels, boundary_addresses, w, writer, verbose=Verbose.LabelSolve in verbose)
+
+    with PrintTimer('  create binary:   ', print_time=time_verbose):
+        writer.write_to_file()
 
     if temp_preprocessed_file:
         os.close(temp_fd)

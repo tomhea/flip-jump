@@ -3,13 +3,12 @@ from os import path
 from pathlib import Path
 from time import time
 from sys import stdin, stdout
-from dataclasses import dataclass
 from typing import Optional, List, Dict, Set
 
 import easygui
 
 import fjm
-from defs import Verbose, TerminationCause
+from defs import Verbose, TerminationCause, PrintTimer
 
 
 class BreakpointHandlerUnnecessary(Exception):
@@ -137,12 +136,8 @@ def run(fjm_path: Path, *,
         time_verbose: bool = False,
         output_verbose: bool = False):
 
-    if time_verbose:
-        print(f'  loading memory:  ', end='', flush=True)
-    start_time = time()
-    mem = fjm.Reader(fjm_path)
-    if time_verbose:
-        print(f'{time() - start_time:.3f}s')
+    with PrintTimer('  loading memory:  ', print_time=time_verbose):
+        mem = fjm.Reader(fjm_path)
 
     ip = 0
     w = mem.w
