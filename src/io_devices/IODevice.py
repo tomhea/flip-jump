@@ -20,6 +20,6 @@ class IODevice(ABC):
 
     @abstractmethod
     def is_eof(self) -> bool:
-        return False
+        return True
 
     # Also, each class should implement a "__del__" to flush last changes before it gets deleted.
