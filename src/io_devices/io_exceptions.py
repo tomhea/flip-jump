@@ -4,3 +4,11 @@ class IODeviceException(IOError):
 
 class BrokenIOUsed(IODeviceException):
     pass
+
+
+class IOReadOnEOF(IODeviceException):
+    pass
+
+
+class IncompleteOutput(IODeviceException):
+    pass

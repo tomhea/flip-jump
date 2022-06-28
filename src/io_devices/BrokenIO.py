@@ -15,7 +15,4 @@ class BrokenIO(IODevice):
     def is_available_write(self) -> bool:
         return False
 
-    def is_eof(self) -> bool:
-        return True
-
     # default __del__

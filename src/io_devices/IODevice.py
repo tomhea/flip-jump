@@ -18,8 +18,4 @@ class IODevice(ABC):
     def is_available_write(self) -> bool:
         return False
 
-    @abstractmethod
-    def is_eof(self) -> bool:
-        return True
-
     # Also, each class should implement a "__del__" to flush last changes before it gets deleted.
