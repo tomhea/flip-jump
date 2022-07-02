@@ -1,11 +1,13 @@
+from __future__ import annotations
+
+import itertools
+from dataclasses import dataclass
 import json
 from enum import IntEnum    # IntEnum equality works between files.
 from pathlib import Path
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
 from time import time
-
-main_macro = ('', 0)
-
+from typing import List, Tuple, Dict, Union, Set
 
 # TODO use the op-strings (instead of the function) up-to the last point possible (to make deepcopy simpler)
 parsing_op2func = {'+': add, '-': sub, '*': mul, '/': floordiv, '%': mod, 
@@ -49,7 +51,7 @@ class FJWriteFjmException(FJException):
     pass
 
 
-def smart_int16(num):
+def smart_int16(num: str) -> int:
     try:
         return int(num, 16)
     except ValueError as ve:
@@ -61,7 +63,7 @@ with open(STL_PATH / 'conf.json', 'r') as stl_json:
     STL_OPTIONS = json.load(stl_json)
 
 
-def get_stl_paths():
+def get_stl_paths() -> List[Path]:
     return [STL_PATH / f'{lib}.fj' for lib in STL_OPTIONS['all']]
 
 
@@ -81,7 +83,7 @@ number_re = fr"({bin_num})|({hex_num})|('({char})')|({dec_num})"
 string_re = fr'"({char})*"'
 
 
-def get_char_value_and_length(s):
+def get_char_value_and_length(s: str) -> Tuple[int, int]:
     if s[0] != '\\':
         return ord(s[0]), 1
     if s[1] in char_escape_dict:
@@ -104,7 +106,7 @@ class TerminationCause(IntEnum):
     Input = 1
     NullIP = 2
 
-    def __str__(self):
+    def __str__(self) -> str:
         return ['looping', 'input', 'ip<2w'][self.value]
 
 
@@ -114,17 +116,20 @@ class SegmentEntry(IntEnum):
     WflipAddress = 2
 
 
+BoundaryAddressesList = List[Tuple[SegmentEntry, int]]
+
+
 class PrintTimer:
     def __init__(self, init_message: str, *, print_time: bool = True):
         self.init_message = init_message
         self.print_time = print_time
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         if self.print_time:
             self.start_time = time()
             print(self.init_message, end='', flush=True)
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         if self.print_time:
             print(f'{time() - self.start_time:.3f}s')
 
@@ -136,44 +141,86 @@ class OpType(IntEnum):  # op.data array content:
     Segment = 3         # expr                      # Survives until (2) label resolve
     Reserve = 4         # expr                      # Survives until (2) label resolve
     Label = 5           # ID                        # Survives until (1) macro resolve
-    Macro = 6           # ID, expr [expr..]         # Survives until (1) macro resolve
+    Macro = 6           # ID, [expr..]              # Survives until (1) macro resolve
     Rep = 7             # expr, ID, macro_call      # Survives until (1) macro resolve
 
 
+@dataclass
+class MacroName:
+    name: str
+    parameter_num: int
+
+    def __str__(self) -> str:
+        if 0 == self.parameter_num:
+            return self.name
+        return f"{self.name}({self.parameter_num})"
+
+    def __hash__(self):
+        return hash((self.name, self.parameter_num))
+
+
+main_macro = MacroName('', 0)
+
+
+@dataclass
+class CodePosition:
+    file: str
+    line: int
+
+    def __str__(self) -> str:
+        return f"file {self.file} (line {self.line})"
+
+
 class Op:
-    def __init__(self, op_type, data, file, line):
+    def __init__(self, op_type: OpType, data: Tuple[Union[Expr, str, MacroCall], ...], code_position: CodePosition):
         self.type = op_type
         self.data = data
-        self.file = file
-        self.line = line
+        self.code_position = code_position
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{f"{self.type}:"[7:]:10}    Data: {", ".join([str(d) for d in self.data])}    ' \
-               f'File: {self.file} (line {self.line})'
+               f'{self.code_position}'
 
-    def macro_trace_str(self):
+    def macro_trace_str(self) -> str:
         assert self.type == OpType.Macro
-        macro_name, param_len = self.data[0]
-        return f'macro {macro_name}({param_len}) (File {self.file}, line {self.line})'
+        return f'macro {self.macro_name} ({self.code_position})'
 
-    def rep_trace_str(self, iter_value, iter_times):
+    def rep_trace_str(self, iter_value: int, iter_times: int) -> str:
         assert self.type == OpType.Rep
         _, iter_name, macro = self.data
-        macro_name, param_len = macro.data[0]
         return f'rep({iter_name}={iter_value}, out of 0..{iter_times-1}) ' \
-               f'macro {macro_name}({param_len})  (File {self.file}, line {self.line})'
+               f'macro {macro.macro_name}  ({macro.code_position})'
+
+
+class MacroCall(Op):
+    def __init__(self, macro_name: str, arguments: List[Expr], code_position: CodePosition):
+        super(MacroCall, self).__init__(OpType.Macro, tuple(arguments), code_position)
+        self.macro_name = MacroName(macro_name, len(arguments))
+
+
+class Macro:
+    # [(params, quiet_params), statements, (curr_file, p.lineno, ns_name)]
+
+    def __init__(self, params: List[str], local_params: List[str],
+                 ops: List[Op], namespace: str,
+                 code_position: CodePosition):
+        self.params = params
+        self.local_params = local_params
+        self.ops = ops
+        self.namespace = namespace
+        self.code_position = code_position
 
 
 class Expr:
-    def __init__(self, expr):
+    def __init__(self, expr: Union[int, str, Tuple[str, Tuple[Expr]]]):
         self.val = expr
 
     # replaces every string it can with its dictionary value, and evaluates anything it can.
     # returns the list of unknown id's
-    def eval(self, id_dict, file, line):
+    def eval(self, id_dict: Dict[str, Expr], code_position: CodePosition) -> List[str]:
         if self.is_tuple():
             op, exps = self.val
-            res = [e.eval(id_dict, file, line) for e in exps]
+            res = [e.eval(id_dict, code_position) for e in exps]
             if any(res):
                 return sum(res, start=[])
             else:
@@ -181,25 +228,25 @@ class Expr:
                     self.val = parsing_op2func[op](*[e.val for e in exps])
                     return []
                 except BaseException as e:
-                    raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)} in file {file} (line {line})')
+                    raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)} in {code_position}')
         elif self.is_str():
             if self.val in id_dict:
                 self.val = id_dict[self.val].val
-                return self.eval({}, file, line)
+                return self.eval({}, code_position)
             else:
                 return [self.val]
         return []
 
-    def is_int(self):
+    def is_int(self) -> bool:
         return type(self.val) is int
 
-    def is_str(self):
+    def is_str(self) -> bool:
         return type(self.val) is str
 
-    def is_tuple(self):
+    def is_tuple(self) -> bool:
         return type(self.val) is tuple
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.is_tuple():
             op, exps = self.val
             if len(exps) == 1:
@@ -218,39 +265,39 @@ class Expr:
         raise FJExprException(f'bad expression: {self.val} (of type {type(self.val)})')
 
 
-def eval_all(op, id_dict=None):
+def eval_all(op: Op, id_dict: Dict[str, Expr] = None) -> List[str]:
     if id_dict is None:
         id_dict = {}
 
     ids = []
     for expr in op.data:
         if type(expr) is Expr:
-            ids += expr.eval(id_dict, op.file, op.line)
+            ids += expr.eval(id_dict, op.code_position)
     if op.type == OpType.Rep:
         macro_op = op.data[2]
         ids += eval_all(macro_op, id_dict)
     return ids
 
 
-def get_all_used_labels(ops):
+def get_all_used_labels(ops: List[Op]) -> Tuple[Set[str], Set[str]]:
     used_labels, declared_labels = set(), set()
     for op in ops:
         if op.type == OpType.Rep:
             n, i, macro_call = op.data
-            used_labels.update(n.eval({}, op.file, op.line))
+            used_labels.update(n.eval({}, op.code_position))
             new_labels = set()
-            new_labels.update(*[e.eval({}, op.file, op.line) for e in macro_call.data[1:]])
+            new_labels.update(*[e.eval({}, op.code_position) for e in macro_call.data])
             used_labels.update(new_labels - {i})
         elif op.type == OpType.Label:
             declared_labels.add(op.data[0])
         else:
             for expr in op.data:
                 if type(expr) is Expr:
-                    used_labels.update(expr.eval({}, op.file, op.line))
+                    used_labels.update(expr.eval({}, op.code_position))
     return used_labels, declared_labels
 
 
-def id_swap(op, id_dict):
+def id_swap(op: Op, id_dict: Dict[str, Expr]) -> None:
     new_data = []
     for datum in op.data:
         if type(datum) is str and datum in id_dict:
@@ -263,7 +310,7 @@ def id_swap(op, id_dict):
     op.data = tuple(new_data)
 
 
-def new_label(counter, name):
+def new_label(counter: itertools.count, name: str) -> Expr:
     if name == '':
         return Expr(f'_.label{next(counter)}')
     else:
