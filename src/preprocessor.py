@@ -163,7 +163,7 @@ def resolve_macro_aux(w: int, parent_name: str, curr_tree: List[str], macros: Di
                 macro_resolve_error(curr_tree, f'Rep index {i_name} is declared twice; maybe an inner rep. '
                                                f'in {op.code_position}.')
             macro_name = macro_call.macro_name
-            pseudo_macro_name = MacroName(new_label(dollar_count, f'rep_{times}_{macro_name}').val, 1)  # just moved outside (before) the for loop
+            pseudo_macro_name = MacroName(new_label(dollar_count, f'rep_{times}_{macro_name}').val, 0)  # just moved outside (before) the for loop
             for i in range(times):
                 rep_dict[i_name] = Expr(i)  # TODO - call the macro_name directly, and do deepcopy(op) beforehand.
                 macros[pseudo_macro_name] = Macro([], [], [macro_call], current_macro.namespace, op.code_position)
