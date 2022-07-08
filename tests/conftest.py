@@ -23,8 +23,10 @@ TESTS_PATH = Path(__file__).parent
 with open(TESTS_PATH / 'conf.json', 'r') as tests_json:
     TESTS_OPTIONS = json.load(tests_json)
 
-TEST_TYPES = TESTS_OPTIONS['ordered_speed_list']
+TEST_TYPES = TESTS_OPTIONS['all_speed_ordered']
 assert TEST_TYPES
+REGULAR_TYPES = TESTS_OPTIONS['regular_speed_ordered']
+assert REGULAR_TYPES
 DEFAULT_TYPE = TESTS_OPTIONS['default_type']
 assert DEFAULT_TYPE in TEST_TYPES
 
@@ -34,6 +36,7 @@ RUN_ORDER_INDEX = 2
 
 
 ALL_FLAG = 'all'
+REGULAR_FLAG = 'regular'
 COMPILE_FLAG = 'compile'
 RUN_FLAG = 'run'
 NAME_EXACT_FLAG = 'name'
@@ -109,6 +112,7 @@ def pytest_addoption(parser) -> None:
 
     for test_type in TEST_TYPES:
         parser.addoption(f"--{test_type}", action="store_true", help=f"run {test_type} tests")
+    parser.addoption(f"--{REGULAR_FLAG}", action="store_true", help=f"run all regular tests ({', '.join(REGULAR_TYPES)})")
     parser.addoption(f"--{ALL_FLAG}", action="store_true", help=f"run all tests")
 
     parser.addoption(f"--{COMPILE_FLAG}", action='store_true', help='only test compiling .fj files')
@@ -151,12 +155,15 @@ def get_test_types_to_run__heavy_first(get_option: Callable[[str], bool]) -> Lis
     @param get_option: function that returns the flags values
     @return: list of the test types to run
     """
-    test_types_heavy_first = TEST_TYPES[::-1]
+    all_test_types_heavy_first = TEST_TYPES[::-1]
+    regular_test_types_heavy_first = REGULAR_TYPES[::-1]
 
     if get_option(ALL_FLAG):
-        types_to_run = list(test_types_heavy_first)
+        types_to_run = list(all_test_types_heavy_first)
+    elif get_option(REGULAR_FLAG):
+        types_to_run = list(regular_test_types_heavy_first)
     else:
-        types_to_run = list(filter(get_option, test_types_heavy_first))
+        types_to_run = list(filter(get_option, all_test_types_heavy_first))
         if not types_to_run:
             types_to_run = [DEFAULT_TYPE]
     return types_to_run
