@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import copy
 from dataclasses import dataclass
 import json
 from enum import IntEnum    # IntEnum equality works between files.
@@ -8,8 +9,8 @@ from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and
 from time import time
 from typing import List, Tuple, Dict, Union, Set
 
-# TODO use the op-strings (instead of the function) up-to the last point possible (to make deepcopy simpler)
-parsing_op2func = {'+': add, '-': sub, '*': mul, '/': floordiv, '%': mod, 
+
+parsing_op2func = {'+': add, '-': sub, '*': mul, '/': floordiv, '%': mod,
                    '<<': lshift, '>>': rshift, '^': xor, '|': or_, '&': and_,
                    '#': lambda x: x.bit_length(),
                    '?:': lambda a, b, c: b if a else c,
@@ -175,7 +176,7 @@ class CodePosition:
 
 
 class Op:
-    def __init__(self, op_type: OpType, data: Tuple[Union[Expr, str, MacroCall], ...], code_position: CodePosition):
+    def __init__(self, op_type: OpType, data: List[Union[Expr, str, MacroCall], ...], code_position: CodePosition):
         self.type = op_type
         self.data = data
         self.code_position = code_position
@@ -184,21 +185,47 @@ class Op:
         return f'{f"{self.type}:"[7:]:10}    Data: {", ".join([str(d) for d in self.data])}    ' \
                f'{self.code_position}'
 
-    def macro_trace_str(self) -> str:
-        assert self.type == OpType.Macro
-        return f'macro {self.macro_name} ({self.code_position})'
-
-    def rep_trace_str(self, iter_value: int, iter_times: int) -> str:
-        assert self.type == OpType.Rep
-        _, iter_name, macro = self.data
-        return f'rep({iter_name}={iter_value}, out of 0..{iter_times-1}) ' \
-               f'macro {macro.macro_name}  ({macro.code_position})'
+    def eval_new(self, id_dict: Dict[str, Expr]) -> Op:
+        op = copy(self)
+        op.data = [expr.eval_new(id_dict) for expr in self.data]
+        return op
 
 
 class MacroCall(Op):
     def __init__(self, macro_name: str, arguments: List[Expr], code_position: CodePosition):
-        super(MacroCall, self).__init__(OpType.Macro, tuple(arguments), code_position)
+        super(MacroCall, self).__init__(OpType.Macro, arguments, code_position)
         self.macro_name = MacroName(macro_name, len(arguments))
+
+    def macro_trace_str(self) -> str:
+        return f'macro {self.macro_name} ({self.code_position})'
+
+
+class RepCall(Op):
+    def __init__(self, times: Expr, iterator_name: str, macro_name: str, arguments: List[Expr], code_position: CodePosition):
+        super(RepCall, self).__init__(OpType.Rep, [times, *arguments], code_position)
+        self.iterator_name = iterator_name
+        self.macro_name = MacroName(macro_name, len(arguments))
+
+    def get_times(self) -> int:
+        try:
+            return int(self.data[0])
+        except FJExprException as e:
+            raise FJExprException(f"Can't calculate rep time on {self.code_position}") from e
+
+    def calculate_times(self, labels: Dict[str, Expr]) -> int:
+        self.data[0] = self.data[0].eval_new(labels)
+        return self.get_times()
+
+    def calculate_arguments(self, iterator_value: int) -> Tuple[Expr, ...]:
+        iterator_dict = {self.iterator_name: Expr(iterator_value)}
+        try:
+            return tuple(expr.eval_new(iterator_dict) for expr in self.data[1:])
+        except FJExprException as e:
+            raise FJExprException(f"Can't calculate rep arguments on {self.code_position}") from e
+
+    def rep_trace_str(self, iter_value: int) -> str:
+        return f'rep({self.iterator_name}={iter_value}, out of 0..{self.get_times()-1}) ' \
+               f'macro {self.macro_name}  ({self.code_position})'
 
 
 class Macro:
@@ -217,6 +244,36 @@ class Macro:
 class Expr:
     def __init__(self, expr: Union[int, str, Tuple[str, Tuple[Expr]]]):
         self.val = expr
+
+    def __int__(self):
+        if isinstance(self.val, int):
+            return self.val
+        raise FJExprException(f"Can't resolve labels:  {', '.join(self.all_unknown_labels())}")
+
+    def all_unknown_labels(self) -> Set[str]:
+        if isinstance(self.val, int):
+            return set()
+        if isinstance(self.val, str):
+            return {self.val}
+        return set(label for expr in self.val[1] for label in expr.all_unknown_labels())
+
+    def eval_new(self, id_dict: Dict[str, Expr], i=0) -> Expr:
+        if isinstance(self.val, int):
+            return Expr(self.val)
+
+        if isinstance(self.val, str):
+            if self.val in id_dict:
+                return id_dict[self.val].eval_new({}, i+1)
+            return Expr(self.val)
+
+        op, args = self.val
+        evaluated_args: Tuple[Expr, ...] = tuple(e.eval_new(id_dict, i+1) for e in args)
+        if all(isinstance(e.val, int) for e in evaluated_args):
+            try:
+                return Expr(parsing_op2func[op](*(arg.val for arg in evaluated_args)))
+            except Exception as e:
+                raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
+        return Expr((op, evaluated_args))
 
     # replaces every string it can with its dictionary value, and evaluates anything it can.
     # returns the list of unknown id's
@@ -285,11 +342,12 @@ def eval_all(op: Op, id_dict: Dict[str, Expr] = None) -> List[str]:
 def get_all_used_labels(ops: List[Op]) -> Tuple[Set[str], Set[str]]:
     used_labels, declared_labels = set(), set()
     for op in ops:
-        if op.type == OpType.Rep:
-            n, i, macro_call = op.data
+        if isinstance(op, RepCall):
+            n, *macro_call_data = op.data
+            i = op.iterator_name
             used_labels.update(n.eval({}, op.code_position))
             new_labels = set()
-            new_labels.update(*[e.eval({}, op.code_position) for e in macro_call.data])
+            new_labels.update(*[e.eval({}, op.code_position) for e in macro_call_data])
             used_labels.update(new_labels - {i})
         elif op.type == OpType.Label:
             declared_labels.add(op.data[0])
@@ -310,7 +368,7 @@ def id_swap(op: Op, id_dict: Dict[str, Expr]) -> None:
             new_data.append(swapped_label.val)
         else:
             new_data.append(datum)
-    op.data = tuple(new_data)
+    op.data = new_data
 
 
 def new_label(macro_path: str, label_name: str) -> Expr:

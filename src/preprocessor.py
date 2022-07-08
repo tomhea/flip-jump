@@ -7,16 +7,16 @@ import plotly.graph_objects as go
 
 from defs import main_macro, wflip_start_label, new_label, \
     Op, OpType, SegmentEntry, Expr, FJPreprocessorException, \
-    eval_all, id_swap, CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall
+    eval_all, id_swap, CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall, RepCall, FJExprException
 
 macro_separator_string = "---"
 
 
-def macro_resolve_error(curr_tree: List[str], msg='') -> None:
+def macro_resolve_error(curr_tree: List[str], msg='', *, orig_exception: BaseException = None) -> None:
     error_str = f"Macro Resolve Error" + (f':\n  {msg}' if msg else '.') + f'\nmacro call trace:\n'
     for i, trace_str in enumerate(curr_tree):
         error_str += f'  {i}) {trace_str}\n'
-    raise FJPreprocessorException(error_str)
+    raise FJPreprocessorException(error_str) from orig_exception
 
 
 def output_ops(ops: List[Op], output_file: Path) -> None:
@@ -83,10 +83,10 @@ def show_macro_usage_pie_graph(macro_code_size: Dict[str, int], total_code_size:
 
 def resolve_macros(w: int, macros: Dict[MacroName, Macro],
                    output_file: Path = None, show_statistics: bool = False, verbose: bool = False)\
-        -> Tuple[List[Op], Dict[str, int], BoundaryAddressesList]:
+        -> Tuple[List[Op], Dict[str, Expr], BoundaryAddressesList]:
     curr_address = [0]
     result_ops: List[Op] = []
-    labels: Dict[str, int] = {}
+    labels: Dict[str, Expr] = {}
     last_address_index = [0]
     label_places = {}
     boundary_addresses: BoundaryAddressesList = [(SegmentEntry.StartAddress, 0)]  # SegEntries
@@ -113,7 +113,7 @@ def try_int(op: Op, expr: Expr) -> int:
 
 def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dict[MacroName, Macro],
                       macro_name: MacroName, args: Iterable[Expr], macro_code_size: Dict[str, int],
-                      labels: Dict[str, int], result_ops: List[Op], boundary_addresses: BoundaryAddressesList, curr_address: List[int], last_address_index, labels_code_positions: Dict[str, CodePosition],
+                      labels: Dict[str, Expr], result_ops: List[Op], boundary_addresses: BoundaryAddressesList, curr_address: List[int], last_address_index, labels_code_positions: Dict[str, CodePosition],
                       verbose: bool = False, code_position: CodePosition = None)\
         -> None:
     init_curr_address = curr_address[0]
@@ -135,6 +135,7 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
         if verbose:
             print(op)
         if op.type != OpType.Rep:
+            # op = op.eval_new(id_dict)
             op = deepcopy(op)
             eval_all(op, id_dict)
             id_swap(op, id_dict)
@@ -146,35 +147,26 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
                               op.macro_name, op.data, macro_code_size,
                               labels, result_ops, boundary_addresses, curr_address, last_address_index,
                               labels_code_positions, verbose, code_position=op.code_position)
-        elif op.type == OpType.Rep:
-            n, i_name, macro_call = op.data
-            n = deepcopy(n)
-            n.eval(id_dict, code_position)
-            temp_op = Op(None, (n,), op.code_position)
-            id_swap(temp_op, id_dict)
-            n = temp_op.data[0]
-            n.eval(labels, op.code_position)
-            if not n.is_int():
-                macro_resolve_error(curr_tree, f'Rep used without a number "{str(n)}" '
-                                               f'in {op.code_position}.')
-            times = n.val
-            if times == 0:
-                continue
-            macro_name = macro_call.macro_name
+        elif isinstance(op, RepCall):
+            op = op.eval_new(id_dict)
 
-            for i in range(times):
+            try:
+                times = op.calculate_times(labels)
+                if times == 0:
+                    continue
+
                 next_macro_path = (f"{macro_path}{macro_separator_string}" if macro_path else "") + \
-                    f"{op.code_position.short_str()}:rep{i}:{macro_name}"
+                                  f"{op.code_position.short_str()}:rep{{}}:{op.macro_name}"
 
-                this_macro_call = deepcopy(macro_call)
-                eval_all(this_macro_call, id_dict)
-                eval_all(this_macro_call, labels)
-                eval_all(this_macro_call, {i_name: Expr(i)})
+                for i in range(times):
+                    resolve_macro_aux(w, next_macro_path.format(i), curr_tree + [op.rep_trace_str(i)], macros,
+                                      op.macro_name, op.calculate_arguments(i), macro_code_size,
+                                      labels, result_ops, boundary_addresses, curr_address, last_address_index,
+                                      labels_code_positions, verbose, code_position=op.code_position)
+            except FJExprException as e:
+                macro_resolve_error(curr_tree, f'rep {op.macro_name} failed.', orig_exception=e)
 
-                resolve_macro_aux(w, next_macro_path, curr_tree + [op.rep_trace_str(i, times)], macros,
-                                  macro_name, this_macro_call.data, macro_code_size,
-                                  labels, result_ops, boundary_addresses, curr_address, last_address_index,
-                                  labels_code_positions, verbose, code_position=op.code_position)
+
 
         # labels_resolve
         elif op.type == OpType.Segment:

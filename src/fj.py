@@ -63,16 +63,11 @@ def main():
         temp_debug_fd, args.debug = mkstemp()
         temp_debug_file = True
 
-    try:
-        assemble(args.file, args.outfile, args.width,
-                 version=args.version, flags=args.flags,
-                 warning_as_errors=args.Werror,
-                 show_statistics=args.stats, verbose=verbose_set,
-                 preprocessed_file=args.no_macros, debugging_file=args.debug)
-    except FJException as e:
-        print()
-        print(e)
-        exit(1)
+    assemble(args.file, args.outfile, args.width,
+             version=args.version, flags=args.flags,
+             warning_as_errors=args.Werror,
+             show_statistics=args.stats, verbose=verbose_set,
+             preprocessed_file=args.no_macros, debugging_file=args.debug)
 
     if temp_assembled_file:
         os.close(temp_assembled_fd)

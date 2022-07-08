@@ -7,7 +7,7 @@ from defs import get_char_value_and_length, get_all_used_labels, \
     main_macro, next_address, \
     OpType, Op, Expr, FJParsingException, \
     number_re, dot_id_re, id_re, string_re, \
-    CodePosition, Macro, MacroCall, MacroName
+    CodePosition, Macro, MacroCall, MacroName, RepCall
 
 global curr_file, curr_file_number, curr_text, error_occurred, curr_namespace, reserved_names
 
@@ -368,23 +368,23 @@ class FJParser(Parser):
 
     @_('ID ":"')
     def label(self, p):
-        return Op(OpType.Label, (self.ns_full_name(p.ID),), get_position(p.lineno))
+        return Op(OpType.Label, [self.ns_full_name(p.ID)], get_position(p.lineno))
 
     @_('expr SC')
     def statement(self, p):
-        return Op(OpType.FlipJump, (p.expr, next_address()), get_position(p.lineno))
+        return Op(OpType.FlipJump, [p.expr, next_address()], get_position(p.lineno))
 
     @_('expr SC expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (p.expr0, p.expr1), get_position(p.lineno))
+        return Op(OpType.FlipJump, [p.expr0, p.expr1], get_position(p.lineno))
 
     @_('SC expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (Expr(0), p.expr), get_position(p.lineno))
+        return Op(OpType.FlipJump, [Expr(0), p.expr], get_position(p.lineno))
 
     @_('SC')
     def statement(self, p):
-        return Op(OpType.FlipJump, (Expr(0), next_address()), get_position(p.lineno))
+        return Op(OpType.FlipJump, [Expr(0), next_address()], get_position(p.lineno))
 
     @_('ID')
     def id(self, p):
@@ -414,11 +414,11 @@ class FJParser(Parser):
 
     @_('WFLIP expr "," expr')
     def statement(self, p):
-        return Op(OpType.WordFlip, (p.expr0, p.expr1, next_address()), get_position(p.lineno))
+        return Op(OpType.WordFlip, [p.expr0, p.expr1, next_address()], get_position(p.lineno))
 
     @_('WFLIP expr "," expr "," expr')
     def statement(self, p):
-        return Op(OpType.WordFlip, (p.expr0, p.expr1, p.expr2), get_position(p.lineno))
+        return Op(OpType.WordFlip, [p.expr0, p.expr1, p.expr2], get_position(p.lineno))
 
     @_('ID "=" expr')
     def statement(self, p):
@@ -434,28 +434,21 @@ class FJParser(Parser):
     def statement(self, p):
         macro_name, lineno = p.id
         code_position = get_position(lineno)
-        macro_call = MacroCall(macro_name, [], code_position)
-        return Op(OpType.Rep,
-                  (p.expr, p.ID, macro_call),
-                  code_position)
+        return RepCall(p.expr, p.ID, macro_name, [], code_position)
 
     @_('REP "(" expr "," ID ")" id expressions')
     def statement(self, p):
-        exps = p.expressions
         macro_name, lineno = p.id
         code_position = get_position(lineno)
-        macro_call = MacroCall(macro_name, exps, code_position)
-        return Op(OpType.Rep,
-                  (p.expr, p.ID, macro_call),
-                  code_position)
+        return RepCall(p.expr, p.ID, macro_name, p.expressions, code_position)
 
     @_('SEGMENT expr')
     def statement(self, p):
-        return Op(OpType.Segment, (p.expr,), get_position(p.lineno))
+        return Op(OpType.Segment, [p.expr], get_position(p.lineno))
 
     @_('RESERVE expr')
     def statement(self, p):
-        return Op(OpType.Reserve, (p.expr,), get_position(p.lineno))
+        return Op(OpType.Reserve, [p.expr], get_position(p.lineno))
 
     @_('expressions "," expr')
     def expressions(self, p):
