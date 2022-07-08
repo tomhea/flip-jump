@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 from dataclasses import dataclass
 import json
 from enum import IntEnum    # IntEnum equality works between files.
@@ -165,10 +164,14 @@ main_macro = MacroName('', 0)
 @dataclass
 class CodePosition:
     file: str
+    file_number: int
     line: int
 
     def __str__(self) -> str:
         return f"file {self.file} (line {self.line})"
+
+    def short_str(self) -> str:
+        return f"f{self.file_number}:l{self.line}"
 
 
 class Op:
@@ -310,11 +313,8 @@ def id_swap(op: Op, id_dict: Dict[str, Expr]) -> None:
     op.data = tuple(new_data)
 
 
-def new_label(counter: itertools.count, name: str) -> Expr:
-    if name == '':
-        return Expr(f'_.label{next(counter)}')
-    else:
-        return Expr(f'_.label{next(counter)}_{name}')
+def new_label(macro_path: str, label_name: str) -> Expr:
+    return Expr(f'{macro_path}---{label_name}')
 
 
 wflip_start_label = '_.wflip_area_start_'

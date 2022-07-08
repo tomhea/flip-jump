@@ -9,11 +9,11 @@ from defs import get_char_value_and_length, get_all_used_labels, \
     number_re, dot_id_re, id_re, string_re, \
     CodePosition, Macro, MacroCall, MacroName
 
-global curr_file, curr_text, error_occurred, curr_namespace, reserved_names
+global curr_file, curr_file_number, curr_text, error_occurred, curr_namespace, reserved_names
 
 
 def get_position(lineno: int):
-    return CodePosition(curr_file, lineno)
+    return CodePosition(curr_file, curr_file_number, lineno)
 
 
 def syntax_error(lineno: int, msg=''):
@@ -368,23 +368,23 @@ class FJParser(Parser):
 
     @_('ID ":"')
     def label(self, p):
-        return Op(OpType.Label, (self.ns_full_name(p.ID),), CodePosition(curr_file, p.lineno))
+        return Op(OpType.Label, (self.ns_full_name(p.ID),), get_position(p.lineno))
 
     @_('expr SC')
     def statement(self, p):
-        return Op(OpType.FlipJump, (p.expr, next_address()), CodePosition(curr_file, p.lineno))
+        return Op(OpType.FlipJump, (p.expr, next_address()), get_position(p.lineno))
 
     @_('expr SC expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (p.expr0, p.expr1), CodePosition(curr_file, p.lineno))
+        return Op(OpType.FlipJump, (p.expr0, p.expr1), get_position(p.lineno))
 
     @_('SC expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (Expr(0), p.expr), CodePosition(curr_file, p.lineno))
+        return Op(OpType.FlipJump, (Expr(0), p.expr), get_position(p.lineno))
 
     @_('SC')
     def statement(self, p):
-        return Op(OpType.FlipJump, (Expr(0), next_address()), CodePosition(curr_file, p.lineno))
+        return Op(OpType.FlipJump, (Expr(0), next_address()), get_position(p.lineno))
 
     @_('ID')
     def id(self, p):
@@ -405,27 +405,27 @@ class FJParser(Parser):
     @_('id')
     def statement(self, p):
         macro_name, lineno = p.id
-        return MacroCall(macro_name, [], CodePosition(curr_file, lineno))
+        return MacroCall(macro_name, [], get_position(lineno))
 
     @_('id expressions')
     def statement(self, p):
         macro_name, lineno = p.id
-        return MacroCall(macro_name, p.expressions, CodePosition(curr_file, lineno))
+        return MacroCall(macro_name, p.expressions, get_position(lineno))
 
     @_('WFLIP expr "," expr')
     def statement(self, p):
-        return Op(OpType.WordFlip, (p.expr0, p.expr1, next_address()), CodePosition(curr_file, p.lineno))
+        return Op(OpType.WordFlip, (p.expr0, p.expr1, next_address()), get_position(p.lineno))
 
     @_('WFLIP expr "," expr "," expr')
     def statement(self, p):
-        return Op(OpType.WordFlip, (p.expr0, p.expr1, p.expr2), CodePosition(curr_file, p.lineno))
+        return Op(OpType.WordFlip, (p.expr0, p.expr1, p.expr2), get_position(p.lineno))
 
     @_('ID "=" expr')
     def statement(self, p):
         name = self.ns_full_name(p.ID)
         if name in self.defs:
             syntax_error(p.lineno, f'Can\'t redeclare the variable "{name}".')
-        if not p.expr.eval(self.defs, CodePosition(curr_file, p.lineno)):
+        if not p.expr.eval(self.defs, get_position(p.lineno)):
             self.defs[name] = p.expr
             return None
         syntax_error(p.lineno, f'Can\'t evaluate expression:  {str(p.expr)}.')
@@ -433,7 +433,7 @@ class FJParser(Parser):
     @_('REP "(" expr "," ID ")" id')
     def statement(self, p):
         macro_name, lineno = p.id
-        code_position = CodePosition(curr_file, lineno)
+        code_position = get_position(lineno)
         macro_call = MacroCall(macro_name, [], code_position)
         return Op(OpType.Rep,
                   (p.expr, p.ID, macro_call),
@@ -443,7 +443,7 @@ class FJParser(Parser):
     def statement(self, p):
         exps = p.expressions
         macro_name, lineno = p.id
-        code_position = CodePosition(curr_file, lineno)
+        code_position = get_position(lineno)
         macro_call = MacroCall(macro_name, exps, code_position)
         return Op(OpType.Rep,
                   (p.expr, p.ID, macro_call),
@@ -451,11 +451,11 @@ class FJParser(Parser):
 
     @_('SEGMENT expr')
     def statement(self, p):
-        return Op(OpType.Segment, (p.expr,), CodePosition(curr_file, p.lineno))
+        return Op(OpType.Segment, (p.expr,), get_position(p.lineno))
 
     @_('RESERVE expr')
     def statement(self, p):
-        return Op(OpType.Reserve, (p.expr,), CodePosition(curr_file, p.lineno))
+        return Op(OpType.Reserve, (p.expr,), get_position(p.lineno))
 
     @_('expressions "," expr')
     def expressions(self, p):
@@ -625,12 +625,12 @@ def exit_if_errors():
 
 
 def parse_macro_tree(input_files, w, warning_as_errors, verbose=False):
-    global curr_file, curr_text, error_occurred, curr_namespace
+    global curr_file, curr_file_number, curr_text, error_occurred, curr_namespace
     error_occurred = False
 
     lexer = FJLexer()
     parser = FJParser(w, warning_as_errors, verbose=verbose)
-    for curr_file in input_files:
+    for curr_file_number, curr_file in enumerate(input_files, start=1):
         if not path.isfile(curr_file):
             raise FJParsingException(f"No such file {curr_file}.")
         curr_text = open(curr_file, 'r').read()

@@ -1,6 +1,5 @@
 import collections
 from copy import deepcopy
-from itertools import count
 from pathlib import Path
 from typing import Dict, List, Tuple, Iterable
 
@@ -9,6 +8,8 @@ import plotly.graph_objects as go
 from defs import main_macro, wflip_start_label, new_label, \
     Op, OpType, SegmentEntry, Expr, FJPreprocessorException, \
     eval_all, id_swap, CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall
+
+macro_separator_string = "---"
 
 
 def macro_resolve_error(curr_tree: List[str], msg='') -> None:
@@ -31,38 +32,30 @@ def output_ops(ops: List[Op], output_file: Path) -> None:
 
 
 def clean_name_for_pie_graph(macro_name: str) -> str:
-    if '_rep_' not in macro_name:
-        return macro_name
-
-    try:
-        # TODO macro_name might have some legitimate underscores
-        rep_count = macro_name.split('_')[3]
-        inner_macro = macro_name.split("'")[1]
-        arg_count = macro_name.split(', ')[1].split(')')[0]
-        return f"{inner_macro}({arg_count})*{rep_count}"
-    except IndexError:
-        print(f'Graph creation Warning: can\'t unpack rep_macro_name: {macro_name}')
-        return macro_name
+    return macro_name
 
 
-def show_macro_usage_pie_graph(macro_code_size: Dict[str, int], total_code_size: int,
-                               min_main_thresh: float = 0.05, min_secondary_thresh: float = 0.02) -> None:
+def show_macro_usage_pie_graph(macro_code_size: Dict[str, int], total_code_size: int, *,
+                               min_main_thresh: float = 0.05, min_secondary_thresh: float = 0.01,
+                               child_significance_min_thresh: float = 0.1) -> None:
     main_thresh = min_main_thresh * total_code_size
     secondary_thresh = min_secondary_thresh * total_code_size
     first_level = {}
     second_level = collections.defaultdict(lambda: dict())
     for k, v in macro_code_size.items():
-        if ' => ' not in k:
+        if macro_separator_string not in k:
             if v < main_thresh:
                 continue
             first_level[k] = v
         else:
             if v < secondary_thresh:
                 continue
-            k_split = k.split(' => ')
+            k_split = k.split(macro_separator_string)
             if len(k_split) != 2:
                 continue
             parent, name = k_split
+            if float(v) / macro_code_size[parent] < child_significance_min_thresh:
+                continue
             second_level[parent][name] = v
 
     chosen = []
@@ -73,7 +66,7 @@ def show_macro_usage_pie_graph(macro_code_size: Dict[str, int], total_code_size:
         else:
             for k2, v2 in sorted(second_level[k].items(), key=lambda x: x[1], reverse=True):
                 k2_name = clean_name_for_pie_graph(k2)
-                chosen.append((f"{k_name} => {k2_name}", v2))
+                chosen.append((f"{k_name}  =>  {k2_name}", v2))
                 v -= v2
             if v >= secondary_thresh:
                 chosen.append((f"{k_name} others", v))
@@ -99,7 +92,7 @@ def resolve_macros(w: int, macros: Dict[MacroName, Macro],
     boundary_addresses: BoundaryAddressesList = [(SegmentEntry.StartAddress, 0)]  # SegEntries
     stat_dict = collections.defaultdict(lambda: 0)
 
-    resolve_macro_aux(w, '', [], macros, main_macro, [], {}, count(), stat_dict,
+    resolve_macro_aux(w, '', [], macros, main_macro, [], stat_dict,
                       labels, result_ops, boundary_addresses, curr_address, last_address_index, label_places,
                       verbose)
     if output_file:
@@ -118,23 +111,22 @@ def try_int(op: Op, expr: Expr) -> int:
     raise FJPreprocessorException(f"Can't resolve the following name: {expr.eval({}, op.code_position)} (in op={op}).")
 
 
-def resolve_macro_aux(w: int, parent_name: str, curr_tree: List[str], macros: Dict[MacroName, Macro],
-                      macro_name: MacroName, args: Iterable[Expr], rep_dict: Dict[str, Expr], dollar_count: count, macro_code_size: Dict[str, int],
+def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dict[MacroName, Macro],
+                      macro_name: MacroName, args: Iterable[Expr], macro_code_size: Dict[str, int],
                       labels: Dict[str, int], result_ops: List[Op], boundary_addresses: BoundaryAddressesList, curr_address: List[int], last_address_index, labels_code_positions: Dict[str, CodePosition],
                       verbose: bool = False, code_position: CodePosition = None)\
         -> None:
     init_curr_address = curr_address[0]
 
     if macro_name not in macros:
-        if not code_position or None in (code_position.file, code_position.line):
+        if not code_position:
             macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined.")
         else:
             macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined. Used in {code_position}.")
 
-    full_name = (f"{parent_name} => " if parent_name else "") + str(macro_name)
     current_macro = macros[macro_name]
 
-    id_dict = get_id_dictionary(current_macro, args, dollar_count, rep_dict, current_macro.namespace)
+    id_dict = get_id_dictionary(current_macro, args, current_macro.namespace, macro_path)
 
     for op in current_macro.ops:
         # macro-resolve
@@ -142,40 +134,47 @@ def resolve_macro_aux(w: int, parent_name: str, curr_tree: List[str], macros: Di
             macro_resolve_error(curr_tree, f"bad op (not of Op type)! type {type(op)}, str {str(op)}.")
         if verbose:
             print(op)
-        op = deepcopy(op)
-        eval_all(op, id_dict)
-        id_swap(op, id_dict)
+        if op.type != OpType.Rep:
+            op = deepcopy(op)
+            eval_all(op, id_dict)
+            id_swap(op, id_dict)
         if isinstance(op, MacroCall):
-            resolve_macro_aux(w, full_name, curr_tree + [op.macro_trace_str()], macros, op.macro_name,
-                              op.data, {}, dollar_count, macro_code_size,
+            next_macro_path = (f"{macro_path}{macro_separator_string}" if macro_path else "") + \
+                f"{op.code_position.short_str()}:{op.macro_name}"
+
+            resolve_macro_aux(w, next_macro_path, curr_tree + [op.macro_trace_str()], macros,
+                              op.macro_name, op.data, macro_code_size,
                               labels, result_ops, boundary_addresses, curr_address, last_address_index,
                               labels_code_positions, verbose, code_position=op.code_position)
         elif op.type == OpType.Rep:
-            eval_all(op, labels)
             n, i_name, macro_call = op.data
+            n = deepcopy(n)
+            n.eval(id_dict, code_position)
+            temp_op = Op(None, (n,), op.code_position)
+            id_swap(temp_op, id_dict)
+            n = temp_op.data[0]
+            n.eval(labels, op.code_position)
             if not n.is_int():
                 macro_resolve_error(curr_tree, f'Rep used without a number "{str(n)}" '
                                                f'in {op.code_position}.')
             times = n.val
             if times == 0:
                 continue
-            if i_name in rep_dict:
-                macro_resolve_error(curr_tree, f'Rep index {i_name} is declared twice; maybe an inner rep. '
-                                               f'in {op.code_position}.')
             macro_name = macro_call.macro_name
-            pseudo_macro_name = MacroName(new_label(dollar_count, f'rep_{times}_{macro_name}').val, 0)  # just moved outside (before) the for loop
+
             for i in range(times):
-                rep_dict[i_name] = Expr(i)  # TODO - call the macro_name directly, and do deepcopy(op) beforehand.
-                macros[pseudo_macro_name] = Macro([], [], [macro_call], current_macro.namespace, op.code_position)
-                resolve_macro_aux(w, full_name, curr_tree + [op.rep_trace_str(i, times)], macros,
-                                  pseudo_macro_name, [], rep_dict, dollar_count, macro_code_size,
+                next_macro_path = (f"{macro_path}{macro_separator_string}" if macro_path else "") + \
+                    f"{op.code_position.short_str()}:rep{i}:{macro_name}"
+
+                this_macro_call = deepcopy(macro_call)
+                eval_all(this_macro_call, id_dict)
+                eval_all(this_macro_call, labels)
+                eval_all(this_macro_call, {i_name: Expr(i)})
+
+                resolve_macro_aux(w, next_macro_path, curr_tree + [op.rep_trace_str(i, times)], macros,
+                                  macro_name, this_macro_call.data, macro_code_size,
                                   labels, result_ops, boundary_addresses, curr_address, last_address_index,
                                   labels_code_positions, verbose, code_position=op.code_position)
-            if i_name in rep_dict:
-                del rep_dict[i_name]
-            else:
-                macro_resolve_error(curr_tree, f'Rep is used but {i_name} index is gone; maybe also declared elsewhere.'
-                                               f' in {op.code_position}.')
 
         # labels_resolve
         elif op.type == OpType.Segment:
@@ -223,15 +222,13 @@ def resolve_macro_aux(w: int, parent_name: str, curr_tree: List[str], macros: Di
             macro_resolve_error(curr_tree, f"Can't assemble this opcode - {str(op)}")
 
     if 1 <= len(curr_tree) <= 2:
-        macro_code_size[full_name] += curr_address[0] - init_curr_address
+        macro_code_size[macro_path] += curr_address[0] - init_curr_address
 
 
-def get_id_dictionary(current_macro: Macro, args: Iterable[Op], dollar_count: count, rep_dict: Dict[str, Expr], namespace: str):
+def get_id_dictionary(current_macro: Macro, args: Iterable[Expr], namespace: str, macro_path: str):
     id_dict: Dict[str, Expr] = dict(zip(current_macro.params, args))
     for local_param in current_macro.local_params:
-        id_dict[local_param] = new_label(dollar_count, local_param)
-    for k in rep_dict:
-        id_dict[k] = rep_dict[k]
+        id_dict[local_param] = new_label(macro_path, local_param)
     if namespace:
         for k in list(id_dict.keys()):
             id_dict[f'{namespace}.{k}'] = id_dict[k]

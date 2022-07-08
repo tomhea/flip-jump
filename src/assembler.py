@@ -1,6 +1,5 @@
 import os
 import pickle
-from time import time
 from tempfile import mkstemp
 
 import fjm
