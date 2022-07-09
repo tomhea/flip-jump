@@ -190,6 +190,20 @@ class Op:
         return op
 
 
+class Label:
+    def __init__(self, name: str, code_position: CodePosition):
+        self.name = name
+        self.code_position = code_position
+
+    def eval_name(self, id_dict: Dict[str, Expr]) -> str:
+        if self.name in id_dict:
+            new_name = id_dict[self.name].val
+            if isinstance(new_name, str):
+                return new_name
+            raise FJExprException(f'Bad label swap (from {self.name} to {id_dict[self.name]}) in {self.code_position}.')
+        return self.name
+
+
 class FlipJump(Op):
     def __init__(self, flip: Expr, jump: Expr, code_position: CodePosition):
         super(FlipJump, self).__init__(OpType.FlipJump, [flip, jump], code_position)
@@ -358,33 +372,20 @@ def eval_all(op: Op, id_dict: Dict[str, Expr] = None) -> List[str]:
 def get_all_used_labels(ops: List[Op]) -> Tuple[Set[str], Set[str]]:
     used_labels, declared_labels = set(), set()
     for op in ops:
-        if isinstance(op, RepCall):
+        if isinstance(op, Label):
+            declared_labels.add(op.name)
+        elif isinstance(op, RepCall):
             n, *macro_call_data = op.data
             i = op.iterator_name
             used_labels.update(n.eval({}, op.code_position))
             new_labels = set()
             new_labels.update(*[e.eval({}, op.code_position) for e in macro_call_data])
             used_labels.update(new_labels - {i})
-        elif op.type == OpType.Label:
-            declared_labels.add(op.data[0])
         else:
             for expr in op.data:
                 if type(expr) is Expr:
                     used_labels.update(expr.eval({}, op.code_position))
     return used_labels, declared_labels
-
-
-def id_swap(op: Op, id_dict: Dict[str, Expr]) -> None:
-    new_data = []
-    for datum in op.data:
-        if type(datum) is str and datum in id_dict:
-            swapped_label = id_dict[datum]
-            if not swapped_label.is_str():
-                raise FJExprException(f'Bad label swap (from {datum} to {swapped_label}) in {op}.')
-            new_data.append(swapped_label.val)
-        else:
-            new_data.append(datum)
-    op.data = new_data
 
 
 def new_label(macro_path: str, label_name: str) -> Expr:

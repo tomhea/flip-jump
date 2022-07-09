@@ -7,8 +7,8 @@ import plotly.graph_objects as go
 
 from defs import main_macro, wflip_start_label, new_label, \
     Op, OpType, SegmentEntry, Expr, FJPreprocessorException, \
-    eval_all, id_swap, CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall, RepCall, FJExprException, \
-    FlipJump, WordFlip
+    eval_all, CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall, RepCall, FJExprException, \
+    FlipJump, WordFlip, Label
 
 macro_separator_string = "---"
 
@@ -89,12 +89,11 @@ def resolve_macros(w: int, macros: Dict[MacroName, Macro],
     result_ops: List[Op] = []
     labels: Dict[str, Expr] = {}
     last_address_index = [0]
-    label_places = {}
     boundary_addresses: BoundaryAddressesList = [(SegmentEntry.StartAddress, 0)]  # SegEntries
     stat_dict = collections.defaultdict(lambda: 0)
 
     resolve_macro_aux(w, '', [], macros, main_macro, [], stat_dict,
-                      labels, result_ops, boundary_addresses, curr_address, last_address_index, label_places)
+                      labels, result_ops, boundary_addresses, curr_address, last_address_index, {})
     if output_file:
         output_ops(result_ops, output_file)
 
@@ -130,13 +129,24 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
 
     for op in current_macro.ops:
         # macro-resolve
-        if not isinstance(op, Op):
-            macro_resolve_error(curr_tree, f"bad op (not of Op type)! type {type(op)}, str {str(op)}.")
-        if op.type not in (OpType.Rep, OpType.FlipJump, OpType.Macro):
+        if not isinstance(op, Label) and op.type not in (OpType.Rep, OpType.FlipJump, OpType.Macro):
             op = deepcopy(op)
             eval_all(op, id_dict)
-            id_swap(op, id_dict)
-        if isinstance(op, MacroCall):
+
+        if isinstance(op, Label):
+            label = op.eval_name(id_dict)
+            if label in labels:
+                other_position = labels_code_positions[label]
+                macro_resolve_error(curr_tree, f'label declared twice - "{label}" on {op.code_position} '
+                                               f'and {other_position}')
+            labels[label] = Expr(curr_address[0])
+            labels_code_positions[label] = op.code_position
+        elif isinstance(op, FlipJump) or isinstance(op, WordFlip):
+            curr_address[0] += 2 * w
+            id_dict['$'] = Expr(curr_address[0])
+            result_ops.append(op.eval_new(id_dict))
+            del id_dict['$']
+        elif isinstance(op, MacroCall):
             op = op.eval_new(id_dict)
 
             next_macro_path = (f"{macro_path}{macro_separator_string}" if macro_path else "") + \
@@ -164,9 +174,6 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
                                       labels_code_positions, code_position=op.code_position)
             except FJExprException as e:
                 macro_resolve_error(curr_tree, f'rep {op.macro_name} failed.', orig_exception=e)
-
-
-
         # labels_resolve
         elif op.type == OpType.Segment:
             eval_all(op, labels)
@@ -193,21 +200,10 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
 
             last_address_index[0] += 1
             result_ops.append(op)
-        elif isinstance(op, FlipJump) or isinstance(op, WordFlip):
-            curr_address[0] += 2 * w
-            id_dict['$'] = Expr(curr_address[0])
-            result_ops.append(op.eval_new(id_dict))
-            del id_dict['$']
-        elif op.type == OpType.Label:
-            label = op.data[0]
-            if label in labels:
-                other_position = labels_code_positions[label]
-                macro_resolve_error(curr_tree, f'label declared twice - "{label}" on {op.code_position} '
-                                               f'and {other_position}')
-            labels[label] = Expr(curr_address[0])
-            labels_code_positions[label] = op.code_position
         else:
             macro_resolve_error(curr_tree, f"Can't assemble this opcode - {str(op)}")
+            if not isinstance(op, Op):
+                macro_resolve_error(curr_tree, f"bad op (not of Op type)! type {type(op)}, str {str(op)}.")
 
     if 1 <= len(curr_tree) <= 2:
         macro_code_size[macro_path] += curr_address[0] - init_curr_address

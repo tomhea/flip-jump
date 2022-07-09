@@ -86,11 +86,6 @@ def labels_resolve(ops, labels, boundary_addresses, w, writer):
     wflip_address = boundary_addresses[get_next_wflip_entry_index(boundary_addresses, 0)][1]
 
     for op in ops:
-        # ids = eval_all(op, labels)
-        # if ids:
-        #     raise FJAssemblerException(f"Can't resolve the following names: {', '.join(ids)} (in op {op}).")
-        # vals = [datum.val for datum in op.data]
-
         try:
             vals = op.eval_int_data(labels)
         except FJException as e:

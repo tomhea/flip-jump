@@ -7,7 +7,7 @@ from defs import get_char_value_and_length, get_all_used_labels, \
     main_macro, next_address, \
     OpType, Op, Expr, FJParsingException, \
     number_re, dot_id_re, id_re, string_re, \
-    CodePosition, Macro, MacroCall, MacroName, RepCall, FlipJump, WordFlip
+    CodePosition, Macro, MacroCall, MacroName, RepCall, FlipJump, WordFlip, Label
 
 global curr_file, curr_file_number, curr_text, error_occurred, curr_namespace, reserved_names
 
@@ -367,7 +367,7 @@ class FJParser(Parser):
 
     @_('ID ":"')
     def label(self, p):
-        return Op(OpType.Label, [self.ns_full_name(p.ID)], get_position(p.lineno))
+        return Label(self.ns_full_name(p.ID), get_position(p.lineno))
 
     @_('expr SC')
     def statement(self, p):
