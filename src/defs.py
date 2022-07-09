@@ -177,10 +177,6 @@ class Op:
         self.data = data
         self.code_position = code_position
 
-    def __str__(self) -> str:
-        return f'{f"{self.type}:"[7:]:10}    Data: {", ".join([str(d) for d in self.data])}    ' \
-               f'{self.code_position}'
-
     def eval_int_data(self, id_dict: Dict[str, Expr]) -> Tuple[int]:
         return tuple(int(expr.eval_new(id_dict)) for expr in self.data)
 
@@ -195,6 +191,9 @@ class Label:
         self.name = name
         self.code_position = code_position
 
+    def __str__(self):
+        return f'Label "{self.name}:", at {self.code_position}'
+
     def eval_name(self, id_dict: Dict[str, Expr]) -> str:
         if self.name in id_dict:
             new_name = id_dict[self.name].val
@@ -208,6 +207,9 @@ class FlipJump(Op):
     def __init__(self, flip: Expr, jump: Expr, code_position: CodePosition):
         super(FlipJump, self).__init__(OpType.FlipJump, [flip, jump], code_position)
 
+    def __str__(self):
+        return f"Flip: {self.data[0]}, Jump: {self.data[1]}, at {self.code_position}"
+
     def get_flip(self, label: Dict[str, Expr]) -> int:
         return int(self.data[0].eval_new(label))
 
@@ -219,11 +221,17 @@ class WordFlip(Op):
     def __init__(self, address: Expr, value: Expr, return_address: Expr, code_position: CodePosition):
         super(WordFlip, self).__init__(OpType.FlipJump, [address, value, return_address], code_position)
 
+    def __str__(self):
+        return f"Flip Word {self.data[0]} by {self.data[1]}, and return to {self.data[2]}. at {self.code_position}"
+
 
 class MacroCall(Op):
     def __init__(self, macro_name: str, arguments: List[Expr], code_position: CodePosition):
         super(MacroCall, self).__init__(OpType.Macro, arguments, code_position)
         self.macro_name = MacroName(macro_name, len(arguments))
+
+    def __str__(self):
+        return f"macro call. {self.macro_name} {', '.join(self.data)}. at {self.code_position}"
 
     def macro_trace_str(self) -> str:
         return f'macro {self.macro_name} ({self.code_position})'
@@ -234,6 +242,9 @@ class RepCall(Op):
         super(RepCall, self).__init__(OpType.Rep, [times, *arguments], code_position)
         self.iterator_name = iterator_name
         self.macro_name = MacroName(macro_name, len(arguments))
+
+    def __str__(self):
+        return f"rep call. rep({self.data[0]}, {self.iterator_name}) {self.macro_name} {', '.join(self.data[1:])}. at {self.code_position}"
 
     def get_times(self) -> int:
         try:
