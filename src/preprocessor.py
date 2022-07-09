@@ -7,7 +7,8 @@ import plotly.graph_objects as go
 
 from defs import main_macro, wflip_start_label, new_label, \
     Op, OpType, SegmentEntry, Expr, FJPreprocessorException, \
-    eval_all, id_swap, CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall, RepCall, FJExprException
+    eval_all, id_swap, CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall, RepCall, FJExprException, \
+    FlipJump
 
 macro_separator_string = "---"
 
@@ -82,7 +83,7 @@ def show_macro_usage_pie_graph(macro_code_size: Dict[str, int], total_code_size:
 
 
 def resolve_macros(w: int, macros: Dict[MacroName, Macro],
-                   output_file: Path = None, show_statistics: bool = False, verbose: bool = False)\
+                   output_file: Path = None, show_statistics: bool = False)\
         -> Tuple[List[Op], Dict[str, Expr], BoundaryAddressesList]:
     curr_address = [0]
     result_ops: List[Op] = []
@@ -93,8 +94,7 @@ def resolve_macros(w: int, macros: Dict[MacroName, Macro],
     stat_dict = collections.defaultdict(lambda: 0)
 
     resolve_macro_aux(w, '', [], macros, main_macro, [], stat_dict,
-                      labels, result_ops, boundary_addresses, curr_address, last_address_index, label_places,
-                      verbose)
+                      labels, result_ops, boundary_addresses, curr_address, last_address_index, label_places)
     if output_file:
         output_ops(result_ops, output_file)
 
@@ -114,7 +114,7 @@ def try_int(op: Op, expr: Expr) -> int:
 def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dict[MacroName, Macro],
                       macro_name: MacroName, args: Iterable[Expr], macro_code_size: Dict[str, int],
                       labels: Dict[str, Expr], result_ops: List[Op], boundary_addresses: BoundaryAddressesList, curr_address: List[int], last_address_index, labels_code_positions: Dict[str, CodePosition],
-                      verbose: bool = False, code_position: CodePosition = None)\
+                      code_position: CodePosition = None)\
         -> None:
     init_curr_address = curr_address[0]
 
@@ -132,9 +132,7 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
         # macro-resolve
         if not isinstance(op, Op):
             macro_resolve_error(curr_tree, f"bad op (not of Op type)! type {type(op)}, str {str(op)}.")
-        if verbose:
-            print(op)
-        if op.type != OpType.Rep:
+        if op.type not in (OpType.Rep, OpType.FlipJump):
             # op = op.eval_new(id_dict)
             op = deepcopy(op)
             eval_all(op, id_dict)
@@ -146,7 +144,7 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
             resolve_macro_aux(w, next_macro_path, curr_tree + [op.macro_trace_str()], macros,
                               op.macro_name, op.data, macro_code_size,
                               labels, result_ops, boundary_addresses, curr_address, last_address_index,
-                              labels_code_positions, verbose, code_position=op.code_position)
+                              labels_code_positions, code_position=op.code_position)
         elif isinstance(op, RepCall):
             op = op.eval_new(id_dict)
 
@@ -162,7 +160,7 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
                     resolve_macro_aux(w, next_macro_path.format(i), curr_tree + [op.rep_trace_str(i)], macros,
                                       op.macro_name, op.calculate_arguments(i), macro_code_size,
                                       labels, result_ops, boundary_addresses, curr_address, last_address_index,
-                                      labels_code_positions, verbose, code_position=op.code_position)
+                                      labels_code_positions, code_position=op.code_position)
             except FJExprException as e:
                 macro_resolve_error(curr_tree, f'rep {op.macro_name} failed.', orig_exception=e)
 
@@ -194,11 +192,14 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
 
             last_address_index[0] += 1
             result_ops.append(op)
-        elif op.type in {OpType.FlipJump, OpType.WordFlip}:
+        elif isinstance(op, FlipJump):
+            curr_address[0] += 2 * w
+            id_dict['$'] = Expr(curr_address[0])
+            result_ops.append(op.eval_new(id_dict))
+            del id_dict['$']
+        elif op.type == OpType.WordFlip:
             curr_address[0] += 2*w
             eval_all(op, {'$': Expr(curr_address[0])})
-            if verbose:
-                print(f'op added: {str(op)}')
             result_ops.append(op)
         elif op.type == OpType.Label:
             label = op.data[0]
@@ -206,8 +207,6 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
                 other_position = labels_code_positions[label]
                 macro_resolve_error(curr_tree, f'label declared twice - "{label}" on {op.code_position} '
                                                f'and {other_position}')
-            if verbose:
-                print(f'label added: "{label}" in {op.code_position}')
             labels[label] = Expr(curr_address[0])
             labels_code_positions[label] = op.code_position
         else:

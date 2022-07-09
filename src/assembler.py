@@ -5,7 +5,7 @@ from tempfile import mkstemp
 import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
-from defs import eval_all, Verbose, SegmentEntry, FJAssemblerException, OpType, PrintTimer
+from defs import eval_all, Verbose, SegmentEntry, FJAssemblerException, OpType, PrintTimer, FlipJump
 
 
 def lsb_first_bin_array(int_value, bit_size):
@@ -91,7 +91,7 @@ def labels_resolve(ops, labels, boundary_addresses, w, writer,
             raise FJAssemblerException(f"Can't resolve the following names: {', '.join(ids)} (in op {op}).")
         vals = [datum.val for datum in op.data]
 
-        if op.type == OpType.FlipJump:
+        if isinstance(op, FlipJump):
             f, j = vals
             bits += [f, j]
         elif op.type == OpType.Segment:
@@ -154,8 +154,7 @@ def assemble(input_files, output_file, w,
 
     with PrintTimer('  macro resolve:   ', print_time=time_verbose):
         ops, labels, boundary_addresses = resolve_macros(w, macros, output_file=preprocessed_file,
-                                                         show_statistics=show_statistics,
-                                                         verbose=Verbose.MacroSolve in verbose)
+                                                         show_statistics=show_statistics)
 
     with PrintTimer('  labels resolve:  ', print_time=time_verbose):
         labels_resolve(ops, labels, boundary_addresses, w, writer, verbose=Verbose.LabelSolve in verbose)

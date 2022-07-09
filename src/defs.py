@@ -93,12 +93,11 @@ def get_char_value_and_length(s: str) -> Tuple[int, int]:
 
 class Verbose(IntEnum):
     Parse = 1
-    MacroSolve = 2
-    LabelDict = 3
-    LabelSolve = 4
-    Run = 5
-    Time = 6
-    PrintOutput = 7
+    LabelDict = 2
+    LabelSolve = 3
+    Run = 4
+    Time = 5
+    PrintOutput = 6
 
 
 class TerminationCause(IntEnum):
@@ -185,10 +184,24 @@ class Op:
         return f'{f"{self.type}:"[7:]:10}    Data: {", ".join([str(d) for d in self.data])}    ' \
                f'{self.code_position}'
 
+    def eval_int_data(self, id_dict: Dict[str, Expr]) -> Tuple[int]:
+        return tuple(int(expr.eval_new(id_dict)) for expr in self.data)
+
     def eval_new(self, id_dict: Dict[str, Expr]) -> Op:
         op = copy(self)
         op.data = [expr.eval_new(id_dict) for expr in self.data]
         return op
+
+
+class FlipJump(Op):
+    def __init__(self, flip: Expr, jump: Expr, code_position: CodePosition):
+        super(FlipJump, self).__init__(OpType.FlipJump, [flip, jump], code_position)
+
+    def get_flip(self, label: Dict[str, Expr]) -> int:
+        return int(self.data[0].eval_new(label))
+
+    def get_jump(self, label: Dict[str, Expr]) -> int:
+        return int(self.data[1].eval_new(label))
 
 
 class MacroCall(Op):
@@ -258,6 +271,7 @@ class Expr:
         return set(label for expr in self.val[1] for label in expr.all_unknown_labels())
 
     def eval_new(self, id_dict: Dict[str, Expr], i=0) -> Expr:
+        # TODO remove i
         if isinstance(self.val, int):
             return Expr(self.val)
 

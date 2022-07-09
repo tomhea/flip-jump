@@ -7,7 +7,7 @@ from defs import get_char_value_and_length, get_all_used_labels, \
     main_macro, next_address, \
     OpType, Op, Expr, FJParsingException, \
     number_re, dot_id_re, id_re, string_re, \
-    CodePosition, Macro, MacroCall, MacroName, RepCall
+    CodePosition, Macro, MacroCall, MacroName, RepCall, FlipJump
 
 global curr_file, curr_file_number, curr_text, error_occurred, curr_namespace, reserved_names
 
@@ -372,19 +372,19 @@ class FJParser(Parser):
 
     @_('expr SC')
     def statement(self, p):
-        return Op(OpType.FlipJump, [p.expr, next_address()], get_position(p.lineno))
+        return FlipJump(p.expr, next_address(), get_position(p.lineno))
 
     @_('expr SC expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, [p.expr0, p.expr1], get_position(p.lineno))
+        return FlipJump(p.expr0, p.expr1, get_position(p.lineno))
 
     @_('SC expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, [Expr(0), p.expr], get_position(p.lineno))
+        return FlipJump(Expr(0), p.expr, get_position(p.lineno))
 
     @_('SC')
     def statement(self, p):
-        return Op(OpType.FlipJump, [Expr(0), next_address()], get_position(p.lineno))
+        return FlipJump(Expr(0), next_address(), get_position(p.lineno))
 
     @_('ID')
     def id(self, p):
