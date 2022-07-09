@@ -1,10 +1,11 @@
 import pickle
+from typing import Deque
 
 import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
 from defs import Verbose, SegmentEntry, FJAssemblerException, PrintTimer, FlipJump, WordFlip, \
-    FJException, Segment, Reserve
+    FJException, Segment, Reserve, Op
 
 
 def lsb_first_bin_array(int_value, bit_size):
@@ -72,7 +73,7 @@ def get_next_wflip_entry_index(boundary_addresses, index):
     return index
 
 
-def labels_resolve(ops, labels, boundary_addresses, w, writer):
+def labels_resolve(ops: Deque[Op], labels, boundary_addresses, w, writer):
     if max(e[1] for e in boundary_addresses) >= (1 << w):
         raise FJAssemblerException(f"Not enough space with the {w}-width.")
 
@@ -92,18 +93,6 @@ def labels_resolve(ops, labels, boundary_addresses, w, writer):
         if isinstance(op, FlipJump):
             f, j = vals
             bits += [f, j]
-        elif isinstance(op, Segment):
-            segment_index += 2
-            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits,
-                          wflips)
-            last_start_seg_index = segment_index
-            first_address = boundary_addresses[last_start_seg_index][1]
-            wflip_address = boundary_addresses[get_next_wflip_entry_index(boundary_addresses, segment_index)][1]
-        elif isinstance(op, Reserve):
-            segment_index += 1
-            last_address = boundary_addresses[segment_index][1]
-            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, last_address, bits, [])
-            first_address = last_address
         elif isinstance(op, WordFlip):
             to_address, by_address, return_address = vals
             flip_bits = [i for i in range(w) if by_address & (1 << i)]
@@ -125,6 +114,18 @@ def labels_resolve(ops, labels, boundary_addresses, w, writer):
 
                 if wflip_address >= (1 << w):
                     raise FJAssemblerException(f"Not enough space with the {w}-width.")
+        elif isinstance(op, Segment):
+            segment_index += 2
+            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits,
+                          wflips)
+            last_start_seg_index = segment_index
+            first_address = boundary_addresses[last_start_seg_index][1]
+            wflip_address = boundary_addresses[get_next_wflip_entry_index(boundary_addresses, segment_index)][1]
+        elif isinstance(op, Reserve):
+            segment_index += 1
+            last_address = boundary_addresses[segment_index][1]
+            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, last_address, bits, [])
+            first_address = last_address
         else:
             raise FJAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
 

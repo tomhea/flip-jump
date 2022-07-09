@@ -291,7 +291,7 @@ class MacroCall(Op):
     def __str__(self):
         return f"macro call. {self.macro_name} {', '.join(self.data)}. at {self.code_position}"
 
-    def macro_trace_str(self) -> str:
+    def trace_str(self) -> str:
         return f'macro {self.macro_name} ({self.code_position})'
 
 
@@ -325,7 +325,10 @@ class RepCall(Op):
         except FJExprException as e:
             raise FJExprException(f"Can't calculate rep arguments on {self.code_position}") from e
 
-    def rep_trace_str(self, iter_value: int) -> str:
+    def trace_str(self, iter_value: int) -> str:
+        """
+        assumes calculate_times successfully called before
+        """
         return f'rep({self.iterator_name}={iter_value}, out of 0..{self.get_times()-1}) ' \
                f'macro {self.macro_name}  ({self.code_position})'
 
