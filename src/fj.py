@@ -5,7 +5,7 @@ from tempfile import mkstemp
 
 from assembler import assemble
 from fjm_run import debug_and_run
-from defs import Verbose, FJReadFjmException, FJException, get_stl_paths
+from defs import Verbose, FJReadFjmException, get_stl_paths
 
 
 def main():
@@ -13,7 +13,6 @@ def main():
     parser.add_argument('file', help="the FlipJump files.", nargs='+')
     parser.add_argument('-s', '--silent', help="don't show assemble & run times", action='store_true')
     parser.add_argument('-o', '--outfile', help="output assembled file.")
-    parser.add_argument('--no-macros', help="output no-macros file.")
     parser.add_argument('-d', '--debug', help="debug file (used for breakpoints).", nargs='?', const=True)
     parser.add_argument('-v', '--version', help="fjm version", type=int, default=0)
     parser.add_argument('-f', '--flags', help="default running flags", type=int, default=0)
@@ -63,16 +62,11 @@ def main():
         temp_debug_fd, args.debug = mkstemp()
         temp_debug_file = True
 
-    try:
-        assemble(args.file, args.outfile, args.width,
-                 version=args.version, flags=args.flags,
-                 warning_as_errors=args.Werror,
-                 show_statistics=args.stats, verbose=verbose_set,
-                 preprocessed_file=args.no_macros, debugging_file=args.debug)
-    except FJException as e:
-        print()
-        print(e)
-        exit(1)
+    assemble(args.file, args.outfile, args.width,
+             version=args.version, flags=args.flags,
+             warning_as_errors=args.Werror,
+             show_statistics=args.stats, verbose=verbose_set,
+             debugging_file=args.debug)
 
     if temp_assembled_file:
         os.close(temp_assembled_fd)
