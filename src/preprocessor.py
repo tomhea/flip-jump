@@ -132,12 +132,13 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
         # macro-resolve
         if not isinstance(op, Op):
             macro_resolve_error(curr_tree, f"bad op (not of Op type)! type {type(op)}, str {str(op)}.")
-        if op.type not in (OpType.Rep, OpType.FlipJump):
-            # op = op.eval_new(id_dict)
+        if op.type not in (OpType.Rep, OpType.FlipJump, OpType.Macro):
             op = deepcopy(op)
             eval_all(op, id_dict)
             id_swap(op, id_dict)
         if isinstance(op, MacroCall):
+            op = op.eval_new(id_dict)
+
             next_macro_path = (f"{macro_path}{macro_separator_string}" if macro_path else "") + \
                 f"{op.code_position.short_str()}:{op.macro_name}"
 
