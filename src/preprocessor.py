@@ -1,14 +1,12 @@
 import collections
-from copy import deepcopy
-from pathlib import Path
 from typing import Dict, List, Tuple, Iterable
 
 import plotly.graph_objects as go
 
 from defs import main_macro, wflip_start_label, new_label, \
-    Op, OpType, SegmentEntry, Expr, FJPreprocessorException, \
-    eval_all, CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall, RepCall, FJExprException, \
-    FlipJump, WordFlip, Label
+    Op, SegmentEntry, Expr, FJPreprocessorException, \
+    CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall, RepCall, FJExprException, \
+    FlipJump, WordFlip, Label, Segment, Reserve
 
 macro_separator_string = "---"
 
@@ -18,18 +16,6 @@ def macro_resolve_error(curr_tree: List[str], msg='', *, orig_exception: BaseExc
     for i, trace_str in enumerate(curr_tree):
         error_str += f'  {i}) {trace_str}\n'
     raise FJPreprocessorException(error_str) from orig_exception
-
-
-def output_ops(ops: List[Op], output_file: Path) -> None:
-    with open(output_file, 'w') as f:
-        for op in ops:
-            eval_all(op)
-            if op.type == OpType.FlipJump:
-                f.write(f'  {op.data[0]};{op.data[1]}\n')
-            elif op.type == OpType.WordFlip:
-                f.write(f'  wflip {op.data[0]}, {op.data[1]}, {op.data[2]}\n')
-            elif op.type == OpType.Label:
-                f.write(f'{op.data[0]}:\n')
 
 
 def clean_name_for_pie_graph(macro_name: str) -> str:
@@ -82,8 +68,7 @@ def show_macro_usage_pie_graph(macro_code_size: Dict[str, int], total_code_size:
     fig.show()
 
 
-def resolve_macros(w: int, macros: Dict[MacroName, Macro],
-                   output_file: Path = None, show_statistics: bool = False)\
+def resolve_macros(w: int, macros: Dict[MacroName, Macro], show_statistics: bool = False)\
         -> Tuple[List[Op], Dict[str, Expr], BoundaryAddressesList]:
     curr_address = [0]
     result_ops: List[Op] = []
@@ -94,20 +79,12 @@ def resolve_macros(w: int, macros: Dict[MacroName, Macro],
 
     resolve_macro_aux(w, '', [], macros, main_macro, [], stat_dict,
                       labels, result_ops, boundary_addresses, curr_address, last_address_index, {})
-    if output_file:
-        output_ops(result_ops, output_file)
 
     if show_statistics:
         show_macro_usage_pie_graph(dict(stat_dict), curr_address[0])
 
     boundary_addresses.append((SegmentEntry.WflipAddress, curr_address[0]))
     return result_ops, labels, boundary_addresses
-
-
-def try_int(op: Op, expr: Expr) -> int:
-    if expr.is_int():
-        return expr.val
-    raise FJPreprocessorException(f"Can't resolve the following name: {expr.eval({}, op.code_position)} (in op={op}).")
 
 
 def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dict[MacroName, Macro],
@@ -118,10 +95,7 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
     init_curr_address = curr_address[0]
 
     if macro_name not in macros:
-        if not code_position:
-            macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined.")
-        else:
-            macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined. Used in {code_position}.")
+        macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined. Used in {code_position}.")
 
     current_macro = macros[macro_name]
 
@@ -129,10 +103,6 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
 
     for op in current_macro.ops:
         # macro-resolve
-        if not isinstance(op, Label) and op.type not in (OpType.Rep, OpType.FlipJump, OpType.Macro):
-            op = deepcopy(op)
-            eval_all(op, id_dict)
-
         if isinstance(op, Label):
             label = op.eval_name(id_dict)
             if label in labels:
@@ -175,11 +145,19 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
             except FJExprException as e:
                 macro_resolve_error(curr_tree, f'rep {op.macro_name} failed.', orig_exception=e)
         # labels_resolve
-        elif op.type == OpType.Segment:
-            eval_all(op, labels)
-            value = try_int(op, op.data[0])
-            if value % w != 0:
-                macro_resolve_error(curr_tree, f'segment ops must have a w-aligned address. In {op}.')
+        elif isinstance(op, Segment):
+            op = op.eval_new(id_dict)
+            op = op.eval_new(labels)
+
+            try:
+                value = op.calculate_address(labels)
+                if value % w != 0:
+                    macro_resolve_error(curr_tree, f'segment ops must have a w-aligned address. In {op}.')
+            except FJExprException as e:
+                macro_resolve_error(curr_tree, f'segment failed.', orig_exception=e)
+
+            # eval_all(op, labels)
+            # value = try_int(op, op.data[0])
 
             boundary_addresses.append((SegmentEntry.WflipAddress, curr_address[0]))
             labels[f'{wflip_start_label}{last_address_index[0]}'] = Expr(curr_address[0])
@@ -188,11 +166,19 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
             curr_address[0] = value
             boundary_addresses.append((SegmentEntry.StartAddress, curr_address[0]))
             result_ops.append(op)
-        elif op.type == OpType.Reserve:
-            eval_all(op, labels)
-            value = try_int(op, op.data[0])
-            if value % w != 0:
-                macro_resolve_error(curr_tree, f'reserve ops must have a w-aligned value. In {op}.')
+        elif isinstance(op, Reserve):
+            op = op.eval_new(id_dict)
+            op = op.eval_new(labels)
+
+            try:
+                value = op.calculate_reserved_bit_size(labels)
+                if value % w != 0:
+                    macro_resolve_error(curr_tree, f'reserve ops must have a w-aligned value. In {op}.')
+            except FJExprException as e:
+                macro_resolve_error(curr_tree, f'reserve failed.', orig_exception=e)
+
+            # eval_all(op, labels)
+            # value = try_int(op, op.data[0])
 
             curr_address[0] += value
             boundary_addresses.append((SegmentEntry.ReserveAddress, curr_address[0]))

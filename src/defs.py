@@ -130,32 +130,40 @@ class PrintTimer:
             print(f'{time() - self.start_time:.3f}s')
 
 
-class OpType(IntEnum):  # op.data array content:
-
-    FlipJump = 1        # expr, expr                # Survives until (2) label resolve
-    WordFlip = 2        # expr, expr, expr          # Survives until (2) label resolve
-    Segment = 3         # expr                      # Survives until (2) label resolve
-    Reserve = 4         # expr                      # Survives until (2) label resolve
-    Label = 5           # ID                        # Survives until (1) macro resolve
-    Macro = 6           # ID, [expr..]              # Survives until (1) macro resolve
-    Rep = 7             # expr, ID, macro_call      # Survives until (1) macro resolve
-
-
-@dataclass
 class MacroName:
-    name: str
-    parameter_num: int
+    def __init__(self, name: str, parameter_num: int = 0):
+        self.name = name
+        self.parameter_num = parameter_num
 
     def __str__(self) -> str:
         if 0 == self.parameter_num:
             return self.name
         return f"{self.name}({self.parameter_num})"
 
+    def to_tuple(self):
+        return self.name, self.parameter_num
+
     def __hash__(self):
-        return hash((self.name, self.parameter_num))
+        return hash(self.to_tuple())
+
+    def __eq__(self, other):
+        return type(other) == MacroName and self.to_tuple() == other.to_tuple()
 
 
-main_macro = MacroName('', 0)
+class Macro:
+    # [(params, quiet_params), statements, (curr_file, p.lineno, ns_name)]
+
+    def __init__(self, params: List[str], local_params: List[str],
+                 ops: List[Op], namespace: str,
+                 code_position: CodePosition):
+        self.params = params
+        self.local_params = local_params
+        self.ops = ops
+        self.namespace = namespace
+        self.code_position = code_position
+
+
+main_macro = MacroName('')
 
 
 @dataclass
@@ -172,8 +180,7 @@ class CodePosition:
 
 
 class Op:
-    def __init__(self, op_type: OpType, data: List[Union[Expr, str, MacroCall], ...], code_position: CodePosition):
-        self.type = op_type
+    def __init__(self, data: List[Union[Expr, str, MacroCall], ...], code_position: CodePosition):
         self.data = data
         self.code_position = code_position
 
@@ -204,8 +211,11 @@ class Label:
 
 
 class FlipJump(Op):
+    """
+    data = [flip_address, jump_address]
+    """
     def __init__(self, flip: Expr, jump: Expr, code_position: CodePosition):
-        super(FlipJump, self).__init__(OpType.FlipJump, [flip, jump], code_position)
+        super(FlipJump, self).__init__([flip, jump], code_position)
 
     def __str__(self):
         return f"Flip: {self.data[0]}, Jump: {self.data[1]}, at {self.code_position}"
@@ -218,16 +228,64 @@ class FlipJump(Op):
 
 
 class WordFlip(Op):
-    def __init__(self, address: Expr, value: Expr, return_address: Expr, code_position: CodePosition):
-        super(WordFlip, self).__init__(OpType.FlipJump, [address, value, return_address], code_position)
+    """
+    data = [word_address, value, return_address]
+    """
+    def __init__(self, word_address: Expr, value: Expr, return_address: Expr, code_position: CodePosition):
+        super(WordFlip, self).__init__([word_address, value, return_address], code_position)
 
     def __str__(self):
         return f"Flip Word {self.data[0]} by {self.data[1]}, and return to {self.data[2]}. at {self.code_position}"
 
 
+class Segment(Op):
+    """
+    data = [start_address]
+    """
+    def __init__(self, start_address: Expr, code_position: CodePosition):
+        super(Segment, self).__init__([start_address], code_position)
+
+    def __str__(self):
+        return f"Segment {self.data[0]}, at {self.code_position}"
+
+    def get_address(self) -> int:
+        try:
+            return int(self.data[0])
+        except FJExprException as e:
+            raise FJExprException(f"Can't calculate segment address on {self.code_position}") from e
+
+    def calculate_address(self, labels: Dict[str, Expr]) -> int:
+        self.data[0] = self.data[0].eval_new(labels)
+        return self.get_address()
+
+
+class Reserve(Op):
+    """
+    data = [reserved_bit_size]
+    """
+    def __init__(self, reserved_bit_size: Expr, code_position: CodePosition):
+        super(Reserve, self).__init__([reserved_bit_size], code_position)
+
+    def __str__(self):
+        return f"Reserve {self.data[0]}, at {self.code_position}"
+
+    def get_reserved_bit_size(self) -> int:
+        try:
+            return int(self.data[0])
+        except FJExprException as e:
+            raise FJExprException(f"Can't calculate reserved bits size on {self.code_position}") from e
+
+    def calculate_reserved_bit_size(self, labels: Dict[str, Expr]) -> int:
+        self.data[0] = self.data[0].eval_new(labels)
+        return self.get_reserved_bit_size()
+
+
 class MacroCall(Op):
+    """
+    data = ordered list of macro arguments
+    """
     def __init__(self, macro_name: str, arguments: List[Expr], code_position: CodePosition):
-        super(MacroCall, self).__init__(OpType.Macro, arguments, code_position)
+        super(MacroCall, self).__init__(arguments, code_position)
         self.macro_name = MacroName(macro_name, len(arguments))
 
     def __str__(self):
@@ -238,8 +296,12 @@ class MacroCall(Op):
 
 
 class RepCall(Op):
-    def __init__(self, times: Expr, iterator_name: str, macro_name: str, arguments: List[Expr], code_position: CodePosition):
-        super(RepCall, self).__init__(OpType.Rep, [times, *arguments], code_position)
+    """
+    data[0] = repeat_times
+    data[1:] = ordered list of macro arguments
+    """
+    def __init__(self, repeat_times: Expr, iterator_name: str, macro_name: str, arguments: List[Expr], code_position: CodePosition):
+        super(RepCall, self).__init__([repeat_times, *arguments], code_position)
         self.iterator_name = iterator_name
         self.macro_name = MacroName(macro_name, len(arguments))
 
@@ -250,7 +312,7 @@ class RepCall(Op):
         try:
             return int(self.data[0])
         except FJExprException as e:
-            raise FJExprException(f"Can't calculate rep time on {self.code_position}") from e
+            raise FJExprException(f"Can't calculate rep times on {self.code_position}") from e
 
     def calculate_times(self, labels: Dict[str, Expr]) -> int:
         self.data[0] = self.data[0].eval_new(labels)
@@ -266,19 +328,6 @@ class RepCall(Op):
     def rep_trace_str(self, iter_value: int) -> str:
         return f'rep({self.iterator_name}={iter_value}, out of 0..{self.get_times()-1}) ' \
                f'macro {self.macro_name}  ({self.code_position})'
-
-
-class Macro:
-    # [(params, quiet_params), statements, (curr_file, p.lineno, ns_name)]
-
-    def __init__(self, params: List[str], local_params: List[str],
-                 ops: List[Op], namespace: str,
-                 code_position: CodePosition):
-        self.params = params
-        self.local_params = local_params
-        self.ops = ops
-        self.namespace = namespace
-        self.code_position = code_position
 
 
 class Expr:
@@ -297,18 +346,18 @@ class Expr:
             return {self.val}
         return set(label for expr in self.val[1] for label in expr.all_unknown_labels())
 
-    def eval_new(self, id_dict: Dict[str, Expr], i=0) -> Expr:
-        # TODO remove i
+    # replaces every string it can with its dictionary value, and evaluates anything it can.
+    def eval_new(self, id_dict: Dict[str, Expr]) -> Expr:
         if isinstance(self.val, int):
             return Expr(self.val)
 
         if isinstance(self.val, str):
             if self.val in id_dict:
-                return id_dict[self.val].eval_new({}, i+1)
+                return id_dict[self.val].eval_new({})
             return Expr(self.val)
 
         op, args = self.val
-        evaluated_args: Tuple[Expr, ...] = tuple(e.eval_new(id_dict, i+1) for e in args)
+        evaluated_args: Tuple[Expr, ...] = tuple(e.eval_new(id_dict) for e in args)
         if all(isinstance(e.val, int) for e in evaluated_args):
             try:
                 return Expr(parsing_op2func[op](*(arg.val for arg in evaluated_args)))
@@ -316,39 +365,8 @@ class Expr:
                 raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
         return Expr((op, evaluated_args))
 
-    # replaces every string it can with its dictionary value, and evaluates anything it can.
-    # returns the list of unknown id's
-    def eval(self, id_dict: Dict[str, Expr], code_position: CodePosition) -> List[str]:
-        if self.is_tuple():
-            op, exps = self.val
-            res = [e.eval(id_dict, code_position) for e in exps]
-            if any(res):
-                return sum(res, start=[])
-            else:
-                try:
-                    self.val = parsing_op2func[op](*[e.val for e in exps])
-                    return []
-                except BaseException as e:
-                    raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)} in {code_position}')
-        elif self.is_str():
-            if self.val in id_dict:
-                self.val = id_dict[self.val].val
-                return self.eval({}, code_position)
-            else:
-                return [self.val]
-        return []
-
-    def is_int(self) -> bool:
-        return type(self.val) is int
-
-    def is_str(self) -> bool:
-        return type(self.val) is str
-
-    def is_tuple(self) -> bool:
-        return type(self.val) is tuple
-
     def __str__(self) -> str:
-        if self.is_tuple():
+        if isinstance(self.val, tuple):
             op, exps = self.val
             if len(exps) == 1:
                 e1 = exps[0]
@@ -359,44 +377,32 @@ class Expr:
             else:
                 e1, e2, e3 = exps
                 return f'({str(e1)} ? {str(e2)} : {str(e3)})'
-        if self.is_str():
+        if isinstance(self.val, str):
             return self.val
-        if self.is_int():
+        if isinstance(self.val, int):
             return hex(self.val)[2:]
         raise FJExprException(f'bad expression: {self.val} (of type {type(self.val)})')
 
 
-def eval_all(op: Op, id_dict: Dict[str, Expr] = None) -> List[str]:
-    if id_dict is None:
-        id_dict = {}
+def get_used_labels(ops: List[Op]) -> Set[str]:
+    """
 
-    ids = []
-    for expr in op.data:
-        if type(expr) is Expr:
-            ids += expr.eval(id_dict, op.code_position)
-    if op.type == OpType.Rep:
-        macro_op = op.data[2]
-        ids += eval_all(macro_op, id_dict)
-    return ids
-
-
-def get_all_used_labels(ops: List[Op]) -> Tuple[Set[str], Set[str]]:
-    used_labels, declared_labels = set(), set()
+    @param ops[in]:d
+    @return:
+    """
+    used_labels = set()
     for op in ops:
-        if isinstance(op, Label):
-            declared_labels.add(op.name)
-        elif isinstance(op, RepCall):
-            n, *macro_call_data = op.data
-            i = op.iterator_name
-            used_labels.update(n.eval({}, op.code_position))
-            new_labels = set()
-            new_labels.update(*[e.eval({}, op.code_position) for e in macro_call_data])
-            used_labels.update(new_labels - {i})
-        else:
-            for expr in op.data:
-                if type(expr) is Expr:
-                    used_labels.update(expr.eval({}, op.code_position))
-    return used_labels, declared_labels
+        if isinstance(op, RepCall):
+            times, *macro_call_data = op.data
+            arguments_labels = set(label for e in macro_call_data for label in e.all_unknown_labels())
+            used_labels.update(times.all_unknown_labels() | (arguments_labels - {op.iterator_name}))
+        elif isinstance(op, Op):
+            used_labels.update(label for expr in op.data for label in expr.all_unknown_labels())
+    return used_labels
+
+
+def get_declared_labels(ops: List[Op]) -> Set[str]:
+    return set(op.name for op in ops if isinstance(op, Label))
 
 
 def new_label(macro_path: str, label_name: str) -> Expr:

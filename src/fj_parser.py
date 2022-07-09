@@ -3,11 +3,11 @@ from typing import Set
 
 from sly import Lexer, Parser
 
-from defs import get_char_value_and_length, get_all_used_labels, \
+from defs import get_char_value_and_length, get_used_labels, get_declared_labels, \
     main_macro, next_address, \
-    OpType, Op, Expr, FJParsingException, \
+    Expr, FJParsingException, \
     number_re, dot_id_re, id_re, string_re, \
-    CodePosition, Macro, MacroCall, MacroName, RepCall, FlipJump, WordFlip, Label
+    CodePosition, Macro, MacroCall, MacroName, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, FJExprException
 
 global curr_file, curr_file_number, curr_text, error_occurred, curr_namespace, reserved_names
 
@@ -283,7 +283,8 @@ class FJParser(Parser):
         self.check_params(params + local_params, name, p.lineno)
         ops = p.line_statements
 
-        used_labels, declared_labels = get_all_used_labels(ops)
+        used_labels = get_used_labels(ops)
+        declared_labels = get_declared_labels(ops)
         self.check_label_usage(used_labels, declared_labels, set(params + local_params), set(extern_params),
                                set(global_params), p.lineno, name)
         self.macros[name] = Macro(params, local_params, ops, self.ns_name(), get_position(p.lineno))
@@ -424,10 +425,12 @@ class FJParser(Parser):
         name = self.ns_full_name(p.ID)
         if name in self.defs:
             syntax_error(p.lineno, f'Can\'t redeclare the variable "{name}".')
-        if not p.expr.eval(self.defs, get_position(p.lineno)):
-            self.defs[name] = p.expr
-            return None
-        syntax_error(p.lineno, f'Can\'t evaluate expression:  {str(p.expr)}.')
+
+        evaluated = p.expr.eval_new(self.defs)
+        try:
+            self.defs[name] = Expr(int(evaluated))
+        except FJExprException:
+            syntax_error(p.lineno, f'Can\'t evaluate expression:  {str(evaluated)}.')
 
     @_('REP "(" expr "," ID ")" id')
     def statement(self, p):
@@ -443,11 +446,11 @@ class FJParser(Parser):
 
     @_('SEGMENT expr')
     def statement(self, p):
-        return Op(OpType.Segment, [p.expr], get_position(p.lineno))
+        return Segment(p.expr, get_position(p.lineno))
 
     @_('RESERVE expr')
     def statement(self, p):
-        return Op(OpType.Reserve, [p.expr], get_position(p.lineno))
+        return Reserve(p.expr, get_position(p.lineno))
 
     @_('expressions "," expr')
     def expressions(self, p):

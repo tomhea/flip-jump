@@ -1,12 +1,10 @@
-import os
 import pickle
-from tempfile import mkstemp
 
 import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
-from defs import eval_all, Verbose, SegmentEntry, FJAssemblerException, OpType, PrintTimer, FlipJump, WordFlip, \
-    FJException
+from defs import Verbose, SegmentEntry, FJAssemblerException, PrintTimer, FlipJump, WordFlip, \
+    FJException, Segment, Reserve
 
 
 def lsb_first_bin_array(int_value, bit_size):
@@ -94,14 +92,14 @@ def labels_resolve(ops, labels, boundary_addresses, w, writer):
         if isinstance(op, FlipJump):
             f, j = vals
             bits += [f, j]
-        elif op.type == OpType.Segment:
+        elif isinstance(op, Segment):
             segment_index += 2
             close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits,
                           wflips)
             last_start_seg_index = segment_index
             first_address = boundary_addresses[last_start_seg_index][1]
             wflip_address = boundary_addresses[get_next_wflip_entry_index(boundary_addresses, segment_index)][1]
-        elif op.type == OpType.Reserve:
+        elif isinstance(op, Reserve):
             segment_index += 1
             last_address = boundary_addresses[segment_index][1]
             close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, last_address, bits, [])
@@ -136,16 +134,11 @@ def labels_resolve(ops, labels, boundary_addresses, w, writer):
 def assemble(input_files, output_file, w,
              *, version=0, flags=0,
              warning_as_errors=True,
-             show_statistics=False, preprocessed_file=None, debugging_file=None, verbose=None):
+             show_statistics=False, debugging_file=None, verbose=None):
     if verbose is None:
         verbose = set()
 
     writer = fjm.Writer(output_file, w, version=version, flags=flags)
-
-    temp_preprocessed_file, temp_fd = False, 0
-    if preprocessed_file is None:
-        temp_fd, preprocessed_file = mkstemp()
-        temp_preprocessed_file = True
 
     time_verbose = Verbose.Time in verbose
 
@@ -153,7 +146,7 @@ def assemble(input_files, output_file, w,
         macros = parse_macro_tree(input_files, w, warning_as_errors)
 
     with PrintTimer('  macro resolve:   ', print_time=time_verbose):
-        ops, labels, boundary_addresses = resolve_macros(w, macros, output_file=preprocessed_file,
+        ops, labels, boundary_addresses = resolve_macros(w, macros,
                                                          show_statistics=show_statistics)
 
     with PrintTimer('  labels resolve:  ', print_time=time_verbose):
@@ -161,9 +154,6 @@ def assemble(input_files, output_file, w,
 
     with PrintTimer('  create binary:   ', print_time=time_verbose):
         writer.write_to_file()
-
-    if temp_preprocessed_file:
-        os.close(temp_fd)
 
     labels = {label: labels[label].val for label in labels}
 
