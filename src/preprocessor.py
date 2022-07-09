@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from defs import main_macro, wflip_start_label, new_label, \
     Op, OpType, SegmentEntry, Expr, FJPreprocessorException, \
     eval_all, id_swap, CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall, RepCall, FJExprException, \
-    FlipJump
+    FlipJump, WordFlip
 
 macro_separator_string = "---"
 
@@ -193,15 +193,11 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: List[str], macros: Dic
 
             last_address_index[0] += 1
             result_ops.append(op)
-        elif isinstance(op, FlipJump):
+        elif isinstance(op, FlipJump) or isinstance(op, WordFlip):
             curr_address[0] += 2 * w
             id_dict['$'] = Expr(curr_address[0])
             result_ops.append(op.eval_new(id_dict))
             del id_dict['$']
-        elif op.type == OpType.WordFlip:
-            curr_address[0] += 2*w
-            eval_all(op, {'$': Expr(curr_address[0])})
-            result_ops.append(op)
         elif op.type == OpType.Label:
             label = op.data[0]
             if label in labels:

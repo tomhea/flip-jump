@@ -92,12 +92,9 @@ def get_char_value_and_length(s: str) -> Tuple[int, int]:
 
 
 class Verbose(IntEnum):
-    Parse = 1
-    LabelDict = 2
-    LabelSolve = 3
-    Run = 4
-    Time = 5
-    PrintOutput = 6
+    Run = 1
+    Time = 2
+    PrintOutput = 3
 
 
 class TerminationCause(IntEnum):
@@ -202,6 +199,11 @@ class FlipJump(Op):
 
     def get_jump(self, label: Dict[str, Expr]) -> int:
         return int(self.data[1].eval_new(label))
+
+
+class WordFlip(Op):
+    def __init__(self, address: Expr, value: Expr, return_address: Expr, code_position: CodePosition):
+        super(WordFlip, self).__init__(OpType.FlipJump, [address, value, return_address], code_position)
 
 
 class MacroCall(Op):

@@ -5,7 +5,8 @@ from tempfile import mkstemp
 import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
-from defs import eval_all, Verbose, SegmentEntry, FJAssemblerException, OpType, PrintTimer, FlipJump
+from defs import eval_all, Verbose, SegmentEntry, FJAssemblerException, OpType, PrintTimer, FlipJump, WordFlip, \
+    FJException
 
 
 def lsb_first_bin_array(int_value, bit_size):
@@ -73,8 +74,7 @@ def get_next_wflip_entry_index(boundary_addresses, index):
     return index
 
 
-def labels_resolve(ops, labels, boundary_addresses, w, writer,
-                   *, verbose=False):   # TODO handle verbose?
+def labels_resolve(ops, labels, boundary_addresses, w, writer):
     if max(e[1] for e in boundary_addresses) >= (1 << w):
         raise FJAssemblerException(f"Not enough space with the {w}-width.")
 
@@ -86,10 +86,15 @@ def labels_resolve(ops, labels, boundary_addresses, w, writer,
     wflip_address = boundary_addresses[get_next_wflip_entry_index(boundary_addresses, 0)][1]
 
     for op in ops:
-        ids = eval_all(op, labels)
-        if ids:
-            raise FJAssemblerException(f"Can't resolve the following names: {', '.join(ids)} (in op {op}).")
-        vals = [datum.val for datum in op.data]
+        # ids = eval_all(op, labels)
+        # if ids:
+        #     raise FJAssemblerException(f"Can't resolve the following names: {', '.join(ids)} (in op {op}).")
+        # vals = [datum.val for datum in op.data]
+
+        try:
+            vals = op.eval_int_data(labels)
+        except FJException as e:
+            raise FJAssemblerException(f"Can't resolve labels in op {op}.") from e
 
         if isinstance(op, FlipJump):
             f, j = vals
@@ -106,7 +111,7 @@ def labels_resolve(ops, labels, boundary_addresses, w, writer,
             last_address = boundary_addresses[segment_index][1]
             close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, last_address, bits, [])
             first_address = last_address
-        elif op.type == OpType.WordFlip:
+        elif isinstance(op, WordFlip):
             to_address, by_address, return_address = vals
             flip_bits = [i for i in range(w) if by_address & (1 << i)]
 
@@ -150,14 +155,14 @@ def assemble(input_files, output_file, w,
     time_verbose = Verbose.Time in verbose
 
     with PrintTimer('  parsing:         ', print_time=time_verbose):
-        macros = parse_macro_tree(input_files, w, warning_as_errors, verbose=Verbose.Parse in verbose)
+        macros = parse_macro_tree(input_files, w, warning_as_errors)
 
     with PrintTimer('  macro resolve:   ', print_time=time_verbose):
         ops, labels, boundary_addresses = resolve_macros(w, macros, output_file=preprocessed_file,
                                                          show_statistics=show_statistics)
 
     with PrintTimer('  labels resolve:  ', print_time=time_verbose):
-        labels_resolve(ops, labels, boundary_addresses, w, writer, verbose=Verbose.LabelSolve in verbose)
+        labels_resolve(ops, labels, boundary_addresses, w, writer)
 
     with PrintTimer('  create binary:   ', print_time=time_verbose):
         writer.write_to_file()

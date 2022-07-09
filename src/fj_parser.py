@@ -7,7 +7,7 @@ from defs import get_char_value_and_length, get_all_used_labels, \
     main_macro, next_address, \
     OpType, Op, Expr, FJParsingException, \
     number_re, dot_id_re, id_re, string_re, \
-    CodePosition, Macro, MacroCall, MacroName, RepCall, FlipJump
+    CodePosition, Macro, MacroCall, MacroName, RepCall, FlipJump, WordFlip
 
 global curr_file, curr_file_number, curr_text, error_occurred, curr_namespace, reserved_names
 
@@ -152,8 +152,7 @@ class FJParser(Parser):
     )
     # debugfile = 'src/parser.out'
 
-    def __init__(self, w, warning_as_errors, verbose=False):
-        self.verbose = verbose
+    def __init__(self, w, warning_as_errors):
         self.defs = {'w': Expr(w)}
         self.warning_as_errors = warning_as_errors
         self.macros = {main_macro: Macro([], [], [], '', None)}
@@ -414,11 +413,11 @@ class FJParser(Parser):
 
     @_('WFLIP expr "," expr')
     def statement(self, p):
-        return Op(OpType.WordFlip, [p.expr0, p.expr1, next_address()], get_position(p.lineno))
+        return WordFlip(p.expr0, p.expr1, next_address(), get_position(p.lineno))
 
     @_('WFLIP expr "," expr "," expr')
     def statement(self, p):
-        return Op(OpType.WordFlip, [p.expr0, p.expr1, p.expr2], get_position(p.lineno))
+        return WordFlip(p.expr0, p.expr1, p.expr2, get_position(p.lineno))
 
     @_('ID "=" expr')
     def statement(self, p):
@@ -617,12 +616,12 @@ def exit_if_errors():
         raise FJParsingException(f'Errors found in file {curr_file}. Assembly stopped.')
 
 
-def parse_macro_tree(input_files, w, warning_as_errors, verbose=False):
+def parse_macro_tree(input_files, w, warning_as_errors):
     global curr_file, curr_file_number, curr_text, error_occurred, curr_namespace
     error_occurred = False
 
     lexer = FJLexer()
-    parser = FJParser(w, warning_as_errors, verbose=verbose)
+    parser = FJParser(w, warning_as_errors)
     for curr_file_number, curr_file in enumerate(input_files, start=1):
         if not path.isfile(curr_file):
             raise FJParsingException(f"No such file {curr_file}.")
