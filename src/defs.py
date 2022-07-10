@@ -184,9 +184,6 @@ class Op:
         self.data = data
         self.code_position = code_position
 
-    def eval_int_data(self, id_dict: Dict[str, Expr]) -> Tuple[int]:
-        return tuple(int(expr.eval_new(id_dict)) for expr in self.data)
-
 
 class Label:
     def __init__(self, name: str, code_position: CodePosition):
@@ -218,25 +215,34 @@ class FlipJump(Op):
     def eval_new(self, id_dict: Dict[str, Expr]) -> FlipJump:
         return FlipJump(self.data[0].eval_new(id_dict), self.data[1].eval_new(id_dict), self.code_position)
 
-    def get_flip(self, label: Dict[str, Expr]) -> int:
-        return int(self.data[0].eval_new(label))
+    def get_flip(self, labels: Dict[str, Expr]) -> int:
+        return int(self.data[0].eval_new(labels))
 
-    def get_jump(self, label: Dict[str, Expr]) -> int:
-        return int(self.data[1].eval_new(label))
+    def get_jump(self, labels: Dict[str, Expr]) -> int:
+        return int(self.data[1].eval_new(labels))
 
 
 class WordFlip(Op):
     """
     data = [word_address, value, return_address]
     """
-    def __init__(self, word_address: Expr, value: Expr, return_address: Expr, code_position: CodePosition):
-        super(WordFlip, self).__init__([word_address, value, return_address], code_position)
+    def __init__(self, word_address: Expr, flip_value: Expr, return_address: Expr, code_position: CodePosition):
+        super(WordFlip, self).__init__([word_address, flip_value, return_address], code_position)
 
     def __str__(self):
         return f"Flip Word {self.data[0]} by {self.data[1]}, and return to {self.data[2]}. at {self.code_position}"
 
     def eval_new(self, id_dict: Dict[str, Expr]) -> WordFlip:
         return WordFlip(self.data[0].eval_new(id_dict), self.data[1].eval_new(id_dict), self.data[2].eval_new(id_dict), self.code_position)
+
+    def get_word_address(self, labels: Dict[str, Expr]) -> int:
+        return int(self.data[0].eval_new(labels))
+
+    def get_flip_value(self, labels: Dict[str, Expr]) -> int:
+        return int(self.data[1].eval_new(labels))
+
+    def get_return_address(self, labels: Dict[str, Expr]) -> int:
+        return int(self.data[2].eval_new(labels))
 
 
 class Segment(Op):
