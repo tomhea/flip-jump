@@ -187,11 +187,6 @@ class Op:
     def eval_int_data(self, id_dict: Dict[str, Expr]) -> Tuple[int]:
         return tuple(int(expr.eval_new(id_dict)) for expr in self.data)
 
-    def eval_new(self, id_dict: Dict[str, Expr]) -> Op:
-        op = copy(self)
-        op.data = [expr.eval_new(id_dict) for expr in self.data]
-        return op
-
 
 class Label:
     def __init__(self, name: str, code_position: CodePosition):
@@ -220,6 +215,9 @@ class FlipJump(Op):
     def __str__(self):
         return f"Flip: {self.data[0]}, Jump: {self.data[1]}, at {self.code_position}"
 
+    def eval_new(self, id_dict: Dict[str, Expr]) -> FlipJump:
+        return FlipJump(self.data[0].eval_new(id_dict), self.data[1].eval_new(id_dict), self.code_position)
+
     def get_flip(self, label: Dict[str, Expr]) -> int:
         return int(self.data[0].eval_new(label))
 
@@ -237,6 +235,9 @@ class WordFlip(Op):
     def __str__(self):
         return f"Flip Word {self.data[0]} by {self.data[1]}, and return to {self.data[2]}. at {self.code_position}"
 
+    def eval_new(self, id_dict: Dict[str, Expr]) -> WordFlip:
+        return WordFlip(self.data[0].eval_new(id_dict), self.data[1].eval_new(id_dict), self.data[2].eval_new(id_dict), self.code_position)
+
 
 class Segment(Op):
     """
@@ -247,6 +248,9 @@ class Segment(Op):
 
     def __str__(self):
         return f"Segment {self.data[0]}, at {self.code_position}"
+
+    def eval_new(self, id_dict: Dict[str, Expr]) -> Segment:
+        return Segment(self.data[0].eval_new(id_dict), self.code_position)
 
     def get_address(self) -> int:
         try:
@@ -268,6 +272,9 @@ class Reserve(Op):
 
     def __str__(self):
         return f"Reserve {self.data[0]}, at {self.code_position}"
+
+    def eval_new(self, id_dict: Dict[str, Expr]) -> Reserve:
+        return Reserve(self.data[0].eval_new(id_dict), self.code_position)
 
     def get_reserved_bit_size(self) -> int:
         try:
@@ -291,6 +298,9 @@ class MacroCall(Op):
     def __str__(self):
         return f"macro call. {self.macro_name} {', '.join(self.data)}. at {self.code_position}"
 
+    def eval_new(self, id_dict: Dict[str, Expr]) -> MacroCall:
+        return MacroCall(self.macro_name.name, [expr.eval_new(id_dict) for expr in self.data], self.code_position)
+
     def trace_str(self) -> str:
         return f'macro {self.macro_name} ({self.code_position})'
 
@@ -307,6 +317,10 @@ class RepCall(Op):
 
     def __str__(self):
         return f"rep call. rep({self.data[0]}, {self.iterator_name}) {self.macro_name} {', '.join(self.data[1:])}. at {self.code_position}"
+
+    def eval_new(self, id_dict: Dict[str, Expr]) -> RepCall:
+        return RepCall(self.data[0].eval_new(id_dict), self.iterator_name, self.macro_name.name,
+                       [expr.eval_new(id_dict) for expr in self.data[1:]], self.code_position)
 
     def get_times(self) -> int:
         try:
