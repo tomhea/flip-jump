@@ -4,9 +4,9 @@ from typing import Dict, List, Tuple, Iterable, Union, Deque
 import plotly.graph_objects as go
 
 from defs import main_macro, wflip_start_label, new_label, \
-    Op, SegmentEntry, Expr, FJPreprocessorException, \
+    SegmentEntry, Expr, FJPreprocessorException, \
     CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall, RepCall, FJExprException, \
-    FlipJump, WordFlip, Label, Segment, Reserve
+    FlipJump, WordFlip, Label, Segment, Reserve, LastPhaseOp
 
 macro_separator_string = "---"
 
@@ -72,9 +72,9 @@ def show_macro_usage_pie_graph(macro_code_size: Dict[str, int], total_code_size:
 
 
 def resolve_macros(w: int, macros: Dict[MacroName, Macro], show_statistics: bool = False)\
-        -> Tuple[Deque[Op], Dict[str, Expr], BoundaryAddressesList]:
+        -> Tuple[Deque[LastPhaseOp], Dict[str, Expr], BoundaryAddressesList]:
     curr_address = [0]
-    result_ops: Deque[Op] = collections.deque()
+    result_ops: Deque[LastPhaseOp] = collections.deque()
     labels: Dict[str, Expr] = {}
     last_address_index = [0]
     boundary_addresses: BoundaryAddressesList = [(SegmentEntry.StartAddress, 0)]  # SegEntries
@@ -92,7 +92,7 @@ def resolve_macros(w: int, macros: Dict[MacroName, Macro], show_statistics: bool
 
 def resolve_macro_aux(w: int, macro_path: str, curr_tree: CurrTree, macros: Dict[MacroName, Macro],
                       macro_name: MacroName, args: Iterable[Expr], macro_code_size: Dict[str, int],
-                      labels: Dict[str, Expr], result_ops: Deque[Op], boundary_addresses: BoundaryAddressesList,
+                      labels: Dict[str, Expr], result_ops: Deque[LastPhaseOp], boundary_addresses: BoundaryAddressesList,
                       curr_address: List[int], last_address_index, labels_code_positions: Dict[str, CodePosition],
                       code_position: CodePosition = None)\
         -> None:
@@ -125,7 +125,7 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: CurrTree, macros: Dict
                 f"{op.code_position.short_str()}:{op.macro_name}"
             curr_tree.append(op)
             resolve_macro_aux(w, next_macro_path, curr_tree, macros,
-                              op.macro_name, op.data, macro_code_size,
+                              op.macro_name, op.arguments, macro_code_size,
                               labels, result_ops, boundary_addresses, curr_address, last_address_index,
                               labels_code_positions, code_position=op.code_position)
             curr_tree.pop()
@@ -181,8 +181,6 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: CurrTree, macros: Dict
             result_ops.append(op)
         else:
             macro_resolve_error(curr_tree, f"Can't assemble this opcode - {str(op)}")
-            if not isinstance(op, Op):
-                macro_resolve_error(curr_tree, f"bad op (not of Op type)! type {type(op)}, str {str(op)}.")
 
     if 1 <= len(curr_tree) <= 2:
         macro_code_size[macro_path] += curr_address[0] - init_curr_address

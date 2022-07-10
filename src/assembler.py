@@ -5,7 +5,7 @@ import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
 from defs import Verbose, SegmentEntry, FJAssemblerException, PrintTimer, FlipJump, WordFlip, \
-    FJException, Segment, Reserve, Op, BoundaryAddressesList, Expr
+    FJException, Segment, Reserve, Op, BoundaryAddressesList, Expr, LastPhaseOp
 
 
 def close_segment(w: int,
@@ -70,7 +70,7 @@ def get_next_wflip_entry_index(boundary_addresses: BoundaryAddressesList, index:
     return index
 
 
-def labels_resolve(ops: Deque[Op], labels: Dict[str, Expr],
+def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
                    boundary_addresses: BoundaryAddressesList,
                    w: int, writer: fjm.Writer) -> None:
     if max(e[1] for e in boundary_addresses) >= (1 << w):
