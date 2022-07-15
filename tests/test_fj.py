@@ -42,7 +42,8 @@ class CompileTestArgs:
         included_files = get_stl_paths() if self.use_stl else []
         fj_paths_list = map(str.strip, fj_paths.split('|'))
         fj_absolute_paths_list = [ROOT_PATH / fj_path for fj_path in fj_paths_list]
-        self.fj_files = included_files + fj_absolute_paths_list
+        fj_files = included_files + fj_absolute_paths_list
+        self.fj_files_tuples = [('', path) for path in fj_files]
 
         self.fjm_out_path = ROOT_PATH / fjm_out_path
 
@@ -71,10 +72,9 @@ def test_compile(compile_args: CompileTestArgs) -> None:
 
     create_parent_directories(compile_args.fjm_out_path)
 
-    assembler.assemble(compile_args.fj_files, compile_args.fjm_out_path, compile_args.word_size,
+    assembler.assemble(compile_args.fj_files_tuples, compile_args.fjm_out_path, compile_args.word_size,
                        version=compile_args.version, flags=compile_args.flags,
-                       warning_as_errors=compile_args.warning_as_errors,
-                       verbose={Verbose.Time})
+                       warning_as_errors=compile_args.warning_as_errors)
 
 
 class RunTestArgs:

@@ -3,12 +3,12 @@ from os import path
 from pathlib import Path
 from time import time
 from sys import stdin, stdout
-from typing import Optional, List, Dict, Set
+from typing import Optional, List, Dict, Set, Tuple
 
 import easygui
 
 import fjm
-from defs import Verbose, TerminationCause, PrintTimer
+from defs import Verbose, TerminationCause, PrintTimer, get_nice_label_repr
 
 
 class BreakpointHandlerUnnecessary(Exception):
@@ -21,7 +21,7 @@ def display_message_box_and_get_answer(msg: str, title: str, choices: List[str])
 
 
 class BreakpointHandler:
-    def __init__(self, breakpoints: Set[int], address_to_label: Dict[int, str]):
+    def __init__(self, breakpoints: Dict[int, str], address_to_label: Dict[int, str]):
         self.breakpoints = breakpoints
         self.address_to_label = address_to_label
 
@@ -33,20 +33,23 @@ class BreakpointHandler:
     def should_break(self, ip: int, op_counter: int) -> bool:
         return self.next_break == op_counter or ip in self.breakpoints
 
-    def get_address_str(self, address: int):
-        if address in self.address_to_label:
-            return f'{hex(address)[2:]} ({self.address_to_label[address]})'
-        elif address in self.breakpoints:
-            return hex(address)
+    def get_address_str(self, address: int) -> str:
+        if address in self.breakpoints and self.breakpoints[address] is not None:
+            label_repr = get_nice_label_repr(self.breakpoints[address], pad=4)
+            return f'{hex(address)[2:]}:\n{label_repr}'
+        elif address in self.address_to_label:
+            label_repr = get_nice_label_repr(self.address_to_label[address], pad=4)
+            return f'{hex(address)[2:]}:\n{label_repr}'
         else:
             address_before = max([a for a in self.address_to_label if a <= address])
-            return f'{hex(address)[2:]} ({self.address_to_label[address_before]} + {hex(address - address_before)})'
+            label_repr = get_nice_label_repr(self.address_to_label[address_before], pad=4)
+            return f'{hex(address)[2:]} ({hex(address - address_before)} after:)\n{label_repr}'
 
     def get_message_box_body(self, ip: int, mem: fjm.Reader, op_counter: int):
         address = self.get_address_str(ip)
         flip = self.get_address_str(mem.get_word(ip))
         jump = self.get_address_str(mem.get_word(ip + mem.w))
-        return f'Address {address}  ({op_counter} ops executed):\n  flip: {flip}.\n  jump: {jump}.'
+        return f'Address {address}.\n\n{op_counter} ops executed.\n\nflip {flip}.\n\njump {jump}.'
 
     def query_user_for_debug_action(self, ip: int, mem: fjm.Reader, op_counter: int):
         title = "Breakpoint" if ip in self.breakpoints else "Debug Step"
@@ -237,23 +240,30 @@ def handle_breakpoint(breakpoint_handler, ip, mem, statistics):
 
 def get_breakpoints(breakpoint_addresses: Optional[Set[int]],
                     breakpoint_labels: Optional[Set[str]],
-                    breakpoint_any_labels: Optional[Set[str]],
-                    label_to_address: Dict[str, int]):
-    breakpoints = set(breakpoint_addresses) if breakpoint_labels else set()
+                    breakpoint_contains_labels: Optional[Set[str]],
+                    label_to_address: Dict[str, int])\
+        -> Dict[int, str]:
+    breakpoints = {}
 
-    if breakpoint_labels is not None:
+    if breakpoint_addresses:
+        for address in breakpoint_addresses:
+            breakpoints[address] = None
+
+    # TODO improve the speed of this part with suffix trees
+    if breakpoint_contains_labels:
+        for bcl in breakpoint_contains_labels:
+            for label in label_to_address:
+                if bcl in label:
+                    address = label_to_address[label]
+                    breakpoints[address] = label
+
+    if breakpoint_labels:
         for bl in breakpoint_labels:
             if bl not in label_to_address:
                 print(f"Warning:  Breakpoint label {bl} can't be found!")
             else:
-                breakpoints.add(label_to_address[bl])
-
-    # TODO improve the speed of this part with suffix trees
-    if breakpoint_any_labels is not None:
-        for bal in breakpoint_any_labels:
-            for label in label_to_address:
-                if bal in label:
-                    breakpoints.add(label_to_address[label])
+                address = label_to_address[bl]
+                breakpoints[address] = bl
 
     return breakpoints
 
@@ -273,17 +283,11 @@ def load_labels_dictionary(debugging_file, labels_file_needed):
 
 def debug_and_run(input_file, debugging_file=None,
                   defined_input: Optional[bytes] = None, verbose=None,
-                  breakpoint_addresses=None, breakpoint_labels=None, breakpoint_any_labels=None) -> TerminationStatistics:
+                  breakpoint_addresses=None, breakpoint_labels=None, breakpoint_contains_labels=None) -> TerminationStatistics:
     if verbose is None:
         verbose = set()
 
-    labels_file_needed = breakpoint_addresses or breakpoint_any_labels
-    label_to_address = load_labels_dictionary(debugging_file, labels_file_needed)
-
-    address_to_label = {label_to_address[label]: label for label in label_to_address}
-    breakpoints = get_breakpoints(breakpoint_addresses, breakpoint_labels, breakpoint_any_labels, label_to_address)
-
-    breakpoint_handler = BreakpointHandler(breakpoints, address_to_label) if breakpoints else None
+    breakpoint_handler = get_breakpoint_handler(debugging_file, breakpoint_addresses, breakpoint_labels, breakpoint_contains_labels)
 
     termination_statistics = run(
         input_file, defined_input=defined_input,
@@ -293,3 +297,13 @@ def debug_and_run(input_file, debugging_file=None,
         breakpoint_handler=breakpoint_handler)
 
     return termination_statistics
+
+
+def get_breakpoint_handler(debugging_file, breakpoint_addresses, breakpoint_labels, breakpoint_contains_labels):
+    labels_file_needed = breakpoint_addresses or breakpoint_contains_labels
+    label_to_address = load_labels_dictionary(debugging_file, labels_file_needed)
+
+    address_to_label = {label_to_address[label]: label for label in label_to_address}
+    breakpoints = get_breakpoints(breakpoint_addresses, breakpoint_labels, breakpoint_contains_labels, label_to_address)
+
+    return BreakpointHandler(breakpoints, address_to_label) if breakpoints else None

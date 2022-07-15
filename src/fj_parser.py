@@ -1,5 +1,6 @@
 from os import path
-from typing import Set
+from pathlib import Path
+from typing import Set, List, Tuple
 
 from sly import Lexer, Parser
 
@@ -9,11 +10,11 @@ from defs import get_char_value_and_length, get_used_labels, get_declared_labels
     number_re, dot_id_re, id_re, string_re, \
     CodePosition, Macro, MacroCall, MacroName, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, FJExprException
 
-global curr_file, curr_file_number, curr_text, error_occurred, curr_namespace, reserved_names
+global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace, reserved_names
 
 
 def get_position(lineno: int):
-    return CodePosition(curr_file, curr_file_number, lineno)
+    return CodePosition(curr_file, curr_file_short_name, lineno)
 
 
 def syntax_error(lineno: int, msg=''):
@@ -619,13 +620,13 @@ def exit_if_errors():
         raise FJParsingException(f'Errors found in file {curr_file}. Assembly stopped.')
 
 
-def parse_macro_tree(input_files, w, warning_as_errors):
-    global curr_file, curr_file_number, curr_text, error_occurred, curr_namespace
+def parse_macro_tree(input_files: List[Tuple[str, Path]], w: int, warning_as_errors: bool):
+    global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace
     error_occurred = False
 
     lexer = FJLexer()
     parser = FJParser(w, warning_as_errors)
-    for curr_file_number, curr_file in enumerate(input_files, start=1):
+    for curr_file_short_name, curr_file in input_files:
         if not path.isfile(curr_file):
             raise FJParsingException(f"No such file {curr_file}.")
         curr_text = open(curr_file, 'r').read()

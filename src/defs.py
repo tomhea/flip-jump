@@ -114,6 +114,14 @@ class SegmentEntry(IntEnum):
 BoundaryAddressesList = List[Tuple[SegmentEntry, int]]
 
 
+macro_separator_string = "---"
+
+
+def get_nice_label_repr(label: str, pad: int = 0) -> str:
+    parts = label.split(macro_separator_string)
+    return ' ->\n'.join(f"{' '*(pad+i)}{part}" for i, part in enumerate(parts))
+
+
 class PrintTimer:
     def __init__(self, init_message: str, *, print_time: bool = True):
         self.init_message = init_message
@@ -168,14 +176,14 @@ main_macro = MacroName('')
 @dataclass
 class CodePosition:
     file: str
-    file_number: int
+    file_short_name: str
     line: int
 
     def __str__(self) -> str:
         return f"file {self.file} (line {self.line})"
 
     def short_str(self) -> str:
-        return f"f{self.file_number}:l{self.line}"
+        return f"{self.file_short_name}:l{self.line}"
 
 
 class Label:

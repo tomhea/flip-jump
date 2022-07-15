@@ -6,10 +6,7 @@ import plotly.graph_objects as go
 from defs import main_macro, wflip_start_label, new_label, \
     SegmentEntry, Expr, FJPreprocessorException, \
     CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall, RepCall, FJExprException, \
-    FlipJump, WordFlip, Label, Segment, Reserve, LastPhaseOp
-
-macro_separator_string = "---"
-
+    FlipJump, WordFlip, Label, Segment, Reserve, LastPhaseOp, macro_separator_string
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
 
