@@ -5,8 +5,11 @@ from typing import Deque, List, Dict, Tuple
 import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
-from defs import SegmentEntry, FJAssemblerException, PrintTimer, FlipJump, WordFlip, \
-    FJException, Segment, Reserve, BoundaryAddressesList, Expr, LastPhaseOp
+
+from defs import SegmentEntry, PrintTimer, BoundaryAddressesList
+from exceptions import FJAssemblerException, FJException
+from expr import Expr
+from ops import FlipJump, WordFlip, Segment, Reserve, LastPhaseOp
 
 
 def close_segment(w: int,

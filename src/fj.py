@@ -2,12 +2,14 @@ import os
 import argparse
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Tuple, List, Set, Callable
+from typing import Tuple, List, Callable
 
 import assembler
 import fjm_run
-from defs import FJReadFjmException, get_stl_paths
-from src.io_devices.StandardIO import StandardIO
+from io_devices.StandardIO import StandardIO
+
+from defs import get_stl_paths
+from exceptions import FJReadFjmException
 
 ErrorFunc = Callable[[str], None]
 

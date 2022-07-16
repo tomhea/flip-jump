@@ -4,11 +4,14 @@ from typing import Set, List, Tuple
 
 from sly import Lexer, Parser
 
-from defs import get_char_value_and_length, get_used_labels, get_declared_labels, \
+from defs import get_char_value_and_length, \
     main_macro, next_address, \
-    Expr, FJParsingException, \
     number_re, dot_id_re, id_re, string_re, \
-    CodePosition, Macro, MacroCall, MacroName, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, FJExprException
+    CodePosition, Macro, MacroName
+from exceptions import FJExprException, FJParsingException
+from expr import Expr
+from ops import get_used_labels, get_declared_labels, MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve
+
 
 global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace, reserved_names
 

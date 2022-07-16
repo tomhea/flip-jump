@@ -5,7 +5,7 @@ from random import randint
 from time import sleep
 from typing import BinaryIO, List, Tuple
 
-from defs import FJReadFjmException, FJWriteFjmException
+from exceptions import FJReadFjmException, FJWriteFjmException
 
 
 """
