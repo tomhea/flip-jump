@@ -3,10 +3,13 @@ from typing import Dict, List, Tuple, Iterable, Union, Deque
 
 import plotly.graph_objects as go
 
-from defs import main_macro, wflip_start_label, new_label, \
-    SegmentEntry, Expr, FJPreprocessorException, \
-    CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall, RepCall, FJExprException, \
-    FlipJump, WordFlip, Label, Segment, Reserve, LastPhaseOp, macro_separator_string
+from defs import main_macro, wflip_start_label, \
+    BoundaryAddressesList, SegmentEntry, \
+    CodePosition, Macro, MacroName, \
+    macro_separator_string
+from exceptions import FJPreprocessorException, FJExprException
+from expr import Expr
+from ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, LastPhaseOp, new_label
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
 
