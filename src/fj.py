@@ -6,28 +6,10 @@ from typing import Tuple, List, Set, Callable
 
 import assembler
 import fjm_run
-from defs import Verbose, FJReadFjmException, get_stl_paths
-
+from defs import FJReadFjmException, get_stl_paths
+from src.io_devices.StandardIO import StandardIO
 
 ErrorFunc = Callable[[str], None]
-
-
-def get_run_verbose_set(args: argparse.Namespace) -> Set[Verbose]:
-    """
-    extract the running verbose-options into a verbose-set.
-    @param args: the parsed arguments
-    @return: the verbose-set
-    """
-    verbose_set = set()
-
-    if not args.silent:
-        verbose_set.add(Verbose.Time)
-    if not args.no_output:
-        verbose_set.add(Verbose.PrintOutput)
-    if args.trace:
-        verbose_set.add(Verbose.Run)
-
-    return verbose_set
 
 
 def get_temp_directory_suffix(args: argparse.Namespace) -> str:
@@ -107,7 +89,7 @@ def get_files_paths(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_na
 
 def run(in_fjm_path: Path, debug_file: Path, args: argparse.Namespace, error_func: ErrorFunc) -> None:
     """
-    prepare and verify arguments, and run the .fjm program.
+    prepare and verify arguments and io_device, and run the .fjm program.
     @param in_fjm_path: the input .fjm-file path
     @param debug_file: the debug-file path
     @param args: the parsed arguments
@@ -117,17 +99,18 @@ def run(in_fjm_path: Path, debug_file: Path, args: argparse.Namespace, error_fun
     if debug_file:
         verify_file_exists(error_func, debug_file)
 
-    verbose_set = get_run_verbose_set(args)
-
     breakpoint_set = set(args.breakpoint)
     breakpoint_contains_set = set(args.breakpoint_contains)
+
+    io_device = StandardIO(not args.no_output)
 
     try:
         termination_statistics = \
             fjm_run.debug_and_run(in_fjm_path,
                                   debugging_file=debug_file,
-                                  defined_input=None,
-                                  verbose=verbose_set,
+                                  io_device=io_device,
+                                  show_trace=args.trace,
+                                  time_verbose=not args.silent,
                                   breakpoint_labels=breakpoint_set,
                                   breakpoint_contains_labels=breakpoint_contains_set)
         if not args.silent:

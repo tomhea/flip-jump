@@ -4,8 +4,8 @@ from pathlib import Path
 
 from src import assembler
 from src import fjm_run
-from src.defs import TerminationCause, Verbose, get_stl_paths
-
+from src.defs import TerminationCause, get_stl_paths, bytes_encoding
+from src.io_devices.FixedIO import FixedIO
 
 CSV_TRUE = 'True'
 CSV_FALSE = 'False'
@@ -133,7 +133,7 @@ class RunTestArgs:
 
         if self.read_out_as_binary:
             with open(self.out_file_path, 'rb') as out_f:
-                return out_f.read().decode('raw_unicode_escape')
+                return out_f.read().decode(bytes_encoding)
         else:
             with open(self.out_file_path, 'r') as out_f:
                 return out_f.read()
@@ -149,8 +149,9 @@ def test_run(run_args: RunTestArgs) -> None:
     """
     print(f'Running test {run_args.test_name}:')
 
+    io_device = FixedIO(run_args.get_defined_input())
     termination_statistics = fjm_run.run(run_args.fjm_path,
-                                         defined_input=run_args.get_defined_input(),
+                                         io_device=io_device,
                                          time_verbose=True)
 
     print(termination_statistics)
@@ -158,6 +159,6 @@ def test_run(run_args: RunTestArgs) -> None:
     expected_termination_cause = TerminationCause.Looping
     assert termination_statistics.termination_cause == expected_termination_cause
 
-    output = termination_statistics.standard_output.decode('raw_unicode_escape')
+    output = io_device.get_output().decode(bytes_encoding)
     expected_output = run_args.get_expected_output()
     assert output == expected_output

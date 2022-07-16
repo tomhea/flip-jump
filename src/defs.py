@@ -90,19 +90,13 @@ def get_char_value_and_length(s: str) -> Tuple[int, int]:
     return int(s[2:4], 16), 4
 
 
-class Verbose(IntEnum):
-    Run = 1
-    Time = 2
-    PrintOutput = 3
-
-
 class TerminationCause(IntEnum):
     Looping = 0
-    Input = 1
+    EOF = 1
     NullIP = 2
 
     def __str__(self) -> str:
-        return ['looping', 'input', 'ip<2w'][self.value]
+        return ['looping', 'EOF', 'ip<2w'][self.value]
 
 
 class SegmentEntry(IntEnum):
@@ -472,3 +466,6 @@ wflip_start_label = '_.wflip_area_start_'
 
 def next_address() -> Expr:
     return Expr('$')
+
+
+bytes_encoding = 'raw_unicode_escape'
