@@ -3,7 +3,7 @@ from os import path
 from pathlib import Path
 from time import time
 from sys import stdin, stdout
-from typing import Optional, List, Dict, Set, Tuple
+from typing import Optional, List, Dict, Set
 
 import easygui
 

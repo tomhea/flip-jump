@@ -1,12 +1,15 @@
 import os
 import argparse
 from pathlib import Path
-from tempfile import mkstemp, TemporaryDirectory
-from typing import Tuple, List, Set
+from tempfile import TemporaryDirectory
+from typing import Tuple, List, Set, Callable
 
 import assembler
 import fjm_run
 from defs import Verbose, FJReadFjmException, get_stl_paths
+
+
+ErrorFunc = Callable[[str], None]
 
 
 def get_run_verbose_set(args: argparse.Namespace) -> Set[Verbose]:
@@ -54,37 +57,155 @@ def get_file_tuples(args: argparse.Namespace) -> List[Tuple[str, Path]]:
     return file_tuples
 
 
-def verify_file_exists(parser: argparse.ArgumentParser, path: Path) -> None:
+def verify_file_exists(error_func: ErrorFunc, path: Path) -> None:
     """
     verify that the file exists.
-    @param parser: the parser
+    @param error_func: the parser's error function
     @param path: the file's path
     """
     if not path.is_file():
-        parser.error(f'file {path} does not exist.')
+        error_func(f'file {path} does not exist.')
 
 
-def verify_fj_files(parser: argparse.ArgumentParser, file_tuples: List[Tuple[str, Path]]) -> None:
+def verify_fj_files(error_func: ErrorFunc, file_tuples: List[Tuple[str, Path]]) -> None:
     """
     verify that all files exist and with the right suffix.
-    @param parser: the parser
+    @param error_func: the parser's error function
     @param file_tuples: a list of file-tuples - (file_short_name, file_path)
     """
     for _, path in file_tuples:
-        verify_file_exists(parser, path)
+        verify_file_exists(error_func, path)
         if '.fj' != path.suffix:
-            parser.error(f'file {path} is not a .fj file.')
+            error_func(f'file {path} is not a .fj file.')
 
 
-def verify_fjm_file(parser: argparse.ArgumentParser, path: Path) -> None:
+def verify_fjm_file(error_func: ErrorFunc, path: Path) -> None:
     """
     verify that this file exists and with the right suffix.
-    @param parser: the parser
+    @param error_func: the parser's error function
     @param path: the file's path
     """
-    verify_file_exists(parser, path)
+    verify_file_exists(error_func, path)
     if '.fjm' != path.suffix:
-        parser.error(f'file {path} is not a .fjm file.')
+        error_func(f'file {path} is not a .fjm file.')
+
+
+def get_files_paths(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_name: str) -> Tuple[Path, Path, Path]:
+    """
+    generate the files paths from args, and create temp paths under temp_dir_name if necessary.
+    @param args: the parsed arguments
+    @param error_func: parser's error function
+    @param temp_dir_name: the temp directory's name
+    @return: the path of the debug-file, the (to-be-compiled) fjm, and the input fjm
+    """
+    out_fjm_path = get_fjm_file_path(args, error_func, temp_dir_name)
+    debug_path = get_debug_file_path(args, error_func, temp_dir_name)
+    in_fjm_path = args.files[0] if args.run else out_fjm_path
+
+    return debug_path, in_fjm_path, out_fjm_path
+
+
+def run(in_fjm_path: Path, debug_file: Path, args: argparse.Namespace, error_func: ErrorFunc) -> None:
+    """
+    prepare and verify arguments, and run the .fjm program.
+    @param in_fjm_path: the input .fjm-file path
+    @param debug_file: the debug-file path
+    @param args: the parsed arguments
+    @param error_func: the parser's error function
+    """
+    verify_fjm_file(error_func, in_fjm_path)
+    if debug_file:
+        verify_file_exists(error_func, debug_file)
+
+    verbose_set = get_run_verbose_set(args)
+
+    breakpoint_set = set(args.breakpoint)
+    breakpoint_contains_set = set(args.breakpoint_contains)
+
+    try:
+        termination_statistics = \
+            fjm_run.debug_and_run(in_fjm_path,
+                                  debugging_file=debug_file,
+                                  defined_input=None,
+                                  verbose=verbose_set,
+                                  breakpoint_labels=breakpoint_set,
+                                  breakpoint_contains_labels=breakpoint_contains_set)
+        if not args.silent:
+            print(termination_statistics)
+    except FJReadFjmException as e:
+        print()
+        print(e)
+        exit(1)
+
+
+def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, error_func: ErrorFunc) -> None:
+    """
+    prepare and verify arguments, and assemble the .fj files.
+    @param out_fjm_file: the to-be-compiled .fjm-file path
+    @param debug_file: the debug-file path
+    @param args: the parsed arguments
+    @param error_func: the parser's error function
+    """
+    file_tuples = get_file_tuples(args)
+    verify_fj_files(error_func, file_tuples)
+
+    assembler.assemble(file_tuples, out_fjm_file, args.width,
+                       version=args.version, flags=args.flags,
+                       warning_as_errors=args.werror,
+                       show_statistics=args.stats, print_time=not args.silent,
+                       debugging_file=debug_file)
+
+
+def get_fjm_file_path(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_name: str) -> Path:
+    """
+    get the output-fjm path from args. If unspecified, create a temporary file under temp_dir_name.
+    @param args: the parsed arguments
+    @param error_func: the parser's error function
+    @param temp_dir_name: a temporary directory that files can safely be created in
+    @return: the output-fjm path
+    """
+    out_fjm_file = args.outfile
+
+    if out_fjm_file is None:
+        if args.asm:
+            error_func(f'assemble-only is used, but no outfile is specified.')
+        out_fjm_file = os.path.join(temp_dir_name, 'out.fjm')
+    elif not args.run and not out_fjm_file.endswith('.fjm'):
+        error_func(f'output file {out_fjm_file} is not a .fjm file.')
+
+    return Path(out_fjm_file)
+
+
+def get_debug_file_path(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_name: str) -> Path:
+    """
+    get the debug-file path from args. If unspecified, create a temporary file under temp_dir_name.
+    @param args: the parsed arguments
+    @param error_func: the parser's error function
+    @param temp_dir_name: a temporary directory that files can safely be created in
+    @return: the debug-file path
+    """
+    debug_file = args.debug
+    debug_file_needed = not args.asm and any((args.breakpoint, args.breakpoint_contains))
+
+    if debug_file is None and debug_file_needed:
+        if not args.silent:
+            parser_warning = 'Parser Warning - breakpoints are used but the debugging flag (-d) is not specified.'
+            if args.werror:
+                error_func(parser_warning)
+            print(f"{parser_warning} Debugging data will be saved.")
+        debug_file = True
+
+    if debug_file is True:
+        if args.asm:
+            error_func('assemble-only is used with the debug flag, but no debug file is specified.')
+        if args.run:
+            error_func('run-only is used with the debug flag, but no debug file is specified.')
+        debug_file = os.path.join(temp_dir_name, 'debug.fjd')
+
+    if isinstance(debug_file, str):
+        debug_file = Path(debug_file)
+
+    return debug_file
 
 
 def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
@@ -176,104 +297,37 @@ def get_argument_parser() -> argparse.ArgumentParser:
     )
 
 
-def main():
-    # TODO document and move up fj.py
-    # TODO remove mkstemp from all directories
-
+def parse_arguments() -> Tuple[argparse.Namespace, ErrorFunc]:
+    """
+    parse the command line arguments.
+    @return: the parsed arguments, and the parser's error function
+    """
     parser = get_argument_parser()
     add_arguments(parser)
     args = parser.parse_args()
 
-    execute_assemble_run(args, parser)
+    return args, parser.error
 
 
-def execute_assemble_run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+def execute_assemble_run(args: argparse.Namespace, error_func: ErrorFunc) -> None:
+    """
+    prepare temp files, and execute the run and assemble functions.
+    @param args: the parsed arguments
+    @param error_func: parser's error function
+    """
     with TemporaryDirectory(suffix=get_temp_directory_suffix(args)) as temp_dir_name:
-        out_fjm_file = get_fjm_file_path(args, parser, temp_dir_name)
-        debug_file = get_debug_file_path(args, temp_dir_name)
-        fjm_file_to_run = args.files[0] if args.run else out_fjm_file
+        debug_path, in_fjm_path, out_fjm_path = get_files_paths(args, error_func, temp_dir_name)
 
         if not args.run:
-            assemble(out_fjm_file, debug_file, args, parser)
+            assemble(out_fjm_path, debug_path, args, error_func)
 
         if not args.asm:
-            run(fjm_file_to_run, debug_file, args, parser)
+            run(in_fjm_path, debug_path, args, error_func)
 
 
-def run(fjm_file_to_run: Path, debug_file: Path, args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
-    verify_fjm_file(parser, fjm_file_to_run)
-    if debug_file:
-        verify_file_exists(parser, debug_file)
-
-    verbose_set = get_run_verbose_set(args)
-
-    breakpoint_set = set(args.breakpoint)
-    breakpoint_contains_set = set(args.breakpoint_contains)
-
-    try:
-        termination_statistics = \
-            fjm_run.debug_and_run(fjm_file_to_run,
-                                  debugging_file=debug_file,
-                                  defined_input=None,
-                                  verbose=verbose_set,
-                                  breakpoint_labels=breakpoint_set,
-                                  breakpoint_contains_labels=breakpoint_contains_set)
-        if not args.silent:
-            print(termination_statistics)
-    except FJReadFjmException as e:
-        print()
-        print(e)
-        exit(1)
-
-
-def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
-    file_tuples = get_file_tuples(args)
-    verify_fj_files(parser, file_tuples)
-
-    assembler.assemble(file_tuples, out_fjm_file, args.width,
-                       version=args.version, flags=args.flags,
-                       warning_as_errors=args.werror,
-                       show_statistics=args.stats, print_time=not args.silent,
-                       debugging_file=debug_file)
-
-
-def get_fjm_file_path(args: argparse.Namespace, parser: argparse.ArgumentParser, temp_dir_name: str) -> Path:
-    """
-    get the output-fjm path from args. If unspecified, create a temporary file under temp_dir_name.
-    @param args: the parsed arguments
-    @param parser: the parser
-    @param temp_dir_name: a temporary directory that files can safely be created in
-    @return: the output-fjm path
-    """
-    out_fjm_file = args.outfile
-
-    if out_fjm_file is None:
-        if args.asm:
-            parser.error(f'assemble-only is used, but no outfile is specified.')
-        out_fjm_file = os.path.join(temp_dir_name, 'out.fjm')
-    elif not out_fjm_file.endswith('.fjm'):
-        parser.error(f'output file {out_fjm_file} is not a .fjm file.')
-
-    return Path(out_fjm_file)
-
-
-def get_debug_file_path(args, temp_dir_name):
-    debug_file = args.debug
-    debug_file_needed = not args.asm and any((args.breakpoint, args.breakpoint_contains))
-
-    if debug_file is None and debug_file_needed:
-        if not args.silent:
-            print(f"Parser Warning - breakpoints are used but the debugging flag (-d) is not specified. "
-                  f"Debugging data will be saved.")
-        debug_file = True
-
-    if debug_file is True:
-        debug_file = os.path.join(temp_dir_name, 'debug.fjd')
-
-    if isinstance(debug_file, str):
-        debug_file = Path(debug_file)
-
-    return debug_file
+def main() -> None:
+    args, error_func = parse_arguments()
+    execute_assemble_run(args, error_func)
 
 
 if __name__ == '__main__':

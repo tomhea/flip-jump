@@ -5,7 +5,7 @@ from typing import Deque, List, Dict, Tuple
 import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
-from defs import Verbose, SegmentEntry, FJAssemblerException, PrintTimer, FlipJump, WordFlip, \
+from defs import SegmentEntry, FJAssemblerException, PrintTimer, FlipJump, WordFlip, \
     FJException, Segment, Reserve, BoundaryAddressesList, Expr, LastPhaseOp
 
 
