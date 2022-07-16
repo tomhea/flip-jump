@@ -1,39 +1,34 @@
-import os
 import pickle
-from time import time
-from tempfile import mkstemp
+from pathlib import Path
+from typing import Deque, List, Dict, Tuple
 
 import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
-from defs import eval_all, Verbose, SegmentEntry, FJAssemblerException, OpType, PrintTimer
+from defs import SegmentEntry, FJAssemblerException, PrintTimer, FlipJump, WordFlip, \
+    FJException, Segment, Reserve, BoundaryAddressesList, Expr, LastPhaseOp
 
 
-def lsb_first_bin_array(int_value, bit_size):
-    return [int(c) for c in bin(int_value & ((1 << bit_size) - 1))[2:].zfill(bit_size)[-bit_size:]][::-1][:bit_size]
-
-
-def write_flip_jump(bits, f, j, w):
-    bits += lsb_first_bin_array(f, w)
-    bits += lsb_first_bin_array(j, w)
-
-
-def close_segment(w, segment_index, boundary_addresses, writer, first_address, last_address, bits, wflips):
+def close_segment(w: int,
+                  segment_index: int, boundary_addresses: BoundaryAddressesList,
+                  writer: fjm.Writer,
+                  first_address: int, last_address: int,
+                  fj_words: List[int], wflip_words: List[int]) -> None:
     if first_address == last_address:
         return
     assert_none_crossing_segments(segment_index, first_address, last_address, boundary_addresses)
 
-    data_start, data_length = writer.add_data(bits + wflips)
+    data_start, data_length = writer.add_data(fj_words + wflip_words)
     segment_length = (last_address - first_address) // w
     if segment_length < data_length:
         raise FJAssemblerException(f'segment-length is smaller than data-length:  {segment_length} < {data_length}')
     writer.add_segment(first_address // w, segment_length, data_start, data_length)
 
-    bits.clear()
-    wflips.clear()
+    fj_words.clear()
+    wflip_words.clear()
 
 
-def clean_segment_index(index, boundary_addresses):
+def get_clean_segment_index(index: int, boundary_addresses: BoundaryAddressesList) -> int:
     clean_index = 0
     for entry in boundary_addresses[:index]:
         if entry[0] == SegmentEntry.WflipAddress:
@@ -41,7 +36,9 @@ def clean_segment_index(index, boundary_addresses):
     return clean_index
 
 
-def assert_none_crossing_segments(curr_segment_index, old_address, new_address, boundary_addresses):
+def assert_none_crossing_segments(curr_segment_index: int,
+                                  old_address: int, new_address: int,
+                                  boundary_addresses: BoundaryAddressesList) -> None:
     min_i = None
     min_seg_start = None
 
@@ -60,12 +57,12 @@ def assert_none_crossing_segments(curr_segment_index, old_address, new_address, 
 
     if min_i is not None:
         raise FJAssemblerException(f"Overlapping segments (address {hex(new_address)}): "
-                                   f"seg[{clean_segment_index(curr_segment_index, boundary_addresses)}]"
+                                   f"seg[{get_clean_segment_index(curr_segment_index, boundary_addresses)}]"
                                    f"=({hex(boundary_addresses[curr_segment_index][1])}..) and "
-                                   f"seg[{clean_segment_index(min_i, boundary_addresses)}]=({hex(min_seg_start)}..)")
+                                   f"seg[{get_clean_segment_index(min_i, boundary_addresses)}]=({hex(min_seg_start)}..)")
 
 
-def get_next_wflip_entry_index(boundary_addresses, index):
+def get_next_wflip_entry_index(boundary_addresses: BoundaryAddressesList, index: int) -> int:
     length = len(boundary_addresses)
     while boundary_addresses[index][0] != SegmentEntry.WflipAddress:
         index += 1
@@ -74,98 +71,84 @@ def get_next_wflip_entry_index(boundary_addresses, index):
     return index
 
 
-def labels_resolve(ops, labels, boundary_addresses, w, writer,
-                   *, verbose=False):   # TODO handle verbose?
+def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
+                   boundary_addresses: BoundaryAddressesList,
+                   w: int, writer: fjm.Writer) -> None:
     if max(e[1] for e in boundary_addresses) >= (1 << w):
         raise FJAssemblerException(f"Not enough space with the {w}-width.")
 
-    bits = []
-    wflips = []
+    fj_words = []
+    wflip_words = []
     segment_index = 0
     last_start_seg_index = segment_index
     first_address = boundary_addresses[last_start_seg_index][1]
     wflip_address = boundary_addresses[get_next_wflip_entry_index(boundary_addresses, 0)][1]
 
     for op in ops:
-        ids = eval_all(op, labels)
-        if ids:
-            raise FJAssemblerException(f"Can't resolve the following names: {', '.join(ids)} (in op {op}).")
-        vals = [datum.val for datum in op.data]
+        if isinstance(op, FlipJump):
+            try:
+                fj_words += (op.get_flip(labels), op.get_jump(labels))
+            except FJException as e:
+                raise FJAssemblerException(f"Can't resolve labels in op {op}.") from e
+        elif isinstance(op, WordFlip):
+            try:
+                word_address = op.get_word_address(labels)
+                flip_value = op.get_flip_value(labels)
+                return_address = op.get_return_address(labels)
+            except FJException as e:
+                raise FJAssemblerException(f"Can't resolve labels in op {op}.") from e
 
-        if op.type == OpType.FlipJump:
-            f, j = vals
-            bits += [f, j]
-        elif op.type == OpType.Segment:
-            segment_index += 2
-            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits,
-                          wflips)
-            last_start_seg_index = segment_index
-            first_address = boundary_addresses[last_start_seg_index][1]
-            wflip_address = boundary_addresses[get_next_wflip_entry_index(boundary_addresses, segment_index)][1]
-        elif op.type == OpType.Reserve:
-            segment_index += 1
-            last_address = boundary_addresses[segment_index][1]
-            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, last_address, bits, [])
-            first_address = last_address
-        elif op.type == OpType.WordFlip:
-            to_address, by_address, return_address = vals
-            flip_bits = [i for i in range(w) if by_address & (1 << i)]
+            flip_bits = [i for i in range(w) if flip_value & (1 << i)]
 
             if len(flip_bits) <= 1:
-                bits += [to_address + flip_bits[0] if flip_bits else 0,
-                         return_address]
+                fj_words += (word_address + flip_bits[0] if flip_bits else 0, return_address)
             else:
-                bits += [to_address + flip_bits[0],
-                         wflip_address]
+                fj_words += (word_address + flip_bits[0], wflip_address)
                 next_op = wflip_address
                 for bit in flip_bits[1:-1]:
                     next_op += 2*w
-                    wflips += [to_address+bit,
-                               next_op]
-                wflips += [to_address + flip_bits[-1],
-                           return_address]
+                    wflip_words += (word_address+bit, next_op)
+                wflip_words += (word_address + flip_bits[-1], return_address)
                 wflip_address = next_op + 2 * w
 
                 if wflip_address >= (1 << w):
                     raise FJAssemblerException(f"Not enough space with the {w}-width.")
+        elif isinstance(op, Segment):
+            segment_index += 2
+            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, fj_words,
+                          wflip_words)
+            last_start_seg_index = segment_index
+            first_address = boundary_addresses[last_start_seg_index][1]
+            wflip_address = boundary_addresses[get_next_wflip_entry_index(boundary_addresses, segment_index)][1]
+        elif isinstance(op, Reserve):
+            segment_index += 1
+            last_address = boundary_addresses[segment_index][1]
+            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, last_address, fj_words, [])
+            first_address = last_address
         else:
             raise FJAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
 
-    close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, bits, wflips)
+    close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, fj_words, wflip_words)
 
 
-def assemble(input_files, output_file, w,
+def assemble(input_files: List[Tuple[str, Path]], output_file, w,
              *, version=0, flags=0,
              warning_as_errors=True,
-             show_statistics=False, preprocessed_file=None, debugging_file=None, verbose=None):
-    if verbose is None:
-        verbose = set()
-
+             show_statistics=False, debugging_file=None, print_time=True):
     writer = fjm.Writer(output_file, w, version=version, flags=flags)
 
-    temp_preprocessed_file, temp_fd = False, 0
-    if preprocessed_file is None:
-        temp_fd, preprocessed_file = mkstemp()
-        temp_preprocessed_file = True
+    with PrintTimer('  parsing:         ', print_time=print_time):
+        macros = parse_macro_tree(input_files, w, warning_as_errors)
 
-    time_verbose = Verbose.Time in verbose
+    with PrintTimer('  macro resolve:   ', print_time=print_time):
+        ops, labels, boundary_addresses = resolve_macros(w, macros,
+                                                         show_statistics=show_statistics)
 
-    with PrintTimer('  parsing:         ', print_time=time_verbose):
-        macros = parse_macro_tree(input_files, w, warning_as_errors, verbose=Verbose.Parse in verbose)
+    with PrintTimer('  labels resolve:  ', print_time=print_time):
+        labels_resolve(ops, labels, boundary_addresses, w, writer)
 
-    with PrintTimer('  macro resolve:   ', print_time=time_verbose):
-        ops, labels, boundary_addresses = resolve_macros(w, macros, output_file=preprocessed_file,
-                                                         show_statistics=show_statistics,
-                                                         verbose=Verbose.MacroSolve in verbose)
-
-    with PrintTimer('  labels resolve:  ', print_time=time_verbose):
-        labels_resolve(ops, labels, boundary_addresses, w, writer, verbose=Verbose.LabelSolve in verbose)
-
-    with PrintTimer('  create binary:   ', print_time=time_verbose):
+    with PrintTimer('  create binary:   ', print_time=print_time):
         writer.write_to_file()
-
-    if temp_preprocessed_file:
-        os.close(temp_fd)
 
     labels = {label: labels[label].val for label in labels}
 

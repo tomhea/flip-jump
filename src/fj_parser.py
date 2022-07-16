@@ -1,25 +1,32 @@
 from os import path
+from pathlib import Path
+from typing import Set, List, Tuple
 
 from sly import Lexer, Parser
 
-from defs import get_char_value_and_length, get_all_used_labels, \
+from defs import get_char_value_and_length, get_used_labels, get_declared_labels, \
     main_macro, next_address, \
-    OpType, Op, Expr, FJParsingException, \
-    number_re, dot_id_re, id_re, string_re
+    Expr, FJParsingException, \
+    number_re, dot_id_re, id_re, string_re, \
+    CodePosition, Macro, MacroCall, MacroName, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, FJExprException
+
+global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace, reserved_names
 
 
-global curr_file, curr_text, error_occurred, curr_namespace, reserved_names
+def get_position(lineno: int):
+    return CodePosition(curr_file, curr_file_short_name, lineno)
 
 
-def syntax_error(line, msg=''):
+def syntax_error(lineno: int, msg=''):
     global error_occurred
     error_occurred = True
+    curr_position = get_position(lineno)
     print()
     if msg:
-        print(f"Syntax Error in file {curr_file} line {line}:")
+        print(f"Syntax Error in {curr_position}:")
         print(f"  {msg}")
     else:
-        print(f"Syntax Error in file {curr_file} line {line}")
+        print(f"Syntax Error in {curr_position}")
 
 
 def syntax_warning(line, is_error, msg=''):
@@ -125,7 +132,7 @@ class FJLexer(Lexer):
         global error_occurred
         error_occurred = True
         print()
-        print(f"Lexing Error in file {curr_file} line {self.lineno}: {t.value[0]}")
+        print(f"Lexing Error in {get_position(self.lineno)}: {t.value[0]}")
         self.index += 1
 
 
@@ -146,67 +153,59 @@ class FJParser(Parser):
     )
     # debugfile = 'src/parser.out'
 
-    def __init__(self, w, warning_as_errors, verbose=False):
-        self.verbose = verbose
+    def __init__(self, w, warning_as_errors):
         self.defs = {'w': Expr(w)}
         self.warning_as_errors = warning_as_errors
+        self.macros = {main_macro: Macro([], [], [], '', None)}
 
-        # [(params, quiet_params), statements, (curr_file, p.lineno, ns_name)]
-        self.macros = {main_macro: [([], []), [], (None, None, '')]}
-
-    def check_macro_name(self, name, line):
+    def check_macro_name(self, name: MacroName, lineno: int):
         global reserved_names
-        base_name = self.ns_to_base_name(name[0])
+        base_name = self.ns_to_base_name(name.name)
         if base_name in reserved_names:
-            syntax_error(line, f'macro name can\'t be {name[0]} ({base_name} is a reserved name)!')
+            syntax_error(lineno, f'macro name can\'t be {name.name} ({base_name} is a reserved name)!')
         if name in self.macros:
-            _, _, (other_file, other_line, _) = self.macros[name]
-            syntax_error(line, f'macro {name} is declared twice! '
-                               f'also declared in file {other_file} (line {other_line}).')
+            syntax_error(lineno, f'macro {name} is declared twice! '
+                                 f'also declared in {self.macros[name].code_position}.')
 
-    def check_params(self, ids, macro_name, line):
+    def check_params(self, ids, macro_name: MacroName, lineno: int):
         for param_id in ids:
             if param_id in self.defs:
-                syntax_error(line, f'parameter {param_id} in macro {macro_name[0]}({macro_name[1]}) '
-                                   f'is also defined as a constant variable (with value {self.defs[param_id]})')
+                syntax_error(lineno, f'parameter {param_id} in macro {macro_name}) '
+                                     f'is also defined as a constant variable (with value {self.defs[param_id]})')
         for i1 in range(len(ids)):
             for i2 in range(i1):
                 if ids[i1] == ids[i2]:
-                    syntax_error(line, f'parameter {ids[i1]} in macro {macro_name[0]}({macro_name[1]}) '
-                                       f'is declared twice!')
+                    syntax_error(lineno, f'parameter {ids[i1]} in macro {macro_name}) '
+                                         f'is declared twice!')
 
-    def check_label_usage(self, labels_used, labels_declared, params, externs, global_labels, line, macro_name):
+    def check_label_usage(self, labels_used: Set[str], labels_declared: Set[str], params: Set[str], externs: Set[str],
+                          global_labels: Set[str], lineno: int, macro_name: MacroName):
         if global_labels & externs:
-            syntax_error(line, f"In macro {macro_name[0]}({macro_name[1]}):  "
-                               f"extern labels can't be global labels: " + ', '.join(global_labels & externs))
+            syntax_error(lineno, f"In macro {macro_name}:  "
+                                 f"extern labels can't be global labels: " + ', '.join(global_labels & externs))
         if global_labels & params:
-            syntax_error(line, f"In macro {macro_name[0]}({macro_name[1]}):  "
-                               f"extern labels can't be regular labels: " + ', '.join(global_labels & params))
+            syntax_error(lineno, f"In macro {macro_name}:  "
+                                 f"extern labels can't be regular labels: " + ', '.join(global_labels & params))
         if externs & params:
-            syntax_error(line, f"In macro {macro_name[0]}({macro_name[1]}):  "
-                               f"global labels can't be regular labels: " + ', '.join(externs & params))
-
-        # params.update([self.ns_full_name(p) for p in params])
-        # externs = set([self.ns_full_name(p) for p in externs])
-        # globals.update([self.ns_full_name(p) for p in globals])
+            syntax_error(lineno, f"In macro {macro_name}:  "
+                                 f"global labels can't be regular labels: " + ', '.join(externs & params))
 
         unused_labels = params - labels_used.union(self.ns_to_base_name(label) for label in labels_declared)
         if unused_labels:
-            syntax_warning(line, self.warning_as_errors,
-                           f"In macro {macro_name[0]}({macro_name[1]}):  "
+            syntax_warning(lineno, self.warning_as_errors,
+                           f"In macro {macro_name}:  "
                            f"unused labels: {', '.join(unused_labels)}.")
 
         bad_declarations = labels_declared - set(self.ns_full_name(label) for label in externs.union(params))
         if bad_declarations:
-            syntax_warning(line, self.warning_as_errors,
-                           f"In macro {macro_name[0]}({macro_name[1]}):  "
+            syntax_warning(lineno, self.warning_as_errors,
+                           f"In macro {macro_name}:  "
                            f"Declared a not extern/parameter label: {', '.join(bad_declarations)}.")
 
         bad_uses = labels_used - global_labels - params - set(labels_declared) - {'$'}
         if bad_uses:
-            # print('\nused:', labels_used, 'globals:', globals, 'params:', params)
-            syntax_warning(line, self.warning_as_errors,
-                           f"In macro {macro_name[0]}({macro_name[1]}):  "
+            syntax_warning(lineno, self.warning_as_errors,
+                           f"In macro {macro_name}:  "
                            f"Used a not global/parameter/declared-extern label: {', '.join(bad_uses)}.")
 
     @staticmethod
@@ -237,19 +236,12 @@ class FJParser(Parser):
         global error_occurred
         error_occurred = True
         print()
-        print(f'Syntax Error in file {curr_file} line {token.lineno}, token=("{token.type}", {token.value})')
+        print(f'Syntax Error in {get_position(token.lineno)}, token=("{token.type}", {token.value})')
 
     @_('definable_line_statements')
     def program(self, p):
         ops = p.definable_line_statements
-        self.macros[main_macro][1].extend(ops)
-
-        # labels_used, labels_declared = all_used_labels(ops)
-        # bad_uses = labels_used - set(labels_declared) - {'$'}
-        # if bad_uses:
-        #     syntax_warning(None, self.warning_as_errors,
-        #                    f"Outside of macros:  "
-        #                    f"Used a not declared label: {', '.join(bad_uses)}.")
+        self.macros[main_macro].ops.extend(ops)
 
     @_('definable_line_statements NL definable_line_statement')
     def definable_line_statements(self, p):
@@ -287,13 +279,16 @@ class FJParser(Parser):
     @_('DEF ID macro_params "{" NL line_statements NL "}"')
     def macro_def(self, p):
         params, local_params, global_params, extern_params = p.macro_params
-        name = (self.ns_full_name(p.ID), len(params))
+        name = MacroName(self.ns_full_name(p.ID), len(params))
         self.check_macro_name(name, p.lineno)
         self.check_params(params + local_params, name, p.lineno)
         ops = p.line_statements
-        self.check_label_usage(*get_all_used_labels(ops), set(params + local_params), set(extern_params),
+
+        used_labels = get_used_labels(ops)
+        declared_labels = get_declared_labels(ops)
+        self.check_label_usage(used_labels, declared_labels, set(params + local_params), set(extern_params),
                                set(global_params), p.lineno, name)
-        self.macros[name] = [(params, local_params), ops, (curr_file, p.lineno, self.ns_name())]
+        self.macros[name] = Macro(params, local_params, ops, self.ns_name(), get_position(p.lineno))
         return None
 
     @_('empty')
@@ -374,23 +369,23 @@ class FJParser(Parser):
 
     @_('ID ":"')
     def label(self, p):
-        return Op(OpType.Label, (self.ns_full_name(p.ID),), curr_file, p.lineno)
+        return Label(self.ns_full_name(p.ID), get_position(p.lineno))
 
     @_('expr SC')
     def statement(self, p):
-        return Op(OpType.FlipJump, (p.expr, next_address()), curr_file, p.lineno)
+        return FlipJump(p.expr, next_address(), get_position(p.lineno))
 
     @_('expr SC expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (p.expr0, p.expr1), curr_file, p.lineno)
+        return FlipJump(p.expr0, p.expr1, get_position(p.lineno))
 
     @_('SC expr')
     def statement(self, p):
-        return Op(OpType.FlipJump, (Expr(0), p.expr), curr_file, p.lineno)
+        return FlipJump(Expr(0), p.expr, get_position(p.lineno))
 
     @_('SC')
     def statement(self, p):
-        return Op(OpType.FlipJump, (Expr(0), next_address()), curr_file, p.lineno)
+        return FlipJump(Expr(0), next_address(), get_position(p.lineno))
 
     @_('ID')
     def id(self, p):
@@ -411,53 +406,52 @@ class FJParser(Parser):
     @_('id')
     def statement(self, p):
         macro_name, lineno = p.id
-        return Op(OpType.Macro, ((macro_name, 0),), curr_file, lineno)
+        return MacroCall(macro_name, [], get_position(lineno))
 
     @_('id expressions')
     def statement(self, p):
         macro_name, lineno = p.id
-        return Op(OpType.Macro, ((macro_name, len(p.expressions)), *p.expressions), curr_file, lineno)
+        return MacroCall(macro_name, p.expressions, get_position(lineno))
 
     @_('WFLIP expr "," expr')
     def statement(self, p):
-        return Op(OpType.WordFlip, (p.expr0, p.expr1, next_address()), curr_file, p.lineno)
+        return WordFlip(p.expr0, p.expr1, next_address(), get_position(p.lineno))
 
     @_('WFLIP expr "," expr "," expr')
     def statement(self, p):
-        return Op(OpType.WordFlip, (p.expr0, p.expr1, p.expr2), curr_file, p.lineno)
+        return WordFlip(p.expr0, p.expr1, p.expr2, get_position(p.lineno))
 
     @_('ID "=" expr')
     def statement(self, p):
         name = self.ns_full_name(p.ID)
         if name in self.defs:
             syntax_error(p.lineno, f'Can\'t redeclare the variable "{name}".')
-        if not p.expr.eval(self.defs, curr_file, p.lineno):
-            self.defs[name] = p.expr
-            return None
-        syntax_error(p.lineno, f'Can\'t evaluate expression:  {str(p.expr)}.')
+
+        evaluated = p.expr.eval_new(self.defs)
+        try:
+            self.defs[name] = Expr(int(evaluated))
+        except FJExprException:
+            syntax_error(p.lineno, f'Can\'t evaluate expression:  {str(evaluated)}.')
 
     @_('REP "(" expr "," ID ")" id')
     def statement(self, p):
         macro_name, lineno = p.id
-        return Op(OpType.Rep,
-                  (p.expr, p.ID, Op(OpType.Macro, ((macro_name, 0),), curr_file, lineno)),
-                  curr_file, p.lineno)
+        code_position = get_position(lineno)
+        return RepCall(p.expr, p.ID, macro_name, [], code_position)
 
     @_('REP "(" expr "," ID ")" id expressions')
     def statement(self, p):
-        exps = p.expressions
         macro_name, lineno = p.id
-        return Op(OpType.Rep,
-                  (p.expr, p.ID, Op(OpType.Macro, ((macro_name, len(exps)), *exps), curr_file, lineno)),
-                  curr_file, p.lineno)
+        code_position = get_position(lineno)
+        return RepCall(p.expr, p.ID, macro_name, p.expressions, code_position)
 
     @_('SEGMENT expr')
     def statement(self, p):
-        return Op(OpType.Segment, (p.expr,), curr_file, p.lineno)
+        return Segment(p.expr, get_position(p.lineno))
 
     @_('RESERVE expr')
     def statement(self, p):
-        return Op(OpType.Reserve, (p.expr,), curr_file, p.lineno)
+        return Reserve(p.expr, get_position(p.lineno))
 
     @_('expressions "," expr')
     def expressions(self, p):
@@ -626,13 +620,13 @@ def exit_if_errors():
         raise FJParsingException(f'Errors found in file {curr_file}. Assembly stopped.')
 
 
-def parse_macro_tree(input_files, w, warning_as_errors, verbose=False):
-    global curr_file, curr_text, error_occurred, curr_namespace
+def parse_macro_tree(input_files: List[Tuple[str, Path]], w: int, warning_as_errors: bool):
+    global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace
     error_occurred = False
 
     lexer = FJLexer()
-    parser = FJParser(w, warning_as_errors, verbose=verbose)
-    for curr_file in input_files:
+    parser = FJParser(w, warning_as_errors)
+    for curr_file_short_name, curr_file in input_files:
         if not path.isfile(curr_file):
             raise FJParsingException(f"No such file {curr_file}.")
         curr_text = open(curr_file, 'r').read()
