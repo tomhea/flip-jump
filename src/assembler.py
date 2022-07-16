@@ -1,11 +1,12 @@
 import pickle
-from typing import Deque, List, Dict
+from pathlib import Path
+from typing import Deque, List, Dict, Tuple
 
 import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
-from defs import Verbose, SegmentEntry, FJAssemblerException, PrintTimer, FlipJump, WordFlip, \
-    FJException, Segment, Reserve, Op, BoundaryAddressesList, Expr, LastPhaseOp
+from defs import SegmentEntry, FJAssemblerException, PrintTimer, FlipJump, WordFlip, \
+    FJException, Segment, Reserve, BoundaryAddressesList, Expr, LastPhaseOp
 
 
 def close_segment(w: int,
@@ -130,28 +131,23 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
     close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, fj_words, wflip_words)
 
 
-def assemble(input_files, output_file, w,
+def assemble(input_files: List[Tuple[str, Path]], output_file, w,
              *, version=0, flags=0,
              warning_as_errors=True,
-             show_statistics=False, debugging_file=None, verbose=None):
-    if verbose is None:
-        verbose = set()
-
+             show_statistics=False, debugging_file=None, print_time=True):
     writer = fjm.Writer(output_file, w, version=version, flags=flags)
 
-    time_verbose = Verbose.Time in verbose
-
-    with PrintTimer('  parsing:         ', print_time=time_verbose):
+    with PrintTimer('  parsing:         ', print_time=print_time):
         macros = parse_macro_tree(input_files, w, warning_as_errors)
 
-    with PrintTimer('  macro resolve:   ', print_time=time_verbose):
+    with PrintTimer('  macro resolve:   ', print_time=print_time):
         ops, labels, boundary_addresses = resolve_macros(w, macros,
                                                          show_statistics=show_statistics)
 
-    with PrintTimer('  labels resolve:  ', print_time=time_verbose):
+    with PrintTimer('  labels resolve:  ', print_time=print_time):
         labels_resolve(ops, labels, boundary_addresses, w, writer)
 
-    with PrintTimer('  create binary:   ', print_time=time_verbose):
+    with PrintTimer('  create binary:   ', print_time=print_time):
         writer.write_to_file()
 
     labels = {label: labels[label].val for label in labels}

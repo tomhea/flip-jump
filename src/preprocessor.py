@@ -6,10 +6,7 @@ import plotly.graph_objects as go
 from defs import main_macro, wflip_start_label, new_label, \
     SegmentEntry, Expr, FJPreprocessorException, \
     CodePosition, Macro, MacroName, BoundaryAddressesList, MacroCall, RepCall, FJExprException, \
-    FlipJump, WordFlip, Label, Segment, Reserve, LastPhaseOp
-
-macro_separator_string = "---"
-
+    FlipJump, WordFlip, Label, Segment, Reserve, LastPhaseOp, macro_separator_string
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
 
@@ -92,7 +89,8 @@ def resolve_macros(w: int, macros: Dict[MacroName, Macro], show_statistics: bool
 
 def resolve_macro_aux(w: int, macro_path: str, curr_tree: CurrTree, macros: Dict[MacroName, Macro],
                       macro_name: MacroName, args: Iterable[Expr], macro_code_size: Dict[str, int],
-                      labels: Dict[str, Expr], result_ops: Deque[LastPhaseOp], boundary_addresses: BoundaryAddressesList,
+                      labels: Dict[str, Expr], result_ops: Deque[LastPhaseOp],
+                      boundary_addresses: BoundaryAddressesList,
                       curr_address: List[int], last_address_index, labels_code_positions: Dict[str, CodePosition],
                       code_position: CodePosition = None)\
         -> None:
@@ -136,7 +134,7 @@ def resolve_macro_aux(w: int, macro_path: str, curr_tree: CurrTree, macros: Dict
                 if times == 0:
                     continue
                 next_macro_path = (f"{macro_path}{macro_separator_string}" if macro_path else "") + \
-                                  f"{op.code_position.short_str()}:rep{{}}:{op.macro_name}"
+                    f"{op.code_position.short_str()}:rep{{}}:{op.macro_name}"
                 for i in range(times):
                     curr_tree.append(op)
                     resolve_macro_aux(w, next_macro_path.format(i), curr_tree, macros,
