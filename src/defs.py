@@ -55,15 +55,6 @@ class TerminationCause(IntEnum):
         return ['looping', 'EOF', 'ip<2w'][self.value]
 
 
-class SegmentEntry(IntEnum):
-    StartAddress = 0
-    ReserveAddress = 1
-    WflipAddress = 2
-
-
-BoundaryAddressesList = List[Tuple[SegmentEntry, int]]
-
-
 macro_separator_string = "---"
 
 bytes_encoding = 'raw_unicode_escape'

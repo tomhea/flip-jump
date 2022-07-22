@@ -264,4 +264,20 @@ def new_label(macro_path: str, label_name: str) -> Expr:
 
 
 Op = Union[FlipJump, WordFlip, Label, MacroCall, RepCall, Segment, Reserve]
-LastPhaseOp = Union[FlipJump, WordFlip, Segment, Reserve]
+
+
+WFLIP_NOT_INSERTED_YET = -1
+
+
+class NewSegment:
+    def __init__(self, start_address: int):
+        self.start_address = start_address
+        self.wflip_start_address = WFLIP_NOT_INSERTED_YET
+
+
+class ReserveBits:
+    def __init__(self, first_address_after_reserved: int):
+        self.first_address_after_reserved = first_address_after_reserved
+
+
+LastPhaseOp = Union[FlipJump, WordFlip, NewSegment, ReserveBits]

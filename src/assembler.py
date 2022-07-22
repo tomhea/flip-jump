@@ -1,98 +1,71 @@
 import pickle
 from pathlib import Path
-from typing import Deque, List, Dict, Tuple
+from typing import Deque, List, Dict, Tuple, Optional
 
 import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
 
-from defs import SegmentEntry, PrintTimer, BoundaryAddressesList
-from exceptions import FJAssemblerException, FJException
+from defs import PrintTimer
+from exceptions import FJAssemblerException, FJException, FJWriteFjmException
 from expr import Expr
-from ops import FlipJump, WordFlip, Segment, Reserve, LastPhaseOp
+from ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits
 
 
 def close_segment(w: int,
-                  segment_index: int, boundary_addresses: BoundaryAddressesList,
                   writer: fjm.Writer,
                   first_address: int, last_address: int,
-                  fj_words: List[int], wflip_words: List[int]) -> None:
+                  fj_words: List[int], wflip_words: Optional[List[int]]) -> None:
     if first_address == last_address:
         return
-    assert_none_crossing_segments(segment_index, first_address, last_address, boundary_addresses)
 
-    data_start, data_length = writer.add_data(fj_words + wflip_words)
-    segment_length = (last_address - first_address) // w
-    if segment_length < data_length:
-        raise FJAssemblerException(f'segment-length is smaller than data-length:  {segment_length} < {data_length}')
-    writer.add_segment(first_address // w, segment_length, data_start, data_length)
+    if first_address % w != 0 or last_address % w != 0:
+        raise FJAssemblerException(f'segment boundaries are unaligned: [{hex(first_address)}, {hex(last_address-1)}].')
+
+    assert_address_in_memory(w, first_address)
+    assert_address_in_memory(w, last_address)
+
+    words_to_write = fj_words if wflip_words is None else fj_words + wflip_words
+    data_start, data_length = writer.add_data(words_to_write)
+
+    first_word_address = first_address // w
+    segment_word_length = (last_address - first_address) // w
+
+    try:
+        writer.add_segment(first_word_address, segment_word_length, data_start, data_length)
+    except FJWriteFjmException as e:
+        raise FJAssemblerException(f"failed to add the segment: "
+                                   f"[{hex(first_address)}, {hex(last_address-1)}].") from e
 
     fj_words.clear()
-    wflip_words.clear()
+    if wflip_words is not None:
+        wflip_words.clear()
 
 
-def get_clean_segment_index(index: int, boundary_addresses: BoundaryAddressesList) -> int:
-    clean_index = 0
-    for entry in boundary_addresses[:index]:
-        if entry[0] == SegmentEntry.WflipAddress:
-            clean_index += 1
-    return clean_index
-
-
-def assert_none_crossing_segments(curr_segment_index: int,
-                                  old_address: int, new_address: int,
-                                  boundary_addresses: BoundaryAddressesList) -> None:
-    min_i = None
-    min_seg_start = None
-
-    last_start = None
-    last_start_i = None
-    for i, entry in enumerate(boundary_addresses):
-        if entry[0] == SegmentEntry.StartAddress:
-            last_start = entry[1]
-            last_start_i = i
-        if entry[0] == SegmentEntry.WflipAddress:
-            if entry[1] != last_start:
-                if old_address < last_start < new_address:
-                    if min_i is None or min_seg_start > last_start:
-                        min_i = last_start_i
-                        min_seg_start = last_start
-
-    if min_i is not None:
-        raise FJAssemblerException(f"Overlapping segments (address {hex(new_address)}): "
-                                   f"seg[{get_clean_segment_index(curr_segment_index, boundary_addresses)}]"
-                                   f"=({hex(boundary_addresses[curr_segment_index][1])}..) and "
-                                   f"seg[{get_clean_segment_index(min_i, boundary_addresses)}]=({hex(min_seg_start)}..)")
-
-
-def get_next_wflip_entry_index(boundary_addresses: BoundaryAddressesList, index: int) -> int:
-    length = len(boundary_addresses)
-    while boundary_addresses[index][0] != SegmentEntry.WflipAddress:
-        index += 1
-        if index >= length:
-            raise FJAssemblerException(f'No WflipAddress entry found in boundary_addresses.')
-    return index
+def assert_address_in_memory(w: int, address: int):
+    if address < 0 or address >= (1 << w):
+        raise FJAssemblerException(f"Not enough space with the {w}-width.")
 
 
 def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
-                   boundary_addresses: BoundaryAddressesList,
                    w: int, writer: fjm.Writer) -> None:
-    if max(e[1] for e in boundary_addresses) >= (1 << w):
-        raise FJAssemblerException(f"Not enough space with the {w}-width.")
+    # TODO check that there are no collisions (including after the wflip area) (in the fjm.py / Writer.add_segment()
 
     fj_words = []
     wflip_words = []
-    segment_index = 0
-    last_start_seg_index = segment_index
-    first_address = boundary_addresses[last_start_seg_index][1]
-    wflip_address = boundary_addresses[get_next_wflip_entry_index(boundary_addresses, 0)][1]
+
+    first_segment: NewSegment = ops.popleft()
+    first_address = first_segment.start_address
+    wflip_address = first_segment.wflip_start_address
 
     for op in ops:
+
         if isinstance(op, FlipJump):
             try:
                 fj_words += (op.get_flip(labels), op.get_jump(labels))
             except FJException as e:
                 raise FJAssemblerException(f"Can't resolve labels in op {op}.") from e
+
         elif isinstance(op, WordFlip):
             try:
                 word_address = op.get_word_address(labels)
@@ -116,22 +89,20 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
 
                 if wflip_address >= (1 << w):
                     raise FJAssemblerException(f"Not enough space with the {w}-width.")
-        elif isinstance(op, Segment):
-            segment_index += 2
-            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, fj_words,
-                          wflip_words)
-            last_start_seg_index = segment_index
-            first_address = boundary_addresses[last_start_seg_index][1]
-            wflip_address = boundary_addresses[get_next_wflip_entry_index(boundary_addresses, segment_index)][1]
-        elif isinstance(op, Reserve):
-            segment_index += 1
-            last_address = boundary_addresses[segment_index][1]
-            close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, last_address, fj_words, [])
-            first_address = last_address
+
+        elif isinstance(op, NewSegment):
+            close_segment(w, writer, first_address, wflip_address, fj_words, wflip_words)
+            first_address = op.start_address
+            wflip_address = op.wflip_start_address
+
+        elif isinstance(op, ReserveBits):
+            close_segment(w, writer, first_address, op.first_address_after_reserved, fj_words, None)
+            first_address = op.first_address_after_reserved
+
         else:
             raise FJAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
 
-    close_segment(w, last_start_seg_index, boundary_addresses, writer, first_address, wflip_address, fj_words, wflip_words)
+    close_segment(w, writer, first_address, wflip_address, fj_words, wflip_words)
 
 
 def assemble(input_files: List[Tuple[str, Path]], output_file, w,
@@ -145,11 +116,10 @@ def assemble(input_files: List[Tuple[str, Path]], output_file, w,
         macros = parse_macro_tree(input_files, w, warning_as_errors)
 
     with PrintTimer('  macro resolve:   ', print_time=print_time):
-        ops, labels, boundary_addresses = resolve_macros(w, macros,
-                                                         show_statistics=show_statistics)
+        ops, labels = resolve_macros(w, macros, show_statistics=show_statistics)
 
     with PrintTimer('  labels resolve:  ', print_time=print_time):
-        labels_resolve(ops, labels, boundary_addresses, w, writer)
+        labels_resolve(ops, labels, w, writer)
 
     with PrintTimer('  create binary:   ', print_time=print_time):
         writer.write_to_file()
