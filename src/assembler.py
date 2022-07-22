@@ -49,8 +49,6 @@ def assert_address_in_memory(w: int, address: int):
 
 def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
                    w: int, writer: fjm.Writer) -> None:
-    # TODO check that there are no collisions (including after the wflip area) (in the fjm.py / Writer.add_segment()
-
     fj_words = []
     wflip_words = []
 
