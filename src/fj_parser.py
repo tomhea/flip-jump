@@ -1,6 +1,6 @@
 from os import path
 from pathlib import Path
-from typing import Set, List, Tuple
+from typing import Set, List, Tuple, Dict
 
 from sly import Lexer, Parser
 
@@ -10,8 +10,8 @@ from defs import get_char_value_and_length, \
     CodePosition, Macro, MacroName
 from exceptions import FJExprException, FJParsingException
 from expr import Expr
-from ops import get_used_labels, get_declared_labels, MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve
-
+from ops import get_used_labels, get_declared_labels, MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, \
+    Op
 
 global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace, reserved_names
 
@@ -156,10 +156,10 @@ class FJParser(Parser):
     )
     # debugfile = 'src/parser.out'
 
-    def __init__(self, w, warning_as_errors):
-        self.defs = {'w': Expr(w)}
-        self.warning_as_errors = warning_as_errors
-        self.macros = {main_macro: Macro([], [], [], '', None)}
+    def __init__(self, w: int, warning_as_errors: bool):
+        self.consts: Dict[str, Expr] = {'w': Expr(w)}
+        self.warning_as_errors: bool = warning_as_errors
+        self.macros: Dict[MacroName, Macro] = {main_macro: Macro([], [], [], '', None)}
 
     def check_macro_name(self, name: MacroName, lineno: int):
         global reserved_names
@@ -172,9 +172,9 @@ class FJParser(Parser):
 
     def check_params(self, ids, macro_name: MacroName, lineno: int):
         for param_id in ids:
-            if param_id in self.defs:
+            if param_id in self.consts:
                 syntax_error(lineno, f'parameter {param_id} in macro {macro_name}) '
-                                     f'is also defined as a constant variable (with value {self.defs[param_id]})')
+                                     f'is also defined as a constant variable (with value {self.consts[param_id]})')
         for i1 in range(len(ids)):
             for i2 in range(i1):
                 if ids[i1] == ids[i2]:
@@ -210,6 +210,14 @@ class FJParser(Parser):
             syntax_warning(lineno, self.warning_as_errors,
                            f"In macro {macro_name}:  "
                            f"Used a not global/parameter/declared-extern label: {', '.join(bad_uses)}.")
+
+    @staticmethod
+    def validate_no_segment_or_reserve(ops: List[Op], macro_name: str):
+        for op in ops:
+            if isinstance(op, Segment):
+                syntax_error(op.code_position.line, f"segment can't be declared inside a macro ({macro_name}).")
+            if isinstance(op, Reserve):
+                syntax_error(op.code_position.line, f"reserve can't be declared inside a macro ({macro_name}).")
 
     @staticmethod
     def ns_name():
@@ -291,6 +299,7 @@ class FJParser(Parser):
         declared_labels = get_declared_labels(ops)
         self.check_label_usage(used_labels, declared_labels, set(params + local_params), set(extern_params),
                                set(global_params), p.lineno, name)
+        self.validate_no_segment_or_reserve(ops, name)
         self.macros[name] = Macro(params, local_params, ops, self.ns_name(), get_position(p.lineno))
         return None
 
@@ -427,12 +436,12 @@ class FJParser(Parser):
     @_('ID "=" expr')
     def statement(self, p):
         name = self.ns_full_name(p.ID)
-        if name in self.defs:
+        if name in self.consts:
             syntax_error(p.lineno, f'Can\'t redeclare the variable "{name}".')
 
-        evaluated = p.expr.eval_new(self.defs)
+        evaluated = p.expr.eval_new(self.consts)
         try:
-            self.defs[name] = Expr(int(evaluated))
+            self.consts[name] = Expr(int(evaluated))
         except FJExprException:
             syntax_error(p.lineno, f'Can\'t evaluate expression:  {str(evaluated)}.')
 
@@ -464,157 +473,157 @@ class FJParser(Parser):
     def expressions(self, p):
         return [p.expr]
 
-    @_('_expr')
+    @_('expr_')
     def expr(self, p):
-        return p._expr[0]
+        return p.expr_[0]
 
-    @_('_expr "+" _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ "+" expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(a + b), p.lineno
         return Expr(('+', (a, b))), p.lineno
 
-    @_('_expr "-" _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ "-" expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(a - b), p.lineno
         return Expr(('-', (a, b))), p.lineno
 
-    @_('_expr "*" _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ "*" expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(a * b), p.lineno
         return Expr(('*', (a, b))), p.lineno
 
-    @_('"#" _expr')
-    def _expr(self, p):
-        a = p._expr[0]
+    @_('"#" expr_')
+    def expr_(self, p):
+        a = p.expr_[0]
         if a is int:
             return Expr(a.bit_length()), p.lineno
         return Expr(('#', (a,))), p.lineno
 
-    @_('_expr "/" _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ "/" expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(a // b), p.lineno
         return Expr(('/', (a, b))), p.lineno
 
-    @_('_expr "%" _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ "%" expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(a % b), p.lineno
         return Expr(('%', (a, b))), p.lineno
 
-    @_('_expr SHL _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ SHL expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(a << b), p.lineno
         return Expr(('<<', (a, b))), p.lineno
 
-    @_('_expr SHR _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ SHR expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(a >> b), p.lineno
         return Expr(('>>', (a, b))), p.lineno
 
-    @_('_expr "^" _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ "^" expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(a ^ b), p.lineno
         return Expr(('^', (a, b))), p.lineno
 
-    @_('_expr "|" _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ "|" expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(a | b), p.lineno
         return Expr(('|', (a, b))), p.lineno
 
-    @_('_expr "&" _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ "&" expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(a & b), p.lineno
         return Expr(('&', (a, b))), p.lineno
 
-    @_('_expr "?" _expr ":" _expr')
-    def _expr(self, p):
-        a, b, c = p._expr0[0], p._expr1[0], p._expr2[0]
+    @_('expr_ "?" expr_ ":" expr_')
+    def expr_(self, p):
+        a, b, c = p.expr_0[0], p.expr_1[0], p.expr_2[0]
         if a is int and b is int and c is int:
             return Expr(b if a else c), p.lineno
         return Expr(('?:', (a, b, c))), p.lineno
 
-    @_('_expr "<" _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ "<" expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(1 if a < b else 0), p.lineno
         return Expr(('<', (a, b))), p.lineno
 
-    @_('_expr ">" _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ ">" expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(1 if a > b else 0), p.lineno
         return Expr(('>', (a, b))), p.lineno
 
-    @_('_expr LE _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ LE expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(1 if a <= b else 0), p.lineno
         return Expr(('<=', (a, b))), p.lineno
 
-    @_('_expr GE _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ GE expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(1 if a >= b else 0), p.lineno
         return Expr(('>=', (a, b))), p.lineno
 
-    @_('_expr EQ _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ EQ expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(1 if a == b else 0), p.lineno
         return Expr(('==', (a, b))), p.lineno
 
-    @_('_expr NEQ _expr')
-    def _expr(self, p):
-        a, b = p._expr0[0], p._expr1[0]
+    @_('expr_ NEQ expr_')
+    def expr_(self, p):
+        a, b = p.expr_0[0], p.expr_1[0]
         if a is int and b is int:
             return Expr(1 if a != b else 0), p.lineno
         return Expr(('!=', (a, b))), p.lineno
 
-    @_('"(" _expr ")"')
-    def _expr(self, p):
-        return p._expr
+    @_('"(" expr_ ")"')
+    def expr_(self, p):
+        return p.expr_
 
     @_('NUMBER')
-    def _expr(self, p):
+    def expr_(self, p):
         return Expr(p.NUMBER), p.lineno
 
     @_('STRING')
-    def _expr(self, p):
+    def expr_(self, p):
         return Expr(p.STRING), p.lineno
 
     @_('"$"')
-    def _expr(self, p):
+    def expr_(self, p):
         return next_address(), p.lineno
 
     @_('id')
-    def _expr(self, p):
+    def expr_(self, p):
         id_str, lineno = p.id
-        if id_str in self.defs:
-            return self.defs[id_str], lineno
+        if id_str in self.consts:
+            return self.consts[id_str], lineno
         return Expr(id_str), lineno
 
 

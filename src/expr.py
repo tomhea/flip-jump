@@ -21,7 +21,7 @@ parsing_op2func = {
 
 
 class Expr:
-    def __init__(self, expr: Union[int, str, Tuple[str, Tuple[Expr]]]):
+    def __init__(self, expr: Union[int, str, Tuple[str, Tuple[Expr, ...]]]):
         self.val = expr
 
     def __int__(self):
@@ -57,15 +57,15 @@ class Expr:
 
     def __str__(self) -> str:
         if isinstance(self.val, tuple):
-            op, exps = self.val
-            if len(exps) == 1:
-                e1 = exps[0]
+            op, expressions = self.val
+            if len(expressions) == 1:
+                e1 = expressions[0]
                 return f'(#{str(e1)})'
-            elif len(exps) == 2:
-                e1, e2 = exps
+            elif len(expressions) == 2:
+                e1, e2 = expressions
                 return f'({str(e1)} {op} {str(e2)})'
             else:
-                e1, e2, e3 = exps
+                e1, e2, e3 = expressions
                 return f'({str(e1)} ? {str(e2)} : {str(e3)})'
         if isinstance(self.val, str):
             return self.val

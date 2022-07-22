@@ -126,7 +126,7 @@ def update_breakpoints_from_breakpoint_set(breakpoint_labels: Optional[Set[str]]
                                            label_to_address: Dict[str, int]) -> None:
     """
     add breakpoints from breakpoint_labels.
-    @param breakpoints[in,out] - adds breakpoints to it
+    param breakpoints[in,out] - adds breakpoints to it
     """
     if breakpoint_labels:
         for bl in breakpoint_labels:
@@ -142,7 +142,7 @@ def update_breakpoints_from_breakpoint_contains_set(breakpoint_contains_labels: 
                                                     label_to_address: Dict[str, int]) -> None:
     """
     add breakpoints generated with breakpoint_contains_labels.
-    @param breakpoints[in,out] - adds breakpoints to it
+    param breakpoints[in,out] - adds breakpoints to it
     """
     # TODO improve the speed of this part with suffix trees
     if breakpoint_contains_labels:
@@ -157,7 +157,7 @@ def update_breakpoints_from_addresses_set(breakpoint_addresses: Optional[Set[int
                                           breakpoints: Dict[int, Optional[str]]) -> None:
     """
     add breakpoints of addresses breakpoint_addresses.
-    @param breakpoints[in,out] - adds breakpoints to it
+    param breakpoints[in,out] - adds breakpoints to it
     """
     if breakpoint_addresses:
         for address in breakpoint_addresses:
