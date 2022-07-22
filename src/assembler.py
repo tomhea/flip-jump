@@ -137,7 +137,8 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
 def assemble(input_files: List[Tuple[str, Path]], output_file, w,
              *, version=0, flags=0,
              warning_as_errors=True,
-             show_statistics=False, debugging_file=None, print_time=True):
+             show_statistics=False, debugging_file=None, print_time=True)\
+        -> None:
     writer = fjm.Writer(output_file, w, version=version, flags=flags)
 
     with PrintTimer('  parsing:         ', print_time=print_time):
@@ -158,5 +159,3 @@ def assemble(input_files: List[Tuple[str, Path]], output_file, w,
     if debugging_file:
         with open(debugging_file, 'wb') as f:
             pickle.dump(labels, f, pickle.HIGHEST_PROTOCOL)
-
-    return labels
