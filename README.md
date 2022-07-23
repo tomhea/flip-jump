@@ -90,8 +90,8 @@ You can also **[Test the project](tests/README.md)** with the project's tests, a
 You can also assemble and run separately:
 
 ```bash
->>> fja.py hello.fj -o hello_world.fjm
->>> fji.py hello.fjm
+>>> fj.py --asm hello.fj -o hello_world.fjm
+>>> fj.py --run hello_world.fjm
 Hello, World!
 ```
 
@@ -115,8 +115,6 @@ Hello, World!
   - fjm_run.py      - interpreter assembled fj files.
   - defs.py         - classes/functions/constants used throughout the project.
   - fjm.py          - read/write .fjm (flip-jump-memory) files.
-  - fja.py          - the FlipJump Assembler script.
-  - fji.py          - the FlipJump Interpreter script.
   - fj.py           - the FlipJump Assembler & Interpreter script.
 other branches:
   - [cpp_fji/](https://github.com/tomhea/flip-jump/tree/cpp-interpreter/src/cpp_fji)        - the cpp interpreter (much faster, about 2Mfj/s).
