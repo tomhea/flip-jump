@@ -42,8 +42,10 @@ class CompileTestArgs:
         included_files = get_stl_paths() if self.use_stl else []
         fj_paths_list = map(str.strip, fj_paths.split('|'))
         fj_absolute_paths_list = [ROOT_PATH / fj_path for fj_path in fj_paths_list]
-        fj_files = included_files + fj_absolute_paths_list
-        self.fj_files_tuples = [('', path) for path in fj_files]
+
+        included_files_tuples = [(f's{i}', path) for i, path in enumerate(included_files, start=1)]
+        fj_paths_tuples = [(f'f{i}', path) for i, path in enumerate(fj_absolute_paths_list, start=1)]
+        self.fj_files_tuples = included_files_tuples + fj_paths_tuples
 
         self.fjm_out_path = ROOT_PATH / fjm_out_path
 

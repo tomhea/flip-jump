@@ -10,6 +10,7 @@ from io_devices.StandardIO import StandardIO
 
 from defs import get_stl_paths
 from exceptions import FJReadFjmException
+from src.breakpoints import get_breakpoint_handler
 
 ErrorFunc = Callable[[str], None]
 
@@ -107,14 +108,14 @@ def run(in_fjm_path: Path, debug_file: Path, args: argparse.Namespace, error_fun
     io_device = StandardIO(not args.no_output)
 
     try:
-        termination_statistics = \
-            fjm_run.debug_and_run(in_fjm_path,
-                                  debugging_file=debug_file,
-                                  io_device=io_device,
-                                  show_trace=args.trace,
-                                  time_verbose=not args.silent,
-                                  breakpoint_labels=breakpoint_set,
-                                  breakpoint_contains_labels=breakpoint_contains_set)
+        breakpoint_handler = get_breakpoint_handler(debug_file, set(), breakpoint_set, breakpoint_contains_set)
+        termination_statistics = fjm_run.run(
+            in_fjm_path,
+            io_device=io_device,
+            show_trace=args.trace,
+            time_verbose=not args.silent,
+            breakpoint_handler=breakpoint_handler
+        )
         if not args.silent:
             print(termination_statistics)
     except FJReadFjmException as e:

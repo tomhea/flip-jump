@@ -1,6 +1,6 @@
 from os import path
 from pathlib import Path
-from typing import Set, List, Tuple, Dict
+from typing import Set, List, Tuple, Dict, Union
 
 from sly import Lexer, Parser
 
@@ -632,22 +632,44 @@ def exit_if_errors():
         raise FJParsingException(f'Errors found in file {curr_file}. Assembly stopped.')
 
 
+def validate_current_file(files_seen: Set[Union[str, Path]]):
+    if not path.isfile(curr_file):
+        raise FJParsingException(f"No such file {curr_file}.")
+
+    if curr_file_short_name in files_seen:
+        raise FJParsingException(f"Short file name is repeated: '{curr_file_short_name}'.")
+
+    abs_path = curr_file.absolute()
+    if abs_path in files_seen:
+        raise FJParsingException(f".fj file path is repeated: '{abs_path}'.")
+
+    files_seen.add(curr_file_short_name)
+    files_seen.add(abs_path)
+
+
+def lex_parse_curr_file(lexer: FJLexer, parser: FJParser):
+    global curr_text, curr_namespace
+    curr_text = curr_file.open('r').read()
+    curr_namespace = []
+
+    lex_res = lexer.tokenize(curr_text)
+    exit_if_errors()
+
+    parser.parse(lex_res)
+    exit_if_errors()
+
+
 def parse_macro_tree(input_files: List[Tuple[str, Path]], w: int, warning_as_errors: bool):
     global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace
     error_occurred = False
 
+    files_seen: Set[Union[str, Path]] = set()
+
     lexer = FJLexer()
     parser = FJParser(w, warning_as_errors)
+
     for curr_file_short_name, curr_file in input_files:
-        if not path.isfile(curr_file):
-            raise FJParsingException(f"No such file {curr_file}.")
-        curr_text = open(curr_file, 'r').read()
-        curr_namespace = []
-
-        lex_res = lexer.tokenize(curr_text)
-        exit_if_errors()
-
-        parser.parse(lex_res)
-        exit_if_errors()
+        validate_current_file(files_seen)
+        lex_parse_curr_file(lexer, parser)
 
     return parser.macros

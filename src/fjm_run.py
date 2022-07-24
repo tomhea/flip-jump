@@ -79,10 +79,10 @@ def run(fjm_path: Path, *,
         time_verbose: bool = False) \
         -> TerminationStatistics:
     """
-    run a .fjm file (a FlipJump interpreter)
+    run / debug a .fjm file (a FlipJump interpreter)
     @param fjm_path: the path to the .fjm file
-    @param breakpoint_handler: the breakpoint handler
-    @param io_device: the device handling input/output
+    @param breakpoint_handler:[in]: the breakpoint handler (if not None - debug, and break on its breakpoints)
+    @param io_device:[in,out]: the device handling input/output
     @param show_trace: if true print every opcode executed
     @param time_verbose: if true print running times
     @return: the run's termination-statistics
@@ -157,38 +157,3 @@ def trace_flip(ip: int, flip_address: int, show_trace: bool) -> None:
     if show_trace:
         print(hex(ip)[2:].rjust(7), end=':   ')
         print(hex(flip_address)[2:], end='; ', flush=True)
-
-
-def debug_and_run(fjm_path: Path, *,
-                  show_trace: bool = False,
-                  time_verbose: bool = False,
-                  debugging_file: Path = None,
-                  io_device: Optional[IODevice] = None,
-                  breakpoint_addresses: Optional[Set[int]] = None,
-                  breakpoint_labels: Optional[Set[str]] = None,
-                  breakpoint_contains_labels: Optional[Set[str]] = None) \
-        -> TerminationStatistics:
-    """
-    run a .fjm file with a breakpoint_handler (a FlipJump interpreter & debugger)
-    @param fjm_path: the path to the .fjm file
-    @param show_trace: if true print every opcode executed
-    @param time_verbose: if true print running times
-    @param debugging_file: the debug file path (created at assemble time)
-    @param io_device: the device handling input/output
-    @param breakpoint_addresses: set of addresses to break at
-    @param breakpoint_labels: set of labels to break at
-    @param breakpoint_contains_labels: set of strings, to break at every label that contains one of them
-    @return: the run's termination-statistics
-    """
-    breakpoint_handler = get_breakpoint_handler(
-        debugging_file, breakpoint_addresses, breakpoint_labels, breakpoint_contains_labels)
-
-    termination_statistics = run(
-        fjm_path,
-        io_device=io_device,
-        show_trace=show_trace,
-        time_verbose=time_verbose,
-        breakpoint_handler=breakpoint_handler
-    )
-
-    return termination_statistics
