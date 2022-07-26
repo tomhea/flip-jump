@@ -14,6 +14,11 @@
 
 
 
+// TODO read 4-bit values (good for bit/hex/dec) values from pointers.
+// it might be cool to implement hex pointers if it can improve speed easily, but it's not needed.
+
+
+
 // ---------- Init
 
 

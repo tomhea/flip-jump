@@ -12,6 +12,11 @@
 
 
 
+// TODO implement dec.vec, maths (inc_by, add, sub, mul, div), if/cmp, input/output.
+// no need for logics, pointers.
+
+
+
 // ---------- Memory Variables:
 // Size Complexity: 1
 
