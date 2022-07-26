@@ -108,13 +108,13 @@ Hello, World!
 
 # Project Structure
 
-**[src](src)** (assembler + interpreter source files):
+**[src](src/README.md)** (assembler + interpreter source files):
+  - fj.py           - the FlipJump Assembler & Interpreter script.
+  - fjm.py          - read/write .fjm (flip-jump-memory) files.
+  - fjm_run.py      - interpret / debug assembled fj files.
   - fj_parser.py    - pythonic lex/yacc parser.
   - preprocessor.py - unwind all macros and reps.
   - assembler.py    - assembles the macro-less fj file.
-  - fjm_run.py      - interpret / debug assembled fj files.
-  - fjm.py          - read/write .fjm (flip-jump-memory) files.
-  - fj.py           - the FlipJump Assembler & Interpreter script.
   - ops/expr/defs/breakpoints.py     - classes/functions/consts used throughout the project.
 
 other branches:
@@ -141,7 +141,7 @@ other branches:
   - [print_dec.fj](programs/print_tests/print_dec.fj)    - prints binary variables as decimals.
   - [multi_comp/](programs/multi_comp) - simulates a big project (compilation of multiple files).
 
-**[tests](tests)** (FlipJump programs), for example:
+**[tests](tests/README.md)** (FlipJump programs), for example:
   - compiled/   - the designated directory for the assembled tests files.
   - inout/      - .in and .out files for each test in the folder above.
   - conftest.py - pytest configuration file.
