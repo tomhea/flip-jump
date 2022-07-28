@@ -290,12 +290,12 @@ class FJParser(sly.Parser):
     @_('definable_line_statements')
     def program(self, p: ParsedRule) -> None:
         ops = p.definable_line_statements
-        self.macros[main_macro].ops.extend(ops)
+        self.macros[main_macro].ops += ops
 
     @_('definable_line_statements NL definable_line_statement')
     def definable_line_statements(self, p: ParsedRule) -> List[Op]:
         if p.definable_line_statement:
-            return p.definable_line_statements + p.definable_line_statement
+            p.definable_line_statements.extend(p.definable_line_statement)
         return p.definable_line_statements
 
     @_('definable_line_statement')
@@ -382,9 +382,8 @@ class FJParser(sly.Parser):
 
     @_('line_statements NL line_statement')
     def line_statements(self, p: ParsedRule) -> List[Op]:
-        # TODO extend statements instead of list + list, and return the extended
-        #  (ctrl+f "statement" and change all to it)
-        return p.line_statements + p.line_statement
+        p.line_statements.extend(p.line_statement)
+        return p.line_statements
 
     @_('line_statement')
     def line_statements(self, p: ParsedRule) -> List[Op]:
@@ -640,8 +639,17 @@ def lex_parse_curr_file(lexer: FJLexer, parser: FJParser) -> None:
     exit_if_errors()
 
 
-def parse_macro_tree(input_files: List[Tuple[str, Path]], w: int, warning_as_errors: bool):
-    global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace
+def parse_macro_tree(input_files: List[Tuple[str, Path]], w: int, warning_as_errors: bool) \
+        -> Dict[MacroName, Macro]:
+    """
+    parse the .fj files and create a macro-dictionary.
+    The files will be parsed as if they were concatenated.
+    @param input_files:[in]: a list of (short_file_name, fj_file_path). The files will to be parsed in that given order.
+    @param w:[in]: the memory-width
+    @param warning_as_errors:[in]: stop also on warnings
+    @return: the macro-dictionary.
+    """
+    global curr_file, curr_file_short_name, error_occurred
     error_occurred = False
 
     files_seen: Set[Union[str, Path]] = set()
