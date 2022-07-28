@@ -6,7 +6,7 @@ from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and
 from exceptions import FJExprException
 
 
-parsing_op2func = {
+op_string_to_function = {
     '+': add, '-': sub, '*': mul, '/': floordiv, '%': mod,
     '<<': lshift, '>>': rshift, '^': xor, '|': or_, '&': and_,
     '#': lambda x: x.bit_length(),
@@ -24,8 +24,11 @@ class Expr:
     def __init__(self, expr: Union[int, str, Tuple[str, Tuple[Expr, ...]]]):
         self.val = expr
 
+    def is_int(self) -> bool:
+        return isinstance(self.val, int)
+
     def __int__(self):
-        if isinstance(self.val, int):
+        if self.is_int():
             return self.val
         raise FJExprException(f"Can't resolve labels:  {', '.join(self.all_unknown_labels())}")
 
@@ -50,7 +53,7 @@ class Expr:
         evaluated_args: Tuple[Expr, ...] = tuple(e.eval_new(id_dict) for e in args)
         if all(isinstance(e.val, int) for e in evaluated_args):
             try:
-                return Expr(parsing_op2func[op](*(arg.val for arg in evaluated_args)))
+                return Expr(op_string_to_function[op](*(arg.val for arg in evaluated_args)))
             except Exception as e:
                 raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
         return Expr((op, evaluated_args))
@@ -72,3 +75,10 @@ class Expr:
         if isinstance(self.val, int):
             return hex(self.val)[2:]
         raise FJExprException(f'bad expression: {self.val} (of type {type(self.val)})')
+
+
+def get_minimized_expr(op: str, params: Tuple[Expr, ...]):
+    if all(param.is_int() for param in params):
+        return Expr(op_string_to_function[op](*map(int, params)))
+    else:
+        return Expr((op, params))
