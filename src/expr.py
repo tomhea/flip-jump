@@ -6,7 +6,9 @@ from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and
 from exceptions import FJExprException
 
 
-parsing_op2func = {
+# dictionary from a math-op string, to its pythonic function.
+# @note: if changed, update Expr.__str__().
+op_string_to_function = {
     '+': add, '-': sub, '*': mul, '/': floordiv, '%': mod,
     '<<': lshift, '>>': rshift, '^': xor, '|': or_, '&': and_,
     '#': lambda x: x.bit_length(),
@@ -21,43 +23,58 @@ parsing_op2func = {
 
 
 class Expr:
+    """
+    The python representation of a .fj expression (from labels, consts and math-ops)
+    """
     def __init__(self, expr: Union[int, str, Tuple[str, Tuple[Expr, ...]]]):
-        self.val = expr
+        self.value = expr
+
+    def is_int(self) -> bool:
+        return isinstance(self.value, int)
 
     def __int__(self):
-        if isinstance(self.val, int):
-            return self.val
+        if self.is_int():
+            return self.value
         raise FJExprException(f"Can't resolve labels:  {', '.join(self.all_unknown_labels())}")
 
     def all_unknown_labels(self) -> Set[str]:
-        if isinstance(self.val, int):
+        """
+        @return: all labels used (recursively) in this expression.
+        """
+        if isinstance(self.value, int):
             return set()
-        if isinstance(self.val, str):
-            return {self.val}
-        return set(label for expr in self.val[1] for label in expr.all_unknown_labels())
+        if isinstance(self.value, str):
+            return {self.value}
+        return set(label for expr in self.value[1] for label in expr.all_unknown_labels())
 
-    # replaces every string it can with its dictionary value, and evaluates anything it can.
+    #
     def eval_new(self, id_dict: Dict[str, Expr]) -> Expr:
-        if isinstance(self.val, int):
-            return Expr(self.val)
+        """
+        creates a new Expr, as minimal as possible.
+        replaces every string it can with its dictionary value, and evaluates any op it can.
+        @param id_dict: the str->Expr dictionary to be used
+        @return: the new Expr
+        """
+        if isinstance(self.value, int):
+            return Expr(self.value)
 
-        if isinstance(self.val, str):
-            if self.val in id_dict:
-                return id_dict[self.val].eval_new({})
-            return Expr(self.val)
+        if isinstance(self.value, str):
+            if self.value in id_dict:
+                return id_dict[self.value].eval_new({})
+            return Expr(self.value)
 
-        op, args = self.val
+        op, args = self.value
         evaluated_args: Tuple[Expr, ...] = tuple(e.eval_new(id_dict) for e in args)
-        if all(isinstance(e.val, int) for e in evaluated_args):
+        if all(isinstance(e.value, int) for e in evaluated_args):
             try:
-                return Expr(parsing_op2func[op](*(arg.val for arg in evaluated_args)))
+                return Expr(op_string_to_function[op](*(arg.value for arg in evaluated_args)))
             except Exception as e:
                 raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
         return Expr((op, evaluated_args))
 
     def __str__(self) -> str:
-        if isinstance(self.val, tuple):
-            op, expressions = self.val
+        if isinstance(self.value, tuple):
+            op, expressions = self.value
             if len(expressions) == 1:
                 e1 = expressions[0]
                 return f'(#{str(e1)})'
@@ -67,8 +84,21 @@ class Expr:
             else:
                 e1, e2, e3 = expressions
                 return f'({str(e1)} ? {str(e2)} : {str(e3)})'
-        if isinstance(self.val, str):
-            return self.val
-        if isinstance(self.val, int):
-            return hex(self.val)[2:]
-        raise FJExprException(f'bad expression: {self.val} (of type {type(self.val)})')
+        if isinstance(self.value, str):
+            return self.value
+        if isinstance(self.value, int):
+            return hex(self.value)[2:]
+        raise FJExprException(f'bad expression: {self.value} (of type {type(self.value)})')
+
+
+def get_minimized_expr(op: str, params: Tuple[Expr, ...]) -> Expr:
+    """
+    tries to calculate the op on the params, if possible. returns the resulting Expr.
+    @param op: the math-op string
+    @param params: the op parameters
+    @return: the expression
+    """
+    if all(param.is_int() for param in params):
+        return Expr(op_string_to_function[op](*map(int, params)))
+    else:
+        return Expr((op, params))

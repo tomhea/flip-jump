@@ -40,6 +40,9 @@ class MacroName:
         return type(other) == MacroName and self.to_tuple() == other.to_tuple()
 
 
+main_macro = MacroName('')
+
+
 class FlipJump:
     """
     data = [flip_address, jump_address]
@@ -240,7 +243,7 @@ class Label:
 
     def eval_name(self, id_dict: Dict[str, Expr]) -> str:
         if self.name in id_dict:
-            new_name = id_dict[self.name].val
+            new_name = id_dict[self.name].value
             if isinstance(new_name, str):
                 return new_name
             raise FJExprException(f'Bad label swap (from {self.name} to {id_dict[self.name]}) in {self.code_position}.')

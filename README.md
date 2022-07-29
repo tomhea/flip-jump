@@ -90,8 +90,8 @@ You can also **[Test the project](tests/README.md)** with the project's tests, a
 You can also assemble and run separately:
 
 ```bash
->>> fja.py hello.fj -o hello_world.fjm
->>> fji.py hello.fjm
+>>> fj.py --asm hello.fj -o hello_world.fjm
+>>> fj.py --run hello_world.fjm
 Hello, World!
 ```
 
@@ -108,16 +108,15 @@ Hello, World!
 
 # Project Structure
 
-**[src](src)** (assembler + interpreter source files):
+**[src](src/README.md)** (assembler + interpreter source files):
+  - fj.py           - the FlipJump Assembler & Interpreter script.
+  - fjm.py          - read/write .fjm (flip-jump-memory) files.
+  - fjm_run.py      - interpret / debug assembled fj files.
   - fj_parser.py    - pythonic lex/yacc parser.
   - preprocessor.py - unwind all macros and reps.
-  - assembler.py    - assembles the macroless fj file.
-  - fjm_run.py      - interpreter assembled fj files.
-  - defs.py         - classes/functions/constants used throughout the project.
-  - fjm.py          - read/write .fjm (flip-jump-memory) files.
-  - fja.py          - the FlipJump Assembler script.
-  - fji.py          - the FlipJump Interpreter script.
-  - fj.py           - the FlipJump Assembler & Interpreter script.
+  - assembler.py    - assembles the macro-less fj file.
+  - ops/expr/defs/breakpoints.py     - classes/functions/consts used throughout the project.
+
 other branches:
   - [cpp_fji/](https://github.com/tomhea/flip-jump/tree/cpp-interpreter/src/cpp_fji)        - the cpp interpreter (much faster, about 2Mfj/s).
   - [riscv2fj/](https://github.com/tomhea/flip-jump/tree/riscv2fj/src/riscv2fj)       - translates a riscv-executable to an equivalent fj code.
@@ -142,7 +141,7 @@ other branches:
   - [print_dec.fj](programs/print_tests/print_dec.fj)    - prints binary variables as decimals.
   - [multi_comp/](programs/multi_comp) - simulates a big project (compilation of multiple files).
 
-**[tests](tests)** (FlipJump programs), for example:
+**[tests](tests/README.md)** (FlipJump programs), for example:
   - compiled/   - the designated directory for the assembled tests files.
   - inout/      - .in and .out files for each test in the folder above.
   - conftest.py - pytest configuration file.
