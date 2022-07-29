@@ -1,7 +1,7 @@
 import struct
+from enum import IntEnum
 from pathlib import Path
 from struct import pack, unpack
-from random import randint
 from time import sleep
 from typing import BinaryIO, List, Tuple
 
@@ -41,14 +41,25 @@ header_extension_size = 8 + 4
 segment_format = '<QQQQ'
 segment_size = 8 + 8 + 8 + 8
 
-SUPPORTED_VERSIONS = {0: 'Normal', 1: 'Full'}
+SUPPORTED_VERSIONS = {0: 'Base', 1: 'Normal'}
 # TODO UPCOMING_VERSIONS = {2: 'Zipped', 3: 'RelativeZipped', 4: '7Zipped', 5: 'RelativeZipped'}
 
 
+class GarbageHandling(IntEnum):
+    Stop = 0
+    SlowRead = 1
+    OnlyWarning = 2
+    Continue = 3
+
+
 class Reader:
-    def __init__(self, input_file: Path, *, slow_garbage_read: bool = True, stop_after_garbage: bool = True):
-        self.slow_garbage_read = slow_garbage_read
-        self.stop_after_garbage = stop_after_garbage
+    def __init__(self, input_file: Path, *, garbage_handling: GarbageHandling = GarbageHandling.Stop):
+        """
+        The .fjm-file reader
+        @param input_file: the path to the .fjm file
+        @param garbage_handling: how to handle access to memory not in any segment
+        """
+        self.garbage_handling = garbage_handling
 
         with open(input_file, 'rb') as fjm_file:
             try:
@@ -118,14 +129,20 @@ class Reader:
                 if start <= address < end:
                     self.memory[address] = 0
                     return 0
-            garbage_val = randint(0, (1 << self.w) - 1)
+
+            garbage_val = 0
             garbage_message = f'Reading garbage word at mem[{hex(address << self.w)[2:]}] = {hex(garbage_val)[2:]}'
-            if self.stop_after_garbage:
+
+            if GarbageHandling.Stop == self.garbage_handling:
                 raise FJReadFjmException(garbage_message)
-            print(f'\nWarning:  {garbage_message}')
-            if self.slow_garbage_read:
+            elif GarbageHandling.OnlyWarning == self.garbage_handling:
+                print(f'\nWarning:  {garbage_message}')
+            elif GarbageHandling.SlowRead == self.garbage_handling:
+                print(f'\nWarning:  {garbage_message}')
                 sleep(0.1)
+
             self.memory[address] = garbage_val
+
         return self.memory[address]
 
     def __setitem__(self, address: int, value: int) -> None:

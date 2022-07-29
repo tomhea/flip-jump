@@ -6,14 +6,12 @@ import sly
 from sly.yacc import YaccProduction as ParsedRule
 from sly.lex import Token
 
-from defs import get_char_value_and_length, \
-    main_macro, next_address, \
-    number_re, dot_id_re, id_re, string_re, \
-    CodePosition, Macro, MacroName
+from defs import Macro
 from exceptions import FJExprException, FJParsingException
 from expr import Expr, get_minimized_expr
 from ops import get_used_labels, get_declared_labels, \
-    MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, Op
+    CodePosition, MacroName, Op, main_macro, \
+    MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve
 
 global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace, reserved_names
 
@@ -47,6 +45,32 @@ def syntax_warning(line: int, is_error: bool, msg: str = '') -> None:
         print(f"  {msg}")
     else:
         print()
+
+
+# Regex for the parser
+
+id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
+dot_id_re = fr'(({id_re})|\.*)?(\.({id_re}))+'
+
+bin_num = r'0[bB][01]+'
+hex_num = r'0[xX][0-9a-fA-F]+'
+dec_num = r'[0-9]+'
+
+char_escape_dict = {'0': 0x0, 'a': 0x7, 'b': 0x8, 'e': 0x1b, 'f': 0xc, 'n': 0xa, 'r': 0xd, 't': 0x9, 'v': 0xb,
+                    '\\': 0x5c, "'": 0x27, '"': 0x22, '?': 0x3f}
+escape_chars = ''.join(k for k in char_escape_dict)
+char = fr'[ -~]|\\[{escape_chars}]|\\[xX][0-9a-fA-F]{{2}}'
+
+number_re = fr"({bin_num})|({hex_num})|('({char})')|({dec_num})"
+string_re = fr'"({char})*"'
+
+
+def get_char_value_and_length(s: str) -> Tuple[int, int]:
+    if s[0] != '\\':
+        return ord(s[0]), 1
+    if s[1] in char_escape_dict:
+        return char_escape_dict[s[1]], 2
+    return int(s[2:4], 16), 4
 
 
 class FJLexer(sly.Lexer):
@@ -139,6 +163,10 @@ class FJLexer(sly.Lexer):
         print()
         print(f"Lexing Error in {get_position(self.lineno)}: {t.value[0]}")
         self.index += 1
+
+
+def next_address() -> Expr:
+    return Expr('$')
 
 
 class FJParser(sly.Parser):
@@ -646,7 +674,7 @@ def parse_macro_tree(input_files: List[Tuple[str, Path]], w: int, warning_as_err
     The files will be parsed as if they were concatenated.
     @param input_files:[in]: a list of (short_file_name, fj_file_path). The files will to be parsed in that given order.
     @param w:[in]: the memory-width
-    @param warning_as_errors:[in]: stop also on warnings
+    @param warning_as_errors:[in]: treat warnings as errors (stop execution on warnings)
     @return: the macro-dictionary.
     """
     global curr_file, curr_file_short_name, error_occurred

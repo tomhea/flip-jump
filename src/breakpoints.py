@@ -6,7 +6,8 @@ from typing import Optional, List, Dict, Set
 import easygui
 
 import fjm
-from defs import get_nice_label_repr
+
+from defs import macro_separator_string
 
 
 class BreakpointHandlerUnnecessary(Exception):
@@ -16,6 +17,11 @@ class BreakpointHandlerUnnecessary(Exception):
 def display_message_box_and_get_answer(msg: str, title: str, choices: List[str]) -> str:
     # TODO deprecated warning. use another gui (tkinter? seems not so simple)
     return easygui.buttonbox(msg, title, choices)
+
+
+def get_nice_label_repr(label: str, pad: int = 0) -> str:
+    parts = label.split(macro_separator_string)
+    return ' ->\n'.join(f"{' '*(pad+i)}{part}" for i, part in enumerate(parts))
 
 
 class BreakpointHandler:

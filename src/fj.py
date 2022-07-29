@@ -10,7 +10,7 @@ from io_devices.StandardIO import StandardIO
 
 from defs import get_stl_paths
 from exceptions import FJReadFjmException
-from src.breakpoints import get_breakpoint_handler
+from breakpoints import get_breakpoint_handler
 
 ErrorFunc = Callable[[str], None]
 

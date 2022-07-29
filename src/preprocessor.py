@@ -1,19 +1,21 @@
 from __future__ import annotations
+
 import collections
 from typing import Dict, Tuple, Iterable, Union, Deque
 
 import plotly.graph_objects as go
 
-from defs import main_macro, wflip_start_label, \
-    CodePosition, Macro, MacroName, \
-    macro_separator_string
-from exceptions import FJPreprocessorException, FJExprException
 from expr import Expr
-from ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, LastPhaseOp, new_label, NewSegment, \
-    ReserveBits
+from defs import CodePosition, Macro, macro_separator_string
+from exceptions import FJPreprocessorException, FJExprException
+from ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
+    LastPhaseOp, new_label, MacroName, main_macro, NewSegment, ReserveBits
+
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
 PreprocessorResults = Tuple[Deque[LastPhaseOp], Dict[str, Expr]]
+
+wflip_start_label = '_.wflip_area_start_'
 
 
 def macro_resolve_error(curr_tree: CurrTree, msg='', *, orig_exception: BaseException = None) -> None:

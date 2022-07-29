@@ -1,10 +1,11 @@
 from pathlib import Path
 from time import time
-from typing import Optional, Set
+from typing import Optional
 
 import fjm
+
 from defs import TerminationCause, PrintTimer
-from breakpoints import BreakpointHandler, handle_breakpoint, get_breakpoint_handler
+from breakpoints import BreakpointHandler, handle_breakpoint
 
 from io_devices.IODevice import IODevice
 from io_devices.BrokenIO import BrokenIO
