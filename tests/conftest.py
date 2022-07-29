@@ -18,6 +18,11 @@ build_tests_queue = Queue()
 COMPILE_ARGUMENTS_FIXTURE = "compile_args"
 RUN_ARGUMENTS_FIXTURE = "run_args"
 
+fixtures_name_to_type = {
+    COMPILE_ARGUMENTS_FIXTURE: CompileTestArgs,
+    RUN_ARGUMENTS_FIXTURE: RunTestArgs,
+}
+
 
 TESTS_PATH = Path(__file__).parent
 with open(TESTS_PATH / 'conf.json', 'r') as tests_json:
@@ -238,6 +243,27 @@ def pytest_generate_tests(metafunc) -> None:
 
     if RUN_ARGUMENTS_FIXTURE in metafunc.fixturenames:
         metafunc.parametrize(RUN_ARGUMENTS_FIXTURE, run_tests__heavy_first, ids=repr)
+
+
+def is_not_skipped(test) -> bool:
+    if hasattr(test, 'callspec') and hasattr(test.callspec, 'params'):
+        for fixture_name, fixture_type in fixtures_name_to_type.items():
+            params = test.callspec.params
+            if fixture_name in params:
+                return isinstance(params[fixture_name], fixture_type)
+    return True
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_collectreport(report):
+    report.result = filter(is_not_skipped, report.result)
+    yield
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_collection_modifyitems(config, items):
+    yield
+    items[:] = filter(is_not_skipped, items)
 
 
 def get_tests_from_csvs__heavy_first__execute_once(get_option: Callable[[str], Any]) -> Tuple[List, List]:
