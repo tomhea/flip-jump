@@ -247,8 +247,8 @@ def pytest_generate_tests(metafunc) -> None:
 
 def is_not_skipped(test) -> bool:
     if hasattr(test, 'callspec') and hasattr(test.callspec, 'params'):
+        params = test.callspec.params
         for fixture_name, fixture_type in fixtures_name_to_type.items():
-            params = test.callspec.params
             if fixture_name in params:
                 return isinstance(params[fixture_name], fixture_type)
     return True
