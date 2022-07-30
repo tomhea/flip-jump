@@ -1,4 +1,5 @@
 import pickle
+from collections import defaultdict
 from pathlib import Path
 from typing import Deque, List, Dict, Tuple, Optional
 
@@ -8,7 +9,7 @@ from preprocessor import resolve_macros
 
 from expr import Expr
 from defs import PrintTimer
-from ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits
+from ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits, Padding
 from exceptions import FJAssemblerException, FJException, FJWriteFjmException
 
 
@@ -24,6 +25,9 @@ def add_segment_to_fjm(w: int,
 
     assert_address_in_memory(w, first_address)
     assert_address_in_memory(w, last_address)
+
+    if wflip_words and len(fj_words) > 1000 and len(wflip_words) > 1000:
+        print(f'wflips={len(wflip_words) / len(fj_words + wflip_words) * 100:.3f}%')
 
     words_to_write = fj_words if wflip_words is None else fj_words + wflip_words
     data_start, data_length = fjm_writer.add_data(words_to_write)
@@ -67,18 +71,33 @@ def insert_wflip_ops(wflip_address: int, flip_value: int, return_address: int,
 
 def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
                    w: int, fjm_writer: fjm.Writer) -> None:
+    op_size = 2*w
+
     fj_words = []
     wflip_words = []
+    padding_ops_indices = []
+
+    return_addresses = []
+    wflip_sizes = []
+    same_bits = 4
+
+    # return_address -> { (i3, i2, i1, i0) -> address }
+    wflips_dict: Dict[int, Dict[Tuple[int, ...], ]] = defaultdict(lambda: {})
 
     first_segment: NewSegment = ops.popleft()
     first_address: int = first_segment.start_address
     wflip_address: int = first_segment.wflip_start_address
+
+    current_address = first_address
+
+    saved_ops = 0
 
     for op in ops:
 
         if isinstance(op, FlipJump):
             try:
                 fj_words += (op.get_flip(labels), op.get_jump(labels))
+                current_address += op_size
             except FJException as e:
                 raise FJAssemblerException(f"Can't resolve labels in op {op}.") from e
 
@@ -90,22 +109,78 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
             except FJException as e:
                 raise FJAssemblerException(f"Can't resolve labels in op {op}.") from e
 
-            wflip_address = insert_wflip_ops(wflip_address, flip_value, return_address,
-                                             fj_words, wflip_words, w, word_address)
+            return_dict = wflips_dict[return_address]
+
+            # this is the order of flip_addresses (tested with many other orders) that produces the best found-statistic
+            #  for searching flip_bit[:i] with different i's in return_dict.
+            flip_addresses = [word_address + i for i in range(w) if flip_value & (1 << i)][::-1]
+
+            if len(flip_addresses) >= same_bits:
+                return_addresses.append((*flip_addresses[:same_bits], return_address))
+                wflip_sizes.append(len(flip_addresses))
+
+            if len(flip_addresses) <= 1:
+                if flip_addresses:
+                    return_dict[(flip_addresses[0], )] = current_address
+                    fj_words += (flip_addresses[0], return_address)
+                else:
+                    fj_words += (0, return_address)
+            else:
+                first_bit = flip_addresses.pop()
+                fj_words += (first_bit, 0)  # TODO 0 return address
+                last_return_address_index = fj_words, len(fj_words) - 1    # record this address as the return address needs to change
+
+                while flip_addresses:
+                    flips_key = tuple(flip_addresses)
+                    ops_list, index = last_return_address_index
+                    if flips_key in return_dict:
+                        ops_list[index] = return_dict[flips_key]
+                        last_return_address_index = None
+                        saved_ops += len(flips_key)
+                        break
+                    else:
+                        ops_list[index] = wflip_address
+                        return_dict[flips_key] = wflip_address
+                        wflip_address += 2 * w
+                        wflip_words += (flip_addresses.pop(), 0)
+                        last_return_address_index = wflip_words, len(wflip_words) - 1
+
+                if last_return_address_index is not None:
+                    ops_list, index = last_return_address_index
+                    ops_list[index] = return_address
+
+                # next_op = wflip_address
+                # for bit in flip_addresses[:-1]:
+                #     next_op += 2 * w
+                #     wflip_words += (bit, next_op)
+                # wflip_words += (flip_addresses[-1], return_address)
+                # wflip_address = next_op + 2 * w
+
+            current_address += op_size
+
+        elif isinstance(op, Padding):
+            for i in range(len(fj_words), len(fj_words) + op.ops_count):
+                padding_ops_indices.append(i)
+                fj_words += (0, 0)
+            current_address += op.ops_count * op_size
 
         elif isinstance(op, NewSegment):
             add_segment_to_fjm(w, fjm_writer, first_address, wflip_address, fj_words, wflip_words)
-            first_address = op.start_address
+            current_address = first_address = op.start_address
             wflip_address = op.wflip_start_address
 
         elif isinstance(op, ReserveBits):
             add_segment_to_fjm(w, fjm_writer, first_address, op.first_address_after_reserved, fj_words, None)
-            first_address = op.first_address_after_reserved
+            current_address = first_address = op.first_address_after_reserved
 
         else:
             raise FJAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
 
     add_segment_to_fjm(w, fjm_writer, first_address, wflip_address, fj_words, wflip_words)
+    if return_addresses and wflip_sizes:
+        print(f'repeated-returns({same_bits})={(len(return_addresses) - len(set(return_addresses))) / len(return_addresses) * 100:.3f}%  '
+              f'(each {sum(wflip_sizes) / len(wflip_sizes):.2f} ops)  '
+              f'(total fj ops = {len(fjm_writer.data) // 2})')
 
 
 def assemble(input_files: List[Tuple[str, Path]], output_file: Path, w: int,

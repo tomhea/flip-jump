@@ -9,8 +9,7 @@ from expr import Expr
 from defs import CodePosition, Macro, macro_separator_string
 from exceptions import FJPreprocessorException, FJExprException
 from ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
-    LastPhaseOp, new_label, MacroName, main_macro, NewSegment, ReserveBits
-
+    LastPhaseOp, new_label, MacroName, main_macro, NewSegment, ReserveBits, Pad, Padding
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
 PreprocessorResults = Tuple[Deque[LastPhaseOp], Dict[str, Expr]]
@@ -154,6 +153,11 @@ class PreprocessorData:
         if 1 <= len(self.curr_tree) <= 2:
             self.macro_code_size[macro_path] += self.curr_address - init_curr_address
 
+    def align_current_address(self, op_size: int, ops_alignment: int) -> None:
+        ops_to_pad = (-self.curr_address // op_size) % ops_alignment
+        self.curr_address += ops_to_pad * op_size
+        self.result_ops.append(Padding(ops_to_pad))
+
 
 def resolve_macros(w: int, macros: Dict[MacroName, Macro], show_statistics: bool = False)\
         -> PreprocessorResults:
@@ -184,6 +188,11 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
             id_dict['$'] = Expr(preprocessor_data.curr_address)
             preprocessor_data.result_ops.append(op.eval_new(id_dict))
             del id_dict['$']
+
+        elif isinstance(op, Pad):
+            op = op.eval_new(id_dict)
+            ops_alignment = get_pad_ops_alignment(op, preprocessor_data)
+            preprocessor_data.align_current_address(2*w, ops_alignment)
 
         elif isinstance(op, MacroCall):
             op = op.eval_new(id_dict)
@@ -223,11 +232,18 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
     preprocessor_data.register_macro_code_size(macro_path, init_curr_address)
 
 
-def get_rep_times(op: RepCall, preprocessor_data: PreprocessorData):
+def get_rep_times(op: RepCall, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_times(preprocessor_data.labels)
     except FJExprException as e:
         macro_resolve_error(preprocessor_data.curr_tree, f'rep {op.macro_name} failed.', orig_exception=e)
+
+
+def get_pad_ops_alignment(op: Pad, preprocessor_data: PreprocessorData) -> int:
+    try:
+        return op.calculate_ops_alignment(preprocessor_data.labels)
+    except FJExprException as e:
+        macro_resolve_error(preprocessor_data.curr_tree, f'pad {op.ops_alignment} failed.', orig_exception=e)
 
 
 def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData, w: int):
