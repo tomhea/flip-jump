@@ -69,35 +69,74 @@ def insert_wflip_ops(wflip_address: int, flip_value: int, return_address: int,
     return wflip_address
 
 
+class BinaryData:
+    def __init__(self, w: int, first_segment: NewSegment):
+        self.w = w
+
+        self.fj_words: List[int] = []
+        self.wflip_words: List[int] = []
+
+        self.padding_ops_indices: List[int] = []    # indices in self.fj_words
+
+        # return_address -> { (i3, i2, i1, i0) -> address }
+        self.wflips_dict: Dict[int, Dict[Tuple[int, ...],]] = defaultdict(lambda: {})
+
+        self.first_address = first_segment.start_address
+        self.wflip_address = first_segment.wflip_start_address
+
+        self.current_address = self.first_address
+
+        self.saved_ops = 0
+
+    def get_wflip_spot(self):
+        if self.padding_ops_indices:
+            self.saved_ops += 1
+            index = self.padding_ops_indices.pop()
+            return self.fj_words, index, self.first_address + self.w * index
+
+        index = len(self.wflip_words)
+        address = self.wflip_address
+
+        self.wflip_words += (0, 0)
+        self.wflip_address += 2*self.w
+
+        return self.wflip_words, index, address
+
+    def close_and_add_segment(self, fjm_writer: fjm.Writer):
+        add_segment_to_fjm(self.w, fjm_writer, self.first_address, self.wflip_address, self.fj_words, self.wflip_words)
+
+    def new_segment(self, fjm_writer: fjm.Writer, new_segment_op: NewSegment):
+        self.close_and_add_segment(fjm_writer)
+        self.first_address = new_segment_op.start_address
+        self.wflip_address = new_segment_op.wflip_start_address
+        self.current_address = self.first_address
+        self.padding_ops_indices.clear()
+
+    def reserve_bits(self, fjm_writer: fjm.Writer, reserve_bits_op: ReserveBits):
+        new_first_address = reserve_bits_op.first_address_after_reserved
+        add_segment_to_fjm(self.w, fjm_writer, self.first_address, new_first_address, self.fj_words, None)
+        self.first_address = new_first_address
+        self.current_address = self.first_address
+        self.padding_ops_indices.clear()
+
+
 def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
                    w: int, fjm_writer: fjm.Writer) -> None:
     op_size = 2*w
-
-    fj_words = []
-    wflip_words = []
-    padding_ops_indices = []
 
     return_addresses = []
     wflip_sizes = []
     same_bits = 4
 
-    # return_address -> { (i3, i2, i1, i0) -> address }
-    wflips_dict: Dict[int, Dict[Tuple[int, ...], ]] = defaultdict(lambda: {})
-
     first_segment: NewSegment = ops.popleft()
-    first_address: int = first_segment.start_address
-    wflip_address: int = first_segment.wflip_start_address
-
-    current_address = first_address
-
-    saved_ops = 0
+    binary_data = BinaryData(w, first_segment)
 
     for op in ops:
 
         if isinstance(op, FlipJump):
             try:
-                fj_words += (op.get_flip(labels), op.get_jump(labels))
-                current_address += op_size
+                binary_data.fj_words += (op.get_flip(labels), op.get_jump(labels))
+                binary_data.current_address += op_size
             except FJException as e:
                 raise FJAssemblerException(f"Can't resolve labels in op {op}.") from e
 
@@ -109,7 +148,7 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
             except FJException as e:
                 raise FJAssemblerException(f"Can't resolve labels in op {op}.") from e
 
-            return_dict = wflips_dict[return_address]
+            return_dict = binary_data.wflips_dict[return_address]
 
             # this is the order of flip_addresses (tested with many other orders) that produces the best found-statistic
             #  for searching flip_bit[:i] with different i's in return_dict.
@@ -121,14 +160,14 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
 
             if len(flip_addresses) <= 1:
                 if flip_addresses:
-                    return_dict[(flip_addresses[0], )] = current_address
-                    fj_words += (flip_addresses[0], return_address)
+                    return_dict[(flip_addresses[0], )] = binary_data.current_address
+                    binary_data.fj_words += (flip_addresses[0], return_address)
                 else:
-                    fj_words += (0, return_address)
+                    binary_data.fj_words += (0, return_address)
             else:
                 first_bit = flip_addresses.pop()
-                fj_words += (first_bit, 0)  # TODO 0 return address
-                last_return_address_index = fj_words, len(fj_words) - 1    # record this address as the return address needs to change
+                binary_data.fj_words += (first_bit, 0)
+                last_return_address_index = binary_data.fj_words, len(binary_data.fj_words) - 1
 
                 while flip_addresses:
                     flips_key = tuple(flip_addresses)
@@ -136,14 +175,16 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
                     if flips_key in return_dict:
                         ops_list[index] = return_dict[flips_key]
                         last_return_address_index = None
-                        saved_ops += len(flips_key)
+                        binary_data.saved_ops += len(flips_key)
                         break
                     else:
-                        ops_list[index] = wflip_address
-                        return_dict[flips_key] = wflip_address
-                        wflip_address += 2 * w
-                        wflip_words += (flip_addresses.pop(), 0)
-                        last_return_address_index = wflip_words, len(wflip_words) - 1
+                        wflip_spot_list, wflip_spot_index, wflip_spot_address = binary_data.get_wflip_spot()
+
+                        ops_list[index] = wflip_spot_address
+                        return_dict[flips_key] = wflip_spot_address
+
+                        wflip_spot_list[wflip_spot_index] = flip_addresses.pop()
+                        last_return_address_index = wflip_spot_list, wflip_spot_index + 1
 
                 if last_return_address_index is not None:
                     ops_list, index = last_return_address_index
@@ -156,31 +197,30 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
                 # wflip_words += (flip_addresses[-1], return_address)
                 # wflip_address = next_op + 2 * w
 
-            current_address += op_size
+            binary_data.current_address += op_size
 
         elif isinstance(op, Padding):
-            for i in range(len(fj_words), len(fj_words) + op.ops_count):
-                padding_ops_indices.append(i)
-                fj_words += (0, 0)
-            current_address += op.ops_count * op_size
+            for i in range(len(binary_data.fj_words), len(binary_data.fj_words) + 2*op.ops_count, 2):
+                binary_data.padding_ops_indices.append(i)
+                binary_data.fj_words += (0, 0)
+            binary_data.current_address += op.ops_count * op_size
 
         elif isinstance(op, NewSegment):
-            add_segment_to_fjm(w, fjm_writer, first_address, wflip_address, fj_words, wflip_words)
-            current_address = first_address = op.start_address
-            wflip_address = op.wflip_start_address
+            binary_data.new_segment(fjm_writer, op)
 
         elif isinstance(op, ReserveBits):
-            add_segment_to_fjm(w, fjm_writer, first_address, op.first_address_after_reserved, fj_words, None)
-            current_address = first_address = op.first_address_after_reserved
+            binary_data.reserve_bits(fjm_writer, op)
 
         else:
             raise FJAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
 
-    add_segment_to_fjm(w, fjm_writer, first_address, wflip_address, fj_words, wflip_words)
+    binary_data.close_and_add_segment(fjm_writer)
+
     if return_addresses and wflip_sizes:
         print(f'repeated-returns({same_bits})={(len(return_addresses) - len(set(return_addresses))) / len(return_addresses) * 100:.3f}%  '
               f'(each {sum(wflip_sizes) / len(wflip_sizes):.2f} ops)  '
-              f'(total fj ops = {len(fjm_writer.data) // 2})')
+              f'(total fj ops = {len(fjm_writer.data) // 2})  '
+              f'(saved {binary_data.saved_ops / (len(fjm_writer.data) // 2 + binary_data.saved_ops) * 100:.3f}%)')
 
 
 def assemble(input_files: List[Tuple[str, Path]], output_file: Path, w: int,
