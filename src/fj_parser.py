@@ -11,9 +11,9 @@ from exceptions import FJExprException, FJParsingException
 from expr import Expr, get_minimized_expr
 from ops import get_used_labels, get_declared_labels, \
     CodePosition, MacroName, Op, main_macro, \
-    MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve
+    MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, Pad
 
-global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace, reserved_names
+global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace
 
 
 def get_position(lineno: int) -> CodePosition:
@@ -75,7 +75,7 @@ def get_char_value_and_length(s: str) -> Tuple[int, int]:
 
 class FJLexer(sly.Lexer):
     tokens = {NS, DEF, REP,
-              WFLIP, SEGMENT, RESERVE,
+              WFLIP, PAD, SEGMENT, RESERVE,
               ID, DOT_ID, NUMBER, STRING,
               LE, GE, EQ, NEQ,
               SHL, SHR,
@@ -105,12 +105,10 @@ class FJLexer(sly.Lexer):
     ID[r'ns'] = NS
 
     ID[r'wflip'] = WFLIP
+    ID[r'pad'] = PAD
 
     ID[r'segment'] = SEGMENT
     ID[r'reserve'] = RESERVE
-
-    global reserved_names
-    reserved_names = {DEF, REP, NS, WFLIP, SEGMENT, RESERVE}
 
     LE = "<="
     GE = ">="
@@ -192,10 +190,6 @@ class FJParser(sly.Parser):
         self.macros: Dict[MacroName, Macro] = {main_macro: Macro([], [], [], '', None)}
 
     def validate_free_macro_name(self, name: MacroName, lineno: int) -> None:
-        global reserved_names
-        base_name = self.to_base_name(name.name)
-        if base_name in reserved_names:
-            syntax_error(lineno, f'macro name can\'t be {name.name} ({base_name} is a reserved name)!')
         if name in self.macros:
             syntax_error(lineno, f'macro {name} is declared twice! '
                                  f'also declared in {self.macros[name].code_position}.')
@@ -494,6 +488,10 @@ class FJParser(sly.Parser):
     @_('WFLIP expr "," expr "," expr')
     def statement(self, p: ParsedRule) -> WordFlip:
         return WordFlip(p.expr0, p.expr1, p.expr2, get_position(p.lineno))
+
+    @_('PAD expr')
+    def statement(self, p: ParsedRule) -> Pad:
+        return Pad(p.expr, get_position(p.lineno))
 
     @_('ID "=" expr')
     def statement(self, p: ParsedRule) -> None:

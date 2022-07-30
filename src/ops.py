@@ -103,6 +103,31 @@ class WordFlip:
         return int(self.return_address.eval_new(labels))
 
 
+class Pad:
+    def __init__(self, ops_alignment: Expr, code_position: CodePosition):
+        self.ops_alignment = ops_alignment
+        self.code_position = code_position
+
+    def __str__(self):
+        return f"Pad {self.ops_alignment} ops, at {self.code_position}"
+
+    def eval_new(self, id_dict: Dict[str, Expr]) -> Pad:
+        return Pad(self.ops_alignment.eval_new(id_dict), self.code_position)
+
+    def all_unknown_labels(self) -> Set[str]:
+        return self.ops_alignment.all_unknown_labels()
+
+    def get_ops_alignment(self) -> int:
+        try:
+            return int(self.ops_alignment)
+        except FJExprException as e:
+            raise FJExprException(f"Can't calculate pad ops_alignment on {self.code_position}") from e
+
+    def calculate_ops_alignment(self, labels: Dict[str, Expr]) -> int:
+        self.ops_alignment = self.ops_alignment.eval_new(labels)
+        return self.get_ops_alignment()
+
+
 class Segment:
     """
     data = [start_address]
@@ -266,7 +291,7 @@ def new_label(macro_path: str, label_name: str) -> Expr:
     return Expr(f'{macro_path}---{label_name}')
 
 
-Op = Union[FlipJump, WordFlip, Label, MacroCall, RepCall, Segment, Reserve]
+Op = Union[FlipJump, WordFlip, Pad, Label, MacroCall, RepCall, Segment, Reserve]
 
 
 WFLIP_NOT_INSERTED_YET = -1
@@ -283,4 +308,9 @@ class ReserveBits:
         self.first_address_after_reserved = first_address_after_reserved
 
 
-LastPhaseOp = Union[FlipJump, WordFlip, NewSegment, ReserveBits]
+class Padding:
+    def __init__(self, ops_count: int):
+        self.ops_count = ops_count
+
+
+LastPhaseOp = Union[FlipJump, WordFlip, Padding, NewSegment, ReserveBits]
