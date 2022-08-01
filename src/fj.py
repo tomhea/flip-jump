@@ -135,8 +135,8 @@ def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, err
     file_tuples = get_file_tuples(args)
     verify_fj_files(error_func, file_tuples)
 
-    assembler.assemble(file_tuples, out_fjm_file, args.width,
-                       version=args.version, flags=args.flags,
+    assembler.assemble(file_tuples, out_fjm_file, args.width, args.version,
+                       flags=args.flags,
                        warning_as_errors=args.werror,
                        show_statistics=args.stats, print_time=not args.silent,
                        debugging_file=debug_file)
@@ -221,7 +221,8 @@ def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
 
     asm_arguments.add_argument('-w', '--width', type=int, default=64, choices=[8, 16, 32, 64], metavar='WIDTH',
                                help="specify memory-width. 64 by default")
-    asm_arguments.add_argument('-v', '--version', metavar='VERSION', help="fjm version", type=int, default=0)
+    asm_arguments.add_argument('-v', '--version', metavar='VERSION', type=int, default=2,
+                               help="fjm version (2 by default)")
     asm_arguments.add_argument('-f', '--flags', help="the default .fjm unpacking & running flags", type=int, default=0)
 
     asm_arguments.add_argument('--werror', help="treat all assemble warnings as errors", action='store_true')

@@ -41,8 +41,14 @@ header_extension_size = 8 + 4
 segment_format = '<QQQQ'
 segment_size = 8 + 8 + 8 + 8
 
-SUPPORTED_VERSIONS = {0: 'Base', 1: 'Normal'}
-# TODO UPCOMING_VERSIONS = {2: 'Zipped', 3: 'RelativeZipped', 4: '7Zipped', 5: 'RelativeZipped'}
+BaseVersion = 0
+NormalVersion = 1
+RelativeJumpVersion = 2     # Compress-friendly
+SUPPORTED_VERSIONS = {BaseVersion: 'Base', NormalVersion: 'Normal', RelativeJumpVersion: 'RelativeJump'}
+
+# TODO decide if needed UPCOMING_VERSIONS = {3: 'Zipped'}
+#  maybe just support 7z compress if asked to -o path.fjm.7z, and 7z-decompress if asked to run path.fjm.7z
+#  anyway, version 2 by default.
 
 
 class GarbageHandling(IntEnum):
@@ -74,7 +80,7 @@ class Reader:
     def _init_header_fields(self, fjm_file: BinaryIO) -> None:
         self.magic, self.w, self.version, self.segment_num = \
             unpack(header_base_format, fjm_file.read(header_base_size))
-        if self.version == 0:
+        if BaseVersion == self.version:
             self.flags, self.reserved = 0, 0
         else:
             self.flags, self.reserved = unpack(header_extension_format, fjm_file.read(header_extension_size))
@@ -95,14 +101,6 @@ class Reader:
         read_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.w]
         word_bytes_size = self.w // 8
 
-        # TODO read file once:
-        # data = []
-        # while True:
-        #     word = fjm_file.read(word_bytes_size)
-        #     if word == '':
-        #         break
-        #     data.append(unpack(read_tag, word)[0])
-
         file_data = fjm_file.read()
         data = [unpack(read_tag, file_data[i:i + word_bytes_size])[0]
                 for i in range(0, len(file_data), word_bytes_size)]
@@ -113,8 +111,14 @@ class Reader:
         self.zeros_boundaries = []
 
         for segment_start, segment_length, data_start, data_length in segments:
-            for i in range(data_length):
-                self.memory[segment_start + i] = data[data_start + i]
+            if RelativeJumpVersion == self.version:
+                word = ((1 << self.w) - 1)
+                for i in range(0, data_length, 2):
+                    self.memory[segment_start + i] = data[data_start + i]
+                    self.memory[segment_start + i+1] = (data[data_start + i+1] + (segment_start + i+1) * self.w) & word
+            else:
+                for i in range(data_length):
+                    self.memory[segment_start + i] = data[data_start + i]
             if segment_length > data_length:
                 if segment_length - data_length < reserved_dict_threshold:
                     for i in range(data_length, segment_length):
@@ -177,14 +181,15 @@ class Reader:
 
 
 class Writer:
-    def __init__(self, output_file, w, *, version=0, flags=0):
+    def __init__(self, output_file, w, version, *, flags=0):
         if w not in (8, 16, 32, 64):
             raise FJWriteFjmException(f"Word size {w} is not in {{8, 16, 32, 64}}.")
-        if version < 0 or version >= 1 << 64:
-            raise FJWriteFjmException(f"version must be a 64bit positive number, not {version}")
-        if flags < 0 or flags >= 1 << 64:
+        if version not in SUPPORTED_VERSIONS:
+            raise FJWriteFjmException(
+                f'Error: unsupported version ({version}, this program supports {str(SUPPORTED_VERSIONS)}).')
+        if flags < 0 or flags >= (1 << 64):
             raise FJWriteFjmException(f"flags must be a 64bit positive number, not {flags}")
-        if version == 0 and flags != 0:
+        if BaseVersion == version and flags != 0:
             raise FJWriteFjmException(f"version 0 does not support the flags option")
 
         self.output_file = output_file
@@ -201,7 +206,7 @@ class Writer:
 
         with open(self.output_file, 'wb') as f:
             f.write(pack(header_base_format, fj_magic, self.word_size, self.version, len(self.segments)))
-            if self.version > 0:
+            if BaseVersion != self.version:
                 f.write(pack(header_extension_format, self.flags, self.reserved))
 
             for segment in self.segments:
@@ -240,7 +245,16 @@ class Writer:
         if segment_length < data_length:
             raise FJWriteFjmException(f"segment-length must be at-least data-length (in )")
 
+        if segment_start % 2 == 1 or segment_length % 2 == 1:
+            raise FJWriteFjmException(f"segment-start and segment-length must be 2*w aligned.")
+
         self._validate_segment_not_overlapping(segment_start, segment_length)
+        # TODO add validate_segment_data_not_overloading (if RelativeJumpVersion == self.version) - maybe inside the above function
+
+        if RelativeJumpVersion == self.version:
+            word = ((1 << self.word_size) - 1)
+            for i in range(1, data_length, 2):
+                self.data[data_start + i] = (self.data[data_start + i] - (segment_start + i) * self.word_size) & word
 
         self.segments.append((segment_start, segment_length, data_start, data_length))
 
