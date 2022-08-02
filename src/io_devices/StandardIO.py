@@ -1,10 +1,10 @@
-from src.io_devices.IODevice import IODevice
-from src.io_devices.io_exceptions import IOReadOnEOF, IncompleteOutput
-
 from sys import stdin, stdout
 
-# TODO use this and FixedIO in fj.py / test_fj.py / fjm_run.py
-from src.defs import bytes_encoding
+from .IODevice import IODevice
+from .io_exceptions import IOReadOnEOF, IncompleteOutput
+
+
+bytes_encoding = 'raw_unicode_escape'
 
 
 class StandardIO(IODevice):
