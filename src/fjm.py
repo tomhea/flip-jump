@@ -3,7 +3,9 @@ from enum import IntEnum
 from pathlib import Path
 from struct import pack, unpack
 from time import sleep
-from typing import BinaryIO, List, Tuple
+from typing import BinaryIO, List, Tuple, Dict
+
+import lzma
 
 from exceptions import FJReadFjmException, FJWriteFjmException
 
@@ -23,8 +25,8 @@ struct {
         u64 segment_length; // in memory words (w-bits)
         u64 data_start;     // in the outer-struct.data words (w-bits)
         u64 data_length;    // in the outer-struct.data words (w-bits)
-    } *segments;            // segments[segment_num]
-    u8* data;               // the data
+    } *segments;        // segments[segment_num]
+    u8* data;       // the data (might be compressed in some versions)
 } fjm_file;     // Flip-Jump Memory file
 """
 
@@ -43,12 +45,21 @@ segment_size = 8 + 8 + 8 + 8
 
 BaseVersion = 0
 NormalVersion = 1
-RelativeJumpVersion = 2     # Compress-friendly
-SUPPORTED_VERSIONS = {BaseVersion: 'Base', NormalVersion: 'Normal', RelativeJumpVersion: 'RelativeJump'}
+RelativeJumpVersion = 2     # compress-friendly
+CompressedVersion = 3       # version 2 but data is lzma2-compressed
+SUPPORTED_VERSIONS = {
+    BaseVersion: 'Base',
+    NormalVersion: 'Normal',
+    RelativeJumpVersion: 'RelativeJump',
+    CompressedVersion: 'Compressed',
+}
 
-# TODO decide if needed UPCOMING_VERSIONS = {3: 'Zipped'}
-#  maybe just support 7z compress if asked to -o path.fjm.7z, and 7z-decompress if asked to run path.fjm.7z
-#  anyway, version 2 by default.
+_LZMA_FORMAT = lzma.FORMAT_RAW
+_LZMA_DECOMPRESSION_FILTERS: List[Dict[str, int]] = [{"id": lzma.FILTER_LZMA2}]
+
+
+def _LZMA_COMPRESSION_FILTERS(dw: int, preset: int) -> List[Dict[str, int]]:
+    return [{"id": lzma.FILTER_LZMA2, "preset": preset, "nice_len": dw}]
 
 
 class GarbageHandling(IntEnum):
@@ -97,11 +108,21 @@ class Reader:
         if self.reserved != 0:
             raise FJReadFjmException(f'Error: bad reserved value ({self.reserved}, should be 0).')
 
+    @staticmethod
+    def _decompress_data(compressed_data: bytes) -> bytes:
+        try:
+            return lzma.decompress(compressed_data, format=_LZMA_FORMAT, filters=_LZMA_DECOMPRESSION_FILTERS)
+        except lzma.LZMAError as e:
+            raise FJReadFjmException(f'Error: The compressed data is damaged; Unable to decompress.') from e
+
     def _read_data(self, fjm_file: BinaryIO) -> List[int]:
         read_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.w]
         word_bytes_size = self.w // 8
 
         file_data = fjm_file.read()
+        if CompressedVersion == self.version:
+            file_data = self._decompress_data(file_data)
+
         data = [unpack(read_tag, file_data[i:i + word_bytes_size])[0]
                 for i in range(0, len(file_data), word_bytes_size)]
         return data
@@ -111,7 +132,7 @@ class Reader:
         self.zeros_boundaries = []
 
         for segment_start, segment_length, data_start, data_length in segments:
-            if RelativeJumpVersion == self.version:
+            if self.version in (RelativeJumpVersion, CompressedVersion):
                 word = ((1 << self.w) - 1)
                 for i in range(0, data_length, 2):
                     self.memory[segment_start + i] = data[data_start + i]
@@ -181,7 +202,7 @@ class Reader:
 
 
 class Writer:
-    def __init__(self, output_file, w, version, *, flags=0):
+    def __init__(self, output_file, w, version, *, flags=0, lzma_preset=None):
         if w not in (8, 16, 32, 64):
             raise FJWriteFjmException(f"Word size {w} is not in {{8, 16, 32, 64}}.")
         if version not in SUPPORTED_VERSIONS:
@@ -191,6 +212,11 @@ class Writer:
             raise FJWriteFjmException(f"flags must be a 64bit positive number, not {flags}")
         if BaseVersion == version and flags != 0:
             raise FJWriteFjmException(f"version 0 does not support the flags option")
+        if CompressedVersion == version:
+            if lzma_preset is None or lzma_preset not in range(10):
+                raise FJWriteFjmException("version 3 requires an LZMA preset (0-9, faster->smaller).")
+            else:
+                self.lzma_preset = lzma_preset
 
         self.output_file = output_file
         self.word_size = w
@@ -200,6 +226,13 @@ class Writer:
 
         self.segments = []
         self.data = []  # words array
+
+    def _compress_data(self, data: bytes) -> bytes:
+        try:
+            return lzma.compress(data, format=_LZMA_FORMAT,
+                                 filters=_LZMA_COMPRESSION_FILTERS(2*self.word_size, self.lzma_preset))
+        except lzma.LZMAError as e:
+            raise FJWriteFjmException(f'Error: Unable to compress the data.') from e
 
     def write_to_file(self) -> None:
         write_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
@@ -212,8 +245,11 @@ class Writer:
             for segment in self.segments:
                 f.write(pack(segment_format, *segment))
 
-            for word in self.data:
-                f.write(pack(write_tag, word))
+            fjm_data = b''.join(pack(write_tag, word) for word in self.data)
+            if CompressedVersion == self.version:
+                fjm_data = self._compress_data(fjm_data)
+
+            f.write(fjm_data)
 
     @staticmethod
     def _is_segment_collision(start1: int, end1: int, start2: int, end2: int) -> bool:
@@ -249,9 +285,10 @@ class Writer:
             raise FJWriteFjmException(f"segment-start and segment-length must be 2*w aligned.")
 
         self._validate_segment_not_overlapping(segment_start, segment_length)
-        # TODO add validate_segment_data_not_overloading (if RelativeJumpVersion == self.version) - maybe inside the above function
+        # TODO add validate_segment_data_not_overloading
+        #  (if self.version in (RelativeJumpVersion, RelativeCompressedVersion)) - maybe inside the above function
 
-        if RelativeJumpVersion == self.version:
+        if self.version in (RelativeJumpVersion, CompressedVersion):
             word = ((1 << self.word_size) - 1)
             for i in range(1, data_length, 2):
                 self.data[data_start + i] = (self.data[data_start + i] - (segment_start + i) * self.word_size) & word

@@ -1,3 +1,4 @@
+import lzma
 from queue import Queue
 from threading import Lock
 from pathlib import Path
@@ -75,7 +76,7 @@ def test_compile(compile_args: CompileTestArgs) -> None:
     create_parent_directories(compile_args.fjm_out_path)
 
     assembler.assemble(compile_args.fj_files_tuples, compile_args.fjm_out_path, compile_args.word_size,
-                       compile_args.version, flags=compile_args.flags,
+                       compile_args.version, flags=compile_args.flags, lzma_preset=lzma.PRESET_DEFAULT,
                        warning_as_errors=compile_args.warning_as_errors)
 
 

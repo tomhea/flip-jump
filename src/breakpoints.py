@@ -15,7 +15,7 @@ class BreakpointHandlerUnnecessary(Exception):
 
 
 def display_message_box_and_get_answer(msg: str, title: str, choices: List[str]) -> str:
-    # TODO deprecated warning. use another gui (tkinter? seems not so simple)
+    # might generate an 'import from collections is deprecated' warning if using easygui-version <= 0.98.3.
     return easygui.buttonbox(msg, title, choices)
 
 

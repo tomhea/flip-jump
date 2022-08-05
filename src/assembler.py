@@ -186,7 +186,7 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
 
 
 def assemble(input_files: List[Tuple[str, Path]], output_file: Path, w: int, version,
-             *, flags: int = 0,
+             *, flags: int = 0, lzma_preset: Optional[int] = None,
              warning_as_errors: bool = True,
              show_statistics: bool = False, debugging_file: Optional[Path] = None, print_time: bool = True)\
         -> None:
@@ -197,12 +197,13 @@ def assemble(input_files: List[Tuple[str, Path]], output_file: Path, w: int, ver
     @param w:[in]: the memory-width
     @param version: the .fjm version
     @param flags: the .fjm flags
+    @param lzma_preset: the preset to be used when compressing the .fjm data
     @param warning_as_errors: treat warnings as errors (stop execution on warnings)
     @param show_statistics: if true shows macro-usage statistics
     @param debugging_file:[in]: is specified, save debug information in this file
     @param print_time: if true prints the times of each assemble-stage
     """
-    fjm_writer = fjm.Writer(output_file, w, version, flags=flags)
+    fjm_writer = fjm.Writer(output_file, w, version, flags=flags, lzma_preset=lzma_preset)
 
     with PrintTimer('  parsing:         ', print_time=print_time):
         macros = parse_macro_tree(input_files, w, warning_as_errors)

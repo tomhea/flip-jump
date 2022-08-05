@@ -1,11 +1,13 @@
 import os
 import argparse
+import lzma
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Tuple, List, Callable
 
 import assembler
 import fjm_run
+import fjm
 from io_devices.StandardIO import StandardIO
 
 from defs import get_stl_paths
@@ -136,7 +138,7 @@ def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, err
     verify_fj_files(error_func, file_tuples)
 
     assembler.assemble(file_tuples, out_fjm_file, args.width, args.version,
-                       flags=args.flags,
+                       flags=args.flags, lzma_preset=args.lzma_preset,
                        warning_as_errors=args.werror,
                        show_statistics=args.stats, print_time=not args.silent,
                        debugging_file=debug_file)
@@ -221,9 +223,17 @@ def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
 
     asm_arguments.add_argument('-w', '--width', type=int, default=64, choices=[8, 16, 32, 64], metavar='WIDTH',
                                help="specify memory-width. 64 by default")
-    asm_arguments.add_argument('-v', '--version', metavar='VERSION', type=int, default=2,
-                               help="fjm version (2 by default)")
+
+    supported_versions = '\n'.join(f"{version}: {name}" for version, name in fjm.SUPPORTED_VERSIONS.items())
+    asm_arguments.add_argument('-v', '--version', metavar='VERSION', type=int, default=3,
+                               help=f"fjm version ({fjm.CompressedVersion}-compressed by default).\n"
+                                    f"supported versions:\n" + supported_versions)
     asm_arguments.add_argument('-f', '--flags', help="the default .fjm unpacking & running flags", type=int, default=0)
+
+    asm_arguments.add_argument('--lzma_preset', type=int, default=lzma.PRESET_DEFAULT, choices=list(range(10)),
+                               help=f"The preset used for the LZMA2 algorithm compression ("
+                                    f"{lzma.PRESET_DEFAULT} by default; "
+                                    f"used when version={fjm.CompressedVersion}).")
 
     asm_arguments.add_argument('--werror', help="treat all assemble warnings as errors", action='store_true')
     asm_arguments.add_argument('--no_stl', help="don't assemble/link the standard library files", action='store_true')
