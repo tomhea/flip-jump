@@ -9,8 +9,11 @@ from exceptions import FJExprException
 
 @dataclass
 class CodePosition:
+    """
+    A position in the .fj files.
+    """
     file: str
-    file_short_name: str
+    file_short_name: str    # shortened file name. usually s1,s2,.. for stl, and f1,f2,.. for the rest.
     line: int
 
     def __str__(self) -> str:
@@ -21,6 +24,9 @@ class CodePosition:
 
 
 class MacroName:
+    """
+    Unique for every macro definition.
+    """
     def __init__(self, name: str, parameter_num: int = 0):
         self.name = name
         self.parameter_num = parameter_num
@@ -40,12 +46,13 @@ class MacroName:
         return type(other) == MacroName and self.to_tuple() == other.to_tuple()
 
 
+# The name of the macro that holds the ops that are outside any macro.
 main_macro = MacroName('')
 
 
 class FlipJump:
     """
-    data = [flip_address, jump_address]
+    The python representation of the "flip; jump" fj-assembly op.
     """
     def __init__(self, flip: Expr, jump: Expr, code_position: CodePosition):
         self.flip = flip
@@ -72,7 +79,7 @@ class FlipJump:
 
 class WordFlip:
     """
-    data = [word_address, value, return_address]
+    The python representation of the "wflip address, value [, return_address]" fj-assembly op.
     """
     def __init__(self, word_address: Expr, flip_value: Expr, return_address: Expr, code_position: CodePosition):
         self.word_address = word_address
@@ -104,6 +111,9 @@ class WordFlip:
 
 
 class Pad:
+    """
+    The python representation of the "pad ops_alignment" fj-assembly op.
+    """
     def __init__(self, ops_alignment: Expr, code_position: CodePosition):
         self.ops_alignment = ops_alignment
         self.code_position = code_position
@@ -130,7 +140,7 @@ class Pad:
 
 class Segment:
     """
-    data = [start_address]
+    The python representation of the "segment start_address" fj-assembly op.
     """
     def __init__(self, start_address: Expr, code_position: CodePosition):
         self.start_address = start_address
@@ -158,7 +168,7 @@ class Segment:
 
 class Reserve:
     """
-    data = [reserved_bit_size]
+    The python representation of the "reserve bit_size" fj-assembly op.
     """
     def __init__(self, reserved_bit_size: Expr, code_position: CodePosition):
         self.reserved_bit_size = reserved_bit_size
@@ -186,7 +196,7 @@ class Reserve:
 
 class MacroCall:
     """
-    data = ordered list of macro arguments
+    The python representation of the "macro-call [args..]" fj-assembly op.
     """
     def __init__(self, macro_name: str, arguments: List[Expr], code_position: CodePosition):
         self.macro_name = MacroName(macro_name, len(arguments))
@@ -208,8 +218,7 @@ class MacroCall:
 
 class RepCall:
     """
-    data[0] = repeat_times
-    data[1:] = ordered list of macro arguments
+    The python representation of the "rep(n, i) macro_call [args..]" fj-assembly op.
     """
     def __init__(self, repeat_times: Expr, iterator_name: str, macro_name: str, arguments: List[Expr],
                  code_position: CodePosition):
@@ -259,6 +268,9 @@ class RepCall:
 
 
 class Label:
+    """
+    The python representation of the "label:" fj-assembly op.
+    """
     def __init__(self, name: str, code_position: CodePosition):
         self.name = name
         self.code_position = code_position
@@ -287,10 +299,17 @@ def get_declared_labels(ops: List[Op]) -> Set[str]:
     return set(op.name for op in ops if isinstance(op, Label))
 
 
-def new_label(macro_path: str, label_name: str) -> Expr:
-    return Expr(f'{macro_path}---{label_name}')
+def new_label(macro_path: str, label_basename: str) -> Expr:
+    """
+    creates a new label expression (with a new name)
+    @param macro_path: the path to the currently-preprocessed macro
+    @param label_basename: the label basename
+    @return: the new expression
+    """
+    return Expr(f'{macro_path}---{label_basename}')
 
 
+# The input for the preprocessor
 Op = Union[FlipJump, WordFlip, Pad, Label, MacroCall, RepCall, Segment, Reserve]
 
 
@@ -298,19 +317,43 @@ WFLIP_NOT_INSERTED_YET = -1
 
 
 class NewSegment:
+    """
+    The python expressions-resolved (all compilation data is known) representation
+     of the "segment start_address" fj-assembly op.
+    """
     def __init__(self, start_address: int):
+        """
+        @param start_address: the first address of the new segment
+        """
         self.start_address = start_address
+
+        # a stub, to be resolved later with the start of the wflip area address
         self.wflip_start_address = WFLIP_NOT_INSERTED_YET
 
 
 class ReserveBits:
+    """
+    The python expressions-resolved (all compilation data is known) representation
+     of the "reserve bit_size" fj-assembly op.
+    """
     def __init__(self, first_address_after_reserved: int):
+        """
+        @param first_address_after_reserved: the address right after the reserved "segment".
+        """
         self.first_address_after_reserved = first_address_after_reserved
 
 
 class Padding:
+    """
+    The python expressions-resolved (all compilation data is known) representation
+     of the "pad ops_alignment" fj-assembly op.
+    """
     def __init__(self, ops_count: int):
+        """
+        @param ops_count: the number of fj-ops to pad.
+        """
         self.ops_count = ops_count
 
 
+# The input to the labels-resolve
 LastPhaseOp = Union[FlipJump, WordFlip, Padding, NewSegment, ReserveBits]
