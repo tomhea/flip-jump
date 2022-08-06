@@ -3,7 +3,7 @@ from enum import IntEnum
 from pathlib import Path
 from struct import pack, unpack
 from time import sleep
-from typing import BinaryIO, List, Tuple, Dict
+from typing import BinaryIO, List, Tuple, Dict, Optional
 
 import lzma
 
@@ -58,7 +58,7 @@ _LZMA_FORMAT = lzma.FORMAT_RAW
 _LZMA_DECOMPRESSION_FILTERS: List[Dict[str, int]] = [{"id": lzma.FILTER_LZMA2}]
 
 
-def _LZMA_COMPRESSION_FILTERS(dw: int, preset: int) -> List[Dict[str, int]]:
+def _lzma_compression_filters(dw: int, preset: int) -> List[Dict[str, int]]:
     return [{"id": lzma.FILTER_LZMA2, "preset": preset, "nice_len": dw}]
 
 
@@ -116,6 +116,9 @@ class Reader:
             raise FJReadFjmException(f'Error: The compressed data is damaged; Unable to decompress.') from e
 
     def _read_data(self, fjm_file: BinaryIO) -> List[int]:
+        """
+        @return: list of the uncompressed words.
+        """
         read_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.w]
         word_bytes_size = self.w // 8
 
@@ -176,33 +179,45 @@ class Reader:
         self.memory[address] = value
 
     def bit_address_decompose(self, bit_address: int) -> Tuple[int, int]:
+        """
+        @param bit_address: the address
+        @return: tuple of the word address and the bit offset
+        """
         address = (bit_address >> (self.w.bit_length() - 1)) & ((1 << self.w) - 1)
-        bit = bit_address & (self.w - 1)
-        return address, bit
+        bit_offset = bit_address & (self.w - 1)
+        return address, bit_offset
 
-    def read_bit(self, bit_address) -> int:
-        address, bit = self.bit_address_decompose(bit_address)
-        return (self[address] >> bit) & 1
+    def read_bit(self, bit_address: int) -> bool:
+        address, bit_offset = self.bit_address_decompose(bit_address)
+        return (self[address] >> bit_offset) & 1 == 1
 
-    def write_bit(self, bit_address, value) -> None:
-        address, bit = self.bit_address_decompose(bit_address)
+    def write_bit(self, bit_address: int, value: bool) -> None:
+        address, bit_offset = self.bit_address_decompose(bit_address)
         if value:
-            self[address] = self[address] | (1 << bit)
+            self[address] = self[address] | (1 << bit_offset)
         else:
-            self[address] = self[address] & ((1 << self.w) - 1 - (1 << bit))
+            self[address] = self[address] & ((1 << self.w) - 1 - (1 << bit_offset))
 
-    def get_word(self, bit_address) -> int:
-        address, bit = self.bit_address_decompose(bit_address)
-        if bit == 0:
+    def get_word(self, bit_address: int) -> int:
+        address, bit_offset = self.bit_address_decompose(bit_address)
+        if bit_offset == 0:
             return self[address]
         if address == ((1 << self.w) - 1):
             raise FJReadFjmException(f'Accessed outside of memory (beyond the last bit).')
         lsw, msw = self[address], self[address+1]
-        return ((lsw >> bit) | (msw << (self.w - bit))) & ((1 << self.w) - 1)
+        return ((lsw >> bit_offset) | (msw << (self.w - bit_offset))) & ((1 << self.w) - 1)
 
 
 class Writer:
-    def __init__(self, output_file, w, version, *, flags=0, lzma_preset=None):
+    def __init__(self, output_file: Path, w: int, version: int, *, flags: int = 0, lzma_preset: Optional[int] = None):
+        """
+        the .fjm-file writer
+        @param output_file: the path to the .fjm file
+        @param w: the memory-width
+        @param version: the file's version
+        @param flags: the file's flags
+        @param lzma_preset: the preset to be used when compressing the .fjm data
+        """
         if w not in (8, 16, 32, 64):
             raise FJWriteFjmException(f"Word size {w} is not in {{8, 16, 32, 64}}.")
         if version not in SUPPORTED_VERSIONS:
@@ -230,7 +245,7 @@ class Writer:
     def _compress_data(self, data: bytes) -> bytes:
         try:
             return lzma.compress(data, format=_LZMA_FORMAT,
-                                 filters=_LZMA_COMPRESSION_FILTERS(2*self.word_size, self.lzma_preset))
+                                 filters=_lzma_compression_filters(2 * self.word_size, self.lzma_preset))
         except lzma.LZMAError as e:
             raise FJWriteFjmException(f'Error: Unable to compress the data.') from e
 
@@ -295,12 +310,16 @@ class Writer:
 
         self.segments.append((segment_start, segment_length, data_start, data_length))
 
-    def add_data(self, data: List[int]) -> Tuple[int, int]:
+    def add_data(self, data: List[int]) -> int:
+        """
+        append the data to the current data
+        @param data: the word-list
+        @return: the data start index
+        """
         start = len(self.data)
-        length = len(data)
         self.data += data
-        return start, length
+        return start
 
-    def add_simple_segment_with_data(self, segment_start, data) -> None:
-        data_start, data_length = self.add_data(data)
-        self.add_segment(segment_start, data_length, data_start, data_length)
+    def add_simple_segment_with_data(self, segment_start: int, data: List[int]) -> None:
+        data_start = self.add_data(data)
+        self.add_segment(segment_start, len(data), data_start, len(data))

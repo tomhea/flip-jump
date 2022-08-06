@@ -1,51 +1,14 @@
 from pathlib import Path
-from time import time
 from typing import Optional
 
 import fjm
 
-from defs import TerminationCause, PrintTimer
+from defs import TerminationCause, PrintTimer, RunStatistics
 from breakpoints import BreakpointHandler, handle_breakpoint
 
 from io_devices.IODevice import IODevice
 from io_devices.BrokenIO import BrokenIO
 from io_devices.io_exceptions import IOReadOnEOF
-
-
-class RunStatistics:
-    """
-    maintains times and counters of the current run.
-    """
-    class PauseTimer:
-        def __init__(self):
-            self.paused_time = 0
-
-        def __enter__(self):
-            self.pause_start_time = time()
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            self.paused_time += time() - self.pause_start_time
-
-    def __init__(self, w: int):
-        self._op_size = 2 * w
-        self._after_null_flip = 2 * w
-
-        self.op_counter = 0
-        self.flip_counter = 0
-        self.jump_counter = 0
-
-        self._start_time = time()
-        self.pause_timer = self.PauseTimer()
-
-    def get_run_time(self) -> float:
-        return time() - self._start_time - self.pause_timer.paused_time
-
-    def register_op(self, ip: int, flip_address: int, jump_address: int) -> None:
-        self.op_counter += 1
-        if flip_address >= self._after_null_flip:
-            self.flip_counter += 1
-        if jump_address != ip + self._op_size:
-            self.jump_counter += 1
 
 
 class TerminationStatistics:
@@ -65,12 +28,39 @@ class TerminationStatistics:
     def __str__(self):
         flips_percentage = self.flip_counter / self.op_counter * 100
         jumps_percentage = self.jump_counter / self.op_counter * 100
-        return f'Finished by {self.termination_cause} after {self.run_time:.3f}s ' \
+        return f'Finished by {str(self.termination_cause)} after {self.run_time:.3f}s ' \
                f'(' \
                f'{self.op_counter:,} ops executed; ' \
                f'{flips_percentage:.2f}% flips, ' \
                f'{jumps_percentage:.2f}% jumps' \
                f').'
+
+
+def handle_input(io_device: IODevice, ip: int, mem: fjm.Reader, statistics: RunStatistics) -> None:
+    w = mem.w
+    in_addr = 3 * w + w.bit_length()  # 3w + dww
+
+    if ip <= in_addr < ip + 2 * w:
+        with statistics.pause_timer:
+            input_bit = io_device.read_bit()
+        mem.write_bit(in_addr, input_bit)
+
+
+def handle_output(flip_address: int, io_device: IODevice, w: int):
+    out_addr = 2 * w
+    if out_addr <= flip_address <= out_addr + 1:
+        io_device.write_bit(out_addr + 1 == flip_address)
+
+
+def trace_jump(jump_address: int, show_trace: bool) -> None:
+    if show_trace:
+        print(hex(jump_address)[2:])
+
+
+def trace_flip(ip: int, flip_address: int, show_trace: bool) -> None:
+    if show_trace:
+        print(hex(ip)[2:].rjust(7), end=':   ')
+        print(hex(flip_address)[2:], end='; ', flush=True)
 
 
 def run(fjm_path: Path, *,
@@ -116,7 +106,7 @@ def run(fjm_path: Path, *,
             return TerminationStatistics(statistics, TerminationCause.EOF)
 
         # FLIP!
-        mem.write_bit(flip_address, 1-mem.read_bit(flip_address))
+        mem.write_bit(flip_address, not mem.read_bit(flip_address))
 
         # read jump word
         jump_address = mem.get_word(ip+w)
@@ -131,30 +121,3 @@ def run(fjm_path: Path, *,
 
         # JUMP!
         ip = jump_address
-
-
-def handle_input(io_device: IODevice, ip: int, mem: fjm.Reader, statistics: RunStatistics) -> None:
-    w = mem.w
-    in_addr = 3 * w + w.bit_length()  # 3w + dww
-
-    if ip <= in_addr < ip + 2 * w:
-        with statistics.pause_timer:
-            input_bit = io_device.read_bit()
-        mem.write_bit(in_addr, input_bit)
-
-
-def handle_output(flip_address: int, io_device: IODevice, w: int):
-    out_addr = 2 * w
-    if out_addr <= flip_address <= out_addr + 1:
-        io_device.write_bit(out_addr + 1 == flip_address)
-
-
-def trace_jump(jump_address: int, show_trace: bool) -> None:
-    if show_trace:
-        print(hex(jump_address)[2:])
-
-
-def trace_flip(ip: int, flip_address: int, show_trace: bool) -> None:
-    if show_trace:
-        print(hex(ip)[2:].rjust(7), end=':   ')
-        print(hex(flip_address)[2:], end='; ', flush=True)

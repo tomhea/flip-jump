@@ -36,10 +36,11 @@ def add_segment_to_fjm(w: int,
     if first_address == last_address:
         return
 
-    data_start, data_length = fjm_writer.add_data(fj_words + wflip_words)
+    data_words = fj_words + wflip_words
+    data_start = fjm_writer.add_data(data_words)
 
     try:
-        fjm_writer.add_segment(first_address // w, (last_address - first_address) // w, data_start, data_length)
+        fjm_writer.add_segment(first_address // w, (last_address - first_address) // w, data_start, len(data_words))
     except FJWriteFjmException as e:
         raise FJAssemblerException(f"failed to add the segment: "
                                    f"[{hex(first_address)}, {hex(last_address-1)}].") from e

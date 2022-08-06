@@ -7,7 +7,7 @@ import easygui
 
 import fjm
 
-from defs import macro_separator_string
+from defs import macro_separator_string, RunStatistics
 
 
 class BreakpointHandlerUnnecessary(Exception):
@@ -87,7 +87,7 @@ class BreakpointHandler:
             raise BreakpointHandlerUnnecessary()
 
 
-def handle_breakpoint(breakpoint_handler: BreakpointHandler, ip: int, mem: fjm.Reader, statistics: 'RunStatistics') \
+def handle_breakpoint(breakpoint_handler: BreakpointHandler, ip: int, mem: fjm.Reader, statistics: RunStatistics) \
         -> BreakpointHandler:
     """
     show debug message, query user for action, apply its action.

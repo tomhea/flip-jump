@@ -47,7 +47,6 @@ class Expr:
             return {self.value}
         return set(label for expr in self.value[1] for label in expr.all_unknown_labels())
 
-    #
     def eval_new(self, id_dict: Dict[str, Expr]) -> Expr:
         """
         creates a new Expr, as minimal as possible.
