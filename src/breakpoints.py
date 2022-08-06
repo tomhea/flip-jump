@@ -7,7 +7,7 @@ import easygui
 
 import fjm
 
-from defs import macro_separator_string, RunStatistics
+from defs import macro_separator_string, RunStatistics, load_debugging_labels
 
 
 class BreakpointHandlerUnnecessary(Exception):
@@ -170,20 +170,20 @@ def update_breakpoints_from_addresses_set(breakpoint_addresses: Optional[Set[int
             breakpoints[address] = None
 
 
-def load_labels_dictionary(debugging_file: Path, labels_file_needed: bool) -> Dict[str, int]:
+def load_labels_dictionary(debugging_file: Optional[Path], labels_file_needed: bool) -> Dict[str, int]:
     """
     load the labels_dictionary from debugging_file, if possible.
     """
-    label_to_address = []
-    if debugging_file is not None:
-        if path.isfile(debugging_file):
-            with open(debugging_file, 'rb') as f:
-                label_to_address = pickle.load(f)
-        else:
-            print(f"Warning:  debugging file {debugging_file} can't be found!")
-    elif labels_file_needed:
-        print(f"Warning:  debugging labels can't be found! no debugging file specified.")
-    return label_to_address
+    if debugging_file is None:
+        if labels_file_needed:
+            print(f"Warning:  debugging labels can't be found! no debugging file specified.")
+        return {}
+
+    if not debugging_file.is_file():
+        print(f"Warning:  debugging file {debugging_file} can't be found!")
+        return {}
+
+    return load_debugging_labels(debugging_file)
 
 
 def get_breakpoint_handler(debugging_file: Path, breakpoint_addresses: Set[int], breakpoint_labels: Set[str],

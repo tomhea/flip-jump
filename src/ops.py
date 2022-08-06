@@ -70,11 +70,11 @@ class FlipJump:
                 for expr in (self.flip, self.jump)
                 for label in expr.all_unknown_labels()}
 
-    def get_flip(self, labels: Dict[str, Expr]) -> int:
-        return int(self.flip.eval_new(labels))
+    def get_flip(self, labels: Dict[str, int]) -> int:
+        return self.flip.exact_eval(labels)
 
-    def get_jump(self, labels: Dict[str, Expr]) -> int:
-        return int(self.jump.eval_new(labels))
+    def get_jump(self, labels: Dict[str, int]) -> int:
+        return self.jump.exact_eval(labels)
 
 
 class WordFlip:
@@ -100,14 +100,14 @@ class WordFlip:
                 for expr in (self.word_address, self.flip_value, self.return_address)
                 for label in expr.all_unknown_labels()}
 
-    def get_word_address(self, labels: Dict[str, Expr]) -> int:
-        return int(self.word_address.eval_new(labels))
+    def get_word_address(self, labels: Dict[str, int]) -> int:
+        return self.word_address.exact_eval(labels)
 
-    def get_flip_value(self, labels: Dict[str, Expr]) -> int:
-        return int(self.flip_value.eval_new(labels))
+    def get_flip_value(self, labels: Dict[str, int]) -> int:
+        return self.flip_value.exact_eval(labels)
 
-    def get_return_address(self, labels: Dict[str, Expr]) -> int:
-        return int(self.return_address.eval_new(labels))
+    def get_return_address(self, labels: Dict[str, int]) -> int:
+        return self.return_address.exact_eval(labels)
 
 
 class Pad:
@@ -127,15 +127,11 @@ class Pad:
     def all_unknown_labels(self) -> Set[str]:
         return self.ops_alignment.all_unknown_labels()
 
-    def get_ops_alignment(self) -> int:
+    def calculate_ops_alignment(self, labels: Dict[str, int]) -> int:
         try:
-            return int(self.ops_alignment)
+            return self.ops_alignment.exact_eval(labels)
         except FJExprException as e:
             raise FJExprException(f"Can't calculate pad ops_alignment on {self.code_position}") from e
-
-    def calculate_ops_alignment(self, labels: Dict[str, Expr]) -> int:
-        self.ops_alignment = self.ops_alignment.eval_new(labels)
-        return self.get_ops_alignment()
 
 
 class Segment:
@@ -155,15 +151,11 @@ class Segment:
     def all_unknown_labels(self) -> Set[str]:
         return {label for label in self.start_address.all_unknown_labels()}
 
-    def get_address(self) -> int:
+    def calculate_address(self, labels: Dict[str, int]) -> int:
         try:
-            return int(self.start_address)
+            return self.start_address.exact_eval(labels)
         except FJExprException as e:
             raise FJExprException(f"Can't calculate segment address on {self.code_position}") from e
-
-    def calculate_address(self, labels: Dict[str, Expr]) -> int:
-        self.start_address = self.start_address.eval_new(labels)
-        return self.get_address()
 
 
 class Reserve:
@@ -183,15 +175,11 @@ class Reserve:
     def all_unknown_labels(self) -> Set[str]:
         return {label for label in self.reserved_bit_size.all_unknown_labels()}
 
-    def get_reserved_bit_size(self) -> int:
+    def calculate_reserved_bit_size(self, labels: Dict[str, int]) -> int:
         try:
-            return int(self.reserved_bit_size)
+            return self.reserved_bit_size.exact_eval(labels)
         except FJExprException as e:
             raise FJExprException(f"Can't calculate reserved bits size on {self.code_position}") from e
-
-    def calculate_reserved_bit_size(self, labels: Dict[str, Expr]) -> int:
-        self.reserved_bit_size = self.reserved_bit_size.eval_new(labels)
-        return self.get_reserved_bit_size()
 
 
 class MacroCall:
@@ -248,9 +236,13 @@ class RepCall:
         except FJExprException as e:
             raise FJExprException(f"Can't calculate rep times on {self.code_position}") from e
 
-    def calculate_times(self, labels: Dict[str, Expr]) -> int:
-        self.repeat_times = self.repeat_times.eval_new(labels)
-        return self.get_times()
+    def calculate_times(self, labels: Dict[str, int]) -> int:
+        try:
+            times = self.repeat_times.exact_eval(labels)
+            self.repeat_times = Expr(times)
+            return times
+        except FJExprException as e:
+            raise FJExprException(f"Can't calculate rep times on {self.code_position}") from e
 
     def calculate_arguments(self, iterator_value: int) -> Tuple[Expr, ...]:
         iterator_dict = {self.iterator_name: Expr(iterator_value)}
@@ -261,9 +253,9 @@ class RepCall:
 
     def trace_str(self, iter_value: int) -> str:
         """
-        assumes calculate_times successfully called before
+        @note assumes calculate_times successfully called before
         """
-        return f'rep({self.iterator_name}={iter_value}, out of 0..{self.get_times()-1}) ' \
+        return f'rep({self.iterator_name}={iter_value}, out of 0..{int(self.repeat_times)-1}) ' \
                f'macro {self.macro_name}  ({self.code_position})'
 
 

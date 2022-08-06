@@ -1,5 +1,4 @@
 import dataclasses
-import pickle
 from collections import defaultdict
 from pathlib import Path
 from typing import Deque, List, Dict, Tuple, Optional
@@ -8,8 +7,7 @@ import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
 
-from expr import Expr
-from defs import PrintTimer
+from defs import PrintTimer, save_debugging_labels
 from ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits, Padding
 from exceptions import FJAssemblerException, FJException, FJWriteFjmException
 
@@ -46,7 +44,7 @@ def add_segment_to_fjm(w: int,
         fjm_writer.add_segment(segment_start_address, segment_length, data_start, len(data_words))
     except FJWriteFjmException as e:
         raise FJAssemblerException(f"failed to add the segment: "
-                                   f"{fjm_writer.segment_addresses_repr(segment_start_address, segment_length)}.") from e
+                                   f"{fjm_writer.get_segment_addresses_repr(segment_start_address, segment_length)}.") from e
 
     fj_words.clear()
     wflip_words.clear()
@@ -152,8 +150,15 @@ class BinaryData:
         self.padding_ops_indices.clear()
 
 
-def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
+def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
                    w: int, fjm_writer: fjm.Writer) -> None:
+    """
+    resolve the labels and expressions to get the list of fj ops, and add all the data and segments into the fjm_writer.
+    @param ops:[in]: the list ops returned from the preprocessor stage
+    @param labels:[in]: dictionary from label to its resolved value
+    @param w: the memory-width
+    @param fjm_writer: [out]: the .fjm file writer
+    """
     first_segment: NewSegment = ops.popleft()
     if not isinstance(first_segment, NewSegment):
         raise FJAssemblerException(f"The first op must be of type NewSegment (and not {first_segment}).")
@@ -189,26 +194,20 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, Expr],
     binary_data.close_and_add_segment(fjm_writer)
 
 
-def assemble(input_files: List[Tuple[str, Path]], output_file: Path, w: int, version,
-             *, flags: int = 0, lzma_preset: Optional[int] = None,
+def assemble(input_files: List[Tuple[str, Path]], w: int, fjm_writer: fjm.Writer,
              warning_as_errors: bool = True,
-             show_statistics: bool = False, debugging_file: Optional[Path] = None, print_time: bool = True)\
+             show_statistics: bool = False, debugging_file_path: Optional[Path] = None, print_time: bool = True)\
         -> None:
     """
     runs the assembly pipeline. assembles the input files to a .fjm.
     @param input_files:[in]: a list of (short_file_name, fj_file_path). The files will to be parsed in that given order.
-    @param output_file:[in]: the path to the .fjm file
-    @param w:[in]: the memory-width
-    @param version: the .fjm version
-    @param flags: the .fjm flags
-    @param lzma_preset: the preset to be used when compressing the .fjm data
+    @param w: the memory-width
+    @param fjm_writer:[out]: the .fjm file writer
     @param warning_as_errors: treat warnings as errors (stop execution on warnings)
     @param show_statistics: if true shows macro-usage statistics
-    @param debugging_file:[in]: is specified, save debug information in this file
+    @param debugging_file_path:[out]: is specified, save debug information in this file
     @param print_time: if true prints the times of each assemble-stage
     """
-    fjm_writer = fjm.Writer(output_file, w, version, flags=flags, lzma_preset=lzma_preset)
-
     with PrintTimer('  parsing:         ', print_time=print_time):
         macros = parse_macro_tree(input_files, w, warning_as_errors)
 
@@ -221,8 +220,4 @@ def assemble(input_files: List[Tuple[str, Path]], output_file: Path, w: int, ver
     with PrintTimer('  create binary:   ', print_time=print_time):
         fjm_writer.write_to_file()
 
-    labels = {label: labels[label].value for label in labels}
-
-    if debugging_file:
-        with open(debugging_file, 'wb') as f:
-            pickle.dump(labels, f, pickle.HIGHEST_PROTOCOL)
+    save_debugging_labels(debugging_file_path, labels)

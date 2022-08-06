@@ -12,7 +12,7 @@ from ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall,
     LastPhaseOp, new_label, MacroName, main_macro, NewSegment, ReserveBits, Pad, Padding
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
-PreprocessorResults = Tuple[Deque[LastPhaseOp], Dict[str, Expr]]
+PreprocessorResults = Tuple[Deque[LastPhaseOp], Dict[str, int]]
 
 wflip_start_label = '_.wflip_area_start_'
 
@@ -104,7 +104,7 @@ class PreprocessorData:
         self.labels_code_positions: Dict[str, CodePosition] = {}
 
         self.result_ops: Deque[LastPhaseOp] = collections.deque()
-        self.labels: Dict[str, Expr] = {}
+        self.labels: Dict[str, int] = {}
 
         first_segment: NewSegment = NewSegment(0)
         self.last_new_segment: NewSegment = first_segment
@@ -126,7 +126,7 @@ class PreprocessorData:
         return self.result_ops, self.labels
 
     def insert_segment(self, next_segment_start: int) -> None:
-        self.labels[f'{wflip_start_label}{self.curr_segment_index}'] = Expr(self.curr_address)
+        self.labels[f'{wflip_start_label}{self.curr_segment_index}'] = self.curr_address
         self.curr_segment_index += 1
 
         self.patch_last_wflip_address()
@@ -147,7 +147,7 @@ class PreprocessorData:
             macro_resolve_error(self.curr_tree, f'label declared twice - "{label}" on '
                                                 f'{code_position} and {other_position}')
         self.labels_code_positions[label] = code_position
-        self.labels[label] = Expr(self.curr_address)
+        self.labels[label] = self.curr_address
 
     def register_macro_code_size(self, macro_path: str, init_curr_address: int):
         if 1 <= len(self.curr_tree) <= 2:
@@ -159,7 +159,7 @@ class PreprocessorData:
         self.result_ops.append(Padding(ops_to_pad))
 
 
-def resolve_macros(w: int, macros: Dict[MacroName, Macro], show_statistics: bool = False)\
+def resolve_macros(w: int, macros: Dict[MacroName, Macro], *, show_statistics: bool = False)\
         -> PreprocessorResults:
     preprocessor_data = PreprocessorData()
     resolve_macro_aux(preprocessor_data,

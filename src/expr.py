@@ -51,7 +51,8 @@ class Expr:
         """
         creates a new Expr, as minimal as possible.
         replaces every string it can with its dictionary value, and evaluates any op it can.
-        @param id_dict: the str->Expr dictionary to be used
+        @param id_dict: the label->ExprValue dictionary to be used
+        @raise FJExprException if math op failed
         @return: the new Expr
         """
         if isinstance(self.value, int):
@@ -70,6 +71,28 @@ class Expr:
             except Exception as e:
                 raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
         return Expr((op, evaluated_args))
+
+    def exact_eval(self, labels: Dict[str, int]) -> int:
+        """
+        evaluates the expression's value with the labels
+        @param labels: the label->value dictionary to be used
+        @raise FJExprException if it can't evaluate
+        @return: the integer-value of the expression
+        """
+        if isinstance(self.value, int):
+            return self.value
+
+        if isinstance(self.value, str):
+            if self.value in labels:
+                return labels[self.value]
+            raise FJExprException(f"Can't evaluate label {self.value} in expression {self}")
+
+        op, args = self.value
+        evaluated_args: Tuple[int, ...] = tuple(e.exact_eval(labels) for e in args)
+        try:
+            return op_string_to_function[op](*evaluated_args)
+        except Exception as e:
+            raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
 
     def __str__(self) -> str:
         if isinstance(self.value, tuple):

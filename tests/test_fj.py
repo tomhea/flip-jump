@@ -3,9 +3,9 @@ from queue import Queue
 from threading import Lock
 from pathlib import Path
 
-from src import assembler
+from src import assembler, fjm
 from src import fjm_run
-from src.defs import TerminationCause, get_stl_paths, bytes_encoding
+from src.defs import TerminationCause, get_stl_paths, io_bytes_encoding
 from src.io_devices.FixedIO import FixedIO
 
 CSV_TRUE = 'True'
@@ -75,8 +75,9 @@ def test_compile(compile_args: CompileTestArgs) -> None:
 
     create_parent_directories(compile_args.fjm_out_path)
 
-    assembler.assemble(compile_args.fj_files_tuples, compile_args.fjm_out_path, compile_args.word_size,
-                       compile_args.version, flags=compile_args.flags, lzma_preset=lzma.PRESET_DEFAULT,
+    fjm_writer = fjm.Writer(compile_args.fjm_out_path, compile_args.word_size, compile_args.version,
+                            flags=compile_args.flags, lzma_preset=lzma.PRESET_DEFAULT)
+    assembler.assemble(compile_args.fj_files_tuples, compile_args.word_size, fjm_writer,
                        warning_as_errors=compile_args.warning_as_errors)
 
 
@@ -136,7 +137,7 @@ class RunTestArgs:
 
         if self.read_out_as_binary:
             with open(self.out_file_path, 'rb') as out_f:
-                return out_f.read().decode(bytes_encoding)
+                return out_f.read().decode(io_bytes_encoding)
         else:
             with open(self.out_file_path, 'r') as out_f:
                 return out_f.read()
@@ -162,6 +163,6 @@ def test_run(run_args: RunTestArgs) -> None:
     expected_termination_cause = TerminationCause.Looping
     assert termination_statistics.termination_cause == expected_termination_cause
 
-    output = io_device.get_output().decode(bytes_encoding)
+    output = io_device.get_output().decode(io_bytes_encoding)
     expected_output = run_args.get_expected_output()
     assert output == expected_output
