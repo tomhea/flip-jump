@@ -250,6 +250,10 @@ class Writer:
             raise FJWriteFjmException(f'Error: Unable to compress the data.') from e
 
     def write_to_file(self) -> None:
+        """
+        writes the .fjm headers, segments and (might be compressed) data into the output_file.
+        @note call this after finished adding data and segments and editing the Writer.
+        """
         write_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
 
         with open(self.output_file, 'wb') as f:
@@ -266,60 +270,109 @@ class Writer:
 
             f.write(fjm_data)
 
+    def segment_addresses_repr(self, word_start_address: int, word_length: int) -> str:
+        """
+        @param word_start_address: the start address of the segment in memory (in words)
+        @param word_length: the number of words the segment takes in memory
+        @return: a nice looking segment-representation string by its addresses
+        """
+        return f'[{hex(self.word_size * word_start_address)}, ' \
+               f'{hex(self.word_size * (word_start_address + word_length))})'
+
     @staticmethod
-    def _is_segment_collision(start1: int, end1: int, start2: int, end2: int) -> bool:
+    def _is_collision(start1: int, end1: int, start2: int, end2: int) -> bool:
         if any(start2 <= address <= end2 for address in (start1, end1)):
             return True
         if any(start1 <= address <= end1 for address in (start2, end2)):
             return True
         return False
 
-    def _validate_segment_not_overlapping(self, new_start: int, new_length: int) -> None:
-        new_end = new_start + new_length - 1
-        for i, (start, length, _, _) in enumerate(self.segments):
+    def _validate_segment_addresses_not_overlapping(self, new_segment_start: int, new_segment_length: int) -> None:
+        new_segment_end = new_segment_start + new_segment_length - 1
+        for i, (segment_start, segment_length, _, _) in enumerate(self.segments):
+            segment_end = segment_start + segment_length - 1
 
-            if self._is_segment_collision(start, start + length - 1, new_start, new_end):
-                w = self.word_size
+            if self._is_collision(segment_start, segment_end, new_segment_start, new_segment_end):
+                raise FJWriteFjmException(
+                    f"Overlapping segments addresses: "
+                    f"seg[{i}]={self.segment_addresses_repr(segment_start, segment_length)}"
+                    f" and "
+                    f"seg[{len(self.segments)}]={self.segment_addresses_repr(new_segment_start, new_segment_length)}"
+                )
 
-                bit_start = start * w
-                bit_end = (start + length) * w - 1
+    def _validate_segment_data_not_overlapping(self, new_data_start: int, new_data_length: int) -> None:
+        if new_data_length == 0:
+            return
+        new_data_end = new_data_start + new_data_length - 1
 
-                new_bit_start = new_start * w
-                new_bit_end = (new_start + new_length) * w - 1
+        for i, (_, _, data_start, data_length) in enumerate(self.segments):
+            if data_length == 0:
+                continue
+            data_end = data_start + data_length - 1
 
-                raise FJWriteFjmException(f"Overlapping segments: "
-                                          f"seg[{i}]=[{hex(bit_start)}, {hex(bit_end)}]"
-                                          f" and "
-                                          f"seg[{len(self.segments)}]=[{hex(new_bit_start)}, {hex(new_bit_end)}]")
+            if self._is_collision(data_start, data_end, new_data_start, new_data_end):
+                raise FJWriteFjmException(
+                    f"Overlapping segments data: "
+                    f"seg[{i}]=data[{hex(data_start)}, {hex(data_end + 1)})"
+                    f" and "
+                    f"seg[{len(self.segments)}]=data[{hex(new_data_start)}, {hex(new_data_end + 1)})"
+                )
 
-    def add_segment(self, segment_start: int, segment_length: int, data_start: int, data_length: int) -> None:
-        if segment_length < data_length:
-            raise FJWriteFjmException(f"segment-length must be at-least data-length (in )")
-
-        if segment_start % 2 == 1 or segment_length % 2 == 1:
-            raise FJWriteFjmException(f"segment-start and segment-length must be 2*w aligned.")
-
-        self._validate_segment_not_overlapping(segment_start, segment_length)
-        # TODO add validate_segment_data_not_overloading
-        #  (if self.version in (RelativeJumpVersion, RelativeCompressedVersion)) - maybe inside the above function
+    def _validate_segment_not_overlapping(self, segment_start: int, segment_length: int,
+                                          data_start: int, data_length: int) -> None:
+        self._validate_segment_addresses_not_overlapping(segment_start, segment_length)
 
         if self.version in (RelativeJumpVersion, CompressedVersion):
-            word = ((1 << self.word_size) - 1)
-            for i in range(1, data_length, 2):
-                self.data[data_start + i] = (self.data[data_start + i] - (segment_start + i) * self.word_size) & word
+            self._validate_segment_data_not_overlapping(data_start, data_length)
+
+    def _update_to_relative_jumps(self, segment_start: int, data_start: int, data_length: int) -> None:
+        word = ((1 << self.word_size) - 1)
+        for i in range(1, data_length, 2):
+            self.data[data_start + i] = (self.data[data_start + i] - (segment_start + i) * self.word_size) & word
+
+    def add_segment(self, segment_start: int, segment_length: int, data_start: int, data_length: int) -> None:
+        """
+        inserts a new segment to the fjm file. checks that it doesn't overlap with any previously inserted segments.
+        @param segment_start: the start address of the segment in memory (in words)
+        @param segment_length: the number of words the segment takes in memory (if bigger that the data_length,
+         the segment is padded with zeros after the end of the data).
+        @param data_start: the index of the data's start in the inner data array
+        @param data_length: the number of words in the segment's data
+        """
+        segment_addresses_str = f'seg[{self.segments}]={self.segment_addresses_repr(segment_start, segment_length)}'
+
+        if segment_length < data_length:
+            raise FJWriteFjmException(f"segment-length must be at-least data-length (in {segment_addresses_str}).")
+
+        if segment_start % 2 == 1 or segment_length % 2 == 1:
+            raise FJWriteFjmException(f"segment-start and segment-length must be 2*w aligned "
+                                      f"(in {segment_addresses_str}).")
+
+        if segment_length <= 0:
+            raise FJWriteFjmException(f"segment-length must be positive (in {segment_addresses_str}).")
+
+        self._validate_segment_not_overlapping(segment_start, segment_length, data_start, data_length)
+
+        if self.version in (RelativeJumpVersion, CompressedVersion):
+            self._update_to_relative_jumps(segment_start, data_start, data_length)
 
         self.segments.append((segment_start, segment_length, data_start, data_length))
 
     def add_data(self, data: List[int]) -> int:
         """
         append the data to the current data
-        @param data: the word-list
+        @param data: a list of words
         @return: the data start index
         """
-        start = len(self.data)
+        data_start = len(self.data)
         self.data += data
-        return start
+        return data_start
 
     def add_simple_segment_with_data(self, segment_start: int, data: List[int]) -> None:
+        """
+        adds the data and a segment that contains exactly the data, to the fjm
+        @param segment_start: the start address of the segment in memory (in words)
+        @param data: a list of words
+        """
         data_start = self.add_data(data)
         self.add_segment(segment_start, len(data), data_start, len(data))
