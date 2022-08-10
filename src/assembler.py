@@ -194,9 +194,9 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
     binary_data.close_and_add_segment(fjm_writer)
 
 
-def assemble(input_files: List[Tuple[str, Path]], w: int, fjm_writer: fjm.Writer,
-             warning_as_errors: bool = True,
-             show_statistics: bool = False, debugging_file_path: Optional[Path] = None, print_time: bool = True)\
+def assemble(input_files: List[Tuple[str, Path]], w: int, fjm_writer: fjm.Writer, *,
+             warning_as_errors: bool = True, debugging_file_path: Optional[Path] = None,
+             show_statistics: bool = False, print_time: bool = True)\
         -> None:
     """
     runs the assembly pipeline. assembles the input files to a .fjm.
@@ -204,8 +204,8 @@ def assemble(input_files: List[Tuple[str, Path]], w: int, fjm_writer: fjm.Writer
     @param w: the memory-width
     @param fjm_writer:[out]: the .fjm file writer
     @param warning_as_errors: treat warnings as errors (stop execution on warnings)
-    @param show_statistics: if true shows macro-usage statistics
     @param debugging_file_path:[out]: is specified, save debug information in this file
+    @param show_statistics: if true shows macro-usage statistics
     @param print_time: if true prints the times of each assemble-stage
     """
     with PrintTimer('  parsing:         ', print_time=print_time):

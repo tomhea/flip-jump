@@ -3,21 +3,26 @@ from __future__ import annotations
 import collections
 from typing import Dict, Tuple, Iterable, Union, Deque
 
-import plotly.graph_objects as go
-
 from expr import Expr
 from defs import CodePosition, Macro, macro_separator_string
 from exceptions import FJPreprocessorException, FJExprException
 from ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
-    LastPhaseOp, new_label, MacroName, main_macro, NewSegment, ReserveBits, Pad, Padding
+    LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
+    initial_macro_name, initial_args, initial_labels_prefix
+from macro_usage_graph import show_macro_usage_pie_graph
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
-PreprocessorResults = Tuple[Deque[LastPhaseOp], Dict[str, int]]
 
 wflip_start_label = '_.wflip_area_start_'
 
 
 def macro_resolve_error(curr_tree: CurrTree, msg='', *, orig_exception: BaseException = None) -> None:
+    """
+    raise a descriptive error (with the macro-expansion trace).
+    @param curr_tree: the ops in the macro-calling path to arrive in this macro
+    @param msg: the message to show on error
+    @param orig_exception: if not None, raise from this base error.
+    """
     error_str = f"Macro Resolve Error" + (f':\n  {msg}\n' if msg else '.\n')
     if curr_tree:
         error_str += 'Macro call trace:\n'
@@ -26,57 +31,13 @@ def macro_resolve_error(curr_tree: CurrTree, msg='', *, orig_exception: BaseExce
     raise FJPreprocessorException(error_str) from orig_exception
 
 
-def clean_name_for_pie_graph(macro_name: str) -> str:
-    return macro_name
-
-
-def show_macro_usage_pie_graph(macro_code_size: Dict[str, int], total_code_size: int, *,
-                               min_main_thresh: float = 0.05, min_secondary_thresh: float = 0.01,
-                               child_significance_min_thresh: float = 0.1) -> None:
-    main_thresh = min_main_thresh * total_code_size
-    secondary_thresh = min_secondary_thresh * total_code_size
-    first_level = {}
-    second_level = collections.defaultdict(lambda: dict())
-    for k, v in macro_code_size.items():
-        if macro_separator_string not in k:
-            if v < main_thresh:
-                continue
-            first_level[k] = v
-        else:
-            if v < secondary_thresh:
-                continue
-            k_split = k.split(macro_separator_string)
-            if len(k_split) != 2:
-                continue
-            parent, name = k_split
-            if float(v) / macro_code_size[parent] < child_significance_min_thresh:
-                continue
-            second_level[parent][name] = v
-
-    chosen = []
-    for k, v in sorted(first_level.items(), key=lambda x: x[1], reverse=True):
-        k_name = clean_name_for_pie_graph(k)
-        if len(second_level[k]) == 0:
-            chosen.append((k_name, v))
-        else:
-            for k2, v2 in sorted(second_level[k].items(), key=lambda x: x[1], reverse=True):
-                k2_name = clean_name_for_pie_graph(k2)
-                chosen.append((f"{k_name}  =>  {k2_name}", v2))
-                v -= v2
-            if v >= secondary_thresh:
-                chosen.append((f"{k_name} others", v))
-
-    others = total_code_size - sum([value for label, value in chosen])
-    chosen.append(('all others', others))
-
-    fig = go.Figure(data=[go.Pie(labels=[label for label, value in chosen],
-                                 values=[value for label, value in chosen],
-                                 textinfo='label+percent'
-                                 )])
-    fig.show()
-
-
 class PreprocessorData:
+    """
+    maintains the preprocessor "global" data structures, throughout its recursion.
+     e.g. current address, resulting ops, labels' dictionary, macros' dictionary...
+    also offer many functions to manipulate its data.
+    @note should call finish before get_result..().
+    """
     class _PrepareMacroCall:
         def __init__(self, curr_tree: CurrTree,
                      calling_op: Union[MacroCall, RepCall], macros: Dict[MacroName, Macro]):
@@ -93,7 +54,10 @@ class PreprocessorData:
         def __exit__(self, exc_type, exc_val, exc_tb):
             self.curr_tree.pop()
 
-    def __init__(self):
+    def __init__(self, w: int, macros: Dict[MacroName, Macro]):
+        self.w = w
+        self.macros = macros
+
         self.curr_address: int = 0
 
         self.macro_code_size = collections.defaultdict(lambda: 0)
@@ -110,19 +74,18 @@ class PreprocessorData:
         self.last_new_segment: NewSegment = first_segment
         self.result_ops.append(first_segment)
 
-    def patch_last_wflip_address(self):
+    def patch_last_wflip_address(self) -> None:
         self.last_new_segment.wflip_start_address = self.curr_address
 
-    def finish(self, show_statistics: bool):
+    def finish(self, show_statistics: bool) -> None:
         self.patch_last_wflip_address()
         if show_statistics:
             show_macro_usage_pie_graph(dict(self.macro_code_size), self.curr_address)
 
-    def prepare_macro_call(self, calling_op: Union[MacroCall, RepCall], macros: Dict[MacroName, Macro])\
-            -> PreprocessorData._PrepareMacroCall:
-        return PreprocessorData._PrepareMacroCall(self.curr_tree, calling_op, macros)
+    def prepare_macro_call(self, calling_op: Union[MacroCall, RepCall]) -> PreprocessorData._PrepareMacroCall:
+        return PreprocessorData._PrepareMacroCall(self.curr_tree, calling_op, self.macros)
 
-    def get_results(self) -> PreprocessorResults:
+    def get_result_ops_and_labels(self) -> Tuple[Deque[LastPhaseOp], Dict[str, int]]:
         return self.result_ops, self.labels
 
     def insert_segment(self, next_segment_start: int) -> None:
@@ -141,7 +104,7 @@ class PreprocessorData:
         self.curr_address += reserved_bits_size
         self.result_ops.append(ReserveBits(self.curr_address))
 
-    def insert_label(self, label: str, code_position: CodePosition):
+    def insert_label(self, label: str, code_position: CodePosition) -> None:
         if label in self.labels:
             other_position = self.labels_code_positions[label]
             macro_resolve_error(self.curr_tree, f'label declared twice - "{label}" on '
@@ -149,87 +112,15 @@ class PreprocessorData:
         self.labels_code_positions[label] = code_position
         self.labels[label] = self.curr_address
 
-    def register_macro_code_size(self, macro_path: str, init_curr_address: int):
+    def register_macro_code_size(self, macro_path: str, init_curr_address: int) -> None:
         if 1 <= len(self.curr_tree) <= 2:
             self.macro_code_size[macro_path] += self.curr_address - init_curr_address
 
-    def align_current_address(self, op_size: int, ops_alignment: int) -> None:
+    def align_current_address(self, ops_alignment: int) -> None:
+        op_size = 2 * self.w
         ops_to_pad = (-self.curr_address // op_size) % ops_alignment
         self.curr_address += ops_to_pad * op_size
         self.result_ops.append(Padding(ops_to_pad))
-
-
-def resolve_macros(w: int, macros: Dict[MacroName, Macro], *, show_statistics: bool = False)\
-        -> PreprocessorResults:
-    preprocessor_data = PreprocessorData()
-    resolve_macro_aux(preprocessor_data,
-                      w, macros,
-                      main_macro, [], '')
-
-    preprocessor_data.finish(show_statistics)
-    return preprocessor_data.get_results()
-
-
-def resolve_macro_aux(preprocessor_data: PreprocessorData,
-                      w: int, macros: Dict[MacroName, Macro],
-                      macro_name: MacroName, args: Iterable[Expr], macro_path: str) -> None:
-
-    init_curr_address = preprocessor_data.curr_address
-    current_macro = macros[macro_name]
-    id_dict = get_id_dictionary(current_macro, args, current_macro.namespace, macro_path)
-
-    for op in current_macro.ops:
-
-        if isinstance(op, Label):
-            preprocessor_data.insert_label(op.eval_name(id_dict), op.code_position)
-
-        elif isinstance(op, FlipJump) or isinstance(op, WordFlip):
-            preprocessor_data.curr_address += 2 * w
-            id_dict['$'] = Expr(preprocessor_data.curr_address)
-            preprocessor_data.result_ops.append(op.eval_new(id_dict))
-            del id_dict['$']
-
-        elif isinstance(op, Pad):
-            op = op.eval_new(id_dict)
-            ops_alignment = get_pad_ops_alignment(op, preprocessor_data)
-            preprocessor_data.align_current_address(2*w, ops_alignment)
-
-        elif isinstance(op, MacroCall):
-            op = op.eval_new(id_dict)
-            next_macro_path = (f"{macro_path}{macro_separator_string}" if macro_path else "") + \
-                f"{op.code_position.short_str()}:{op.macro_name}"
-            with preprocessor_data.prepare_macro_call(op, macros):
-                resolve_macro_aux(preprocessor_data,
-                                  w, macros,
-                                  op.macro_name, op.arguments, next_macro_path)
-
-        elif isinstance(op, RepCall):
-            op = op.eval_new(id_dict)
-            rep_times = get_rep_times(op, preprocessor_data)
-            if rep_times == 0:
-                continue
-            next_macro_path = (f"{macro_path}{macro_separator_string}" if macro_path else "") + \
-                f"{op.code_position.short_str()}:rep{{}}:{op.macro_name}"
-            with preprocessor_data.prepare_macro_call(op, macros):
-                for i in range(rep_times):
-                    resolve_macro_aux(preprocessor_data,
-                                      w, macros,
-                                      op.macro_name, op.calculate_arguments(i), next_macro_path.format(i))
-
-        elif isinstance(op, Segment):
-            op = op.eval_new(id_dict)
-            next_segment_start = get_next_segment_start(op, preprocessor_data, w)
-            preprocessor_data.insert_segment(next_segment_start)
-
-        elif isinstance(op, Reserve):
-            op = op.eval_new(id_dict)
-            reserved_bits_size = get_reserved_bits_size(op, preprocessor_data, w)
-            preprocessor_data.insert_reserve(reserved_bits_size)
-
-        else:
-            macro_resolve_error(preprocessor_data.curr_tree, f"Can't assemble this opcode - {str(op)}")
-
-    preprocessor_data.register_macro_code_size(macro_path, init_curr_address)
 
 
 def get_rep_times(op: RepCall, preprocessor_data: PreprocessorData) -> int:
@@ -246,10 +137,10 @@ def get_pad_ops_alignment(op: Pad, preprocessor_data: PreprocessorData) -> int:
         macro_resolve_error(preprocessor_data.curr_tree, f'pad {op.ops_alignment} failed.', orig_exception=e)
 
 
-def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData, w: int):
+def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData) -> int:
     try:
         next_segment_start = op.calculate_address(preprocessor_data.labels)
-        if next_segment_start % w != 0:
+        if next_segment_start % preprocessor_data.w != 0:
             macro_resolve_error(preprocessor_data.curr_tree, f'segment ops must have a w-aligned address: '
                                                              f'{hex(next_segment_start)}. In {op.code_position}.')
         return next_segment_start
@@ -257,10 +148,10 @@ def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData, w: 
         macro_resolve_error(preprocessor_data.curr_tree, f'segment failed.', orig_exception=e)
 
 
-def get_reserved_bits_size(op: Reserve, preprocessor_data: PreprocessorData, w: int):
+def get_reserved_bits_size(op: Reserve, preprocessor_data: PreprocessorData) -> int:
     try:
         reserved_bits_size = op.calculate_reserved_bit_size(preprocessor_data.labels)
-        if reserved_bits_size % w != 0:
+        if reserved_bits_size % preprocessor_data.w != 0:
             macro_resolve_error(preprocessor_data.curr_tree, f'reserve ops must have a w-aligned value: '
                                                              f'{hex(reserved_bits_size)}. In {op.code_position}.')
         return reserved_bits_size
@@ -268,11 +159,107 @@ def get_reserved_bits_size(op: Reserve, preprocessor_data: PreprocessorData, w: 
         macro_resolve_error(preprocessor_data.curr_tree, f'reserve failed.', orig_exception=e)
 
 
-def get_id_dictionary(current_macro: Macro, args: Iterable[Expr], namespace: str, macro_path: str):
-    id_dict: Dict[str, Expr] = dict(zip(current_macro.params, args))
+def get_params_dictionary(current_macro: Macro, args: Iterable[Expr], namespace: str, labels_prefix: str) \
+        -> Dict[str, Expr]:
+    """
+    generates the dictionary between the labels (params and local-params) defined by the macro, and their Expr-values.
+    @param current_macro: the current macro
+    @param args: the macro's arguments (Expressions)
+    @param namespace: the current namespace
+    @param labels_prefix: the path to the currently-preprocessed macro
+    @return: the parameters' dictionary
+    """
+    params_dict: Dict[str, Expr] = dict(zip(current_macro.params, args))
+
     for local_param in current_macro.local_params:
-        id_dict[local_param] = new_label(macro_path, local_param)
+        params_dict[local_param] = Expr(f'{labels_prefix}---{local_param}')
+
     if namespace:
-        for k in list(id_dict.keys()):
-            id_dict[f'{namespace}.{k}'] = id_dict[k]
-    return id_dict
+        for k, v in tuple(params_dict.items()):
+            params_dict[f'{namespace}.{k}'] = v
+
+    return params_dict
+
+
+def resolve_macro_aux(preprocessor_data: PreprocessorData,
+                      macro_name: MacroName, args: Iterable[Expr], labels_prefix: str) -> None:
+    """
+    recursively unwind the current macro into a serialized stream of ops and add them to the result_ops-queue.
+    also add every label's value to the labels-dictionary. both saved in preprocessor_data.
+    @param preprocessor_data: maintains the preprocessor "global" data structures
+    @param macro_name: the name of the macro to unwind
+    @param args: the arguments for the macro to unwind
+    @param labels_prefix: The prefix for all labels defined in this macro
+    """
+    init_curr_address = preprocessor_data.curr_address
+    current_macro = preprocessor_data.macros[macro_name]
+    params_dict = get_params_dictionary(current_macro, args, current_macro.namespace, labels_prefix)
+
+    for op in current_macro.ops:
+
+        if isinstance(op, Label):
+            preprocessor_data.insert_label(op.eval_name(params_dict), op.code_position)
+
+        elif isinstance(op, FlipJump) or isinstance(op, WordFlip):
+            preprocessor_data.curr_address += 2 * preprocessor_data.w
+            params_dict['$'] = Expr(preprocessor_data.curr_address)
+            preprocessor_data.result_ops.append(op.eval_new(params_dict))
+            del params_dict['$']
+
+        elif isinstance(op, Pad):
+            op = op.eval_new(params_dict)
+            ops_alignment = get_pad_ops_alignment(op, preprocessor_data)
+            preprocessor_data.align_current_address(ops_alignment)
+
+        elif isinstance(op, MacroCall):
+            op = op.eval_new(params_dict)
+            next_macro_path = (f"{labels_prefix}{macro_separator_string}" if labels_prefix else "") + \
+                f"{op.code_position.short_str()}:{op.macro_name}"
+            with preprocessor_data.prepare_macro_call(op):
+                resolve_macro_aux(preprocessor_data,
+                                  op.macro_name, op.arguments, next_macro_path)
+
+        elif isinstance(op, RepCall):
+            op = op.eval_new(params_dict)
+            rep_times = get_rep_times(op, preprocessor_data)
+            if rep_times == 0:
+                continue
+            next_macro_path = (f"{labels_prefix}{macro_separator_string}" if labels_prefix else "") + \
+                f"{op.code_position.short_str()}:rep{{}}:{op.macro_name}"
+            with preprocessor_data.prepare_macro_call(op):
+                for i in range(rep_times):
+                    resolve_macro_aux(preprocessor_data,
+                                      op.macro_name, op.calculate_arguments(i), next_macro_path.format(i))
+
+        elif isinstance(op, Segment):
+            op = op.eval_new(params_dict)
+            next_segment_start = get_next_segment_start(op, preprocessor_data)
+            preprocessor_data.insert_segment(next_segment_start)
+
+        elif isinstance(op, Reserve):
+            op = op.eval_new(params_dict)
+            reserved_bits_size = get_reserved_bits_size(op, preprocessor_data)
+            preprocessor_data.insert_reserve(reserved_bits_size)
+
+        else:
+            macro_resolve_error(preprocessor_data.curr_tree, f"Can't assemble this opcode - {str(op)}")
+
+    preprocessor_data.register_macro_code_size(labels_prefix, init_curr_address)
+
+
+def resolve_macros(w: int, macros: Dict[MacroName, Macro], *, show_statistics: bool = False) \
+        -> Tuple[Deque[LastPhaseOp], Dict[str, int]]:
+    """
+    unwind the macro tree to a serialized-queue of ops,
+    and creates a dictionary from label's name to its address.
+    @param w: the memory-width
+    @param macros: parser's result; the dictionary from the macro names to the macro declaration
+    @param show_statistics: if True then prints the macro-usage statistics
+    @return: tuple of the queue of ops, and the labels' dictionary
+    """
+    preprocessor_data = PreprocessorData(w, macros)
+    resolve_macro_aux(preprocessor_data,
+                      initial_macro_name, initial_args, initial_labels_prefix)
+
+    preprocessor_data.finish(show_statistics)
+    return preprocessor_data.get_result_ops_and_labels()

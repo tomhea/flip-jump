@@ -10,7 +10,7 @@ from defs import Macro
 from exceptions import FJExprException, FJParsingException
 from expr import Expr, get_minimized_expr
 from ops import get_used_labels, get_declared_labels, \
-    CodePosition, MacroName, Op, main_macro, \
+    CodePosition, MacroName, Op, initial_macro_name, \
     MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, Pad
 
 global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace
@@ -187,7 +187,7 @@ class FJParser(sly.Parser):
     def __init__(self, w: int, warning_as_errors: bool):
         self.consts: Dict[str, Expr] = {'w': Expr(w)}
         self.warning_as_errors: bool = warning_as_errors
-        self.macros: Dict[MacroName, Macro] = {main_macro: Macro([], [], [], '', None)}
+        self.macros: Dict[MacroName, Macro] = {initial_macro_name: Macro([], [], [], '', None)}
 
     def validate_free_macro_name(self, name: MacroName, lineno: int) -> None:
         if name in self.macros:
@@ -312,7 +312,7 @@ class FJParser(sly.Parser):
     @_('definable_line_statements')
     def program(self, p: ParsedRule) -> None:
         ops = p.definable_line_statements
-        self.macros[main_macro].ops += ops
+        self.macros[initial_macro_name].ops += ops
 
     @_('definable_line_statements NL definable_line_statement')
     def definable_line_statements(self, p: ParsedRule) -> List[Op]:

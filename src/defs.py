@@ -52,7 +52,6 @@ def save_debugging_labels(debugging_file_path: Path, labels: Dict[str, int]) -> 
         with open(debugging_file_path, 'wb') as f:
             data = json.dumps(labels).encode(_debug_json_encoding)
             compressed_data = lzma.compress(data, format=_debug_json_lzma_format, filters=_debug_json_lzma_filters)
-            print(f'debugging file size: {len(data)} -> {len(compressed_data)}.')
             f.write(compressed_data)
 
 
@@ -93,7 +92,7 @@ class PrintTimer:
 @dataclasses.dataclass
 class Macro:
     """
-    The python representation of a .fj macro.
+    The python representation of a .fj macro (macro declaration).
     """
     params: List[str]
     local_params: List[str]

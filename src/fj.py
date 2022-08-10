@@ -139,9 +139,8 @@ def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, err
 
     fjm_writer = fjm.Writer(out_fjm_file, args.width, args.version, flags=args.flags, lzma_preset=args.lzma_preset)
     assembler.assemble(file_tuples, args.width, fjm_writer,
-                       warning_as_errors=args.werror,
-                       show_statistics=args.stats, print_time=not args.silent,
-                       debugging_file_path=debug_file)
+                       warning_as_errors=args.werror, debugging_file_path=debug_file,
+                       show_statistics=args.stats, print_time=not args.silent)
 
 
 def get_fjm_file_path(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_name: str) -> Path:

@@ -47,11 +47,11 @@ class Expr:
             return {self.value}
         return set(label for expr in self.value[1] for label in expr.all_unknown_labels())
 
-    def eval_new(self, id_dict: Dict[str, Expr]) -> Expr:
+    def eval_new(self, params_dict: Dict[str, Expr]) -> Expr:
         """
         creates a new Expr, as minimal as possible.
         replaces every string it can with its dictionary value, and evaluates any op it can.
-        @param id_dict: the label->ExprValue dictionary to be used
+        @param params_dict: the label->ExprValue dictionary to be used
         @raise FJExprException if math op failed
         @return: the new Expr
         """
@@ -59,12 +59,12 @@ class Expr:
             return Expr(self.value)
 
         if isinstance(self.value, str):
-            if self.value in id_dict:
-                return id_dict[self.value].eval_new({})
+            if self.value in params_dict:
+                return params_dict[self.value].eval_new({})
             return Expr(self.value)
 
         op, args = self.value
-        evaluated_args: Tuple[Expr, ...] = tuple(e.eval_new(id_dict) for e in args)
+        evaluated_args: Tuple[Expr, ...] = tuple(e.eval_new(params_dict) for e in args)
         if all(isinstance(e.value, int) for e in evaluated_args):
             try:
                 return Expr(op_string_to_function[op](*(arg.value for arg in evaluated_args)))
