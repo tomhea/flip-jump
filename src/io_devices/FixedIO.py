@@ -1,5 +1,5 @@
-from src.io_devices.IODevice import IODevice
-from src.io_devices.io_exceptions import IOReadOnEOF, IncompleteOutput
+from .IODevice import IODevice
+from .io_exceptions import IOReadOnEOF, IncompleteOutput
 
 
 class FixedIO(IODevice):

@@ -47,30 +47,52 @@ class Expr:
             return {self.value}
         return set(label for expr in self.value[1] for label in expr.all_unknown_labels())
 
-    #
-    def eval_new(self, id_dict: Dict[str, Expr]) -> Expr:
+    def eval_new(self, params_dict: Dict[str, Expr]) -> Expr:
         """
         creates a new Expr, as minimal as possible.
         replaces every string it can with its dictionary value, and evaluates any op it can.
-        @param id_dict: the str->Expr dictionary to be used
+        @param params_dict: the label->ExprValue dictionary to be used
+        @raise FJExprException if math op failed
         @return: the new Expr
         """
         if isinstance(self.value, int):
             return Expr(self.value)
 
         if isinstance(self.value, str):
-            if self.value in id_dict:
-                return id_dict[self.value].eval_new({})
+            if self.value in params_dict:
+                return params_dict[self.value].eval_new({})
             return Expr(self.value)
 
         op, args = self.value
-        evaluated_args: Tuple[Expr, ...] = tuple(e.eval_new(id_dict) for e in args)
+        evaluated_args: Tuple[Expr, ...] = tuple(e.eval_new(params_dict) for e in args)
         if all(isinstance(e.value, int) for e in evaluated_args):
             try:
                 return Expr(op_string_to_function[op](*(arg.value for arg in evaluated_args)))
             except Exception as e:
                 raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
         return Expr((op, evaluated_args))
+
+    def exact_eval(self, labels: Dict[str, int]) -> int:
+        """
+        evaluates the expression's value with the labels
+        @param labels: the label->value dictionary to be used
+        @raise FJExprException if it can't evaluate
+        @return: the integer-value of the expression
+        """
+        if isinstance(self.value, int):
+            return self.value
+
+        if isinstance(self.value, str):
+            if self.value in labels:
+                return labels[self.value]
+            raise FJExprException(f"Can't evaluate label {self.value} in expression {self}")
+
+        op, args = self.value
+        evaluated_args: Tuple[int, ...] = tuple(e.exact_eval(labels) for e in args)
+        try:
+            return op_string_to_function[op](*evaluated_args)
+        except Exception as e:
+            raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
 
     def __str__(self) -> str:
         if isinstance(self.value, tuple):
