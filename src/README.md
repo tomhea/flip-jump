@@ -4,7 +4,7 @@
 
 The assembler has 4 steps:
 - parsing the .fj text files into a dictionary of macros and their ops ([fj_parser.py](fj_parser.py)).
-- resolving the macros (and reps) to get a straight stream of ops ([preprocessor.py](preprocessor.py)).
+- resolving (unwinding) the macros (and reps) to get a straight stream of ops ([preprocessor.py](preprocessor.py)).
 - resolving the label values and getting the ops binary data ([assembler.py](assembler.py)). 
 - writing the binary data into the executable ([fjm.py](fjm.py)).
 
@@ -17,12 +17,13 @@ The whole process is executed within the [assemble()](assembler.py) function.
 
 The Interpreter ([fjm_run.py](fjm_run.py)) stores the entire memory in a dictionary {address: value}, and supports unaligned-word access.
 
-The Interpreter has a built-in debugger, and it's activated by specifying breakpoints when called (via a [BreakpointHandler](breakpoints.py)).
+The Interpreter has a built-in debugger, and it's activated by specifying breakpoints when called (via the [BreakpointHandler](breakpoints.py)).
 The debugger can stop on the next breakpoint, or on a fixed number of executed ops after the current breakpoint.
 In order to call the debugger with the right labels, get familiar with the [generating label names](README.md#Generated-Label-Names).
 
-The whole interpretation is done within [run()](fjm_run.py) function.
+The whole interpretation is done within the [run()](fjm_run.py) function (also uses [fjm.py](fjm.py) to read the fjm file).
 
+- The [macro_usage_graph.py](macro_usage_graph.py) file allows presenting the macro-usage in a graph.
 
 ### Generated Label Names
 
@@ -44,12 +45,18 @@ and f1,f2,f3,.. for the compiled .fj files, in the order they are mentioned to t
 
 ## More Files
 
-- The [fj.py](fj.py) file is the main FlipJump script. run with --help to see its capabilities.
+- The [fj.py](fj.py) file is the main FlipJump cli-script. run with --help to see its capabilities.
 - The [fjm.py](fjm.py) file helps to read and write a .fjm file.
-- The [defs.py](defs.py) file contains functionality used across source, and the project definitions.
+- The [defs.py](defs.py) file contains functionality used across the source files, and the project's definitions.
 - The [exceptions.py](exceptions.py) file contains exceptions definitions.
-
-
+- The [io_devices/](io_devices) folder contains modules for different Input/Output-handling classes. The standard one is [StandardIO.py](io_devices/StandardIO.py), and the tests uses the [FixedIO.py](io_devices/FixedIO.py).
 
 
 # Read More
+
+The FlipJump source is built in a way that allows simple addition of new features.
+
+Every addition should be supported from the parsing level to the phase that is disappears, in the progression found in assemble() in [assembler](assembler.py).
+
+For example, if you want to add a new operation a@b that calculates a*a+b*b or a! for factorial(a), it is simple as adding a parsing rule in [fj_parser.py](fj_parser.py), then adding the function to the op_string_to_function() in [expr.py](expr.py).
+
