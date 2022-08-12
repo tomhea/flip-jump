@@ -126,6 +126,19 @@ def run(in_fjm_path: Path, debug_file: Path, args: argparse.Namespace, error_fun
         exit(1)
 
 
+def get_version(args: argparse.Namespace) -> int:
+    """
+    @param args: the parsed arguments
+    @return: the chosen version, or default if not specified
+    """
+    if args.version is not None:
+        return args.version
+
+    if args.outfile is not None:
+        return fjm.CompressedVersion
+    return fjm.NormalVersion
+
+
 def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, error_func: ErrorFunc) -> None:
     """
     prepare and verify arguments, and assemble the .fj files.
@@ -137,7 +150,7 @@ def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, err
     file_tuples = get_file_tuples(args)
     verify_fj_files(error_func, file_tuples)
 
-    fjm_writer = fjm.Writer(out_fjm_file, args.width, args.version, flags=args.flags, lzma_preset=args.lzma_preset)
+    fjm_writer = fjm.Writer(out_fjm_file, args.width, get_version(args), flags=args.flags, lzma_preset=args.lzma_preset)
     assembler.assemble(file_tuples, args.width, fjm_writer,
                        warning_as_errors=args.werror, debugging_file_path=debug_file,
                        show_statistics=args.stats, print_time=not args.silent)
@@ -223,10 +236,11 @@ def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
     asm_arguments.add_argument('-w', '--width', type=int, default=64, choices=[8, 16, 32, 64], metavar='WIDTH',
                                help="specify memory-width. 64 by default")
 
-    supported_versions = '\n'.join(f"{version}: {name}" for version, name in fjm.SUPPORTED_VERSIONS.items())
-    asm_arguments.add_argument('-v', '--version', metavar='VERSION', type=int, default=3,
-                               help=f"fjm version ({fjm.CompressedVersion}-compressed by default).\n"
-                                    f"supported versions:\n" + supported_versions)
+    supported_versions = ', '.join(f"{version}: {name}" for version, name in fjm.SUPPORTED_VERSIONS.items())
+    asm_arguments.add_argument('-v', '--version', metavar='VERSION', type=int, default=None,
+                               help=f"fjm version (default of {fjm.CompressedVersion}-compressed "
+                                    f"if --outfile specified; version {fjm.NormalVersion} otherwise). "
+                                    f"supported versions: {supported_versions}.")   # as in get_version()
     asm_arguments.add_argument('-f', '--flags', help="the default .fjm unpacking & running flags", type=int, default=0)
 
     asm_arguments.add_argument('--lzma_preset', type=int, default=lzma.PRESET_DEFAULT, choices=list(range(10)),
