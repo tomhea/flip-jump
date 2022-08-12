@@ -87,7 +87,7 @@ def get_files_paths(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_na
     """
     out_fjm_path = get_fjm_file_path(args, error_func, temp_dir_name)
     debug_path = get_debug_file_path(args, error_func, temp_dir_name)
-    in_fjm_path = args.files[0] if args.run else out_fjm_path
+    in_fjm_path = Path(args.files[0]) if args.run else out_fjm_path
 
     return debug_path, in_fjm_path, out_fjm_path
 
