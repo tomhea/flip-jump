@@ -278,6 +278,7 @@ def bit2hex n, hex, bit {
 
 
 def hex2bit bit, hex {
+    bit.zero 4, bit
     hex.exact_xor bit+3*dw+dbit, bit+2*dw+dbit, bit+dw+dbit, bit+dbit, hex
 }
 
