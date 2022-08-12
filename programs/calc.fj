@@ -191,15 +191,9 @@ def check_quit true, false @ try_quit1 < ascii, quit1, quit2 {
 
 
 
-// does not print new-line
-def getch @ check_n, do_print, end < end_line_r, end_line_n, ascii {
+// does not echo input characters
+def getch < ascii {
     bit.input ascii
-    bit.cmp 8, ascii, end_line_r, check_n,  end, check_n
-  check_n:
-    bit.cmp 8, ascii, end_line_n, do_print, end, do_print
-  do_print:
-    bit.print ascii
-  end:
 }
 
 
