@@ -1,4 +1,4 @@
-// $ python3 src/fj.py --asm -w 16 quine16.fj -o quine16.fjm && python3 src/fj.py --run -s quine16.fjm >/tmp/output && diff quine16.fjm /tmp/output && echo "quine!"
+// $ python3 src/fj.py --asm -w 16 -v 0 quine16.fj -o quine16.fjm && python3 src/fj.py --run -s quine16.fjm >/tmp/output && diff quine16.fjm /tmp/output && echo "quine!"
 //
 // Author: Luis Fernando Estrozi ( https://github.com/lestrozi )
 //

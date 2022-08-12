@@ -78,12 +78,11 @@ Cloning into 'flip-jump'...
 ```bash
 >>> python src/fj.py programs/hello_world.fj
 Hello, World!
->>> python src/fj.py programs/hello_no-stl.fj --no-stl
-Hello, World!
 ```
-  - The --no-stl flag tells the assembler not to include the standard library. The flag is needed as we implemented the macros ourselves.
+  - The --no-stl flag tells the assembler not to include the standard library (`python src/fj.py programs/hello_no-stl.fj --no-stl`). The flag is needed here as we implemented the macros ourselves.
+  - the -w [WIDTH] flag allows compiling the .fj files to a WIDTH-bits memory width. WIDTH is 64 by default.
   - You can use the -o flag to save the assembled file for later use too.
-  - you can find all the different flags with `python src/fj.py -h` 
+  - you can find all the different flags with `python src/fj.py -h`.
 
 You can also **[Test the project](tests/README.md)** with the project's tests, and with your tests.
 
@@ -115,11 +114,11 @@ Hello, World!
   - fj_parser.py    - pythonic lex/yacc parser.
   - preprocessor.py - unwind all macros and reps.
   - assembler.py    - assembles the macro-less fj file.
-  - ops/expr/defs/breakpoints.py     - classes/functions/consts used throughout the project.
+  - [more...](src/README.md)
 
 other branches:
   - [cpp_fji/](https://github.com/tomhea/flip-jump/tree/cpp-interpreter/src/cpp_fji)        - the cpp interpreter (much faster, about 2Mfj/s).
-  - [riscv2fj/](https://github.com/tomhea/flip-jump/tree/riscv2fj/src/riscv2fj)       - translates a riscv-executable to an equivalent fj code.
+  - [riscv2fj/](https://github.com/tomhea/flip-jump/tree/riscv2fj/src/riscv2fj)             - translates a riscv-executable to an equivalent fj code.
 
 **[stl](stl)** (standard library files - macros. [list of all macros](https://esolangs.org/wiki/FlipJump#The_Standard_Library)):
   - runlib.fj   - constants and initialization macros.
@@ -136,7 +135,7 @@ other branches:
   - [calc.fj](programs/calc.fj)     - command line calculator for 2 hex/dec numbers: ```a [+-*/%] b```.
   - [func_tests/](programs/func_tests)     - performs function calls and operations on stack.
   - [hexlib_tests/](programs/hexlib_tests)   - tests for the macros in stl/hexlib.fj.
-  - [quine16.fj](programs/quine16.fj)  - a 16-bits quine by [lestrozi](https://github.com/lestrozi); prints itself.
+  - [quine16.fj](programs/quine16.fj)  - a 16-bits quine by [lestrozi](https://github.com/lestrozi); when assembled with `-w16 -v0` - prints itself.
   - [pair_ns.fj](programs/concept_checks/pair_ns.fj)  - simulating the concept of a Class using a namespace.
   - [print_dec.fj](programs/print_tests/print_dec.fj)    - prints binary variables as decimals.
   - [multi_comp/](programs/multi_comp) - simulates a big project (compilation of multiple files).
@@ -157,8 +156,11 @@ A very extensive explanation can be found on the [GitHub wiki page](https://gith
 
 More detailed explanation and the **specifications of the FlipJump assembly** can be found on the [FlipJump esolangs page](https://esolangs.org/wiki/FlipJump).
 
-Start by reading the [bitlib.fj](stl/bitlib.fj) standard library file. That's where the FlipJump magic begins.
+Read more about the [flip-jump source files](src/README.md) and [how to run the tests](tests/README.md). 
 
-If you want to contribute to this project, open a pull request, and start [Discussing](https://github.com/tomhea/flip-jump/discussions/148).
+If you want to contribute to this project, read the [CONTRIBUTING.md](CONTRIBUTING.md) file, and take a look at the [Discussions](https://github.com/tomhea/flip-jump/discussions/148).
 
-You can also write and run programs for yourself! It is just [that](#how-to-run) easy :)
+If you are new to FlipJump and you want to learn how modern computation can be executed using FlipJump, Start by reading the [bitlib.fj](stl/bitlib.fj) standard library file (start with `xor`, `if`). That's where the FlipJump magic begins.
+
+You can also write and run programs for yourself! It is just [that](README.md#how-to-run) easy :)
+
