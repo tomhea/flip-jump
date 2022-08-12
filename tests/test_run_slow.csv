@@ -20,3 +20,6 @@ func5, tests/compiled/func_tests/func5.fjm, ,tests/inout/func_tests/func5.out, F
 pair_ns1, tests/compiled/pair_ns_tests/test1.fjm, ,tests/inout/pair_ns_tests/pair_ns1.out, False,False
 pair_ns2, tests/compiled/pair_ns_tests/test2.fjm, ,tests/inout/pair_ns_tests/pair_ns2.out, False,False
 pair_ns3, tests/compiled/pair_ns_tests/test3.fjm, ,tests/inout/pair_ns_tests/pair_ns3.out, False,False
+
+series_sum, tests/compiled/simple_math_checks/series_sum.fjm, ,tests/inout/simple_math_checks/series_sum.out, False,False
+
