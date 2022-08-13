@@ -13,7 +13,7 @@ The operation takes 2 memory addresses - it flips (inverts) the bit the first ad
 This project is a **Macro Assembler**, an **Interpreter** and a **Tested Standard Library** to the language.
 
 This calculator was built with only FlipJump ([source](programs/calc.fj)):
-<img src=res/calc.gif width=1000 />
+<img src=res/calc.gif />
 
 ## Hello, World!
 
@@ -85,7 +85,7 @@ Cloning into 'flip-jump'...
 >>> python src/fj.py programs/hello_world.fj
 Hello, World!
 ```
-<img src=res/hello.gif width=1000 />
+<img src=res/hello.gif />
 
   - The --no-stl flag tells the assembler not to include the standard library. for example: `python src/fj.py programs/hello_no-stl.fj --no-stl`.
   - the -w [WIDTH] flag allows compiling the .fj files to a WIDTH-bits memory width. WIDTH is 64 by default.
@@ -111,7 +111,6 @@ You can also use the faster (stable, but still in development) cpp-based interpr
 >>> fji hello.fjm
 Hello, World!
 ```
-
 
 # Project Structure
 

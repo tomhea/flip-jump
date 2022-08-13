@@ -9,7 +9,7 @@ The assembler has 4 steps:
 - writing the binary data into the executable ([fjm.py](fjm.py)).
 
 The whole process is executed within the [assemble()](assembler.py) function.
-<img src=../res/calc__asm.jpg width=1000 />
+<img src=../res/calc__asm.jpg />
 
 - The [ops.py](ops.py) file contains the classes of the different ops.
 - The [expr.py](expr.py) file contains the expression class (Expr), used to maintain a mathematical expression based on numbers and labels.
@@ -19,14 +19,14 @@ The whole process is executed within the [assemble()](assembler.py) function.
 The Interpreter ([fjm_run.py](fjm_run.py)) stores the entire memory in a dictionary {address: value}, and supports unaligned-word access. 
 
 The whole interpretation is done within the [run()](fjm_run.py) function (also uses [fjm.py](fjm.py) to read the fjm file).
-<img src=../res/calc__run.jpg width=1000 />
+<img src=../res/calc__run.jpg />
 
 The Interpreter has a built-in debugger, and it's activated by specifying breakpoints when called (via the [BreakpointHandler](breakpoints.py)).
 The debugger can stop on the next breakpoint, or on a fixed number of executed ops after the current breakpoint.
 In order to call the debugger with the right labels, get familiar with the [generating label names](README.md#Generated-Label-Names) (and see the debugger-image there).
 
 The [macro_usage_graph.py](macro_usage_graph.py) file allows presenting the macro-usage in a graph:
-<img src=../res/calc_stats.png width=1000 />
+<img src=../res/calc_stats.png />
 
 ### FJM versions
 
@@ -57,7 +57,7 @@ the short_file_name is (by default) s1,s2,s3,.. for the standard library files (
 and f1,f2,f3,.. for the compiled .fj files, in the order they are mentioned to the compiler (or appear in the test-line).
 
 You can insert breakpoints on specific labels using the `-d` followed by a  `-b` and a label name (or `-B` and a part of a label name). For example:
-<img src=../res/breakpoint.jpg width=1000 />
+<img src=../res/breakpoint.jpg />
 
 ## More Files
 
