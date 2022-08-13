@@ -1,6 +1,8 @@
 # FlipJump
 
 FlipJump is the simplest programing language.<br>
+Yet, it can do **any modern computation**.
+
 It's an Esoteric language ([FlipJump esolangs page](https://esolangs.org/wiki/FlipJump)), with just 1 operation `a;b`:  
 - `not *a; jump b`
 
@@ -10,6 +12,9 @@ The operation takes 2 memory addresses - it flips (inverts) the bit the first ad
 
 This project is a **Macro Assembler**, an **Interpreter** and a **Tested Standard Library** to the language.
 
+This calculator was built with only FlipJump ([source](programs/calc.fj)):
+<img src=res/calc.gif width=1000 />
+
 ## Hello, World!
 
 A simple fj [hello-world](programs/print_tests/hello_no-stl.fj) program, not using the standard library:
@@ -18,13 +23,13 @@ A simple fj [hello-world](programs/print_tests/hello_no-stl.fj) program, not usi
 def startup @ code_start > IO  {
     ;code_start
   IO:
-    ;0
+    ;0              // the second op is reserved for Input/Output.
   code_start:
 }
 
 
 def output_bit bit < IO {
-    IO + bit;
+    IO + bit;       // flipping IO+0 outputs 0; flipping IO+1 outputs 1.
 }
 def output_char ascii {
     rep(8, i) output_bit ((ascii>>i)&1)
@@ -32,7 +37,7 @@ def output_char ascii {
 
 def end_loop @ loop_label {
     loop_label:
-    ;loop_label
+    ;loop_label     // fj finishes on a self loop
 }
 
     startup
@@ -44,6 +49,7 @@ def end_loop @ loop_label {
     output_char 'o'
     output_char ','
     output_char ' '
+    
     output_char 'W'
     output_char 'o'
     output_char 'r'
@@ -79,7 +85,9 @@ Cloning into 'flip-jump'...
 >>> python src/fj.py programs/hello_world.fj
 Hello, World!
 ```
-  - The --no-stl flag tells the assembler not to include the standard library (`python src/fj.py programs/hello_no-stl.fj --no-stl`). The flag is needed here as we implemented the macros ourselves.
+<img src=res/hello.gif width=1000 />
+
+  - The --no-stl flag tells the assembler not to include the standard library. for example: `python src/fj.py programs/hello_no-stl.fj --no-stl`.
   - the -w [WIDTH] flag allows compiling the .fj files to a WIDTH-bits memory width. WIDTH is 64 by default.
   - You can use the -o flag to save the assembled file for later use too.
   - you can find all the different flags with `python src/fj.py -h`.
