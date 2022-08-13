@@ -30,7 +30,8 @@ The [macro_usage_graph.py](macro_usage_graph.py) file allows presenting the macr
 
 ### FJM versions
 
-The .fjm file currently has 4 version:
+The .fjm file currently has 4 versions:
+
 0. The basic version
 1. The normal version (more configurable than the basic version)
 2. The relative-jumps version (good for further compression)
