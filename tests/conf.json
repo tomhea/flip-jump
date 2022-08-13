@@ -1,6 +1,11 @@
 {
   "default_type": "fast",
-  "ordered_speed_list": [
+  "regular_speed_ordered": [
+    "fast",
+    "medium",
+    "slow"
+  ],
+  "all_speed_ordered": [
     "fast",
     "medium",
     "slow",

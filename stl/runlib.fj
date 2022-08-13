@@ -59,10 +59,11 @@ def wflip_macro dst, val, jmp_addr {
     wflip dst, val, jmp_addr
 }
 
-def pad x @ pad_start {
-  pad_start:
-    rep((0-pad_start/(2*w))%x, i) zero_op
-}
+//// @note - padding can also be implemented in fj itself! (but the saved-word pad is more compile-time efficient)
+//def pad x @ pad_start {
+//  pad_start:
+//    rep((0-pad_start/(2*w))%x, i) zero_op
+//}
 
 
 // ---------- Compilation Time:

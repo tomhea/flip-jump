@@ -1,11 +1,12 @@
+import lzma
 from queue import Queue
 from threading import Lock
 from pathlib import Path
 
-from src import assembler
+from src import assembler, fjm
 from src import fjm_run
-from src.defs import TerminationCause, Verbose, get_stl_paths
-
+from src.defs import TerminationCause, get_stl_paths, io_bytes_encoding
+from src.io_devices.FixedIO import FixedIO
 
 CSV_TRUE = 'True'
 CSV_FALSE = 'False'
@@ -42,7 +43,10 @@ class CompileTestArgs:
         included_files = get_stl_paths() if self.use_stl else []
         fj_paths_list = map(str.strip, fj_paths.split('|'))
         fj_absolute_paths_list = [ROOT_PATH / fj_path for fj_path in fj_paths_list]
-        self.fj_files = included_files + fj_absolute_paths_list
+
+        included_files_tuples = [(f's{i}', path) for i, path in enumerate(included_files, start=1)]
+        fj_paths_tuples = [(f'f{i}', path) for i, path in enumerate(fj_absolute_paths_list, start=1)]
+        self.fj_files_tuples = included_files_tuples + fj_paths_tuples
 
         self.fjm_out_path = ROOT_PATH / fjm_out_path
 
@@ -71,10 +75,10 @@ def test_compile(compile_args: CompileTestArgs) -> None:
 
     create_parent_directories(compile_args.fjm_out_path)
 
-    assembler.assemble(compile_args.fj_files, compile_args.fjm_out_path, compile_args.word_size,
-                       version=compile_args.version, flags=compile_args.flags,
-                       warning_as_errors=compile_args.warning_as_errors,
-                       verbose={Verbose.Time})
+    fjm_writer = fjm.Writer(compile_args.fjm_out_path, compile_args.word_size, compile_args.version,
+                            flags=compile_args.flags, lzma_preset=lzma.PRESET_DEFAULT)
+    assembler.assemble(compile_args.fj_files_tuples, compile_args.word_size, fjm_writer,
+                       warning_as_errors=compile_args.warning_as_errors)
 
 
 class RunTestArgs:
@@ -133,7 +137,7 @@ class RunTestArgs:
 
         if self.read_out_as_binary:
             with open(self.out_file_path, 'rb') as out_f:
-                return out_f.read().decode('raw_unicode_escape')
+                return out_f.read().decode(io_bytes_encoding)
         else:
             with open(self.out_file_path, 'r') as out_f:
                 return out_f.read()
@@ -149,15 +153,16 @@ def test_run(run_args: RunTestArgs) -> None:
     """
     print(f'Running test {run_args.test_name}:')
 
-    run_time, ops_executed, flips_executed, output, termination_cause =\
-        fjm_run.run(run_args.fjm_path, defined_input=run_args.get_defined_input(), time_verbose=True)
+    io_device = FixedIO(run_args.get_defined_input())
+    termination_statistics = fjm_run.run(run_args.fjm_path,
+                                         io_device=io_device,
+                                         time_verbose=True)
 
-    print(f'finished by {termination_cause} after {run_time:.3f}s '
-          f'({ops_executed:,} ops executed, {flips_executed / ops_executed * 100:.2f}% flips)')
+    print(termination_statistics)
 
     expected_termination_cause = TerminationCause.Looping
-    assert termination_cause == expected_termination_cause
+    assert termination_statistics.termination_cause == expected_termination_cause
 
-    output = output.decode('raw_unicode_escape')
+    output = io_device.get_output().decode(io_bytes_encoding)
     expected_output = run_args.get_expected_output()
     assert output == expected_output

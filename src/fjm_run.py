@@ -1,203 +1,123 @@
-import pickle
-from os import path
-from time import time
-from sys import stdin, stdout
-from typing import Optional, List
-
-import easygui
+from pathlib import Path
+from typing import Optional
 
 import fjm
-from defs import Verbose, TerminationCause
+
+from defs import TerminationCause, PrintTimer, RunStatistics
+from breakpoints import BreakpointHandler, handle_breakpoint
+
+from io_devices.IODevice import IODevice
+from io_devices.BrokenIO import BrokenIO
+from io_devices.io_exceptions import IOReadOnEOF
 
 
-def display_message_box_and_get_answer(msg: str, title: str, choices: List[str]) -> str:
-    # TODO deprecated warning. use another gui (tkinter? seems not so simple)
-    return easygui.buttonbox(msg, title, choices)
+class TerminationStatistics:
+    """
+    saves the run-statistics and data of the fj program-termination, to be presented nicely.
+    also saves the program's output.
+    """
+    def __init__(self, run_statistics: RunStatistics, termination_cause: TerminationCause):
+        self.run_time = run_statistics.get_run_time()
+
+        self.op_counter = run_statistics.op_counter
+        self.flip_counter = run_statistics.flip_counter
+        self.jump_counter = run_statistics.jump_counter
+
+        self.termination_cause = termination_cause
+
+    def __str__(self):
+        flips_percentage = self.flip_counter / self.op_counter * 100
+        jumps_percentage = self.jump_counter / self.op_counter * 100
+        return f'Finished by {str(self.termination_cause)} after {self.run_time:.3f}s ' \
+               f'(' \
+               f'{self.op_counter:,} ops executed; ' \
+               f'{flips_percentage:.2f}% flips, ' \
+               f'{jumps_percentage:.2f}% jumps' \
+               f').'
 
 
-def get_address_str(address, breakpoints, labels_dict):
-    if address in breakpoints:
-        return f'{hex(address)[2:]} ({breakpoints[address]})'
-    else:
-        if address in labels_dict:
-            return f'{hex(address)[2:]} ({labels_dict[address]})'
-        else:
-            address_before = max([a for a in labels_dict if a <= address])
-            return f'{hex(address)[2:]} ({labels_dict[address_before]} + {hex(address - address_before)})'
+def handle_input(io_device: IODevice, ip: int, mem: fjm.Reader, statistics: RunStatistics) -> None:
+    w = mem.w
+    in_addr = 3 * w + w.bit_length()  # 3w + dww
+
+    if ip <= in_addr < ip + 2 * w:
+        with statistics.pause_timer:
+            input_bit = io_device.read_bit()
+        mem.write_bit(in_addr, input_bit)
 
 
-def run(input_file, breakpoints=None, defined_input: Optional[bytes] = None, verbose=False, time_verbose=False, output_verbose=False,
-        next_break=None, labels_dict=None):
-    if labels_dict is None:
-        labels_dict = {}
-    if breakpoints is None:
-        breakpoints = {}
+def handle_output(flip_address: int, io_device: IODevice, w: int):
+    out_addr = 2 * w
+    if out_addr <= flip_address <= out_addr + 1:
+        io_device.write_bit(out_addr + 1 == flip_address)
 
-    if time_verbose:
-        print(f'  loading memory:  ', end='', flush=True)
-    start_time = time()
-    mem = fjm.Reader(input_file)
-    if time_verbose:
-        print(f'{time() - start_time:.3f}s')
+
+def trace_jump(jump_address: int, show_trace: bool) -> None:
+    if show_trace:
+        print(hex(jump_address)[2:])
+
+
+def trace_flip(ip: int, flip_address: int, show_trace: bool) -> None:
+    if show_trace:
+        print(hex(ip)[2:].rjust(7), end=':   ')
+        print(hex(flip_address)[2:], end='; ', flush=True)
+
+
+def run(fjm_path: Path, *,
+        breakpoint_handler: Optional[BreakpointHandler] = None,
+        io_device: Optional[IODevice] = None,
+        show_trace: bool = False,
+        time_verbose: bool = False) \
+        -> TerminationStatistics:
+    """
+    run / debug a .fjm file (a FlipJump interpreter)
+    @param fjm_path: the path to the .fjm file
+    @param breakpoint_handler:[in]: the breakpoint handler (if not None - debug, and break on its breakpoints)
+    @param io_device:[in,out]: the device handling input/output
+    @param show_trace: if true print every opcode executed
+    @param time_verbose: if true print running times
+    @return: the run's termination-statistics
+    """
+    with PrintTimer('  loading memory:  ', print_time=time_verbose):
+        mem = fjm.Reader(fjm_path)
+
+    if io_device is None:
+        io_device = BrokenIO()
 
     ip = 0
     w = mem.w
-    out_addr = 2*w
-    in_addr = 3*w + w.bit_length()     # 3w + dww
 
-    input_char, input_size = 0, 0
-    output_char, output_size = 0, 0
-    output = bytes()
-
-    if 0 not in labels_dict:
-        labels_dict[0] = 'memory_start_0x0000'
-
-    output_anything_yet = False
-    ops_executed = 0
-    flips_executed = 0
-
-    start_time = time()
-    pause_time = 0
+    statistics = RunStatistics(w)
 
     while True:
-        if next_break == ops_executed or ip in breakpoints:
-            pause_time_start = time()
-            title = "Breakpoint" if ip in breakpoints else "Single Step"
-            address = get_address_str(ip, breakpoints, labels_dict)
-            flip = f'flip: {get_address_str(mem.get_word(ip), breakpoints, labels_dict)}'
-            jump = f'jump: {get_address_str(mem.get_word(ip + w), breakpoints, labels_dict)}'
-            body = f'Address {address}  ({ops_executed} ops executed):\n  {flip}.\n  {jump}.'
-            actions = ['Single Step', 'Skip 10', 'Skip 100', 'Skip 1000', 'Continue', 'Continue All']
-            print('  program break', end="", flush=True)
-            action = display_message_box_and_get_answer(body, title, actions)
+        # handle breakpoints
+        if breakpoint_handler and breakpoint_handler.should_break(ip, statistics.op_counter):
+            breakpoint_handler = handle_breakpoint(breakpoint_handler, ip, mem, statistics)
 
-            if action is None:
-                action = 'Continue All'
-            print(f': {action}')
-            if action == 'Single Step':
-                next_break = ops_executed + 1
-            elif action == 'Skip 10':
-                next_break = ops_executed + 10
-            elif action == 'Skip 100':
-                next_break = ops_executed + 100
-            elif action == 'Skip 1000':
-                next_break = ops_executed + 1000
-            elif action == 'Continue':
-                next_break = None
-            elif action == 'Continue All':
-                next_break = None
-                breakpoints.clear()
-            pause_time += time() - pause_time_start
+        # read flip word
+        flip_address = mem.get_word(ip)
+        trace_flip(ip, flip_address, show_trace)
 
-        f = mem.get_word(ip)
-        if verbose:
-            print(f'{hex(ip)[2:].rjust(7)}:   {hex(f)[2:]}', end='; ', flush=True)
+        # handle IO
+        handle_output(flip_address, io_device, w)
+        try:
+            handle_input(io_device, ip, mem, statistics)
+        except IOReadOnEOF:
+            return TerminationStatistics(statistics, TerminationCause.EOF)
 
-        ops_executed += 1
-        if f >= 2*w:
-            flips_executed += 1
+        # FLIP!
+        mem.write_bit(flip_address, not mem.read_bit(flip_address))
 
-        # handle output
-        if out_addr <= f <= out_addr+1:
-            output_char |= (f-out_addr) << output_size
-            output_byte = bytes([output_char])
-            output_size += 1
-            if output_size == 8:
-                output += output_byte
-                if output_verbose:
-                    if verbose:
-                        for _ in range(3):
-                            print()
-                        print(f'Outputted Char:  ', end='')
-                        stdout.buffer.write(bytes([output_char]))
-                        stdout.flush()
-                        for _ in range(3):
-                            print()
-                    else:
-                        stdout.buffer.write(bytes([output_char]))
-                        stdout.flush()
-                output_anything_yet = True
-                output_char, output_size = 0, 0
+        # read jump word
+        jump_address = mem.get_word(ip+w)
+        trace_jump(jump_address, show_trace)
+        statistics.register_op(ip, flip_address, jump_address)
 
-        # handle input
-        if ip <= in_addr < ip+2*w:
-            if input_size == 0:
-                if defined_input is None:
-                    pause_time_start = time()
-                    input_char = stdin.buffer.read(1)[0]
-                    pause_time += time() - pause_time_start
-                elif len(defined_input) > 0:
-                    input_char = defined_input[0]
-                    defined_input = defined_input[1:]
-                else:
-                    if output_verbose and output_anything_yet:
-                        print()
-                    run_time = time() - start_time - pause_time
-                    return run_time, ops_executed, flips_executed, output, TerminationCause.Input  # no more input
-                input_size = 8
-            mem.write_bit(in_addr, input_char & 1)
-            input_char = input_char >> 1
-            input_size -= 1
+        # check finish?
+        if jump_address == ip and not ip <= flip_address < ip+2*w:
+            return TerminationStatistics(statistics, TerminationCause.Looping)
+        if jump_address < 2*w:
+            return TerminationStatistics(statistics, TerminationCause.NullIP)
 
-        mem.write_bit(f, 1-mem.read_bit(f))     # Flip!
-        new_ip = mem.get_word(ip+w)
-        if verbose:
-            print(hex(new_ip)[2:])
-
-        if new_ip == ip and not ip <= f < ip+2*w:
-            if output_verbose and output_anything_yet and breakpoints:
-                print()
-            run_time = time()-start_time-pause_time
-            return run_time, ops_executed, flips_executed, output, TerminationCause.Looping        # infinite simple loop
-        if new_ip < 2*w:
-            if output_verbose and output_anything_yet and breakpoints:
-                print()
-            run_time = time() - start_time - pause_time
-            return run_time, ops_executed, flips_executed, output, TerminationCause.NullIP         # null ip
-        ip = new_ip     # Jump!
-
-
-def debug_and_run(input_file, debugging_file=None,
-                  defined_input: Optional[bytes] = None, verbose=None,
-                  breakpoint_addresses=None, breakpoint_labels=None, breakpoint_any_labels=None):
-    if breakpoint_any_labels is None:
-        breakpoint_any_labels = set()
-    if breakpoint_labels is None:
-        breakpoint_labels = set()
-    if breakpoint_addresses is None:
-        breakpoint_addresses = set()
-    if verbose is None:
-        verbose = set()
-
-    labels = []
-    if debugging_file is not None:
-        if path.isfile(debugging_file):
-            with open(debugging_file, 'rb') as f:
-                labels = pickle.load(f)
-        else:
-            print(f"Warning:  debugging file {debugging_file} can't be found!")
-    elif breakpoint_labels or breakpoint_addresses or breakpoint_any_labels:
-        print(f"Warning:  debugging labels can't be found! no debugging file specified.")
-
-    # Handle breakpoints
-    breakpoint_map = {ba: hex(ba) for ba in breakpoint_addresses}
-    for bl in breakpoint_labels:
-        if bl not in labels:
-            print(f"Warning:  Breakpoint label {bl} can't be found!")
-        else:
-            breakpoint_map[labels[bl]] = bl
-    for bal in breakpoint_any_labels:
-        for label in labels:
-            if bal in label:
-                breakpoint_map[labels[label]] = f'{bal}@{label}'
-
-    opposite_labels = {labels[label]: label for label in labels}
-
-    run_time, ops_executed, flips_executed, output, termination_cause = run(
-        input_file, defined_input=defined_input,
-        verbose=Verbose.Run in verbose,
-        time_verbose=Verbose.Time in verbose,
-        output_verbose=Verbose.PrintOutput in verbose,
-        breakpoints=breakpoint_map, labels_dict=opposite_labels)
-
-    return run_time, ops_executed, flips_executed, output, termination_cause
+        # JUMP!
+        ip = jump_address

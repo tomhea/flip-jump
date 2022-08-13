@@ -1,262 +1,137 @@
+from __future__ import annotations
+
+import dataclasses
 import json
+import lzma
 from enum import IntEnum    # IntEnum equality works between files.
 from pathlib import Path
-from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
+from time import time
+from typing import List, Dict
+
+from ops import CodePosition, Op
 
 
-main_macro = ('', 0)
-
-
-# TODO use the op-strings (instead of the function) up-to the last point possible (to make deepcopy simpler)
-parsing_op2func = {'+': add, '-': sub, '*': mul, '/': floordiv, '%': mod, 
-                   '<<': lshift, '>>': rshift, '^': xor, '|': or_, '&': and_,
-                   '#': lambda x: x.bit_length(),
-                   '?:': lambda a, b, c: b if a else c,
-                   '<': lambda a, b: 1 if a < b else 0,
-                   '>': lambda a, b: 1 if a > b else 0,
-                   '<=': lambda a, b: 1 if a <= b else 0,
-                   '>=': lambda a, b: 1 if a >= b else 0,
-                   '==': lambda a, b: 1 if a == b else 0,
-                   '!=': lambda a, b: 1 if a != b else 0,
-                   }
-
-
-class FJException(Exception):
-    pass
-
-
-class FJParsingException(FJException):
-    pass
-
-
-class FJPreprocessorException(FJException):
-    pass
-
-
-class FJExprException(FJException):
-    pass
-
-
-class FJAssemblerException(FJException):
-    pass
-
-
-class FJReadFjmException(FJException):
-    pass
-
-
-class FJWriteFjmException(FJException):
-    pass
-
-
-def smart_int16(num):
-    try:
-        return int(num, 16)
-    except ValueError as ve:
-        raise FJException(f'{num} is not a number!') from ve
-
-
-STL_PATH = Path(__file__).parent.parent / 'stl'
-with open(STL_PATH / 'conf.json', 'r') as stl_json:
-    STL_OPTIONS = json.load(stl_json)
-
-
-def get_stl_paths():
-    return [STL_PATH / f'{lib}.fj' for lib in STL_OPTIONS['all']]
-
-
-id_re = r'[a-zA-Z_][a-zA-Z_0-9]*'
-dot_id_re = fr'(({id_re})|\.*)?(\.({id_re}))+'
-
-bin_num = r'0[bB][01]+'
-hex_num = r'0[xX][0-9a-fA-F]+'
-dec_num = r'[0-9]+'
-
-char_escape_dict = {'0': 0x0, 'a': 0x7, 'b': 0x8, 'e': 0x1b, 'f': 0xc, 'n': 0xa, 'r': 0xd, 't': 0x9, 'v': 0xb,
-                    '\\': 0x5c, "'": 0x27, '"': 0x22, '?': 0x3f}
-escape_chars = ''.join(k for k in char_escape_dict)
-char = fr'[ -~]|\\[{escape_chars}]|\\[xX][0-9a-fA-F]{{2}}'
-
-number_re = fr"({bin_num})|({hex_num})|('({char})')|({dec_num})"
-string_re = fr'"({char})*"'
-
-
-def get_char_value_and_length(s):
-    if s[0] != '\\':
-        return ord(s[0]), 1
-    if s[1] in char_escape_dict:
-        return char_escape_dict[s[1]], 2
-    return int(s[2:4], 16), 4
-
-
-class Verbose(IntEnum):
-    Parse = 1
-    MacroSolve = 2
-    LabelDict = 3
-    LabelSolve = 4
-    Run = 5
-    Time = 6
-    PrintOutput = 7
+def get_stl_paths() -> List[Path]:
+    """
+    @return: list of the ordered standard-library paths
+    """
+    stl_path = Path(__file__).parent.parent / 'stl'
+    with open(stl_path / 'conf.json', 'r') as stl_json:
+        stl_options = json.load(stl_json)
+    return [stl_path / f'{lib}.fj' for lib in stl_options['all']]
 
 
 class TerminationCause(IntEnum):
-    Looping = 0
-    Input = 1
-    NullIP = 2
+    Looping = 0         # Finished by jumping to the last op, without flipping it (the "regular" finish/exit)
+    EOF = 1             # Finished by reading input when there is no more input
+    NullIP = 2          # Finished by jumping back to the initial op 0 (bad finish)
+    UnalignedWord = 3   # FOR FUTURE SUPPORT - tried to access an unaligned word (bad finish)
+    UnalignedOp = 4     # FOR FUTURE SUPPORT - tried to access a dword-unaligned op (bad finish)
 
-    def __str__(self):
-        return ['looping', 'input', 'ip<2w'][self.value]
-
-
-class SegmentEntry(IntEnum):
-    StartAddress = 0
-    ReserveAddress = 1
-    WflipAddress = 2
+    def __str__(self) -> str:
+        return ['looping', 'EOF', 'ip<2w', 'unaligned-word', 'unaligned-op'][self.value]
 
 
-class OpType(IntEnum):  # op.data array content:
+macro_separator_string = "---"
 
-    FlipJump = 1        # expr, expr                # Survives until (2) label resolve
-    WordFlip = 2        # expr, expr, expr          # Survives until (2) label resolve
-    Segment = 3         # expr                      # Survives until (2) label resolve
-    Reserve = 4         # expr                      # Survives until (2) label resolve
-    Label = 5           # ID                        # Survives until (1) macro resolve
-    Macro = 6           # ID, expr [expr..]         # Survives until (1) macro resolve
-    Rep = 7             # expr, ID, macro_call      # Survives until (1) macro resolve
+io_bytes_encoding = 'raw_unicode_escape'
 
 
-class Op:
-    def __init__(self, op_type, data, file, line):
-        self.type = op_type
-        self.data = data
-        self.file = file
-        self.line = line
-
-    def __str__(self):
-        return f'{f"{self.type}:"[7:]:10}    Data: {", ".join([str(d) for d in self.data])}    ' \
-               f'File: {self.file} (line {self.line})'
-
-    def macro_trace_str(self):
-        assert self.type == OpType.Macro
-        macro_name, param_len = self.data[0]
-        return f'macro {macro_name}({param_len}) (File {self.file}, line {self.line})'
-
-    def rep_trace_str(self, iter_value, iter_times):
-        assert self.type == OpType.Rep
-        _, iter_name, macro = self.data
-        macro_name, param_len = macro.data[0]
-        return f'rep({iter_name}={iter_value}, out of 0..{iter_times-1}) ' \
-               f'macro {macro_name}({param_len})  (File {self.file}, line {self.line})'
+_debug_json_encoding = 'utf-8'
+_debug_json_lzma_format = lzma.FORMAT_RAW
+_debug_json_lzma_filters: List[Dict[str, int]] = [{"id": lzma.FILTER_LZMA2}]
 
 
-class Expr:
-    def __init__(self, expr):
-        self.val = expr
-
-    # replaces every string it can with its dictionary value, and evaluates anything it can.
-    # returns the list of unknown id's
-    def eval(self, id_dict, file, line):
-        if self.is_tuple():
-            op, exps = self.val
-            res = [e.eval(id_dict, file, line) for e in exps]
-            if any(res):
-                return sum(res, start=[])
-            else:
-                try:
-                    self.val = parsing_op2func[op](*[e.val for e in exps])
-                    return []
-                except BaseException as e:
-                    raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)} in file {file} (line {line})')
-        elif self.is_str():
-            if self.val in id_dict:
-                self.val = id_dict[self.val].val
-                return self.eval({}, file, line)
-            else:
-                return [self.val]
-        return []
-
-    def is_int(self):
-        return type(self.val) is int
-
-    def is_str(self):
-        return type(self.val) is str
-
-    def is_tuple(self):
-        return type(self.val) is tuple
-
-    def __str__(self):
-        if self.is_tuple():
-            op, exps = self.val
-            if len(exps) == 1:
-                e1 = exps[0]
-                return f'(#{str(e1)})'
-            elif len(exps) == 2:
-                e1, e2 = exps
-                return f'({str(e1)} {op} {str(e2)})'
-            else:
-                e1, e2, e3 = exps
-                return f'({str(e1)} ? {str(e2)} : {str(e3)})'
-        if self.is_str():
-            return self.val
-        if self.is_int():
-            return hex(self.val)[2:]
-        raise FJExprException(f'bad expression: {self.val} (of type {type(self.val)})')
+def save_debugging_labels(debugging_file_path: Path, labels: Dict[str, int]) -> None:
+    """
+    save the labels' dictionary to the debugging-file as lzma2-compressed json
+    @param debugging_file_path: the file's path
+    @param labels: the labels' dictionary
+    """
+    if debugging_file_path:
+        with open(debugging_file_path, 'wb') as f:
+            data = json.dumps(labels).encode(_debug_json_encoding)
+            compressed_data = lzma.compress(data, format=_debug_json_lzma_format, filters=_debug_json_lzma_filters)
+            f.write(compressed_data)
 
 
-def eval_all(op, id_dict=None):
-    if id_dict is None:
-        id_dict = {}
-
-    ids = []
-    for expr in op.data:
-        if type(expr) is Expr:
-            ids += expr.eval(id_dict, op.file, op.line)
-    if op.type == OpType.Rep:
-        macro_op = op.data[2]
-        ids += eval_all(macro_op, id_dict)
-    return ids
-
-
-def get_all_used_labels(ops):
-    used_labels, declared_labels = set(), set()
-    for op in ops:
-        if op.type == OpType.Rep:
-            n, i, macro_call = op.data
-            used_labels.update(n.eval({}, op.file, op.line))
-            new_labels = set()
-            new_labels.update(*[e.eval({}, op.file, op.line) for e in macro_call.data[1:]])
-            used_labels.update(new_labels - {i})
-        elif op.type == OpType.Label:
-            declared_labels.add(op.data[0])
-        else:
-            for expr in op.data:
-                if type(expr) is Expr:
-                    used_labels.update(expr.eval({}, op.file, op.line))
-    return used_labels, declared_labels
+def load_debugging_labels(debugging_file_path: Path) -> Dict[str, int]:
+    """
+    loads and decompresses the labels' dictionary from the lzma2-compressed debugging-file
+    @param debugging_file_path: the file's path
+    @return: the labels' dictionary
+    """
+    if debugging_file_path:
+        with open(debugging_file_path, 'rb') as f:
+            compressed_data = f.read()
+            data = lzma.decompress(compressed_data, format=_debug_json_lzma_format, filters=_debug_json_lzma_filters)
+            return json.loads(data.decode(_debug_json_encoding))
 
 
-def id_swap(op, id_dict):
-    new_data = []
-    for datum in op.data:
-        if type(datum) is str and datum in id_dict:
-            swapped_label = id_dict[datum]
-            if not swapped_label.is_str():
-                raise FJExprException(f'Bad label swap (from {datum} to {swapped_label}) in {op}.')
-            new_data.append(swapped_label.val)
-        else:
-            new_data.append(datum)
-    op.data = tuple(new_data)
+class PrintTimer:
+    """
+    prints the time a code segment took.
+    usage:
+    with PrintTimer('long_function time: '):
+        long_function()
+    """
+    def __init__(self, init_message: str, *, print_time: bool = True):
+        self.init_message = init_message
+        self.print_time = print_time
+
+    def __enter__(self) -> None:
+        if self.print_time:
+            self.start_time = time()
+            print(self.init_message, end='', flush=True)
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        if self.print_time:
+            print(f'{time() - self.start_time:.3f}s')
 
 
-def new_label(counter, name):
-    if name == '':
-        return Expr(f'_.label{next(counter)}')
-    else:
-        return Expr(f'_.label{next(counter)}_{name}')
+@dataclasses.dataclass
+class Macro:
+    """
+    The python representation of a .fj macro (macro declaration).
+    """
+    params: List[str]
+    local_params: List[str]
+    ops: List[Op]
+    namespace: str
+    code_position: CodePosition
 
 
-wflip_start_label = '_.wflip_area_start_'
+class RunStatistics:
+    """
+    maintains times and counters of the current run.
+    """
+    class PauseTimer:
+        def __init__(self):
+            self.paused_time = 0
 
+        def __enter__(self):
+            self.pause_start_time = time()
 
-def next_address() -> Expr:
-    return Expr('$')
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.paused_time += time() - self.pause_start_time
+
+    def __init__(self, w: int):
+        self._op_size = 2 * w
+        self._after_null_flip = 2 * w
+
+        self.op_counter = 0
+        self.flip_counter = 0
+        self.jump_counter = 0
+
+        self._start_time = time()
+        self.pause_timer = self.PauseTimer()
+
+    def get_run_time(self) -> float:
+        return time() - self._start_time - self.pause_timer.paused_time
+
+    def register_op(self, ip: int, flip_address: int, jump_address: int) -> None:
+        self.op_counter += 1
+        if flip_address >= self._after_null_flip:
+            self.flip_counter += 1
+        if jump_address != ip + self._op_size:
+            self.jump_counter += 1

@@ -1,11 +1,14 @@
-calc, programs/calc.fj,tests/compiled/calc.fjm, 64,1,0, True,True
+calc, programs/calc.fj,tests/compiled/calc.fjm, 64,3,0, True,True
 
-func1, programs/func_tests/func1.fj,tests/compiled/func_tests/func1.fjm, 64,1,0, True,True
-func2, programs/func_tests/func2.fj,tests/compiled/func_tests/func2.fjm, 64,1,0, True,True
-func3, programs/func_tests/func3.fj,tests/compiled/func_tests/func3.fjm, 64,1,0, True,True
-func4, programs/func_tests/func4.fj,tests/compiled/func_tests/func4.fjm, 64,1,0, True,True
-func5, programs/func_tests/func5.fj,tests/compiled/func_tests/func5.fjm, 64,1,0, True,True
+func1, programs/func_tests/func1.fj,tests/compiled/func_tests/func1.fjm, 64,3,0, True,True
+func2, programs/func_tests/func2.fj,tests/compiled/func_tests/func2.fjm, 64,3,0, True,True
+func3, programs/func_tests/func3.fj,tests/compiled/func_tests/func3.fjm, 64,3,0, True,True
+func4, programs/func_tests/func4.fj,tests/compiled/func_tests/func4.fjm, 64,3,0, True,True
+func5, programs/func_tests/func5.fj,tests/compiled/func_tests/func5.fjm, 64,3,0, True,True
 
-pair_ns1, programs/concept_checks/pair_ns.fj | programs/pair_ns_tests/test1.fj,tests/compiled/pair_ns_tests/test1.fjm, 64,1,0, True,True
-pair_ns2, programs/concept_checks/pair_ns.fj | programs/pair_ns_tests/test2.fj,tests/compiled/pair_ns_tests/test2.fjm, 64,1,0, True,True
-pair_ns3, programs/concept_checks/pair_ns.fj | programs/pair_ns_tests/test3.fj,tests/compiled/pair_ns_tests/test3.fjm, 64,1,0, True,True
+pair_ns1, programs/concept_checks/pair_ns.fj | programs/pair_ns_tests/test1.fj,tests/compiled/pair_ns_tests/test1.fjm, 64,3,0, True,True
+pair_ns2, programs/concept_checks/pair_ns.fj | programs/pair_ns_tests/test2.fj,tests/compiled/pair_ns_tests/test2.fjm, 64,3,0, True,True
+pair_ns3, programs/concept_checks/pair_ns.fj | programs/pair_ns_tests/test3.fj,tests/compiled/pair_ns_tests/test3.fjm, 64,3,0, True,True
+
+series_sum, programs/simple_math_checks/series_sum.fj,tests/compiled/simple_math_checks/series_sum.fjm, 64,3,0, True,True
+

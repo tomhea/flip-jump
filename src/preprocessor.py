@@ -1,232 +1,265 @@
+from __future__ import annotations
+
 import collections
-from copy import deepcopy
-from itertools import count
+from typing import Dict, Tuple, Iterable, Union, Deque
 
-import plotly.graph_objects as go
+from expr import Expr
+from defs import CodePosition, Macro, macro_separator_string
+from exceptions import FJPreprocessorException, FJExprException
+from ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
+    LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
+    initial_macro_name, initial_args, initial_labels_prefix
+from macro_usage_graph import show_macro_usage_pie_graph
 
-from defs import main_macro, wflip_start_label, new_label, \
-    Op, OpType, SegmentEntry, Expr, FJPreprocessorException, \
-    eval_all, id_swap
+CurrTree = Deque[Union[MacroCall, RepCall]]
 
-
-def macro_resolve_error(curr_tree, msg=''):
-    error_str = f"Macro Resolve Error" + (f':\n  {msg}' if msg else '.') + f'\nmacro call trace:\n'
-    for i, trace_str in enumerate(curr_tree):
-        error_str += f'  {i}) {trace_str}\n'
-    raise FJPreprocessorException(error_str)
+wflip_start_label = '_.wflip_area_start_'
 
 
-def output_ops(ops, output_file):
-    with open(output_file, 'w') as f:
-        for op in ops:
-            eval_all(op)
-            if op.type == OpType.FlipJump:
-                f.write(f'  {op.data[0]};{op.data[1]}\n')
-            elif op.type == OpType.WordFlip:
-                f.write(f'  wflip {op.data[0]}, {op.data[1]}, {op.data[2]}\n')
-            elif op.type == OpType.Label:
-                f.write(f'{op.data[0]}:\n')
+def macro_resolve_error(curr_tree: CurrTree, msg='', *, orig_exception: BaseException = None) -> None:
+    """
+    raise a descriptive error (with the macro-expansion trace).
+    @param curr_tree: the ops in the macro-calling path to arrive in this macro
+    @param msg: the message to show on error
+    @param orig_exception: if not None, raise from this base error.
+    """
+    error_str = f"Macro Resolve Error" + (f':\n  {msg}\n' if msg else '.\n')
+    if curr_tree:
+        error_str += 'Macro call trace:\n'
+        for i, op in enumerate(curr_tree):
+            error_str += f'  {i}) {op.trace_str()}\n'
+    raise FJPreprocessorException(error_str) from orig_exception
 
 
-def clean_name_for_pie_graph(macro_name: str):
-    if '_rep_' not in macro_name:
-        return macro_name
+class PreprocessorData:
+    """
+    maintains the preprocessor "global" data structures, throughout its recursion.
+     e.g. current address, resulting ops, labels' dictionary, macros' dictionary...
+    also offer many functions to manipulate its data.
+    @note should call finish before get_result..().
+    """
+    class _PrepareMacroCall:
+        def __init__(self, curr_tree: CurrTree,
+                     calling_op: Union[MacroCall, RepCall], macros: Dict[MacroName, Macro]):
+            self.curr_tree = curr_tree
+            self.calling_op = calling_op
+            self.macros = macros
 
+        def __enter__(self):
+            macro_name = self.calling_op.macro_name
+            if macro_name not in self.macros:
+                macro_resolve_error(self.curr_tree, f"macro {macro_name} is used but isn't defined.")
+            self.curr_tree.append(self.calling_op)
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.curr_tree.pop()
+
+    def __init__(self, w: int, macros: Dict[MacroName, Macro]):
+        self.w = w
+        self.macros = macros
+
+        self.curr_address: int = 0
+
+        self.macro_code_size = collections.defaultdict(lambda: 0)
+
+        self.curr_tree: CurrTree = collections.deque()
+
+        self.curr_segment_index: int = 0
+        self.labels_code_positions: Dict[str, CodePosition] = {}
+
+        self.result_ops: Deque[LastPhaseOp] = collections.deque()
+        self.labels: Dict[str, int] = {}
+
+        first_segment: NewSegment = NewSegment(0)
+        self.last_new_segment: NewSegment = first_segment
+        self.result_ops.append(first_segment)
+
+    def patch_last_wflip_address(self) -> None:
+        self.last_new_segment.wflip_start_address = self.curr_address
+
+    def finish(self, show_statistics: bool) -> None:
+        self.patch_last_wflip_address()
+        if show_statistics:
+            show_macro_usage_pie_graph(dict(self.macro_code_size), self.curr_address)
+
+    def prepare_macro_call(self, calling_op: Union[MacroCall, RepCall]) -> PreprocessorData._PrepareMacroCall:
+        return PreprocessorData._PrepareMacroCall(self.curr_tree, calling_op, self.macros)
+
+    def get_result_ops_and_labels(self) -> Tuple[Deque[LastPhaseOp], Dict[str, int]]:
+        return self.result_ops, self.labels
+
+    def insert_segment(self, next_segment_start: int) -> None:
+        self.labels[f'{wflip_start_label}{self.curr_segment_index}'] = self.curr_address
+        self.curr_segment_index += 1
+
+        self.patch_last_wflip_address()
+
+        new_segment = NewSegment(next_segment_start)
+        self.last_new_segment = new_segment
+        self.result_ops.append(new_segment)
+
+        self.curr_address = next_segment_start
+
+    def insert_reserve(self, reserved_bits_size: int) -> None:
+        self.curr_address += reserved_bits_size
+        self.result_ops.append(ReserveBits(self.curr_address))
+
+    def insert_label(self, label: str, code_position: CodePosition) -> None:
+        if label in self.labels:
+            other_position = self.labels_code_positions[label]
+            macro_resolve_error(self.curr_tree, f'label declared twice - "{label}" on '
+                                                f'{code_position} and {other_position}')
+        self.labels_code_positions[label] = code_position
+        self.labels[label] = self.curr_address
+
+    def register_macro_code_size(self, macro_path: str, init_curr_address: int) -> None:
+        if 1 <= len(self.curr_tree) <= 2:
+            self.macro_code_size[macro_path] += self.curr_address - init_curr_address
+
+    def align_current_address(self, ops_alignment: int) -> None:
+        op_size = 2 * self.w
+        ops_to_pad = (-self.curr_address // op_size) % ops_alignment
+        self.curr_address += ops_to_pad * op_size
+        self.result_ops.append(Padding(ops_to_pad))
+
+
+def get_rep_times(op: RepCall, preprocessor_data: PreprocessorData) -> int:
     try:
-        rep_count = macro_name.split('_')[3]
-        inner_macro = macro_name.split("'")[1]
-        arg_count = macro_name.split(', ')[1].split(')')[0]
-        return f"{inner_macro}({arg_count})*{rep_count}"
-    except IndexError:
-        return macro_name
+        return op.calculate_times(preprocessor_data.labels)
+    except FJExprException as e:
+        macro_resolve_error(preprocessor_data.curr_tree, f'rep {op.macro_name} failed.', orig_exception=e)
 
 
-def dict_pie_graph(d, total, min_main_thresh=0.05, min_secondary_thresh=0.02):
-    main_thresh = min_main_thresh * total
-    secondary_thresh = min_secondary_thresh * total
-    first_level = {}
-    second_level = collections.defaultdict(lambda: dict())
-    for k, v in d.items():
-        if ' => ' not in k:
-            if v < main_thresh:
+def get_pad_ops_alignment(op: Pad, preprocessor_data: PreprocessorData) -> int:
+    try:
+        return op.calculate_ops_alignment(preprocessor_data.labels)
+    except FJExprException as e:
+        macro_resolve_error(preprocessor_data.curr_tree, f'pad {op.ops_alignment} failed.', orig_exception=e)
+
+
+def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData) -> int:
+    try:
+        next_segment_start = op.calculate_address(preprocessor_data.labels)
+        if next_segment_start % preprocessor_data.w != 0:
+            macro_resolve_error(preprocessor_data.curr_tree, f'segment ops must have a w-aligned address: '
+                                                             f'{hex(next_segment_start)}. In {op.code_position}.')
+        return next_segment_start
+    except FJExprException as e:
+        macro_resolve_error(preprocessor_data.curr_tree, f'segment failed.', orig_exception=e)
+
+
+def get_reserved_bits_size(op: Reserve, preprocessor_data: PreprocessorData) -> int:
+    try:
+        reserved_bits_size = op.calculate_reserved_bit_size(preprocessor_data.labels)
+        if reserved_bits_size % preprocessor_data.w != 0:
+            macro_resolve_error(preprocessor_data.curr_tree, f'reserve ops must have a w-aligned value: '
+                                                             f'{hex(reserved_bits_size)}. In {op.code_position}.')
+        return reserved_bits_size
+    except FJExprException as e:
+        macro_resolve_error(preprocessor_data.curr_tree, f'reserve failed.', orig_exception=e)
+
+
+def get_params_dictionary(current_macro: Macro, args: Iterable[Expr], namespace: str, labels_prefix: str) \
+        -> Dict[str, Expr]:
+    """
+    generates the dictionary between the labels (params and local-params) defined by the macro, and their Expr-values.
+    @param current_macro: the current macro
+    @param args: the macro's arguments (Expressions)
+    @param namespace: the current namespace
+    @param labels_prefix: the path to the currently-preprocessed macro
+    @return: the parameters' dictionary
+    """
+    params_dict: Dict[str, Expr] = dict(zip(current_macro.params, args))
+
+    for local_param in current_macro.local_params:
+        params_dict[local_param] = Expr(f'{labels_prefix}---{local_param}')
+
+    if namespace:
+        for k, v in tuple(params_dict.items()):
+            params_dict[f'{namespace}.{k}'] = v
+
+    return params_dict
+
+
+def resolve_macro_aux(preprocessor_data: PreprocessorData,
+                      macro_name: MacroName, args: Iterable[Expr], labels_prefix: str) -> None:
+    """
+    recursively unwind the current macro into a serialized stream of ops and add them to the result_ops-queue.
+    also add every label's value to the labels-dictionary. both saved in preprocessor_data.
+    @param preprocessor_data: maintains the preprocessor "global" data structures
+    @param macro_name: the name of the macro to unwind
+    @param args: the arguments for the macro to unwind
+    @param labels_prefix: The prefix for all labels defined in this macro
+    """
+    init_curr_address = preprocessor_data.curr_address
+    current_macro = preprocessor_data.macros[macro_name]
+    params_dict = get_params_dictionary(current_macro, args, current_macro.namespace, labels_prefix)
+
+    for op in current_macro.ops:
+
+        if isinstance(op, Label):
+            preprocessor_data.insert_label(op.eval_name(params_dict), op.code_position)
+
+        elif isinstance(op, FlipJump) or isinstance(op, WordFlip):
+            preprocessor_data.curr_address += 2 * preprocessor_data.w
+            params_dict['$'] = Expr(preprocessor_data.curr_address)
+            preprocessor_data.result_ops.append(op.eval_new(params_dict))
+            del params_dict['$']
+
+        elif isinstance(op, Pad):
+            op = op.eval_new(params_dict)
+            ops_alignment = get_pad_ops_alignment(op, preprocessor_data)
+            preprocessor_data.align_current_address(ops_alignment)
+
+        elif isinstance(op, MacroCall):
+            op = op.eval_new(params_dict)
+            next_macro_path = (f"{labels_prefix}{macro_separator_string}" if labels_prefix else "") + \
+                f"{op.code_position.short_str()}:{op.macro_name}"
+            with preprocessor_data.prepare_macro_call(op):
+                resolve_macro_aux(preprocessor_data,
+                                  op.macro_name, op.arguments, next_macro_path)
+
+        elif isinstance(op, RepCall):
+            op = op.eval_new(params_dict)
+            rep_times = get_rep_times(op, preprocessor_data)
+            if rep_times == 0:
                 continue
-            first_level[k] = v
+            next_macro_path = (f"{labels_prefix}{macro_separator_string}" if labels_prefix else "") + \
+                f"{op.code_position.short_str()}:rep{{}}:{op.macro_name}"
+            with preprocessor_data.prepare_macro_call(op):
+                for i in range(rep_times):
+                    resolve_macro_aux(preprocessor_data,
+                                      op.macro_name, op.calculate_arguments(i), next_macro_path.format(i))
+
+        elif isinstance(op, Segment):
+            op = op.eval_new(params_dict)
+            next_segment_start = get_next_segment_start(op, preprocessor_data)
+            preprocessor_data.insert_segment(next_segment_start)
+
+        elif isinstance(op, Reserve):
+            op = op.eval_new(params_dict)
+            reserved_bits_size = get_reserved_bits_size(op, preprocessor_data)
+            preprocessor_data.insert_reserve(reserved_bits_size)
+
         else:
-            if v < secondary_thresh:
-                continue
-            k_split = k.split(' => ')
-            if len(k_split) != 2:
-                continue
-            parent, name = k_split
-            second_level[parent][name] = v
+            macro_resolve_error(preprocessor_data.curr_tree, f"Can't assemble this opcode - {str(op)}")
 
-    chosen = []
-    for k, v in sorted(first_level.items(), key=lambda x: x[1], reverse=True):
-        k_name = clean_name_for_pie_graph(k)
-        if len(second_level[k]) == 0:
-            chosen.append((k_name, v))
-        else:
-            for k2, v2 in sorted(second_level[k].items(), key=lambda x: x[1], reverse=True):
-                k2_name = clean_name_for_pie_graph(k2)
-                chosen.append((f"{k_name} => {k2_name}", v2))
-                v -= v2
-            if v >= secondary_thresh:
-                chosen.append((f"{k_name} others", v))
-
-    others = total - sum([value for label, value in chosen])
-    chosen.append(('all others', others))
-
-    fig = go.Figure(data=[go.Pie(labels=[label for label, value in chosen],
-                                 values=[value for label, value in chosen],
-                                 textinfo='label+percent'
-                                 )])
-    fig.show()
+    preprocessor_data.register_macro_code_size(labels_prefix, init_curr_address)
 
 
-def resolve_macros(w, macros, output_file=None, show_statistics=False, verbose=False):
-    curr_address = [0]
-    rem_ops = []
-    labels = {}
-    last_address_index = [0]
-    label_places = {}
-    boundary_addresses = [(SegmentEntry.StartAddress, 0)]  # SegEntries
-    stat_dict = collections.defaultdict(lambda: 0)
+def resolve_macros(w: int, macros: Dict[MacroName, Macro], *, show_statistics: bool = False) \
+        -> Tuple[Deque[LastPhaseOp], Dict[str, int]]:
+    """
+    unwind the macro tree to a serialized-queue of ops,
+    and creates a dictionary from label's name to its address.
+    @param w: the memory-width
+    @param macros: parser's result; the dictionary from the macro names to the macro declaration
+    @param show_statistics: if True then prints the macro-usage statistics
+    @return: tuple of the queue of ops, and the labels' dictionary
+    """
+    preprocessor_data = PreprocessorData(w, macros)
+    resolve_macro_aux(preprocessor_data,
+                      initial_macro_name, initial_args, initial_labels_prefix)
 
-    ops = resolve_macro_aux(w, '', [], macros, main_macro, [], {}, count(), stat_dict,
-                            labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
-                            verbose)
-    if output_file:
-        output_ops(ops, output_file)
-
-    if show_statistics:
-        dict_pie_graph(dict(stat_dict), curr_address[0])
-
-    boundary_addresses.append((SegmentEntry.WflipAddress, curr_address[0]))
-    return rem_ops, labels, boundary_addresses
-
-
-def try_int(op, expr):
-    if expr.is_int():
-        return expr.val
-    raise FJPreprocessorException(f"Can't resolve the following name: {expr.eval({}, op.file, op.line)} (in op={op}).")
-
-
-def resolve_macro_aux(w, parent_name, curr_tree, macros, macro_name, args, rep_dict, dollar_count, stat_dict,
-                      labels, rem_ops, boundary_addresses, curr_address, last_address_index, label_places,
-                      verbose=False, file=None, line=None):
-    commands = []
-    init_curr_address = curr_address[0]
-    this_curr_address = 0
-    if macro_name not in macros:
-        macro_name = f'{macro_name[0]}({macro_name[1]})'
-        if None in (file, line):
-            macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined.")
-        else:
-            macro_resolve_error(curr_tree, f"macro {macro_name} isn't defined. Used in file {file} (line {line}).")
-    full_name = (f"{parent_name} => " if parent_name else "") + macro_name[0] + (f"({macro_name[1]})" if macro_name[0]
-                                                                                 else "")
-    (params, dollar_params), ops, (_, _, ns_name) = macros[macro_name]
-    id_dict = dict(zip(params, args))
-    for dp in dollar_params:
-        id_dict[dp] = new_label(dollar_count, dp)
-    for k in rep_dict:
-        id_dict[k] = rep_dict[k]
-    if ns_name:
-        for k in list(id_dict.keys()):
-            id_dict[f'{ns_name}.{k}'] = id_dict[k]
-
-    for op in ops:
-        # macro-resolve
-        if type(op) is not Op:
-            macro_resolve_error(curr_tree, f"bad op (not of Op type)! type {type(op)}, str {str(op)}.")
-        if verbose:
-            print(op)
-        op = deepcopy(op)
-        eval_all(op, id_dict)
-        id_swap(op, id_dict)
-        if op.type == OpType.Macro:
-            commands += resolve_macro_aux(w, full_name, curr_tree+[op.macro_trace_str()], macros, op.data[0],
-                                          list(op.data[1:]), {}, dollar_count, stat_dict,
-                                          labels, rem_ops, boundary_addresses, curr_address, last_address_index,
-                                          label_places, verbose, file=op.file, line=op.line)
-        elif op.type == OpType.Rep:
-            eval_all(op, labels)
-            n, i_name, macro_call = op.data
-            if not n.is_int():
-                macro_resolve_error(curr_tree, f'Rep used without a number "{str(n)}" '
-                                               f'in file {op.file} line {op.line}.')
-            times = n.val
-            if times == 0:
-                continue
-            if i_name in rep_dict:
-                macro_resolve_error(curr_tree, f'Rep index {i_name} is declared twice; maybe an inner rep. '
-                                               f'in file {op.file} line {op.line}.')
-            macro_name = macro_call.data[0]
-            pseudo_macro_name = (new_label(dollar_count, f'rep_{times}_{macro_name}').val, 1)  # just moved outside (before) the for loop
-            for i in range(times):
-                rep_dict[i_name] = Expr(i)  # TODO - call the macro_name directly, and do deepcopy(op) beforehand.
-                macros[pseudo_macro_name] = (([], []), [macro_call], (op.file, op.line, ns_name))
-                commands += resolve_macro_aux(w, full_name, curr_tree+[op.rep_trace_str(i, times)], macros,
-                                              pseudo_macro_name, [], rep_dict, dollar_count, stat_dict,
-                                              labels, rem_ops, boundary_addresses, curr_address, last_address_index,
-                                              label_places, verbose, file=op.file, line=op.line)
-            if i_name in rep_dict:
-                del rep_dict[i_name]
-            else:
-                macro_resolve_error(curr_tree, f'Rep is used but {i_name} index is gone; maybe also declared elsewhere.'
-                                               f' in file {op.file} line {op.line}.')
-
-        # labels_resolve
-        elif op.type == OpType.Segment:
-            eval_all(op, labels)
-            value = try_int(op, op.data[0])
-            if value % w != 0:
-                macro_resolve_error(curr_tree, f'segment ops must have a w-aligned address. In {op}.')
-
-            boundary_addresses.append((SegmentEntry.WflipAddress, curr_address[0]))
-            labels[f'{wflip_start_label}{last_address_index[0]}'] = Expr(curr_address[0])
-            last_address_index[0] += 1
-
-            this_curr_address += value - curr_address[0]
-            curr_address[0] = value
-            boundary_addresses.append((SegmentEntry.StartAddress, curr_address[0]))
-            rem_ops.append(op)
-        elif op.type == OpType.Reserve:
-            eval_all(op, labels)
-            value = try_int(op, op.data[0])
-            if value % w != 0:
-                macro_resolve_error(curr_tree, f'reserve ops must have a w-aligned value. In {op}.')
-
-            this_curr_address += value
-            curr_address[0] += value
-            boundary_addresses.append((SegmentEntry.ReserveAddress, curr_address[0]))
-            labels[f'{wflip_start_label}{last_address_index[0]}'] = Expr(curr_address[0])
-
-            last_address_index[0] += 1
-            rem_ops.append(op)
-        elif op.type in {OpType.FlipJump, OpType.WordFlip}:
-            this_curr_address += 2*w
-            curr_address[0] += 2*w
-            eval_all(op, {'$': Expr(curr_address[0])})
-            if verbose:
-                print(f'op added: {str(op)}')
-            rem_ops.append(op)
-        elif op.type == OpType.Label:
-            label = op.data[0]
-            if label in labels:
-                other_file, other_line = label_places[label]
-                macro_resolve_error(curr_tree, f'label declared twice - "{label}" on file {op.file} (line {op.line}) '
-                                               f'and file {other_file} (line {other_line})')
-            if verbose:
-                print(f'label added: "{label}" in {op.file} line {op.line}')
-            labels[label] = Expr(curr_address[0])
-            label_places[label] = (op.file, op.line)
-        else:
-            macro_resolve_error(curr_tree, f"Can't assemble this opcode - {str(op)}")
-
-    # if len(curr_tree) == 1:
-    #     stat_dict[macro_name[0]] += curr_address[0] - init_curr_address
-    # stat_dict[macro_name[0]] += this_curr_address
-    if 1 <= len(curr_tree) <= 2:
-        stat_dict[full_name] += curr_address[0] - init_curr_address
-    return commands
+    preprocessor_data.finish(show_statistics)
+    return preprocessor_data.get_result_ops_and_labels()

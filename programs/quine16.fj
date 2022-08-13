@@ -1,4 +1,4 @@
-// $ python3 src/fja.py -w 16 quine16.fj -o quine16.fjm && python3 src/fji.py -s quine16.fjm >/tmp/output && diff quine16.fjm /tmp/output && echo "quine!"
+// $ python3 src/fj.py --asm -w 16 -v 0 quine16.fj -o quine16.fjm && python3 src/fj.py --run -s quine16.fjm >/tmp/output && diff quine16.fjm /tmp/output && echo "quine!"
 //
 // Author: Luis Fernando Estrozi ( https://github.com/lestrozi )
 //
@@ -16,10 +16,10 @@
 // I took the liberty to define a Quine for FlipJump as a binary (fjm) that prints itself (including the header struct).
 // 
 // First, create quine16.fjm from the source:
-// `$ python3 src/fja.py -w 16 quine16.fj -o quine16.fjm`
+// `$ python3 src/fj.py --asm -w 16 quine16.fj -o quine16.fjm`
 //
 // Then the quine can be checked using:
-// `$ python3 fji.py -s quine16.fjm >output`
+// `$ python3 fj.py --run -s quine16.fjm >output`
 // `$ diff quine16.fjm output`
 // 
 // 
