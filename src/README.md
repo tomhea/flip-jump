@@ -74,5 +74,5 @@ The FlipJump source is built in a way that allows simple addition of new feature
 
 Every addition should be supported from the parsing level to the phase that is disappears, in the progression found in assemble() in [assembler](assembler.py).
 
-For example, if you want to add a new operation a@b that calculates a*a+b*b or a! for factorial(a), it is simple as adding a parsing rule in [fj_parser.py](fj_parser.py), then adding the function to the op_string_to_function() in [expr.py](expr.py).
+For example, if you want to add a new operation a@b that calculates a^2+b^2 or a! for factorial(a), it is simple as adding a parsing rule in [fj_parser.py](fj_parser.py), then adding the function to the op_string_to_function() in [expr.py](expr.py).
 
