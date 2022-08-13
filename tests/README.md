@@ -11,9 +11,13 @@ Use `--regulr` to run all the tests of stable parts.<br>
 Use `--all` to run all the tests.<br>
 The default (no type flags) means `--fast`.
 
+<img src=../res/pytest.gif width=1000 />
+
 You can run the tests parallel with `-n auto` (using [xdist](https://github.com/pytest-dev/pytest-xdist)).<br>
 note that this option is only allowed while using exactly one of `--compile` / `--run`.<br>
 You can execute the `test_parallel` / `test_parallel.bat` to run parallel compile, and afterwords parallel run, with the given flags.
+
+<img src=../res/test_parallel.gif width=1000 />
 
 Please note that the 7 `hexlib-div-*` tests currently fail.
 

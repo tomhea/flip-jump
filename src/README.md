@@ -9,21 +9,35 @@ The assembler has 4 steps:
 - writing the binary data into the executable ([fjm.py](fjm.py)).
 
 The whole process is executed within the [assemble()](assembler.py) function.
+<img src=../res/calc__asm.jpg width=1000 />
 
 - The [ops.py](ops.py) file contains the classes of the different ops.
 - The [expr.py](expr.py) file contains the expression class (Expr), used to maintain a mathematical expression based on numbers and labels.
 
 ## The FlipJump Interpreter
 
-The Interpreter ([fjm_run.py](fjm_run.py)) stores the entire memory in a dictionary {address: value}, and supports unaligned-word access.
+The Interpreter ([fjm_run.py](fjm_run.py)) stores the entire memory in a dictionary {address: value}, and supports unaligned-word access. 
+
+The whole interpretation is done within the [run()](fjm_run.py) function (also uses [fjm.py](fjm.py) to read the fjm file).
+<img src=../res/calc__run.jpg width=1000 />
 
 The Interpreter has a built-in debugger, and it's activated by specifying breakpoints when called (via the [BreakpointHandler](breakpoints.py)).
 The debugger can stop on the next breakpoint, or on a fixed number of executed ops after the current breakpoint.
-In order to call the debugger with the right labels, get familiar with the [generating label names](README.md#Generated-Label-Names).
+In order to call the debugger with the right labels, get familiar with the [generating label names](README.md#Generated-Label-Names) (and see the debugger-image there).
 
-The whole interpretation is done within the [run()](fjm_run.py) function (also uses [fjm.py](fjm.py) to read the fjm file).
+The [macro_usage_graph.py](macro_usage_graph.py) file allows presenting the macro-usage in a graph:
+<img src=../res/calc_stats.png width=1000 />
 
-- The [macro_usage_graph.py](macro_usage_graph.py) file allows presenting the macro-usage in a graph.
+### FJM versions
+
+The .fjm file currently has 4 version:
+0. The basic version
+1. The normal version (more configurable than the basic version)
+2. The relative-jumps version (good for further compression)
+3. The compressed version
+
+You can specify the version you want with the `-v VERSION` flag.<br>
+The assembler chooses **by default** version **3** if the `--outfile` is specified, and version **1** if it isn't. 
 
 ### Generated Label Names
 
@@ -42,6 +56,8 @@ for example: f1:32:rep6:hex.print---f2:17:print_bit---print_label
 the short_file_name is (by default) s1,s2,s3,.. for the standard library files (in the order of [stl/conf.json - all](../stl/conf.json)),
 and f1,f2,f3,.. for the compiled .fj files, in the order they are mentioned to the compiler (or appear in the test-line).
 
+You can insert breakpoints on specific labels using the `-d` followed by a  `-b` and a label name (or `-B` and a part of a label name). For example:
+<img src=../res/breakpoint.jpg width=1000 />
 
 ## More Files
 

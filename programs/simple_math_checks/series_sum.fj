@@ -1,0 +1,58 @@
+N = 8   // 32bits
+
+startup
+
+// starting printings:
+output "params:  a1 = "
+print_hex_as_decimal a1
+output ",  d = "
+print_hex_as_decimal d
+output ",  n = "
+print_hex_as_decimal n
+output ".\n\n"
+
+
+hex.mov N, n_1, n
+hex.dec N, n_1          // n_1 = n-1
+hex.mul N, an, n_1, d   // an = d(n-1)
+hex.add N, an, a1       // an = a1 + d(n-1)
+
+// print an
+output "an = "
+print_hex_as_decimal an
+output ".\n"
+
+hex.add N, an, a1   // a1 + an
+hex.mul N, s, an, n // s = (a1+an) * n
+hex.shr_bit N, s    // s = (a1+an) * n/2
+
+// print sum
+output "Sum(a1, a2, ..., an) = "
+print_hex_as_decimal s
+output ".\n"
+
+loop
+hex.init    // inits the hex.mul
+
+
+def print_hex_as_decimal hexxx < num, ret, print_num {
+    hex2bit N, num, hexxx
+    fcall print_num, ret
+}
+
+print_num:
+    bit.print_dec_int N*4, num
+    ;ret
+num:    bit.vec N*4
+ret:    bit
+
+
+// inputs and variables:
+a1: hex.vec 8,  1
+d:  hex.vec 8,  3
+n:  hex.vec 8, 12
+
+an: hex.vec 8
+s:  hex.vec 8
+
+n_1:    hex.vec N
