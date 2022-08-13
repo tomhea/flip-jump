@@ -219,5 +219,4 @@ def assemble(input_files: List[Tuple[str, Path]], w: int, fjm_writer: fjm.Writer
 
     with PrintTimer('  create binary:   ', print_time=print_time):
         fjm_writer.write_to_file()
-
-    save_debugging_labels(debugging_file_path, labels)
+        save_debugging_labels(debugging_file_path, labels)
