@@ -55,12 +55,13 @@ When filing an issue, make sure to answer these five questions:
 General questions should go to the [Questions thread](https://github.com/tomhea/flip-jump/discussions/176), or the [Discussions](https://github.com/tomhea/flip-jump/discussions) in general. 
 
 # How to suggest a feature or enhancement
-The FlipJump philosophy is to be the simplest langauge of all, that can do any modern computation.
+The FlipJump philosophy is to be the simplest language of all, that can do any modern computation.
 
 FlipJump should be below the OS, as it's a cpu-architecture after all.
 
-The FlipJump stl should be minimalistic, efficient in both space and time, and to offer macros similar to x86 ops.<br>
-The generic stl macro should look like `macro_name n dst src` for an n-bit/hex variable, with dst being the destination-variable, and src being source-variable. (e.g. `hex.add n, dst, src`). 
+The FlipJump stl should be minimalistic, efficient in both space and time, and offer macros similar to x86 ops.
+
+The generic stl macro should look like `macro_name n dst src` for an n-bit/hex variable, with dst being the destination-variable, and src being the source-variable. (e.g. `hex.add n, dst, src`). 
 
 If you find yourself wishing for a feature that doesn't exist, you are probably not alone. Some features that FlipJump has today have been added because our users saw the need. Open an issue on our issues list on GitHub which describes the feature you would like to see, why you need it, and how it should work.
 

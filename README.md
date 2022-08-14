@@ -105,10 +105,10 @@ Hello, World!
 - The first line will assemble your code.
 - The second line will run your code.
 
-You can also use the faster (stable, but still in development) cpp-based interpreter (currently in a [different branch](https://github.com/tomhea/flip-jump/tree/cpp-interpreter/src/cpp_fji)):
+You can also use the faster [cpp-based interpreter](https://github.com/tomhea/fji-cpp):
 
 ```bash
->>> fji hello.fjm
+>>> fji hello.fjm -s
 Hello, World!
 ```
 
@@ -123,11 +123,7 @@ Hello, World!
   - assembler.py    - assembles the macro-less fj file.
   - [more...](src/README.md)
 
-other branches:
-  - [cpp_fji/](https://github.com/tomhea/flip-jump/tree/cpp-interpreter/src/cpp_fji)        - the cpp interpreter (much faster, about 2Mfj/s).
-  - [riscv2fj/](https://github.com/tomhea/flip-jump/tree/riscv2fj/src/riscv2fj)             - translates a riscv-executable to an equivalent fj code.
-
-**[stl](stl)** (standard library files - macros. [list of all macros](https://esolangs.org/wiki/FlipJump#The_Standard_Library)):
+**[stl](stl/README.md)** (standard library files - macros. [list of all macros](https://esolangs.org/wiki/FlipJump#The_Standard_Library)):
   - runlib.fj   - constants and initialization macros.
   - bitlib.fj   - macros for manipulating binary variables and vectors (i.e. numbers).
   - mathlib.fj  - advanced math macros (mul/div).
