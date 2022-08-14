@@ -123,7 +123,7 @@ Hello, World!
   - assembler.py    - assembles the macro-less fj file.
   - [more...](src/README.md)
 
-**[stl](stl)** (standard library files - macros. [list of all macros](https://esolangs.org/wiki/FlipJump#The_Standard_Library)):
+**[stl](stl/README.md)** (standard library files - macros. [list of all macros](https://esolangs.org/wiki/FlipJump#The_Standard_Library)):
   - runlib.fj   - constants and initialization macros.
   - bitlib.fj   - macros for manipulating binary variables and vectors (i.e. numbers).
   - mathlib.fj  - advanced math macros (mul/div).
