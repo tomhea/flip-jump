@@ -1,7 +1,7 @@
 // Every line is (Input/Output of) bananas!
 // Implementation of input/output and casting operations
 
-// should be assembled with both bitlib.fj and runlib.fj files
+// should be assembled with both bit/ and runlib.fj files
 // This file is independent of the bit-width, and uses the consts defined at runlib.fj
 
 // Everything after // is ignored, and every whitespace is ignored (besides new line)

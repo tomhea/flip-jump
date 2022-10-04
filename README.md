@@ -66,7 +66,7 @@ Look at the [hello_world.fj](programs/print_tests/hello_world.fj) program for mo
 
 Note that all of these macros are already implemented in the standard library:
 - startup      in [runlib.fj](stl/runlib.fj)
-- end_loop     in [bitlib.fj](stl/bitlib.fj) (loop)
+- end_loop     in [bit/math.fj](stl/bit/math.fj) (loop)
 - output_char  in [iolib.fj](stl/iolib.fj)
 - output       in [iolib.fj](stl/iolib.fj)  (for printing string consts, e.g. output "Hello, World!")
 
@@ -125,7 +125,7 @@ Hello, World!
 
 **[stl](stl/README.md)** (standard library files - macros. [list of all macros](https://esolangs.org/wiki/FlipJump#The_Standard_Library)):
   - runlib.fj   - constants and initialization macros.
-  - bitlib.fj   - macros for manipulating binary variables and vectors (i.e. numbers).
+  - bit/        - macros for manipulating binary variables and vectors (i.e. numbers).
   - mathlib.fj  - advanced math macros (mul/div).
   - hexlib.fj   - macros for manipulating hexadecimal variables and vectors.
   - declib.fj   - macros for manipulating decimal variables and vectors (to be implemented).
@@ -163,7 +163,7 @@ Read more about the [flip-jump source files](src/README.md) and [how to run the 
 
 If you want to contribute to this project, read the [CONTRIBUTING.md](CONTRIBUTING.md) file, and take a look at the [Discussions](https://github.com/tomhea/flip-jump/discussions/148).
 
-If you are new to FlipJump and you want to learn how modern computation can be executed using FlipJump, Start by reading the [bitlib.fj](stl/bitlib.fj) standard library file (start with `xor`, `if`). That's where the FlipJump magic begins.
+If you are new to FlipJump and you want to learn how modern computation can be executed using FlipJump, Start by reading the [bit/math.fj](stl/bit/math.fj) standard library file (start with `xor`, `if`). That's where the FlipJump magic begins.
 
 You can also write and run programs for yourself! It is just [that](README.md#how-to-run) easy :)
 

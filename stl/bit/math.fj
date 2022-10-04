@@ -1,0 +1,70 @@
+// ---------- Arithmetical Macros
+// carry is both input and output
+
+
+ns bit {
+    // Unsafe for dst==carry (but there is no reason in calling it that way)
+    // Complexity: 2phi+10
+    def inc1 dst, carry @ end {
+        .if0 carry, end
+        .not dst
+        .if0 dst, end
+        .not carry
+      end:
+    }
+
+    // Complexity: n(2phi+10)
+    def inc n, x @ carry {
+        .one carry
+        rep(n, i) .inc1 x+i*dw, carry
+        skip
+      carry:
+        bit
+    }
+
+    // Complexity: n(2phi+12)
+    def dec n, x {
+        .not n, x
+        .inc n, x
+        .not n, x
+    }
+
+    // Complexity: n(2phi+11)
+    def neg n, x {
+        .not n, x
+        .inc n, x
+    }
+
+
+    // Unsafe for dst==carry (but there is no reason in calling it that way)
+    // Complexity: 8phi+33
+    def add1 dst, src, carry @ _src {
+        .mov _src, src
+        .inc1 dst, _src
+        .inc1 dst, carry
+        .or carry, _src
+        skip
+      _src:
+        bit
+    }
+
+    // Complexity: n(8phi+33)
+    def add n, dst, src @ carry {
+        .zero carry
+        rep(n, i) .add1 dst+i*dw, src+i*dw, carry
+        skip
+      carry:
+        bit
+    }
+
+    // Complexity: n(8phi+35)
+    def sub n, dst, src @ carry {
+        .not n, src
+        .one carry
+        rep(n, i) .add1 dst+i*dw, src+i*dw, carry
+        .not n, src
+        skip
+      carry:
+        bit
+    }
+}

@@ -1,7 +1,13 @@
 {
   "all": [
     "runlib",
-    "bitlib",
+
+    "bit/memory",
+    "bit/logics",
+    "bit/cond_jumps",
+    "bit/shifts",
+    "bit/math",
+
     "iolib",
     "ptrlib",
     "mathlib",
