@@ -35,13 +35,8 @@ Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers).
 
 You can find conditional jumps, memory manipulations, and logical and arithmetical macros. 
 
-### [declib.fj](declib.fj)
-Defines the `dec` data-structure (for decimal variables).
-
-It is not implemented yet, but it would offer conditional jumps, memory manipulations, and arithmetical macros for manipulating decimal variables. 
-
 ### [iolib.fj](iolib.fj)
-Offers outputting chars, strings. also outputting bit and hex variables as binary, hexadecimal, ascii, or decimal.
+Offers outputting chars, strings. Also outputting bit and hex variables as binary, hexadecimal, ascii, or decimal.
 
 Offers input macros for the bit and hex variables, as numbers or as ascii.
 

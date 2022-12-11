@@ -128,7 +128,6 @@ Hello, World!
   - bit/        - macros for manipulating binary variables and vectors (i.e. numbers).
   - mathlib.fj  - advanced math macros (mul/div).
   - hexlib.fj   - macros for manipulating hexadecimal variables and vectors.
-  - declib.fj   - macros for manipulating decimal variables and vectors (to be implemented).
   - iolib.fj    - input/output macros, bit/hex/dec casting.
   - ptrlib.fj   - pointers, stack and functions.
   - conf.json   - standard library list file.
