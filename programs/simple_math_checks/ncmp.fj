@@ -1,4 +1,7 @@
-startup 0, 0
+startup
+default_input 0, 0
+
+
 n=4
 bit.cmp n, a, b, lt, eq, gt
 

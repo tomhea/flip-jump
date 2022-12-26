@@ -38,7 +38,7 @@ class TerminationStatistics:
 
 def handle_input(io_device: IODevice, ip: int, mem: fjm.Reader, statistics: RunStatistics) -> None:
     w = mem.w
-    in_addr = 3 * w + w.bit_length()  # 3w + dww
+    in_addr = 3 * w + w.bit_length()  # 3w + #w
 
     if ip <= in_addr < ip + 2 * w:
         with statistics.pause_timer:

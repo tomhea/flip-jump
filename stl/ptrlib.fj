@@ -118,9 +118,9 @@ ns bit {
 
     // Assumes *ptr is dw-aligned, and value is 2dw-aligned
     def ptr_wflip_2nd_word ptr, value {
-        .not ptr + dw*ww
+        .not ptr + dw*(#w-1)
         .ptr_wflip ptr, value
-        .not ptr + dw*ww
+        .not ptr + dw*(#w-1)
     }
 }
 
@@ -178,13 +178,13 @@ ns bit {
 
     // Complexity w(2phi+10)
     def inc_ptr ptr {
-        .inc w-dww, ptr+dww*dw
+        .inc w-#w, ptr+#w*dw
     }
 
 
     // Complexity w(2phi+12)
     def dec_ptr ptr {
-        .dec w-dww, ptr+dww*dw
+        .dec w-#w, ptr+#w*dw
     }
 
 
