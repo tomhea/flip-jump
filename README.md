@@ -79,6 +79,8 @@ Cloning into 'flip-jump'...
 >>> pip install -r requirements.txt
 ```
 
+You can add <span style="color:orange">syntax highlighting</span> support for *.fj files on Pycharm - just import the [PycharmHighlighting.zip](PycharmHighlighting.zip) settings.
+
 # How to run?
 
 ```bash
