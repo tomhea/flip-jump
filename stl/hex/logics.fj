@@ -125,21 +125,20 @@ ns hex {
     }
 
     // Complexity: 4n
-    // Complexity: 4
-    //   hex = !hex
+    //   hex[:n] = !hex[:n]
     def not n, hex {
         rep(n, i) .not hex+i*dw
     }
 
 
-    //  Time Complexity: 4@+13
+    //  Time Complexity: 4@+10
     // Space Complexity: 4@+52
     //   dst |= src
     def or dst, src < .or.dst {
         ._.jump_to_table_entry dst, src, .or.dst
     }
 
-    //  Time Complexity: n(4@+13)
+    //  Time Complexity: n(4@+10)
     // Space Complexity: n(4@+52)
     //   dst[:n] |= src[:n]
     def or n, dst, src {
@@ -147,8 +146,8 @@ ns hex {
     }
 
     ns or {
-        //  Time Complexity: 9 (when jumping to dst, until finished)
-        // Space Complexity: 514
+        //  Time Complexity: 6 (when jumping to dst, until finished)
+        // Space Complexity: 595
         def init @ switch, clean_table_entry, end < .._.res, .._.ret > dst {
             ;end
           dst: ;.switch
@@ -159,6 +158,7 @@ ns hex {
             // The [src<<4 | dst] entry sets hex._.res (assumed to be 0) to (dst | src) ^ dst,
             //   so that xoring it with dst will update it to the or-result.
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
+            // Space Complexity / total table ops: 337.
             rep(256, d) wflip_macro .._.res+w, (((d&0xf)|(d>>4))^(d&0xf))*dw, clean_table_entry+d*dw
 
           clean_table_entry:
@@ -169,14 +169,14 @@ ns hex {
     }
 
 
-    //  Time Complexity: 4@+13
+    //  Time Complexity: 4@+10
     // Space Complexity: 4@+52
     //   dst &= src
     def and dst, src < .and.dst {
         ._.jump_to_table_entry dst, src, .and.dst
     }
 
-    //  Time Complexity: n(4@+13)
+    //  Time Complexity: n(4@+10)
     // Space Complexity: n(4@+52)
     //   dst[:n] &= src[:n]
     def and n, dst, src {
@@ -184,8 +184,8 @@ ns hex {
     }
 
     ns and {
-        //  Time Complexity: 9 (when jumping to dst, until finished)
-        // Space Complexity: 514
+        //  Time Complexity: 6 (when jumping to dst, until finished)
+        // Space Complexity: 595
         def init @ switch, clean_table_entry, end < .._.res, .._.ret > dst {
             ;end
           dst: ;.switch
@@ -196,6 +196,7 @@ ns hex {
             // The [src<<4 | dst] entry sets hex._.res (assumed to be 0) to (dst & src) ^ dst,
             //   so that xoring it with dst will update it to the and-result.
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
+            // Space Complexity / total table ops: 337.
             rep(256, d) wflip_macro .._.res+w, (((d&0xf)&(d>>4))^(d&0xf))*dw, clean_table_entry+d*dw
 
           clean_table_entry:
