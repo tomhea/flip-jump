@@ -49,7 +49,7 @@ ns bit {
         rep(n, i) .double_exact_xor bit+i, var+dbit+i*dw, src+i*dw
     }
 
-    // Complexity: n@
+    // Complexity: @
     //   dst ^= src
     //   src = 0
     def xor_zero dst, src {
