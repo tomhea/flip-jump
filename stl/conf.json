@@ -10,6 +10,7 @@
 
     "hex/memory",
     "hex/logics",
+    "hex/math",
     "hexlib",
 
     "iolib",
