@@ -307,7 +307,10 @@ class FJParser(sly.Parser):
         global error_occurred
         error_occurred = True
         print()
-        print(f'Syntax Error in {get_position(token.lineno)}, token=("{token.type}", {token.value})')
+        if token is None:
+            print(f'Syntax Error in {get_position(self.line_position(None))}, unknown token')
+        else:
+            print(f'Syntax Error in {get_position(token.lineno)}, token=("{token.type}", {token.value})')
 
     @_('definable_line_statements')
     def program(self, p: ParsedRule) -> None:
