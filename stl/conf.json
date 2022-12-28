@@ -8,9 +8,11 @@
     "bit/shifts",
     "bit/math",
 
+    "hex/memory",
+    "hexlib",
+
     "iolib",
     "ptrlib",
-    "mathlib",
-    "hexlib"
+    "mathlib"
   ]
 }
