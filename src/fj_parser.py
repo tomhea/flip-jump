@@ -308,7 +308,7 @@ class FJParser(sly.Parser):
         error_occurred = True
         print()
         if token is None:
-            print(f'Syntax Error in {get_position(self.line_position(None))}, unknown token')
+            print(f'Syntax Error in {get_position(self.line_position(None))}. Maybe missing }} or {{ before this line?')
         else:
             print(f'Syntax Error in {get_position(token.lineno)}, token=("{token.type}", {token.value})')
 
