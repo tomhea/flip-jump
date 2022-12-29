@@ -11,6 +11,7 @@
     "hex/memory",
     "hex/logics",
     "hex/math",
+    "hex/shifts",
     "hexlib",
 
     "iolib",
