@@ -1,7 +1,11 @@
 // ---------- Output Hex
 
 
+// print raw bits
 ns hex {
+    //  Time Complexity: @
+    // Space Complexity: @+26
+    //   output 4 bits from hex  (lsb first)
     def output hex @ switch, print_0, print_2, print_4, print_6, print_8, print_a, print_c, print_e, end < IO {
         wflip hex+w, switch, hex
         pad 16
@@ -16,12 +20,13 @@ ns hex {
         IO+1;print_6    //  7
         IO+0;print_8    //  8
         IO+1;print_8    //  9
-        IO+0;print_a    //  4
-        IO+1;print_a    //  5
-        IO+0;print_c    //  6
-        IO+1;print_c    //  7
-        IO+0;print_e    //  8
-        IO+1;print_e    //  9
+
+        IO+0;print_a    //  a
+        IO+1;print_a    //  b
+        IO+0;print_c    //  c
+        IO+1;print_c    //  d
+        IO+0;print_e    //  e
+        IO+1;print_e    //  f
 
 
       print_0:
@@ -52,19 +57,32 @@ ns hex {
     }
 
 
+    //  Time Complexity: 2@
+    // Space Complexity: 2@+52
+    //   output 8 bits from x[:2]  (lsb first)
     def print x {
         .output x
         .output x+dw
     }
 
+    //  Time Complexity: n(2@)
+    // Space Complexity: n(2@+52)
+    //   output n bytes from x[:2n]  (lsb first)
     def print n, x {
         rep(n, i) .print x+2*i*dw
     }
+}
 
 
-    //  Time Complexity: phi+4
-    // Space Complexity: phi+51  phi-4+15+16+24
-    def print_as_digit hex, big_flag @ switch, print_0, print_2, print_4, print_6, print_8, print_a, print_b, print_d, print_f, end < IO {
+
+// print the hexadecimal number representation
+ns hex {
+    //  Time Complexity: @+4
+    // Space Complexity: @+36
+    //   prints the ascii of the hexadecimal representation of hex.
+    //
+    // use_uppercase (constant): if true, print in uppercase (else lowercase).
+    def print_as_digit hex, use_uppercase @ switch, print_0, print_2, print_4, print_6, print_8, print_a, print_b, print_d, print_f, end < IO {
         wflip hex+w, switch, hex
         pad 16
       switch:
@@ -86,7 +104,7 @@ ns hex {
         IO+1;print_d    //  e
         IO+0;print_f    //  f
 
-      print_0:
+      print_0:  // outputs 0x30
         IO+0;
         IO+0;
         IO+0;
@@ -105,12 +123,12 @@ ns hex {
         IO+0;
         IO+0;
         IO+1;print_0+3*dw
-      print_a:
+      print_a:  // outputs 0x40 / 0x60
         IO+0;
         IO+0;
         IO+0;
         IO+0;
-        IO+(big_flag ? 0 : 1);
+        IO+(use_uppercase ? 0 : 1);
         IO+1;print_0+6*dw
       print_b:
         IO+1;print_a+1*dw
@@ -124,21 +142,28 @@ ns hex {
         wflip hex+w, switch
     }
 
-    //  Time Complexity: phi+4
-    // Space Complexity: phi+42
-    def print_as_digit n, x, big_flag {
-        rep (n, i) .print_as_digit x+(n-1-i)*dw, big_flag
+    //  Time Complexity: n(@+4)
+    // Space Complexity: n(@+36)
+    //   prints the ascii of the hexadecimal representation of x[:n].
+    //
+    // use_uppercase (constant): if true, print in uppercase (else lowercase).
+    def print_as_digit n, x, use_uppercase {
+        rep (n, i) .print_as_digit x+(n-1-i)*dw, use_uppercase
     }
 
-    //  Time Complexity: n(2phi+8)
-    // Space Complexity: n(3.5phi+72)
-    def print_uint n, x, x_prefix, big_flag @ after_prefix, printed_something, end {
+    //  Time Complexity: n(2@+6)
+    // Space Complexity: n(3@+54)
+    //    print the unsigned x[:n], without leading zeros.
+    //
+    // x_prefix (constant): print with the "0x" prefix.
+    // use_uppercase (constant): if true, print in uppercase (else lowercase).
+    def print_uint n, x, x_prefix, use_uppercase @ after_prefix, printed_something, end {
         bit.zero printed_something
         comp_if0 x_prefix, after_prefix
         output "0x"
 
       after_prefix:
-        rep(n, i) .print_uint.print_digit x+(n-1-i)*dw, printed_something, big_flag
+        rep(n, i) .print_uint.print_digit x+(n-1-i)*dw, printed_something, use_uppercase
         bit.if1 printed_something, end
         output '0'
         ;end
@@ -147,29 +172,38 @@ ns hex {
       end:
     }
     ns print_uint {
-        //  Time Complexity: 2phi+8 (once: 3phi+9)
-        // Space Complexity: 3.5phi+72
-        def print_digit hex, printed_something, big_flag @ print, end {
+        //  Time Complexity: 2@+6
+        // Space Complexity: 3@+54
+        //   print the ascii of the hexadecimal representation of hex (skip leading zeros, based on printed_something)
+        //
+        // hex (hex): the number to be printed
+        // printed_something (bit [inout]): have any digit printed yet? (the macro also updates it)
+        // use_uppercase (constant): if true, print in uppercase (else lowercase).
+        def print_digit hex, printed_something, use_uppercase @ print, end {
             bit.if1 printed_something, print
             ..if0 hex, end
             bit.not printed_something
           print:
-            ..print_as_digit hex, big_flag
+            ..print_as_digit hex, use_uppercase
           end:
         }
     }
 
-    //  Time Complexity: n(2phi+16)
-    // Space Complexity: n(6.5phi+126)
-    def print_int n, x, x_prefix, big_flag @ do_neg, print, neg, end {
+    //  Time Complexity: n(2@+10)
+    // Space Complexity: n(4.5@+71)
+    //    print the signed x[:n], without leading zeros.
+    //
+    // x_prefix (constant): print with the "0x" prefix.
+    // use_uppercase (constant): if true, print in uppercase (else lowercase).
+    def print_int n, x, x_prefix, use_uppercase @ do_neg, print, neg, end {
         bit.zero neg
-        .if_flags x+(n-1)*dw, 0xff00, print, do_neg
+        .sign n, x, do_neg, print
       do_neg:
         bit.not neg
         .neg n, x
         output '-'
       print:
-        .print_uint n, x, x_prefix, big_flag
+        .print_uint n, x, x_prefix, use_uppercase
         bit.if0 neg, end
         .neg n, x
         ;end
