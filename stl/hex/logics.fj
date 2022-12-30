@@ -134,6 +134,7 @@ ns hex {
     //  Time Complexity: 4@+10
     // Space Complexity: 4@+52
     //   dst |= src
+    // @requires hex.or.init (or hex.init)
     def or dst, src < .or.dst {
         ._.jump_to_table_entry dst, src, .or.dst
     }
@@ -141,6 +142,7 @@ ns hex {
     //  Time Complexity: n(4@+10)
     // Space Complexity: n(4@+52)
     //   dst[:n] |= src[:n]
+    // @requires hex.or.init (or hex.init)
     def or n, dst, src {
         rep(n, i) .or dst+i*dw, src+i*dw
     }
@@ -148,6 +150,7 @@ ns hex {
     ns or {
         //  Time Complexity: 6 (when jumping to dst, until finished)
         // Space Complexity: 595
+        // This is where the or "truth" tables are.
         def init @ switch, clean_table_entry, end < .._.res, .._.ret > dst {
             ;end
           dst: ;.switch
@@ -172,6 +175,7 @@ ns hex {
     //  Time Complexity: 4@+10
     // Space Complexity: 4@+52
     //   dst &= src
+    // @requires hex.and.init (or hex.init)
     def and dst, src < .and.dst {
         ._.jump_to_table_entry dst, src, .and.dst
     }
@@ -179,6 +183,7 @@ ns hex {
     //  Time Complexity: n(4@+10)
     // Space Complexity: n(4@+52)
     //   dst[:n] &= src[:n]
+    // @requires hex.and.init (or hex.init)
     def and n, dst, src {
         rep(n, i) .and dst+i*dw, src+i*dw
     }
@@ -186,6 +191,7 @@ ns hex {
     ns and {
         //  Time Complexity: 6 (when jumping to dst, until finished)
         // Space Complexity: 595
+        // This is where the and "truth" tables are.
         def init @ switch, clean_table_entry, end < .._.res, .._.ret > dst {
             ;end
           dst: ;.switch

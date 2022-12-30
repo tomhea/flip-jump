@@ -194,6 +194,7 @@ ns hex {
     // Space Complexity: 4@+52
     //   dst += src
     // Relies on the add-carry, and updates it at the end.
+    // @requires hex.add.init (or hex.init)
     def add dst, src < .add.dst {
         ._.jump_to_table_entry dst, src, .add.dst
     }
@@ -201,6 +202,7 @@ ns hex {
     //  Time Complexity: n(4@+12)
     // Space Complexity: n(4@+52)
     //   dst[:n] += src[:n]
+    // @requires hex.add.init (or hex.init)
     def add n, dst, src {
         .add.clear_carry
         rep(n, i) .add dst+i*dw, src+i*dw
@@ -246,7 +248,7 @@ ns hex {
 
         //  Time Complexity: 8 (when jumping to dst, until finished)
         // Space Complexity: 1570
-        // This is where the add "truth" tables are. must be called once if you want to use hex.add (hex.init calls it).
+        // This is where the add "truth" tables are.
         def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < .._.res, .._.ret > dst {
             ;end
           dst: ;.switch__without_carry
@@ -279,6 +281,7 @@ ns hex {
     //  Time Complexity: 4@+12
     // Space Complexity: 4@+52
     //   dst -= src
+    // @requires hex.sub.init (or hex.init)
     def sub dst, src < .sub.dst {
         ._.jump_to_table_entry dst, src, .sub.dst
     }
@@ -286,6 +289,7 @@ ns hex {
     //  Time Complexity: n(4@+12)
     // Space Complexity: n(4@+52)
     //   dst[:n] -= src[:n]
+    // @requires hex.sub.init (or hex.init)
     def sub n, dst, src {
         .sub.clear_carry
         rep(n, i) .sub dst+i*dw, src+i*dw
@@ -330,7 +334,7 @@ ns hex {
 
         //  Time Complexity: 8 (when jumping to dst, until finished)
         // Space Complexity: 1570
-        // This is where the add "truth" tables are. must be called once if you want to use hex.sub (hex.init calls it).
+        // This is where the sub "truth" tables are. must be called once if you want to use hex.sub (hex.init calls it).
         def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < .._.res, .._.ret > dst {
             ;end
           dst: ;.switch__without_carry

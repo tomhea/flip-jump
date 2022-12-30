@@ -12,6 +12,7 @@
     "hex/logics",
     "hex/math",
     "hex/shifts",
+    "hex/cond_jumps",
     "hexlib",
 
     "iolib",
