@@ -11,6 +11,7 @@
     "hex/memory",
     "hex/logics",
     "hex/math",
+    "hex/math_basic",
     "hex/shifts",
     "hex/cond_jumps",
     "hex/tables_init",

@@ -1,3 +1,6 @@
+// ---------- Init The Truth Tables:
+
+
 ns hex {
     def init {
         ._.init
