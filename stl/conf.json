@@ -15,7 +15,8 @@
     "hex/shifts",
     "hex/cond_jumps",
     "hex/tables_init",
-    "hexlib",
+    "hex/input",
+    "hex/output",
 
     "iolib",
     "ptrlib",

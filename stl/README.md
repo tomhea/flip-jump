@@ -28,8 +28,8 @@ Offers multiplication and division macros for bit/hex variables.
 
 **@note**: The hex.div fails test as for now. You can use the bit version and castings.
 
-### [hexlib.fj](hexlib.fj)
-Defines the `hex` data-structure (for hexadecimal variables), which is smaller and faster than `bit`. 
+### [hexlib.fj](hex/)
+Defines the `hex` data-structure (for hexadecimal variables), which is smaller and faster than using 4 `bit`s. 
 
 Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers).
 
@@ -60,7 +60,7 @@ FlipJump should be below the OS, as it's a cpu-architecture after all.
 The FlipJump stl should be minimalistic, efficient in both space and time, and offer macros similar to x86 ops.
 
 The generic stl macro should look like `macro_name n dst src` for an n-bit/hex variable, with dst being the destination-variable, and src being the source-variable.
-- e.g. the [hexlib.fj](hexlib.fj) / `hex.add n, dst, src`. 
+- e.g. the [hex/math.fj](hex/math.fj) / `hex.add n, dst, src`. 
 
 
 # Read More
