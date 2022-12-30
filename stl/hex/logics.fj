@@ -6,6 +6,8 @@ ns hex {
     //  Time Complexity: @
     // Space Complexity: @+12
     //   dst ^= src
+    //
+    // both dst,src are hexes
     def xor dst, src {
         .exact_xor dst+dbit+3, dst+dbit+2, dst+dbit+1, dst+dbit+0, src
     }
@@ -21,6 +23,8 @@ ns hex {
     //  Time Complexity: @
     // Space Complexity: @+12
     //   {d3,d2,d1,d0} ^= src
+    //
+    // d3,d2,d1,d0 are bit-addresses; src is hex.
     def exact_xor d3, d2, d1, d0, src @ switch, end {
         wflip src+w, switch, src
         pad 16
@@ -49,6 +53,8 @@ ns hex {
     // Space Complexity: @+28
     //   dst ^= src
     //   src = 0
+    //
+    // both dst,src are hexes
     def xor_zero dst, src {
         .double_xor dst, src, src
     }
@@ -65,6 +71,8 @@ ns hex {
     // Space Complexity: @+28
     //   dst1 ^= src
     //   dst2 ^= src
+    //
+    // dst1,dst2,src are hexes
     def double_xor dst1, dst2, src {
         .double_exact_xor dst1+dbit+3, dst1+dbit+2, dst1+dbit+1, dst1+dbit+0, dst2+dbit+3, dst2+dbit+2, dst2+dbit+1, dst2+dbit+0, src
     }
@@ -73,6 +81,8 @@ ns hex {
     // Space Complexity: @+28
     //   {t3,t2,t1,t0} ^= src
     //   {d3,d2,d1,d0} ^= src
+    //
+    // t3,t2,t1,t0,d3,d2,d1,d0 are bit-addresses; src is hex.
     def double_exact_xor t3, t2, t1, t0, d3, d2, d1, d0, src @ first_flip, second_flip, end {
         wflip src+w, first_flip, src
         pad 16
@@ -125,9 +135,9 @@ ns hex {
     }
 
     // Complexity: 4n
-    //   hex[:n] = !hex[:n]
-    def not n, hex {
-        rep(n, i) .not hex+i*dw
+    //   x[:n] = !x[:n]
+    def not n, x {
+        rep(n, i) .not x+i*dw
     }
 
 
@@ -135,6 +145,8 @@ ns hex {
     // Space Complexity: 4@+52
     //   dst |= src
     // @requires hex.or.init (or hex.init)
+    //
+    // both dst,src are hexes.
     def or dst, src < .or.dst {
         ._.jump_to_table_entry dst, src, .or.dst
     }
@@ -175,6 +187,8 @@ ns hex {
     //  Time Complexity: 4@+10
     // Space Complexity: 4@+52
     //   dst &= src
+    //
+    // both dst,src are hexes.
     // @requires hex.and.init (or hex.init)
     def and dst, src < .and.dst {
         ._.jump_to_table_entry dst, src, .and.dst

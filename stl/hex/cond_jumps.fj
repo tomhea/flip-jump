@@ -7,6 +7,8 @@ ns hex {
     //   if flags&(1<<hex) is true:
     //     jump to l1;
     //   else jump to l0.
+    //
+    // flags (constant): 16 bit constant; bit i indicates whether to jump to l0/l1 when hex=i.
     def if_flags hex, flags, l0, l1 @ switch, clean, return, finish {
         wflip hex+w, switch, hex
 
@@ -61,9 +63,9 @@ ns hex {
 
     //  Time Complexity: @-1
     // Space Complexity: @+15
-    //   if x[:n] < 0 jump to neg, else jump to zpos (Zero POSitive).
-    def sign n, x, neg, zpos {
-        .if_flags x+(n-1)*dw, 0xff00, zpos, neg
+    //   if number[:n] < 0 jump to neg, else jump to zpos (Zero POSitive).
+    def sign n, number, neg, zpos {
+        .if_flags number+(n-1)*dw, 0xff00, zpos, neg
     }
 
 
@@ -74,6 +76,8 @@ ns hex {
     //     if a == b:   goto eq;
     //     if a  > b:   goto gt;
     // @requires hex.cmp.init (or hex.init)
+    //
+    // a,b are hexes; lt/eq/gt are addresses.
     def cmp a, b, lt, eq, gt @ ret, _eq, _gt, jumper_to_return_table, __lt, __eq, __gt < .cmp.dst, ._.ret {
         //part1
         .xor .cmp.dst  , a
@@ -109,12 +113,15 @@ ns hex {
     //     if a[:n] == b[:n]:   goto eq;
     //     if a[:n]  > b[:n]:   goto gt;
     // @requires hex.cmp.init (or hex.init)
+    //
+    // n is size-constant; a,b are hexes; lt/eq/gt are addresses.
     def cmp n, a, b, lt, eq, gt {
         rep(n-1, i) .cmp.cmp_eq_next a+(n-1-i)*dw, b+(n-1-i)*dw, lt, gt
         .cmp a, b, lt, eq, gt
     }
 
     ns cmp {
+        // compares a to b; if equal just continue.
         def cmp_eq_next a, b, lt, gt @ eq {
             ..cmp a, b, lt, eq, gt
           eq:

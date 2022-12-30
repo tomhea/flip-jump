@@ -43,7 +43,9 @@ ns hex {
     ns shifts {
         //  Time Complexity: @+1
         // Space Complexity: @+28
-        //    {next(bit),dst(hex)} = dst << 1
+        //    {next(1bit),dst(1hex)} = dst << 1
+        //
+        // next is the bit-address of the next msb, dst is a hex.
         // @note, this should be called in reverse order (so that the "next" is already shifted).
         def shl_bit_once dst, next @ switch, xor_by, end {
             wflip dst+w, switch, dst
@@ -61,7 +63,9 @@ ns hex {
 
         //  Time Complexity: @+1
         // Space Complexity: @+28
-        //   {dst(hex),next(bit)} = dst >> 1
+        //    {next(1bit),dst(1hex)} = dst >> 1
+        //
+        // next is the bit-address of the next msb, dst is a hex.
         // @note, this should be called in a regular order (so that the "next" is already shifted).
         def shr_bit_once dst, next @ switch, xor_by, end {
             wflip dst+w, switch, dst

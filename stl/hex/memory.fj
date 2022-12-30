@@ -28,9 +28,9 @@ ns hex {
 
     //  Time Complexity: @
     // Space Complexity: @+12
-    //   x = 0
-    def zero x {
-        .xor x, x
+    //   hex = 0
+    def zero hex {
+        .xor hex, hex
     }
 
     //  Time Complexity: n@
@@ -43,6 +43,8 @@ ns hex {
     //  Time Complexity: 2@+1
     // Space Complexity: 2@+25
     //   dst = src
+    //
+    // both dst,src are hexes.
     def mov dst, src @ end {
         comp_if1 dst==src, end
         .zero dst
@@ -91,6 +93,8 @@ ns hex {
     //  Time Complexity: 3@+1
     // Space Complexity: 3@+37
     //   hex1, hex2 = hex2, hex1
+    //
+    // both hex1,hex2 are hexes.
     def swap hex1, hex2 @ end {
         comp_if1 hex1==hex2, end
         .xor hex1, hex2

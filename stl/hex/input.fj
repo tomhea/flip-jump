@@ -4,7 +4,7 @@
 ns hex {
     //  Time Complexity: 2@+7
     // Space Complexity: 2@+18
-    //   hex = input(4bits)     // lsb first
+    //   hex := input(4bits)     // lsb first
     def input_hex hex @ flip0, flip1, flip2, flip3, end < IO {
         // part0
         .zero hex
@@ -28,17 +28,17 @@ ns hex {
 
     //  Time Complexity: 4@+14
     // Space Complexity: 4@+36
-    //   x[:2] = input(8bits)   // lsb first
-    def input x {
-        .input_hex x
-        .input_hex x+dw
+    //   byte[:2] = input(8bits)   // lsb first
+    def input byte {
+        .input_hex byte
+        .input_hex byte+dw
     }
 
     //  Time Complexity: n(4@+14)
     // Space Complexity: n(4@+36)
-    //   x[:2n] = input(8n-bits)   // lsb first
-    def input n, x {
-        rep(n, i) .input x+2*i*dw
+    //   bytes[:2n] = input(8n-bits)   // lsb first
+    def input n, bytes {
+        rep(n, i) .input bytes+2*i*dw
     }
 
     //  Time Complexity: 7@+11

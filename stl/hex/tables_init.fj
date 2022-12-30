@@ -30,6 +30,8 @@ ns hex {
         //
         //  Time Complexity: log(n) / 2     (an overage over all entries, of jumping to an entry in this table)
         // Space Complexity: n
+        //
+        // n is a size-constant, dst/ret are hexes.
         def clean_table_entry__table n, dst, ret @ clean {
           clean:
             rep(n, d) fj    d==0?0: (dst+dbit+(#d)-1),    (d==((1<<(#d))>>1)) ? ret : clean+(d^((1<<(#d))>>1))*dw
@@ -39,6 +41,8 @@ ns hex {
         //
         //  Time Complexity: 4
         // Space Complexity: 256
+        //
+        // dst is a hex.
         def clean_table_entry__table dst < .ret {
             .clean_table_entry__table 256, dst, .ret
         }
@@ -51,6 +55,8 @@ ns hex {
         //
         // It jumps to the table, at entry (src<<4 | dst).
         // At last, it xors the value of hex._.res into dst.
+        //
+        // both dst,src are hexes, and jumper_to_table is an address.
         def jump_to_table_entry dst, src, jumper_to_table @ return < .ret, .res {
             ..xor jumper_to_table  , dst
             ..xor jumper_to_table+4, src

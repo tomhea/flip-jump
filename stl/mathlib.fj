@@ -134,6 +134,8 @@ ns hex {
     //  Time Complexity: 5phi+32
     // Space Complexity: 4phi+96
     // .mul.add_carry_dst : res   +=   x * .mul.dst + .mul.add_carry_dst
+    //
+    // @requires hex.or.init (or hex.init)
     def add_mul res, x @ ret < .mul.dst, .add.dst, .mul.ret, ._.res {
         .xor .mul.dst+4, x
         .xor .add.dst, res
@@ -146,6 +148,8 @@ ns hex {
     //  Time Complexity: n(5phi+32)
     // Space Complexity: n(4phi+96)
     // res[n] += a[n] * b[1]
+    //
+    // @requires hex.or.init (or hex.init)
     def add_mul n, res, a, b < .mul.dst {
         .mul.clear_carry
         .xor .mul.dst, b
@@ -158,6 +162,8 @@ ns hex {
     //     (for n==b/2): n^2(5.5phi+24)
     // Space Complexity: n(#n(0.75phi+12) + 18.5phi+636)
     // res[n] = a[n] * b[n]
+    //
+    // @requires hex.or.init (or hex.init)
     def mul n, res, a, b @ a_less_1bits, b_less_1bits, loop, after_add, dst, src, a_1bits, b_1bits, end {
         .zero n, dst
         .zero n, src

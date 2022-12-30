@@ -5,6 +5,8 @@ ns hex {
     //  Time Complexity: 4@+12
     // Space Complexity: 4@+52
     //   dst += src
+    //
+    // both dst,src are hexes.
     // Relies on the add-carry, and updates it at the end.
     // @requires hex.add.init (or hex.init)
     def add dst, src < .add.dst {
@@ -93,6 +95,8 @@ ns hex {
     //  Time Complexity: 4@+12
     // Space Complexity: 4@+52
     //   dst -= src
+    //
+    // both dst,src are hexes.
     // @requires hex.sub.init (or hex.init)
     def sub dst, src < .sub.dst {
         ._.jump_to_table_entry dst, src, .sub.dst

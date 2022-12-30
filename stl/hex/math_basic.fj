@@ -6,6 +6,7 @@ ns hex {
     // Space Complexity: 0.5@+109 + n(1.5@+13)  // (2@-10 + 16(1+4+1+2) + 4 + (n-1)(1.5@+13))
     // (n=2 when operating on 16-255 bit-numbers)
     //   dst[:n] += src.#on-bits (between 0->4)
+    // dst is hex.vec n, src is hex.
     def add_count_bits n, dst, src @ count_switch,  do_add,  add_switch, add4_switch,  xor_switch,  after_add, is_carry,  should_inc, do_inc,  clean {
         //part1
         wflip src+w, count_switch, src
@@ -74,6 +75,8 @@ ns hex {
     //  Time Complexity: n(2.27@-1)
     // Space Complexity: n(3.5@+135)    // on 16-255 bit-numbers. (a bit bigger on bigger numbers).
     //   dst[:small_n] = x[:n].#on-bits
+    //
+    // x is hex.vec n, and dst is hex.vec small_n.
     // small_n (it's 2 for 16-255 bit-numbers) is the smallest number of bits that can hold the number n:  ((#(n*4))+3)/4
     def count_bits n, dst, x {
         .zero ((#(n*4))+3)/4, dst
@@ -183,9 +186,9 @@ ns hex {
 
     //  Time Complexity: ~@+4n
     // Space Complexity: n(1.5@+17)
-    //   hex[:n] = -hex[:n]
-    def neg n, hex {
-        .not n, hex
-        .inc n, hex
+    //   x[:n] = -x[:n]
+    def neg n, x {
+        .not n, x
+        .inc n, x
     }
 }

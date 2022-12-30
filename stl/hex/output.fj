@@ -176,7 +176,6 @@ ns hex {
         // Space Complexity: 3@+54
         //   print the ascii of the hexadecimal representation of hex (skip leading zeros, based on printed_something)
         //
-        // hex (hex): the number to be printed
         // printed_something (bit [inout]): have any digit printed yet? (the macro also updates it)
         // use_uppercase (constant): if true, print in uppercase (else lowercase).
         def print_digit hex, printed_something, use_uppercase @ print, end {
