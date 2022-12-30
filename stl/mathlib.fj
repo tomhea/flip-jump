@@ -204,7 +204,7 @@ ns hex {
             wflip .ret+w, return
         }
 
-        // Space Complexity: 1600
+        // Space Complexity: 1616+@
         def init @ add_res, after_add,   switch_small_table, add_carry_small_table, set_carry_small_table, clean_small_table,   switch, set_carry_0, set_carry_1, clean,   add_carry, clean_add, clean_carry,   end < ..add.dst, .._.ret > ret, dst, add_carry_dst {
             // general progression (after jumping to hex.mul.dst with value d):
             //  dst           -> switch+d           (set lower4  mul result in add_carry_dst+4)                                                                     (5)
