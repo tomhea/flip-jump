@@ -14,6 +14,8 @@ These FlipJump files result from a lot of research, runs, and tests.
 ### [runlib.fj](runlib.fj)
 This file contains constants and initialization macros.
 
+Offers outputting constant chars/strings.
+
 **@note**: It should be the first file in the compilation order.
 
 ### [bit/](bit/)
@@ -21,26 +23,22 @@ Defines the `bit` data-structure (for binary variables).
 
 Offers macros for manipulating binary variables and vectors (i.e. numbers).
 
-You can find conditional jumps, memory manipulations, and logical and arithmetical macros. 
+You can find conditional jumps, memory manipulations, inputs, outputs, and logical and arithmetical macros. 
 
 ### [mathlib.fj](mathlib.fj)
 Offers multiplication and division macros for bit/hex variables.
 
 **@note**: The hex.div fails test as for now. You can use the bit version and castings.
 
-### [hexlib.fj](hex/)
+### [hex/](hex/)
 Defines the `hex` data-structure (for hexadecimal variables), which is smaller and faster than using 4 `bit`s. 
 
 Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers).
 
-You can find conditional jumps, memory manipulations, and logical and arithmetical macros. 
+You can find conditional jumps, memory manipulations, input, output, and logical and arithmetical macros. 
 
-### [iolib.fj](iolib.fj)
-Offers outputting chars, strings. Also outputting bit and hex variables as binary, hexadecimal, ascii, or decimal.
-
-Offers input macros for the bit and hex variables, as numbers or as ascii.
-
-Offers casting between different variable types.
+### [casting.fj](casting.fj)
+Offers casting between bits and hexes.
 
 ### [ptrlib.fj](ptrlib.fj)
 Offers the concept of pointers, i.e. reading, jumping to, and flipping bits, directly from a pointer (i.e. a bit-variable that holds an address).

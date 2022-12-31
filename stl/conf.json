@@ -7,6 +7,9 @@
     "bit/cond_jumps",
     "bit/shifts",
     "bit/math",
+    "bit/input",
+    "bit/output",
+    "bit/casting",
 
     "hex/memory",
     "hex/logics",
@@ -18,7 +21,7 @@
     "hex/input",
     "hex/output",
 
-    "iolib",
+    "casting",
     "ptrlib",
     "mathlib"
   ]

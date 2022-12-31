@@ -1,0 +1,23 @@
+// ---------- Input:
+
+
+
+ns bit {
+    // Complexity: 2phi+4
+    def input_bit dst < IO {
+        .zero dst
+        .xor dst, IO
+    }
+
+
+    // Complexity: 16phi+32
+    def input dst {
+        rep(8, i) .input_bit dst+i*dw
+    }
+
+
+    // Complexity: n(16phi+32)
+    def input n, dst {
+        rep(n, i) .input dst+8*(n-1-i)*dw
+    }
+}
