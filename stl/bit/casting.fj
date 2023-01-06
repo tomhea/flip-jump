@@ -37,7 +37,7 @@ ns bit {
 
     // Complexity: 16@+19
     // Space:      21@+30
-    //   ascii := the ascii representation of the value of hex.
+    //   ascii := the ascii representation of the value of hex (digits & capital-letters).
     // ascii is bit[:8], hex is bit[:4].
     def hex2ascii ascii, hex @ dec_label, hex_label, nine4, end {
         .zero 8, ascii

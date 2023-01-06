@@ -1,5 +1,6 @@
 ns bit {
-    // Complexity phi+5
+    // Complexity @+2
+    //   outputs the bit 'x'.
     def output x @ label_ptr, base_jump_label, end < IO {
         .xor label_ptr, x
       label_ptr:
@@ -13,20 +14,22 @@ ns bit {
     }
 
 
-    // Complexity 8phi+40
+    // Complexity 8@+16
+    //   outputs a byte from x[:8] (a bit vector. from lsb to msb).
     def print x {
         rep(8, i) .output x+i*dw
     }
 
-    // Complexity n(8phi+40)
+    // Complexity n(8@+16)
+    //   outputs n bytes from x[:8n] (a bit vector. from lsb to msb).
     def print n, x {
         rep(n, i) .print x+8*i*dw
     }
 
 
 
-    // print string of max size n.
-    // Complexity min(n, len+1)*(16phi+72)
+    // Complexity min(n, len+1)*(16@+32)
+    //   prints the string at x[:8n], or until the reaches the first '\0' (the earlier).
     def print_str n, x @ end {
         rep(n, i) ._.print_str_one_char x+8*i*dw, end
       end:
@@ -39,11 +42,17 @@ ns bit {
     }
 
 
+    // Complexity: @+9
+    //   prints the ascii character '0'/'1', based on x's value.
+    // x is a bit.
     def print_as_digit x {
         .output x
         rep(7, i) output_bit ('0'>>(i+1)) & 1
     }
 
+    // Complexity: @+9
+    //   prints x[:n] as n ascii-characters ('0's and '1's, lsb first).
+    // x is a bit[:n], and n is a size constant.
     def print_as_digit n, x {
         rep(n, i) .print_as_digit x+(n-1-i)*dw
     }
@@ -55,16 +64,20 @@ ns bit {
 
 
 ns bit {
-    // Assumes n divides by 4.
-    // Complexity: n(10phi+39)
-    def print_hex_uint n, x, print_x @ after_print_x, printed_flag, end {
-        comp_if0 print_x, after_print_x
+    // Complexity: n(7@+11)
+    //    print x[:n] as an unsigned hexadecimal number, without leading zeros (digits & capital-letters).
+    //
+    // x_prefix (constant): print with the "0x" prefix.
+    //
+    // @Assumes n can be divided by 4.
+    def print_hex_uint n, x, x_prefix @ after_print_x, printed_flag, end {
+        comp_if0 x_prefix, after_print_x
         output '0'
         output 'x'
       after_print_x:
 
         .zero printed_flag
-        rep(n/4, i) ._.print_hex_uint_char x+(n/4-1-i)*4*dw, printed_flag
+        rep(n/4, i) .print_hex_uint.print_digit x+(n/4-1-i)*4*dw, printed_flag
 
         .if1 printed_flag, end
         output '0'
@@ -74,9 +87,9 @@ ns bit {
         bit
       end:
     }
-    //Comp: 39phi+155
-    ns _ {
-        def print_hex_uint_char hex, printed_flag @ continue, ascii, end {
+    //Comp: 29@+44
+    ns print_hex_uint {
+        def print_digit hex, printed_flag @ continue, ascii, end {
             ..if1 4, hex, continue
             ..if1 printed_flag, continue
             ;end
@@ -94,13 +107,18 @@ ns bit {
     }
 
 
-
-    def print_hex_int n, x, print_x @ do_print {
+    // Complexity: n(9@+18)
+    //    print x[:n] as a signed hexadecimal number, without leading zeros (digits & capital-letters).
+    //
+    // x_prefix (constant): print with the "0x" prefix.
+    //
+    // @Assumes n can be divided by 4.
+    def print_hex_int n, x, x_prefix @ do_print {
         .if0 x+(n-1)*dw, do_print
         output '-'
         .neg n, x
       do_print:
-        .print_hex_uint n, x, print_x
+        .print_hex_uint n, x, x_prefix
     }
 }
 
