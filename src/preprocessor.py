@@ -48,7 +48,7 @@ class PreprocessorData:
         def __enter__(self):
             macro_name = self.calling_op.macro_name
             if macro_name not in self.macros:
-                macro_resolve_error(self.curr_tree, f"macro {macro_name} is used but isn't defined.")
+                macro_resolve_error(self.curr_tree, f"macro {macro_name} is used but isn't defined. In {self.calling_op.code_position}.")
             self.curr_tree.append(self.calling_op)
 
         def __exit__(self, exc_type, exc_val, exc_tb):
@@ -127,14 +127,14 @@ def get_rep_times(op: RepCall, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_times(preprocessor_data.labels)
     except FJExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree, f'rep {op.macro_name} failed.', orig_exception=e)
+        macro_resolve_error(preprocessor_data.curr_tree, f'rep {op.macro_name} failed. In {op.code_position}.', orig_exception=e)
 
 
 def get_pad_ops_alignment(op: Pad, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_ops_alignment(preprocessor_data.labels)
     except FJExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree, f'pad {op.ops_alignment} failed.', orig_exception=e)
+        macro_resolve_error(preprocessor_data.curr_tree, f'pad {op.ops_alignment} failed. In {op.code_position}.', orig_exception=e)
 
 
 def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData) -> int:
@@ -145,7 +145,7 @@ def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData) -> 
                                                              f'{hex(next_segment_start)}. In {op.code_position}.')
         return next_segment_start
     except FJExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree, f'segment failed.', orig_exception=e)
+        macro_resolve_error(preprocessor_data.curr_tree, f'segment failed. In {op.code_position}.', orig_exception=e)
 
 
 def get_reserved_bits_size(op: Reserve, preprocessor_data: PreprocessorData) -> int:
@@ -156,7 +156,7 @@ def get_reserved_bits_size(op: Reserve, preprocessor_data: PreprocessorData) -> 
                                                              f'{hex(reserved_bits_size)}. In {op.code_position}.')
         return reserved_bits_size
     except FJExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree, f'reserve failed.', orig_exception=e)
+        macro_resolve_error(preprocessor_data.curr_tree, f'reserve failed. In {op.code_position}.', orig_exception=e)
 
 
 def get_params_dictionary(current_macro: Macro, args: Iterable[Expr], namespace: str, labels_prefix: str) \
@@ -228,6 +228,7 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
                 f"{op.code_position.short_str()}:rep{{}}:{op.macro_name}"
             with preprocessor_data.prepare_macro_call(op):
                 for i in range(rep_times):
+                    op.current_index = i
                     resolve_macro_aux(preprocessor_data,
                                       op.macro_name, op.calculate_arguments(i), next_macro_path.format(i))
 
