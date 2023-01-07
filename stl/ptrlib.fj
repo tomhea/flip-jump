@@ -254,18 +254,7 @@ ns bit {
 // ---------- Fast Call
 
 
-def fcall_init {
-    _.fcall_init
-}
-ns _ {
-    def fcall_init > ret_addr1, ret_addr2, ret_addr3 {
-        ret_addr1: bit 0
-        ret_addr2: bit 0
-        ret_addr3: bit 0
-    }
-}
-
-// Complexity: phi+1
+// Complexity: @-1
 def fcall label, ret_reg @ ret {
     wflip ret_reg+w, ret, label
     pad 2
@@ -276,23 +265,4 @@ def fcall label, ret_reg @ ret {
 // Complexity: 1
 def fret ret_reg {
     ;ret_reg
-}
-
-def fcall1 label < _.ret_addr1 {
-    fcall label, _.ret_addr1
-}
-def fcall2 label < _.ret_addr2 {
-    fcall label, _.ret_addr2
-}
-def fcall3 label < _.ret_addr3 {
-    fcall label, _.ret_addr3
-}
-def fret1 < _.ret_addr1 {
-    fret _.ret_addr1
-}
-def fret2 < _.ret_addr2 {
-    fret _.ret_addr2
-}
-def fret3 < _.ret_addr3 {
-    fret _.ret_addr3
 }
