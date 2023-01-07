@@ -18,7 +18,8 @@
 
 
 ns bit {
-    // Complexity n(14phi+48)
+    // Complexity n(14@+10)
+    //   x[:n] *= 10
     def mul10 n, x @ twice, end {
         .shl n, x
         .mov n, twice, x
@@ -32,8 +33,8 @@ ns bit {
     }
 
 
-    // dst, src = src/10, src%10.
-    // Complexity: n(5phi+23)
+    // Complexity: n(5@+11)
+    //   dst[:n], src[:n] = src[:n] / 10, src[:n] % 10.
     def div10 n, dst, src @ zero, end {
         .zero n, dst
         ._.cmp_sub_10 zero, src+(n-4)*dw, dst+(n-4)*dw
@@ -43,31 +44,33 @@ ns bit {
       end:
     }
     ns _ {
-        // if (val > 10) { val-=10; res=!res; },  (for val4:val[3,2,1,0] of length 5, and val <= 18).
-        // Complexity: 4phi+21
-        def cmp_sub_10 val4, val, res @ yes, no, _1xxxx, _1xx0x, _1xx1x, _01x1x {
+        // Complexity: 4@+12
+        //   if (val > 10) {
+        //     val -= 10;
+        //     res  = !res;
+        //   }
+        // for val4:val[3,2,1,0] of length 5, and Assumes val <= 19.
+        // This macro is getting called on consecutive 5-bits, shifting the 5-bit-frame 1 bit right at a time.
+        def cmp_sub_10 val4, val, res @ yes, no, _1xxxx, _1xx0x, _1xx1x, _01x1x, _0110x {
             ..if1 val4, _1xxxx
             ..if0 val+3*dw, no
             ..if1 val+  dw, _01x1x
             ..if0 val+2*dw, no
 
+          _0110x:
             ..not val+2*dw
-            ..not val+3*dw
-            ;yes
+            val+3*dw+dbit; yes
 
           _01x1x:
-            ..not val+3*dw
-            ;yes
+            val+3*dw+dbit; yes
 
           _1xxxx:
             ..not val4
             ..if val+dw, _1xx0x, _1xx1x
           _1xx0x:
-            ..not val+2*dw
-            ;yes
+            val+2*dw+dbit; yes
           _1xx1x:
-            ..not val+3*dw
-            ;yes
+            val+3*dw+dbit; yes
 
           yes:
             ..not val+dw
@@ -134,6 +137,8 @@ ns hex {
     //  Time Complexity: 5phi+32
     // Space Complexity: 4phi+96
     // .mul.add_carry_dst : res   +=   x * .mul.dst + .mul.add_carry_dst
+    //
+    // @requires hex.or.init (or hex.init)
     def add_mul res, x @ ret < .mul.dst, .add.dst, .mul.ret, ._.res {
         .xor .mul.dst+4, x
         .xor .add.dst, res
@@ -146,6 +151,8 @@ ns hex {
     //  Time Complexity: n(5phi+32)
     // Space Complexity: n(4phi+96)
     // res[n] += a[n] * b[1]
+    //
+    // @requires hex.or.init (or hex.init)
     def add_mul n, res, a, b < .mul.dst {
         .mul.clear_carry
         .xor .mul.dst, b
@@ -158,6 +165,8 @@ ns hex {
     //     (for n==b/2): n^2(5.5phi+24)
     // Space Complexity: n(#n(0.75phi+12) + 18.5phi+636)
     // res[n] = a[n] * b[n]
+    //
+    // @requires hex.or.init (or hex.init)
     def mul n, res, a, b @ a_less_1bits, b_less_1bits, loop, after_add, dst, src, a_1bits, b_1bits, end {
         .zero n, dst
         .zero n, src
@@ -204,7 +213,7 @@ ns hex {
             wflip .ret+w, return
         }
 
-        // Space Complexity: 1600
+        // Space Complexity: 1616+@
         def init @ add_res, after_add,   switch_small_table, add_carry_small_table, set_carry_small_table, clean_small_table,   switch, set_carry_0, set_carry_1, clean,   add_carry, clean_add, clean_carry,   end < ..add.dst, .._.ret > ret, dst, add_carry_dst {
             // general progression (after jumping to hex.mul.dst with value d):
             //  dst           -> switch+d           (set lower4  mul result in add_carry_dst+4)                                                                     (5)

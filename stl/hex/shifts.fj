@@ -1,0 +1,83 @@
+// ---------- Logical Shifts:
+
+
+ns hex {
+    //  Time Complexity: n(@+1)
+    // Space Complexity: n(@+28)
+    //   dst[:n] <<= 1
+    def shl_bit n, dst {
+        .shifts.shl_bit_once dst+(n-1)*dw, 0
+        rep(n-1, i) .shifts.shl_bit_once dst+(n-2-i)*dw, dst+(n-1-i)*dw
+    }
+
+
+    //  Time Complexity: n(@+1)
+    // Space Complexity: n(@+28)
+    //   dst[:n] >>= 1
+    def shr_bit n, dst {
+        .shifts.shr_bit_once dst, 0
+        rep(n-1, i) .shifts.shr_bit_once dst+(i+1)*dw, dst+i*dw
+    }
+
+
+    //  Time Complexity: n(@+4)
+    // Space Complexity: n(@+28)
+    // dst[:n] <<= 4
+    def shl_hex n, dst {
+        .zero dst+(n-1)*dw
+        rep(n-1, i) .xor_zero dst+(n-1-i)*dw, dst+(n-2-i)*dw
+    }
+
+
+    //  Time Complexity: n(@+4)
+    // Space Complexity: n(@+28)
+    //   dst[:n] >>= 4
+    def shr_hex n, dst {
+        .zero dst
+        rep(n-1, i) .xor_zero dst+i*dw, dst+(i+1)*dw
+    }
+}
+
+
+ns hex {
+    ns shifts {
+        //  Time Complexity: @+1
+        // Space Complexity: @+28
+        //    {next(1bit),dst(1hex)} = dst << 1
+        //
+        // next is the bit-address of the next msb, dst is a hex.
+        // @note, this should be called in reverse order (so that the "next" is already shifted).
+        def shl_bit_once dst, next @ switch, xor_by, end {
+            wflip dst+w, switch, dst
+
+            pad 16
+          switch:
+            rep(16, i) fj    i&8 ? next+dbit+0 : 0,  xor_by+(i^((i<<1)&0xf))*dw
+          xor_by:
+            .._.clean_table_entry__table 16, dst, end
+
+          end:
+            wflip dst+w, switch
+        }
+
+
+        //  Time Complexity: @+1
+        // Space Complexity: @+28
+        //    {next(1bit),dst(1hex)} = dst >> 1
+        //
+        // next is the bit-address of the next msb, dst is a hex.
+        // @note, this should be called in a regular order (so that the "next" is already shifted).
+        def shr_bit_once dst, next @ switch, xor_by, end {
+            wflip dst+w, switch, dst
+
+            pad 16
+          switch:
+            rep(16, i) fj    i&1 ? next+dbit+3 : 0,  xor_by+(i^((i>>1)&0xf))*dw
+          xor_by:
+            .._.clean_table_entry__table 16, dst, end
+
+          end:
+            wflip dst+w, switch
+        }
+    }
+}

@@ -64,11 +64,11 @@ def end_loop @ loop_label {
 The FlipJump assembly supports a ```"Hello, World!"``` syntax for initializing a variable with a string value.
 Look at the [hello_world.fj](programs/print_tests/hello_world.fj) program for more info.
 
-Note that all of these macros are already implemented in the standard library:
-- startup      in [runlib.fj](stl/runlib.fj)
-- end_loop     in [bit/math.fj](stl/bit/math.fj) (loop)
-- output_char  in [iolib.fj](stl/iolib.fj)
-- output       in [iolib.fj](stl/iolib.fj)  (for printing string consts, e.g. output "Hello, World!")
+Note that all of these macros are already implemented in the standard library (all in [runlib.fj](stl/runlib.fj)):
+- startup
+- end_loop     (loop)
+- output_char
+- output       (for printing string consts, e.g. output "Hello, World!")
 
 # How to download?
 
@@ -126,11 +126,11 @@ Hello, World!
   - [more...](src/README.md)
 
 **[stl](stl/README.md)** (standard library files - macros. [list of all macros](https://esolangs.org/wiki/FlipJump#The_Standard_Library)):
-  - runlib.fj   - constants and initialization macros.
-  - bit/        - macros for manipulating binary variables and vectors (i.e. numbers).
+  - runlib.fj   - constants and initialization macros. output constant strings.
+  - [bit/](stl/README.md#bit)        - macros for io/manipulating binary variables and vectors (i.e. numbers).
   - mathlib.fj  - advanced math macros (mul/div).
-  - hexlib.fj   - macros for manipulating hexadecimal variables and vectors.
-  - iolib.fj    - input/output macros, bit/hex/dec casting.
+  - [hex/](stl/README.md#hex)        - macros for io/manipulating hexadecimal variables and vectors.
+  - casting.fj  - casting between bit/hex.
   - ptrlib.fj   - pointers, stack and functions.
   - conf.json   - standard library list file.
 

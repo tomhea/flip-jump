@@ -212,6 +212,7 @@ class RepCall:
     """
     def __init__(self, repeat_times: Expr, iterator_name: str, macro_name: str, arguments: List[Expr],
                  code_position: CodePosition):
+        self.current_index = 0
         self.repeat_times = repeat_times
         self.iterator_name = iterator_name
         self.macro_name = MacroName(macro_name, len(arguments))
@@ -253,11 +254,11 @@ class RepCall:
         except FJExprException as e:
             raise FJExprException(f"Can't calculate rep arguments on {self.code_position}") from e
 
-    def trace_str(self, iter_value: int) -> str:
+    def trace_str(self) -> str:
         """
         @note assumes calculate_times successfully called before
         """
-        return f'rep({self.iterator_name}={iter_value}, out of 0..{int(self.repeat_times)-1}) ' \
+        return f'rep({self.iterator_name}={self.current_index}, out of 0..{int(self.repeat_times)-1}) ' \
                f'macro {self.macro_name}  ({self.code_position})'
 
 

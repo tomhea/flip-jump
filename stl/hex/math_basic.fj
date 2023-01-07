@@ -1,0 +1,194 @@
+// ---------- Basic Mathmatics:
+
+
+ns hex {
+    //  Time Complexity: 2.27@-1                // (2@-10 + 2 + 4 + 3 + 0.25*[16@/15])
+    // Space Complexity: 0.5@+109 + n(1.5@+13)  // (2@-10 + 16(1+4+1+2) + 4 + (n-1)(1.5@+13))
+    // (n=2 when operating on 16-255 bit-numbers)
+    //   dst[:n] += src.#on-bits (between 0->4)
+    // dst is hex.vec n, src is hex.
+    def add_count_bits n, dst, src @ count_switch,  do_add,  add_switch, add4_switch,  xor_switch,  after_add, is_carry,  should_inc, do_inc,  clean {
+        //part1
+        wflip src+w, count_switch, src
+
+        pad 16
+        //part2
+      count_switch:
+        ;clean              //  0
+        ;do_add
+        ;do_add
+        dst+dbit+4;do_add
+        ;do_add             //  4
+        dst+dbit+4;do_add
+        dst+dbit+4;do_add
+        dst+dbit+5;do_add
+        ;do_add             //  8
+        dst+dbit+4;do_add
+        dst+dbit+4;do_add
+        dst+dbit+5;do_add
+        dst+dbit+4;do_add   // 12
+        dst+dbit+5;do_add
+        dst+dbit+5;do_add
+        dst+dbit+5;count_switch+3*dw
+
+        //part3
+      do_add:
+        wflip dst+w, add_switch, dst
+
+        pad 64
+        //part4
+      add_switch:
+        rep(16, d) fj             0,    xor_switch+(d^(d+1))*dw
+        rep(16, d) fj    dst+dbit+4,    xor_switch+(d^(d+2))*dw
+        rep(16, d) fj    dst+dbit+5,    xor_switch+(d^(d+3))*dw
+        rep(16, d) fj    dst+dbit+5,    add4_switch+d*dw
+      add4_switch:
+        rep(16, d) fj    dst+dbit+4,    xor_switch+(d^(d+4))*dw
+
+        pad 32
+        //part5
+      xor_switch:
+        ._.clean_table_entry__table 16, dst, after_add
+        rep(16, i) fj    is_carry+dbit,    xor_switch+i*dw
+
+      after_add:
+        //part6
+        wflip dst+w, add_switch, is_carry
+      is_carry:
+        //part7
+        ;should_inc
+        pad 2
+      should_inc:
+        //part8
+        ;clean
+        is_carry+dbit;do_inc
+      do_inc:
+        //part9 (optional)
+        .inc n-1, dst+dw
+        ;clean
+
+      clean:
+        //part10
+        wflip src+w, count_switch
+    }
+
+    //  Time Complexity: n(2.27@-1)
+    // Space Complexity: n(3.5@+135)    // on 16-255 bit-numbers. (a bit bigger on bigger numbers).
+    //   dst[:small_n] = x[:n].#on-bits
+    //
+    // x is hex.vec n, and dst is hex.vec small_n.
+    // small_n (it's 2 for 16-255 bit-numbers) is the smallest number of bits that can hold the number n:  ((#(n*4))+3)/4
+    def count_bits n, dst, x {
+        .zero ((#(n*4))+3)/4, dst
+        rep(n, i) .add_count_bits ((#(n*4))+3)/4, dst, x+i*dw
+    }
+}
+
+
+
+// ---------- Arithmetical Macros
+// carry is both input and output, and is saved in the 8th bit in hex.{add/sub}.dst
+
+
+ns hex {
+    //  Time Complexity: @
+    // Space Complexity: 1.5@+13
+    //   hex++  (if overflows - jump to carry1; else jump to carry0)
+    def inc1 hex, carry0, carry1 @ switch, end {
+        wflip hex+w, switch, hex
+        pad 16
+      switch:
+        hex+dbit+0;end          //  0
+        hex+dbit+1;switch+0*dw  //  1
+        hex+dbit+0;end          //  2
+        hex+dbit+2;switch+1*dw  //  3
+        hex+dbit+0;end          //  4
+        hex+dbit+1;switch+0*dw  //  5
+        hex+dbit+0;end          //  6
+        hex+dbit+3;switch+3*dw  //  7
+        hex+dbit+0;end          //  8
+        hex+dbit+1;switch+0*dw  //  9
+        hex+dbit+0;end          // 10
+        hex+dbit+2;switch+1*dw  // 11
+        hex+dbit+0;end          // 12
+        hex+dbit+1;switch+0*dw  // 13
+        hex+dbit+0;end          // 14
+        hex+dbit+3;             // 15
+        hex+dbit+2;
+        hex+dbit+1;
+        hex+dbit+0;
+        wflip hex+w, switch, carry1
+      end:
+        wflip hex+w, switch, carry0
+    }
+
+    //  Time Complexity: 1.067@     // (16/15 * @)
+    // Space Complexity: n(1.5@+13)
+    //   hex[:n]++
+    def inc n, hex @ end {
+        rep(n, i) .inc.step hex+i*dw, end
+      end:
+    }
+    ns inc {
+        def step hex, end @ next {
+            ..inc1 hex, end, next
+          next:
+        }
+    }
+
+
+    //  Time Complexity: @
+    // Space Complexity: 1.5@+13
+    //   hex--  (if underflows - jump to borrow1; else jump to borrow0)
+    def dec1 hex, borrow0, borrow1 @ switch, borrow, end {
+        wflip hex+w, switch, hex
+        pad 16
+      switch:
+        hex+dbit+3;borrow       //  0
+        hex+dbit+0;end          //  1
+        hex+dbit+1;switch+1*dw  //  2
+        hex+dbit+0;end          //  3
+        hex+dbit+2;switch+2*dw  //  4
+        hex+dbit+0;end          //  5
+        hex+dbit+1;switch+1*dw  //  6
+        hex+dbit+0;end          //  7
+        hex+dbit+3;switch+4*dw  //  8
+        hex+dbit+0;end          //  9
+        hex+dbit+1;switch+1*dw  // 10
+        hex+dbit+0;end          // 11
+        hex+dbit+2;switch+2*dw  // 12
+        hex+dbit+0;end          // 13
+        hex+dbit+1;switch+1*dw  // 14
+        hex+dbit+0;end          // 15
+      borrow:
+        hex+dbit+2;
+        hex+dbit+1;
+        hex+dbit+0;
+        wflip hex+w, switch, borrow1
+      end:
+        wflip hex+w, switch, borrow0
+    }
+
+    //  Time Complexity: 1.067@     // (16/15 * @)
+    // Space Complexity: n(1.5@+13)
+    //   hex[:n]--
+    def dec n, hex @ end {
+        rep(n, i) .dec.step hex+i*dw, end
+      end:
+    }
+    ns dec {
+        def step hex, end @ next {
+            ..dec1 hex, end, next
+          next:
+        }
+    }
+
+
+    //  Time Complexity: ~@+4n
+    // Space Complexity: n(1.5@+17)
+    //   x[:n] = -x[:n]
+    def neg n, x {
+        .not n, x
+        .inc n, x
+    }
+}

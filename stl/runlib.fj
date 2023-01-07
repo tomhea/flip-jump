@@ -71,7 +71,9 @@ def comp_if1 expr, l1 @ continue {
 }
 
 
-// if expr != 0 (compilation time), flip the given bit
+// if expr != 0 (compilation time), flip the given bit.
+//
+// expr is a constant, and bit is a general bit-address.
 def comp_flip_if bit, expr {
     (expr ? bit : 0);
 }
@@ -99,6 +101,17 @@ def loop {
 
 
 // sets the input handlers. When inputting 0 - in0_handler will be called, and for 1 - in1_handler will be called.
+//
+// @note, most of the programs won't use this macro, as they'll use (at the place they want to input) bit.input_bit,
+// or most likely, something like the next code:
+//    wflip IO+w, input_0, IO
+//    pad 2
+//   input_0:
+//    wflip IO+w, input_0, jump_to_input_0_handling
+//   input_1:
+//    wflip IO+w, input_0, jump_to_input_0_handling
+//
+// @note that if you use this macro, you can't touch IO yourself, or use macros that does it; so know what you are doing.
 def default_input in0_handler, in1_handler @ io_handler, end < IO {
     wflip IO+w, io_handler, end
     pad 2
@@ -106,4 +119,27 @@ def default_input in0_handler, in1_handler @ io_handler, end < IO {
     ;in0_handler
     ;in1_handler
   end:
+}
+
+
+
+// ---------- Output constants:
+
+
+// Complexity: 1
+// bit is a constant. 0 will output o, anything else will output 1.
+def output_bit bit < IO {
+    IO + (bit ? 1 : 0);
+}
+
+// Complexity: 8
+// ascii is a constant. The macro outputs the byte (ascii & 0xff)
+def output_char ascii {
+    rep(8, i) output_bit (ascii>>i)&1
+}
+
+// Complexity: 8 * string_length
+// str is a constant. The macro outputs the bytes of it (from lsB to msB) until it becomes all zeros.
+def output str {
+    rep(((#str)+7)>>3, i) output_char (str>>(8*i))&0xff
 }

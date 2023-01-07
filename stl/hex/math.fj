@@ -1,0 +1,181 @@
+// ---------- Addition / Subtraction:
+
+
+ns hex {
+    //  Time Complexity: 4@+12
+    // Space Complexity: 4@+52
+    //   dst += src
+    //
+    // both dst,src are hexes.
+    // Relies on the add-carry, and updates it at the end.
+    // @requires hex.add.init (or hex.init)
+    def add dst, src < .add.dst {
+        ._.jump_to_table_entry dst, src, .add.dst
+    }
+
+    //  Time Complexity: n(4@+12)
+    // Space Complexity: n(4@+52)
+    //   dst[:n] += src[:n]
+    // @requires hex.add.init (or hex.init)
+    def add n, dst, src {
+        .add.clear_carry
+        rep(n, i) .add dst+i*dw, src+i*dw
+        .add.clear_carry
+    }
+
+    ns add {
+        //  Time Complexity: 2@
+        // Space Complexity: 2@+12
+        //   carry = 0
+        def clear_carry @ ret < .._.ret, .dst, .._.res {
+            wflip .._.ret+w, ret, .dst
+          ret:
+            wflip .._.ret+w, ret
+            ..zero .._.res
+        }
+
+        //  Time Complexity: 2@+1
+        // Space Complexity: 2@+16
+        //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
+        def clear_carry c0, c1 @ ret < .._.ret, .dst, .._.res {
+            wflip .._.ret+w, ret, .dst
+          ret:
+            wflip .._.ret+w, ret
+            // carry is 0/1
+            ..if0 .._.res, c0
+            .._.res+dbit; c1
+        }
+
+        // Complexity: 1
+        //   carry = !carry
+        def not_carry < .dst {
+            .dst+dbit+8;
+        }
+
+        //  Time Complexity: 2@+1
+        // Space Complexity: 2@+13
+        //   carry = 1
+        def set_carry {
+            .clear_carry
+            .not_carry
+        }
+
+        //  Time Complexity: 8 (when jumping to dst, until finished)
+        // Space Complexity: 1570
+        // This is where the add "truth" tables are.
+        def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < .._.res, .._.ret > dst {
+            ;end
+          dst: ;.switch__without_carry
+
+            pad 512
+            // The next lines are the addition flipping-tables.
+            // The [carry<<8 | src<<4 | dst] entry sets hex._.res (assumed to be 0) to (dst + src + carry) ^ dst,
+            //   so that xoring it with dst will update it to the add-result.
+            //   also, it updates the carry (.dst+dbit+8) to the next carry.
+            // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
+          switch__without_carry:
+            // Space Complexity / total table ops: 528.
+            rep(256, d) wflip_macro .._.res+w, ((((d&0xf)+(d>>4)  )&0xf)^(d&0xf))*dw, (((d&0xf)+(d>>4)   > 0xf) ? (flip_carry+d*dw) : (clean_table_entry+d*dw))
+          switch__with_carry:
+            // Space Complexity / total table ops: 528.
+            rep(256, d) wflip_macro .._.res+w, ((((d&0xf)+(d>>4)+1)&0xf)^(d&0xf))*dw, (((d&0xf)+(d>>4)+1 > 0xf) ? (clean_table_entry+d*dw) : (flip_carry+d*dw))
+
+          flip_carry:
+            // if got here - flip the carry; then clean the table-entry.
+            // in about half of the times, we'll get here.
+            rep(256, i) fj .dst+dbit+8, clean_table_entry+i*dw
+          clean_table_entry:
+            // xors back the table-entry from .dst
+            .._.clean_table_entry__table .dst
+          end:
+        }
+    }
+
+
+    //  Time Complexity: 4@+12
+    // Space Complexity: 4@+52
+    //   dst -= src
+    //
+    // both dst,src are hexes.
+    // @requires hex.sub.init (or hex.init)
+    def sub dst, src < .sub.dst {
+        ._.jump_to_table_entry dst, src, .sub.dst
+    }
+
+    //  Time Complexity: n(4@+12)
+    // Space Complexity: n(4@+52)
+    //   dst[:n] -= src[:n]
+    // @requires hex.sub.init (or hex.init)
+    def sub n, dst, src {
+        .sub.clear_carry
+        rep(n, i) .sub dst+i*dw, src+i*dw
+        .sub.clear_carry
+    }
+
+    ns sub {
+        //  Time Complexity: 2@+5
+        // Space Complexity: 2@+20
+        //   carry = 0
+        def clear_carry @ end {
+            .clear_carry end, end
+          end:
+        }
+
+        //  Time Complexity: 2@+5
+        // Space Complexity: 2@+20
+        //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
+        def clear_carry c0, c1 @ ret < .._.ret, .dst, .._.res {
+            wflip .._.ret+w, ret, .dst
+          ret:
+            wflip .._.ret+w, ret
+            // carry is 0/f
+            ..if0 .._.res, c0
+            .not_carry
+            wflip .._.res+w, 0xf*dw, c1
+        }
+
+        // Complexity: 1
+        //   carry = !carry
+        def not_carry < .dst {
+            .dst+dbit+8;
+        }
+
+        //  Time Complexity: 2@+6
+        // Space Complexity: 2@+21
+        //   carry = 1
+        def set_carry {
+            .clear_carry
+            .not_carry
+        }
+
+        //  Time Complexity: 8 (when jumping to dst, until finished)
+        // Space Complexity: 1570
+        // This is where the sub "truth" tables are. must be called once if you want to use hex.sub (hex.init calls it).
+        def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < .._.res, .._.ret > dst {
+            ;end
+          dst: ;.switch__without_carry
+
+            pad 512
+            // The next lines are the subtraction flipping-tables.
+            // The [carry<<8 | src<<4 | dst] entry sets hex._.res (assumed to be 0) to (dst - src - carry) ^ dst,
+            //   so that xoring it with dst will update it to the sub-result.
+            //   also, it updates the carry (.dst+dbit+8) to the next carry. (subtraction's carry is also known as the borrow).
+            // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
+          switch__without_carry:
+            // Space Complexity / total table ops: 528.
+            rep(256, d) wflip_macro .._.res+w, ((((d&0xf)-(d>>4)  )&0xf)^(d&0xf))*dw, (((d&0xf)-(d>>4)   < 0) ? (flip_carry+d*dw) : (clean_table_entry+d*dw))
+          switch__with_carry:
+            // Space Complexity / total table ops: 528.
+            rep(256, d) wflip_macro .._.res+w, ((((d&0xf)-(d>>4)-1)&0xf)^(d&0xf))*dw, (((d&0xf)-(d>>4)-1 < 0) ? (clean_table_entry+d*dw) : (flip_carry+d*dw))
+
+          flip_carry:
+            // if got here - flip the carry; then clean the table-entry.
+            // in about half of the times, we'll get here.
+            rep(256, i) fj .dst+dbit+8, clean_table_entry+i*dw
+          clean_table_entry:
+            // xors back the table-entry from .dst
+            .._.clean_table_entry__table .dst
+          end:
+        }
+    }
+}

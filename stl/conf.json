@@ -7,10 +7,22 @@
     "bit/cond_jumps",
     "bit/shifts",
     "bit/math",
+    "bit/input",
+    "bit/output",
+    "bit/casting",
 
-    "iolib",
+    "hex/memory",
+    "hex/logics",
+    "hex/math",
+    "hex/math_basic",
+    "hex/shifts",
+    "hex/cond_jumps",
+    "hex/tables_init",
+    "hex/input",
+    "hex/output",
+
+    "casting",
     "ptrlib",
-    "mathlib",
-    "hexlib"
+    "mathlib"
   ]
 }

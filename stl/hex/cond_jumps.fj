@@ -1,0 +1,153 @@
+// ---------- Conditional Jump
+
+
+ns hex {
+    //  Time Complexity: @-1
+    // Space Complexity: @+15
+    //   if flags&(1<<hex) is true:
+    //     jump to l1;
+    //   else jump to l0.
+    //
+    // flags (constant): 16 bit constant; bit i indicates whether to jump to l0/l1 when hex=i.
+    def if_flags hex, flags, l0, l1 @ switch, clean, return, finish {
+        wflip hex+w, switch, hex
+
+        pad 16
+      switch:
+        rep(16, i) fj    (flags>>i)&1 ? return+dbit+0 : 0,    clean
+
+      clean:
+        wflip hex+w, switch
+      return: ;finish
+        pad 2
+      finish:
+                     ; l0
+        return+dbit+0; l1
+    }
+
+    //  Time Complexity: @-1
+    // Space Complexity: @+15
+    //   if hex==0 goto l0, else goto l1.
+    def if hex, l0, l1 {
+        .if_flags hex, 0xfffe, l0, l1
+    }
+    //   if hex==0 goto l0, else continue.
+    def if0 hex, l0 @ l1 {
+        .if hex, l0, l1
+      l1:
+    }
+    //   if hex!=0 goto l1, else continue.
+    def if1 hex, l1 @ l0 {
+        .if hex, l0, l1
+      l0:
+    }
+
+    //  Time Complexity: n(@-1)
+    // Space Complexity: n(@+15)
+    //   if hex[:n]==0 goto l0, else goto l1.
+    def if n, hex, l0, l1 {
+        rep(n-1, i) .if1 hex+i*dw, l1
+        .if hex+(n-1)*dw, l0, l1
+    }
+    //   if hex[:n]==0 goto l0, else continue.
+    def if0 n, hex, l0 @ l1 {
+        .if n, hex, l0, l1
+      l1:
+    }
+    //   if hex[:n]!=0 goto l1, else continue.
+    def if1 n, hex, l1 @ l0 {
+        .if n, hex, l0, l1
+      l0:
+    }
+
+
+    //  Time Complexity: @-1
+    // Space Complexity: @+15
+    //   if number[:n] < 0 jump to neg, else jump to zpos (Zero POSitive).
+    def sign n, number, neg, zpos {
+        .if_flags number+(n-1)*dw, 0xff00, zpos, neg
+    }
+
+
+    //  Time Complexity: 3@+8
+    // Space Complexity: 3@+30
+    //   compares a to b.
+    //     if a  < b:   goto lt;
+    //     if a == b:   goto eq;
+    //     if a  > b:   goto gt;
+    // @requires hex.cmp.init (or hex.init)
+    //
+    // a,b are hexes; lt/eq/gt are addresses.
+    def cmp a, b, lt, eq, gt @ ret, _eq, _gt, jumper_to_return_table, __lt, __eq, __gt < .cmp.dst, ._.ret {
+        //part1
+        .xor .cmp.dst  , a
+        .xor .cmp.dst+4, b
+        wflip ._.ret+w, ret, .cmp.dst
+
+
+        pad 4
+        //part2
+      ret:
+        wflip ._.ret+w, ret, jumper_to_return_table //part3
+        ._.ret+dbit  ;_eq
+        ._.ret+dbit+1;_gt
+
+      _eq:  jumper_to_return_table+dbit  ;ret       //(part2.5)
+      _gt:  jumper_to_return_table+dbit+1;ret
+
+      jumper_to_return_table:
+        //part4
+        ;__lt
+
+        pad 4
+        //part5
+      __lt:                               ;lt
+      __eq:  jumper_to_return_table+dbit  ;eq
+      __gt:  jumper_to_return_table+dbit+1;gt
+    }
+
+    //  Time Complexity: m(3@+8)        // m=(n-i), where i is the most-significant index such that a[i] != b[i] (if a==b, then m==n).
+    // Space Complexity: n(3@+30)
+    //   compares a[:n] to b[:n].
+    //     if a[:n]  < b[:n]:   goto lt;
+    //     if a[:n] == b[:n]:   goto eq;
+    //     if a[:n]  > b[:n]:   goto gt;
+    // @requires hex.cmp.init (or hex.init)
+    //
+    // n is size-constant; a,b are hexes; lt/eq/gt are addresses.
+    def cmp n, a, b, lt, eq, gt {
+        rep(n-1, i) .cmp.cmp_eq_next a+(n-1-i)*dw, b+(n-1-i)*dw, lt, gt
+        .cmp a, b, lt, eq, gt
+    }
+
+    ns cmp {
+        // compares a to b; if equal just continue.
+        def cmp_eq_next a, b, lt, gt @ eq {
+            ..cmp a, b, lt, eq, gt
+          eq:
+        }
+
+        //  Time Complexity: 6 (when jumping to dst, until finished)
+        // Space Complexity: 514
+        // This is where the compare "truth" tables are.
+        def init @ switch, clean_table_entry, end < .._.ret > dst {
+            ;end
+          dst: ;.switch
+
+            pad 256
+          switch:
+            // The next line is the compare flipping-table.
+            // The [src<<4 | dst] entry flips bits in hex._.ret:
+            //   if dst  > src:     flips dbit+1
+            //   if dst == src:     flips dbit+0
+            //   if dst  < src:     no flips
+            // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
+            rep(256, d) fj    ((d&0xf) > (d>>4)) ? .._.ret+dbit+1 : (((d&0xf) == (d>>4)) ? .._.ret+dbit : 0),    clean_table_entry+d*dw
+
+          clean_table_entry:
+            // xors back the table-entry from .dst
+            .._.clean_table_entry__table .dst
+          end:
+        }
+    }
+}
