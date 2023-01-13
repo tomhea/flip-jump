@@ -6,6 +6,7 @@ ns bit {
     // Unsafe for dst==carry (but there is no reason in calling it that way)
     // Complexity: 2@+6
     //   {carry:dst}++
+    // carry,dst are bits.
     def inc1 dst, carry @ end {
         .if0 carry, end
         .not dst
@@ -16,6 +17,7 @@ ns bit {
 
     // Complexity: n(2@+6)
     //   x[:n]++
+    // x is a bit[:n]
     def inc n, x @ carry {
         .one carry
         rep(n, i) .inc1 x+i*dw, carry
@@ -26,6 +28,7 @@ ns bit {
 
     // Complexity: n(2@+8)
     //   x[:n]--
+    // x is a bit[:n]
     def dec n, x {
         .not n, x
         .inc n, x
@@ -34,6 +37,7 @@ ns bit {
 
     // Complexity: n(2@+7)
     //   x[:n]--
+    // x is a bit[:n]
     def neg n, x {
         .not n, x
         .inc n, x
@@ -43,6 +47,7 @@ ns bit {
     // Unsafe for dst==carry (but there is no reason in calling it that way)
     // Complexity: 8@+14
     //   {carry:dst} += src
+    // dst,src,carry are bits.
     def add1 dst, src, carry @ _src {
         .mov _src, src
         .inc1 dst, _src
@@ -55,6 +60,7 @@ ns bit {
 
     // Complexity: n(8@+14)
     //   dst[:n] += src[:n]
+    // dst,src are bit[:n]
     def add n, dst, src @ carry {
         .zero carry
         rep(n, i) .add1 dst+i*dw, src+i*dw, carry
@@ -65,6 +71,7 @@ ns bit {
 
     // Complexity: n(8@+16)
     //   dst[:n] -= src[:n]
+    // dst,src are bit[:n]
     def sub n, dst, src @ carry {
         .not n, src
         .one carry

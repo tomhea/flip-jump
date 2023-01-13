@@ -1,7 +1,11 @@
 // ---------- Memory Variables
+
+
 // Size Complexity: 1
-
-
+//
+// This is another basic variable in the FlipJump standard library - a hexadecimal (can contain only 0-15).
+// you can't place it as any other standard library macro, as "running" this line is undefined behavior.
+// The hex (and hex.vec) should be placed in a place that won't run.
 def bit value {
     ; value ? dw : 0
 }
@@ -12,6 +16,7 @@ def bit {
 
 
 // Size Complexity: n
+// read the comment for the bit macro.
 ns bit {
     def vec n, value {
         rep(n, i) bit (value>>i)&1
@@ -28,9 +33,9 @@ ns bit {
 
 ns bit {
     // Complexity: @-1
-    //   x = 0
-    def zero x {
-        .xor x, x
+    //   bit = 0
+    def zero bit {
+        .xor bit, bit
     }
 
     // Complexity: n(@-1)
@@ -41,10 +46,10 @@ ns bit {
 
 
     // Complexity: @
-    //   x = 1
-    def one x {
-        .zero x
-        .not x
+    //   bit = 1
+    def one bit {
+        .zero bit
+        .not bit
     }
 
     // Complexity: n@
@@ -57,6 +62,7 @@ ns bit {
     // Complexity: 2@-2
     // note: doesn't work if dst==src.
     //   dst = src
+    // dst,src are bits.
     def unsafe_mov dst, src {
         .zero dst
         .xor dst, src
@@ -65,6 +71,7 @@ ns bit {
     // Complexity: 2@-1
     // note: works if dst==src.
     //   dst = src
+    // dst,src are bits.
     def mov dst, src @ end {
         comp_if1 dst==src, end
         .unsafe_mov dst, src
@@ -74,6 +81,7 @@ ns bit {
     // Complexity: n(2@-2)
     // note: doesn't work if dst and src overlap. works if dst==src.
     //   dst[:n] = src[:n]
+    // dst,src are bit.vec[:n].
     def mov n, dst, src @ end {
         comp_if1 dst==src, end
         rep(n, i) .unsafe_mov dst+i*dw, src+i*dw
@@ -84,6 +92,7 @@ ns bit {
     // Complexity: 2@+5
     // Space: 3@+8
     //   a, b = b, a
+    // a,b are bits.
     def swap a, b @ a0, a1, notnot, end {
         .if a, a0, a1
       a0:
@@ -99,6 +108,7 @@ ns bit {
     // Complexity: n(2@+5)
     // Space: n(3@+8)
     //   a[:n], b[:n] = b[:n], a[:n]
+    // a,b are bit.vec[:n].
     def swap n, a, b {
         rep(n, i) .swap a+i*dw, b+i*dw
     }
