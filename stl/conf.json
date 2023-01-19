@@ -10,6 +10,7 @@
     "bit/input",
     "bit/output",
     "bit/casting",
+    "bit/pointers",
 
     "hex/memory",
     "hex/logics",

@@ -1,0 +1,206 @@
+// ---------- Init
+
+
+ns bit {
+    def ptr_init {
+        .pointers.ptr_init
+    }
+
+    ns pointers {
+        def ptr_init > to_flip, to_jump, to_flip_var, to_flip_return_var, to_jump_var {
+            pad 1
+          to_flip:
+            0;0
+          to_jump:
+            ;0
+
+          to_flip_var:
+            bit.vec w, 0
+          to_flip_return_var:
+            bit.vec w, 0
+          to_jump_var:
+            bit.vec w, 0
+        }
+    }
+}
+
+
+
+// ---------- Jump:
+
+
+ns bit {
+    // like:  ;*ptr
+    // Complexity w(2phi+6)
+    def ptr_jump ptr < .pointers.to_jump, .pointers.to_jump_var {
+        .bit_var_xor w, .pointers.to_jump+w, .pointers.to_jump_var, .pointers.to_jump_var
+        .bit_var_xor w, .pointers.to_jump+w, .pointers.to_jump_var, ptr
+        ;.pointers.to_jump
+    }
+}
+
+
+
+// ---------- Flip:
+
+
+ns bit {
+    // like:  *ptr;
+    // Complexity w(2phi+6)
+    def ptr_flip ptr @ cleanup < .pointers.to_flip, .pointers.to_flip_var {
+        wflip .pointers.to_flip+w, cleanup
+
+        .bit_var_xor w, .pointers.to_flip, .pointers.to_flip_var, .pointers.to_flip_var
+        .bit_var_xor w, .pointers.to_flip, .pointers.to_flip_var, ptr
+        ;.pointers.to_flip
+
+      cleanup:
+        wflip .pointers.to_flip+w, cleanup
+    }
+
+    // like:  (*ptr)+dbit;
+    // Assumes *ptr is dw-aligned
+    // Complexity w(2phi+7)
+        // The comp_flip_if executes much less than w/2 operations.
+    def ptr_flip_dbit ptr {
+        rep(#dbit, i) comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
+        .ptr_flip ptr
+        rep(#dbit, i) comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
+    }
+
+    // Assumes *ptr is dw-aligned
+    def xor_to_ptr ptr, bit @ end {
+        .if0 bit, end
+        .ptr_flip_dbit ptr
+      end:
+    }
+
+
+    // like:  wflip *ptr, value
+    // Assumes *ptr is w-aligned, and value is 2dw-aligned
+    // Complexity w(3phi+11)
+    def ptr_wflip ptr, value < .pointers.to_flip, .pointers.to_flip_var{
+        .bit_var_xor w, .pointers.to_flip, .pointers.to_flip_var, .pointers.to_flip_var
+        .bit_var_xor w, .pointers.to_flip, .pointers.to_flip_var, ptr
+        rep(w, i) .pointers.advance_by_one_and_flip__ptr_wflip (#(i^((i+1)%w))), (value>>i)&1
+    }
+    ns pointers {
+        def advance_by_one_and_flip__ptr_wflip n, do_flip @ cleanup, advance < .to_flip {
+            comp_if0 do_flip, advance
+            wflip .to_flip+w, cleanup, .to_flip
+          cleanup:
+            wflip .to_flip+w, cleanup
+          advance:
+            rep(n, i) ..exact_not .to_flip+i
+        }
+    }
+
+    // Assumes *ptr is dw-aligned, and value is 2dw-aligned
+    def ptr_wflip_2nd_word ptr, value {
+        .not ptr + dw*(#w-1)
+        .ptr_wflip ptr, value
+        .not ptr + dw*(#w-1)
+    }
+}
+
+
+
+// ---------- Xor
+
+
+ns bit {
+    // like:  .xor dst *ptr
+    // assumes *ptr is dw-aligned
+    // Complexity w(8phi+28)
+    def xor_from_ptr dst, ptr {
+        .exact_xor_from_ptr dst+dbit, ptr
+    }
+
+    def exact_xor_from_ptr dst, ptr @ base_jump_label, cleanup {
+        .ptr_wflip_2nd_word ptr, base_jump_label
+
+        .ptr_jump ptr
+        pad 2
+      base_jump_label:
+        ;cleanup
+        dst;
+
+      cleanup:
+        .ptr_wflip_2nd_word ptr, base_jump_label
+
+    }
+}
+
+
+
+// ---------- Stack
+
+
+ns bit {
+    def stack n {
+        .pointers.stack n
+    }
+
+    ns pointers {
+        // sp always points to the last pushed value (at start - to stack[-1])
+        def stack n > sp, stack {
+            pad 1
+          sp:
+            bit.vec w, .stack-dw
+          stack:
+            bit.vec n, 0
+        }
+    }
+
+    def get_sp dst < .pointers.sp {
+        .mov w, dst, .pointers.sp
+    }
+
+
+    // Complexity w(2phi+10)
+    def inc_ptr ptr {
+        .inc w-#w, ptr+#w*dw
+    }
+
+
+    // Complexity w(2phi+12)
+    def dec_ptr ptr {
+        .dec w-#w, ptr+#w*dw
+    }
+
+
+    // Assumes address is 2dw-aligned
+    // Complexity w(5phi+21)
+    def push_ret_address address < .pointers.sp {
+        .inc_ptr .pointers.sp
+        .ptr_wflip_2nd_word .pointers.sp, address
+    }
+
+    // Assumes address is 2dw-aligned
+    // Complexity w(5phi+23)
+    def pop_ret_address address < .pointers.sp {
+        .ptr_wflip_2nd_word .pointers.sp, address
+        .dec_ptr .pointers.sp
+    }
+
+
+    // Complexity: w(4phi+17)
+    def push bit < .pointers.sp {
+        .inc_ptr .pointers.sp
+        .xor_to_ptr .pointers.sp, bit
+    }
+
+    // Assumes *sp==bit.
+    // Complexity: w(4phi+19)
+    def pop bit < .pointers.sp {
+        .xor_to_ptr .pointers.sp, bit
+        .dec_ptr .pointers.sp
+    }
+
+    // Complexity: w(12phi+47)
+    def pop_res bit < .pointers.sp {
+        .zero bit
+        .xor_from_ptr bit, .pointers.sp
+        .pop bit
+    }
+}
