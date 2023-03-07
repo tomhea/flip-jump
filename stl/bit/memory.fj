@@ -1,29 +1,29 @@
 // ---------- Memory Variables
 
 
-// Size Complexity: 1
-//
-// This is another basic variable in the FlipJump standard library - a hexadecimal (can contain only 0-15).
-// you can't place it as any other standard library macro, as "running" this line is undefined behavior.
-// The hex (and hex.vec) should be placed in a place that won't run.
-def bit value {
-    ; value ? dw : 0
-}
-
-def bit {
-    bit 0
-}
-
-
-// Size Complexity: n
-// read the comment for the bit macro.
 ns bit {
+    // Size Complexity: 1
+    //
+    // This is the basic variable in the FlipJump standard library - a bit (can contain only 0/1).
+    // you can't place it as any other standard library macro, as "running" this line is undefined behavior.
+    // The bit (and bit.vec) should be placed in a place that won't run.
+    def bit value {
+        ; value ? dw : 0
+    }
+
+    def bit {
+        .bit 0
+    }
+
+
+    // Size Complexity: n
+    // read the comment for the bit macro.
     def vec n, value {
-        rep(n, i) bit (value>>i)&1
+        rep(n, i) .bit (value>>i)&1
     }
 
     def vec n {
-        rep(n, i) bit
+        rep(n, i) .bit
     }
 }
 

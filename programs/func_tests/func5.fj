@@ -51,17 +51,17 @@ func5:
 
     bit.return
   __func5_res:
-    bit
+    bit.bit
   __func5_arg_ptr:
     bit.vec w
 
 
 x5:
-    bit 1
+    bit.bit 1
 y5:
-    bit 1
+    bit.bit 1
 res5:
-    bit 0
+    bit.bit 0
 
 ascii:
     bit.vec 8

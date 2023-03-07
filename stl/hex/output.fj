@@ -168,7 +168,7 @@ ns hex {
         output '0'
         ;end
 
-      printed_something: bit
+      printed_something: bit.bit
       end:
     }
     ns print_uint {
@@ -207,7 +207,7 @@ ns hex {
         .neg n, x
         ;end
 
-      neg: bit
+      neg: bit.bit
       end:
     }
 }

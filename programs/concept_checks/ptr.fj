@@ -51,7 +51,7 @@ test3:
   p0:
     bit.vec w, d0+dbit
   d0:
-    bit 0  // 0 => 1,  1 => 0
+    bit.bit 0  // 0 => 1,  1 => 0
 
   p1:
     bit.vec w, d1
@@ -63,11 +63,11 @@ test3:
   p2_jump:
     bit.vec w, d2
   d2:
-    bit 0  // 0 => N,  1 => Y
+    bit.bit 0  // 0 => N,  1 => Y
 
   p3:
     bit.vec w, d3
   d3:
-    bit 1  // 0 => F,  1 => T
+    bit.bit 1  // 0 => F,  1 => T
   d3_var:
-    bit 0
+    bit.bit 0

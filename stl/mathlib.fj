@@ -40,7 +40,7 @@ ns bit {
         ._.cmp_sub_10 zero, src+(n-4)*dw, dst+(n-4)*dw
         rep(n-4, i) ._.cmp_sub_10 src+(n-1-i)*dw, src+(n-5-i)*dw, dst+(n-5-i)*dw
         ;end
-      zero: bit 0
+      zero: .bit 0
       end:
     }
     ns _ {
@@ -309,11 +309,11 @@ ns bit {
         ;end
 
       negative_a:
-        bit
+        .bit
       negative_b:
-        bit
+        .bit
       one_negative:
-        bit
+        .bit
       end:
     }
 
@@ -377,11 +377,11 @@ ns bit {
         ;end
 
       negative_a:
-        bit
+        .bit
       negative_b:
-        bit
+        .bit
       one_negative:
-        bit
+        .bit
       end:
     }
 

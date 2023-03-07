@@ -84,7 +84,7 @@ ns bit {
         ;end
 
       printed_flag:
-        bit
+        .bit
       end:
     }
     //Comp: 29@+44
@@ -164,7 +164,7 @@ ns bit {
         src: .vec n
         print_buffer:      .vec (n*28/93+1)*4
         print_buffer_flag: .vec  n*28/93+1
-        zero_flag: bit
+        zero_flag: .bit
         ret_reg: 0;0
       end:
     }

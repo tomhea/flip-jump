@@ -44,7 +44,7 @@ print_num:
     bit.print_dec_int N*4, num
     ;ret
 num:    bit.vec N*4
-ret:    bit
+ret:    bit.bit
 
 
 // inputs and variables:

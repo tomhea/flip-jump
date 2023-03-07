@@ -105,7 +105,7 @@ def insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_de
     ;dec_loop
 
   minus_flag:
-    bit
+    bit.bit
   end:
     bit.if0 minus_flag, after_minus
     bit.neg w, x
@@ -159,7 +159,7 @@ def calc a, op, b @ try_add, try_sub, try_mul, try_mul_loop, try_div, try_mod, a
     ;end
 
   div_mod_flag:
-    bit
+    bit.bit
   r:
     bit.vec w
   q:
@@ -206,11 +206,11 @@ def print_int x @ print_hex, end < hex_used {
 
 op:     bit.vec 8, 0
 ascii:  bit.vec 8, 0
-error:  bit 0
+error:  bit.bit 0
 hex:    bit.vec 4, 0
 dec:    bit.vec 4, 0
-should_finish:  bit 0
-hex_used:       bit 0
+should_finish:  bit.bit 0
+hex_used:       bit.bit 0
 
 a:  bit.vec w, 0
 b:  bit.vec w, 0

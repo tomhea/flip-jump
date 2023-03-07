@@ -62,7 +62,7 @@ ns Pair {
                 bit.print_hex_int ..len, .temp1, 1
                 fret .ret_reg
 
-            ret_reg: bit 0
+            ret_reg: bit.bit 0
             temp1: bit.vec ..len, 0
             temp2: bit.vec ..len, 0
 

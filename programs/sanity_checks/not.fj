@@ -3,4 +3,4 @@
     loop
 
   x:
-    bit 0
+    bit.bit 0

@@ -34,7 +34,7 @@ func4:
 
 
 x4:
-    bit 0
+    bit.bit 0
 
 ascii:
     bit.vec 8

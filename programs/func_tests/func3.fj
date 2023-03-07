@@ -20,7 +20,7 @@ func3:
 
 
 x3:
-    bit 0
+    bit.bit 0
 
 bit.ptr_init
 bit.stack 10

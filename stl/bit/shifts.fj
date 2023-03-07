@@ -40,7 +40,7 @@ ns bit {
         .mov x+(n-1)*dw, temp_bit
         skip
       temp_bit:
-        bit
+        .bit
     }
 
 
@@ -52,6 +52,6 @@ ns bit {
         .mov x, temp_bit
         skip
       temp_bit:
-        bit
+        .bit
     }
 }

@@ -23,8 +23,8 @@ output '\n'
 loop
 
 
-b0: bit 0
-b1: bit 1
+b0: bit.bit 0
+b1: bit.bit 1
 h: hex
 bits: bit.vec 12, 0x123
 hex:  hex.vec 3

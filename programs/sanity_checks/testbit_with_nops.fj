@@ -37,9 +37,9 @@ def temp_macro g, y {
 }
 
   x:
-    bit 1   // bit0 => 'Z',  bit1 => '1'
+    bit.bit 1   // bit0 => 'Z',  bit1 => '1'
   y:
-    bit 1
+    bit.bit 1
   z:
-    bit 1
+    bit.bit 1
 

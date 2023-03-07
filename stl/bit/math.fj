@@ -23,7 +23,7 @@ ns bit {
         rep(n, i) .inc1 x+i*dw, carry
         skip
       carry:
-        bit
+        .bit
     }
 
     // Complexity: n(2@+8)
@@ -55,7 +55,7 @@ ns bit {
         .or carry, _src
         skip
       _src:
-        bit
+        .bit
     }
 
     // Complexity: n(8@+14)
@@ -66,7 +66,7 @@ ns bit {
         rep(n, i) .add1 dst+i*dw, src+i*dw, carry
         skip
       carry:
-        bit
+        .bit
     }
 
     // Complexity: n(8@+16)
@@ -79,6 +79,6 @@ ns bit {
         .not n, src
         skip
       carry:
-        bit
+        .bit
     }
 }
