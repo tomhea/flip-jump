@@ -51,14 +51,24 @@ A configurable json file that maintains ordered lists of the standard library fi
 
 # Documentation
 Every macro is documented with:
-- Its **time complexity** (and if it's significantly different, the **space complexity** as well)
+- Its **time complexity** (and if it's significantly different, the **space complexity** as well).
   - The complexities use the **@** sign, which is the log2 of the total number of fj ops in this program (can be it usually will be between 15-25).
   - The reason for this _weird_ log complexity, is that `wflip address, value` has the complexity of the number of on-bits in _address_; And it is widely used.
 - An explanation about what the macro does (usually in a python-like syntax).
-- For every one of its parameters, states its type (bit/hex/bit.vec/hex.vec/constant/address and so on).
+- The type of each of the parameters (bit/hex/bit.vec/hex.vec/constant/address and so on).
   - if a parameter is called bit/hex, it is a bit/hex variable (of size 1).
   - if a parameter (in a macro declared under the bit/hex namespaces) is used in the documentation as an array (x[:n], ascii[:8], etc.) - it is a bit/hex vector of the specified size; and that size is a size-constant.
 - Optionally, what the macro assumes about the parameters, and what can you assume about the result.
+
+
+## Reserved Names
+The standard library reserves all the labels under the "stl", "bit", and "hex" namespaces.
+
+No other labels are reserved or used by the standard library.
+
+
+## Startup Macros
+
 
 
 # Contribute
