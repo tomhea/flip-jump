@@ -34,8 +34,8 @@ def test_sub a, b @ c0_1st, c1_1st, print_1st, c0_2nd, c1_2nd, print_2nd, ah_1st
     output '\n'
     ;end
 
-  ah_1st: hex a
-  ah_2nd: hex a
-  bh:     hex b
+  ah_1st: hex.hex a
+  ah_2nd: hex.hex a
+  bh:     hex.hex b
   end:
 }

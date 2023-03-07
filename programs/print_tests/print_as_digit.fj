@@ -13,4 +13,4 @@ loop
 
 b0: bit.bit 0
 b1: bit.bit 1
-h: rep(16, i) hex i
+h: rep(16, i) hex.hex i

@@ -81,9 +81,9 @@ output "\n\n"
 loop
 
 
-vars:   rep(16, j) hex j
-vars2:  rep(16, j) hex 15-j
-consts: rep(16, j) hex j
+vars:   rep(16, j) hex.hex j
+vars2:  rep(16, j) hex.hex 15-j
+consts: rep(16, j) hex.hex j
 
 
 def inc1_print_carry hex, carry @ output1, end {

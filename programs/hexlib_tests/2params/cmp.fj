@@ -20,8 +20,8 @@ def test_cmp a, b @ lt, eq, gt, ah, bh, end {
   gt:
     output '>'
     ;end
-  ah: hex a
-  bh: hex b
+  ah: hex.hex a
+  bh: hex.hex b
   end:
     output '\n'
 }

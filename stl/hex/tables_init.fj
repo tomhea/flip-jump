@@ -15,7 +15,7 @@ ns hex {
         def init @ end > ret, res {
             ;end
           ret: ;0
-          res: hex
+          res: ..hex
           ..or.init     //  595
           ..and.init    //  595
           ..mul.init    // 1616+@

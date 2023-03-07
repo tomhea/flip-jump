@@ -81,7 +81,7 @@ ns hex {
         ;hex_switch
         ;hex_switch
 
-      upper: hex
+      upper: .hex
       end:
     }
 }

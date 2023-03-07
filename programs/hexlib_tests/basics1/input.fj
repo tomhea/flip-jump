@@ -42,7 +42,7 @@ def input_hex_print_error @ hex, error, end {
     hex.print_as_digit hex, 0
     ;end
 
-  hex: hex
+  hex: hex.hex
   error:
     output 'X'
   end:

@@ -76,7 +76,7 @@ vars:   hex.vec 16
 
 def print_if_flags hex_flags_val @ l0, l1, hex < IO {
     hex.if_flags hex, hex_flags_val>>4, l0, l1
-  hex: hex hex_flags_val & 0xf
+  hex: hex.hex hex_flags_val & 0xf
   l0:
     IO+0;l1+dw
   l1:

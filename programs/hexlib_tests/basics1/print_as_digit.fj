@@ -8,4 +8,4 @@ output '\n'
 loop
 
 
-vars:   rep(16, j) hex j
+vars:   rep(16, j) hex.hex j

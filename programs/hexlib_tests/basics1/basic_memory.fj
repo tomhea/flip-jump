@@ -52,9 +52,9 @@ output "\n\n"
 loop
 
 
-vars:   rep(16, j) hex j
+vars:   rep(16, j) hex.hex j
 vars2:  hex.vec 16, 0
-consts: rep(16, j) hex j
+consts: rep(16, j) hex.hex j
 
 
 def xor_all val < vars, consts {

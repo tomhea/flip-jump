@@ -25,7 +25,7 @@ loop
 
 b0: bit.bit 0
 b1: bit.bit 1
-h: hex
+h: hex.hex
 bits: bit.vec 12, 0x123
 hex:  hex.vec 3
 

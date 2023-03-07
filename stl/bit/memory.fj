@@ -10,7 +10,6 @@ ns bit {
     def bit value {
         ; value ? dw : 0
     }
-
     def bit {
         .bit 0
     }
@@ -21,7 +20,6 @@ ns bit {
     def vec n, value {
         rep(n, i) .bit (value>>i)&1
     }
-
     def vec n {
         rep(n, i) .bit
     }
