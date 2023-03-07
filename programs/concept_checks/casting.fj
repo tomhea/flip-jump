@@ -1,20 +1,20 @@
 stl.startup
 
-bit2hex h, b0
+stl.bit2hex h, b0
 hex.print_as_digit h, 0
-bit2hex h, b1
+stl.bit2hex h, b1
 hex.print_as_digit h, 0
 stl.output '\n'
 
-bit2hex 12, hex, bits
+stl.bit2hex 12, hex, bits
 hex.print_as_digit 3, hex, 0
 stl.output '\n'
 stl.output '\n'
 
-hex2bit 10, bits2, hex2
+stl.hex2bit 10, bits2, hex2
 hex.print_as_digit 10, hex2, 0
 stl.output '\n'
-bit2hex 40, hex2, bits2
+stl.bit2hex 40, hex2, bits2
 bit.print_hex_uint 40, bits2, 0
 stl.output '\n'
 bit.print_as_digit 40, bits2
