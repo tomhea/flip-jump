@@ -1,6 +1,6 @@
-    startup
+    stl.startup
     bit.inc1 x, carry
-    loop
+    stl.loop
 
   x:
     bit.bit 0

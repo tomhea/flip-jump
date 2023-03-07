@@ -51,7 +51,7 @@ ns hex {
     //
     // both dst,src are hexes.
     def mov dst, src @ end {
-        comp_if1 dst==src, end
+        stl.comp_if1 dst==src, end
         .zero dst
         .xor dst, src
       end:
@@ -62,7 +62,7 @@ ns hex {
     // Unsafe if dst and src overlap! but safe if they are the exact same address.
     //   dst[:n] = src[:n]
     def mov n, dst, src @ end {
-        comp_if1 dst==src, end
+        stl.comp_if1 dst==src, end
         .zero n, dst
         .xor n, dst, src
       end:
@@ -101,7 +101,7 @@ ns hex {
     //
     // both hex1,hex2 are hexes.
     def swap hex1, hex2 @ end {
-        comp_if1 hex1==hex2, end
+        stl.comp_if1 hex1==hex2, end
         .xor hex1, hex2
         .xor hex2, hex1
         .xor hex1, hex2
@@ -113,7 +113,7 @@ ns hex {
     // Unsafe if dst and src overlap! but safe if they are the exact same address.
     //   hex1[:n], hex2[:n] = hex2[:n], hex1[:n]
     def swap n, hex1, hex2 @ end {
-        comp_if1 hex1==hex2, end
+        stl.comp_if1 hex1==hex2, end
         .xor n, hex1, hex2
         .xor n, hex2, hex1
         .xor n, hex1, hex2

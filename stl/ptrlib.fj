@@ -29,15 +29,17 @@ ns bit {
 // ---------- Fast Call
 
 
-// Complexity: @-1
-def fcall label, ret_reg @ ret {
-    wflip ret_reg+w, ret, label
-    pad 2
-  ret:
-    wflip ret_reg+w, ret
-}
+ns stl {
+    // Complexity: @-1
+    def fcall label, ret_reg @ ret {
+        wflip ret_reg+w, ret, label
+        pad 2
+      ret:
+        wflip ret_reg+w, ret
+    }
 
-// Complexity: 1
-def fret ret_reg {
-    ;ret_reg
+    // Complexity: 1
+    def fret ret_reg {
+        ;ret_reg
+    }
 }

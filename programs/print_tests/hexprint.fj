@@ -1,8 +1,8 @@
-    startup
+    stl.startup
     bit.add 4, a, b
     bit.hex2ascii c, a
     bit.print c
-    loop
+    stl.loop
 
   a:
     bit.vec 4, 0x5

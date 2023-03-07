@@ -75,15 +75,15 @@ ns hex {
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
           switch__without_carry:
             // Space Complexity / total table ops: 528.
-            rep(256, d) wflip_macro .._.res+w, ((((d&0xf)+(d>>4)  )&0xf)^(d&0xf))*dw, (((d&0xf)+(d>>4)   > 0xf) ? (flip_carry+d*dw) : (clean_table_entry+d*dw))
+            rep(256, d) stl.wflip_macro .._.res+w, ((((d&0xf)+(d>>4)  )&0xf)^(d&0xf))*dw, (((d&0xf)+(d>>4)   > 0xf) ? (flip_carry+d*dw) : (clean_table_entry+d*dw))
           switch__with_carry:
             // Space Complexity / total table ops: 528.
-            rep(256, d) wflip_macro .._.res+w, ((((d&0xf)+(d>>4)+1)&0xf)^(d&0xf))*dw, (((d&0xf)+(d>>4)+1 > 0xf) ? (clean_table_entry+d*dw) : (flip_carry+d*dw))
+            rep(256, d) stl.wflip_macro .._.res+w, ((((d&0xf)+(d>>4)+1)&0xf)^(d&0xf))*dw, (((d&0xf)+(d>>4)+1 > 0xf) ? (clean_table_entry+d*dw) : (flip_carry+d*dw))
 
           flip_carry:
             // if got here - flip the carry; then clean the table-entry.
             // in about half of the times, we'll get here.
-            rep(256, i) fj .dst+dbit+8, clean_table_entry+i*dw
+            rep(256, i) stl.fj .dst+dbit+8, clean_table_entry+i*dw
           clean_table_entry:
             // xors back the table-entry from .dst
             .._.clean_table_entry__table .dst
@@ -163,15 +163,15 @@ ns hex {
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
           switch__without_carry:
             // Space Complexity / total table ops: 528.
-            rep(256, d) wflip_macro .._.res+w, ((((d&0xf)-(d>>4)  )&0xf)^(d&0xf))*dw, (((d&0xf)-(d>>4)   < 0) ? (flip_carry+d*dw) : (clean_table_entry+d*dw))
+            rep(256, d) stl.wflip_macro .._.res+w, ((((d&0xf)-(d>>4)  )&0xf)^(d&0xf))*dw, (((d&0xf)-(d>>4)   < 0) ? (flip_carry+d*dw) : (clean_table_entry+d*dw))
           switch__with_carry:
             // Space Complexity / total table ops: 528.
-            rep(256, d) wflip_macro .._.res+w, ((((d&0xf)-(d>>4)-1)&0xf)^(d&0xf))*dw, (((d&0xf)-(d>>4)-1 < 0) ? (clean_table_entry+d*dw) : (flip_carry+d*dw))
+            rep(256, d) stl.wflip_macro .._.res+w, ((((d&0xf)-(d>>4)-1)&0xf)^(d&0xf))*dw, (((d&0xf)-(d>>4)-1 < 0) ? (clean_table_entry+d*dw) : (flip_carry+d*dw))
 
           flip_carry:
             // if got here - flip the carry; then clean the table-entry.
             // in about half of the times, we'll get here.
-            rep(256, i) fj .dst+dbit+8, clean_table_entry+i*dw
+            rep(256, i) stl.fj .dst+dbit+8, clean_table_entry+i*dw
           clean_table_entry:
             // xors back the table-entry from .dst
             .._.clean_table_entry__table .dst

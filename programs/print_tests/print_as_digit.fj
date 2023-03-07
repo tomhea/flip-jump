@@ -1,15 +1,15 @@
-startup
+stl.startup
 
 bit.print_as_digit b0
 bit.print_as_digit b1
-output '\n'
+stl.output '\n'
 
 rep(16, i) hex.print_as_digit h+i*dw, 0
-output '\n'
+stl.output '\n'
 rep(16, i) hex.print_as_digit h+i*dw, 1
-output '\n'
+stl.output '\n'
 
-loop
+stl.loop
 
 b0: bit.bit 0
 b1: bit.bit 1

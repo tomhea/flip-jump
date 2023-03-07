@@ -1,6 +1,6 @@
-    startup
+    stl.startup
     bit.not x
-    loop
+    stl.loop
 
   x:
     bit.bit 0

@@ -5,23 +5,23 @@ ns hex {
     //  Time Complexity: 2@+7
     // Space Complexity: 2@+18
     //   hex := input(4bits)     // lsb first
-    def input_hex hex @ flip0, flip1, flip2, flip3, end < IO {
+    def input_hex hex @ flip0, flip1, flip2, flip3, end < stl.IO {
         // part0
         .zero hex
-        wflip IO+w, flip0, IO
+        wflip stl.IO+w, flip0, stl.IO
 
         pad 8
       flip0:
-        IO+dbit+1;IO        // part1
+        stl.IO+dbit+1;stl.IO        // part1
         hex+dbit+0;flip0    //(part0.5)
       flip1:
-        IO+dbit+2;IO        // part2
+        stl.IO+dbit+2;stl.IO        // part2
         hex+dbit+1;flip1    //(part1.5)
       flip3:
-        wflip IO+w, flip3, end  // part4
+        wflip stl.IO+w, flip3, end  // part4
         hex+dbit+3;flip3        //(part3.5)
       flip2:
-        IO+dbit+1;IO        // part3
+        stl.IO+dbit+1;stl.IO        // part3
         hex+dbit+2;flip2    //(part2.5)
       end:
     }

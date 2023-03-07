@@ -38,7 +38,7 @@ ns bit {
         .mov temp_bit, x
         rep(n-1, i) .mov x+i*dw, x+(i+1)*dw
         .mov x+(n-1)*dw, temp_bit
-        skip
+        stl.skip
       temp_bit:
         .bit
     }
@@ -50,7 +50,7 @@ ns bit {
         .mov temp_bit, x+(n-1)*dw
         rep(n-1, i) .mov x+(n-1-i)*dw, x+(n-1-i-1)*dw
         .mov x, temp_bit
-        skip
+        stl.skip
       temp_bit:
         .bit
     }

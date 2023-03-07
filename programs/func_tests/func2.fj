@@ -1,28 +1,28 @@
-startup
+stl.startup
 
 
 // Prints "AB~CD~EF"
 test2:
-    output 'A'
+    stl.output 'A'
     bit.call func2a
     bit.call func2b
-    output 'F'
+    stl.output 'F'
 
-    output '\n'
-    loop
+    stl.output '\n'
+    stl.loop
 
 func2a:
-    output 'B'
+    stl.output 'B'
     bit.call func2c
-    output 'C'
+    stl.output 'C'
     bit.return
 func2b:
-    output 'D'
+    stl.output 'D'
     bit.call func2c
-    output 'E'
+    stl.output 'E'
     bit.return
 func2c:
-    output '~'
+    stl.output '~'
     bit.return
 
 

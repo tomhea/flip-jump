@@ -1,6 +1,6 @@
-    startup
+    stl.startup
     bit.inc 2, x
-    loop
+    stl.loop
 
   x:
     bit.vec 2, 0

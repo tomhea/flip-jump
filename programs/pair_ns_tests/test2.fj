@@ -1,4 +1,4 @@
-startup
+stl.startup
 
 Pair.init
 
@@ -20,7 +20,7 @@ Pair.prints.print_two p1, p2
 Pair.add p2, p1
 Pair.prints.print_two p1, p2
 
-loop
+stl.loop
 
 
 p1: bit.vec Pair.size

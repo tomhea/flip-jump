@@ -61,11 +61,11 @@ ns bit {
     // like:  (*ptr)+dbit;
     // Assumes *ptr is dw-aligned
     // Complexity w(2phi+7)
-        // The comp_flip_if executes much less than w/2 operations.
+        // The stl.comp_flip_if executes much less than w/2 operations.
     def ptr_flip_dbit ptr {
-        rep(#dbit, i) comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
+        rep(#dbit, i) stl.comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
         .ptr_flip ptr
-        rep(#dbit, i) comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
+        rep(#dbit, i) stl.comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
     }
 
     // Assumes *ptr is dw-aligned
@@ -86,7 +86,7 @@ ns bit {
     }
     ns pointers {
         def advance_by_one_and_flip__ptr_wflip n, do_flip @ cleanup, advance < .to_flip {
-            comp_if0 do_flip, advance
+            stl.comp_if0 do_flip, advance
             wflip .to_flip+w, cleanup, .to_flip
           cleanup:
             wflip .to_flip+w, cleanup

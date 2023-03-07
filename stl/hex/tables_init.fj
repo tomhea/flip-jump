@@ -34,7 +34,7 @@ ns hex {
         // n is a size-constant, dst/ret are hexes.
         def clean_table_entry__table n, dst, ret @ clean {
           clean:
-            rep(n, d) fj    d==0?0: (dst+dbit+(#d)-1),    (d==((1<<(#d))>>1)) ? ret : clean+(d^((1<<(#d))>>1))*dw
+            rep(n, d) stl.fj    d==0?0: (dst+dbit+(#d)-1),    (d==((1<<(#d))>>1)) ? ret : clean+(d^((1<<(#d))>>1))*dw
         }
 
         // A table. When jumping to entry d - it xors d into dst, and jumps to hex._.ret

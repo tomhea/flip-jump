@@ -1,53 +1,53 @@
-startup
+stl.startup
 
 
 // Prints "ABC abcdefg ABCD-", and then 0/1, the xor of x5,y5
 test5:
-    output 'A'
+    stl.output 'A'
     bit.push res5
-    output 'B'
+    stl.output 'B'
     bit.push x5
-    output 'C'
+    stl.output 'C'
     bit.push y5
 
-    output ' '
+    stl.output ' '
     bit.call func5
-    output ' '
+    stl.output ' '
 
-    output 'A'
+    stl.output 'A'
     bit.pop y5
-    output 'B'
+    stl.output 'B'
     bit.pop x5
-    output 'C'
+    stl.output 'C'
     bit.pop_res res5
-    output 'D'
+    stl.output 'D'
 
     bit.bin2ascii ascii, res5
-    output '-'
+    stl.output '-'
     bit.print ascii
 
-    output '\n'
-    loop
+    stl.output '\n'
+    stl.loop
 
 // res = arg0 xor arg1
 func5:
     bit.zero __func5_res
     bit.get_sp __func5_arg_ptr
-    output 'a'
+    stl.output 'a'
 
     bit.dec_ptr __func5_arg_ptr
-    output 'b'
+    stl.output 'b'
     bit.xor_from_ptr __func5_res, __func5_arg_ptr
-    output 'c'
+    stl.output 'c'
     bit.dec_ptr __func5_arg_ptr
-    output 'd'
+    stl.output 'd'
     bit.xor_from_ptr __func5_res, __func5_arg_ptr
-    output 'e'
+    stl.output 'e'
 
     bit.dec_ptr __func5_arg_ptr
-    output 'f'
+    stl.output 'f'
     bit.xor_to_ptr __func5_arg_ptr, __func5_res
-    output 'g'
+    stl.output 'g'
 
     bit.return
   __func5_res:

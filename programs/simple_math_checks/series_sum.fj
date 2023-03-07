@@ -1,15 +1,15 @@
 N = 8   // 32bits
 
-startup
+stl.startup
 
 // starting printings:
-output "params:  a1 = "
+stl.output "params:  a1 = "
 print_hex_as_decimal a1
-output ",  d = "
+stl.output ",  d = "
 print_hex_as_decimal d
-output ",  n = "
+stl.output ",  n = "
 print_hex_as_decimal n
-output ".\n\n"
+stl.output ".\n\n"
 
 
 hex.mov N, n_1, n
@@ -18,26 +18,26 @@ hex.mul N, an, n_1, d   // an = d(n-1)
 hex.add N, an, a1       // an = a1 + d(n-1)
 
 // print an
-output "an = "
+stl.output "an = "
 print_hex_as_decimal an
-output ".\n"
+stl.output ".\n"
 
 hex.add N, an, a1   // a1 + an
 hex.mul N, s, an, n // s = (a1+an) * n
 hex.shr_bit N, s    // s = (a1+an) * n/2
 
 // print sum
-output "Sum(a1, a2, ..., an) = "
+stl.output "Sum(a1, a2, ..., an) = "
 print_hex_as_decimal s
-output ".\n"
+stl.output ".\n"
 
-loop
+stl.loop
 hex.init    // inits the hex.mul
 
 
 def print_hex_as_decimal hexxx < num, ret, print_num {
     hex2bit N, num, hexxx
-    fcall print_num, ret
+    stl.fcall print_num, ret
 }
 
 print_num:

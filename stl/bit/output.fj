@@ -1,14 +1,14 @@
 ns bit {
     // Complexity @+2
     //   outputs the bit 'x'.
-    def output x @ label_ptr, base_jump_label, end < IO {
+    def output x @ label_ptr, base_jump_label, end < stl.IO {
         .xor label_ptr, x
       label_ptr:
         ;base_jump_label
         pad 2
       base_jump_label:
-        IO+0;end
-        IO+1;
+        stl.IO+0;end
+        stl.IO+1;
         .not label_ptr
       end:
     }
@@ -47,7 +47,7 @@ ns bit {
     // x is a bit.
     def print_as_digit x {
         .output x
-        rep(7, i) output_bit ('0'>>(i+1)) & 1
+        rep(7, i) stl.output_bit ('0'>>(i+1)) & 1
     }
 
     // Complexity: @+9
@@ -71,16 +71,16 @@ ns bit {
     //
     // @Assumes n can be divided by 4.
     def print_hex_uint n, x, x_prefix @ after_print_x, printed_flag, end {
-        comp_if0 x_prefix, after_print_x
-        output '0'
-        output 'x'
+        stl.comp_if0 x_prefix, after_print_x
+        stl.output '0'
+        stl.output 'x'
       after_print_x:
 
         .zero printed_flag
         rep(n/4, i) .print_hex_uint.print_digit x+(n/4-1-i)*4*dw, printed_flag
 
         .if1 printed_flag, end
-        output '0'
+        stl.output '0'
         ;end
 
       printed_flag:
@@ -115,7 +115,7 @@ ns bit {
     // @Assumes n can be divided by 4.
     def print_hex_int n, x, x_prefix @ do_print {
         .if0 x+(n-1)*dw, do_print
-        output '-'
+        stl.output '-'
         .neg n, x
       do_print:
         .print_hex_uint n, x, x_prefix
@@ -151,13 +151,13 @@ ns bit {
 
       div10:
         .div10 n, dst, src
-        fret ret_reg
+        stl.fret ret_reg
       xor:
         .xor n, src, dst     // can double_exact_xor and zero dst too - so to save the "zero n dst" inside the next div10
         .if1 n, dst, end_xor
         .not zero_flag
       end_xor:
-        fret ret_reg
+        stl.fret ret_reg
 
         // takes n(2+28/93*5) = 3.5n space
         dst: .vec n
@@ -182,11 +182,11 @@ ns bit {
         // src and ascii_res are both bit[:4], and char_flag, zero_flag and start_printing are flags.
         def div10_step div10, xor, ret_reg, src, ascii_res, char_flag, zero_flag, start_printing {
             ..if1 zero_flag, start_printing
-            fcall div10, ret_reg
+            stl.fcall div10, ret_reg
             ..zero 4, ascii_res
             rep(4, i) ..double_exact_xor ascii_res+dbit+i*dw, src+dbit+i*dw, src+i*dw
             ..not char_flag
-            fcall xor, ret_reg
+            stl.fcall xor, ret_reg
         }
 
         // Complexity: 5@+12
@@ -195,7 +195,7 @@ ns bit {
         def print_char ascii4, char_flag @ end {
             ..if0 char_flag, end
             rep(4, i) ..output ascii4+i*dw
-            rep(4, i) output_bit (0x3>>i)&1
+            rep(4, i) stl.output_bit (0x3>>i)&1
           end:
         }
     }
@@ -209,7 +209,7 @@ ns bit {
     // It's bigger than log(2)/log(10) by 0.015%, which is just enough.
     def print_dec_int n, x @ do_print {
         .if0 x+(n-1)*dw, do_print
-        output '-'
+        stl.output '-'
         .neg n, x
       do_print:
         .print_dec_uint n, x

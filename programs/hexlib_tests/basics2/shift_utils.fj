@@ -3,19 +3,19 @@ def test_shl_bit n, x @ lt, eq, gt, xh, ch, end {
     hex.cmp n, xh, ch, lt, eq, gt
 
   lt:
-    output '<'
+    stl.output '<'
     ;end
   eq:
-    output '='
+    stl.output '='
     ;end
   gt:
-    output '>'
+    stl.output '>'
     ;end
 
   xh: hex.vec n, x
   ch: hex.vec n, (x<<1)&((1<<(4*n))-1)
   end:
-    output '\n'
+    stl.output '\n'
 }
 
 def test_shr_bit n, x @ lt, eq, gt, xh, ch, end {
@@ -23,19 +23,19 @@ def test_shr_bit n, x @ lt, eq, gt, xh, ch, end {
     hex.cmp n, xh, ch, lt, eq, gt
 
   lt:
-    output '<'
+    stl.output '<'
     ;end
   eq:
-    output '='
+    stl.output '='
     ;end
   gt:
-    output '>'
+    stl.output '>'
     ;end
 
   xh: hex.vec n, x
   ch: hex.vec n, (x>>1)&((1<<(4*n))-1)
   end:
-    output '\n'
+    stl.output '\n'
 }
 
 
@@ -44,19 +44,19 @@ def test_shl_hex n, x @ lt, eq, gt, xh, ch, end {
     hex.cmp n, xh, ch, lt, eq, gt
 
   lt:
-    output '<'
+    stl.output '<'
     ;end
   eq:
-    output '='
+    stl.output '='
     ;end
   gt:
-    output '>'
+    stl.output '>'
     ;end
 
   xh: hex.vec n, x
   ch: hex.vec n, (x<<4)&((1<<(4*n))-1)
   end:
-    output '\n'
+    stl.output '\n'
 }
 
 def test_shr_hex n, x @ lt, eq, gt, xh, ch, end {
@@ -64,17 +64,17 @@ def test_shr_hex n, x @ lt, eq, gt, xh, ch, end {
     hex.cmp n, xh, ch, lt, eq, gt
 
   lt:
-    output '<'
+    stl.output '<'
     ;end
   eq:
-    output '='
+    stl.output '='
     ;end
   gt:
-    output '>'
+    stl.output '>'
     ;end
 
   xh: hex.vec n, x
   ch: hex.vec n, (x>>4)&((1<<(4*n))-1)
   end:
-    output '\n'
+    stl.output '\n'
 }

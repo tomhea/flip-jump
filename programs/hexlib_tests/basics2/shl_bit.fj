@@ -1,8 +1,8 @@
-startup
+stl.startup
 
 rep(256, i) test_shl_bit 2, i
 
-loop
+stl.loop
 
 
 hex.init

@@ -1,6 +1,6 @@
-    startup
+    stl.startup
     rep(7, i) bit.exact_not x+i+i
-    loop
+    stl.loop
 
   x:
     bit.bit 0

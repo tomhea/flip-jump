@@ -1,7 +1,7 @@
-    startup
+    stl.startup
 
     bit.print_hex_int w, a, 1
-    loop
+    stl.loop
 
   a:
     bit.vec w, 0-0xabcdef

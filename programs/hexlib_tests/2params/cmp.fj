@@ -1,8 +1,8 @@
-startup
+stl.startup
 
 rep(256, i) test_cmp i&0xf, i>>4
 
-loop
+stl.loop
 
 
 hex.init
@@ -12,16 +12,16 @@ def test_cmp a, b @ lt, eq, gt, ah, bh, end {
     hex.cmp ah, bh, lt, eq, gt
 
   lt:
-    output '<'
+    stl.output '<'
     ;end
   eq:
-    output '='
+    stl.output '='
     ;end
   gt:
-    output '>'
+    stl.output '>'
     ;end
   ah: hex.hex a
   bh: hex.hex b
   end:
-    output '\n'
+    stl.output '\n'
 }

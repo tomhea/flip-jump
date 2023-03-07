@@ -71,7 +71,7 @@ ns bit {
     //   dst = src
     // dst,src are bits.
     def mov dst, src @ end {
-        comp_if1 dst==src, end
+        stl.comp_if1 dst==src, end
         .unsafe_mov dst, src
       end:
     }
@@ -81,7 +81,7 @@ ns bit {
     //   dst[:n] = src[:n]
     // dst,src are bit.vec[:n].
     def mov n, dst, src @ end {
-        comp_if1 dst==src, end
+        stl.comp_if1 dst==src, end
         rep(n, i) .unsafe_mov dst+i*dw, src+i*dw
       end:
     }

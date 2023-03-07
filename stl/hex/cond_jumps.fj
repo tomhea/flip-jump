@@ -14,7 +14,7 @@ ns hex {
 
         pad 16
       switch:
-        rep(16, i) fj    (flags>>i)&1 ? return+dbit+0 : 0,    clean
+        rep(16, i) stl.fj    (flags>>i)&1 ? return+dbit+0 : 0,    clean
 
       clean:
         wflip hex+w, switch
@@ -142,7 +142,7 @@ ns hex {
             //   if dst == src:     flips dbit+0
             //   if dst  < src:     no flips
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
-            rep(256, d) fj    ((d&0xf) > (d>>4)) ? .._.ret+dbit+1 : (((d&0xf) == (d>>4)) ? .._.ret+dbit : 0),    clean_table_entry+d*dw
+            rep(256, d) stl.fj    ((d&0xf) > (d>>4)) ? .._.ret+dbit+1 : (((d&0xf) == (d>>4)) ? .._.ret+dbit : 0),    clean_table_entry+d*dw
 
           clean_table_entry:
             // xors back the table-entry from .dst

@@ -1,4 +1,4 @@
-startup
+stl.startup
 
 
 loop:
@@ -39,7 +39,7 @@ loop:
 
   do_print:
     print_int a
-    output '\n'
+    stl.output '\n'
 
     bit.if should_finish, loop, finish
 
@@ -52,7 +52,7 @@ loop:
     line_ended loop, finish, finish
 
   finish:
-    loop
+    stl.loop
 
 
 

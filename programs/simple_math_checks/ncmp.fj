@@ -1,19 +1,19 @@
-startup
-default_input 0, 0
+stl.startup
+stl.default_input 0, 0
 
 
 n=4
 bit.cmp n, a, b, lt, eq, gt
 
 lt:
-    output '<'
-    loop
+    stl.output '<'
+    stl.loop
 eq:
-    output '='
-    loop
+    stl.output '='
+    stl.loop
 gt:
-    output '>'
-    loop
+    stl.output '>'
+    stl.loop
 
   a:
     bit.vec n, 3

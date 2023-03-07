@@ -6,9 +6,9 @@ ns bit {
     // Complexity: 2@-2
     //   input one bit into the bit-variable, 'dst'.
     // dst is an output parameter.
-    def input_bit dst < IO {
+    def input_bit dst < stl.IO {
         .zero dst
-        .xor dst, IO
+        .xor dst, stl.IO
     }
 
 

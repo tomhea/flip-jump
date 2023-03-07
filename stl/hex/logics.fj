@@ -174,7 +174,7 @@ ns hex {
             //   so that xoring it with dst will update it to the or-result.
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
             // Space Complexity / total table ops: 337.
-            rep(256, d) wflip_macro .._.res+w, (((d&0xf)|(d>>4))^(d&0xf))*dw, clean_table_entry+d*dw
+            rep(256, d) stl.wflip_macro .._.res+w, (((d&0xf)|(d>>4))^(d&0xf))*dw, clean_table_entry+d*dw
 
           clean_table_entry:
             // xors back the table-entry from .dst
@@ -217,7 +217,7 @@ ns hex {
             //   so that xoring it with dst will update it to the and-result.
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
             // Space Complexity / total table ops: 337.
-            rep(256, d) wflip_macro .._.res+w, (((d&0xf)&(d>>4))^(d&0xf))*dw, clean_table_entry+d*dw
+            rep(256, d) stl.wflip_macro .._.res+w, (((d&0xf)&(d>>4))^(d&0xf))*dw, clean_table_entry+d*dw
 
           clean_table_entry:
             // xors back the table-entry from .dst

@@ -1,8 +1,8 @@
-startup
+stl.startup
 
 rep(256, i) test_sub i&0xf, i>>4
 
-loop
+stl.loop
 
 
 hex.init
@@ -13,25 +13,25 @@ def test_sub a, b @ c0_1st, c1_1st, print_1st, c0_2nd, c1_2nd, print_2nd, ah_1st
     hex.sub ah_1st, bh
     hex.sub.clear_carry c0_1st, c1_1st
   c0_1st:
-    output '0'
+    stl.output '0'
     ;print_1st
   c1_1st:
-    output 'f'
+    stl.output 'f'
   print_1st:
     hex.print_as_digit ah_1st, 0
-    output '-'
+    stl.output '-'
 
     hex.sub.not_carry
     hex.sub ah_2nd, bh
     hex.sub.clear_carry c0_2nd, c1_2nd
   c0_2nd:
-    output '0'
+    stl.output '0'
     ;print_2nd
   c1_2nd:
-    output 'f'
+    stl.output 'f'
   print_2nd:
     hex.print_as_digit ah_2nd, 0
-    output '\n'
+    stl.output '\n'
     ;end
 
   ah_1st: hex.hex a

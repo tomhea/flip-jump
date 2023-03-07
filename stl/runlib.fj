@@ -3,143 +3,144 @@ dw   = 2 * w    // double word size
 dbit = w + #w   // the bit-distance from the variable's start, to the bit value (w + w_width)
 
 
+ns stl {
+    // startup Macro - should be the first piece of code in your program.
+    def startup > IO, code_start {
+        ;.code_start     // 0w;1w : first code to run
+      IO:
+        ;0              // 2w;3w : sets the io_handler to address 0 (good for a future wflip)
 
-// Startup Macro - should be the first piece of code in your program.
-def startup > IO, code_start {
-    ;code_start     // 0w;1w : first code to run
-  IO:
-    ;0              // 2w;3w : sets the io_handler to address 0 (good for a future wflip)
-
-  code_start:
-                    // 4w;5w : start of code
-}
-
-
-
-// ---------- Basic Functionality
-
-
-// Complexity: 1
-//   macro for 1 flip-jump op
-def fj f, j {
-    f;j
-}
-
-
-// Complexity: @
-//   macro for 1 wflip op
-def wflip_macro dst, val {
-    wflip dst, val
-}
-
-
-// Complexity: @
-//   macro for 1 wflip op (with jump)
-def wflip_macro dst, val, jmp_addr {
-    wflip dst, val, jmp_addr
-}
-
-
-//// @note - padding can also be implemented in fj itself! (but the saved-word pad is more compile-time efficient)
-////   pad zeros up to the address
-//def pad address @ pad_start {
-//  pad_start:
-//    rep((0-pad_start/(2*w))%address, i) fj 0, 0
-//}
+      code_start:
+                        // 4w;5w : start of code
+    }
 
 
 
-// ---------- Compilation Time Comparisons:
-// Complexity: 1
+    // ---------- Basic Functionality
 
 
-// if expression is 0 (compilation time), jump to l0. else jump to l1
-def comp_if expr, l0, l1 {
-    ; expr ? l1 : l0
-}
-
-// if expression is 0 (compilation time), jump to l0. else continue
-def comp_if0 expr, l0 @ continue {
-    comp_if expr, l0, continue
-  continue:
-}
-
-// if expression is not 0 (compilation time), jump to l1. else continue
-def comp_if1 expr, l1 @ continue {
-    comp_if expr, continue, l1
-  continue:
-}
+    // Complexity: 1
+    //   macro for 1 flip-jump op
+    def fj f, j {
+        f;j
+    }
 
 
-// if expr != 0 (compilation time), flip the given bit.
-//
-// expr is a constant, and bit is a general bit-address.
-def comp_flip_if bit, expr {
-    (expr ? bit : 0);
-}
+    // Complexity: @
+    //   macro for 1 wflip op
+    def wflip_macro dst, val {
+        wflip dst, val
+    }
 
 
-
-// ---------- Unconditional Jumps
-// Complexity: 1
-
-
-// skip the next flip-jump op
-def skip {
-    ;$ + dw
-}
+    // Complexity: @
+    //   macro for 1 wflip op (with jump)
+    def wflip_macro dst, val, jmp_addr {
+        wflip dst, val, jmp_addr
+    }
 
 
-// finish (loop to self)
-def loop {
-    ;$ - dw
-}
+    //// @note - padding can also be implemented in fj itself! (but the saved-word pad is more compile-time efficient)
+    ////   pad zeros up to the address
+    //def pad address @ pad_start {
+    //  pad_start:
+    //    rep((0-pad_start/(2*w))%address, i) fj 0, 0
+    //}
 
 
 
-// ---------- Input Handler
+    // ---------- Compilation Time Comparisons:
+    // Complexity: 1
 
 
-// sets the input handlers. When inputting 0 - in0_handler will be called, and for 1 - in1_handler will be called.
-//
-// @note, most of the programs won't use this macro, as they'll use (at the place they want to input) bit.input_bit,
-// or most likely, something like the next code:
-//    wflip IO+w, input_0, IO
-//    pad 2
-//   input_0:
-//    wflip IO+w, input_0, jump_to_input_0_handling
-//   input_1:
-//    wflip IO+w, input_0, jump_to_input_0_handling
-//
-// @note that if you use this macro, you can't touch IO yourself, or use macros that does it; so know what you are doing.
-def default_input in0_handler, in1_handler @ io_handler, end < IO {
-    wflip IO+w, io_handler, end
-    pad 2
-  io_handler:
-    ;in0_handler
-    ;in1_handler
-  end:
-}
+    // if expression is 0 (compilation time), jump to l0. else jump to l1
+    def comp_if expr, l0, l1 {
+        ; expr ? l1 : l0
+    }
+
+    // if expression is 0 (compilation time), jump to l0. else continue
+    def comp_if0 expr, l0 @ continue {
+        .comp_if expr, l0, continue
+      continue:
+    }
+
+    // if expression is not 0 (compilation time), jump to l1. else continue
+    def comp_if1 expr, l1 @ continue {
+        .comp_if expr, continue, l1
+      continue:
+    }
+
+
+    // if expr != 0 (compilation time), flip the given bit.
+    //
+    // expr is a constant, and bit is a general bit-address.
+    def comp_flip_if bit, expr {
+        (expr ? bit : 0);
+    }
 
 
 
-// ---------- Output constants:
+    // ---------- Unconditional Jumps
+    // Complexity: 1
 
 
-// Complexity: 1
-// bit is a constant. 0 will output o, anything else will output 1.
-def output_bit bit < IO {
-    IO + (bit ? 1 : 0);
-}
+    // skip the next flip-jump op
+    def skip {
+        ;$ + dw
+    }
 
-// Complexity: 8
-// ascii is a constant. The macro outputs the byte (ascii & 0xff)
-def output_char ascii {
-    rep(8, i) output_bit (ascii>>i)&1
-}
 
-// Complexity: 8 * string_length
-// str is a constant. The macro outputs the bytes of it (from lsB to msB) until it becomes all zeros.
-def output str {
-    rep(((#str)+7)>>3, i) output_char (str>>(8*i))&0xff
+    // finish (loop to self)
+    def loop {
+        ;$ - dw
+    }
+
+
+
+    // ---------- Input Handler
+
+
+    // sets the input handlers. When inputting 0 - in0_handler will be called, and for 1 - in1_handler will be called.
+    //
+    // @note, most of the programs won't use this macro, as they'll use (at the place they want to input) bit.input_bit,
+    // or most likely, something like the next code:
+    //    wflip stl.IO+w, input_0, stl.IO
+    //    pad 2
+    //   input_0:
+    //    wflip stl.IO+w, input_0, jump_to_input_0_handling
+    //   input_1:
+    //    wflip stl.IO+w, input_0, jump_to_input_0_handling
+    //
+    // @note that if you use this macro, you can't touch stl.IO yourself, or use macros that does it; so know what you are doing.
+    def default_input in0_handler, in1_handler @ io_handler, end < .IO {
+        wflip .IO+w, io_handler, end
+        pad 2
+      io_handler:
+        ;in0_handler
+        ;in1_handler
+      end:
+    }
+
+
+
+    // ---------- Output constants:
+
+
+    // Complexity: 1
+    // bit is a constant. 0 will output o, anything else will output 1.
+    def output_bit bit < .IO {
+        .IO + (bit ? 1 : 0);
+    }
+
+    // Complexity: 8
+    // ascii is a constant. The macro outputs the byte (ascii & 0xff)
+    def output_char ascii {
+        rep(8, i) .output_bit (ascii>>i)&1
+    }
+
+    // Complexity: 8 * string_length
+    // str is a constant. The macro outputs the bytes of it (from lsB to msB) until it becomes all zeros.
+    def output str {
+        rep(((#str)+7)>>3, i) .output_char (str>>(8*i))&0xff
+    }
 }

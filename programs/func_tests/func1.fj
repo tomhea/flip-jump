@@ -1,17 +1,17 @@
-startup
+stl.startup
 
 
 // Prints "ABC"
 test1:
-    output 'A'
+    stl.output 'A'
     bit.call func1
-    output 'C'
+    stl.output 'C'
 
-    output '\n'
-    loop
+    stl.output '\n'
+    stl.loop
 
 func1:
-    output 'B'
+    stl.output 'B'
     bit.return
 
 

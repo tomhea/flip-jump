@@ -21,7 +21,7 @@ ns bit {
     def inc n, x @ carry {
         .one carry
         rep(n, i) .inc1 x+i*dw, carry
-        skip
+        stl.skip
       carry:
         .bit
     }
@@ -53,7 +53,7 @@ ns bit {
         .inc1 dst, _src
         .inc1 dst, carry
         .or carry, _src
-        skip
+        stl.skip
       _src:
         .bit
     }
@@ -64,7 +64,7 @@ ns bit {
     def add n, dst, src @ carry {
         .zero carry
         rep(n, i) .add1 dst+i*dw, src+i*dw, carry
-        skip
+        stl.skip
       carry:
         .bit
     }
@@ -77,7 +77,7 @@ ns bit {
         .one carry
         rep(n, i) .add1 dst+i*dw, src+i*dw, carry
         .not n, src
-        skip
+        stl.skip
       carry:
         .bit
     }

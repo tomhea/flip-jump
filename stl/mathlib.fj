@@ -242,33 +242,33 @@ ns hex {
 
             pad 16  // not really needed
           switch_small_table:
-            rep(16, d) fj    (d==0)?0: (.add_carry_dst+dbit+(#d)+3),             (d==((1<<(#d))>>1)) ? .add_carry_dst  : switch_small_table   +(d^((1<<(#d))>>1))*dw
+            rep(16, d) stl.fj    (d==0)?0: (.add_carry_dst+dbit+(#d)+3),             (d==((1<<(#d))>>1)) ? .add_carry_dst  : switch_small_table   +(d^((1<<(#d))>>1))*dw
           set_carry_small_table:
-            rep(16, d) fj    (d==0)?0: (.add_carry_dst+dbit+(#d)-1),             (d==((1<<(#d))>>1)) ? add_res         : set_carry_small_table+(d^((1<<(#d))>>1))*dw
+            rep(16, d) stl.fj    (d==0)?0: (.add_carry_dst+dbit+(#d)-1),             (d==((1<<(#d))>>1)) ? add_res         : set_carry_small_table+(d^((1<<(#d))>>1))*dw
           add_carry_small_table:
-            rep(16, d) fj    (d==0) ? .add_carry_dst+dbit+8 : (..add.dst+dbit+(#d)+3),        (d==0) ? .add_carry_dst  : add_carry_small_table+(d^((1<<(#d))>>1))*dw
+            rep(16, d) stl.fj    (d==0) ? .add_carry_dst+dbit+8 : (..add.dst+dbit+(#d)+3),        (d==0) ? .add_carry_dst  : add_carry_small_table+(d^((1<<(#d))>>1))*dw
           clean_small_table:
-            rep(16, d) fj    (d==0) ? .dst+dbit+9           : (     .dst+dbit+(#d)+3),        (d==0) ? .ret            : clean_small_table    +(d^((1<<(#d))>>1))*dw
+            rep(16, d) stl.fj    (d==0) ? .dst+dbit+9           : (     .dst+dbit+(#d)+3),        (d==0) ? .ret            : clean_small_table    +(d^((1<<(#d))>>1))*dw
 
 
             pad 1024
           switch:
-            rep(256, d) fj              0,    switch_small_table    + (((d&0xf)*(d>>4)) & 0xf) * dw
+            rep(256, d) stl.fj              0,    switch_small_table    + (((d&0xf)*(d>>4)) & 0xf) * dw
           set_carry_0:
-            rep(256, d) fj    .dst+dbit+9,    set_carry_small_table +  (((d&0xf)*(d>>4)) >> 4) * dw
+            rep(256, d) stl.fj    .dst+dbit+9,    set_carry_small_table +  (((d&0xf)*(d>>4)) >> 4) * dw
           set_carry_1:
-            rep(256, d) fj    .dst+dbit+8,    set_carry_small_table + ((((d&0xf)*(d>>4)) >> 4)+1) * dw
+            rep(256, d) stl.fj    .dst+dbit+8,    set_carry_small_table + ((((d&0xf)*(d>>4)) >> 4)+1) * dw
           clean:
-            rep(256, d) fj    .dst+dbit+8,    clean_small_table     +    (d>>4) * dw
+            rep(256, d) stl.fj    .dst+dbit+8,    clean_small_table     +    (d>>4) * dw
 
 
           // needs to be 1024-padded
           add_carry:
-            rep(256, d) fj    .dst+dbit + (((d&0xf)+(d>>4) > 0xf) ? 9 : 8),    add_carry_small_table + (((d&0xf)+(d>>4)) & 0xf) * dw
+            rep(256, d) stl.fj    .dst+dbit + (((d&0xf)+(d>>4) > 0xf) ? 9 : 8),    add_carry_small_table + (((d&0xf)+(d>>4)) & 0xf) * dw
           clean_add:
-            rep(256, d) fj    (d==0) ? .add_carry_dst+dbit+8 : (.add_carry_dst+dbit+(#d)-1),    (d==0) ? .dst : clean_add  +(d^((1<<(#d))>>1))*dw
+            rep(256, d) stl.fj    (d==0) ? .add_carry_dst+dbit+8 : (.add_carry_dst+dbit+(#d)-1),    (d==0) ? .dst : clean_add  +(d^((1<<(#d))>>1))*dw
           clean_carry:
-            rep( 16, d) fj    (d==0) ? .add_carry_dst+dbit+9 : (.add_carry_dst+dbit+(#d)-1),    (d==0) ? .dst : clean_carry+(d^((1<<(#d))>>1))*dw
+            rep( 16, d) stl.fj    (d==0) ? .add_carry_dst+dbit+9 : (.add_carry_dst+dbit+(#d)-1),    (d==0) ? .dst : clean_carry+(d^((1<<(#d))>>1))*dw
 
 
           end:
@@ -448,13 +448,13 @@ ns hex {
         .shl_hex n, r
         .xor r, a+(n-1)*dw
 
-        fcall do_cmp_sub_func, ret
+        stl.fcall do_cmp_sub_func, ret
         jump_to_flip+dbit+0;
-        fcall do_cmp_sub_func, ret
+        stl.fcall do_cmp_sub_func, ret
         jump_to_flip+dbit+1;
-        fcall do_cmp_sub_func, ret
+        stl.fcall do_cmp_sub_func, ret
         jump_to_flip+dbit+0;
-        fcall do_cmp_sub_func, ret
+        stl.fcall do_cmp_sub_func, ret
         jump_to_flip+dbit+1;
 
         .shl_hex n, a

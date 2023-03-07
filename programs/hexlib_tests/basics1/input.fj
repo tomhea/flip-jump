@@ -1,31 +1,31 @@
-startup
+stl.startup
 
 
 // input_hex
-output "input_hex:\n"
+stl.output "input_hex:\n"
 rep(16, i) input2hex input+i*dw
 hex.print_as_digit 16, input, 0
 input2hex garbage
-output '\n'
+stl.output '\n'
 
 // input_hex
 rep(64, i) input_hex_print_error
 input2hex garbage
-output "\n\n"
+stl.output "\n\n"
 
 
 // input-print
-output "input-print:\n"
+stl.output "input-print:\n"
 hex.input 16, input
 hex.print 16, input
 input2hex garbage
-output '\n'
+stl.output '\n'
 rep(11, i) cat_char
 input2hex garbage
-output "\n\n"
+stl.output "\n\n"
 
 
-loop
+stl.loop
 
 
 input:   hex.vec 16*2
@@ -44,7 +44,7 @@ def input_hex_print_error @ hex, error, end {
 
   hex: hex.hex
   error:
-    output 'X'
+    stl.output 'X'
   end:
 }
 

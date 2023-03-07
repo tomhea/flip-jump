@@ -38,18 +38,18 @@ ns hex {
         pad 64
         //part4
       add_switch:
-        rep(16, d) fj             0,    xor_switch+(d^(d+1))*dw
-        rep(16, d) fj    dst+dbit+4,    xor_switch+(d^(d+2))*dw
-        rep(16, d) fj    dst+dbit+5,    xor_switch+(d^(d+3))*dw
-        rep(16, d) fj    dst+dbit+5,    add4_switch+d*dw
+        rep(16, d) stl.fj             0,    xor_switch+(d^(d+1))*dw
+        rep(16, d) stl.fj    dst+dbit+4,    xor_switch+(d^(d+2))*dw
+        rep(16, d) stl.fj    dst+dbit+5,    xor_switch+(d^(d+3))*dw
+        rep(16, d) stl.fj    dst+dbit+5,    add4_switch+d*dw
       add4_switch:
-        rep(16, d) fj    dst+dbit+4,    xor_switch+(d^(d+4))*dw
+        rep(16, d) stl.fj    dst+dbit+4,    xor_switch+(d^(d+4))*dw
 
         pad 32
         //part5
       xor_switch:
         ._.clean_table_entry__table 16, dst, after_add
-        rep(16, i) fj    is_carry+dbit,    xor_switch+i*dw
+        rep(16, i) stl.fj    is_carry+dbit,    xor_switch+i*dw
 
       after_add:
         //part6
