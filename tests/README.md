@@ -46,6 +46,8 @@ Then add a new line to the relevant compile-csv and run-csv files, according to 
 
 ### Compile CSVs format:
 
+(files with the next format: ```test_compile_*.csv```)
+
 | test name    | .fj paths                                                   | out .fjm path                | memory width | version | flags | use stl | treat warnings as errors |
 |--------------|-------------------------------------------------------------|------------------------------|--------------|---------|-------|---------|--------------------------|
 | example_test | path/to/example_1.fj &#124; ... &#124; path/to/example_n.fj | path/to/compiled/example.fjm | 64           | 1       | 0     | True    | True                     |
@@ -54,8 +56,16 @@ Note that you can specify a single file, or a '|' separated list of files in the
 
 ### Run CSVs format:
 
+(files with the next format: ```test_run_*.csv```)
+
 | test name    | .fjm path                    | input file path           | output file path            | is input a binary file | is output a binary file |
 |--------------|------------------------------|---------------------------|-----------------------------|------------------------|-------------------------|
 | example_test | path/to/compiled/example.fjm | path/to/inputs/example.in | path/to/outputs/example.out | False                  | False                   |
 
 Note that you can also emit specifying a file in the input/output cell, and leave it empty. In that case an empty input/output will be used.
+
+### Xfail Lists
+
+If you want to add your test, but you want it to [xfail](https://docs.pytest.org/en/7.1.x/how-to/skipping.html#xfail-mark-test-functions-as-expected-to-fail), you can add your test name to:
+- ```xfail_compile.csv``` - to mark its compilation as expected to fail.
+- ```xfail_run.csv``` - to mark its run as expected to fail.

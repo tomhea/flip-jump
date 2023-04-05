@@ -74,35 +74,43 @@ def argument_line_iterator(csv_file_path: Path, num_of_args: int) -> Iterable[Li
             if line:
                 assert len(line) == num_of_args, f'expects {num_of_args} args, got {len(line)} ' \
                                                  f'(file {Path(csv_file_path).absolute()}, line {line_index + 1})'
-                yield map(str.strip, line)
+                yield list(map(str.strip, line))
 
 
-def get_compile_tests_params_from_csv(csv_file_path: Path) -> List:
+def get_compile_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str]) -> List:
     """
     read the compile-tests from the csv
     @param csv_file_path: read tests from this csv
+    @param xfail_list: list of tests names to mark with xfail (expected to fail)
     @return: the list of pytest.params(CompileTestArgs, )
     """
     params = []
 
     for line in argument_line_iterator(csv_file_path, CompileTestArgs.num_of_args):
         args = CompileTestArgs(*line)
-        params.append(pytest.param(args, marks=pytest.mark.run(order=COMPILE_ORDER_INDEX)))
+        test_marks = [pytest.mark.run(order=COMPILE_ORDER_INDEX)]
+        if args.test_name in xfail_list:
+            test_marks.append(pytest.mark.xfail())
+        params.append(pytest.param(args, marks=test_marks))
 
     return params
 
 
-def get_run_tests_params_from_csv(csv_file_path: Path) -> List:
+def get_run_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str]) -> List:
     """
     read the run-tests from the csv
     @param csv_file_path: read tests from this csv
+    @param xfail_list: list of tests names to mark with xfail (expected to fail)
     @return: the list of pytest.params(RunTestArgs, depends=)
     """
     params = []
 
     for line in argument_line_iterator(csv_file_path, RunTestArgs.num_of_args):
         args = RunTestArgs(*line)
-        params.append(pytest.param(args, marks=pytest.mark.run(order=RUN_ORDER_INDEX)))
+        test_marks = [pytest.mark.run(order=RUN_ORDER_INDEX)]
+        if args.test_name in xfail_list:
+            test_marks.append(pytest.mark.xfail())
+        params.append(pytest.param(args, marks=test_marks))
 
     return params
 
@@ -295,12 +303,15 @@ def get_tests_from_csvs(get_option: Callable[[str], Any]) -> Tuple[List, List]:
 
     types_to_run__heavy_first = get_test_types_to_run__heavy_first(get_option)
 
+    compile_xfail_list = [line[0] for line in argument_line_iterator(TESTS_PATH / "xfail_compile.csv", 1)]
+    run_xfail_list = [line[0] for line in argument_line_iterator(TESTS_PATH / "xfail_run.csv", 1)]
+
     compile_tests = []
     if check_compile_tests:
         compiles_csvs = {test_type: TESTS_PATH / f"test_compile_{test_type}.csv"
                          for test_type in types_to_run__heavy_first}
         for test_type in types_to_run__heavy_first:
-            compile_tests.extend(get_compile_tests_params_from_csv(compiles_csvs[test_type]))
+            compile_tests.extend(get_compile_tests_params_from_csv(compiles_csvs[test_type], compile_xfail_list))
         compile_tests = filter_by_test_name(compile_tests, get_option)
 
     run_tests = []
@@ -308,7 +319,7 @@ def get_tests_from_csvs(get_option: Callable[[str], Any]) -> Tuple[List, List]:
         run_csvs = {test_type: TESTS_PATH / f"test_run_{test_type}.csv"
                     for test_type in types_to_run__heavy_first}
         for test_type in types_to_run__heavy_first:
-            run_tests.extend(get_run_tests_params_from_csv(run_csvs[test_type]))
+            run_tests.extend(get_run_tests_params_from_csv(run_csvs[test_type], run_xfail_list))
         run_tests = filter_by_test_name(run_tests, get_option)
 
     return compile_tests, run_tests
