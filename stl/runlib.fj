@@ -51,14 +51,6 @@ ns stl {
     }
 
 
-    //// @note - padding can also be implemented in fj itself! (but the saved-word pad is more compile-time efficient)
-    ////   pad zeros up to the address
-    //def pad address @ pad_start {
-    //  pad_start:
-    //    rep((0-pad_start/(2*w))%address, i) fj 0, 0
-    //}
-
-
 
     // ---------- Compilation Time Comparisons:
     // Complexity: 1

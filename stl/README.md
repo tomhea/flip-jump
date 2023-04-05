@@ -60,6 +60,7 @@ Every macro is documented with:
   - if a parameter (in a macro declared under the bit/hex namespaces) is used in the documentation as an array (x[:n], ascii[:8], etc.) - it is a bit/hex vector of the specified size; and that size is a size-constant.
 - Optionally, what the macro assumes about the parameters, and what can you assume about the result.
 
+# Thing You Need To Know
 
 ## Reserved Names
 The standard library reserves all the labels under the "stl", "bit", and "hex" namespaces.
@@ -76,6 +77,25 @@ Basically, The first line in a FlipJump program should be ```stl.startup```.
 
 Instead, you can also use the ```stl.startup_and_init_all``` macro, which does the startup, and also every ```init``` macro that's exist in the standard library.
 
+## Padding
+We decided to make the padding a part of the FlipJump assembly.
+
+```pad n``` - A special assembly-op that fills the current address with arbitrary fj ops, until the address is divisible by (n*dw).
+
+We made it a part of the FlipJump assembly, in spite of the fact that padding CAN be defined with the other primitives of the FlipJump assembly:
+```c
+// @note - padding can also be implemented in fj itself! (but the saved-word pad is more compile-time efficient)
+//   pad zeros up to the address
+def pad address @ pad_start {
+  pad_start:
+    rep((0-pad_start/(2*w))%address, i) fj 0, 0
+}
+```
+By making the padding a part of the assembly, we can (and do) **utilize the free space** we just gained.
+
+The free space, gained by the padding, is also **being used for storing fj-ops that will be created by future ```wflip```s**. 
+
+That way, **using the ```pad n```** macros won't only **not waste up space**, but might even **save space**; That's because ```wflip```s to a padded address are smaller (less 1's in that address binary representation -> less fj-ops will be created for ```wflip```ing there).
 
 # Contribute
 
