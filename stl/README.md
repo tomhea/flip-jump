@@ -68,7 +68,13 @@ No other labels are reserved or used by the standard library.
 
 
 ## Startup Macros
+FlipJump programs start running at address 0. The IO opcode is placed at address 2w, and a normal program just skips above it and then starts.
 
+To keep things simple, we wrote the ```stl.startup``` macro. It should be the first used macro/op in your program. If you are using multiple files, then **it should only be declared once**, at the start of the first file.
+
+Basically, The first line in a FlipJump program should be ```stl.startup```.
+
+Instead, you can also use the ```stl.startup_and_init_all``` macro, which does the startup, and also every ```init``` macro that's exist in the standard library.
 
 
 # Contribute

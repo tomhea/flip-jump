@@ -14,6 +14,17 @@ ns stl {
                         // 4w;5w : start of code
     }
 
+    def startup_and_init_all > IO, code_start {
+        ;.code_start     // 0w;1w : first code to run
+      IO:
+        ;0              // 2w;3w : sets the io_handler to address 0 (good for a future wflip)
+
+        hex.init
+        bit.ptr_init
+
+      code_start:
+    }
+
 
 
     // ---------- Basic Functionality
