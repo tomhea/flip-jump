@@ -23,4 +23,4 @@ x3:
     bit.bit 0
 
 bit.ptr_init
-bit.stack 10
+bit.stack_init 10

@@ -8,7 +8,7 @@ stl.loop
 hex.init
 
 
-def test_sub a, b @ c0_1st, c1_1st, print_1st, c0_2nd, c1_2nd, print_2nd, ah_1st, bh, ah_2nd, end < hex.sub.dst {
+def test_sub a, b @ c0_1st, c1_1st, print_1st, c0_2nd, c1_2nd, print_2nd, ah_1st, bh, ah_2nd, end {
     hex.sub.clear_carry
     hex.sub ah_1st, bh
     hex.sub.clear_carry c0_1st, c1_1st

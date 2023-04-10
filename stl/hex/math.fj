@@ -63,7 +63,10 @@ ns hex {
         //  Time Complexity: 8 (when jumping to dst, until finished)
         // Space Complexity: 1570
         // This is where the add "truth" tables are.
-        def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < .._.res, .._.ret > dst {
+        // @output-param dst: This variable is an 9-bit variable (in a single op, [dbit,dbit+9)).
+        //                    Its 9-bits are expected to be {carry<<8 | src<<4 | dst} at the jump to it (for the src,dst hexes, and the carry bit, of the add operation).
+        //                    Its 9-bits are expected to be {new_carry<<8} after the jump to it.
+        def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < .._.res > dst {
             ;end
           dst: ;.switch__without_carry
 
@@ -151,7 +154,10 @@ ns hex {
         //  Time Complexity: 8 (when jumping to dst, until finished)
         // Space Complexity: 1570
         // This is where the sub "truth" tables are. must be called once if you want to use hex.sub (hex.init calls it).
-        def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < .._.res, .._.ret > dst {
+        // @output-param dst: This variable is an 9-bit variable (in a single op, [dbit,dbit+9)).
+        //                    Its 9-bits are expected to be {carry<<8 | src<<4 | dst} at the jump to it (for the src,dst hexes, and the carry bit, of the sub operation).
+        //                    Its 9-bits are expected to be {new_carry<<8} after the jump to it.
+        def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < .._.res > dst {
             ;end
           dst: ;.switch__without_carry
 

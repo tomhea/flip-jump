@@ -16,4 +16,4 @@ func1:
 
 
 bit.ptr_init
-bit.stack 10
+bit.stack_init 10

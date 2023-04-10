@@ -130,6 +130,9 @@ ns hex {
         //  Time Complexity: 6 (when jumping to dst, until finished)
         // Space Complexity: 514
         // This is where the compare "truth" tables are.
+        // @output-param dst: This variable is an 8-bit variable (in a single op, [dbit,dbit+8)).
+        //                    Its 8-bits are expected to be {src<<4 | dst} at the jump to it (for the src,dst hexes of the cmp operation).
+        //                    Its 8-bits are expected to be 0 after the jump to it.
         def init @ switch, clean_table_entry, end < .._.ret > dst {
             ;end
           dst: ;.switch

@@ -216,10 +216,11 @@ class FJParser(sly.Parser):
                              lineno: int, macro_name: MacroName) -> None:
         self.validate_labels_groups(extern_labels, global_labels, regular_labels, lineno, macro_name)
 
-        self.validate_no_unused_labels(regular_labels, labels_declared, labels_used, lineno, macro_name)
-        self.validate_no_bad_label_declarations(regular_labels, extern_labels, labels_declared, lineno, macro_name)
+        self.validate_no_unused_labels(regular_labels, global_labels, labels_declared, labels_used, lineno, macro_name)
         self.validate_no_unknown_label_uses(regular_labels, global_labels, labels_declared, labels_used,
                                             lineno, macro_name)
+        self.validate_no_bad_label_declarations(regular_labels, extern_labels, labels_declared, lineno, macro_name)
+        self.validate_all_extern_labels_are_declared(extern_labels, labels_declared, lineno, macro_name)
 
     @staticmethod
     def validate_labels_groups(extern_labels: Set[str], global_labels: Set[str], regular_labels: Set[str],
@@ -234,14 +235,22 @@ class FJParser(sly.Parser):
             syntax_error(lineno, f"In macro {macro_name}:  "
                                  f"global labels can't be regular labels: " + ', '.join(extern_labels & regular_labels))
 
-    def validate_no_unused_labels(self, regular_labels: Set[str],
+    def validate_no_unused_labels(self, regular_labels: Set[str], global_labels: Set[str],
                                   labels_declared: Set[str], labels_used: Set[str],
                                   lineno: int, macro_name: MacroName) -> None:
-        unused_labels = regular_labels - labels_used.union(self.to_base_name(label) for label in labels_declared)
+        unused_labels = regular_labels.union(global_labels) - labels_used.union(self.to_base_name(label) for label in labels_declared)
         if unused_labels:
             syntax_warning(lineno, self.warning_as_errors,
                            f"In macro {macro_name}:  "
                            f"unused labels: {', '.join(unused_labels)}.")
+
+    def validate_all_extern_labels_are_declared(self, extern_labels: Set[str], labels_declared: Set[str],
+                                                lineno: int, macro_name: MacroName) -> None:
+        unused_labels = extern_labels - {self.to_base_name(label) for label in labels_declared}
+        if unused_labels:
+            syntax_warning(lineno, self.warning_as_errors,
+                           f"In macro {macro_name}:  "
+                           f"undeclared extern label: {', '.join(unused_labels)}.")
 
     def validate_no_bad_label_declarations(self, regular_labels: Set[str], extern_labels: Set[str],
                                            labels_declared: Set[str],

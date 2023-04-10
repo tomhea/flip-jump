@@ -67,4 +67,4 @@ ascii:
     bit.vec 8
 
 bit.ptr_init
-bit.stack 10
+bit.stack_init 10

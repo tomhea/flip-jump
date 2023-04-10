@@ -27,4 +27,4 @@ func2c:
 
 
 bit.ptr_init
-bit.stack 10
+bit.stack_init 10

@@ -163,7 +163,10 @@ ns hex {
         //  Time Complexity: 6 (when jumping to dst, until finished)
         // Space Complexity: 595
         // This is where the or "truth" tables are.
-        def init @ switch, clean_table_entry, end < .._.res, .._.ret > dst {
+        // @output-param dst: This variable is an 8-bit variable (in a single op, [dbit,dbit+8)).
+        //                    Its 8-bits are expected to be {src<<4 | dst} at the jump to it (for the src,dst hexes of the or operation).
+        //                    Its 8-bits are expected to be 0 after the jump to it.
+        def init @ switch, clean_table_entry, end < .._.res > dst {
             ;end
           dst: ;.switch
 
@@ -206,7 +209,10 @@ ns hex {
         //  Time Complexity: 6 (when jumping to dst, until finished)
         // Space Complexity: 595
         // This is where the and "truth" tables are.
-        def init @ switch, clean_table_entry, end < .._.res, .._.ret > dst {
+        // @output-param dst: This variable is an 8-bit variable (in a single op, [dbit,dbit+8)).
+        //                    Its 8-bits are expected to be {src<<4 | dst} at the jump to it (for the src,dst hexes of the and operation).
+        //                    Its 8-bits are expected to be 0 after the jump to it.
+        def init @ switch, clean_table_entry, end < .._.res > dst {
             ;end
           dst: ;.switch
 
