@@ -4,8 +4,8 @@ stl.startup
 // Prints "AB~CD~EF"
 test2:
     stl.output 'A'
-    bit.call func2a
-    bit.call func2b
+    stl.call func2a
+    stl.call func2b
     stl.output 'F'
 
     stl.output '\n'
@@ -13,18 +13,18 @@ test2:
 
 func2a:
     stl.output 'B'
-    bit.call func2c
+    stl.call func2c
     stl.output 'C'
-    bit.return
+    stl.return
 func2b:
     stl.output 'D'
-    bit.call func2c
+    stl.call func2c
     stl.output 'E'
-    bit.return
+    stl.return
 func2c:
     stl.output '~'
-    bit.return
+    stl.return
 
 
-bit.ptr_init
-bit.stack_init 10
+stl.ptr_init
+stl.stack_init 10

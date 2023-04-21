@@ -30,8 +30,8 @@ ns stl {
         ;0              // 2w;3w : sets the io_handler to address 0 (good for a future wflip)
 
         hex.init
-        bit.ptr_init
-        bit.stack_init stack_bit_size
+        stl.ptr_init
+        stl.stack_init stack_bit_size
 
       code_start:
     }

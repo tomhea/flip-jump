@@ -21,6 +21,7 @@
     "hex/tables_init",
     "hex/input",
     "hex/output",
+    "hex/pointers",
 
     "casting",
     "ptrlib",

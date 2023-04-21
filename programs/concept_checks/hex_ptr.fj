@@ -1,0 +1,73 @@
+stl.startup
+
+test0:
+    hex.ptr_flip p0
+    bit.if d0, d00, d01
+    d00:
+         stl.output '0'
+         ;test1
+    d01:
+         stl.output '1'
+         ;test1
+
+test1:
+    hex.ptr_jump p1
+    jump_to6:
+              stl.output '6'
+              ;test2
+    jump_to7:
+              stl.output '7'
+              ;test2
+
+test2:
+    hex.ptr_wflip p2, base_jump_label2
+    hex.ptr_jump p2_jump
+    pad 2
+    base_jump_label2:
+         ;p20
+         ;p21
+    p20:
+         stl.output 'N'
+         ;test3
+    p21:
+         stl.output 'Y'
+         ;test3
+
+test3:
+    bit.zero d3_var
+    hex.xor_from_ptr d3_var, p3
+    bit.if d3_var, d30, d31
+    d30:
+         stl.output 'F'
+         stl.loop
+    d31:
+         stl.output 'T'
+         stl.loop
+
+
+
+    stl.ptr_init
+
+  p0:
+    bit.vec w, d0+dbit
+  d0:
+    bit.bit 0  // 0 => 1,  1 => 0
+
+  p1:
+    bit.vec w, d1
+  d1:
+    ;jump_to7   // jump_to6 => 6, jump_to7 => 7
+
+  p2:
+    bit.vec w, d2+w
+  p2_jump:
+    bit.vec w, d2
+  d2:
+    bit.bit 0  // 0 => N,  1 => Y
+
+  p3:
+    bit.vec w, d3
+  d3:
+    bit.bit 1  // 0 => F,  1 => T
+  d3_var:
+    bit.bit 0

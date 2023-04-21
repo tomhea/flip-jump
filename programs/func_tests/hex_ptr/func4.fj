@@ -4,13 +4,13 @@ stl.startup
 // Prints "ABCDEFGH-" and then 0/1, the invert of x4
 test4:
     stl.output 'A'
-    bit.push x4
+    hex.push x4
     stl.output 'B'
 
-    bit.call func4
+    stl.call func4
 
     stl.output 'G'
-    bit.pop_res x4
+    hex.pop_res x4
     stl.output 'H'
     bit.bin2ascii ascii, x4
     stl.output '-'
@@ -21,13 +21,13 @@ test4:
 
 func4:
     stl.output 'C'
-    bit.get_sp __func4_arg_ptr
+    hex.get_sp __func4_arg_ptr
     stl.output 'D'
-    bit.dec_ptr __func4_arg_ptr
+    hex.dec_ptr __func4_arg_ptr
     stl.output 'E'
-    bit.ptr_flip_dbit __func4_arg_ptr
+    hex.ptr_flip_dbit __func4_arg_ptr
     stl.output 'F'
-    bit.return
+    stl.return
   __func4_arg_ptr:
     bit.vec w, 0
 
@@ -39,5 +39,5 @@ x4:
 ascii:
     bit.vec 8
 
-bit.ptr_init
-bit.stack_init 10
+stl.ptr_init
+stl.stack_init 10

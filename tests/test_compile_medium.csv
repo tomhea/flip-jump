@@ -3,5 +3,6 @@ div10, programs/simple_math_checks/div10.fj,tests/compiled/simple_math_checks/di
 hello_world_with_str, programs/print_tests/hello_world_with_str.fj,tests/compiled/print_tests/hello_world_with_str.fjm, 64,3,0, True,True
 print_dec, programs/print_tests/print_dec.fj,tests/compiled/print_tests/print_dec.fjm, 64,3,0, True,True
 print_hex_int, programs/print_tests/print_hex_int.fj,tests/compiled/print_tests/print_hex_int.fjm, 64,3,0, True,True
-ptr, programs/concept_checks/ptr.fj,tests/compiled/concept_checks/ptr.fjm, 64,3,0, True,True
+bit_ptr, programs/concept_checks/bit_ptr.fj,tests/compiled/concept_checks/bit_ptr.fjm, 64,3,0, True,True
+hex_ptr, programs/concept_checks/hex_ptr.fj,tests/compiled/concept_checks/hex_ptr.fjm, 64,3,0, True,True
 segments, programs/concept_checks/segments.fj,tests/compiled/concept_checks/segments.fjm, 64,3,0, True,True

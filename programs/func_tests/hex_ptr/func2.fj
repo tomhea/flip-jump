@@ -1,0 +1,30 @@
+stl.startup
+
+
+// Prints "AB~CD~EF"
+test2:
+    stl.output 'A'
+    stl.call func2a
+    stl.call func2b
+    stl.output 'F'
+
+    stl.output '\n'
+    stl.loop
+
+func2a:
+    stl.output 'B'
+    stl.call func2c
+    stl.output 'C'
+    stl.return
+func2b:
+    stl.output 'D'
+    stl.call func2c
+    stl.output 'E'
+    stl.return
+func2c:
+    stl.output '~'
+    stl.return
+
+
+stl.ptr_init
+stl.stack_init 10

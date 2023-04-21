@@ -4,7 +4,7 @@ stl.startup
 // Prints "ABC"
 test1:
     stl.output 'A'
-    bit.call func1
+    stl.call func1
     stl.output 'C'
 
     stl.output '\n'
@@ -12,8 +12,8 @@ test1:
 
 func1:
     stl.output 'B'
-    bit.return
+    stl.return
 
 
-bit.ptr_init
-bit.stack_init 10
+stl.ptr_init
+stl.stack_init 10

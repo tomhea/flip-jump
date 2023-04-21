@@ -1,0 +1,70 @@
+stl.startup
+
+
+// Prints "ABC abcdefg ABCD-", and then 0/1, the xor of x5,y5
+test5:
+    stl.output 'A'
+    hex.push res5
+    stl.output 'B'
+    hex.push x5
+    stl.output 'C'
+    hex.push y5
+
+    stl.output ' '
+    stl.call func5
+    stl.output ' '
+
+    stl.output 'A'
+    hex.pop y5
+    stl.output 'B'
+    hex.pop x5
+    stl.output 'C'
+    hex.pop_res res5
+    stl.output 'D'
+
+    bit.bin2ascii ascii, res5
+    stl.output '-'
+    bit.print ascii
+
+    stl.output '\n'
+    stl.loop
+
+// res = arg0 xor arg1
+func5:
+    bit.zero __func5_res
+    hex.get_sp __func5_arg_ptr
+    stl.output 'a'
+
+    hex.dec_ptr __func5_arg_ptr
+    stl.output 'b'
+    hex.xor_from_ptr __func5_res, __func5_arg_ptr
+    stl.output 'c'
+    hex.dec_ptr __func5_arg_ptr
+    stl.output 'd'
+    hex.xor_from_ptr __func5_res, __func5_arg_ptr
+    stl.output 'e'
+
+    hex.dec_ptr __func5_arg_ptr
+    stl.output 'f'
+    hex.xor_to_ptr __func5_arg_ptr, __func5_res
+    stl.output 'g'
+
+    stl.return
+  __func5_res:
+    bit.bit
+  __func5_arg_ptr:
+    bit.vec w
+
+
+x5:
+    bit.bit 1
+y5:
+    bit.bit 1
+res5:
+    bit.bit 0
+
+ascii:
+    bit.vec 8
+
+stl.ptr_init
+stl.stack_init 10

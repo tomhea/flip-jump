@@ -11,7 +11,7 @@ test5:
     bit.push y5
 
     stl.output ' '
-    bit.call func5
+    stl.call func5
     stl.output ' '
 
     stl.output 'A'
@@ -49,7 +49,7 @@ func5:
     bit.xor_to_ptr __func5_arg_ptr, __func5_res
     stl.output 'g'
 
-    bit.return
+    stl.return
   __func5_res:
     bit.bit
   __func5_arg_ptr:
@@ -66,5 +66,5 @@ res5:
 ascii:
     bit.vec 8
 
-bit.ptr_init
-bit.stack_init 10
+stl.ptr_init
+stl.stack_init 10

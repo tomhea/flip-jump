@@ -46,7 +46,7 @@ test3:
 
 
 
-    bit.ptr_init
+    stl.ptr_init
 
   p0:
     bit.vec w, d0+dbit

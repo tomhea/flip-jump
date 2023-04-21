@@ -1,26 +1,79 @@
 // TODO read 4-bit values (good for bit/hex/dec) values from pointers.
 
 
+// ---------- Init
+
+
+ns stl {
+    // Comp
+    def ptr_init {
+        .pointers.ptr_init
+    }
+
+    // Space Complexity: n+w
+    //   Initializes a stack of size n (maximal capacity of n bits / hexs / return-addresses).
+    // n is the size of the stack.
+    def stack_init n {
+        .pointers.stack_init n
+    }
+
+    ns pointers {
+        // Space Complexity: 3w+2
+        //   Inits the global opcodes and pointer-copies required for the bit.pointers, hex.pointers, and ptrlib macros.
+        // @note: The
+        //
+        // @output-param to_flip:  address of opcode that holds a flipping address in its first word. jumping into it will flip wanted bit.
+        // @output-param to_flip_var:  the bit-vector (pointer) that also holds the flipping address.
+        // @output-param to_jump:  address of opcode that holds a jumping address in its second word. jumping into it will jump to the wanted address.
+        // @output-param to_jump_var:  the bit-vector (pointer) that also holds the jumping address.
+        def ptr_init > to_flip, to_jump, to_flip_var, to_jump_var {
+          to_flip:
+            0;0
+          to_jump:
+            ;0
+
+          to_flip_var:
+            bit.vec w, 0
+          to_jump_var:
+            bit.vec w, 0
+        }
+
+        // Space Complexity: n+w
+        //   Initializes a stack of size n (maximal capacity of n bits / hexs / return-addresses).
+        // n is the size of the stack.
+        // @output-param sp: the stack pointer. sp always points to the last pushed value (at start - to stack[-1])
+        // @output-param stack: the global stack.
+        def stack_init n > sp, stack {
+          sp:
+            bit.vec w, .stack-dw
+          stack:
+            bit.vec n, 0
+        }
+    }
+}
+
+
+
 // ---------- Functions
 
 
-ns bit {
+ns stl {
         // Complexity: w(5phi+21)
         // the pop_ret_address is counted for the future return
     def call address @ return_label {
-        .push_ret_address return_label
+        bit.push_ret_address return_label
         ;address
 
         pad 2
       return_label:
-        .pop_ret_address return_label
+        bit.pop_ret_address return_label
     }
 
 
     // Complexity: w(7phi+29)
         // the last-call's pop_ret_address is counted for this return
     def return < .pointers.sp {
-        .ptr_jump .pointers.sp
+        bit.ptr_jump .pointers.sp
     }
 }
 
