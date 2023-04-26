@@ -7,7 +7,8 @@
 ns stl {
     // Comp
     def ptr_init {
-        .pointers.ptr_init
+        bit.pointers.ptr_init
+        hex.pointers.ptr_init
     }
 
     // Space Complexity: n+w

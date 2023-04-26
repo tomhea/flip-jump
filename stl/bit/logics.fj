@@ -47,11 +47,11 @@ ns bit {
     }
 
     // Complexity: n@
-    //   bit(bit_address) ^= src
+    //   address(bit_address) ^= src
     //   var ^= src
-    // dst,var,src are bit[:n].
-    def bit_var_xor n, bit, var, src {
-        rep(n, i) .double_exact_xor bit+i, var+dbit+i*dw, src+i*dw
+    // var,src are bit[:n], address is an address.
+    def address_and_variable_xor n, address, var, src {
+        rep(n, i) .double_exact_xor address+i, var+dbit+i*dw, src+i*dw
     }
 
     // Complexity: @
