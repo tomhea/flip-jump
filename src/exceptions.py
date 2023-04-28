@@ -24,3 +24,7 @@ class FJReadFjmException(FJException):
 
 class FJWriteFjmException(FJException):
     pass
+
+
+class FJRuntimeMemoryException(FJException):
+    pass
