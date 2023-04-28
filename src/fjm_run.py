@@ -1,10 +1,12 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Deque
+from collections import deque
 
 import fjm
 
 from defs import TerminationCause, PrintTimer, RunStatistics
 from breakpoints import BreakpointHandler, handle_breakpoint
+from exceptions import FJRuntimeMemoryException
 
 from io_devices.IODevice import IODevice
 from io_devices.BrokenIO import BrokenIO
@@ -22,18 +24,26 @@ class TerminationStatistics:
         self.op_counter = run_statistics.op_counter
         self.flip_counter = run_statistics.flip_counter
         self.jump_counter = run_statistics.jump_counter
+        self.last_ops_addresses: Deque[int] = run_statistics.last_ops_addresses
 
         self.termination_cause = termination_cause
 
     def __str__(self):
         flips_percentage = self.flip_counter / self.op_counter * 100
         jumps_percentage = self.jump_counter / self.op_counter * 100
+
+        last_ops_str = ''
+        if True or TerminationCause.RuntimeMemoryError == self.termination_cause:   # TODO remove the "if True" part.
+            last_ops_str = f'\nLast {len(self.last_ops_addresses)} ops were at:\n  ' + \
+                '\n  '.join([hex(address) for address in self.last_ops_addresses])
+
         return f'Finished by {str(self.termination_cause)} after {self.run_time:.3f}s ' \
                f'(' \
                f'{self.op_counter:,} ops executed; ' \
                f'{flips_percentage:.2f}% flips, ' \
                f'{jumps_percentage:.2f}% jumps' \
-               f').'
+               f').' \
+               f'{last_ops_str}'
 
 
 def handle_input(io_device: IODevice, ip: int, mem: fjm.Reader, statistics: RunStatistics) -> None:
@@ -89,35 +99,41 @@ def run(fjm_path: Path, *,
 
     statistics = RunStatistics(w)
 
-    while True:
-        # handle breakpoints
-        if breakpoint_handler and breakpoint_handler.should_break(ip, statistics.op_counter):
-            breakpoint_handler = handle_breakpoint(breakpoint_handler, ip, mem, statistics)
+    try:
+        while True:
+            statistics.register_op_address(ip)
 
-        # read flip word
-        flip_address = mem.get_word(ip)
-        trace_flip(ip, flip_address, show_trace)
+            # handle breakpoints
+            if breakpoint_handler and breakpoint_handler.should_break(ip, statistics.op_counter):
+                breakpoint_handler = handle_breakpoint(breakpoint_handler, ip, mem, statistics)
 
-        # handle IO
-        handle_output(flip_address, io_device, w)
-        try:
-            handle_input(io_device, ip, mem, statistics)
-        except IOReadOnEOF:
-            return TerminationStatistics(statistics, TerminationCause.EOF)
+            # read flip word
+            flip_address = mem.get_word(ip)
+            trace_flip(ip, flip_address, show_trace)
 
-        # FLIP!
-        mem.write_bit(flip_address, not mem.read_bit(flip_address))
+            # handle IO
+            handle_output(flip_address, io_device, w)
+            try:
+                handle_input(io_device, ip, mem, statistics)
+            except IOReadOnEOF:
+                return TerminationStatistics(statistics, TerminationCause.EOF)
 
-        # read jump word
-        jump_address = mem.get_word(ip+w)
-        trace_jump(jump_address, show_trace)
-        statistics.register_op(ip, flip_address, jump_address)
+            # FLIP!
+            mem.write_bit(flip_address, not mem.read_bit(flip_address))
 
-        # check finish?
-        if jump_address == ip and not ip <= flip_address < ip+2*w:
-            return TerminationStatistics(statistics, TerminationCause.Looping)
-        if jump_address < 2*w:
-            return TerminationStatistics(statistics, TerminationCause.NullIP)
+            # read jump word
+            jump_address = mem.get_word(ip+w)
+            trace_jump(jump_address, show_trace)
+            statistics.register_op(ip, flip_address, jump_address)
 
-        # JUMP!
-        ip = jump_address
+            # check finish?
+            if jump_address == ip and not ip <= flip_address < ip+2*w:
+                return TerminationStatistics(statistics, TerminationCause.Looping)
+            if jump_address < 2*w:
+                return TerminationStatistics(statistics, TerminationCause.NullIP)
+
+            # JUMP!
+            ip = jump_address
+
+    except FJRuntimeMemoryException:
+        return TerminationStatistics(statistics, TerminationCause.RuntimeMemoryError)

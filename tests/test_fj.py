@@ -3,6 +3,7 @@ from queue import Queue
 from threading import Lock
 from pathlib import Path
 
+from breakpoints import BreakpointHandler, load_labels_dictionary
 from src import assembler, fjm
 from src import fjm_run
 from src.defs import TerminationCause, get_stl_paths, io_bytes_encoding
@@ -78,7 +79,8 @@ def test_compile(compile_args: CompileTestArgs) -> None:
     fjm_writer = fjm.Writer(compile_args.fjm_out_path, compile_args.word_size, compile_args.version,
                             flags=compile_args.flags, lzma_preset=lzma.PRESET_DEFAULT)
     assembler.assemble(compile_args.fj_files_tuples, compile_args.word_size, fjm_writer,
-                       warning_as_errors=compile_args.warning_as_errors)
+                       warning_as_errors=compile_args.warning_as_errors,
+                       debugging_file_path=Path(f'{compile_args.fjm_out_path}.fj_debugging_info'))
 
 
 class RunTestArgs:
@@ -154,6 +156,10 @@ def test_run(run_args: RunTestArgs) -> None:
     print(f'Running test {run_args.test_name}:')
 
     io_device = FixedIO(run_args.get_defined_input())
+
+    label_to_address = load_labels_dictionary(Path(f'{run_args.fjm_path}.fj_debugging_info'), True)
+    breakpoint_handler = BreakpointHandler({}, {label_to_address[label]: label for label in label_to_address})
+
     termination_statistics = fjm_run.run(run_args.fjm_path,
                                          io_device=io_device,
                                          time_verbose=True)
