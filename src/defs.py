@@ -3,10 +3,11 @@ from __future__ import annotations
 import dataclasses
 import json
 import lzma
+from collections import deque
 from enum import IntEnum    # IntEnum equality works between files.
 from pathlib import Path
 from time import time
-from typing import List, Dict
+from typing import List, Dict, Deque
 
 from ops import CodePosition, Op
 
@@ -22,14 +23,16 @@ def get_stl_paths() -> List[Path]:
 
 
 class TerminationCause(IntEnum):
-    Looping = 0         # Finished by jumping to the last op, without flipping it (the "regular" finish/exit)
-    EOF = 1             # Finished by reading input when there is no more input
-    NullIP = 2          # Finished by jumping back to the initial op 0 (bad finish)
-    UnalignedWord = 3   # FOR FUTURE SUPPORT - tried to access an unaligned word (bad finish)
-    UnalignedOp = 4     # FOR FUTURE SUPPORT - tried to access a dword-unaligned op (bad finish)
+    Looping = 0             # Finished by jumping to the last op, without flipping it (the "regular" finish/exit)
+    EOF = 1                 # Finished by reading input when there is no more input
+    NullIP = 2              # Finished by jumping back to the initial op 0 (bad finish)
+    UnalignedWord = 3       # FOR FUTURE SUPPORT - tried to access an unaligned word (bad finish)
+    UnalignedOp = 4         # FOR FUTURE SUPPORT - tried to access a dword-unaligned op (bad finish)
+    RuntimeMemoryError = 5  # Finished by trying to read/write something out of the defined memory
+                            # (probably a bug in the fj-program)
 
     def __str__(self) -> str:
-        return ['looping', 'EOF', 'ip<2w', 'unaligned-word', 'unaligned-op'][self.value]
+        return ['looping', 'EOF', 'ip<2w', 'unaligned-word', 'unaligned-op', 'runtime-memory-error'][self.value]
 
 
 macro_separator_string = "---"
@@ -115,19 +118,23 @@ class RunStatistics:
         def __exit__(self, exc_type, exc_val, exc_tb):
             self.paused_time += time() - self.pause_start_time
 
-    def __init__(self, w: int):
+    def __init__(self, w: int, *, number_of_saved_last_ops_addresses=10):
         self._op_size = 2 * w
         self._after_null_flip = 2 * w
 
         self.op_counter = 0
         self.flip_counter = 0
         self.jump_counter = 0
+        self.last_ops_addresses: Deque[int] = deque(maxlen=number_of_saved_last_ops_addresses)
 
         self._start_time = time()
         self.pause_timer = self.PauseTimer()
 
     def get_run_time(self) -> float:
         return time() - self._start_time - self.pause_timer.paused_time
+
+    def register_op_address(self, ip: int):
+        self.last_ops_addresses.append(ip)
 
     def register_op(self, ip: int, flip_address: int, jump_address: int) -> None:
         self.op_counter += 1

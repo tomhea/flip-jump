@@ -7,8 +7,7 @@ from typing import BinaryIO, List, Tuple, Dict, Optional
 
 import lzma
 
-from exceptions import FJReadFjmException, FJWriteFjmException
-
+from exceptions import FJReadFjmException, FJWriteFjmException, FJRuntimeMemoryException
 
 """
 struct {
@@ -174,7 +173,7 @@ class Reader:
             garbage_message = f'Reading garbage word at mem[{hex(word_address << self.w)[2:]}] = {hex(garbage_val)[2:]}'
 
             if GarbageHandling.Stop == self.garbage_handling:
-                raise FJReadFjmException(garbage_message)
+                raise FJRuntimeMemoryException(garbage_message)
             elif GarbageHandling.OnlyWarning == self.garbage_handling:
                 print(f'\nWarning:  {garbage_message}')
             elif GarbageHandling.SlowRead == self.garbage_handling:
@@ -232,7 +231,7 @@ class Reader:
         if bit_offset == 0:
             return self._get_memory_word(word_address)
         if word_address == ((1 << self.w) - 1):
-            raise FJReadFjmException(f'Accessed outside of memory (beyond the last bit).')
+            raise FJRuntimeMemoryException(f'Accessed outside of memory (beyond the last bit).')
 
         lsw = self._get_memory_word(word_address)
         msw = self._get_memory_word(word_address + 1)
