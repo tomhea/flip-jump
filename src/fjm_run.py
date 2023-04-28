@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import Optional, Deque
-from collections import deque
 
 import fjm
 
@@ -28,22 +27,38 @@ class TerminationStatistics:
 
         self.termination_cause = termination_cause
 
-    def __str__(self):
+    @staticmethod
+    def beautify_address(address: int, breakpoint_handler: Optional[BreakpointHandler]):
+        if not breakpoint_handler:
+            return hex(address)
+
+        return breakpoint_handler.get_address_str(address)
+
+    def print(self, *, labels_handler: Optional[BreakpointHandler] = None):
+        """
+        Prints the termination cause, run times, ops-statistics.
+        If ended not by looping - Then print the last-opcodes` addresses as well (and their label names if possible).
+        @param labels_handler: Used to find the label name for each address (from the last-opcodes` addresses).
+        """
+
         flips_percentage = self.flip_counter / self.op_counter * 100
         jumps_percentage = self.jump_counter / self.op_counter * 100
 
         last_ops_str = ''
-        if True or TerminationCause.RuntimeMemoryError == self.termination_cause:   # TODO remove the "if True" part.
-            last_ops_str = f'\nLast {len(self.last_ops_addresses)} ops were at:\n  ' + \
-                '\n  '.join([hex(address) for address in self.last_ops_addresses])
+        if TerminationCause.Looping != self.termination_cause:
+            last_ops_str = f'\n\nLast {len(self.last_ops_addresses)} ops were at these addresses ' \
+                           f'(The most-recent op, the one that failed, is first):\n  ' + \
+                           '\n  '.join([self.beautify_address(address, labels_handler)
+                                        for address in self.last_ops_addresses][::-1])
 
-        return f'Finished by {str(self.termination_cause)} after {self.run_time:.3f}s ' \
-               f'(' \
-               f'{self.op_counter:,} ops executed; ' \
-               f'{flips_percentage:.2f}% flips, ' \
-               f'{jumps_percentage:.2f}% jumps' \
-               f').' \
-               f'{last_ops_str}'
+        print(f'Finished by {str(self.termination_cause)} after {self.run_time:.3f}s '
+              f'('
+              f'{self.op_counter:,} ops executed; '
+              f'{flips_percentage:.2f}% flips, '
+              f'{jumps_percentage:.2f}% jumps'
+              f').'
+              f'{last_ops_str}'
+              )
 
 
 def handle_input(io_device: IODevice, ip: int, mem: fjm.Reader, statistics: RunStatistics) -> None:

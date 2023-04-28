@@ -119,7 +119,7 @@ def run(in_fjm_path: Path, debug_file: Path, args: argparse.Namespace, error_fun
             breakpoint_handler=breakpoint_handler
         )
         if not args.silent:
-            print(termination_statistics)
+            termination_statistics.print(labels_handler=breakpoint_handler)
     except FJReadFjmException as e:
         print()
         print(e)

@@ -14,6 +14,9 @@ CSV_FALSE = 'False'
 CSV_BOOLEAN = (CSV_TRUE, CSV_FALSE)
 
 
+DEBUGGING_FILE_SUFFIX = '.fj_debugging_info'
+
+
 ROOT_PATH = Path(__file__).parent.parent
 
 
@@ -26,11 +29,12 @@ class CompileTestArgs:
     Arguments class for a compile test
     """
 
-    num_of_args = 8
+    num_of_csv_line_args = 8
 
     def __init__(self, test_name: str, fj_paths: str, fjm_out_path: str,
                  word_size__str: str, version__str: str, flags__str: str,
-                 use_stl__str: str, warning_as_errors__str: str):
+                 use_stl__str: str, warning_as_errors__str: str,
+                 save_debug_info: bool):
         """
         handling a line.split() from a csv file
         """
@@ -38,6 +42,8 @@ class CompileTestArgs:
         assert warning_as_errors__str in CSV_BOOLEAN
         self.use_stl = use_stl__str == CSV_TRUE
         self.warning_as_errors = warning_as_errors__str == CSV_TRUE
+
+        self.save_debug_info = save_debug_info
 
         self.test_name = test_name
 
@@ -78,9 +84,14 @@ def test_compile(compile_args: CompileTestArgs) -> None:
 
     fjm_writer = fjm.Writer(compile_args.fjm_out_path, compile_args.word_size, compile_args.version,
                             flags=compile_args.flags, lzma_preset=lzma.PRESET_DEFAULT)
+
+    debugging_file_path = None
+    if compile_args.save_debug_info:
+        debugging_file_path = Path(f'{compile_args.fjm_out_path}{DEBUGGING_FILE_SUFFIX}')
+
     assembler.assemble(compile_args.fj_files_tuples, compile_args.word_size, fjm_writer,
                        warning_as_errors=compile_args.warning_as_errors,
-                       debugging_file_path=Path(f'{compile_args.fjm_out_path}.fj_debugging_info'))
+                       debugging_file_path=debugging_file_path)
 
 
 class RunTestArgs:
@@ -88,11 +99,12 @@ class RunTestArgs:
     Arguments class for a run test
     """
 
-    num_of_args = 6
+    num_of_csv_line_args = 6
 
     def __init__(self, test_name: str, fjm_path: str,
                  in_file_path: str, out_file_path: str,
-                 read_in_as_binary__str: str, read_out_as_binary__str: str):
+                 read_in_as_binary__str: str, read_out_as_binary__str: str,
+                 use_debug_info: bool):
         """
         @note handling a line.split() (each is stripped) from a csv file
         """
@@ -100,6 +112,8 @@ class RunTestArgs:
         assert read_out_as_binary__str in CSV_BOOLEAN
         self.read_in_as_binary = read_in_as_binary__str == CSV_TRUE
         self.read_out_as_binary = read_out_as_binary__str == CSV_TRUE
+
+        self.use_debug_info = use_debug_info
 
         self.test_name = test_name
         self.fjm_path = ROOT_PATH / fjm_path
@@ -157,14 +171,16 @@ def test_run(run_args: RunTestArgs) -> None:
 
     io_device = FixedIO(run_args.get_defined_input())
 
-    label_to_address = load_labels_dictionary(Path(f'{run_args.fjm_path}.fj_debugging_info'), True)
-    breakpoint_handler = BreakpointHandler({}, {label_to_address[label]: label for label in label_to_address})
+    breakpoint_handler = None
+    if run_args.use_debug_info:
+        label_to_address = load_labels_dictionary(Path(f'{run_args.fjm_path}{DEBUGGING_FILE_SUFFIX}'), True)
+        breakpoint_handler = BreakpointHandler({}, {label_to_address[label]: label for label in label_to_address})
 
     termination_statistics = fjm_run.run(run_args.fjm_path,
                                          io_device=io_device,
                                          time_verbose=True)
 
-    print(termination_statistics)
+    termination_statistics.print(labels_handler=breakpoint_handler)
 
     expected_termination_cause = TerminationCause.Looping
     assert termination_statistics.termination_cause == expected_termination_cause

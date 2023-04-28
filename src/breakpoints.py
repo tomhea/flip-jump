@@ -43,14 +43,17 @@ class BreakpointHandler:
     def get_address_str(self, address: int) -> str:
         if address in self.breakpoints and self.breakpoints[address] is not None:
             label_repr = get_nice_label_repr(self.breakpoints[address], pad=4)
-            return f'{hex(address)[2:]}:\n{label_repr}'
+            return f'{hex(address)}:\n{label_repr}'
         elif address in self.address_to_label:
             label_repr = get_nice_label_repr(self.address_to_label[address], pad=4)
-            return f'{hex(address)[2:]}:\n{label_repr}'
+            return f'{hex(address)}:\n{label_repr}'
         else:
-            address_before = max([a for a in self.address_to_label if a <= address])
-            label_repr = get_nice_label_repr(self.address_to_label[address_before], pad=4)
-            return f'{hex(address)[2:]} ({hex(address - address_before)} after:)\n{label_repr}'
+            try:
+                address_before = max(a for a in self.address_to_label if a <= address)
+                label_repr = get_nice_label_repr(self.address_to_label[address_before], pad=4)
+                return f'{hex(address)} ({hex(address - address_before)} bits after:)\n{label_repr}'
+            except ValueError:
+                return f'{hex(address)}'
 
     def get_message_box_body(self, ip: int, mem: fjm.Reader, op_counter: int) -> str:
         address = self.get_address_str(ip)
