@@ -118,7 +118,7 @@ class RunStatistics:
         def __exit__(self, exc_type, exc_val, exc_tb):
             self.paused_time += time() - self.pause_start_time
 
-    def __init__(self, w: int, *, number_of_saved_last_ops_addresses=10):
+    def __init__(self, w: int, *, number_of_saved_last_ops_addresses=20):
         self._op_size = 2 * w
         self._after_null_flip = 2 * w
 
