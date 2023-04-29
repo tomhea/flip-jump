@@ -129,8 +129,8 @@ def pytest_addoption(parser) -> None:
 
     parser.addoption(f"--{NO_DEBUG_INFO_FLAG}", action="store_true",
                      help="don't show the last executed opcodes on tests that failed during their run"
-                          "(thus the tests are ~15% faster, and takes ~half the size)."
-                          "Anyway doesn't show last executed opcodes on parallel tests.")
+                          "(thus the tests are ~20% faster, and takes ~30% of their size)."
+                          "Anyway this is irrelevant (doesn't show last executed opcodes) on parallel tests.")
 
     for test_type in TEST_TYPES:
         parser.addoption(f"--{test_type}", action="store_true", help=f"run {test_type} tests")
