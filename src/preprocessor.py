@@ -4,7 +4,7 @@ import collections
 from typing import Dict, Tuple, Iterable, Union, Deque
 
 from expr import Expr
-from defs import CodePosition, Macro, macro_separator_string
+from defs import CodePosition, Macro, MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING
 from exceptions import FJPreprocessorException, FJExprException
 from ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
     LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
@@ -172,7 +172,7 @@ def get_params_dictionary(current_macro: Macro, args: Iterable[Expr], namespace:
     params_dict: Dict[str, Expr] = dict(zip(current_macro.params, args))
 
     for local_param in current_macro.local_params:
-        params_dict[local_param] = Expr(f'{labels_prefix}---{local_param}')
+        params_dict[local_param] = Expr(f'{labels_prefix}{MACRO_SEPARATOR_STRING}{local_param}')
 
     if namespace:
         for k, v in tuple(params_dict.items()):
@@ -195,6 +195,9 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
     current_macro = preprocessor_data.macros[macro_name]
     params_dict = get_params_dictionary(current_macro, args, current_macro.namespace, labels_prefix)
 
+    preprocessor_data.insert_label(f'{labels_prefix}{MACRO_SEPARATOR_STRING}{STARTING_LABEL_IN_MACROS_STRING}',
+                                   current_macro.code_position)
+
     for op in current_macro.ops:
 
         if isinstance(op, Label):
@@ -213,7 +216,7 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
 
         elif isinstance(op, MacroCall):
             op = op.eval_new(params_dict)
-            next_macro_path = (f"{labels_prefix}{macro_separator_string}" if labels_prefix else "") + \
+            next_macro_path = (f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else "") + \
                 f"{op.code_position.short_str()}:{op.macro_name}"
             with preprocessor_data.prepare_macro_call(op):
                 resolve_macro_aux(preprocessor_data,
@@ -224,7 +227,7 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
             rep_times = get_rep_times(op, preprocessor_data)
             if rep_times == 0:
                 continue
-            next_macro_path = (f"{labels_prefix}{macro_separator_string}" if labels_prefix else "") + \
+            next_macro_path = (f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else "") + \
                 f"{op.code_position.short_str()}:rep{{}}:{op.macro_name}"
             with preprocessor_data.prepare_macro_call(op):
                 for i in range(rep_times):

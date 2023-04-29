@@ -173,7 +173,8 @@ def test_run(run_args: RunTestArgs) -> None:
     breakpoint_handler = None
     if run_args.use_debug_info:
         label_to_address = load_labels_dictionary(Path(f'{run_args.fjm_path}{DEBUGGING_FILE_SUFFIX}'), True)
-        breakpoint_handler = BreakpointHandler({}, {label_to_address[label]: label for label in label_to_address})
+        breakpoint_handler = BreakpointHandler({}, {label_to_address[label]: label
+                                                    for label in tuple(label_to_address)[::-1]})
 
     termination_statistics = fjm_run.run(run_args.fjm_path,
                                          io_device=io_device,

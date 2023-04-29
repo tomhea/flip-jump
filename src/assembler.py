@@ -7,7 +7,7 @@ import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
 
-from defs import PrintTimer, save_debugging_labels
+from defs import PrintTimer, save_debugging_labels, WFLIP_LABEL_PREFIX
 from ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits, Padding
 from exceptions import FJAssemblerException, FJException, FJWriteFjmException
 
@@ -58,8 +58,6 @@ class WFlipSpot:
 
 
 class BinaryData:
-    _WFLIP_LABEL_PREFIX = '::wflips::'
-
     def __init__(self, w: int, first_segment: NewSegment, labels: Dict[str, int]):
         self.w = w
 
@@ -93,7 +91,7 @@ class BinaryData:
         add_segment_to_fjm(self.w, fjm_writer, self.first_address, self.wflip_address, self.fj_words, self.wflip_words)
 
     def _insert_wflip_label(self, address: int):
-        self.labels[f'{self._WFLIP_LABEL_PREFIX}{self.wflips_so_far}'] = address
+        self.labels[f'{WFLIP_LABEL_PREFIX}{self.wflips_so_far}'] = address
         self.wflips_so_far += 1
 
     def insert_fj_op(self, flip: int, jump: int) -> None:

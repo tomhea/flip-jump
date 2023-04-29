@@ -35,7 +35,9 @@ class TerminationCause(IntEnum):
         return ['looping', 'EOF', 'ip<2w', 'unaligned-word', 'unaligned-op', 'runtime-memory-error'][self.value]
 
 
-macro_separator_string = "---"
+MACRO_SEPARATOR_STRING = "---"
+STARTING_LABEL_IN_MACROS_STRING = ':start:'
+WFLIP_LABEL_PREFIX = ':wflips:'
 
 io_bytes_encoding = 'raw_unicode_escape'
 
