@@ -180,7 +180,8 @@ def test_run(run_args: RunTestArgs) -> None:
                                          io_device=io_device,
                                          time_verbose=True)
 
-    termination_statistics.print(labels_handler=breakpoint_handler)
+    termination_statistics.print(labels_handler=breakpoint_handler,
+                                 output_to_print=io_device.get_output(allow_incomplete_output=True))
 
     expected_termination_cause = TerminationCause.Looping
     assert termination_statistics.termination_cause == expected_termination_cause

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import collections
-from typing import Dict, Tuple, Iterable, Union, Deque
+from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional
 
 from expr import Expr
 from defs import CodePosition, Macro, MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING
@@ -69,6 +69,8 @@ class PreprocessorData:
 
         self.result_ops: Deque[LastPhaseOp] = collections.deque()
         self.labels: Dict[str, int] = {}
+        self.addresses_with_labels: Set[int] = set()
+        self.macro_start_labels: List[Tuple[int, str, CodePosition]] = []   # (address, label, code_position)
 
         first_segment: NewSegment = NewSegment(0)
         self.last_new_segment: NewSegment = first_segment
@@ -79,6 +81,7 @@ class PreprocessorData:
 
     def finish(self, show_statistics: bool) -> None:
         self.patch_last_wflip_address()
+        self.insert_macro_start_labels_if_their_address_not_used()
         if show_statistics:
             show_macro_usage_pie_graph(dict(self.macro_code_size), self.curr_address)
 
@@ -104,13 +107,28 @@ class PreprocessorData:
         self.curr_address += reserved_bits_size
         self.result_ops.append(ReserveBits(self.curr_address))
 
-    def insert_label(self, label: str, code_position: CodePosition) -> None:
+    def insert_label(self, label: str, code_position: CodePosition, *, address: Optional[int] = None) -> None:
+        if address is None:
+            address = self.curr_address
+
         if label in self.labels:
             other_position = self.labels_code_positions[label]
             macro_resolve_error(self.curr_tree, f'label declared twice - "{label}" on '
                                                 f'{code_position} and {other_position}')
         self.labels_code_positions[label] = code_position
-        self.labels[label] = self.curr_address
+        self.labels[label] = address
+        self.addresses_with_labels.add(address)
+
+    def insert_macro_start_label(self, label: str, code_position: CodePosition) -> None:
+        """
+        @note must be called at the start of the function.
+        """
+        self.macro_start_labels.append((self.curr_address, label, code_position))
+
+    def insert_macro_start_labels_if_their_address_not_used(self):
+        for address, label, code_position in self.macro_start_labels[::-1]:
+            if address not in self.addresses_with_labels:
+                self.insert_label(label, code_position, address=address)
 
     def register_macro_code_size(self, macro_path: str, init_curr_address: int) -> None:
         if 1 <= len(self.curr_tree) <= 2:
@@ -195,8 +213,8 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
     current_macro = preprocessor_data.macros[macro_name]
     params_dict = get_params_dictionary(current_macro, args, current_macro.namespace, labels_prefix)
 
-    preprocessor_data.insert_label(f'{labels_prefix}{MACRO_SEPARATOR_STRING}{STARTING_LABEL_IN_MACROS_STRING}',
-                                   current_macro.code_position)
+    preprocessor_data.insert_macro_start_label(
+        f'{labels_prefix}{MACRO_SEPARATOR_STRING}{STARTING_LABEL_IN_MACROS_STRING}', current_macro.code_position)
 
     for op in current_macro.ops:
 
