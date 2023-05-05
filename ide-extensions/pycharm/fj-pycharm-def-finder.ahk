@@ -7,6 +7,8 @@
 
 ^+Lbutton::
 {
+	old_clipboard := clipboard
+
 	; Click
 	Send {Lbutton}
 	
@@ -31,5 +33,6 @@
 	Send ^v
 	Send {Space}
 	
+	clipboard := old_clipboard
 	return
 }
