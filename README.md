@@ -116,6 +116,15 @@ You can also use the faster [cpp-based interpreter](https://github.com/tomhea/fj
 Hello, World!
 ```
 
+### How to Debug?
+Programs won't work on their first run. They just can't. That's why we support the next debugging flags.
+
+- No debugging flags at all: Shows the last 10 executed addresses of tests that failed their run (i.e. finished not by looping). 
+- `-d [PATH]`: Save debug information: Adds [very extensive label names](tests/README.md#example-label-name-youll-get-with-using---debuginfo-len), Which are like a "**macro-stack**" for each of the last executed address. (can be used with `--debug-ops-list LEN`)
+- `--debug-ops-list LEN`: Shows the last _LEN_ executed addresses (instead of 10). (can be used with `-d`)
+- `-b NAME [NAME ...]`: Places breakpoints at every specified label NAMEs (note that label names are long: [more information about labels](src/README.md#generated-label-names)). (requires `-b`)
+- `-B NAME [NAME ...]`: Places breakpoints at every label that contains one of the given NAMEs. (requires `-b`)
+
 # Project Structure
 
 **[src](src/README.md)** (assembler + interpreter source files):

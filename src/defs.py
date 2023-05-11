@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import dataclasses
 import json
 import lzma
@@ -7,7 +8,7 @@ from collections import deque
 from enum import IntEnum    # IntEnum equality works between files.
 from pathlib import Path
 from time import time
-from typing import List, Dict, Deque
+from typing import List, Dict, Deque, Optional
 
 from ops import CodePosition, Op
 
@@ -39,7 +40,7 @@ MACRO_SEPARATOR_STRING = "---"
 STARTING_LABEL_IN_MACROS_STRING = ':start:'
 WFLIP_LABEL_PREFIX = ':wflips:'
 
-NUMBER_OF_SAVED_LAST_OPS_ADDRESSES = 50
+LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH = 10
 
 io_bytes_encoding = 'raw_unicode_escape'
 
@@ -47,6 +48,13 @@ io_bytes_encoding = 'raw_unicode_escape'
 _debug_json_encoding = 'utf-8'
 _debug_json_lzma_format = lzma.FORMAT_RAW
 _debug_json_lzma_filters: List[Dict[str, int]] = [{"id": lzma.FILTER_LZMA2}]
+
+
+def check_int_positive(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
+    return ivalue
 
 
 def save_debugging_labels(debugging_file_path: Path, labels: Dict[str, int]) -> None:
@@ -122,14 +130,22 @@ class RunStatistics:
         def __exit__(self, exc_type, exc_val, exc_tb):
             self.paused_time += time() - self.pause_start_time
 
-    def __init__(self, w: int, *, number_of_saved_last_ops_addresses=NUMBER_OF_SAVED_LAST_OPS_ADDRESSES):
+    def __init__(self, w: int, last_ops_debugging_list_length: Optional[int]):
+        """
+        Saves statistics about the current run (and a queue of the last executed ops).
+        @param w: the memory bit-length
+        @param last_ops_debugging_list_length: The length of the last-ops list
+        """
         self._op_size = 2 * w
         self._after_null_flip = 2 * w
 
         self.op_counter = 0
         self.flip_counter = 0
         self.jump_counter = 0
-        self.last_ops_addresses: Deque[int] = deque(maxlen=number_of_saved_last_ops_addresses)
+
+        self.last_ops_addresses: Optional[Deque[int]] = None
+        if last_ops_debugging_list_length is not None:
+            self.last_ops_addresses = deque(maxlen=last_ops_debugging_list_length)
 
         self._start_time = time()
         self.pause_timer = self.PauseTimer()
@@ -138,7 +154,8 @@ class RunStatistics:
         return time() - self._start_time - self.pause_timer.paused_time
 
     def register_op_address(self, ip: int):
-        self.last_ops_addresses.append(ip)
+        if self.last_ops_addresses is not None:
+            self.last_ops_addresses.append(ip)
 
     def register_op(self, ip: int, flip_address: int, jump_address: int) -> None:
         self.op_counter += 1
