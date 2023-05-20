@@ -134,7 +134,8 @@ ns bit {
     //
     // The number 28/93 is the ratio of the number of decimal digits and the number of binary digits.
     // It's bigger than log(2)/log(10) by 0.015%, which is just enough.
-    def print_dec_uint n, x @ start_printing, xor, end_xor, dst, src, print_buffer, print_buffer_flag, div10, zero_flag, ret_reg, end {
+    def print_dec_uint n, x @ start_printing, xor, end_xor, dst, src, print_buffer, print_buffer_flag, \
+            div10, zero_flag, ret_reg, end {
         .mov n, src, x
         .zero zero_flag
 
@@ -143,9 +144,12 @@ ns bit {
 
         .zero n*28/93+1, print_buffer_flag   // all chars are off
         // fill the print buffer with the decimal digits of src
-        rep(n*28/93+1, i) .print_dec_uint.div10_step div10, xor, ret_reg, src, print_buffer+i*4*dw, print_buffer_flag+i*dw, zero_flag, start_printing
+        rep(n*28/93+1, i) .print_dec_uint.div10_step div10, xor, ret_reg, src, \
+            print_buffer+i*4*dw, print_buffer_flag+i*dw, zero_flag, start_printing
       start_printing:
-        rep(n*28/93+1, i) .print_dec_uint.print_char print_buffer+(n*28/93-i)*4*dw, print_buffer_flag+(n*28/93-i)*dw
+        rep(n*28/93+1, i) .print_dec_uint.print_char \
+            print_buffer+(n*28/93-i)*4*dw, \
+            print_buffer_flag+(n*28/93-i)*dw
 
         ;end
 

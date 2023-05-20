@@ -4,7 +4,9 @@ EACH_INDEX_REPEATS = 3
 DST_N = 8
 // ADD_N hex-size is:   EACH_INDEX_REPEATS * 2 * DST_N * (DST_N * DST_N)
 ADD_N = 0x747651c5ba3acd47e92894d005eef113e5a0bc88d937e656b8f071e013ae206a10501cdb5a480e243b89bd817bd60288ae8570eb8c34d62914cd47950752869915ca7b5374c2df7b548628846d568decdfd290cbc4ec942acf89808f888d2415aa91b6081a0ac791a166139c3c9ad29ab5c6ae09f16a7aae29ae31d4e0ca3963f22109f1b47865e8b3bce7f4a218255750141fa3f08f8659086cce047014a10db555b996cedd6d609c47a9377d659e9fa546c17361e3f8eac58bf45f02833a987b6b1c0e03f2f7a1e9836862118fd34cb78c6f87c672b5cc6764b2b3b842c1c783cc98a1367ff1f8193a123d24ee1adb4cad7a5927ad24cf43cc6f56647a2fb619a52b48e5003202e353a7a4b1da775282db3f2478396fa872c5ccb159bc31b619e774ff6a3aaa28646e7e58365a7904b19a107d52017a3e5fefbb3b45023b22eb9a473b6aed9ac5ea1094506fba4de9e2808e1870123d5cf20f8a1edea39c9a2863e037e965ae6f581e57dc493126979ac85697e452f731b56df08d8e8bf59e40e2563fd2f5ffcbe0c3878dfa2a8e40e2865dd568b1476fcc57caa4397fe19bc288eeaea731d1291cbdaf94699082e5f362f57aeb67b56b247bc7c0dc87fe8497ccdad95dcb32685a2ac102cef5278c39955a0c96b79abb488047a921509240a5626310e6b6f97a35101009edb2616bc154d6a70b5eb1129aa1a80fbd145f2eae4d10933026285303487ac6984eb445bcfafde8e002844d0242148af9bbc9a37008aea3cf2ca5fe0431ff0e46b23a4e24e37521411dea35889764bd1d13ff3e25489b9aff064a8ecd7052524aae7084826e269e6d30596da015c9eeae37b78182af51b90105a5e04e43433347fd500d1d932092ef50426d5219bf1fd069af129e267aa6afe2e4bc852a17da6a17e82beb51e79e67f701def5511522e78f9d8bafd74b9481c4fc36be3398ebddd52187c37e9fb0c34b3c4560c3d4d8f9e288ea1944e3c87aabe5b7491817ad31ab43901f8805e657b98fdfae8d11cfd9bf93a305abbba9e0297da912c2a94a2ddc0737df438889ff40e86b541cfa4694cde62253b8782403eb86b9f8990974759b9cee0f60f393f54a4027a2d1eac176ae13f4f9fa82d71c9c22be8ec12555183f07ac552ec2bf6e8a13f66d70759f5ad48a08bbfdf1bd408b151e85b079f35499f8734df9f0bb94902d4fc0469f441f99179b7ec4b8818ecdb114ab6b231db46b9f4f8e02c3d00d082db7b8251f8063ce08bba53fb8e2ac160c1a76bbb0dd04c37dae05ff1d4fd23ec5360ca070bd030cf3bbafe8023489a5735b4b7ee9a3584540137caad6c8063e8605b5029ecf5f164f942821114ed83320064b4072da5fbe9eda192bf57796cb344bc24c35aaccd16bfdeda060a1fae48a6b69dff50be79d724c0ddd217562f88cef51b59688db514a7c0fcc567a61c7bc64cdc26d95fe1a913e990c08c64a00ea1cd2e1e1c8c967b96d939a25142f91d52bba681ed4e2d100b75a063b98d79fa6a16de95567b9b35b10fd450d2aec5083ba1bf5b975fb8a298a8cff12d3a6bbb80bd4224e9bbb932d19a5a7d86f56977dfce7fb5993476ef08a4ebbde5d3b6e71356e080b39ac0f76d5c266a4bcbc72e27b12115b4ed742fe4ff52221bda32d00d7559cb552da44e1f13e2cd10f836d054f1c704f78d9c15a86528bd7cf074d2a22554eb315ace78bbf54f5f2baadacf5ec79e78300baa1523200cfe59ebfbdbd3e27b0152b98ef040807ee8bd8fb3c5ac83f29ff68e33f4119eaaafde1147fd8ac692944ff7e8331ef1cfac2d4ab76d0b3e4eb9470aa023a2d4ea03e3839092b2052a9b7a50ce292c3f19b9ae5b5154b83fff85d686dec2414c865af96bd9b5cf1cbfda48cf7c6b9ae71e1fee6ea15010d33efdbde7ebeb03937e442fe8e8d2b37e6e9e40a1cbecebdde0437d91f6337c3d1f94f9541d8d6fac79da7e9d3051a6fc60bd198026c20311568b3d332edade28754910b0504886b12547c9da672343a85057bfe541ac0710312f70d95f685880a0e3c13f82063c81ae7ee6416e98de35e3ca4c66ca40d0e8bc159358624e1f441026ab078dd0e7475723d3cbcd1cce033f5cae51fe8a3f74b44f67c71657916b65cd207c5c1b808c1ab5dd4039e4562cf29c370d1f6ab84
-rep(DST_N, src_n_minus_1) test_entire_src_length_from_data (ADD_N >> (4*2*DST_N*EACH_INDEX_REPEATS*DST_N * src_n_minus_1)) & ((1<<(4*2*DST_N*EACH_INDEX_REPEATS*DST_N))-1), DST_N, src_n_minus_1 + 1
+rep(DST_N, src_n_minus_1) test_entire_src_length_from_data \
+    (ADD_N >> (4*2*DST_N*EACH_INDEX_REPEATS*DST_N * src_n_minus_1)) & ((1<<(4*2*DST_N*EACH_INDEX_REPEATS*DST_N))-1), \
+    DST_N, src_n_minus_1 + 1
 
 stl.loop
 
@@ -13,11 +15,14 @@ hex.init
 
 
 def test_entire_src_length_from_data test_data, dst_n, src_n {
-    rep(dst_n - src_n + 1, hex_shift) test_entire_index_from_data (test_data >> (4*2*DST_N*EACH_INDEX_REPEATS * hex_shift)) & ((1<<(4*2*DST_N*EACH_INDEX_REPEATS))-1), dst_n, src_n, hex_shift
+    rep(dst_n - src_n + 1, hex_shift) test_entire_index_from_data \
+        (test_data >> (4*2*DST_N*EACH_INDEX_REPEATS * hex_shift)) & ((1<<(4*2*DST_N*EACH_INDEX_REPEATS))-1), \
+        dst_n, src_n, hex_shift
 }
 
 def test_entire_index_from_data test_data, dst_n, src_n, hex_shift {
-    rep(EACH_INDEX_REPEATS, i) test_1_time_from_data (test_data >> (4*2*DST_N * i)) & ((1<<(4*2*DST_N))-1), dst_n, src_n, hex_shift
+    rep(EACH_INDEX_REPEATS, i) test_1_time_from_data \
+        (test_data >> (4*2*DST_N * i)) & ((1<<(4*2*DST_N))-1), dst_n, src_n, hex_shift
 }
 
 def test_1_time_from_data test_data, dst_n, src_n, hex_shift {

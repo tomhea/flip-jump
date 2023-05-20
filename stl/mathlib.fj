@@ -217,7 +217,9 @@ ns hex {
         // @output-param ret: ... TODO document the output params
         // @output-param dst: ...
         // @output-param add_carry_dst: ...
-        def init @ add_res, after_add,   switch_small_table, add_carry_small_table, set_carry_small_table, clean_small_table,   switch, set_carry_0, set_carry_1, clean,   add_carry, clean_add, clean_carry,   end < ..add.dst, .._.ret > ret, dst, add_carry_dst {
+        def init @ add_res, after_add, end,   switch_small_table, add_carry_small_table, set_carry_small_table, \
+                clean_small_table,   switch, set_carry_0, set_carry_1, clean,   add_carry, clean_add, clean_carry \
+                < ..add.dst, .._.ret > ret, dst, add_carry_dst {
             // general progression (after jumping to hex.mul.dst with value d):
             //  dst           -> switch+d           (set lower4  mul result in add_carry_dst+4)                                                                     (5)
             //  add_carry_dst -> add_carry+?        (set         add result in hex.add.dst  +4. sets dst to set_carry_{0/1}. sets add_carry_dst to clean_add)       (6)
@@ -245,13 +247,21 @@ ns hex {
 
             pad 16  // not really needed
           switch_small_table:
-            rep(16, d) stl.fj    (d==0)?0: (.add_carry_dst+dbit+(#d)+3),             (d==((1<<(#d))>>1)) ? .add_carry_dst  : switch_small_table   +(d^((1<<(#d))>>1))*dw
+            rep(16, d) stl.fj \
+                (d==0)              ? 0              :  (.add_carry_dst + dbit + (#d) + 3), \
+                (d==((1<<(#d))>>1)) ? .add_carry_dst :  switch_small_table + (d^((1<<(#d)) >> 1))*dw
           set_carry_small_table:
-            rep(16, d) stl.fj    (d==0)?0: (.add_carry_dst+dbit+(#d)-1),             (d==((1<<(#d))>>1)) ? add_res         : set_carry_small_table+(d^((1<<(#d))>>1))*dw
+            rep(16, d) stl.fj \
+                (d==0)              ? 0       :  (.add_carry_dst+dbit+(#d)-1), \
+                (d==((1<<(#d))>>1)) ? add_res :  set_carry_small_table + (d^((1<<(#d)) >> 1))*dw
           add_carry_small_table:
-            rep(16, d) stl.fj    (d==0) ? .add_carry_dst+dbit+8 : (..add.dst+dbit+(#d)+3),        (d==0) ? .add_carry_dst  : add_carry_small_table+(d^((1<<(#d))>>1))*dw
+            rep(16, d) stl.fj \
+                (d==0) ? .add_carry_dst+dbit+8 :  (..add.dst+dbit+(#d)+3), \
+                (d==0) ? .add_carry_dst        : add_carry_small_table+(d^((1<<(#d))>>1))*dw
           clean_small_table:
-            rep(16, d) stl.fj    (d==0) ? .dst+dbit+9           : (     .dst+dbit+(#d)+3),        (d==0) ? .ret            : clean_small_table    +(d^((1<<(#d))>>1))*dw
+            rep(16, d) stl.fj \
+                (d==0) ? .dst+dbit+9 :  (.dst+dbit+(#d)+3), \
+                (d==0) ? .ret        :  clean_small_table + (d^((1<<(#d)) >> 1))*dw
 
 
             pad 1024
@@ -267,11 +277,17 @@ ns hex {
 
           // needs to be 1024-padded
           add_carry:
-            rep(256, d) stl.fj    .dst+dbit + (((d&0xf)+(d>>4) > 0xf) ? 9 : 8),    add_carry_small_table + (((d&0xf)+(d>>4)) & 0xf) * dw
+            rep(256, d) stl.fj \
+                .dst+dbit + (((d&0xf)+(d>>4) > 0xf) ? 9 : 8), \
+                add_carry_small_table + (((d&0xf)+(d>>4)) & 0xf) * dw
           clean_add:
-            rep(256, d) stl.fj    (d==0) ? .add_carry_dst+dbit+8 : (.add_carry_dst+dbit+(#d)-1),    (d==0) ? .dst : clean_add  +(d^((1<<(#d))>>1))*dw
+            rep(256, d) stl.fj \
+                (d==0) ? .add_carry_dst+dbit+8 : (.add_carry_dst+dbit+(#d)-1), \
+                (d==0) ? .dst                  : clean_add  +(d^((1<<(#d))>>1))*dw
           clean_carry:
-            rep( 16, d) stl.fj    (d==0) ? .add_carry_dst+dbit+9 : (.add_carry_dst+dbit+(#d)-1),    (d==0) ? .dst : clean_carry+(d^((1<<(#d))>>1))*dw
+            rep( 16, d) stl.fj \
+                (d==0) ? .add_carry_dst+dbit+9 : (.add_carry_dst+dbit+(#d)-1), \
+                (d==0) ? .dst                  : clean_carry+(d^((1<<(#d))>>1))*dw
 
 
           end:
@@ -328,7 +344,7 @@ ns bit {
         .zero 2*n, R
         .zero   n, Q
 
-        rep(n, i) _.div_step n, a+(n-1-i)*dw, b, R+(n-1-i)*dw, Q+(n-1-i)*dw
+        rep(n, i) _.div_step n,  a+(n-1-i)*dw,  b,  R+(n-1-i)*dw,  Q+(n-1-i)*dw
 
         .mov n, r, R
         .mov n, q, Q
@@ -434,7 +450,8 @@ ns bit {
 
 ns hex {
     // TODO - hex.div fails tests. for example, 0xc3 / 0xe fails.
-    def div n, nb, q, _r, _a, _b, div0 @ loop, after_loop,   do_cmp_sub_func, do_sub, jump_to_flip, flip_op,   r, b, a, i, ret,   end {
+    def div n, nb, q, _r, _a, _b, div0 @ loop, after_loop,   do_cmp_sub_func, do_sub, jump_to_flip, flip_op,   \
+            r, b, a, i, ret,   end {
         .if0 nb, _b, div0
 
         .zero q

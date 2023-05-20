@@ -7,7 +7,8 @@ ns hex {
     // (n=2 when operating on 16-255 bit-numbers)
     //   dst[:n] += src.#on-bits (between 0->4)
     // dst is hex.vec n, src is hex.
-    def add_count_bits n, dst, src @ count_switch,  do_add,  add_switch, add4_switch,  xor_switch,  after_add, is_carry,  should_inc, do_inc,  clean {
+    def add_count_bits n, dst, src @ count_switch,  do_add,  add_switch, add4_switch,  xor_switch,  \
+            after_add, is_carry,  should_inc, do_inc,  clean {
         //part1
         wflip src+w, count_switch, src
 

@@ -82,7 +82,8 @@ ns hex {
     //   prints the ascii of the hexadecimal representation of hex.
     //
     // use_uppercase (constant): if true, print in uppercase (else lowercase).
-    def print_as_digit hex, use_uppercase @ switch, print_0, print_2, print_4, print_6, print_8, print_a, print_b, print_d, print_f, end < stl.IO {
+    def print_as_digit hex, use_uppercase @ switch, print_0, print_2, print_4, print_6, print_8, \
+            print_a, print_b, print_d, print_f, end < stl.IO {
         wflip hex+w, switch, hex
         pad 16
       switch:

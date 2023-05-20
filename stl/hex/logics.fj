@@ -74,7 +74,10 @@ ns hex {
     //
     // dst1,dst2,src are hexes
     def double_xor dst1, dst2, src {
-        .double_exact_xor dst1+dbit+3, dst1+dbit+2, dst1+dbit+1, dst1+dbit+0, dst2+dbit+3, dst2+dbit+2, dst2+dbit+1, dst2+dbit+0, src
+        .double_exact_xor \
+            dst1+dbit+3, dst1+dbit+2, dst1+dbit+1, dst1+dbit+0, \
+            dst2+dbit+3, dst2+dbit+2, dst2+dbit+1, dst2+dbit+0, \
+            src
     }
 
     //  Time Complexity: n(@+4)
@@ -83,7 +86,10 @@ ns hex {
     //   var ^= src
     // var,src are hex[:n], address is an address.
     def address_and_variable_xor n, address, var, src {
-        rep(n, i) .double_exact_xor address+4*i+3, address+4*i+2, address+4*i+1, address+4*i+0, var+dbit+i*dw+3, var+dbit+i*dw+2, var+dbit+i*dw+1, var+dbit+i*dw+0, src+i*dw
+        rep(n, i) .double_exact_xor \
+            address+4*i+3, address+4*i+2, address+4*i+1, address+4*i+0, \
+            var+dbit+i*dw+3, var+dbit+i*dw+2, var+dbit+i*dw+1, var+dbit+i*dw+0, \
+            src+i*dw
     }
 
     //  Time Complexity: @+4
@@ -186,7 +192,10 @@ ns hex {
             //   so that xoring it with dst will update it to the or-result.
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
             // Space Complexity / total table ops: 337.
-            rep(256, d) stl.wflip_macro .._.res+w, (((d&0xf)|(d>>4))^(d&0xf))*dw, clean_table_entry+d*dw
+            rep(256, d) stl.wflip_macro \
+                .._.res+w, \
+                (((d&0xf)|(d>>4))^(d&0xf))*dw, \
+                clean_table_entry+d*dw
 
           clean_table_entry:
             // xors back the table-entry from .dst
@@ -232,7 +241,10 @@ ns hex {
             //   so that xoring it with dst will update it to the and-result.
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
             // Space Complexity / total table ops: 337.
-            rep(256, d) stl.wflip_macro .._.res+w, (((d&0xf)&(d>>4))^(d&0xf))*dw, clean_table_entry+d*dw
+            rep(256, d) stl.wflip_macro \
+                .._.res+w, \
+                (((d&0xf)&(d>>4))^(d&0xf))*dw, \
+                clean_table_entry+d*dw
 
           clean_table_entry:
             // xors back the table-entry from .dst

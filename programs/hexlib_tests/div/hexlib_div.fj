@@ -52,7 +52,8 @@ neq_mod_print:
     stl.fret ret
 
 
-def test_div n, nb, div_label, a, b @ neq_div, eq_div,  cmp_mod,  neq_mod, eq_mod,  end < ah, bh, res, ch,  mod, mh,  ret,  neq_div_print, neq_mod_print {
+def test_div n, nb, div_label, a, b @ neq_div, eq_div,  cmp_mod,  neq_mod, eq_mod,  end \
+        < ah, bh, res, ch,  mod, mh,  ret,  neq_div_print, neq_mod_print {
     hex.set   n, ah, a
     hex.zero nb, bh
     stl.fcall div_label, ret

@@ -95,6 +95,7 @@ class FJLexer(sly.Lexer):
                 "@", ","}
 
     ignore_ending_comment = r'//.*'
+    ignore_line_continuation = r'\\[ \t]*\n'
 
     # Tokens
     DOT_ID = dot_id_re

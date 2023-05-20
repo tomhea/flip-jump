@@ -231,7 +231,7 @@ ns hex {
 
 
 
-    // TODO read/write 4-bit values (good for bit/hex/dec) with hex.{push/pop/pop_res}
+    // TODO hex.xor_{from/to}_ptr 4-bit values (good for bit/hex/dec). also affects hex.{push/pop/pop_res}.
 
 
 

@@ -78,7 +78,9 @@ ns hex {
     // @requires hex.cmp.init (or hex.init)
     //
     // a,b are hexes; lt/eq/gt are addresses.
-    def cmp a, b, lt, eq, gt @ ret, _eq, _gt, jumper_to_return_table, __lt, __eq, __gt < .cmp.dst, ._.ret {
+    def cmp a, b, lt, eq, gt \
+            @ ret, _eq, _gt, jumper_to_return_table, __lt, __eq, __gt \
+            < .cmp.dst, ._.ret {
         //part1
         .xor .cmp.dst  , a
         .xor .cmp.dst+4, b
@@ -145,7 +147,10 @@ ns hex {
             //   if dst == src:     flips dbit+0
             //   if dst  < src:     no flips
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
-            rep(256, d) stl.fj    ((d&0xf) > (d>>4)) ? .._.ret+dbit+1 : (((d&0xf) == (d>>4)) ? .._.ret+dbit : 0),    clean_table_entry+d*dw
+            rep(256, d) stl.fj  ((d&0xf) > (d>>4)) \
+                                 ? .._.ret+dbit+1 \
+                                 : (((d&0xf) == (d>>4)) ? .._.ret+dbit : 0),\
+                                clean_table_entry+d*dw
 
           clean_table_entry:
             // xors back the table-entry from .dst

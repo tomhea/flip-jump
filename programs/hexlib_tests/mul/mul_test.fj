@@ -3,7 +3,9 @@ stl.startup
 HexSize = NumSize / 4
 Flag = (1<<NumSize)-1
 BlockSize = 2*NumSize
-rep(Repetitions, i) test_mul HexSize, (Data>>(BlockSize*i))&Flag, (Data>>(BlockSize*i+NumSize))&Flag
+rep(Repetitions, i) test_mul HexSize, \
+    (Data>>(BlockSize*i))&Flag, \
+    (Data>>(BlockSize*i+NumSize))&Flag
 
 stl.loop
 

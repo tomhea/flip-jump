@@ -117,16 +117,19 @@ ns bit {
     // Complexity: 54@+92
     //   if ascii is '0'-'9'/'a'-'f'/'A'-'F', set hex to that hexadecimal digit value (end error=0).  else, set error=1.
     // ascii is bit[:8], hex in bit[:4], and error(output-param) is a bit.
-    def ascii2hex error, hex, ascii @ decimal_ascii_msh, uppercase_hexadecimal_ascii_msh, lowercase_hexadecimal_ascii_msh, return_error, check_uppercase_hex, check_lowercase_hex, dec_first_check, hex_first_check, hex_second_check, copy_decimal_value, copy_hexadecimal_value, nine4, seven3, two3, end {
+    def ascii2hex error, hex, ascii \
+            @ decimal_ascii_msh, uppercase_hexadecimal_ascii_msh, lowercase_hexadecimal_ascii_msh, return_error, \
+            check_uppercase_hex, check_lowercase_hex, dec_first_check, hex_first_check, hex_second_check, \
+            copy_decimal_value, copy_hexadecimal_value, nine4, seven3, two3, end {
         .zero error
         .zero 4, hex
 
         .cmp 4, ascii+4*dw, decimal_ascii_msh, check_uppercase_hex, dec_first_check, check_uppercase_hex
 
       check_uppercase_hex:
-        .cmp 5, ascii+3*dw, uppercase_hexadecimal_ascii_msh,    check_lowercase_hex, hex_first_check, check_lowercase_hex
+        .cmp 5, ascii+3*dw, uppercase_hexadecimal_ascii_msh, check_lowercase_hex, hex_first_check, check_lowercase_hex
       check_lowercase_hex:
-        .cmp 5, ascii+3*dw, lowercase_hexadecimal_ascii_msh,  return_error,  hex_first_check, return_error
+        .cmp 5, ascii+3*dw, lowercase_hexadecimal_ascii_msh, return_error,        hex_first_check, return_error
 
       dec_first_check:
         .cmp 4, ascii, nine4, copy_decimal_value, copy_decimal_value, return_error

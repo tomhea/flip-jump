@@ -70,7 +70,9 @@ def remove_spaces @ main_loop, try2, next_ascii, end < space1, space2, ascii {
 
 
 
-def insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_dec, dec_loop, minus_flag, end, after_minus < dec, hex_prefix1, hex_prefix2, t, hex, minus, ascii, error, hex_used {
+def insert_number x @ \
+        check1, set_minus, check2, before_hex, hex_loop, before_dec, dec_loop, minus_flag, end, after_minus \
+        < dec, hex_prefix1, hex_prefix2, t, hex, minus, ascii, error, hex_used {
     bit.zero w, x
     bit.zero minus_flag
     bit.cmp 8, ascii, minus, check1, set_minus, check1
@@ -115,7 +117,9 @@ def insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_de
 
 
 
-def calc a, op, b @ try_add, try_sub, try_mul, try_mul_loop, try_div, try_mod, add, sub, mul, mul_loop, div_mod, div, mod, bad, div_mod_flag, r, q, end < minus, asterisk, error, percentage, roof, slash, plus {
+def calc a, op, b @ try_add, try_sub, try_mul, try_mul_loop, try_div, try_mod, \
+        add, sub, mul, mul_loop, div_mod, div, mod, bad, div_mod_flag, r, q, end \
+        < minus, asterisk, error, percentage, roof, slash, plus {
     bit.zero error
 
   try_add:
