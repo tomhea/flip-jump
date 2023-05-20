@@ -3,7 +3,7 @@
 
 ns bit {
     ns pointers {
-        // Space Complexity: 3w+2
+        // Space Complexity: 2w+2
         //   Inits the global opcodes and pointer-copies required for the pointers macros.
         //
         // @output-param to_flip:  address of opcode that holds a flipping address in its first word. jumping into it will flip wanted bit.
@@ -170,12 +170,12 @@ ns bit {
     // Complexity: w(2@+6)      // actually (w-#w)(2@+6)
     //   ptr[:n] += 2w
     def inc_ptr ptr {
-        .inc w-#w, ptr+(#w)*dw    //TODO check if need #dw or #w
+        .inc w-#w, ptr+(#w)*dw
     }
 
     // Complexity: w(2@+8)      // actually (w-#w)(2@+8)
     //   ptr[:n] -= 2w
     def dec_ptr ptr {
-        .dec w-#w, ptr+(#w)*dw    //TODO check if need #dw or #w
+        .dec w-#w, ptr+(#w)*dw
     }
 }

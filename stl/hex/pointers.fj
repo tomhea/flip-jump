@@ -4,7 +4,7 @@
 
 ns hex {
     ns pointers {
-        // Space Complexity: 3w+2
+        // Space Complexity: w/2+2
         //   Inits the global opcodes and pointer-copies required for the pointers macros.
         //
         // @output-param to_flip:  address of opcode that holds a flipping address in its first word. jumping into it will flip wanted bit.
@@ -23,8 +23,8 @@ ns hex {
             hex.vec w/4, 0
         }
 
-        //  Time Complexity: n(2@+8)
-        // Space Complexity: n(2@+56)
+        //  Time Complexity: w(0.5@+2)
+        // Space Complexity: w(0.5@+14)
         //   Sets both to_jump and to_jump_var to point to the given pointer.
         //   (  to_jump{_var} = ptr  )
         // ptr is a hex[:w/4] that holds an address.
@@ -33,8 +33,8 @@ ns hex {
             ..address_and_variable_xor w/4, .to_jump+w, .to_jump_var, ptr
         }
 
-        //  Time Complexity: n(2@+8)
-        // Space Complexity: n(2@+56)
+        //  Time Complexity: w(0.5@+2)
+        // Space Complexity: w(0.5@+14)
         //   Sets both to_flip and to_flip_var to point to the given pointer.
         //   (  to_flip{_var} = ptr  )
         // ptr is a hex[:w/4] that holds an address.
@@ -43,7 +43,7 @@ ns hex {
             ..address_and_variable_xor w/4, .to_flip, .to_flip_var, ptr
         }
 
-        // Space Complexity: n+w
+        // Space Complexity: n+w/4
         //   Initializes a stack of size n (maximal capacity of n bits / hexs / return-addresses).
         // n is the size of the stack.
         // @output-param sp: the stack pointer. sp always points to the last pushed value (at start - to stack[-1])
@@ -61,8 +61,9 @@ ns hex {
 
 
 ns hex {
-    // Complexity: 2w@ + 2
-    //   like:  ;*ptr
+    //  Time Complexity: w(0.5@+2)
+    // Space Complexity: w(0.5@+14)
+        //   like:  ;*ptr
     //   Jump to the address the pointer points to.
     // ptr is a hex[:w/4] that holds an address.
     def ptr_jump ptr < hex.pointers.to_jump {
@@ -77,7 +78,8 @@ ns hex {
 
 
 ns hex {
-    // Complexity: 2w@ + @
+    //  Time Complexity: w(0.5@+2)  + @
+    // Space Complexity: w(0.5@+14) + @
     //   like:  *ptr;
     //   Flip the address the pointer points to.
     // ptr is a hex[:w/4] that holds an address.
@@ -93,7 +95,8 @@ ns hex {
     }
 
 
-    // Complexity 2w@ + 2@
+    //  Time Complexity: w(0.5@+2)  + 2@
+    // Space Complexity: w(0.5@+14) + 2@
     // The stl.comp_flip_if executes in ~##w, which should be much less than @/2 operations.
     //   like:  (*ptr)+dbit;
     //   Flip the address dbit-ahead of what the pointer points to.
@@ -104,7 +107,8 @@ ns hex {
         rep(#dbit, i) stl.comp_flip_if ptr+dbit+(i/4)*dw+i%4, (dbit>>i)&1
     }
 
-    // Complexity 2w@ + 2@+2
+    //  Time Complexity: w(0.5@+2)  + 3@+2
+    // Space Complexity: w(0.5@+14) + 3@+2
     //   like:  bit.xor *ptr, bit
     // ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def xor_to_ptr ptr, bit @ end {
@@ -152,14 +156,15 @@ ns hex {
 
 
 ns hex {
-    // Complexity 7w@ (actually a bit smaller, 6w@+6w+8 + 2(@-2)^2)
+    // Complexity 5.5w@
     //   like:  bit.xor dst, *ptr
     // dst is a bit. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def xor_from_ptr dst, ptr {
         .exact_xor_from_ptr dst+dbit, ptr
     }
 
-    // Complexity 7w@ (actually a bit smaller, 6w@+6w+8 + 2(@-2)^2)
+    //  Time Complexity: 5.5w@ (exact: 4.5w@+8w+8 + 2(@-2)^2)
+    // Space Complexity: 5.5w@ (exact: 4.5w@+8w+20 + 2(@-2)^2)
     //   like:  bit.exact_xor dst, *ptr
     // dst is a bit-address. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def exact_xor_from_ptr dst, ptr @ base_jump_label, cleanup {
@@ -179,7 +184,7 @@ ns hex {
 
 
 
-// ---------- Stack
+// ---------- Ptr ++/--
 
 
 ns hex {
@@ -196,10 +201,16 @@ ns hex {
     def dec_ptr ptr {
         hex.dec_shifted w/4, ptr, #w
     }
+}
 
 
+
+// ---------- Stack
+
+
+ns hex {
     //  Time Complexity: 4w@  (actually a bit smaller)
-    // Space Complexity: 5w@  (actually a bit smaller)
+    // Space Complexity: 4w@  (actually a bit smaller)
     //   Like:  stack[++sp] = return_address
     //   Pushes the given return_address to the next cell in the stack (assumes it's zero). Increments sp.
     // return_address is a fj-op address, so we assume is dw-aligned.
@@ -209,7 +220,7 @@ ns hex {
     }
 
     //  Time Complexity: 4w@  (actually a bit smaller)
-    // Space Complexity: 5w@  (actually a bit smaller)
+    // Space Complexity: 4w@  (actually a bit smaller)
     //   Like:  stack[sp--] = 0
     //   Pops the given return_address from the current cell in the stack (assumes it has the value of the return_address). Decrements sp.
     // return_address is a fj-op address, so we assume is dw-aligned.
@@ -219,8 +230,13 @@ ns hex {
     }
 
 
-    //  Time Complexity: 2w@ + 3@+2
-    // Space Complexity: w(3.5@+13)
+
+    // TODO read/write 4-bit values (good for bit/hex/dec) with hex.{push/pop/pop_res}
+
+
+
+    //  Time Complexity: w(0.5@+2)  + 13@+19
+    // Space Complexity: w(0.875@+5.25) + 9@+73
     //   Like:  stack[++sp] = bit
     //   Pushes the given bit to the next cell in the stack (assumes it's zero). Increments sp.
     def push bit < hex.pointers.sp {
@@ -228,8 +244,8 @@ ns hex {
         .xor_to_ptr hex.pointers.sp, bit
     }
 
-    //  Time Complexity: 2w@ + 3@+2
-    // Space Complexity: w(3.5@+13)
+    //  Time Complexity: w(0.5@+2)       + 13@+28
+    // Space Complexity: w(0.875@+17.25) + 9@+85
     //   Like:  stack[sp--] = 0
     //   Pops the given bit from the current cell in the stack (assumes it has the value of bit). Decrements sp.
     def pop bit < hex.pointers.sp {
@@ -238,8 +254,8 @@ ns hex {
     }
 
 
-    //  Time Complexity: w(10@+10)  (actually a bit smaller, 8w@ + 10w+9 + 2(@-2)^2)
-    // Space Complexity: w(11@+20)  (actually a bit smaller, w(9.5@+19) + 2(@-2)^2 + @-1)
+    //  Time Complexity: w(6@+10)   (for w=64. exact: w(5@+10)        + 14@+36  + 2(@-2)^2)
+    // Space Complexity: w(6.5@+20) (for w=64. exact: w(5.375@+25.25) + 10@+117 + 2(@-2)^2)
     //   Like:  bit = stack[sp]
     //          stack[sp--] = 0
     //   Pops the current stack cell into the the given bit. Decrements sp.

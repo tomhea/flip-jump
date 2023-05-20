@@ -4,6 +4,7 @@ dbit = w + #w   // the bit-distance from the variable's start, to the bit value 
 
 
 ns stl {
+    // Complexity: 2
     // startup Macro - should be the first piece of code in your program.
     // @output-param IO: the address of the opcode that's reserved for Input/Output. More info in https://esolangs.org/wiki/FlipJump#Input_/_Output
     def startup @ code_start > IO {
@@ -15,12 +16,14 @@ ns stl {
                         // 4w;5w : start of code
     }
 
+    // Complexity: ~6700  (6765 for w=64, 6633 for w=16)
     // startup Macro, that initialize anything needed for the standard library - should be the first piece of code in your program.
     // @output-param IO: the address of the opcode that's reserved for Input/Output. More info in https://esolangs.org/wiki/FlipJump#Input_/_Output
     def startup_and_init_all {
         .startup_and_init_all 100
     }
 
+    // Complexity: 6464 + 2.75w+@ + n
     // startup Macro, that initialize anything needed for the standard library - should be the first piece of code in your program.
     // stack_bit_size is the size of the global-stack (will hold this number of bits / return-addresses).
     // @output-param IO: the address of the opcode that's reserved for Input/Output. More info in https://esolangs.org/wiki/FlipJump#Input_/_Output
