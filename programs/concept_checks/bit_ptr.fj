@@ -46,8 +46,6 @@ test3:
 
 
 
-    stl.ptr_init
-
   p0:
     bit.vec w, d0+dbit
   d0:
@@ -71,3 +69,6 @@ test3:
     bit.bit 1  // 0 => F,  1 => T
   d3_var:
     bit.bit 0
+
+
+bit.pointers.ptr_init

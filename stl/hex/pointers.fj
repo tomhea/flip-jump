@@ -18,9 +18,9 @@ ns hex {
             ;0
 
           to_flip_var:
-            bit.vec w, 0    //TODO hex.vec
+            hex.vec w/4, 0
           to_jump_var:
-            bit.vec w, 0    //TODO hex.vec
+            hex.vec w/4, 0
         }
 
         //  Time Complexity: n(2@+8)
@@ -32,6 +32,30 @@ ns hex {
             ..address_and_variable_xor w/4, .to_jump+w, .to_jump_var, .to_jump_var
             ..address_and_variable_xor w/4, .to_jump+w, .to_jump_var, ptr
         }
+
+        //  Time Complexity: n(2@+8)
+        // Space Complexity: n(2@+56)
+        //   Sets both to_flip and to_flip_var to point to the given pointer.
+        //   (  to_flip{_var} = ptr  )
+        // ptr is a hex[:w/4] that holds an address.
+        def set_flip_pointer ptr < .to_flip, .to_flip_var {
+            ..address_and_variable_xor w/4, .to_flip, .to_flip_var, .to_flip_var
+            ..address_and_variable_xor w/4, .to_flip, .to_flip_var, ptr
+        }
+
+        // Space Complexity: n+w
+        //   Initializes a stack of size n (maximal capacity of n bits / hexs / return-addresses).
+        // n is the size of the stack.
+        // @output-param sp: the stack pointer. sp always points to the last pushed value (at start - to stack[-1])
+        // @output-param stack: the global stack.
+        def stack_init n > sp, stack {
+          sp:
+            hex.vec w/4, .stack-dw
+
+            pad w
+          stack:
+            bit.vec n, 0
+        }
     }
 }
 
@@ -40,11 +64,9 @@ ns hex {
     // Complexity: 2w@ + 2
     //   like:  ;*ptr
     //   Jump to the address the pointer points to.
-    //   ( to_jump{_var} = ptr.  ==>  ;to_jump )
-    // ptr is a bit[:w] that holds an address.
-    def ptr_jump ptr < hex.pointers.to_jump, hex.pointers.to_jump_var {
-        bit.address_and_variable_xor w, hex.pointers.to_jump+w, hex.pointers.to_jump_var, hex.pointers.to_jump_var
-        bit.address_and_variable_xor w, hex.pointers.to_jump+w, hex.pointers.to_jump_var, ptr
+    // ptr is a hex[:w/4] that holds an address.
+    def ptr_jump ptr < hex.pointers.to_jump {
+        .pointers.set_jump_pointer ptr
         ;hex.pointers.to_jump
     }
 }
@@ -58,13 +80,11 @@ ns hex {
     // Complexity: 2w@ + @
     //   like:  *ptr;
     //   Flip the address the pointer points to.
-    //   ( to_flip{_var} = ptr.  ==>  ;to_flip )
-    // ptr is a bit[:w] that holds an address.
-    def ptr_flip ptr @ cleanup < hex.pointers.to_flip, hex.pointers.to_flip_var {
+    // ptr is a hex[:w/4] that holds an address.
+    def ptr_flip ptr @ cleanup < hex.pointers.to_flip {
         wflip hex.pointers.to_flip+w, cleanup
 
-        bit.address_and_variable_xor w, hex.pointers.to_flip, hex.pointers.to_flip_var, hex.pointers.to_flip_var
-        bit.address_and_variable_xor w, hex.pointers.to_flip, hex.pointers.to_flip_var, ptr
+        .pointers.set_flip_pointer ptr
         ;hex.pointers.to_flip
 
         pad 4
@@ -77,16 +97,16 @@ ns hex {
     // The stl.comp_flip_if executes in ~##w, which should be much less than @/2 operations.
     //   like:  (*ptr)+dbit;
     //   Flip the address dbit-ahead of what the pointer points to.
-    // ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    // ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def ptr_flip_dbit ptr {
-        rep(#dbit, i) stl.comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
+        rep(#dbit, i) stl.comp_flip_if ptr+dbit+(i/4)*dw+i%4, (dbit>>i)&1
         .ptr_flip ptr
-        rep(#dbit, i) stl.comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
+        rep(#dbit, i) stl.comp_flip_if ptr+dbit+(i/4)*dw+i%4, (dbit>>i)&1
     }
 
     // Complexity 2w@ + 2@+2
     //   like:  bit.xor *ptr, bit
-    // ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    // ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def xor_to_ptr ptr, bit @ end {
         bit.if0 bit, end
         .ptr_flip_dbit ptr
@@ -96,10 +116,9 @@ ns hex {
 
     // Complexity 3w@  (actually a bit smaller, 2w@+3w + (@-2)^2)
     //   like:  wflip *ptr, value
-    // ptr is a bit[:w] that holds an address, which we assume is w-aligned.
-    def ptr_wflip ptr, value < hex.pointers.to_flip, hex.pointers.to_flip_var {
-        bit.address_and_variable_xor w, hex.pointers.to_flip, hex.pointers.to_flip_var, hex.pointers.to_flip_var
-        bit.address_and_variable_xor w, hex.pointers.to_flip, hex.pointers.to_flip_var, ptr
+    // ptr is a hex[:w/4] that holds an address, which we assume is w-aligned.
+    def ptr_wflip ptr, value {
+        .pointers.set_flip_pointer ptr
         rep(w, i) .pointers.advance_by_one_and_flip__ptr_wflip (#(i^((i+1)%w))), (value>>i)&1
     }
     ns pointers {
@@ -119,11 +138,11 @@ ns hex {
 
     // Complexity 3w@  (actually a bit smaller, 2w@+3w+2 + (@-2)^2)
     //   like:  wflip (*ptr)+w, value
-    // ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    // ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def ptr_wflip_2nd_word ptr, value {
-        bit.not ptr + dw*(#w-1)
-        bit.ptr_wflip ptr, value
-        bit.not ptr + dw*(#w-1)
+        ptr+dbit + ((#w-1)/4)*dw + (#w-1)%4;
+        hex.ptr_wflip ptr, value
+        ptr+dbit + ((#w-1)/4)*dw + (#w-1)%4;
     }
 }
 
@@ -135,14 +154,14 @@ ns hex {
 ns hex {
     // Complexity 7w@ (actually a bit smaller, 6w@+6w+8 + 2(@-2)^2)
     //   like:  bit.xor dst, *ptr
-    // dst is a bit. ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    // dst is a bit. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def xor_from_ptr dst, ptr {
         .exact_xor_from_ptr dst+dbit, ptr
     }
 
     // Complexity 7w@ (actually a bit smaller, 6w@+6w+8 + 2(@-2)^2)
     //   like:  bit.exact_xor dst, *ptr
-    // dst is a bit-address. ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    // dst is a bit-address. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def exact_xor_from_ptr dst, ptr @ base_jump_label, cleanup {
         .ptr_wflip_2nd_word ptr, base_jump_label
 
@@ -164,27 +183,18 @@ ns hex {
 
 
 ns hex {
-    //  Time Complexity: n(2@)
-    // Space Complexity: n(2@+24)
-    // Unsafe if dst is stl.pointers.sp.
-    //   dst[:n] = sp
-    def get_sp dst < stl.pointers.sp {
-        bit.mov w, dst, stl.pointers.sp
-    }
-
-
-    //  Time Complexity: 1.067@         // (16/15 * @)
-    // Space Complexity: w(1.5@+13)     // actually (w-#w)(1.5@+13)
-    //   ptr[:n] += 2w
+    //  Time Complexity: 10@+17
+    // Space Complexity: w(0.375@ + 3.25)  + 6@+71  (for log(w) in 16,32,64,128)
+    //   ptr[:w/4] += 2w
     def inc_ptr ptr {
-        bit.inc w-#w, ptr+#w*dw
+        hex.inc_shifted w/4, ptr, #w
     }
 
-    //  Time Complexity: 1.067@         // (16/15 * @)
-    // Space Complexity: w(1.5@+13)     // actually (w-#w)(1.5@+13)
-    //   ptr[:n] -= 2w
+    //  Time Complexity: 10@+26
+    // Space Complexity: w(0.375@ + 3.25)  + 6@+83  (for log(w) in 16,32,64,128)
+    //   ptr[:w/4] -= 2w
     def dec_ptr ptr {
-        bit.dec w-#w, ptr+#w*dw
+        hex.dec_shifted w/4, ptr, #w
     }
 
 
@@ -193,9 +203,9 @@ ns hex {
     //   Like:  stack[++sp] = return_address
     //   Pushes the given return_address to the next cell in the stack (assumes it's zero). Increments sp.
     // return_address is a fj-op address, so we assume is dw-aligned.
-    def push_ret_address return_address < stl.pointers.sp {
-        .inc_ptr stl.pointers.sp
-        .ptr_wflip_2nd_word stl.pointers.sp, return_address
+    def push_ret_address return_address < hex.pointers.sp {
+        .inc_ptr hex.pointers.sp
+        .ptr_wflip_2nd_word hex.pointers.sp, return_address
     }
 
     //  Time Complexity: 4w@  (actually a bit smaller)
@@ -203,9 +213,9 @@ ns hex {
     //   Like:  stack[sp--] = 0
     //   Pops the given return_address from the current cell in the stack (assumes it has the value of the return_address). Decrements sp.
     // return_address is a fj-op address, so we assume is dw-aligned.
-    def pop_ret_address return_address < stl.pointers.sp {
-        .ptr_wflip_2nd_word stl.pointers.sp, return_address
-        .dec_ptr stl.pointers.sp
+    def pop_ret_address return_address < hex.pointers.sp {
+        .ptr_wflip_2nd_word hex.pointers.sp, return_address
+        .dec_ptr hex.pointers.sp
     }
 
 
@@ -213,18 +223,18 @@ ns hex {
     // Space Complexity: w(3.5@+13)
     //   Like:  stack[++sp] = bit
     //   Pushes the given bit to the next cell in the stack (assumes it's zero). Increments sp.
-    def push bit < stl.pointers.sp {
-        .inc_ptr stl.pointers.sp
-        .xor_to_ptr stl.pointers.sp, bit
+    def push bit < hex.pointers.sp {
+        .inc_ptr hex.pointers.sp
+        .xor_to_ptr hex.pointers.sp, bit
     }
 
     //  Time Complexity: 2w@ + 3@+2
     // Space Complexity: w(3.5@+13)
     //   Like:  stack[sp--] = 0
     //   Pops the given bit from the current cell in the stack (assumes it has the value of bit). Decrements sp.
-    def pop bit < stl.pointers.sp {
-        .xor_to_ptr stl.pointers.sp, bit
-        .dec_ptr stl.pointers.sp
+    def pop bit < hex.pointers.sp {
+        .xor_to_ptr hex.pointers.sp, bit
+        .dec_ptr hex.pointers.sp
     }
 
 
@@ -234,9 +244,9 @@ ns hex {
     //          stack[sp--] = 0
     //   Pops the current stack cell into the the given bit. Decrements sp.
     // bit is only an output parameter
-    def pop_res bit < stl.pointers.sp {
+    def pop_res bit < hex.pointers.sp {
         bit.zero bit
-        .xor_from_ptr bit, stl.pointers.sp
+        .xor_from_ptr bit, hex.pointers.sp
         .pop bit
     }
 }

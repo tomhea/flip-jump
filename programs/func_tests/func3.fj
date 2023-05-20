@@ -1,4 +1,4 @@
-stl.startup
+stl.startup_and_init_all 10
 
 
 // Prints "ABCDE"
@@ -21,6 +21,3 @@ func3:
 
 x3:
     bit.bit 0
-
-stl.ptr_init
-stl.stack_init 10

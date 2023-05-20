@@ -83,7 +83,7 @@ ns hex {
     //   var ^= src
     // var,src are hex[:n], address is an address.
     def address_and_variable_xor n, address, var, src {
-        rep(n, i) .double_exact_xor address+4*i+3, address+4*i+2, address+4*i+1, address+4*i+0, var+dbit+i*dw+3, var+dbit+i*dw+2, var+dbit+i*dw+1, var+dbit+i*dw+0, src
+        rep(n, i) .double_exact_xor address+4*i+3, address+4*i+2, address+4*i+1, address+4*i+0, var+dbit+i*dw+3, var+dbit+i*dw+2, var+dbit+i*dw+1, var+dbit+i*dw+0, src+i*dw
     }
 
     //  Time Complexity: @+4

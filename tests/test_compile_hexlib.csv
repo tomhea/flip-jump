@@ -20,8 +20,10 @@ hexlib-cmp, programs/hexlib_tests/2params/cmp.fj,tests/compiled/hexlib_tests/2pa
 hexlib-cmp_n, programs/hexlib_tests/2params/cmp_n.fj,tests/compiled/hexlib_tests/2params/cmp_n.fjm, 64,3,0, True,True
 hexlib-add, programs/hexlib_tests/2params/add.fj,tests/compiled/hexlib_tests/2params/add.fjm, 64,3,0, True,True
 hexlib-add_n, programs/hexlib_tests/2params/add_n.fj,tests/compiled/hexlib_tests/2params/add_n.fjm, 64,3,0, True,True
+hexlib-add_shifted, programs/hexlib_tests/2params/add_shifted.fj,tests/compiled/hexlib_tests/2params/add_shifted.fjm, 64,3,0, True,True
 hexlib-sub, programs/hexlib_tests/2params/sub.fj,tests/compiled/hexlib_tests/2params/sub.fjm, 64,3,0, True,True
 hexlib-sub_n, programs/hexlib_tests/2params/sub_n.fj,tests/compiled/hexlib_tests/2params/sub_n.fjm, 64,3,0, True,True
+hexlib-sub_shifted, programs/hexlib_tests/2params/sub_shifted.fj,tests/compiled/hexlib_tests/2params/sub_shifted.fjm, 64,3,0, True,True
 hexlib-or, programs/hexlib_tests/2params/or.fj,tests/compiled/hexlib_tests/2params/or.fjm, 64,3,0, True,True
 hexlib-or_n, programs/hexlib_tests/2params/or_n.fj,tests/compiled/hexlib_tests/2params/or_n.fjm, 64,3,0, True,True
 hexlib-and, programs/hexlib_tests/2params/and.fj,tests/compiled/hexlib_tests/2params/and.fjm, 64,3,0, True,True

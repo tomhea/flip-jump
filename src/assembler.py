@@ -178,14 +178,14 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
             try:
                 binary_data.insert_fj_op(op.get_flip(labels), op.get_jump(labels))
             except FJException as e:
-                raise FJAssemblerException(f"Can't resolve labels in op {op}.") from e
+                raise FJAssemblerException(f"{e} in op {op}.")
 
         elif isinstance(op, WordFlip):
             try:
                 binary_data.insert_wflip_ops(op.get_word_address(labels), op.get_flip_value(labels),
                                              op.get_return_address(labels))
             except FJException as e:
-                raise FJAssemblerException(f"Can't resolve labels in op {op}.") from e
+                raise FJAssemblerException(f"{e} in op {op}.")
 
         elif isinstance(op, Padding):
             binary_data.insert_padding(op.ops_count)

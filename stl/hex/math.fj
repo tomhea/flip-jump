@@ -23,6 +23,19 @@ ns hex {
         .add.clear_carry
     }
 
+    //  Time Complexity: src_n(4@+12)   + 5@+1        // It's on average, see the note in hex.inc.
+    // Space Complexity: src_n(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+28
+    //   dst[:dst_n] += src[:src_n] << (4*hex_shift)
+    // @requires hex.add.init (or hex.init)
+    def add_shifted dst_n, src_n, dst, src, hex_shift @ do_inc, end {
+        .add.clear_carry
+        rep(src_n, i) .add dst+(hex_shift + i)*dw, src+i*dw
+        .add.clear_carry end, do_inc
+      do_inc:
+        rep(dst_n - (src_n + hex_shift), i) .inc.step dst+(src_n + hex_shift + i)*dw, end
+      end:
+    }
+
     ns add {
         //  Time Complexity: 2@
         // Space Complexity: 2@+12
@@ -113,6 +126,19 @@ ns hex {
         .sub.clear_carry
         rep(n, i) .sub dst+i*dw, src+i*dw
         .sub.clear_carry
+    }
+
+    //  Time Complexity: src_n(4@+12)   + 5@+10        // It's on average, see the note in hex.inc.
+    // Space Complexity: src_n(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+40
+    //   dst[:dst_n] -= src[:src_n] << (4*hex_shift)
+    // @requires sub.add.init (or hex.init)
+    def sub_shifted dst_n, src_n, dst, src, hex_shift @ do_dec, end {
+        .sub.clear_carry
+        rep(src_n, i) .sub dst+(hex_shift + i)*dw, src+i*dw
+        .sub.clear_carry end, do_dec
+      do_dec:
+        rep(dst_n - (src_n + hex_shift), i) .dec.step dst+(src_n + hex_shift + i)*dw, end
+      end:
     }
 
     ns sub {

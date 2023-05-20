@@ -1,4 +1,4 @@
-stl.startup
+stl.startup_and_init_all 10
 
 
 // Prints "ABC"
@@ -13,7 +13,3 @@ test1:
 func1:
     stl.output 'B'
     stl.return
-
-
-stl.ptr_init
-stl.stack_init 10

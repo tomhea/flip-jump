@@ -1,4 +1,4 @@
-stl.startup
+stl.startup_and_init_all 10
 
 
 // Prints "ABCDEFGH-" and then 0/1, the invert of x4
@@ -21,7 +21,7 @@ test4:
 
 func4:
     stl.output 'C'
-    hex.get_sp __func4_arg_ptr
+    stl.get_sp __func4_arg_ptr
     stl.output 'D'
     hex.dec_ptr __func4_arg_ptr
     stl.output 'E'
@@ -29,7 +29,7 @@ func4:
     stl.output 'F'
     stl.return
   __func4_arg_ptr:
-    bit.vec w, 0
+    hex.vec w/4, 0
 
 
 
@@ -38,6 +38,3 @@ x4:
 
 ascii:
     bit.vec 8
-
-stl.ptr_init
-stl.stack_init 10

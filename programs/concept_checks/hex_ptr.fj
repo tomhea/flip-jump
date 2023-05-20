@@ -49,24 +49,24 @@ test3:
     stl.ptr_init
 
   p0:
-    bit.vec w, d0+dbit
+    hex.vec w/4, d0+dbit
   d0:
     bit.bit 0  // 0 => 1,  1 => 0
 
   p1:
-    bit.vec w, d1
+    hex.vec w/4, d1
   d1:
     ;jump_to7   // jump_to6 => 6, jump_to7 => 7
 
   p2:
-    bit.vec w, d2+w
+    hex.vec w/4, d2+w
   p2_jump:
-    bit.vec w, d2
+    hex.vec w/4, d2
   d2:
     bit.bit 0  // 0 => N,  1 => Y
 
   p3:
-    bit.vec w, d3
+    hex.vec w/4, d3
   d3:
     bit.bit 1  // 0 => F,  1 => T
   d3_var:

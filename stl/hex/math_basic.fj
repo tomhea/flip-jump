@@ -122,7 +122,7 @@ ns hex {
         wflip hex+w, switch, carry0
     }
 
-    //  Time Complexity: 1.067@     // (16/15 * @)
+    //  Time Complexity: 1.067@     // It's on average. To be exact: 16/15 * @.
     // Space Complexity: n(1.5@+13)
     //   hex[:n]++
     def inc n, hex @ end {
@@ -169,7 +169,7 @@ ns hex {
         wflip hex+w, switch, borrow0
     }
 
-    //  Time Complexity: 1.067@     // (16/15 * @)
+    //  Time Complexity: 1.067@     // It's on average. To be exact: 16/15 * @.
     // Space Complexity: n(1.5@+13)
     //   hex[:n]--
     def dec n, hex @ end {
@@ -181,6 +181,31 @@ ns hex {
             ..dec1 hex, end, next
           next:
         }
+    }
+
+
+    //  Time Complexity: 10@+17
+    // Space Complexity: (n+6-shift)(1.5@+13)     // exact: (n-shift)(1.5@+13) + 7.5@+84
+    //   hex[:n] += 1<<shift
+    def inc_shifted n, hex, shift @ shifted_one, end {
+        hex.set shifted_one, 1 << (shift % 4)
+        hex.add_shifted n, 1, hex, shifted_one, shift / 4
+        ;end
+
+      shifted_one: hex.hex
+      end:
+    }
+
+    //  Time Complexity: 10@+26
+    // Space Complexity: (n+6-shift)(1.5@+13)     // exact: (n-shift)(1.5@+13) + 7.5@+96
+    //   hex[:n] -= 1<<shift
+    def dec_shifted n, hex, shift @ shifted_one, end {
+        hex.set shifted_one, 1 << (shift % 4)
+        hex.sub_shifted n, 1, hex, shifted_one, shift / 4
+        ;end
+
+      shifted_one: hex.hex
+      end:
     }
 
 

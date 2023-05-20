@@ -20,8 +20,10 @@ hexlib-cmp, tests/compiled/hexlib_tests/2params/cmp.fjm, ,tests/inout/hexlib_tes
 hexlib-cmp_n, tests/compiled/hexlib_tests/2params/cmp_n.fjm, ,tests/inout/hexlib_tests/2params/cmp_n.out, False,False
 hexlib-add, tests/compiled/hexlib_tests/2params/add.fjm, ,tests/inout/hexlib_tests/2params/add.out, False,False
 hexlib-add_n, tests/compiled/hexlib_tests/2params/add_n.fjm, ,tests/inout/hexlib_tests/2params/100equals.out, False,False
+hexlib-add_shifted, tests/compiled/hexlib_tests/2params/add_shifted.fjm, ,tests/inout/hexlib_tests/2params/108equals.out, False,False
 hexlib-sub, tests/compiled/hexlib_tests/2params/sub.fjm, ,tests/inout/hexlib_tests/2params/sub.out, False,False
 hexlib-sub_n, tests/compiled/hexlib_tests/2params/sub_n.fjm, ,tests/inout/hexlib_tests/2params/100equals.out, False,False
+hexlib-sub_shifted, tests/compiled/hexlib_tests/2params/sub_shifted.fjm, ,tests/inout/hexlib_tests/2params/108equals.out, False,False
 hexlib-or, tests/compiled/hexlib_tests/2params/or.fjm, ,tests/inout/hexlib_tests/2params/or.out, False,False
 hexlib-or_n, tests/compiled/hexlib_tests/2params/or_n.fjm, ,tests/inout/hexlib_tests/2params/100equals.out, False,False
 hexlib-and, tests/compiled/hexlib_tests/2params/and.fjm, ,tests/inout/hexlib_tests/2params/and.out, False,False

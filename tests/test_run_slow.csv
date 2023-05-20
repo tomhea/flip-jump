@@ -11,17 +11,11 @@ calc10, tests/compiled/calc.fjm, tests/inout/calc_tests/calc10.in,tests/inout/ca
 calc_empty, tests/compiled/calc.fjm, tests/inout/calc_tests/calc_empty.in,tests/inout/calc_tests/calc_empty.out, False,False
 calc_many, tests/compiled/calc.fjm, tests/inout/calc_tests/calc_many.in,tests/inout/calc_tests/calc_many.out, False,False
 
-bit_func1, tests/compiled/func_tests/bit_ptr/func1.fjm, ,tests/inout/func_tests/bit_ptr/func1.out, False,False
-bit_func2, tests/compiled/func_tests/bit_ptr/func2.fjm, ,tests/inout/func_tests/bit_ptr/func2.out, False,False
-bit_func3, tests/compiled/func_tests/bit_ptr/func3.fjm, ,tests/inout/func_tests/bit_ptr/func3.out, False,False
-bit_func4, tests/compiled/func_tests/bit_ptr/func4.fjm, ,tests/inout/func_tests/bit_ptr/func4.out, False,False
-bit_func5, tests/compiled/func_tests/bit_ptr/func5.fjm, ,tests/inout/func_tests/bit_ptr/func5.out, False,False
-
-hex_func1, tests/compiled/func_tests/hex_ptr/func1.fjm, ,tests/inout/func_tests/hex_ptr/func1.out, False,False
-hex_func2, tests/compiled/func_tests/hex_ptr/func2.fjm, ,tests/inout/func_tests/hex_ptr/func2.out, False,False
-hex_func3, tests/compiled/func_tests/hex_ptr/func3.fjm, ,tests/inout/func_tests/hex_ptr/func3.out, False,False
-hex_func4, tests/compiled/func_tests/hex_ptr/func4.fjm, ,tests/inout/func_tests/hex_ptr/func4.out, False,False
-hex_func5, tests/compiled/func_tests/hex_ptr/func5.fjm, ,tests/inout/func_tests/hex_ptr/func5.out, False,False
+hex_func1, tests/compiled/func_tests/func1.fjm, ,tests/inout/func_tests/func1.out, False,False
+hex_func2, tests/compiled/func_tests/func2.fjm, ,tests/inout/func_tests/func2.out, False,False
+hex_func3, tests/compiled/func_tests/func3.fjm, ,tests/inout/func_tests/func3.out, False,False
+hex_func4, tests/compiled/func_tests/func4.fjm, ,tests/inout/func_tests/func4.out, False,False
+hex_func5, tests/compiled/func_tests/func5.fjm, ,tests/inout/func_tests/func5.out, False,False
 
 pair_ns1, tests/compiled/pair_ns_tests/test1.fjm, ,tests/inout/pair_ns_tests/pair_ns1.out, False,False
 pair_ns2, tests/compiled/pair_ns_tests/test2.fjm, ,tests/inout/pair_ns_tests/pair_ns2.out, False,False

@@ -1,4 +1,4 @@
-stl.startup
+stl.startup_and_init_all 10
 
 
 // Prints "AB~CD~EF"
@@ -24,7 +24,3 @@ func2b:
 func2c:
     stl.output '~'
     stl.return
-
-
-stl.ptr_init
-stl.stack_init 10

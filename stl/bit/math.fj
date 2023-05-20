@@ -18,12 +18,13 @@ ns bit {
     // Complexity: n(2@+6)
     //   x[:n]++
     // x is a bit[:n]
-    def inc n, x @ carry {
+    def inc n, x @ carry, end {
         .one carry
         rep(n, i) .inc1 x+i*dw, carry
-        stl.skip
+        ;end
       carry:
         .bit
+      end:
     }
 
     // Complexity: n(2@+8)
