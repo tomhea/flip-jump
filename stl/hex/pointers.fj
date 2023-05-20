@@ -157,28 +157,41 @@ ns hex {
 
 ns hex {
     // Complexity 5.5w@
-    //   like:  bit.xor dst, *ptr
-    // dst is a bit. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
+    //   like:  dst ^= *ptr
+    // dst is a hex. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def xor_from_ptr dst, ptr {
-        .exact_xor_from_ptr dst+dbit, ptr
+        .exact_xor_from_ptr dst+dbit+3, dst+dbit+2, dst+dbit+1, dst+dbit+0, ptr
     }
 
-    //  Time Complexity: 5.5w@ (exact: 4.5w@+8w+8 + 2(@-2)^2)
-    // Space Complexity: 5.5w@ (exact: 4.5w@+8w+20 + 2(@-2)^2)
-    //   like:  bit.exact_xor dst, *ptr
-    // dst is a bit-address. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
-    def exact_xor_from_ptr dst, ptr @ base_jump_label, cleanup {
-        .ptr_wflip_2nd_word ptr, base_jump_label
-
+    //  Time Complexity: 5.5w@ (exact: 4.5w@+8w+11 + 2(@-2)^2)
+    // Space Complexity: 5.5w@ (exact: 4.5w@+8w+34 + 2(@-2)^2)
+    //   like:  {d3,d2,d1,d0} ^= *ptr
+    // d3,d2,d1,d0 are bit-addresses. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
+    def exact_xor_from_ptr d3, d2, d1, d0, ptr @ switch, end {
+        .ptr_wflip_2nd_word ptr, switch
         .ptr_jump ptr
-        pad 2
-      base_jump_label:
-        ;cleanup
-        dst;
 
-      cleanup:
-        .ptr_wflip_2nd_word ptr, base_jump_label
+        pad 16
+      switch:
+          ;end          //  0
+        d0;end          //  1
+        d1;end          //  2
+        d1;switch+1*dw  //  3
+        d2;end          //  4
+        d2;switch+1*dw  //  5
+        d2;switch+2*dw  //  6
+        d2;switch+3*dw  //  7
+        d3;end          //  8
+        d3;switch+1*dw  //  9
+        d3;switch+2*dw  // 10
+        d3;switch+3*dw  // 11
+        d3;switch+4*dw  // 12
+        d3;switch+5*dw  // 13
+        d3;switch+6*dw  // 14
+        d3;switch+7*dw  // 15
 
+      end:
+        .ptr_wflip_2nd_word ptr, switch
     }
 }
 
@@ -231,7 +244,10 @@ ns hex {
 
 
 
-    // TODO hex.xor_{from/to}_ptr 4-bit values (good for bit/hex/dec). also affects hex.{push/pop/pop_res}.
+    // TODO hex.xor_to_ptr 4-bit values (good for bit/hex/dec). also affects hex.{push/pop/pop_res}.
+    //  also test both xor_{from/to}_ptr in func6, such that it will test a function that actually does something to the inputs (like add, sub)..
+
+    // TODO also add xor full hex-address from address (ptr1 = *ptr2)  (by zero ptr1; ptr1 ^= ptr2).
 
 
 
@@ -256,13 +272,13 @@ ns hex {
 
     //  Time Complexity: w(6@+10)   (for w=64. exact: w(5@+10)        + 14@+36  + 2(@-2)^2)
     // Space Complexity: w(6.5@+20) (for w=64. exact: w(5.375@+25.25) + 10@+117 + 2(@-2)^2)
-    //   Like:  bit = stack[sp]
+    //   Like:  hex = stack[sp]
     //          stack[sp--] = 0
-    //   Pops the current stack cell into the the given bit. Decrements sp.
-    // bit is only an output parameter
-    def pop_res bit < hex.pointers.sp {
-        bit.zero bit
-        .xor_from_ptr bit, hex.pointers.sp
-        .pop bit
+    //   Pops the current stack cell into the the given hex. Decrements sp.
+    // hex is only an output parameter
+    def pop_res hex < hex.pointers.sp {
+        hex.zero hex
+        .xor_from_ptr hex, hex.pointers.sp
+        .pop hex
     }
 }

@@ -34,19 +34,14 @@ test2:
          ;test3
 
 test3:
-    bit.zero d3_var
+    hex.set d3, 6
+    hex.set d3_var, 0xD
     hex.xor_from_ptr d3_var, p3
-    bit.if d3_var, d30, d31
-    d30:
-         stl.output 'F'
-         stl.loop
-    d31:
-         stl.output 'T'
-         stl.loop
+    hex.print_as_digit d3_var, 1
+
+    stl.loop
 
 
-
-    stl.ptr_init
 
   p0:
     hex.vec w/4, d0+dbit
@@ -68,6 +63,9 @@ test3:
   p3:
     hex.vec w/4, d3
   d3:
-    bit.bit 1  // 0 => F,  1 => T
+    hex.hex
   d3_var:
-    bit.bit 0
+    hex.hex
+
+
+stl.ptr_init
