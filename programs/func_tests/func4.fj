@@ -10,7 +10,7 @@ test4:
     stl.call func4
 
     stl.output 'G'
-    hex.pop_res x4
+    hex.pop x4
     stl.output 'H'
     bit.bin2ascii ascii, x4
     stl.output '-'

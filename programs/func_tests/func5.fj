@@ -15,11 +15,11 @@ test5:
     stl.output ' '
 
     stl.output 'A'
-    hex.pop y5
+    hex.pop_unchanged_parameter y5
     stl.output 'B'
-    hex.pop x5
+    hex.pop_unchanged_parameter x5
     stl.output 'C'
-    hex.pop_res res5
+    hex.pop res5
     stl.output 'D'
 
     bit.bin2ascii ascii, res5

@@ -8,7 +8,7 @@ test3:
     stl.output 'B'
     stl.call func3
     stl.output 'D'
-    hex.pop x3
+    hex.pop_unchanged_parameter x3
     stl.output 'E'
 
     stl.output '\n'
