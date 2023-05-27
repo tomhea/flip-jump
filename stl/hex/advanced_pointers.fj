@@ -92,9 +92,6 @@ ns hex {
     }
 
 
-    // TODO also add xor full hex-address from address (ptr1 = *ptr2)  (by zero ptr1; ptr1 ^= ptr2).
-
-
     //  Time Complexity: w(0.5@+2)      + 14@+26
     // Space Complexity: w(0.875@+5.25) + 10@+131
     //   Like:  stack[++sp] = hex    (assumes  stack[++sp] == 0  beforehand, which the stack-macros guarantee).
