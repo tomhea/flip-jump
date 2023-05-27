@@ -43,18 +43,23 @@ ns hex {
             ..address_and_variable_xor w/4, .to_flip, .to_flip_var, ptr
         }
 
-        // Space Complexity: n+w/4
+        // Space Complexity: n+w/4 + 330
         //   Initializes a stack of size n (maximal capacity of n hexs / return-addresses).
         // n is the size of the stack.
         // @output-param sp: the stack pointer. sp always points to the last pushed value (at start - to stack[-1])
         // @output-param stack: the global stack.
-        def stack_init n > sp, stack {
+        def stack_init n @ stack_error_handler > sp, stack {
           sp:
-            hex.vec w/4, .stack-dw
+            hex.vec w/4, .stack
 
             pad w
           stack:
+            hex.hex stack_error_handler
             hex.vec n, 0
+
+          stack_error_handler:
+            stl.output "\n\nERROR: You returned on an empty stack.\n"
+            ;0      // (would fail, so the stack trace would be printed).
         }
     }
 }
@@ -112,38 +117,36 @@ ns hex {
     // Space Complexity: w(0.5@+14) + 5@+76
     //   like:  hex.xor *ptr, hex
     // ptr is a hex[:w/4] that holds an address, which we assume is an hex-variable, which is dw-aligned.
-    def xor_to_ptr ptr, hex @ handle_flip_bit0, handle_flip_bit1, handle_flip_bit2, handle_flip_bit3, \
-            flip_bit0, flip_bit1, flip_bit2, flip_bit3,  cleanup  < hex.pointers.to_flip {
+    def xor_to_ptr ptr, hex @ prepare_flip_bit0, prepare_flip_bit1, prepare_flip_bit2, prepare_flip_bit3, \
+            after_flip_bit0, after_flip_bit1, after_flip_bit2, after_flip_bit3,  cleanup  < hex.pointers.to_flip {
         .pointers.set_flip_pointer ptr
-        wflip hex.pointers.to_flip, dbit
-        wflip hex.pointers.to_flip+w, flip_bit0, flip_bit0
+        wflip hex.pointers.to_flip+w, after_flip_bit0, prepare_flip_bit0
 
-      handle_flip_bit0:
+      prepare_flip_bit0:
+        wflip hex.pointers.to_flip, dbit+0
+        hex.if_flags hex, 0xAAAA, after_flip_bit0, hex.pointers.to_flip
+      prepare_flip_bit1:
         wflip hex.pointers.to_flip, (dbit+0)^(dbit+1)
-        hex.if_flags hex, 0xAAAA, flip_bit1, hex.pointers.to_flip
-      handle_flip_bit1:
+        hex.if_flags hex, 0xCCCC, after_flip_bit1, hex.pointers.to_flip
+      prepare_flip_bit3:
         wflip hex.pointers.to_flip, (dbit+1)^(dbit+3)
-        hex.if_flags hex, 0xCCCC, flip_bit3, hex.pointers.to_flip
-      handle_flip_bit2:
-        hex.if_flags hex, 0xF0F0, cleanup  , hex.pointers.to_flip
-      handle_flip_bit3:
+        hex.if_flags hex, 0xFF00, after_flip_bit3, hex.pointers.to_flip
+      prepare_flip_bit2:
         wflip hex.pointers.to_flip, (dbit+3)^(dbit+2)
-        hex.if_flags hex, 0xFF00, flip_bit2, hex.pointers.to_flip
+        hex.if_flags hex, 0xF0F0, after_flip_bit2, hex.pointers.to_flip
 
-        pad 8
-      flip_bit0:
-        hex.pointers.to_flip+dbit+0;handle_flip_bit0
-      flip_bit1:
-        hex.pointers.to_flip+dbit+1;handle_flip_bit1
-      flip_bit2:
-        hex.pointers.to_flip+dbit+2;handle_flip_bit2
-      flip_bit3:
-        hex.pointers.to_flip+dbit+0;handle_flip_bit3
-        ;
-        ;
+        pad 4
+      after_flip_bit0:
+        hex.pointers.to_flip+dbit+0;prepare_flip_bit1
+      after_flip_bit1:
+        hex.pointers.to_flip+dbit+1;prepare_flip_bit3
+      after_flip_bit2:
+        wflip hex.pointers.to_flip, dbit+2, cleanup
+      after_flip_bit3:
+        hex.pointers.to_flip+dbit+0;prepare_flip_bit2
+
       cleanup:
-        wflip hex.pointers.to_flip, dbit+2
-        wflip hex.pointers.to_flip+w, cleanup
+        wflip hex.pointers.to_flip+w, after_flip_bit2
     }
 
     // Complexity 3w@  (actually a bit smaller, 2w@+3w + (@-2)^2)
@@ -225,22 +228,42 @@ ns hex {
 
 
 
-// ---------- Ptr ++/--
+// ---------- Ptr ++/--/+=/-=
 
 
 ns hex {
-    //  Time Complexity: 10@+17
-    // Space Complexity: w(0.375@ + 3.25)  + 6@+71  (for log(w) in 16,32,64,128)
+    //  Time Complexity: 9@+14
+    // Space Complexity: w(0.375@ + 3.25)  + 5@+55  (for log(w) in 16,32,64,128)
     //   ptr[:w/4] += 2w
-    def inc_ptr ptr {
-        hex.inc_shifted w/4, ptr, #w
+    // @requires hex.add.init (or hex.init)
+    def ptr_inc ptr {
+        hex.add_constant w/4, ptr, dw
     }
 
-    //  Time Complexity: 10@+26
-    // Space Complexity: w(0.375@ + 3.25)  + 6@+83  (for log(w) in 16,32,64,128)
+    //  Time Complexity: 9@+23
+    // Space Complexity: w(0.375@ + 3.25)  + 5@+67  (for log(w) in 16,32,64,128)
     //   ptr[:w/4] -= 2w
-    def dec_ptr ptr {
-        hex.dec_shifted w/4, ptr, #w
+    // @requires hex.sub.init (or hex.init)
+    def ptr_dec ptr {
+        hex.sub_constant w/4, ptr, dw
+    }
+
+    //  Time Complexity: 13@+26
+    // Space Complexity: w(0.375@ + 3.25) + 7.5@+94
+    //   ptr[:w/4] += value * 2w    (advance ptr by value)
+    // @requires hex.add.init (or hex.init)
+    // @note: The complexity is calculated with n_const=2, and for log(w) in 16,32,64,128.
+    def ptr_add ptr, value {
+        hex.add_constant w/4, ptr, value * dw
+    }
+
+    //  Time Complexity: 13@+35
+    // Space Complexity: w(0.375@ + 3.25)  + 7.5@+106
+    //   ptr[:w/4] -= value * 2w    (retreat ptr by value)
+    // @requires hex.add.init (or hex.init)
+    // @note: The complexity is calculated with n_const=2, and for log(w) in 16,32,64,128.
+    def ptr_sub ptr, value {
+        hex.sub_constant w/4, ptr, value * dw
     }
 }
 
@@ -250,13 +273,41 @@ ns hex {
 
 
 ns hex {
+    //  Time Complexity: 9@+14
+    // Space Complexity: w(0.375@ + 3.25)  + 5@+55
+    //   Like:  sp++
+    def sp_inc < hex.pointers.sp {
+        .ptr_inc hex.pointers.sp
+    }
+
+    //  Time Complexity: 9@+23
+    // Space Complexity: w(0.375@ + 3.25)  + 5@+67
+    //   Like:  sp--
+    def sp_dec < hex.pointers.sp {
+        .ptr_dec hex.pointers.sp
+    }
+
+    //  Time Complexity: 13@+26
+    // Space Complexity: w(0.375@ + 3.25) + 7.5@+94
+    //   Like:  sp += value
+    def sp_add value < hex.pointers.sp {
+        .ptr_add hex.pointers.sp, value
+    }
+
+    //  Time Complexity: 13@+35
+    // Space Complexity: w(0.375@ + 3.25)  + 7.5@+106
+    //   Like:  sp -= value
+    def sp_sub value < hex.pointers.sp {
+        .ptr_sub hex.pointers.sp, value
+    }
+
     //  Time Complexity: 4w@  (actually a bit smaller)
     // Space Complexity: 4w@  (actually a bit smaller)
     //   Like:  stack[++sp] = return_address
     //   Pushes the given return_address to the next cell in the stack (assumes it's zero). Increments sp.
     // return_address is a fj-op address, so we assume is dw-aligned.
     def push_ret_address return_address < hex.pointers.sp {
-        .inc_ptr hex.pointers.sp
+        .sp_inc
         .ptr_wflip_2nd_word hex.pointers.sp, return_address
     }
 
@@ -267,31 +318,24 @@ ns hex {
     // return_address is a fj-op address, so we assume is dw-aligned.
     def pop_ret_address return_address < hex.pointers.sp {
         .ptr_wflip_2nd_word hex.pointers.sp, return_address
-        .dec_ptr hex.pointers.sp
+        .sp_dec
     }
 
-
-
-    // TODO test both xor_{from/to}_ptr and hex.{push/pop_unchanged_parameter/pop} in func6,
-    //  such that it will test a function that actually does something to the inputs (like add, sub)..
 
     // TODO also add xor full hex-address from address (ptr1 = *ptr2)  (by zero ptr1; ptr1 ^= ptr2).
 
-    // TODO test hex.{push/pop_unchanged_parameter/pop} n, vec
 
-
-
-    //  Time Complexity: w(0.5@+2)      + 15@+29
-    // Space Complexity: w(0.875@+5.25) + 11@+147
+    //  Time Complexity: w(0.5@+2)      + 14@+26
+    // Space Complexity: w(0.875@+5.25) + 10@+131
     //   Like:  stack[++sp] = hex    (assumes  stack[++sp] == 0  beforehand, which the stack-macros guarantee).
     //   Pushes the given hex to the next cell in the stack (assumes it's zero). Increments sp.
     def push hex < hex.pointers.sp {
-        .inc_ptr hex.pointers.sp
+        .sp_inc
         .xor_to_ptr hex.pointers.sp, hex
     }
 
-    //  Time Complexity: n(w(0.5@+2)      + 15@+29)
-    // Space Complexity: n(w(0.875@+5.25) + 11@+147)
+    //  Time Complexity: n(w(0.5@+2)      + 14@+26)
+    // Space Complexity: n(w(0.875@+5.25) + 10@+131)
     //   Like:  stack[sp+1:][:n] = hex[:n];  sp += n    (assumes  stack[sp:sp+n] == 0  beforehand, which the stack-macros guarantee).
     //   Pushes the given hex[:n] to the next n cells in the stack (assumes they're zero). Increments sp by n.
     def push n, hex {
@@ -299,17 +343,17 @@ ns hex {
     }
 
 
-    //  Time Complexity: w(0.5@+2)       + 15@+38
-    // Space Complexity: w(0.875@+17.25) + 11@+159
+    //  Time Complexity: w(0.5@+2)       + 14@+35
+    // Space Complexity: w(0.875@+17.25) + 10@+143
     //   Like:  stack[sp--] = 0   (assumes  stack[sp] == unchanged_hex  beforehand)
     //   Pops the given unchanged_hex (a hex) from the current cell in the stack (assumes it has the exact value of hex). Decrements sp.
     def pop_unchanged_parameter unchanged_hex < hex.pointers.sp {
         .xor_to_ptr hex.pointers.sp, unchanged_hex
-        .dec_ptr hex.pointers.sp
+        .sp_dec
     }
 
-    //  Time Complexity: n(w(0.5@+2)       + 15@+38)
-    // Space Complexity: n(w(0.875@+17.25) + 11@+159)
+    //  Time Complexity: n(w(0.5@+2)       + 14@+35)
+    // Space Complexity: n(w(0.875@+17.25) + 10@+143)
     //   Like:  sp -= n;  stack[sp+1:][:n] = 0   (assumes  stack[sp+1-n:][:n] == unchanged_hex[:n]  beforehand)
     //   Pops the given unchanged_hex (a hex[:n]) from the current cell in the stack (assumes it has the exact value of hex). Decrements sp by n.
     def pop_unchanged_parameter n, unchanged_hex {
@@ -317,8 +361,8 @@ ns hex {
     }
 
 
-    //  Time Complexity: w(6@+10)   (for w=64. exact: w(5@+10)        + 16@+46  + 2(@-2)^2)
-    // Space Complexity: w(6.5@+20) (for w=64. exact: w(5.375@+25.25) + 12@+189 + 2(@-2)^2)
+    //  Time Complexity: w(6@+10)   (for w=64. exact: w(5@+10)        + 15@+43  + 2(@-2)^2)
+    // Space Complexity: w(6.5@+20) (for w=64. exact: w(5.375@+25.25) + 11@+173 + 2(@-2)^2)
     //   Like:  hex = stack[sp]
     //          stack[sp--] = 0
     //   Pops the current stack cell into the the given hex. Decrements sp.
@@ -329,14 +373,14 @@ ns hex {
         .pop_unchanged_parameter hex
     }
 
-    //  Time Complexity: nw(6@+10)   (for w=64. exact/n is: w(5@+10)        + 16@+46  + 2(@-2)^2)
-    // Space Complexity: nw(6.5@+20) (for w=64. exact/n is: w(5.375@+25.25) + 12@+189 + 2(@-2)^2)
+    //  Time Complexity: nw(6@+10)   (for w=64. exact/n is: w(5@+10)        + 15@+43  + 2(@-2)^2)
+    // Space Complexity: nw(6.5@+20) (for w=64. exact/n is: w(5.375@+25.25) + 11@+173 + 2(@-2)^2)
     //   Like:  sp -= n
     //          hex[:n] = stack[sp+1][:n]
     //          stack[sp+1:][:n] = 0
     //   Pops the current stack cell into the the given hex[:n]. Decrements sp by n.
     // hex[:n] is only an output parameter.
     def pop n, hex {
-        rep(n, i) .pop hex+i*dw
+        rep(n, i) .pop hex+(n-1-i)*dw
     }
 }

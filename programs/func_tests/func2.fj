@@ -1,3 +1,6 @@
+// Tests a diamond call-stack. (main->a->c  ==>  main->b->c)
+
+
 stl.startup_and_init_all 10
 
 

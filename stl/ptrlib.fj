@@ -34,6 +34,20 @@ ns stl {
         hex.pop_ret_address return_label
     }
 
+    //  Time Complexity: 4w@    (actually a bit smaller)
+    // Space Complexity: 8.5w@  (actually a bit smaller)
+    //
+    // note: the pop_ret_address is for the future return (counts as space, but not time, complexity).
+    def call address, params_hex_length @ return_label {
+        hex.push_ret_address return_label
+        ;address
+
+        pad 2
+      return_label:
+        hex.pop_ret_address return_label
+        hex.sp_sub params_hex_length
+    }
+
 
     //  Time Complexity: w(7phi+29)
     // Space Complexity: 2w@

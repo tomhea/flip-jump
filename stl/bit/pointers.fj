@@ -169,13 +169,13 @@ ns bit {
 ns bit {
     // Complexity: w(2@+6)      // actually (w-#w)(2@+6)
     //   ptr[:n] += 2w
-    def inc_ptr ptr {
+    def ptr_inc ptr {
         .inc w-#w, ptr+(#w)*dw
     }
 
     // Complexity: w(2@+8)      // actually (w-#w)(2@+8)
     //   ptr[:n] -= 2w
-    def dec_ptr ptr {
+    def ptr_dec ptr {
         .dec w-#w, ptr+(#w)*dw
     }
 }

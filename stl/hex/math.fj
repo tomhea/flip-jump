@@ -36,6 +36,35 @@ ns hex {
       end:
     }
 
+    //  Time Complexity: n_const(4@+12)   + 5@+2
+    // Space Complexity: n_const(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+29
+    //   dst[:dst_n] += const
+    // @requires hex.add.init (or hex.init)
+    // n_const is the hex-length of const, without all of it's least-significant-hexes zeros.
+    def add_constant n, dst, const {
+        .add.add_constant_with_leading_zeros n, dst, const, (#(const&(0-const)))-1
+    }
+    ns add {
+        def add_constant_with_leading_zeros n, dst, const, leading_lsb_const_zeros {
+            .add_hex_shifted_constant n, dst, const >> (leading_lsb_const_zeros & (0-4)), leading_lsb_const_zeros >> 2
+        }
+        def add_hex_shifted_constant n, dst, const, hex_shift {
+            .add_hex_shifted_constant n, ((#const)+3)/4, dst, const, hex_shift
+        }
+        //  Time Complexity: n_const(4@+12)   + 5@+2
+        // Space Complexity: n_const(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+29
+        //   dst[:dst_n] += const << (4*hex_shift)
+        // @requires hex.add.init (or hex.init)
+        // const is a constant of size hex[:n_const]
+        def add_hex_shifted_constant n_dst, n_const, dst, const, hex_shift @ shifted_constant, end {
+            hex.add_shifted n_dst, n_const, dst, shifted_constant, hex_shift
+            ;end
+
+          shifted_constant: hex.vec n_const, const
+          end:
+        }
+    }
+
     ns add {
         //  Time Complexity: 2@
         // Space Complexity: 2@+12
@@ -135,7 +164,7 @@ ns hex {
     //  Time Complexity: src_n(4@+12)   + 5@+10        // It's on average, see the note in hex.inc.
     // Space Complexity: src_n(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+40
     //   dst[:dst_n] -= src[:src_n] << (4*hex_shift)
-    // @requires sub.add.init (or hex.init)
+    // @requires hex.sub.init (or hex.init)
     def sub_shifted dst_n, src_n, dst, src, hex_shift @ do_dec, end {
         .sub.clear_carry
         rep(src_n, i) .sub dst+(hex_shift + i)*dw, src+i*dw
@@ -143,6 +172,35 @@ ns hex {
       do_dec:
         rep(dst_n - (src_n + hex_shift), i) .dec.step dst+(src_n + hex_shift + i)*dw, end
       end:
+    }
+
+    //  Time Complexity: n_const(4@+12)   + 5@+11
+    // Space Complexity: n_const(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+41
+    //   dst[:dst_n] -= const
+    // @requires hex.sub.init (or hex.init)
+    // n_const is the hex-length of const, without all of it's least-significant-hexes zeros.
+    def sub_constant n, dst, const {
+        .sub.sub_constant_with_leading_zeros n, dst, const, (#(const&(0-const)))-1
+    }
+    ns sub {
+        def sub_constant_with_leading_zeros n, dst, const, leading_lsb_const_zeros {
+            .sub_hex_shifted_constant n, dst, const >> (leading_lsb_const_zeros & (0-4)), leading_lsb_const_zeros >> 2
+        }
+        def sub_hex_shifted_constant n, dst, const, hex_shift {
+            .sub_hex_shifted_constant n, ((#const)+3)/4, dst, const, hex_shift
+        }
+        //  Time Complexity: n_const(4@+12)   + 5@+2
+        // Space Complexity: n_const(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+29
+        //   dst[:dst_n] -= const << (4*hex_shift)
+        // @requires hex.sub.init (or hex.init)
+        // const is a constant of size hex[:n_const]
+        def sub_hex_shifted_constant n_dst, n_const, dst, const, hex_shift @ shifted_constant, end {
+            hex.sub_shifted n_dst, n_const, dst, shifted_constant, hex_shift
+            ;end
+
+          shifted_constant: hex.vec n_const, const
+          end:
+        }
     }
 
     ns sub {

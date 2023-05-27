@@ -1,3 +1,5 @@
+hex_func7, tests/compiled/func_tests/func7.fjm, ,tests/inout/func_tests/func7.out, False,False
+
 calc1, tests/compiled/calc.fjm, tests/inout/calc_tests/calc1.in,tests/inout/calc_tests/calc1.out, False,False
 calc2, tests/compiled/calc.fjm, tests/inout/calc_tests/calc2.in,tests/inout/calc_tests/calc2.out, False,False
 calc3, tests/compiled/calc.fjm, tests/inout/calc_tests/calc3.in,tests/inout/calc_tests/calc3.out, False,False
@@ -16,6 +18,7 @@ hex_func2, tests/compiled/func_tests/func2.fjm, ,tests/inout/func_tests/func2.ou
 hex_func3, tests/compiled/func_tests/func3.fjm, ,tests/inout/func_tests/func3.out, False,False
 hex_func4, tests/compiled/func_tests/func4.fjm, ,tests/inout/func_tests/func4.out, False,False
 hex_func5, tests/compiled/func_tests/func5.fjm, ,tests/inout/func_tests/func5.out, False,False
+hex_func6, tests/compiled/func_tests/func6.fjm, ,tests/inout/func_tests/func6.out, False,False
 
 pair_ns1, tests/compiled/pair_ns_tests/test1.fjm, ,tests/inout/pair_ns_tests/pair_ns1.out, False,False
 pair_ns2, tests/compiled/pair_ns_tests/test2.fjm, ,tests/inout/pair_ns_tests/pair_ns2.out, False,False

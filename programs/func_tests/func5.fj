@@ -1,3 +1,6 @@
+// Tests the xor_from_ptr, xor_to_ptr and function calls
+
+
 stl.startup_and_init_all 10
 
 
@@ -35,16 +38,16 @@ func5:
     stl.get_sp __func5_arg_ptr
     stl.output 'a'
 
-    hex.dec_ptr __func5_arg_ptr
+    hex.ptr_dec __func5_arg_ptr
     stl.output 'b'
     hex.xor_from_ptr __func5_res, __func5_arg_ptr
     stl.output 'c'
-    hex.dec_ptr __func5_arg_ptr
+    hex.ptr_dec __func5_arg_ptr
     stl.output 'd'
     hex.xor_from_ptr __func5_res, __func5_arg_ptr
     stl.output 'e'
 
-    hex.dec_ptr __func5_arg_ptr
+    hex.ptr_dec __func5_arg_ptr
     stl.output 'f'
     hex.xor_to_ptr __func5_arg_ptr, __func5_res
     stl.output 'g'

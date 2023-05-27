@@ -185,36 +185,23 @@ ns hex {
     }
 
 
-    //  Time Complexity: 10@+17
-    // Space Complexity: (n+6-shift)(1.5@+13)     // exact: (n-shift)(1.5@+13) + 7.5@+84
-    //   hex[:n] += 1<<shift
-    def inc_shifted n, hex, shift @ shifted_one, end {
-        hex.set shifted_one, 1 << (shift % 4)
-        hex.add_shifted n, 1, hex, shifted_one, shift / 4
-        ;end
-
-      shifted_one: hex.hex
-      end:
-    }
-
-    //  Time Complexity: 10@+26
-    // Space Complexity: (n+6-shift)(1.5@+13)     // exact: (n-shift)(1.5@+13) + 7.5@+96
-    //   hex[:n] -= 1<<shift
-    def dec_shifted n, hex, shift @ shifted_one, end {
-        hex.set shifted_one, 1 << (shift % 4)
-        hex.sub_shifted n, 1, hex, shifted_one, shift / 4
-        ;end
-
-      shifted_one: hex.hex
-      end:
-    }
-
-
     //  Time Complexity: ~@+4n
     // Space Complexity: n(1.5@+17)
     //   x[:n] = -x[:n]
     def neg n, x {
         .not n, x
         .inc n, x
+    }
+
+
+    //  Time Complexity: (full_n - signed_n)(@+4)
+    // Space Complexity: (full_n - signed_n)(@+16)
+    //   sign-extends hex[:signed_n] into hex[:full_n]
+    def sign_extend full_n, signed_n, hex @ negative, positive {
+        .zero full_n - signed_n, hex + signed_n * dw
+        .sign signed_n, hex, negative, positive
+      negative:
+        .not full_n - signed_n, hex + signed_n * dw
+      positive:
     }
 }

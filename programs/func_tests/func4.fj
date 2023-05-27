@@ -1,3 +1,6 @@
+// Tests the ptr_flip_dbit and function calls
+
+
 stl.startup_and_init_all 10
 
 
@@ -23,7 +26,7 @@ func4:
     stl.output 'C'
     stl.get_sp __func4_arg_ptr
     stl.output 'D'
-    hex.dec_ptr __func4_arg_ptr
+    hex.ptr_dec __func4_arg_ptr
     stl.output 'E'
     hex.ptr_flip_dbit __func4_arg_ptr
     stl.output 'F'
