@@ -1,3 +1,6 @@
+// TODO refactor this file into: bit/mul.fj, bit/div.fj, hex/mul.fj, hex/div.fj, and update complexities
+
+
 // Every line is (advanced math) bananas!
 // Implementation of advanced math operation over bit-vectors
 
