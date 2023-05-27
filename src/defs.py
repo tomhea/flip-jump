@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import dataclasses
 import json
 import lzma
 from collections import deque
@@ -9,8 +8,6 @@ from enum import IntEnum    # IntEnum equality works between files.
 from pathlib import Path
 from time import time
 from typing import List, Dict, Deque, Optional
-
-from ops import CodePosition, Op
 
 
 def get_stl_paths() -> List[Path]:
@@ -102,18 +99,6 @@ class PrintTimer:
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         if self.print_time:
             print(f'{time() - self.start_time:.3f}s')
-
-
-@dataclasses.dataclass
-class Macro:
-    """
-    The python representation of a .fj macro (macro declaration).
-    """
-    params: List[str]
-    local_params: List[str]
-    ops: List[Op]
-    namespace: str
-    code_position: CodePosition
 
 
 class RunStatistics:

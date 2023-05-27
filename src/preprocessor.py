@@ -4,10 +4,10 @@ import collections
 from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional
 
 from expr import Expr
-from defs import CodePosition, Macro, MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING
+from defs import MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING
 from exceptions import FJPreprocessorException, FJExprException
 from ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
-    LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
+    CodePosition, Macro, LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
     initial_macro_name, initial_args, initial_labels_prefix
 from macro_usage_graph import show_macro_usage_pie_graph
 

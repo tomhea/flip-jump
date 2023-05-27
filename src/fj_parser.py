@@ -6,11 +6,10 @@ import sly
 from sly.yacc import YaccProduction as ParsedRule
 from sly.lex import Token
 
-from defs import Macro
 from exceptions import FJExprException, FJParsingException
 from expr import Expr, get_minimized_expr
 from ops import get_used_labels, get_declared_labels, \
-    CodePosition, MacroName, Op, initial_macro_name, \
+    CodePosition, MacroName, Op, Macro, initial_macro_name, \
     MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, Pad
 
 global curr_file, curr_file_short_name, curr_text, error_occurred, all_errors, curr_namespace

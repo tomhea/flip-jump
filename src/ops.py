@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import dataclasses
+import os
 from dataclasses import dataclass
 from typing import Union, Dict, Set, List, Tuple
 
@@ -21,6 +23,9 @@ class CodePosition:
 
     def short_str(self) -> str:
         return f"{self.file_short_name}:l{self.line}"
+
+    def __repr__(self) -> str:
+        return f"{os.path.basename(self.file)}:{self.line}"
 
 
 class MacroName:
@@ -44,6 +49,9 @@ class MacroName:
 
     def __eq__(self, other):
         return type(other) == MacroName and self.to_tuple() == other.to_tuple()
+
+    def __repr__(self):
+        return str(self)
 
 
 # The macro that holds the ops that are outside any macro.
@@ -296,6 +304,21 @@ def get_declared_labels(ops: List[Op]) -> Set[str]:
 
 # The input for the preprocessor
 Op = Union[FlipJump, WordFlip, Pad, Label, MacroCall, RepCall, Segment, Reserve]
+
+
+@dataclasses.dataclass
+class Macro:
+    """
+    The python representation of a .fj macro (macro declaration).
+    """
+    params: List[str]
+    local_params: List[str]
+    ops: List[Op]
+    namespace: str
+    code_position: CodePosition
+
+    def __repr__(self) -> str:
+        return f'{self.namespace}.MACRO({", ".join(self.params)})  ({repr(self.code_position)})'
 
 
 WFLIP_NOT_INSERTED_YET = -1
