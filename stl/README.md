@@ -21,21 +21,41 @@ Offers outputting constant chars/strings.
 ### [bit/](bit/)
 Defines the `bit` data-structure (for binary variables).
 
-Offers macros for manipulating binary variables and vectors (i.e. numbers).
+Offers macros for manipulating binary variables and vectors (i.e. numbers):
 
-You can find conditional jumps, memory manipulations, inputs, outputs, and logical and arithmetical macros. 
+- [memory.fj](bit/memory.fj) - bit/vec, zero, one, mov, swap
+- [cond_jumps.fj](bit/cond_jumps.fj) - if, cmp
+- [logics.fj](bit/logics.fj) - xor, or, and, not
+- [casting.fj](bit/casting.fj) - casting between bits and ascii
+- [input.fj](bit/input.fj) - input into bit variables
+- [output.fj](bit/output.fj) - output bits, bytes; print as hex/decimal
+- [shifts.fj](bit/shifts.fj) - bit-shift left/right, bit-rotate left/right
+- [math.fj](bit/math.fj) - inc, dec, add, sub
+- [pointers.fj](bit/pointers.fj) - bit-vec pointers: flip, jump, xor_to, xor_from, inc/dec; pointers init
+
+### [hex/](hex/)
+Defines the `hex` data-structure (for hexadecimal variables).
+
+**They are smaller and faster than 4 `bit`s.** 
+
+Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers):
+
+- [memory.fj](hex/memory.fj) - hex/vec, zero, xor_by, set, mov, swap
+- [cond_jumps.fj](hex/cond_jumps.fj) - if, cmp
+- [logics.fj](hex/logics.fj) - xor, or, and, not
+- [input.fj](hex/input.fj) - input bits into hex, input ascii as hex
+- [output.fj](hex/output.fj) - output hex as bits/bytes; print as hex-number (in ascii)
+- [shifts.fj](hex/shifts.fj) - shift left/right by 1 bit/hex
+- [math_basic.fj](hex/math_basic.fj) - inc/dec, neg, count_bits, sign_extend
+- [math.fj](hex/math.fj) - add/sub, {add/sub}_shifted, {add/sub}_constant
+- [pointers.fj](hex/pointers.fj) - hex-vec pointers: flip, jump, xor_to, xor_from; stack/pointers init
+- [advanced_pointers.fj](hex/advanced_pointers.fj) - hex-vec pointers: ptr/sp - inc/dec/add/sub, all push/pop
+- [tables_init.fj](hex/tables_init.fj) - initializes the "results-tables" for the next hex macros: or,and, add,sub, cmp, mul
 
 ### [mathlib.fj](mathlib.fj)
 Offers multiplication and division macros for bit/hex variables.
 
 **@note**: The hex.div fails test as for now. You can use the bit version and castings.
-
-### [hex/](hex/)
-Defines the `hex` data-structure (for hexadecimal variables), which is smaller and faster than using 4 `bit`s. 
-
-Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers).
-
-You can find conditional jumps, memory manipulations, input, output, and logical and arithmetical macros. 
 
 ### [casting.fj](casting.fj)
 Offers casting between bits and hexes.
@@ -113,4 +133,4 @@ The generic stl macro should look like `macro_name n dst src` for an n-bit/hex v
 
 You can explore the full list of all macros from the [esolang page](https://esolangs.org/wiki/FlipJump#The_Standard_Library).
 
-If you are new to the FlipJump standard-library, Start by reading the [bit/logics.fj](stl/bit/logics.fj) standard library file (start with `xor`, `if`). That's where the FlipJump magic begins.
+If you are new to the FlipJump standard-library, Start by reading the [bit/logics.fj](bit/logics.fj) standard library file (start with `xor`, `if`). That's where the FlipJump magic begins.
