@@ -1,9 +1,9 @@
-startup
+stl.startup
 
 ADD_N = 0x0000ffff800040a73dd06622dc0594c9e1b9b001
 rep(100, i) test_add_n 4, (ADD_N>>((i%10)*4)&0xf), (ADD_N>>((i/10))*4&0xf)
 
-loop
+stl.loop
 
 
 hex.init
@@ -14,18 +14,18 @@ def test_add_n n, a, b @ lt, eq, gt, ah, bh, ch, end {
     hex.cmp n, ah, ch, lt, eq, gt
     
   lt:
-    output '<'
+    stl.output '<'
     ;end
   eq:
-    output '='
+    stl.output '='
     ;end
   gt:
-    output '>'
+    stl.output '>'
     ;end
     
   ah: hex.vec n, a
   bh: hex.vec n, b
   ch: hex.vec n, a+b
   end:
-    output '\n'
+    stl.output '\n'
 }

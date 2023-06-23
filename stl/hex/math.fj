@@ -1,0 +1,279 @@
+// ---------- Addition / Subtraction:
+
+
+ns hex {
+    //  Time Complexity: 4@+12
+    // Space Complexity: 4@+52
+    //   dst += src
+    //
+    // both dst,src are hexes.
+    // Relies on the add-carry, and updates it at the end.
+    // @requires hex.add.init (or hex.init)
+    def add dst, src < .add.dst {
+        ._.jump_to_table_entry dst, src, .add.dst
+    }
+
+    //  Time Complexity: n(4@+12)
+    // Space Complexity: n(4@+52)
+    //   dst[:n] += src[:n]
+    // @requires hex.add.init (or hex.init)
+    def add n, dst, src {
+        .add.clear_carry
+        rep(n, i) .add dst+i*dw, src+i*dw
+        .add.clear_carry
+    }
+
+    //  Time Complexity: src_n(4@+12)   + 5@+1        // It's on average, see the note in hex.inc.
+    // Space Complexity: src_n(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+28
+    //   dst[:dst_n] += src[:src_n] << (4*hex_shift)
+    // @requires hex.add.init (or hex.init)
+    def add_shifted dst_n, src_n, dst, src, hex_shift @ do_inc, end {
+        .add.clear_carry
+        rep(src_n, i) .add dst+(hex_shift + i)*dw, src+i*dw
+        .add.clear_carry end, do_inc
+      do_inc:
+        rep(dst_n - (src_n + hex_shift), i) .inc.step dst+(src_n + hex_shift + i)*dw, end
+      end:
+    }
+
+    //  Time Complexity: n_const(4@+12)   + 5@+2
+    // Space Complexity: n_const(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+29
+    //   dst[:dst_n] += const
+    // @requires hex.add.init (or hex.init)
+    // n_const is the hex-length of const, without all of it's least-significant-hexes zeros.
+    def add_constant n, dst, const {
+        .add.add_constant_with_leading_zeros n, dst, const, (#(const&(0-const)))-1
+    }
+    ns add {
+        def add_constant_with_leading_zeros n, dst, const, leading_lsb_const_zeros {
+            .add_hex_shifted_constant n, dst, const >> (leading_lsb_const_zeros & (0-4)), leading_lsb_const_zeros >> 2
+        }
+        def add_hex_shifted_constant n, dst, const, hex_shift {
+            .add_hex_shifted_constant n, ((#const)+3)/4, dst, const, hex_shift
+        }
+        //  Time Complexity: n_const(4@+12)   + 5@+2
+        // Space Complexity: n_const(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+29
+        //   dst[:dst_n] += const << (4*hex_shift)
+        // @requires hex.add.init (or hex.init)
+        // const is a constant of size hex[:n_const]
+        def add_hex_shifted_constant n_dst, n_const, dst, const, hex_shift @ shifted_constant, end {
+            hex.add_shifted n_dst, n_const, dst, shifted_constant, hex_shift
+            ;end
+
+          shifted_constant: hex.vec n_const, const
+          end:
+        }
+    }
+
+    ns add {
+        //  Time Complexity: 2@
+        // Space Complexity: 2@+12
+        //   carry = 0
+        def clear_carry @ ret < .._.ret, .dst, .._.res {
+            wflip .._.ret+w, ret, .dst
+          ret:
+            wflip .._.ret+w, ret
+            ..zero .._.res
+        }
+
+        //  Time Complexity: 2@+1
+        // Space Complexity: 2@+16
+        //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
+        def clear_carry c0, c1 @ ret < .._.ret, .dst, .._.res {
+            wflip .._.ret+w, ret, .dst
+          ret:
+            wflip .._.ret+w, ret
+            // carry is 0/1
+            ..if0 .._.res, c0
+            .._.res+dbit; c1
+        }
+
+        // Complexity: 1
+        //   carry = !carry
+        def not_carry < .dst {
+            .dst+dbit+8;
+        }
+
+        //  Time Complexity: 2@+1
+        // Space Complexity: 2@+13
+        //   carry = 1
+        def set_carry {
+            .clear_carry
+            .not_carry
+        }
+
+        //  Time Complexity: 8 (when jumping to dst, until finished)
+        // Space Complexity: 1570
+        // This is where the add "truth" tables are.
+        // @output-param dst: This variable is an 9-bit variable (in a single op, [dbit,dbit+9)).
+        //                    Its 9-bits are expected to be {carry<<8 | src<<4 | dst} at the jump to it (for the src,dst hexes, and the carry bit, of the add operation).
+        //                    Its 9-bits are expected to be {new_carry<<8} after the jump to it.
+        def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < .._.res > dst {
+            ;end
+          dst: ;.switch__without_carry
+
+            pad 512
+            // The next lines are the addition flipping-tables.
+            // The [carry<<8 | src<<4 | dst] entry sets hex._.res (assumed to be 0) to (dst + src + carry) ^ dst,
+            //   so that xoring it with dst will update it to the add-result.
+            //   also, it updates the carry (.dst+dbit+8) to the next carry.
+            // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
+          switch__without_carry:
+            // Space Complexity / total table ops: 528.
+            rep(256, d) stl.wflip_macro .._.res+w, \
+                ((((d&0xf)+(d>>4)  )&0xf)^(d&0xf))*dw, \
+                (((d&0xf)+(d>>4)   > 0xf) ? (flip_carry+d*dw) : (clean_table_entry+d*dw))
+          switch__with_carry:
+            // Space Complexity / total table ops: 528.
+            rep(256, d) stl.wflip_macro .._.res+w, \
+                ((((d&0xf)+(d>>4)+1)&0xf)^(d&0xf))*dw, \
+                (((d&0xf)+(d>>4)+1 > 0xf) ? (clean_table_entry+d*dw) : (flip_carry+d*dw))
+
+          flip_carry:
+            // if got here - flip the carry; then clean the table-entry.
+            // in about half of the times, we'll get here.
+            rep(256, i) stl.fj .dst+dbit+8, clean_table_entry+i*dw
+          clean_table_entry:
+            // xors back the table-entry from .dst
+            .._.clean_table_entry__table .dst
+          end:
+        }
+    }
+
+
+    //  Time Complexity: 4@+12
+    // Space Complexity: 4@+52
+    //   dst -= src
+    //
+    // both dst,src are hexes.
+    // @requires hex.sub.init (or hex.init)
+    def sub dst, src < .sub.dst {
+        ._.jump_to_table_entry dst, src, .sub.dst
+    }
+
+    //  Time Complexity: n(4@+12)
+    // Space Complexity: n(4@+52)
+    //   dst[:n] -= src[:n]
+    // @requires hex.sub.init (or hex.init)
+    def sub n, dst, src {
+        .sub.clear_carry
+        rep(n, i) .sub dst+i*dw, src+i*dw
+        .sub.clear_carry
+    }
+
+    //  Time Complexity: src_n(4@+12)   + 5@+10        // It's on average, see the note in hex.inc.
+    // Space Complexity: src_n(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+40
+    //   dst[:dst_n] -= src[:src_n] << (4*hex_shift)
+    // @requires hex.sub.init (or hex.init)
+    def sub_shifted dst_n, src_n, dst, src, hex_shift @ do_dec, end {
+        .sub.clear_carry
+        rep(src_n, i) .sub dst+(hex_shift + i)*dw, src+i*dw
+        .sub.clear_carry end, do_dec
+      do_dec:
+        rep(dst_n - (src_n + hex_shift), i) .dec.step dst+(src_n + hex_shift + i)*dw, end
+      end:
+    }
+
+    //  Time Complexity: n_const(4@+12)   + 5@+11
+    // Space Complexity: n_const(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+41
+    //   dst[:dst_n] -= const
+    // @requires hex.sub.init (or hex.init)
+    // n_const is the hex-length of const, without all of it's least-significant-hexes zeros.
+    def sub_constant n, dst, const {
+        .sub.sub_constant_with_leading_zeros n, dst, const, (#(const&(0-const)))-1
+    }
+    ns sub {
+        def sub_constant_with_leading_zeros n, dst, const, leading_lsb_const_zeros {
+            .sub_hex_shifted_constant n, dst, const >> (leading_lsb_const_zeros & (0-4)), leading_lsb_const_zeros >> 2
+        }
+        def sub_hex_shifted_constant n, dst, const, hex_shift {
+            .sub_hex_shifted_constant n, ((#const)+3)/4, dst, const, hex_shift
+        }
+        //  Time Complexity: n_const(4@+12)   + 5@+2
+        // Space Complexity: n_const(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+29
+        //   dst[:dst_n] -= const << (4*hex_shift)
+        // @requires hex.sub.init (or hex.init)
+        // const is a constant of size hex[:n_const]
+        def sub_hex_shifted_constant n_dst, n_const, dst, const, hex_shift @ shifted_constant, end {
+            hex.sub_shifted n_dst, n_const, dst, shifted_constant, hex_shift
+            ;end
+
+          shifted_constant: hex.vec n_const, const
+          end:
+        }
+    }
+
+    ns sub {
+        //  Time Complexity: 2@+5
+        // Space Complexity: 2@+20
+        //   carry = 0
+        def clear_carry @ end {
+            .clear_carry end, end
+          end:
+        }
+
+        //  Time Complexity: 2@+5
+        // Space Complexity: 2@+20
+        //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
+        def clear_carry c0, c1 @ ret < .._.ret, .dst, .._.res {
+            wflip .._.ret+w, ret, .dst
+          ret:
+            wflip .._.ret+w, ret
+            // carry is 0/f
+            ..if0 .._.res, c0
+            .not_carry
+            wflip .._.res+w, 0xf*dw, c1
+        }
+
+        // Complexity: 1
+        //   carry = !carry
+        def not_carry < .dst {
+            .dst+dbit+8;
+        }
+
+        //  Time Complexity: 2@+6
+        // Space Complexity: 2@+21
+        //   carry = 1
+        def set_carry {
+            .clear_carry
+            .not_carry
+        }
+
+        //  Time Complexity: 8 (when jumping to dst, until finished)
+        // Space Complexity: 1570
+        // This is where the sub "truth" tables are. must be called once if you want to use hex.sub (hex.init calls it).
+        // @output-param dst: This variable is an 9-bit variable (in a single op, [dbit,dbit+9)).
+        //                    Its 9-bits are expected to be {carry<<8 | src<<4 | dst} at the jump to it (for the src,dst hexes, and the carry bit, of the sub operation).
+        //                    Its 9-bits are expected to be {new_carry<<8} after the jump to it.
+        def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < .._.res > dst {
+            ;end
+          dst: ;.switch__without_carry
+
+            pad 512
+            // The next lines are the subtraction flipping-tables.
+            // The [carry<<8 | src<<4 | dst] entry sets hex._.res (assumed to be 0) to (dst - src - carry) ^ dst,
+            //   so that xoring it with dst will update it to the sub-result.
+            //   also, it updates the carry (.dst+dbit+8) to the next carry. (subtraction's carry is also known as the borrow).
+            // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
+          switch__without_carry:
+            // Space Complexity / total table ops: 528.
+            rep(256, d) stl.wflip_macro .._.res+w, \
+                ((((d&0xf)-(d>>4)  )&0xf)^(d&0xf))*dw, \
+                (((d&0xf)-(d>>4)   < 0) ? (flip_carry+d*dw) : (clean_table_entry+d*dw))
+          switch__with_carry:
+            // Space Complexity / total table ops: 528.
+            rep(256, d) stl.wflip_macro .._.res+w, \
+                ((((d&0xf)-(d>>4)-1)&0xf)^(d&0xf))*dw, \
+                (((d&0xf)-(d>>4)-1 < 0) ? (clean_table_entry+d*dw) : (flip_carry+d*dw))
+
+          flip_carry:
+            // if got here - flip the carry; then clean the table-entry.
+            // in about half of the times, we'll get here.
+            rep(256, i) stl.fj .dst+dbit+8, clean_table_entry+i*dw
+          clean_table_entry:
+            // xors back the table-entry from .dst
+            .._.clean_table_entry__table .dst
+          end:
+        }
+    }
+}

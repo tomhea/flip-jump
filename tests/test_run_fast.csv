@@ -8,6 +8,7 @@ nadd, tests/compiled/simple_math_checks/nadd.fjm, ,tests/inout/simple_math_check
 ncat, tests/compiled/print_tests/ncat.fjm, tests/inout/print_tests/ncat.in,tests/inout/print_tests/ncat.out, True,True
 ncmp, tests/compiled/simple_math_checks/ncmp.fjm, ,tests/inout/simple_math_checks/ncmp.out, False,False
 not, tests/compiled/sanity_checks/not.fjm, ,, False,False
+test_startup_init_all, tests/compiled/sanity_checks/startup_init_all.fjm, ,tests/inout/sanity_checks/startup_init_all.out, False,False
 print_as_digit, tests/compiled/print_tests/print_as_digit.fjm, ,tests/inout/print_tests/print_as_digit.out, False,False
 quine16, tests/compiled/quine16.fjm, ,tests/compiled/quine16.fjm, True,True
 rep, tests/compiled/sanity_checks/rep.fjm, ,, False,False

@@ -1,3 +1,4 @@
+import argparse
 import csv
 import json
 from os import environ
@@ -8,7 +9,8 @@ from typing import List, Iterable, Callable, Tuple, Optional, Any
 
 import pytest
 
-from tests.test_fj import CompileTestArgs, RunTestArgs
+from defs import check_int_positive
+from tests.test_fj import CompileTestArgs, RunTestArgs, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
 
 
 build_tests_lock = Lock()
@@ -40,6 +42,7 @@ COMPILE_ORDER_INDEX = 1
 RUN_ORDER_INDEX = 2
 
 
+DEBUG_INFO_FLAG = 'debuginfo'
 ALL_FLAG = 'all'
 REGULAR_FLAG = 'regular'
 COMPILE_FLAG = 'compile'
@@ -74,40 +77,53 @@ def argument_line_iterator(csv_file_path: Path, num_of_args: int) -> Iterable[Li
             if line:
                 assert len(line) == num_of_args, f'expects {num_of_args} args, got {len(line)} ' \
                                                  f'(file {Path(csv_file_path).absolute()}, line {line_index + 1})'
-                yield map(str.strip, line)
+                yield list(map(str.strip, line))
 
 
-def get_compile_tests_params_from_csv(csv_file_path: Path) -> List:
+def get_compile_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str], save_debug_info: bool) -> List:
     """
     read the compile-tests from the csv
     @param csv_file_path: read tests from this csv
+    @param xfail_list: list of tests names to mark with xfail (expected to fail)
+    @param save_debug_info: should save the debugging info file
+
     @return: the list of pytest.params(CompileTestArgs, )
     """
     params = []
 
-    for line in argument_line_iterator(csv_file_path, CompileTestArgs.num_of_args):
-        args = CompileTestArgs(*line)
-        params.append(pytest.param(args, marks=pytest.mark.run(order=COMPILE_ORDER_INDEX)))
+    for line in argument_line_iterator(csv_file_path, CompileTestArgs.num_of_csv_line_args):
+        args = CompileTestArgs(save_debug_info, *line)
+        test_marks = [pytest.mark.run(order=COMPILE_ORDER_INDEX)]
+        if args.test_name in xfail_list:
+            test_marks.append(pytest.mark.xfail())
+        params.append(pytest.param(args, marks=test_marks))
 
     return params
 
 
-def get_run_tests_params_from_csv(csv_file_path: Path) -> List:
+def get_run_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str],
+                                  save_debug_file: bool, debug_info_length: int) -> List:
     """
     read the run-tests from the csv
     @param csv_file_path: read tests from this csv
+    @param xfail_list: list of tests names to mark with xfail (expected to fail)
+    @param save_debug_file: If not True: should use the debugging info file,
+    @param debug_info_length: show the last {debug_info_length} fj-ops if the program failed running.
     @return: the list of pytest.params(RunTestArgs, depends=)
     """
     params = []
 
-    for line in argument_line_iterator(csv_file_path, RunTestArgs.num_of_args):
-        args = RunTestArgs(*line)
-        params.append(pytest.param(args, marks=pytest.mark.run(order=RUN_ORDER_INDEX)))
+    for line in argument_line_iterator(csv_file_path, RunTestArgs.num_of_csv_line_args):
+        args = RunTestArgs(save_debug_file, debug_info_length, *line)
+        test_marks = [pytest.mark.run(order=RUN_ORDER_INDEX)]
+        if args.test_name in xfail_list:
+            test_marks.append(pytest.mark.xfail())
+        params.append(pytest.param(args, marks=test_marks))
 
     return params
 
 
-def pytest_addoption(parser) -> None:
+def pytest_addoption(parser: pytest.Parser) -> None:
     """
     add the costume flags to pytest
     @param parser: the parser
@@ -115,10 +131,26 @@ def pytest_addoption(parser) -> None:
     colliding_keywords = set(TEST_TYPES) & SAVED_KEYWORDS
     assert not colliding_keywords
 
+    def check_int_positive_with_true(value):
+        int_value = int(value)
+        if int_value <= 0:
+            raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
+        return True, int_value
+
+    # This is a tuple: (should_compile_tests_save_debugging_info, run_tests_debugging_ops_list_length)
+    parser.addoption(f"--{DEBUG_INFO_FLAG}", metavar='LENGTH', type=check_int_positive_with_true, nargs='?',
+                     const=(True, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH),
+                     default=(False, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH),
+                     help=f"show the last LENGTH executed opcodes on tests that failed during their run "
+                          f"({LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH} by default). "
+                          f"(if this option is unspecified"
+                          f" - the tests will be ~20% faster, and will takes ~30% of their size). "
+                          f"This option is irrelevant (doesn't show last executed opcodes) on parallel tests.")
+
     for test_type in TEST_TYPES:
         parser.addoption(f"--{test_type}", action="store_true", help=f"run {test_type} tests")
     parser.addoption(f"--{REGULAR_FLAG}", action="store_true", help=f"run all regular tests ({', '.join(REGULAR_TYPES)})")
-    parser.addoption(f"--{ALL_FLAG}", action="store_true", help=f"run all tests")
+    parser.addoption(f"--{ALL_FLAG}", action="store_true", help="run all tests")
 
     parser.addoption(f"--{COMPILE_FLAG}", action='store_true', help='only test compiling .fj files')
     parser.addoption(f"--{RUN_FLAG}", action='store_true', help='only test running .fjm files')
@@ -295,12 +327,20 @@ def get_tests_from_csvs(get_option: Callable[[str], Any]) -> Tuple[List, List]:
 
     types_to_run__heavy_first = get_test_types_to_run__heavy_first(get_option)
 
+    compile_xfail_list = [line[0] for line in argument_line_iterator(TESTS_PATH / "xfail_compile.csv", 1)]
+    run_xfail_list = [line[0] for line in argument_line_iterator(TESTS_PATH / "xfail_run.csv", 1)]
+
+    save_debug_file, debug_info_length = get_option(DEBUG_INFO_FLAG)
+    if is_parallel_active():
+        save_debug_file = False
+
     compile_tests = []
     if check_compile_tests:
         compiles_csvs = {test_type: TESTS_PATH / f"test_compile_{test_type}.csv"
                          for test_type in types_to_run__heavy_first}
         for test_type in types_to_run__heavy_first:
-            compile_tests.extend(get_compile_tests_params_from_csv(compiles_csvs[test_type]))
+            compile_tests.extend(get_compile_tests_params_from_csv(compiles_csvs[test_type], compile_xfail_list,
+                                                                   save_debug_file))
         compile_tests = filter_by_test_name(compile_tests, get_option)
 
     run_tests = []
@@ -308,7 +348,8 @@ def get_tests_from_csvs(get_option: Callable[[str], Any]) -> Tuple[List, List]:
         run_csvs = {test_type: TESTS_PATH / f"test_run_{test_type}.csv"
                     for test_type in types_to_run__heavy_first}
         for test_type in types_to_run__heavy_first:
-            run_tests.extend(get_run_tests_params_from_csv(run_csvs[test_type]))
+            run_tests.extend(get_run_tests_params_from_csv(run_csvs[test_type], run_xfail_list,
+                                                           save_debug_file, debug_info_length))
         run_tests = filter_by_test_name(run_tests, get_option)
 
     return compile_tests, run_tests

@@ -6,14 +6,13 @@ import sly
 from sly.yacc import YaccProduction as ParsedRule
 from sly.lex import Token
 
-from defs import Macro
 from exceptions import FJExprException, FJParsingException
 from expr import Expr, get_minimized_expr
 from ops import get_used_labels, get_declared_labels, \
-    CodePosition, MacroName, Op, initial_macro_name, \
+    CodePosition, MacroName, Op, Macro, initial_macro_name, \
     MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, Pad
 
-global curr_file, curr_file_short_name, curr_text, error_occurred, curr_namespace
+global curr_file, curr_file_short_name, curr_text, error_occurred, all_errors, curr_namespace
 
 
 def get_position(lineno: int) -> CodePosition:
@@ -21,30 +20,32 @@ def get_position(lineno: int) -> CodePosition:
 
 
 def syntax_error(lineno: int, msg='') -> None:
-    global error_occurred
+    global error_occurred, all_errors
     error_occurred = True
     curr_position = get_position(lineno)
-    print()
+
     if msg:
-        print(f"Syntax Error in {curr_position}:")
-        print(f"  {msg}")
+        error_string = f"Syntax Error in {curr_position}:\n  {msg}"
     else:
-        print(f"Syntax Error in {curr_position}")
+        error_string = f"Syntax Error in {curr_position}"
+    all_errors += f"{error_string}\n"
+
+    print(error_string)
 
 
 def syntax_warning(line: int, is_error: bool, msg: str = '') -> None:
-    if is_error:
-        global error_occurred
-        error_occurred = True
-    print()
-    print(f"Syntax Warning in file {curr_file}", end="")
+    error_string = f"Syntax Warning in file {curr_file}"
     if line is not None:
-        print(f" line {line}", end="")
+        error_string += f" line {line}"
     if msg:
-        print(f":")
-        print(f"  {msg}")
-    else:
-        print()
+        error_string += f":\n  {msg}"
+
+    if is_error:
+        global error_occurred, all_errors
+        error_occurred = True
+        all_errors += f"{error_string}\n"
+
+    print(error_string)
 
 
 # Regex for the parser
@@ -93,6 +94,7 @@ class FJLexer(sly.Lexer):
                 "@", ","}
 
     ignore_ending_comment = r'//.*'
+    ignore_line_continuation = r'\\[ \t]*\n'
 
     # Tokens
     DOT_ID = dot_id_re
@@ -156,10 +158,13 @@ class FJLexer(sly.Lexer):
         return t
 
     def error(self, t: Token) -> None:
-        global error_occurred
+        global error_occurred, all_errors
         error_occurred = True
-        print()
-        print(f"Lexing Error in {get_position(self.lineno)}: {t.value[0]}")
+
+        error_string = f"Lexing Error in {get_position(self.lineno)}: {t.value[0]}"
+        all_errors += f"{error_string}\n"
+        print(error_string)
+
         self.index += 1
 
 
@@ -211,10 +216,11 @@ class FJParser(sly.Parser):
                              lineno: int, macro_name: MacroName) -> None:
         self.validate_labels_groups(extern_labels, global_labels, regular_labels, lineno, macro_name)
 
-        self.validate_no_unused_labels(regular_labels, labels_declared, labels_used, lineno, macro_name)
-        self.validate_no_bad_label_declarations(regular_labels, extern_labels, labels_declared, lineno, macro_name)
+        self.validate_no_unused_labels(regular_labels, global_labels, labels_declared, labels_used, lineno, macro_name)
         self.validate_no_unknown_label_uses(regular_labels, global_labels, labels_declared, labels_used,
                                             lineno, macro_name)
+        self.validate_no_bad_label_declarations(regular_labels, extern_labels, labels_declared, lineno, macro_name)
+        self.validate_all_extern_labels_are_declared(extern_labels, labels_declared, lineno, macro_name)
 
     @staticmethod
     def validate_labels_groups(extern_labels: Set[str], global_labels: Set[str], regular_labels: Set[str],
@@ -229,14 +235,22 @@ class FJParser(sly.Parser):
             syntax_error(lineno, f"In macro {macro_name}:  "
                                  f"global labels can't be regular labels: " + ', '.join(extern_labels & regular_labels))
 
-    def validate_no_unused_labels(self, regular_labels: Set[str],
+    def validate_no_unused_labels(self, regular_labels: Set[str], global_labels: Set[str],
                                   labels_declared: Set[str], labels_used: Set[str],
                                   lineno: int, macro_name: MacroName) -> None:
-        unused_labels = regular_labels - labels_used.union(self.to_base_name(label) for label in labels_declared)
+        unused_labels = regular_labels.union(global_labels) - labels_used.union(self.to_base_name(label) for label in labels_declared)
         if unused_labels:
             syntax_warning(lineno, self.warning_as_errors,
                            f"In macro {macro_name}:  "
                            f"unused labels: {', '.join(unused_labels)}.")
+
+    def validate_all_extern_labels_are_declared(self, extern_labels: Set[str], labels_declared: Set[str],
+                                                lineno: int, macro_name: MacroName) -> None:
+        unused_labels = extern_labels - {self.to_base_name(label) for label in labels_declared}
+        if unused_labels:
+            syntax_warning(lineno, self.warning_as_errors,
+                           f"In macro {macro_name}:  "
+                           f"undeclared extern label: {', '.join(unused_labels)}.")
 
     def validate_no_bad_label_declarations(self, regular_labels: Set[str], extern_labels: Set[str],
                                            labels_declared: Set[str],
@@ -304,13 +318,17 @@ class FJParser(sly.Parser):
         return name.split('.')[-1]
 
     def error(self, token: Token) -> None:
-        global error_occurred
+        global error_occurred, all_errors
         error_occurred = True
-        print()
+
         if token is None:
-            print(f'Syntax Error in {get_position(self.line_position(None))}. Maybe missing }} or {{ before this line?')
+            error_string = f'Syntax Error in {get_position(self.line_position(None))}. Maybe missing }} or {{ before this line?'
         else:
-            print(f'Syntax Error in {get_position(token.lineno)}, token=("{token.type}", {token.value})')
+            error_string = f'Syntax Error in {get_position(token.lineno)}, token=("{token.type}", {token.value})'
+
+        all_errors += f"{error_string}\n"
+        print(error_string)
+
 
     @_('definable_line_statements')
     def program(self, p: ParsedRule) -> None:
@@ -638,7 +656,7 @@ class FJParser(sly.Parser):
 
 def exit_if_errors() -> None:
     if error_occurred:
-        raise FJParsingException(f'Errors found in file {curr_file}. Assembly stopped.')
+        raise FJParsingException(f'Errors found in file {curr_file}. Assembly stopped.\n\nThe Errors:\n{all_errors}')
 
 
 def validate_current_file(files_seen: Set[Union[str, Path]]) -> None:
@@ -678,8 +696,9 @@ def parse_macro_tree(input_files: List[Tuple[str, Path]], w: int, warning_as_err
     @param warning_as_errors:[in]: treat warnings as errors (stop execution on warnings)
     @return: the macro-dictionary.
     """
-    global curr_file, curr_file_short_name, error_occurred
+    global curr_file, curr_file_short_name, error_occurred, all_errors
     error_occurred = False
+    all_errors = ''
 
     files_seen: Set[Union[str, Path]] = set()
 

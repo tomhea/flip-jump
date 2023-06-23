@@ -1,0 +1,52 @@
+// ---------- Casting from bit
+
+
+ns stl {
+    //  Time Complexity: 2@-1
+    // Space Complexity: 2@+11
+    //
+    // hex = bit
+    //
+    // hex is a hex, bit is a bit.
+    def bit2hex hex, bit {
+        hex.zero hex
+        bit.xor hex, bit
+    }
+
+    //  Time Complexity: n(1.25@-1)
+    // Space Complexity: n(1.25@+2)
+    //
+    // hex[:(n+3)/4] = bit[:n]
+    //
+    // n is a size-constant, hex is a hex.vec (n+3)/4, bit is a bit.vec n.
+    def bit2hex n, hex, bit {
+        hex.zero (n+3)/4, hex
+        rep(n, i) bit.exact_xor hex+(i/4)*dw+dbit+(i%4), bit+i*dw
+    }
+
+
+
+    // ---------- Casting from hex
+
+
+    //  Time Complexity: 5@-4
+    // Space Complexity: 5@+8
+    //
+    // bit[:4] = hex
+    //
+    // hex is a hex, bit is a bit.vec 4.
+    def hex2bit bit, hex {
+        bit.zero 4, bit
+        hex.exact_xor bit+3*dw+dbit, bit+2*dw+dbit, bit+dw+dbit, bit+dbit, hex
+    }
+
+    //  Time Complexity: n(5@-4)
+    // Space Complexity: n(5@+8)
+    //
+    // bit[:4n] = hex[:n]
+    //
+    // n is a size-constant, hex is a hex.vec n, bit is a bit.vec 4*n.
+    def hex2bit n, bit, hex {
+        rep(n, i) .hex2bit bit+4*i*dw, hex+i*dw
+    }
+}

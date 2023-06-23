@@ -1,7 +1,7 @@
-    startup
+    stl.startup
 
     bit.print_str 20, str
-    loop
+    stl.loop
 
   str:
     bit.str "Hello, World!\n(:"

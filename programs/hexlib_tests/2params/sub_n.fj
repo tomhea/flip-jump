@@ -1,10 +1,10 @@
-startup
+stl.startup
 
 SUB_N = 0x0000ffff8000ada41d9d587f40027d6d07f2c898
 rep(100, i) test_sub_n 4, (SUB_N>>((i%10)*4)&0xf), (SUB_N>>((i/10))*4&0xf)
 
 
-loop
+stl.loop
 
 
 hex.init
@@ -15,18 +15,18 @@ def test_sub_n n, a, b @ lt, eq, gt, ah, bh, ch, end {
     hex.cmp n, ah, ch, lt, eq, gt
     
   lt:
-    output '<'
+    stl.output '<'
     ;end
   eq:
-    output '='
+    stl.output '='
     ;end
   gt:
-    output '>'
+    stl.output '>'
     ;end
     
   ah: hex.vec n, a
   bh: hex.vec n, b
   ch: hex.vec n, a-b
   end:
-    output '\n'
+    stl.output '\n'
 }

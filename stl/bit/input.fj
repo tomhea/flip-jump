@@ -1,0 +1,29 @@
+// ---------- Input:
+
+
+
+ns bit {
+    // Complexity: 2@-2
+    //   input one bit into the bit-variable, 'dst'.
+    // dst is an output parameter.
+    def input_bit dst < stl.IO {
+        .zero dst
+        .xor dst, stl.IO
+    }
+
+
+    // Complexity: 16@-16
+    //   input one byte into dst[:8] (lsb first)
+    // dst is an output parameter.
+    def input dst {
+        rep(8, i) .input_bit dst+i*dw
+    }
+
+
+    // Complexity: n(16@-16)
+    //   input n bytes into dst[:8n] (lsb first)
+    // dst is an output parameter.
+    def input n, dst {
+        rep(n, i) .input dst+8*(n-1-i)*dw
+    }
+}

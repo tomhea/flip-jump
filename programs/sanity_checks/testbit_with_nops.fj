@@ -1,20 +1,20 @@
-startup
+stl.startup
 
 rep(10, i) bit.mov y, z
 bit.mov x, x
 bit.if x, l0, l1
 
 l0:
-    output 0x5A // 'Z'
+    stl.output 0x5A // 'Z'
     ;loop
 l1:
-    output 0x10*3+1*3-4/2 // '1'
+    stl.output 0x10*3+1*3-4/2 // '1'
     ;
     ;loop
 loop:
     ;
 
-    loop
+    stl.loop
     pad 2
     wflip l1, loop
 
@@ -22,7 +22,7 @@ loop:
     ;dloop
     bit.vec 8, 3
   bananas:
-    output 0x5c
+    stl.output 0x5c
     dy=3
 
     n=15
@@ -37,9 +37,9 @@ def temp_macro g, y {
 }
 
   x:
-    bit 1   // bit0 => 'Z',  bit1 => '1'
+    bit.bit 1   // bit0 => 'Z',  bit1 => '1'
   y:
-    bit 1
+    bit.bit 1
   z:
-    bit 1
+    bit.bit 1
 

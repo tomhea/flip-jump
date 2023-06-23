@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import dataclasses
+import argparse
 import json
 import lzma
+from collections import deque
 from enum import IntEnum    # IntEnum equality works between files.
 from pathlib import Path
 from time import time
-from typing import List, Dict
-
-from ops import CodePosition, Op
+from typing import List, Dict, Deque, Optional
 
 
 def get_stl_paths() -> List[Path]:
@@ -22,17 +21,23 @@ def get_stl_paths() -> List[Path]:
 
 
 class TerminationCause(IntEnum):
-    Looping = 0         # Finished by jumping to the last op, without flipping it (the "regular" finish/exit)
-    EOF = 1             # Finished by reading input when there is no more input
-    NullIP = 2          # Finished by jumping back to the initial op 0 (bad finish)
-    UnalignedWord = 3   # FOR FUTURE SUPPORT - tried to access an unaligned word (bad finish)
-    UnalignedOp = 4     # FOR FUTURE SUPPORT - tried to access a dword-unaligned op (bad finish)
+    Looping = 0             # Finished by jumping to the last op, without flipping it (the "regular" finish/exit)
+    EOF = 1                 # Finished by reading input when there is no more input
+    NullIP = 2              # Finished by jumping back to the initial op 0 (bad finish)
+    UnalignedWord = 3       # FOR FUTURE SUPPORT - tried to access an unaligned word (bad finish)
+    UnalignedOp = 4         # FOR FUTURE SUPPORT - tried to access a dword-unaligned op (bad finish)
+    RuntimeMemoryError = 5  # Finished by trying to read/write something out of the defined memory
+                            # (probably a bug in the fj-program)
 
     def __str__(self) -> str:
-        return ['looping', 'EOF', 'ip<2w', 'unaligned-word', 'unaligned-op'][self.value]
+        return ['looping', 'EOF', 'ip<2w', 'unaligned-word', 'unaligned-op', 'runtime-memory-error'][self.value]
 
 
-macro_separator_string = "---"
+MACRO_SEPARATOR_STRING = "---"
+STARTING_LABEL_IN_MACROS_STRING = ':start:'
+WFLIP_LABEL_PREFIX = ':wflips:'
+
+LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH = 10
 
 io_bytes_encoding = 'raw_unicode_escape'
 
@@ -40,6 +45,13 @@ io_bytes_encoding = 'raw_unicode_escape'
 _debug_json_encoding = 'utf-8'
 _debug_json_lzma_format = lzma.FORMAT_RAW
 _debug_json_lzma_filters: List[Dict[str, int]] = [{"id": lzma.FILTER_LZMA2}]
+
+
+def check_int_positive(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
+    return ivalue
 
 
 def save_debugging_labels(debugging_file_path: Path, labels: Dict[str, int]) -> None:
@@ -89,18 +101,6 @@ class PrintTimer:
             print(f'{time() - self.start_time:.3f}s')
 
 
-@dataclasses.dataclass
-class Macro:
-    """
-    The python representation of a .fj macro (macro declaration).
-    """
-    params: List[str]
-    local_params: List[str]
-    ops: List[Op]
-    namespace: str
-    code_position: CodePosition
-
-
 class RunStatistics:
     """
     maintains times and counters of the current run.
@@ -115,7 +115,12 @@ class RunStatistics:
         def __exit__(self, exc_type, exc_val, exc_tb):
             self.paused_time += time() - self.pause_start_time
 
-    def __init__(self, w: int):
+    def __init__(self, w: int, last_ops_debugging_list_length: Optional[int]):
+        """
+        Saves statistics about the current run (and a queue of the last executed ops).
+        @param w: the memory bit-length
+        @param last_ops_debugging_list_length: The length of the last-ops list
+        """
         self._op_size = 2 * w
         self._after_null_flip = 2 * w
 
@@ -123,11 +128,19 @@ class RunStatistics:
         self.flip_counter = 0
         self.jump_counter = 0
 
+        self.last_ops_addresses: Optional[Deque[int]] = None
+        if last_ops_debugging_list_length is not None:
+            self.last_ops_addresses = deque(maxlen=last_ops_debugging_list_length)
+
         self._start_time = time()
         self.pause_timer = self.PauseTimer()
 
     def get_run_time(self) -> float:
         return time() - self._start_time - self.pause_timer.paused_time
+
+    def register_op_address(self, ip: int):
+        if self.last_ops_addresses is not None:
+            self.last_ops_addresses.append(ip)
 
     def register_op(self, ip: int, flip_address: int, jump_address: int) -> None:
         self.op_counter += 1

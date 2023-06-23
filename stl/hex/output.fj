@@ -1,0 +1,214 @@
+// ---------- Output Hex
+
+
+// print raw bits
+ns hex {
+    //  Time Complexity: @
+    // Space Complexity: @+26
+    //   output 4 bits from hex  (lsb first)
+    def output hex @ switch, print_0, print_2, print_4, print_6, print_8, print_a, print_c, print_e, end < stl.IO {
+        wflip hex+w, switch, hex
+        pad 16
+      switch:
+        stl.IO+0;print_0    //  0
+        stl.IO+1;print_0    //  1
+        stl.IO+0;print_2    //  2
+        stl.IO+1;print_2    //  3
+        stl.IO+0;print_4    //  4
+        stl.IO+1;print_4    //  5
+        stl.IO+0;print_6    //  6
+        stl.IO+1;print_6    //  7
+        stl.IO+0;print_8    //  8
+        stl.IO+1;print_8    //  9
+
+        stl.IO+0;print_a    //  a
+        stl.IO+1;print_a    //  b
+        stl.IO+0;print_c    //  c
+        stl.IO+1;print_c    //  d
+        stl.IO+0;print_e    //  e
+        stl.IO+1;print_e    //  f
+
+
+      print_0:
+        stl.IO+0;
+        stl.IO+0;
+        stl.IO+0;end
+      print_2:
+        stl.IO+1;print_0+1*dw
+      print_4:
+        stl.IO+0;
+        stl.IO+1;print_0+2*dw
+      print_6:
+        stl.IO+1;print_4+1*dw
+      print_8:
+        stl.IO+0;
+        stl.IO+0;
+        stl.IO+1;end
+      print_a:
+        stl.IO+1;print_8+1*dw
+      print_c:
+        stl.IO+0;
+        stl.IO+1;print_8+2*dw
+      print_e:
+        stl.IO+1;print_c+1*dw
+
+      end:
+        wflip hex+w, switch
+    }
+
+
+    //  Time Complexity: 2@
+    // Space Complexity: 2@+52
+    //   output 8 bits from x[:2]  (lsb first)
+    def print x {
+        .output x
+        .output x+dw
+    }
+
+    //  Time Complexity: n(2@)
+    // Space Complexity: n(2@+52)
+    //   output n bytes from x[:2n]  (lsb first)
+    def print n, x {
+        rep(n, i) .print x+2*i*dw
+    }
+}
+
+
+
+// print the hexadecimal number representation
+ns hex {
+    //  Time Complexity: @+4
+    // Space Complexity: @+36
+    //   prints the ascii of the hexadecimal representation of hex.
+    //
+    // use_uppercase (constant): if true, print in uppercase (else lowercase).
+    def print_as_digit hex, use_uppercase @ switch, print_0, print_2, print_4, print_6, print_8, \
+            print_a, print_b, print_d, print_f, end < stl.IO {
+        wflip hex+w, switch, hex
+        pad 16
+      switch:
+        stl.IO+0;print_0    //  0
+        stl.IO+1;print_0    //  1
+        stl.IO+0;print_2    //  2
+        stl.IO+1;print_2    //  3
+        stl.IO+0;print_4    //  4
+        stl.IO+1;print_4    //  5
+        stl.IO+0;print_6    //  6
+        stl.IO+1;print_6    //  7
+        stl.IO+0;print_8    //  8
+        stl.IO+1;print_8    //  9
+
+        stl.IO+1;print_a    //  a
+        stl.IO+0;print_b    //  b
+        stl.IO+1;print_b    //  c
+        stl.IO+0;print_d    //  d
+        stl.IO+1;print_d    //  e
+        stl.IO+0;print_f    //  f
+
+      print_0:  // outputs 0x30
+        stl.IO+0;
+        stl.IO+0;
+        stl.IO+0;
+        stl.IO+1;
+        stl.IO+1;
+        stl.IO+0;
+        stl.IO+0;end
+      print_2:
+        stl.IO+1;print_0+1*dw
+      print_4:
+        stl.IO+0;
+        stl.IO+1;print_0+2*dw
+      print_6:
+        stl.IO+1;print_4+1*dw
+      print_8:
+        stl.IO+0;
+        stl.IO+0;
+        stl.IO+1;print_0+3*dw
+      print_a:  // outputs 0x40 / 0x60
+        stl.IO+0;
+        stl.IO+0;
+        stl.IO+0;
+        stl.IO+0;
+        stl.IO+(use_uppercase ? 0 : 1);
+        stl.IO+1;print_0+6*dw
+      print_b:
+        stl.IO+1;print_a+1*dw
+      print_d:
+        stl.IO+0;
+        stl.IO+1;print_a+2*dw
+      print_f:
+        stl.IO+1;print_d+1*dw
+
+      end:
+        wflip hex+w, switch
+    }
+
+    //  Time Complexity: n(@+4)
+    // Space Complexity: n(@+36)
+    //   prints the ascii of the hexadecimal representation of x[:n].
+    //
+    // use_uppercase (constant): if true, print in uppercase (else lowercase).
+    def print_as_digit n, x, use_uppercase {
+        rep (n, i) .print_as_digit x+(n-1-i)*dw, use_uppercase
+    }
+
+    //  Time Complexity: n(2@+6)
+    // Space Complexity: n(3@+54)
+    //    print the unsigned x[:n], without leading zeros.
+    //
+    // x_prefix (constant): print with the "0x" prefix.
+    // use_uppercase (constant): if true, print in uppercase (else lowercase).
+    def print_uint n, x, x_prefix, use_uppercase @ after_prefix, printed_something, end {
+        bit.zero printed_something
+        stl.comp_if0 x_prefix, after_prefix
+        stl.output "0x"
+
+      after_prefix:
+        rep(n, i) .print_uint.print_digit x+(n-1-i)*dw, printed_something, use_uppercase
+        bit.if1 printed_something, end
+        stl.output '0'
+        ;end
+
+      printed_something: bit.bit
+      end:
+    }
+    ns print_uint {
+        //  Time Complexity: 2@+6
+        // Space Complexity: 3@+54
+        //   print the ascii of the hexadecimal representation of hex (skip leading zeros, based on printed_something)
+        //
+        // printed_something (bit [inout]): have any digit printed yet? (the macro also updates it)
+        // use_uppercase (constant): if true, print in uppercase (else lowercase).
+        def print_digit hex, printed_something, use_uppercase @ print, end {
+            bit.if1 printed_something, print
+            ..if0 hex, end
+            bit.not printed_something
+          print:
+            ..print_as_digit hex, use_uppercase
+          end:
+        }
+    }
+
+    //  Time Complexity: n(2@+10)
+    // Space Complexity: n(4.5@+71)
+    //    print the signed x[:n], without leading zeros.
+    //
+    // x_prefix (constant): print with the "0x" prefix.
+    // use_uppercase (constant): if true, print in uppercase (else lowercase).
+    def print_int n, x, x_prefix, use_uppercase @ do_neg, print, neg, end {
+        bit.zero neg
+        .sign n, x, do_neg, print
+      do_neg:
+        bit.not neg
+        .neg n, x
+        stl.output '-'
+      print:
+        .print_uint n, x, x_prefix, use_uppercase
+        bit.if0 neg, end
+        .neg n, x
+        ;end
+
+      neg: bit.bit
+      end:
+    }
+}

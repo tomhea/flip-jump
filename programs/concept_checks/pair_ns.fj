@@ -23,12 +23,12 @@ ns Pair {
     }
 
     def print this {
-        output '('
+        stl.output '('
         ._.print_hex_int this+.first
-        output ','
-        output ' '
+        stl.output ','
+        stl.output ' '
         ._.print_hex_int this+.second
-        output ')'
+        stl.output ')'
     }
 
     def init {
@@ -39,7 +39,7 @@ ns Pair {
         def add dst, src < .add, .ret_reg, .temp1, .temp2 {
             bit.xor ..len, .temp2, src
             bit.xor_zero ..len, .temp1, dst
-            fcall .add, .ret_reg
+            stl.fcall .add, .ret_reg
             bit.xor_zero ..len, dst, .temp1
             bit.zero ..len, .temp2
         }
@@ -47,7 +47,7 @@ ns Pair {
 
         def print_hex_int val < .print_hex_int, .ret_reg, .temp1 {
             bit.xor ..len, .temp1, val
-            fcall .print_hex_int, .ret_reg
+            stl.fcall .print_hex_int, .ret_reg
             bit.xor ..len, .temp1, val
         }
 
@@ -56,13 +56,13 @@ ns Pair {
 
             add:
                 bit.add ..len, .temp1, .temp2
-                fret .ret_reg
+                stl.fret .ret_reg
 
             print_hex_int:
                 bit.print_hex_int ..len, .temp1, 1
-                fret .ret_reg
+                stl.fret .ret_reg
 
-            ret_reg: bit 0
+            ret_reg: bit.bit 0
             temp1: bit.vec ..len, 0
             temp2: bit.vec ..len, 0
 
@@ -78,11 +78,11 @@ ns Pair {
     ns prints {
         def print_two p1, p2 {
             ..print p1
-            output ','
-            output ' '
-            output ' '
+            stl.output ','
+            stl.output ' '
+            stl.output ' '
             ..print p2
-            output '\n'
+            stl.output '\n'
         }
     }
 }

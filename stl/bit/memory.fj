@@ -1,0 +1,113 @@
+// ---------- Memory Variables
+
+
+ns bit {
+    // Size Complexity: 1
+    //
+    // This is the basic variable in the FlipJump standard library - a bit (can contain only 0/1).
+    // you can't place it as any other standard library macro, as "running" this line is undefined behavior.
+    // The bit (and bit.vec) should be placed in a place that won't run.
+    def bit value {
+        ; value ? dw : 0
+    }
+    def bit {
+        .bit 0
+    }
+
+
+    // Size Complexity: n
+    // read the comment for the bit macro.
+    def vec n, value {
+        rep(n, i) .bit (value>>i)&1
+    }
+    def vec n {
+        rep(n, i) .bit
+    }
+}
+
+
+// ---------- Memory Manipulation
+
+
+ns bit {
+    // Complexity: @-1
+    //   bit = 0
+    def zero bit {
+        .xor bit, bit
+    }
+
+    // Complexity: n(@-1)
+    //   x[:n] = 0
+    def zero n, x {
+        rep(n, i) .zero x+i*dw
+    }
+
+
+    // Complexity: @
+    //   bit = 1
+    def one bit {
+        .zero bit
+        .not bit
+    }
+
+    // Complexity: n@
+    //   x[:n] = (1<<n) - 1   // all 1's
+    def one n, x {
+        rep(n, i) .one x+i*dw
+    }
+
+
+    // Complexity: 2@-2
+    // note: doesn't work if dst==src.
+    //   dst = src
+    // dst,src are bits.
+    def unsafe_mov dst, src {
+        .zero dst
+        .xor dst, src
+    }
+
+    // Complexity: 2@-1
+    // note: works if dst==src.
+    //   dst = src
+    // dst,src are bits.
+    def mov dst, src @ end {
+        stl.comp_if1 dst==src, end
+        .unsafe_mov dst, src
+      end:
+    }
+
+    // Complexity: n(2@-2)
+    // note: doesn't work if dst and src overlap. works if dst==src.
+    //   dst[:n] = src[:n]
+    // dst,src are bit.vec[:n].
+    def mov n, dst, src @ end {
+        stl.comp_if1 dst==src, end
+        rep(n, i) .unsafe_mov dst+i*dw, src+i*dw
+      end:
+    }
+
+
+    // Complexity: 2@+5
+    // Space: 3@+8
+    //   a, b = b, a
+    // a,b are bits.
+    def swap a, b @ a0, a1, notnot, end {
+        .if a, a0, a1
+      a0:
+        .if b, end, notnot
+      a1:
+        .if b, notnot, end
+      notnot:
+        .not a
+        .not b
+      end:
+    }
+
+    // Complexity: n(2@+5)
+    // Space: n(3@+8)
+    //   a[:n], b[:n] = b[:n], a[:n]
+    // a,b are bit.vec[:n].
+    def swap n, a, b {
+        rep(n, i) .swap a+i*dw, b+i*dw
+    }
+}

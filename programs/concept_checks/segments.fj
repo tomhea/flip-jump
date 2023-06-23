@@ -1,4 +1,4 @@
-startup
+stl.startup
 
 X1 = 0x10000000
 X2 = 0x20000000
@@ -22,7 +22,7 @@ back:
 
 
   error:
-    bit
+    bit.bit
 
   str_hi:
     bit.str "Hi!\n"
@@ -46,7 +46,7 @@ segment X4
     bit.print_hex_int 20, num, 1
     ;back
   end:
-    loop
+    stl.loop
 
   num:
     reserve dw*10

@@ -1,30 +1,29 @@
-startup
+// Tests a diamond call-stack. (main->a->c  ==>  main->b->c)
+
+
+stl.startup_and_init_all 10
 
 
 // Prints "AB~CD~EF"
 test2:
-    output 'A'
-    bit.call func2a
-    bit.call func2b
-    output 'F'
+    stl.output 'A'
+    stl.call func2a
+    stl.call func2b
+    stl.output 'F'
 
-    output '\n'
-    loop
+    stl.output '\n'
+    stl.loop
 
 func2a:
-    output 'B'
-    bit.call func2c
-    output 'C'
-    bit.return
+    stl.output 'B'
+    stl.call func2c
+    stl.output 'C'
+    stl.return
 func2b:
-    output 'D'
-    bit.call func2c
-    output 'E'
-    bit.return
+    stl.output 'D'
+    stl.call func2c
+    stl.output 'E'
+    stl.return
 func2c:
-    output '~'
-    bit.return
-
-
-bit.ptr_init
-bit.stack 10
+    stl.output '~'
+    stl.return

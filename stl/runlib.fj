@@ -1,119 +1,163 @@
-// Every line is (running) bananas!
-// This file contains a width-independent code
-
-// This file contains constants and labels used by other standard library files.
-
-// Everything after // is ignored, and every whitespace is ignored (besides new line)
-// An opcode is:  F;J  F;  ;J  or just  ;  (no F => F=0;  no J => J=next)
-
-// Complexity note: phi is log2 of the total number of fj operations, counting wflips as one op.
-// so 2 wflips with value=label (while label is padded with 2^n) causes phi-n space/time complexity
-
-// The complexities are not updated in this file (should be lower/faster).
-
-
 // w = ??       // memory and operands width. Is defined at compile time.
-dww  = #w       // double-w-width (log2(2w))
-ww   = dww-1    // w-width (log2(w))
 dw   = 2 * w    // double word size
-dbit = w + dww  // bit-distance from variable start to bit value (w+dww)
+dbit = w + #w   // the bit-distance from the variable's start, to the bit value (w + w_width)
+
+
+ns stl {
+    // Complexity: 2
+    // startup Macro - should be the first piece of code in your program.
+    // @output-param IO: the address of the opcode that's reserved for Input/Output. More info in https://esolangs.org/wiki/FlipJump#Input_/_Output
+    def startup @ code_start > IO {
+        ;.code_start    // 0w;1w : first code to run
+      IO:
+        ;0              // 2w;3w : sets the io_handler to address 0 (good for a future wflip)
+
+      code_start:
+                        // 4w;5w : start of code
+    }
+
+    // Complexity: ~7000  (7094 for w=64, 6962 for w=16)
+    // startup Macro, that initialize anything needed for the standard library - should be the first piece of code in your program.
+    // @output-param IO: the address of the opcode that's reserved for Input/Output. More info in https://esolangs.org/wiki/FlipJump#Input_/_Output
+    def startup_and_init_all {
+        .startup_and_init_all 100
+    }
+
+    // Complexity: 6793 + 2.75w+@ + n
+    // startup Macro, that initialize anything needed for the standard library - should be the first piece of code in your program.
+    // stack_bit_size is the size of the global-stack (will hold this number of bits / return-addresses).
+    // @output-param IO: the address of the opcode that's reserved for Input/Output. More info in https://esolangs.org/wiki/FlipJump#Input_/_Output
+    def startup_and_init_all stack_bit_size @ code_start > IO {
+        ;.code_start    // 0w;1w : first code to run
+      IO:
+        ;0              // 2w;3w : sets the io_handler to address 0 (good for a future wflip)
+
+        hex.init
+        stl.ptr_init
+        stl.stack_init stack_bit_size
+
+      code_start:
+    }
 
 
 
-// ---------- Startup Code
+    // ---------- Basic Functionality
 
 
-def startup > IO, code_start {
-    ;code_start     // 0w;1w : code start
-  IO:
-    ;0              // 2w;3w : now points to io_handler
-
-  code_start:
-                    // 4w;5w : start of code
-}
+    // Complexity: 1
+    //   macro for 1 flip-jump op
+    def fj f, j {
+        f;j
+    }
 
 
-def startup in0_handler, in1_handler {
-    startup
-    default_input in0_handler, in1_handler
-}
+    // Complexity: @
+    //   macro for 1 wflip op
+    def wflip_macro dst, val {
+        wflip dst, val
+    }
 
 
-
-// ---------- Basic Functionality
-
-
-def zero_op {
-    0;0
-}
-
-def fj f, j {
-    f;j
-}
-
-def wflip_macro dst, val {
-    wflip dst, val
-}
-
-def wflip_macro dst, val, jmp_addr {
-    wflip dst, val, jmp_addr
-}
-
-//// @note - padding can also be implemented in fj itself! (but the saved-word pad is more compile-time efficient)
-//def pad x @ pad_start {
-//  pad_start:
-//    rep((0-pad_start/(2*w))%x, i) zero_op
-//}
-
-
-// ---------- Compilation Time:
-// Complexity: 1
-
-
-def comp_if expr, l0, l1 {
-    ; expr ? l1 : l0
-}
-
-def comp_if0 expr, l0 @ l1 {
-    comp_if expr, l0, l1
-  l1:
-}
-
-def comp_if1 expr, l1 @ l0 {
-    comp_if expr, l0, l1
-  l0:
-}
-
-
-def comp_flip_if bit, expr {
-    (expr ? bit : 0);
-}
+    // Complexity: @
+    //   macro for 1 wflip op (with jump)
+    def wflip_macro dst, val, jmp_addr {
+        wflip dst, val, jmp_addr
+    }
 
 
 
-// ---------- Unconditional Jump
-// Complexity: 1
+    // ---------- Compilation Time Comparisons:
+    // Complexity: 1
 
 
-def skip {
-    ;$ + dw
-}
+    // if expression is 0 (compilation time), jump to l0. else jump to l1
+    def comp_if expr, l0, l1 {
+        ; expr ? l1 : l0
+    }
+
+    // if expression is 0 (compilation time), jump to l0. else continue
+    def comp_if0 expr, l0 @ continue {
+        .comp_if expr, l0, continue
+      continue:
+    }
+
+    // if expression is not 0 (compilation time), jump to l1. else continue
+    def comp_if1 expr, l1 @ continue {
+        .comp_if expr, continue, l1
+      continue:
+    }
 
 
-def loop {
-    ;$ - dw
-}
+    // if expr != 0 (compilation time), flip the given bit.
+    //
+    // expr is a constant, and bit is a general bit-address.
+    def comp_flip_if bit, expr {
+        (expr ? bit : 0);
+    }
 
 
 
-// ---------- Input Handler
+    // ---------- Unconditional Jumps
+    // Complexity: 1
 
 
-def default_input in0_handler, in1_handler @ io_handler, end < IO {
-    wflip IO+w, io_handler, end
-    pad 2
-  io_handler:
-    ;in0_handler
-    ;in1_handler
-  end:
+    // skip the next flip-jump op
+    def skip {
+        ;$ + dw
+    }
+
+
+    // finish (loop to self)
+    def loop {
+        ;$ - dw
+    }
+
+
+
+    // ---------- Input Handler
+
+
+    // sets the input handlers. When inputting 0 - in0_handler will be called, and for 1 - in1_handler will be called.
+    //
+    // @note, most of the programs won't use this macro, as they'll use (at the place they want to input) bit.input_bit,
+    // or most likely, something like the next code:
+    //    wflip stl.IO+w, input_0, stl.IO
+    //    pad 2
+    //   input_0:
+    //    wflip stl.IO+w, input_0, jump_to_input_0_handling
+    //   input_1:
+    //    wflip stl.IO+w, input_0, jump_to_input_0_handling
+    //
+    // @note that if you use this macro, you can't touch stl.IO yourself, or use macros that does it; so know what you are doing.
+    def default_input in0_handler, in1_handler @ io_handler, end < .IO {
+        wflip .IO+w, io_handler, end
+        pad 2
+      io_handler:
+        ;in0_handler
+        ;in1_handler
+      end:
+    }
+
+
+
+    // ---------- Output constants:
+
+
+    // Complexity: 1
+    // bit is a constant. 0 will output o, anything else will output 1.
+    def output_bit bit < .IO {
+        .IO + (bit ? 1 : 0);
+    }
+
+    // Complexity: 8
+    // ascii is a constant. The macro outputs the byte (ascii & 0xff)
+    def output_char ascii {
+        rep(8, i) .output_bit (ascii>>i)&1
+    }
+
+    // Complexity: 8 * string_length
+    // str is a constant. The macro outputs the bytes of it (from lsB to msB) until it becomes all zeros.
+    def output str {
+        rep(((#str)+7)>>3, i) .output_char (str>>(8*i))&0xff
+    }
 }

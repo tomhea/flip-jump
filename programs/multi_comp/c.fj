@@ -2,9 +2,9 @@ NL = '\n'
 
 
 def print_chars n, c {
-    rep(n, i) output_char c
+    rep(n, i) stl.output_char c
 }
 
 def println {
-    output_char NL
+    stl.output_char NL
 }

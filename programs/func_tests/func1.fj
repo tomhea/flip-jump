@@ -1,19 +1,18 @@
-startup
+// Tests a parameterless function call
+
+
+stl.startup_and_init_all 10
 
 
 // Prints "ABC"
 test1:
-    output 'A'
-    bit.call func1
-    output 'C'
+    stl.output 'A'
+    stl.call func1
+    stl.output 'C'
 
-    output '\n'
-    loop
+    stl.output '\n'
+    stl.loop
 
 func1:
-    output 'B'
-    bit.return
-
-
-bit.ptr_init
-bit.stack 10
+    stl.output 'B'
+    stl.return

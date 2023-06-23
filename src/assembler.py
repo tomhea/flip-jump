@@ -7,7 +7,7 @@ import fjm
 from fj_parser import parse_macro_tree
 from preprocessor import resolve_macros
 
-from defs import PrintTimer, save_debugging_labels
+from defs import PrintTimer, save_debugging_labels, WFLIP_LABEL_PREFIX
 from ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits, Padding
 from exceptions import FJAssemblerException, FJException, FJWriteFjmException
 
@@ -58,11 +58,14 @@ class WFlipSpot:
 
 
 class BinaryData:
-    def __init__(self, w: int, first_segment: NewSegment):
+    def __init__(self, w: int, first_segment: NewSegment, labels: Dict[str, int]):
         self.w = w
 
         self.first_address = first_segment.start_address
         self.wflip_address = first_segment.wflip_start_address
+
+        self.labels = labels
+        self.wflips_so_far = 0
 
         self.current_address = self.first_address
 
@@ -86,6 +89,10 @@ class BinaryData:
 
     def close_and_add_segment(self, fjm_writer: fjm.Writer) -> None:
         add_segment_to_fjm(self.w, fjm_writer, self.first_address, self.wflip_address, self.fj_words, self.wflip_words)
+
+    def _insert_wflip_label(self, address: int):
+        self.labels[f'{WFLIP_LABEL_PREFIX}{self.wflips_so_far}'] = address
+        self.wflips_so_far += 1
 
     def insert_fj_op(self, flip: int, jump: int) -> None:
         self.fj_words += (flip, jump)
@@ -116,6 +123,7 @@ class BinaryData:
                 else:
                     # insert a new wflip op, and connect the last one to it
                     wflip_spot = self.get_wflip_spot()
+                    self._insert_wflip_label(wflip_spot.address)
 
                     ops_list[last_address_index] = wflip_spot.address
                     return_dict[flips_key] = wflip_spot.address
@@ -163,21 +171,21 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
     if not isinstance(first_segment, NewSegment):
         raise FJAssemblerException(f"The first op must be of type NewSegment (and not {first_segment}).")
 
-    binary_data = BinaryData(w, first_segment)
+    binary_data = BinaryData(w, first_segment, labels)
 
     for op in ops:
         if isinstance(op, FlipJump):
             try:
                 binary_data.insert_fj_op(op.get_flip(labels), op.get_jump(labels))
             except FJException as e:
-                raise FJAssemblerException(f"Can't resolve labels in op {op}.") from e
+                raise FJAssemblerException(f"{e} in op {op}.")
 
         elif isinstance(op, WordFlip):
             try:
                 binary_data.insert_wflip_ops(op.get_word_address(labels), op.get_flip_value(labels),
                                              op.get_return_address(labels))
             except FJException as e:
-                raise FJAssemblerException(f"Can't resolve labels in op {op}.") from e
+                raise FJAssemblerException(f"{e} in op {op}.")
 
         elif isinstance(op, Padding):
             binary_data.insert_padding(op.ops_count)

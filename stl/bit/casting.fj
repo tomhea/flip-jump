@@ -1,0 +1,168 @@
+// ---------- String:
+
+
+ns bit {
+    // create a bit-vector, initialized with the value of 'str', and with the number of bytes needed to store 'str', plus 1.
+    //   used to initialize a string, like:   bit.str "Hello, World!\n"
+    def str str {
+        .vec (((#str)+15)>>3)<<3, str
+    }
+}
+
+
+
+// ---------- Casting to ascii:
+
+
+ns bit {
+    // Complexity 9@-7
+    //   ascii := the ascii representation of the value of bin.
+    // ascii is bit[:8], bin is a bit.
+    def bin2ascii ascii, bin {
+        .zero 8, ascii
+        .not 2, ascii + 4*dw   // ascii = 0x30
+        .xor ascii, bin
+    }
+
+
+    // Complexity 12@-10
+    //   ascii := the ascii representation of the value of dec.
+    // ascii is bit[:8], dec is bit[:4].
+    def dec2ascii ascii, dec {
+        .zero 8, ascii
+        .not 2, ascii + 4*dw   // ascii = 0x30
+        .xor 4, ascii, dec
+    }
+
+
+    // Complexity: 16@+19
+    // Space:      21@+30
+    //   ascii := the ascii representation of the value of hex (digits & capital-letters).
+    // ascii is bit[:8], hex is bit[:4].
+    def hex2ascii ascii, hex @ dec_label, hex_label, nine4, end {
+        .zero 8, ascii
+        .xor 3, ascii, hex
+        .cmp 4, hex, nine4, dec_label, dec_label, hex_label
+      dec_label:
+        .xor ascii+3*dw, hex+3*dw
+        .not 2, ascii + 4*dw    // ascii = 0x30
+        ;end
+      hex_label:
+        .dec 3, ascii           // A-F is now 1-6
+        .not ascii + 6*dw       // ascii = 0x40
+        ;end
+      nine4:
+        .vec 4, 9
+      end:
+    }
+}
+
+
+
+// ---------- Casting from ascii:
+
+
+ns bit {
+    // Complexity: 17@+24
+    //   if ascii is '0'/'1', set bit to 0/1 (end error=0).  else, set error=1.
+    // ascii is bit[:8], and error(output-param),bin are bits.
+    def ascii2bin error, bin, ascii @ half_bin, return_error, copy_binary_value, end {
+        .zero error
+        .zero bin
+
+        .cmp 7, ascii+dw, half_bin, return_error, copy_binary_value, return_error
+
+        return_error:
+            .not error
+            ;end
+
+        copy_binary_value:
+            .xor bin, ascii
+            ;end
+
+      half_bin:
+        .vec 7, 0x30>>1
+
+      end:
+    }
+
+
+    // Complexity: 25@+56
+    //   if ascii is '0'-'9', set dec to that decimal digit value (end error=0).  else, set error=1.
+    // ascii is bit[:8], dec in bit[:4], and error(output-param) is a bit.
+    def ascii2dec error, dec, ascii @ half_dec, return_error, check_decimal, copy_decimal_value, nine4, end {
+        .zero error
+        .zero 4, dec
+
+        .cmp 4, ascii+4*dw, half_dec, return_error, check_decimal, return_error
+      check_decimal:
+        .cmp 4, ascii, nine4, copy_decimal_value, copy_decimal_value, return_error
+
+        return_error:
+            .not error
+            ;end
+
+        copy_decimal_value:
+            .xor 4, dec, ascii
+            ;end
+
+      half_dec:
+        .vec 4, 0x30>>4
+      nine4:
+        .vec 4, 9
+      end:
+    }
+
+
+    // Complexity: 54@+92
+    //   if ascii is '0'-'9'/'a'-'f'/'A'-'F', set hex to that hexadecimal digit value (end error=0).  else, set error=1.
+    // ascii is bit[:8], hex in bit[:4], and error(output-param) is a bit.
+    def ascii2hex error, hex, ascii \
+            @ decimal_ascii_msh, uppercase_hexadecimal_ascii_msh, lowercase_hexadecimal_ascii_msh, return_error, \
+            check_uppercase_hex, check_lowercase_hex, dec_first_check, hex_first_check, hex_second_check, \
+            copy_decimal_value, copy_hexadecimal_value, nine4, seven3, two3, end {
+        .zero error
+        .zero 4, hex
+
+        .cmp 4, ascii+4*dw, decimal_ascii_msh, check_uppercase_hex, dec_first_check, check_uppercase_hex
+
+      check_uppercase_hex:
+        .cmp 5, ascii+3*dw, uppercase_hexadecimal_ascii_msh, check_lowercase_hex, hex_first_check, check_lowercase_hex
+      check_lowercase_hex:
+        .cmp 5, ascii+3*dw, lowercase_hexadecimal_ascii_msh, return_error,        hex_first_check, return_error
+
+      dec_first_check:
+        .cmp 4, ascii, nine4, copy_decimal_value, copy_decimal_value, return_error
+      copy_decimal_value:
+        .xor 4, hex, ascii
+        ;end
+
+      hex_first_check:
+        .inc 3, ascii
+        .cmp 3, ascii, two3,   return_error, hex_second_check, hex_second_check
+      hex_second_check:
+        .cmp 3, ascii, seven3, copy_hexadecimal_value, copy_hexadecimal_value, return_error
+      copy_hexadecimal_value:
+        .xor 3, hex, ascii
+        .not hex+3*dw
+        ;end
+
+      return_error:
+        .not error
+        ;end
+
+      decimal_ascii_msh:
+        .vec 4, 0x30>>4
+      uppercase_hexadecimal_ascii_msh:
+        .vec 5, 0x40>>3
+      lowercase_hexadecimal_ascii_msh:
+        .vec 5, 0x60>>3
+      nine4:
+        .vec 4, 9
+      seven3:
+        .vec 3, 7
+      two3:
+        .vec 3, 2
+      end:
+    }
+}

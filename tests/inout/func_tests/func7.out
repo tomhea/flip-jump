@@ -1,0 +1,15 @@
+ABCDa-123-b-123456-cd
+Ea-123-b-123456-cd
+F-123-GHIJ
+dist[p1, p2] ** 2 = 0x3EDA
+
+ABCDa-123-b-123456-cd
+Ea-123-b-123456-cd
+F-123-GHIJ
+dist[p1, p3] ** 2 = 0x2C95
+
+ABCDa-123-b-123456-cd
+Ea-123-b-123456-cd
+F-123-GHIJ
+dist[p2, p3] ** 2 = 0x3C79
+

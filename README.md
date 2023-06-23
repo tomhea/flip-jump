@@ -1,5 +1,11 @@
 # FlipJump
 
+[![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/tomhea/flip-jump)](https://github.com/tomhea/flip-jump#project-structure)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/tomhea/flip-jump)](https://github.com/tomhea/flip-jump/releases/latest)
+[![GitHub Discussions](https://img.shields.io/github/discussions/tomhea/flip-jump)](https://github.com/tomhea/flip-jump/discussions)
+[![GitHub](https://img.shields.io/github/license/tomhea/flip-jump)](LICENSE)
+[![Website](https://img.shields.io/website?down_color=red&down_message=down&up_message=up&url=https%3A%2F%2Fesolangs.org%2Fwiki%2FFlipJump)](https://esolangs.org/wiki/FlipJump)
+
 FlipJump is the simplest programing language.<br>
 Yet, it can do **any modern computation**.
 
@@ -64,11 +70,11 @@ def end_loop @ loop_label {
 The FlipJump assembly supports a ```"Hello, World!"``` syntax for initializing a variable with a string value.
 Look at the [hello_world.fj](programs/print_tests/hello_world.fj) program for more info.
 
-Note that all of these macros are already implemented in the standard library:
-- startup      in [runlib.fj](stl/runlib.fj)
-- end_loop     in [bitlib.fj](stl/bitlib.fj) (loop)
-- output_char  in [iolib.fj](stl/iolib.fj)
-- output       in [iolib.fj](stl/iolib.fj)  (for printing string consts, e.g. output "Hello, World!")
+Note that all of these macros are already implemented in the standard library (all in [runlib.fj](stl/runlib.fj)):
+- startup
+- end_loop     (loop)
+- output_char
+- output       (for printing string consts, e.g. output "Hello, World!")
 
 # How to download?
 
@@ -79,7 +85,9 @@ Cloning into 'flip-jump'...
 >>> pip install -r requirements.txt
 ```
 
-You can add <span style="color:orange">syntax highlighting</span> support for *.fj files on Pycharm - just import the [PycharmHighlighting.zip](PycharmHighlighting.zip) settings.
+Pycharm Extensions:
+- Add <span style="color:orange">syntax highlighting</span> support for *.fj files - just import the [PycharmHighlighting.zip](ide-extensions/pycharm/PycharmHighlighting.zip) settings.
+- Add a ctrl+shift+click (find fj-macro definition) functionality by using the [AutoHotKey script](ide-extensions/pycharm/fj-pycharm-def-finder.ahk).
 
 # How to run?
 
@@ -114,6 +122,15 @@ You can also use the faster [cpp-based interpreter](https://github.com/tomhea/fj
 Hello, World!
 ```
 
+### How to Debug?
+Programs won't work on their first run. They just can't. That's why we support the next debugging flags.
+
+- No debugging flags at all: Shows the last 10 executed addresses of tests that failed their run (i.e. finished not by looping). 
+- `-d [PATH]`: Save debug information: Adds [very extensive label names](tests/README.md#example-label-name-youll-get-with-using---debuginfo-len), Which are like a "**macro-stack**" for each of the last executed address. (can be used with `--debug-ops-list LEN`)
+- `--debug-ops-list LEN`: Shows the last _LEN_ executed addresses (instead of 10). (can be used with `-d`)
+- `-b NAME [NAME ...]`: Places breakpoints at every specified label NAMEs (note that label names are long: [more information about labels](src/README.md#generated-label-names)). (requires `-b`)
+- `-B NAME [NAME ...]`: Places breakpoints at every label that contains one of the given NAMEs. (requires `-b`)
+
 # Project Structure
 
 **[src](src/README.md)** (assembler + interpreter source files):
@@ -126,11 +143,11 @@ Hello, World!
   - [more...](src/README.md)
 
 **[stl](stl/README.md)** (standard library files - macros. [list of all macros](https://esolangs.org/wiki/FlipJump#The_Standard_Library)):
-  - runlib.fj   - constants and initialization macros.
-  - bitlib.fj   - macros for manipulating binary variables and vectors (i.e. numbers).
+  - runlib.fj   - constants and initialization macros. output constant strings.
+  - [bit/](stl/README.md#bit)        - macros for io/manipulating binary variables and vectors (i.e. numbers).
   - mathlib.fj  - advanced math macros (mul/div).
-  - hexlib.fj   - macros for manipulating hexadecimal variables and vectors.
-  - iolib.fj    - input/output macros, bit/hex/dec casting.
+  - [hex/](stl/README.md#hex)        - macros for io/manipulating hexadecimal variables and vectors.
+  - casting.fj  - casting between bit/hex.
   - ptrlib.fj   - pointers, stack and functions.
   - conf.json   - standard library list file.
 
@@ -164,7 +181,7 @@ Read more about the [flip-jump source files](src/README.md) and [how to run the 
 
 If you want to contribute to this project, read the [CONTRIBUTING.md](CONTRIBUTING.md) file, and take a look at the [Discussions](https://github.com/tomhea/flip-jump/discussions/148).
 
-If you are new to FlipJump and you want to learn how modern computation can be executed using FlipJump, Start by reading the [bitlib.fj](stl/bitlib.fj) standard library file (start with `xor`, `if`). That's where the FlipJump magic begins.
+If you are new to FlipJump and you want to learn how modern computation can be executed using FlipJump, Start by reading the [bit/math.fj](stl/bit/math.fj) standard library file (start with `xor`, `if`). That's where the FlipJump magic begins.
 
 You can also write and run programs for yourself! It is just [that](README.md#how-to-run) easy :)
 

@@ -1,0 +1,128 @@
+// ---------- Logical Macros
+
+
+ns bit {
+    // Complexity: @-1
+    //   dst ^= src
+    // dst,src are bits.
+    def xor dst, src {
+        .exact_xor dst + dbit, src
+    }
+
+    // Complexity: n(@-1)
+    //   dst[:n] ^= src[:n]
+    // dst,src are bit[:n].
+    def xor n, dst, src {
+        rep(n, i) .xor dst+dw*i, src+dw*i
+    }
+
+    // Complexity: @-1
+    // note: pad 2 is needed, but pad 8 is used for wflips-padding optimization and for smaller wflips.
+    //   dst(bit_address) ^= src
+    // dst,src are bits.
+    def exact_xor dst, src @ base_jump_label, cleanup {
+        wflip src+w, base_jump_label, src
+        pad 8
+      base_jump_label:
+        ;cleanup
+        dst;
+      cleanup:
+        wflip src+w, base_jump_label
+    }
+
+    // Complexity: @
+    // note: pad 2 is needed, but pad 8 is used for wflips-padding optimization and for smaller wflips.
+    //   dst1(bit_address) ^= src
+    //   dst2(bit_address) ^= src
+    // dst1,dst2,src are bits.
+    def double_exact_xor dst1, dst2, src @ base_jump_label, cleanup {
+        wflip src+w, base_jump_label, src
+        pad 8
+      base_jump_label:
+        ;cleanup
+        dst1;
+        dst2;
+      cleanup:
+        wflip src+w, base_jump_label
+    }
+
+    // Complexity: n@
+    //   address(bit_address) ^= src
+    //   var ^= src
+    // var,src are bit[:n], address is an address.
+    def address_and_variable_xor n, address, var, src {
+        rep(n, i) .double_exact_xor address+i, var+dbit+i*dw, src+i*dw
+    }
+
+    // Complexity: @
+    //   dst ^= src
+    //   src = 0
+    // dst,src are bits.
+    def xor_zero dst, src {
+        .double_exact_xor dst+dbit, src+dbit, src
+    }
+
+    // Complexity: n@
+    //   dst[:n] ^= src[:n]
+    //   src[:n] = 0
+    // dst,src are bit[:n].
+    def xor_zero n, dst, src {
+        rep(n, i) .xor_zero dst+dw*i, src+dw*i
+    }
+
+
+    // Complexity: 2@+2
+    //   dst |= src
+    // dst,src are bits.
+    def or dst, src @ end {
+        .if0 src, end
+        .one dst
+      end:
+    }
+
+    // Complexity: n(2@+2)
+    //   dst[:n] |= src[:n]
+    // dst,src are bit[:n].
+    def or n, dst, src {
+        rep(n, i) .or dst+dw*i, src+dw*i
+    }
+
+
+    // Complexity: 2@+2
+    //   dst &= src
+    // dst,src are bits.
+    def and dst, src @ end {
+        .if1 src, end
+        .zero dst
+      end:
+    }
+
+    // Complexity: n(2@+2)
+    //   dst[:n] &= src[:n]
+    // dst,src are bit[:n].
+    def and n, dst, src {
+        rep(n, i) .and dst+dw*i, src+dw*i
+    }
+
+
+    // Complexity: 1
+    //   dst ^= 1
+    // dst is a bit.
+    def not dst {
+        dst + dbit;
+    }
+
+    // Complexity: n
+    //   dst[:n] ^= (1<<n)-1
+    // dst is bit[:n]
+    def not n, dst {
+        rep(n, i) .not dst+dw*i
+    }
+
+    // Complexity: 1
+    //   dst(bit_address) ^= 1
+    // dst is an address.
+    def exact_not dst {
+        dst;
+    }
+}

@@ -1,0 +1,122 @@
+// ---------- Memory Variables:
+
+
+ns hex {
+    // Size Complexity: 1
+    //
+    // This is another basic variable in the FlipJump standard library - a hexadecimal (can contain only 0-15).
+    // you can't place it as any other standard library macro, as "running" this line is undefined behavior.
+    // The hex (and hex.vec) should be placed in a place that won't run.
+    def hex val {
+        ;(val > 0xf ? 0xf : (val < 0 ? 0 : val)) * dw
+    }
+    def hex {
+        .hex 0
+    }
+
+
+    // Size Complexity: n
+    // read the comment for the hex macro.
+    def vec n, value {
+        rep(n, i) .hex (value>>(4*i))&0xf
+    }
+    def vec n {
+        rep(n, i) .hex
+    }
+}
+
+
+// ---------- Memory Manipulation:
+
+
+ns hex {
+
+    //  Time Complexity: @
+    // Space Complexity: @+12
+    //   hex = 0
+    def zero hex {
+        .xor hex, hex
+    }
+
+    //  Time Complexity: n@
+    // Space Complexity: n(@+12)
+    //   x[:n] = 0
+    def zero n, x {
+        rep (n, i) .zero x+i*dw
+    }
+
+    //  Time Complexity: 2@+1
+    // Space Complexity: 2@+25
+    //   dst = src
+    //
+    // both dst,src are hexes.
+    def mov dst, src @ end {
+        stl.comp_if1 dst==src, end
+        .zero dst
+        .xor dst, src
+      end:
+    }
+
+    //  Time Complexity: n(2@)
+    // Space Complexity: n(2@+24)
+    // Unsafe if dst and src overlap! but safe if they are the exact same address.
+    //   dst[:n] = src[:n]
+    def mov n, dst, src @ end {
+        stl.comp_if1 dst==src, end
+        .zero n, dst
+        .xor n, dst, src
+      end:
+    }
+
+    // Complexity: 4 (avg. 2: #on-bits)
+    //   hex ^= val (constant)
+    def xor_by hex, val {
+        wflip hex+w, (val > 0xf ? 0xf : (val < 0 ? 0 : val)) * dw
+    }
+
+    // Complexity: 4n (avg. 2n: #on-bits)
+    //   hex[:n] ^= val (constant)
+    def xor_by n, hex, val {
+        rep(n, i) .xor_by hex+i*dw, (val>>(4*i))&0xf
+    }
+
+    //  Time Complexity: @+4
+    // Space Complexity: @+16
+    //   hex = val (constant)
+    def set hex, val {
+        .zero hex
+        .xor_by hex, val
+    }
+
+    //  Time Complexity: n(@+4)
+    // Space Complexity: n(@+16)
+    //   hex[:n] = val (constant)
+    def set n, hex, val {
+        rep(n, i) .set hex+i*dw, (val>>(4*i))&0xf
+    }
+
+    //  Time Complexity: 3@+1
+    // Space Complexity: 3@+37
+    //   hex1, hex2 = hex2, hex1
+    //
+    // both hex1,hex2 are hexes.
+    def swap hex1, hex2 @ end {
+        stl.comp_if1 hex1==hex2, end
+        .xor hex1, hex2
+        .xor hex2, hex1
+        .xor hex1, hex2
+      end:
+    }
+
+    //  Time Complexity: n(3@)
+    // Space Complexity: n(3@+36)
+    // Unsafe if dst and src overlap! but safe if they are the exact same address.
+    //   hex1[:n], hex2[:n] = hex2[:n], hex1[:n]
+    def swap n, hex1, hex2 @ end {
+        stl.comp_if1 hex1==hex2, end
+        .xor n, hex1, hex2
+        .xor n, hex2, hex1
+        .xor n, hex1, hex2
+      end:
+    }
+}

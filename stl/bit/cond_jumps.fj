@@ -1,0 +1,97 @@
+// ---------- Conditional Jumps
+
+
+ns bit {
+    // Complexity: @+2
+    //   if x == 0 jump to l0, else jump to l1
+    // x is a bit, l0,l1 are addresses.
+    def if x, l0, l1 @ label_ptr, base_jump_label {
+        .xor label_ptr, x
+      label_ptr:
+        ;base_jump_label
+        pad 2
+      base_jump_label:
+        ;l0
+        label_ptr + dbit;l1
+    }
+
+    // Complexity: n(@+2)
+    //   if x[:n] == 0 jump to l0, else jump to l1
+    // x is bit[:n], l0,l1 are addresses.
+    def if n, x, l0, l1 {
+        rep(n-1, i) .if1 x+i*dw, l1
+        .if x+(n-1)*dw, l0, l1
+    }
+
+    // Complexity: @+2
+    //   if x == 1 jump to l1
+    // x is a bit, l1 is an address.
+    def if1 x, l1 @ end {
+        .if x, end, l1
+      end:
+    }
+
+    // Complexity: n(@+2)
+    //   if the x[:n] != 0 jump to l1
+    // x is bit[:n], l1 is an address.
+    def if1 n, x, l1 @ end {
+        .if n, x, end, l1
+      end:
+    }
+
+    // Complexity: @+2
+    //   if x == 0 jump to l0
+    // x is a bit, l0 is an address.
+    def if0 x, l0 @ end {
+        .if x, l0, end
+      end:
+    }
+
+    // Complexity: n(@+2)
+    //   if x[:n] == 0 jump to l0
+    // x is bit[:n], l0 is an address.
+    def if0 n, x, l0 @ end {
+        .if n, x, l0, end
+      end:
+    }
+
+
+    // Complexity: 2@+4
+    // Space: 3@+6
+    //   jump to:
+    //     a < b:  lt
+    //     a = b:  eq
+    //     a > b:  gt
+    // a,b are bits, lt,eq,gt are addresses.
+    def cmp a, b, lt, eq, gt @ a_is1_label {
+        .if1 a, a_is1_label
+        .if b, eq, lt
+      a_is1_label:
+        .if b, gt, eq
+    }
+
+    // Complexity: n(2@+4)
+    // Space: n(3@+6)
+    //   jump to:
+    //     a[:n] < b[:n]:  lt
+    //     a[:n] = b[:n]:  eq
+    //     a[:n] > b[:n]:  gt
+    // a,b are bit[:n], lt,eq,gt are addresses.
+    def cmp n, a, b, lt, eq, gt {
+        rep(n-1, i) ._.cmp_next_eq a+(n-1-i)*dw, b+(n-1-i)*dw, lt, gt
+        .cmp a, b, lt, eq, gt
+    }
+    ns _ {
+        // Complexity: 2@+4
+        // Space: 3@+6
+        //   jump to:
+        //     a < b:  lt
+        //     a = b:  continue
+        //     a > b:  gt
+        // a,b are bits, lt,gt are addresses.
+        def cmp_next_eq a, b, lt, gt @ eq {
+            ..cmp a, b, lt, eq, gt
+          eq:
+        }
+    }
+}

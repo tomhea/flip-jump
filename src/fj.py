@@ -10,7 +10,7 @@ import fjm_run
 import fjm
 from io_devices.StandardIO import StandardIO
 
-from defs import get_stl_paths
+from defs import get_stl_paths, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, check_int_positive
 from exceptions import FJReadFjmException
 from breakpoints import get_breakpoint_handler
 
@@ -116,10 +116,12 @@ def run(in_fjm_path: Path, debug_file: Path, args: argparse.Namespace, error_fun
             io_device=io_device,
             show_trace=args.trace,
             time_verbose=not args.silent,
-            breakpoint_handler=breakpoint_handler
+            breakpoint_handler=breakpoint_handler if breakpoint_handler.breakpoints else None,
+            last_ops_debugging_list_length=args.debug_ops_list,
         )
         if not args.silent:
-            print(termination_statistics)
+            termination_statistics.print(labels_handler=breakpoint_handler,
+                                         output_to_print=io_device.get_output(allow_incomplete_output=True))
     except FJReadFjmException as e:
         print()
         print(e)
@@ -214,6 +216,12 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
     @param parser: the parser
     """
     run_arguments = parser.add_argument_group('run arguments', 'Ignored when using the --assemble option')
+
+    run_arguments.add_argument('--debug-ops-list', metavar='LENGTH', type=check_int_positive,
+                               default=LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
+                               help=f"show the last LENGTH executed opcodes on tests that failed during their run "
+                                    f"({LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH} by default)."
+                               )
 
     run_arguments.add_argument('-t', '--trace', help="output every running opcode", action='store_true')
     run_arguments.add_argument('--no_output', help="don't print the program's output", action='store_true')

@@ -1,4 +1,4 @@
-startup
+stl.startup
 ;end_of_div
 
 
@@ -24,64 +24,65 @@ ret: ;0
 
 
 div0:
-    output "0"
-    fret ret
+    stl.output "0"
+    stl.fret ret
 
 neq_div_print:
-    output '\n'
+    stl.output '\n'
     hex.print_uint 16, ah, 1, 0
-    output " / "
+    stl.output " / "
     hex.print_uint 16, bh, 1, 0
-    output " = "
+    stl.output " = "
     hex.print_uint 16, res, 1, 0
-    output "  !=  "
+    stl.output "  !=  "
     hex.print_uint 16, ch, 1, 0
-    output '\n'
-    fret ret
+    stl.output '\n'
+    stl.fret ret
 
 neq_mod_print:
-    output '\n'
+    stl.output '\n'
     hex.print_uint 16, ah, 1, 0
-    output " % "
+    stl.output " % "
     hex.print_uint 16, bh, 1, 0
-    output " = "
+    stl.output " = "
     hex.print_uint 16, mod, 1, 0
-    output "  !=  "
+    stl.output "  !=  "
     hex.print_uint 16, mh, 1, 0
-    output '\n'
-    fret ret
+    stl.output '\n'
+    stl.fret ret
 
 
-def test_div n, nb, div_label, a, b @ neq_div, eq_div,  cmp_mod,  neq_mod, eq_mod,  end < ah, bh, res, ch,  mod, mh,  ret,  neq_div_print, neq_mod_print {
+def test_div n, nb, div_label, a, b @ neq_div, eq_div,  cmp_mod,  neq_mod, eq_mod,  end \
+        < ah, bh, res, ch,  mod, mh,  ret,  neq_div_print, neq_mod_print {
     hex.set   n, ah, a
     hex.zero nb, bh
-    fcall div_label, ret
+    stl.fcall div_label, ret
     hex.set  nb, bh, b
     hex.set   n, ch, (a/b)&((1<<(4*n ))-1)
     hex.set  nb, mh, (a%b)&((1<<(4*nb))-1)
-    fcall div_label, ret
+    stl.fcall div_label, ret
 
     hex.cmp  n, res, ch, neq_div, eq_div, neq_div
 
   neq_div:
-    fcall neq_div_print, ret
+    stl.fcall neq_div_print, ret
     ;cmp_mod
   eq_div:
-    output "="
+    stl.output "="
     ;cmp_mod
 
   cmp_mod:
     hex.cmp nb, mod, mh, neq_mod, eq_mod, neq_mod
 
   neq_mod:
-    fcall neq_mod_print, ret
+    stl.fcall neq_mod_print, ret
     ;end
   eq_mod:
-    output "="
+    stl.output "="
     ;end
 
   end:
-    output "\n"
+    stl.output "\n"
 }
 
 

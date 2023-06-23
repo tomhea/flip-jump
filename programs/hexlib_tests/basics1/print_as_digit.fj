@@ -1,11 +1,11 @@
-startup
+stl.startup
 
 hex.print_as_digit 16, vars, 0
-output '\n'
+stl.output '\n'
 hex.print_as_digit 16, vars, 1
-output '\n'
+stl.output '\n'
 
-loop
+stl.loop
 
 
-vars:   rep(16, j) hex j
+vars:   rep(16, j) hex.hex j
