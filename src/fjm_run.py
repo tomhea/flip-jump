@@ -34,24 +34,34 @@ class TerminationStatistics:
 
         return breakpoint_handler.get_address_str(address)
 
-    def print(self, *, labels_handler: Optional[BreakpointHandler] = None):
+    def print(self, *, labels_handler: Optional[BreakpointHandler] = None, output_to_print: Optional[bytes] = None):
         """
         Prints the termination cause, run times, ops-statistics.
         If ended not by looping - Then print the last-opcodes` addresses as well (and their label names if possible).
         @param labels_handler: Used to find the label name for each address (from the last-opcodes` addresses).
+        @param output_to_print: if specified and terminated not by looping - print the given output.
         """
 
         flips_percentage = self.flip_counter / self.op_counter * 100
         jumps_percentage = self.jump_counter / self.op_counter * 100
 
         last_ops_str = ''
+        output_str = ''
         if TerminationCause.Looping != self.termination_cause:
-            last_ops_str = f'\n\nLast {len(self.last_ops_addresses)} ops were at these addresses ' \
-                           f'(The most-recent op, the one that failed, is first):\n  ' + \
-                           '\n  '.join([self.beautify_address(address, labels_handler)
-                                        for address in self.last_ops_addresses][::-1])
+            if self.last_ops_addresses is not None:
+                labels_handler_missing_string = '' if labels_handler is not None and labels_handler.address_to_label \
+                    else f'**** You may want to use debugging flags for more debugging info ****\n\n'
+                last_ops_str = f'\n\n{labels_handler_missing_string}' \
+                               f'Last {len(self.last_ops_addresses)} ops were at these addresses ' \
+                               f'(The most-recent op, the one that failed, is first):\n  ' \
+                               + '\n  '.join([self.beautify_address(address, labels_handler)
+                                              for address in self.last_ops_addresses][::-1])
+            if output_to_print is not None:
+                output_str = f"Program's output before it was terminated:  {output_to_print}\n\n"
 
-        print(f'Finished by {str(self.termination_cause)} after {self.run_time:.3f}s '
+        print(f'\n'
+              f'{output_str}'
+              f'Finished by {str(self.termination_cause)} after {self.run_time:.3f}s '
               f'('
               f'{self.op_counter:,} ops executed; '
               f'{flips_percentage:.2f}% flips, '
@@ -63,7 +73,7 @@ class TerminationStatistics:
 
 def handle_input(io_device: IODevice, ip: int, mem: fjm.Reader, statistics: RunStatistics) -> None:
     w = mem.w
-    in_addr = 3 * w + w.bit_length()  # 3w + dww
+    in_addr = 3 * w + w.bit_length()  # 3w + #w
 
     if ip <= in_addr < ip + 2 * w:
         with statistics.pause_timer:
@@ -92,7 +102,8 @@ def run(fjm_path: Path, *,
         breakpoint_handler: Optional[BreakpointHandler] = None,
         io_device: Optional[IODevice] = None,
         show_trace: bool = False,
-        time_verbose: bool = False) \
+        time_verbose: bool = False,
+        last_ops_debugging_list_length: Optional[int] = None) \
         -> TerminationStatistics:
     """
     run / debug a .fjm file (a FlipJump interpreter)
@@ -101,6 +112,7 @@ def run(fjm_path: Path, *,
     @param io_device:[in,out]: the device handling input/output
     @param show_trace: if true print every opcode executed
     @param time_verbose: if true print running times
+    @param last_ops_debugging_list_length: The length of the last-ops list
     @return: the run's termination-statistics
     """
     with PrintTimer('  loading memory:  ', print_time=time_verbose):
@@ -112,7 +124,7 @@ def run(fjm_path: Path, *,
     ip = 0
     w = mem.w
 
-    statistics = RunStatistics(w)
+    statistics = RunStatistics(w, last_ops_debugging_list_length)
 
     try:
         while True:

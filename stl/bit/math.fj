@@ -1,0 +1,85 @@
+// ---------- Arithmetical Macros
+// carry is both input and output
+
+
+ns bit {
+    // Unsafe for dst==carry (but there is no reason in calling it that way)
+    // Complexity: 2@+6
+    //   {carry:dst}++
+    // carry,dst are bits.
+    def inc1 dst, carry @ end {
+        .if0 carry, end
+        .not dst
+        .if0 dst, end
+        .not carry
+      end:
+    }
+
+    // Complexity: n(2@+6)
+    //   x[:n]++
+    // x is a bit[:n]
+    def inc n, x @ carry, end {
+        .one carry
+        rep(n, i) .inc1 x+i*dw, carry
+        ;end
+      carry:
+        .bit
+      end:
+    }
+
+    // Complexity: n(2@+8)
+    //   x[:n]--
+    // x is a bit[:n]
+    def dec n, x {
+        .not n, x
+        .inc n, x
+        .not n, x
+    }
+
+    // Complexity: n(2@+7)
+    //   x[:n]--
+    // x is a bit[:n]
+    def neg n, x {
+        .not n, x
+        .inc n, x
+    }
+
+
+    // Unsafe for dst==carry (but there is no reason in calling it that way)
+    // Complexity: 8@+14
+    //   {carry:dst} += src
+    // dst,src,carry are bits.
+    def add1 dst, src, carry @ _src {
+        .mov _src, src
+        .inc1 dst, _src
+        .inc1 dst, carry
+        .or carry, _src
+        stl.skip
+      _src:
+        .bit
+    }
+
+    // Complexity: n(8@+14)
+    //   dst[:n] += src[:n]
+    // dst,src are bit[:n]
+    def add n, dst, src @ carry {
+        .zero carry
+        rep(n, i) .add1 dst+i*dw, src+i*dw, carry
+        stl.skip
+      carry:
+        .bit
+    }
+
+    // Complexity: n(8@+16)
+    //   dst[:n] -= src[:n]
+    // dst,src are bit[:n]
+    def sub n, dst, src @ carry {
+        .not n, src
+        .one carry
+        rep(n, i) .add1 dst+i*dw, src+i*dw, carry
+        .not n, src
+        stl.skip
+      carry:
+        .bit
+    }
+}

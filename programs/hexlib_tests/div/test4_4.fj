@@ -1,8 +1,8 @@
 rep(20, i) test_div 4, 4, div4_4, (DIV_NUM>>(16*i+2))&((1<<16)-1), (DIV_B4_NUM>>(16*i))&((1<<16)-1)
 
-loop
+stl.loop
 
 
 div4_4:
     hex.div 4, 4, res, mod, ah, bh, div0
-    fret ret
+    stl.fret ret

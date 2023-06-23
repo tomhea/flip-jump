@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Union, Tuple, Set, Dict
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
 
+from defs import MACRO_SEPARATOR_STRING
 from exceptions import FJExprException
 
 
@@ -109,8 +110,11 @@ class Expr:
         if isinstance(self.value, str):
             return self.value
         if isinstance(self.value, int):
-            return hex(self.value)[2:]
+            return str(self.value)
         raise FJExprException(f'bad expression: {self.value} (of type {type(self.value)})')
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
 def get_minimized_expr(op: str, params: Tuple[Expr, ...]) -> Expr:

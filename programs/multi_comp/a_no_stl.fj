@@ -13,10 +13,12 @@ println
 loop:;loop
 
 
-def output_bit bit < IO {
-    IO + (bit ? 1 : 0);
-}
+ns stl {
+    def output_bit bit < IO {
+        IO + (bit ? 1 : 0);
+    }
 
-def output_char ascii {
-    rep(8, i) output_bit (ascii>>i)&1
+    def output_char ascii {
+        rep(8, i) .output_bit (ascii>>i)&1
+    }
 }

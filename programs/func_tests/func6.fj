@@ -1,0 +1,43 @@
+// calculate the unsigned multiplication between two numbers.
+
+
+N = 4
+stl.startup_and_init_all 100
+
+hex.set N, x, 7438
+hex.set N, y, 2524
+
+
+hex.push N, x
+hex.push N, y
+stl.call math.add, N
+hex.pop N, res
+hex.print_as_digit N, res, 1
+stl.output '\n'
+
+stl.loop
+
+
+
+ns math {
+add:
+    hex.sp_dec
+    hex.pop N, .res
+    hex.pop N, .temp
+
+    hex.add N, .res, .temp
+
+    hex.push N, .res
+    hex.sp_add N+1
+
+    stl.return
+
+
+temp: hex.vec 2*N
+res: hex.vec 2*N
+}
+
+
+x: hex.vec N
+y: hex.vec N
+res: hex.vec N

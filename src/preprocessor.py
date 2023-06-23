@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import collections
-from typing import Dict, Tuple, Iterable, Union, Deque
+from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional
 
 from expr import Expr
-from defs import CodePosition, Macro, macro_separator_string
+from defs import MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING
 from exceptions import FJPreprocessorException, FJExprException
 from ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
-    LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
+    CodePosition, Macro, LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
     initial_macro_name, initial_args, initial_labels_prefix
 from macro_usage_graph import show_macro_usage_pie_graph
 
@@ -48,7 +48,7 @@ class PreprocessorData:
         def __enter__(self):
             macro_name = self.calling_op.macro_name
             if macro_name not in self.macros:
-                macro_resolve_error(self.curr_tree, f"macro {macro_name} is used but isn't defined.")
+                macro_resolve_error(self.curr_tree, f"macro {macro_name} is used but isn't defined. In {self.calling_op.code_position}.")
             self.curr_tree.append(self.calling_op)
 
         def __exit__(self, exc_type, exc_val, exc_tb):
@@ -69,6 +69,8 @@ class PreprocessorData:
 
         self.result_ops: Deque[LastPhaseOp] = collections.deque()
         self.labels: Dict[str, int] = {}
+        self.addresses_with_labels: Set[int] = set()
+        self.macro_start_labels: List[Tuple[int, str, CodePosition]] = []   # (address, label, code_position)
 
         first_segment: NewSegment = NewSegment(0)
         self.last_new_segment: NewSegment = first_segment
@@ -79,6 +81,7 @@ class PreprocessorData:
 
     def finish(self, show_statistics: bool) -> None:
         self.patch_last_wflip_address()
+        self.insert_macro_start_labels_if_their_address_not_used()
         if show_statistics:
             show_macro_usage_pie_graph(dict(self.macro_code_size), self.curr_address)
 
@@ -104,13 +107,28 @@ class PreprocessorData:
         self.curr_address += reserved_bits_size
         self.result_ops.append(ReserveBits(self.curr_address))
 
-    def insert_label(self, label: str, code_position: CodePosition) -> None:
+    def insert_label(self, label: str, code_position: CodePosition, *, address: Optional[int] = None) -> None:
+        if address is None:
+            address = self.curr_address
+
         if label in self.labels:
             other_position = self.labels_code_positions[label]
             macro_resolve_error(self.curr_tree, f'label declared twice - "{label}" on '
                                                 f'{code_position} and {other_position}')
         self.labels_code_positions[label] = code_position
-        self.labels[label] = self.curr_address
+        self.labels[label] = address
+        self.addresses_with_labels.add(address)
+
+    def insert_macro_start_label(self, label: str, code_position: CodePosition) -> None:
+        """
+        @note must be called at the start of the function.
+        """
+        self.macro_start_labels.append((self.curr_address, label, code_position))
+
+    def insert_macro_start_labels_if_their_address_not_used(self):
+        for address, label, code_position in self.macro_start_labels[::-1]:
+            if address not in self.addresses_with_labels:
+                self.insert_label(label, code_position, address=address)
 
     def register_macro_code_size(self, macro_path: str, init_curr_address: int) -> None:
         if 1 <= len(self.curr_tree) <= 2:
@@ -127,14 +145,14 @@ def get_rep_times(op: RepCall, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_times(preprocessor_data.labels)
     except FJExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree, f'rep {op.macro_name} failed.', orig_exception=e)
+        macro_resolve_error(preprocessor_data.curr_tree, f'rep {op.macro_name} failed. In {op.code_position}.', orig_exception=e)
 
 
 def get_pad_ops_alignment(op: Pad, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_ops_alignment(preprocessor_data.labels)
     except FJExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree, f'pad {op.ops_alignment} failed.', orig_exception=e)
+        macro_resolve_error(preprocessor_data.curr_tree, f'pad {op.ops_alignment} failed. In {op.code_position}.', orig_exception=e)
 
 
 def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData) -> int:
@@ -145,7 +163,7 @@ def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData) -> 
                                                              f'{hex(next_segment_start)}. In {op.code_position}.')
         return next_segment_start
     except FJExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree, f'segment failed.', orig_exception=e)
+        macro_resolve_error(preprocessor_data.curr_tree, f'segment failed. In {op.code_position}.', orig_exception=e)
 
 
 def get_reserved_bits_size(op: Reserve, preprocessor_data: PreprocessorData) -> int:
@@ -156,7 +174,7 @@ def get_reserved_bits_size(op: Reserve, preprocessor_data: PreprocessorData) -> 
                                                              f'{hex(reserved_bits_size)}. In {op.code_position}.')
         return reserved_bits_size
     except FJExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree, f'reserve failed.', orig_exception=e)
+        macro_resolve_error(preprocessor_data.curr_tree, f'reserve failed. In {op.code_position}.', orig_exception=e)
 
 
 def get_params_dictionary(current_macro: Macro, args: Iterable[Expr], namespace: str, labels_prefix: str) \
@@ -172,7 +190,7 @@ def get_params_dictionary(current_macro: Macro, args: Iterable[Expr], namespace:
     params_dict: Dict[str, Expr] = dict(zip(current_macro.params, args))
 
     for local_param in current_macro.local_params:
-        params_dict[local_param] = Expr(f'{labels_prefix}---{local_param}')
+        params_dict[local_param] = Expr(f'{labels_prefix}{MACRO_SEPARATOR_STRING}{local_param}')
 
     if namespace:
         for k, v in tuple(params_dict.items()):
@@ -195,6 +213,9 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
     current_macro = preprocessor_data.macros[macro_name]
     params_dict = get_params_dictionary(current_macro, args, current_macro.namespace, labels_prefix)
 
+    preprocessor_data.insert_macro_start_label(
+        f'{labels_prefix}{MACRO_SEPARATOR_STRING}{STARTING_LABEL_IN_MACROS_STRING}', current_macro.code_position)
+
     for op in current_macro.ops:
 
         if isinstance(op, Label):
@@ -213,7 +234,7 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
 
         elif isinstance(op, MacroCall):
             op = op.eval_new(params_dict)
-            next_macro_path = (f"{labels_prefix}{macro_separator_string}" if labels_prefix else "") + \
+            next_macro_path = (f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else "") + \
                 f"{op.code_position.short_str()}:{op.macro_name}"
             with preprocessor_data.prepare_macro_call(op):
                 resolve_macro_aux(preprocessor_data,
@@ -224,10 +245,11 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
             rep_times = get_rep_times(op, preprocessor_data)
             if rep_times == 0:
                 continue
-            next_macro_path = (f"{labels_prefix}{macro_separator_string}" if labels_prefix else "") + \
+            next_macro_path = (f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else "") + \
                 f"{op.code_position.short_str()}:rep{{}}:{op.macro_name}"
             with preprocessor_data.prepare_macro_call(op):
                 for i in range(rep_times):
+                    op.current_index = i
                     resolve_macro_aux(preprocessor_data,
                                       op.macro_name, op.calculate_arguments(i), next_macro_path.format(i))
 

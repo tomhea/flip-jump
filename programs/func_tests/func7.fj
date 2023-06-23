@@ -1,0 +1,207 @@
+// Calculate the squared distance between each pair of points (between the 3 points)
+// Tests a complicated call stack, with many push/pop n, that's repeated 3 times.
+
+
+stl.startup_and_init_all 100
+N = 2
+
+hex.set N, p1_x, 9
+hex.set N, p1_y, 0-54
+
+hex.set N, p2_x, 0-22
+hex.set N, p2_y, 69
+
+hex.set N, p3_x, 87
+hex.set N, p3_y, 0-127
+
+calc_dist_squared p1_x, p1_y, p2_x, p2_y, "dist[p1, p2] ** 2 = 0x"
+calc_dist_squared p1_x, p1_y, p3_x, p3_y, "dist[p1, p3] ** 2 = 0x"
+calc_dist_squared p2_x, p2_y, p3_x, p3_y, "dist[p2, p3] ** 2 = 0x"
+
+
+stl.loop
+
+p1_x: hex.vec N
+p1_y: hex.vec N
+p2_x: hex.vec N
+p2_y: hex.vec N
+p3_x: hex.vec N
+p3_y: hex.vec N
+
+
+
+def calc_dist_squared x1, y1, x2, y2, prefix_distance_string @ end, res < math.square_distance {
+    stl.output 'A'
+    hex.push N, x1
+    hex.push N, y1
+    hex.push N, x2
+    hex.push N, y2
+    stl.output 'B'
+
+    stl.call math.square_distance, 2*N
+    stl.output 'I'
+
+    hex.pop 2*N, res
+    stl.output "J\n"
+
+    stl.output prefix_distance_string
+    hex.print_as_digit 2*N, res, 1
+    stl.output "\n\n"
+
+    ;end
+  res: hex.vec 2*N
+  end:
+}
+
+
+
+ns math {
+sub:
+ns sub {
+    hex.sp_dec
+    hex.pop N, .res
+    hex.pop N, .temp
+    stl.output "-1"
+
+    hex.sub N, .res, .temp
+    stl.output '2'
+
+    hex.push N, .res
+    hex.sp_add N+1
+    stl.output "3-"
+
+    stl.return
+res: hex.vec N
+temp: hex.vec N
+}
+
+
+add_2N:
+ns add_2N {
+    hex.sp_dec
+    hex.pop 2*N, .res
+    hex.pop 2*N, .temp
+    stl.output "-1"
+
+    hex.add 2*N, .res, .temp
+    stl.output '2'
+
+    hex.push 2*N, .res
+    hex.sp_add 2*N+1
+    stl.output "3-"
+
+    stl.return
+
+res: hex.vec 2*N
+temp: hex.vec 2*N
+}
+
+
+mul:
+ns mul {
+    stl.output "-1"
+    hex.sp_dec
+
+    stl.output '2'
+    hex.pop N, .temp1
+    hex.sign_extend 2*N, N, .temp1
+    stl.output '3'
+    hex.pop N, .temp2
+    hex.sign_extend 2*N, N, .temp2
+
+    stl.output '4'
+    hex.mul 2*N, .res, .temp1, .temp2
+
+    stl.output '5'
+    hex.push 2*N, .res
+    hex.sp_inc
+
+    stl.output "6-"
+    stl.return
+
+temp1: hex.vec 2*N
+temp2: hex.vec 2*N
+res: hex.vec 2*N
+}
+
+
+square_sub:
+ns square_sub {
+    hex.sp_dec
+    hex.pop N, .b
+    hex.pop N, .a
+    hex.sp_add 2*N+1
+    stl.output 'a'
+
+    hex.push N, .a
+    hex.push N, .b
+    stl.call ..sub, N
+    hex.pop N, .res
+    stl.output 'b'
+
+    hex.push N, .res
+    hex.push N, .res
+    stl.call ..mul
+    hex.pop 2*N, .res
+    stl.output 'c'
+
+    hex.sp_sub 2*N+1
+    hex.push 2*N, .res
+    hex.sp_inc
+    stl.output "d\n"
+
+    stl.return
+
+a: hex.vec 2*N
+b: hex.vec 2*N
+res: hex.vec 2*N
+}
+
+
+square_distance:
+ns square_distance {
+    stl.output 'C'
+    hex.sp_dec
+    hex.pop N, .y2
+    hex.pop N, .x2
+    hex.pop N, .y1
+    hex.pop N, .x1
+    hex.sp_add 4*N+1
+    stl.output 'D'
+
+    // (x1-x2)**2
+    hex.push N, .x1
+    hex.push N, .x2
+    stl.call ..square_sub
+    hex.pop 2*N, .res1
+    stl.output 'E'
+
+    // (y1-y2)**2
+    hex.push N, .y1
+    hex.push N, .y2
+    stl.call ..square_sub
+    hex.pop 2*N, .res2
+    stl.output 'F'
+
+    // (x1-x2)**2 + (y1-y2)**2
+    hex.push 2*N, .res1
+    hex.push 2*N, .res2
+    stl.call ..add_2N, 2*N
+    hex.pop 2*N, .res1
+    stl.output 'G'
+
+    hex.sp_sub 4*N+1
+    hex.push 2*N, .res1
+    hex.sp_add 2*N+1
+    stl.output 'H'
+
+    stl.return
+
+x1: hex.vec N
+y1: hex.vec N
+x2: hex.vec N
+y2: hex.vec N
+res1: hex.vec 2*N
+res2: hex.vec 2*N
+}
+}

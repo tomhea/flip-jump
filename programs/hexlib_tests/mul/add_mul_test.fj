@@ -1,11 +1,14 @@
-startup
+stl.startup
 
 HexSize = NumSize / 4
 Flag = ((1<<NumSize)-1)
 BlockSize = 2*NumSize + 4
-rep(Repetitions, i) test_add_mul (Data>>(BlockSize*i))&Flag, (Data>>(BlockSize*i + NumSize))&Flag, (Data>>(BlockSize*i + 2*NumSize))&0xf
+rep(Repetitions, i) test_add_mul \
+    (Data>>(BlockSize*i))&Flag, \
+    (Data>>(BlockSize*i + NumSize))&Flag, \
+    (Data>>(BlockSize*i + 2*NumSize))&0xf
 
-loop
+stl.loop
 
 
 hex.init
@@ -26,59 +29,60 @@ zero_all_5:
     hex.zero 16, ch
     hex.zero 16, res
     hex.zero 16, old_res
-    fret ret
+    stl.fret ret
 
 add_mul_lt_print:
-    output '\n'
+    stl.output '\n'
     hex.print_uint 16, old_res, 1, 0
-    output " + "
+    stl.output " + "
     hex.print_uint 16, ah, 1, 0
-    output " * "
+    stl.output " * "
     hex.print_uint 16, bh, 1, 0
-    output " = "
+    stl.output " = "
     hex.print_uint 16, res, 1, 0
-    output " < "
+    stl.output " < "
     hex.print_uint 16, ch, 1, 0
-    output '\n'
-    fret ret
+    stl.output '\n'
+    stl.fret ret
 
 add_mul_gt_print:
-    output '\n'
+    stl.output '\n'
     hex.print_uint 16, old_res, 1, 0
-    output " + "
+    stl.output " + "
     hex.print_uint 16, ah, 1, 0
-    output " * "
+    stl.output " * "
     hex.print_uint 16, bh, 1, 0
-    output " = "
+    stl.output " = "
     hex.print_uint 16, res, 1, 0
-    output " > "
+    stl.output " > "
     hex.print_uint 16, ch, 1, 0
-    output '\n'
-    fret ret
+    stl.output '\n'
+    stl.fret ret
 
 
 add_mul:
     hex.add_mul HexSize, res, ah, bh
-    fret ret
+    stl.fret ret
 
-def test_add_mul r, a, b @ lt, eq, gt,  end < ah, bh, res, old_res, ch, ret, add_mul_lt_print, add_mul_gt_print, add_mul, zero_all_5 {
-    fcall zero_all_5, ret
+def test_add_mul r, a, b @ lt, eq, gt,  end \
+        < ah, bh, res, old_res, ch, ret, add_mul_lt_print, add_mul_gt_print, add_mul, zero_all_5 {
+    stl.fcall zero_all_5, ret
     hex.xor_by HexSize, ah,  a
     hex.xor_by HexSize, bh,  b
     hex.xor_by HexSize, res, r
     hex.xor_by HexSize, old_res, r
     hex.xor_by HexSize, ch, (r+a*b)&Flag
-    fcall add_mul, ret
+    stl.fcall add_mul, ret
     hex.cmp HexSize, res, ch, lt, eq, gt
 
   lt:
-    fcall add_mul_lt_print, ret
+    stl.fcall add_mul_lt_print, ret
     ;end
   eq:
-    output "=\n"
+    stl.output "=\n"
     ;end
   gt:
-    fcall add_mul_gt_print, ret
+    stl.fcall add_mul_gt_print, ret
     ;end
   end:
 }

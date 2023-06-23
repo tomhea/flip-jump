@@ -1,4 +1,4 @@
-startup
+stl.startup
 
 
 loop:
@@ -39,7 +39,7 @@ loop:
 
   do_print:
     print_int a
-    output '\n'
+    stl.output '\n'
 
     bit.if should_finish, loop, finish
 
@@ -52,7 +52,7 @@ loop:
     line_ended loop, finish, finish
 
   finish:
-    loop
+    stl.loop
 
 
 
@@ -70,7 +70,9 @@ def remove_spaces @ main_loop, try2, next_ascii, end < space1, space2, ascii {
 
 
 
-def insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_dec, dec_loop, minus_flag, end, after_minus < dec, hex_prefix1, hex_prefix2, t, hex, minus, ascii, error, hex_used {
+def insert_number x @ \
+        check1, set_minus, check2, before_hex, hex_loop, before_dec, dec_loop, minus_flag, end, after_minus \
+        < dec, hex_prefix1, hex_prefix2, t, hex, minus, ascii, error, hex_used {
     bit.zero w, x
     bit.zero minus_flag
     bit.cmp 8, ascii, minus, check1, set_minus, check1
@@ -105,7 +107,7 @@ def insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_de
     ;dec_loop
 
   minus_flag:
-    bit
+    bit.bit
   end:
     bit.if0 minus_flag, after_minus
     bit.neg w, x
@@ -115,7 +117,9 @@ def insert_number x @ check1, set_minus, check2, before_hex, hex_loop, before_de
 
 
 
-def calc a, op, b @ try_add, try_sub, try_mul, try_mul_loop, try_div, try_mod, add, sub, mul, mul_loop, div_mod, div, mod, bad, div_mod_flag, r, q, end < minus, asterisk, error, percentage, roof, slash, plus {
+def calc a, op, b @ try_add, try_sub, try_mul, try_mul_loop, try_div, try_mod, \
+        add, sub, mul, mul_loop, div_mod, div, mod, bad, div_mod_flag, r, q, end \
+        < minus, asterisk, error, percentage, roof, slash, plus {
     bit.zero error
 
   try_add:
@@ -159,7 +163,7 @@ def calc a, op, b @ try_add, try_sub, try_mul, try_mul_loop, try_div, try_mod, a
     ;end
 
   div_mod_flag:
-    bit
+    bit.bit
   r:
     bit.vec w
   q:
@@ -206,11 +210,11 @@ def print_int x @ print_hex, end < hex_used {
 
 op:     bit.vec 8, 0
 ascii:  bit.vec 8, 0
-error:  bit 0
+error:  bit.bit 0
 hex:    bit.vec 4, 0
 dec:    bit.vec 4, 0
-should_finish:  bit 0
-hex_used:       bit 0
+should_finish:  bit.bit 0
+hex_used:       bit.bit 0
 
 a:  bit.vec w, 0
 b:  bit.vec w, 0

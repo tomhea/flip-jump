@@ -1,0 +1,35 @@
+stl.startup_and_init_all
+N = 4
+
+hex.sub N, a, b
+
+hex.print_uint N, a, 1, 1
+stl.output "\n"
+
+flip_and_print
+flip_and_print
+flip_and_print
+flip_and_print
+stl.output "\n"
+
+stl.loop
+
+a: hex.vec N, 0xE973
+b: hex.vec N, 0xDEAD
+
+p:  bit.vec w, d+dbit
+d:  bit.bit 0  // 0 => 1
+
+def flip_and_print @ d0, d1, end < p, d {
+    bit.ptr_flip p
+    bit.if d, d0, d1
+  d0:
+     stl.output "0"
+     ;end
+  d1:
+     stl.output "1"
+     ;end
+  end:
+}
+
+

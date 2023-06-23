@@ -3,7 +3,7 @@ from typing import Dict, Tuple, List
 
 import plotly.graph_objects as go
 
-from defs import macro_separator_string
+from defs import MACRO_SEPARATOR_STRING
 
 
 def _prepare_first_and_second_level_significant_macros(
@@ -13,14 +13,14 @@ def _prepare_first_and_second_level_significant_macros(
     first_level = {}
     second_level = collections.defaultdict(lambda: dict())
     for k, v in macro_code_size.items():
-        if macro_separator_string not in k:
+        if MACRO_SEPARATOR_STRING not in k:
             if v < main_thresh:
                 continue
             first_level[k] = v
         else:
             if v < secondary_thresh:
                 continue
-            k_split = k.split(macro_separator_string)
+            k_split = k.split(MACRO_SEPARATOR_STRING)
             if len(k_split) != 2:
                 continue
             parent, name = k_split

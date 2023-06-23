@@ -1,26 +1,26 @@
-startup
+// Tests push/pop_unchanged_parameter with an empty function call
+
+
+stl.startup_and_init_all 10
 
 
 // Prints "ABCDE"
 test3:
-    output 'A'
-    bit.push x3
-    output 'B'
-    bit.call func3
-    output 'D'
-    bit.pop x3
-    output 'E'
+    stl.output 'A'
+    hex.push x3
+    stl.output 'B'
+    stl.call func3
+    stl.output 'D'
+    hex.pop_unchanged_parameter x3
+    stl.output 'E'
 
-    output '\n'
-    loop
+    stl.output '\n'
+    stl.loop
 
 func3:
-    output 'C'
-    bit.return
+    stl.output 'C'
+    stl.return
 
 
 x3:
-    bit 0
-
-bit.ptr_init
-bit.stack 10
+    bit.bit 0

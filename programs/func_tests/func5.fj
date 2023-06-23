@@ -1,70 +1,70 @@
-startup
+// Tests the xor_from_ptr, xor_to_ptr and function calls
+
+
+stl.startup_and_init_all 10
 
 
 // Prints "ABC abcdefg ABCD-", and then 0/1, the xor of x5,y5
 test5:
-    output 'A'
-    bit.push res5
-    output 'B'
-    bit.push x5
-    output 'C'
-    bit.push y5
+    stl.output 'A'
+    hex.push res5
+    stl.output 'B'
+    hex.push x5
+    stl.output 'C'
+    hex.push y5
 
-    output ' '
-    bit.call func5
-    output ' '
+    stl.output ' '
+    stl.call func5
+    stl.output ' '
 
-    output 'A'
-    bit.pop y5
-    output 'B'
-    bit.pop x5
-    output 'C'
-    bit.pop_res res5
-    output 'D'
+    stl.output 'A'
+    hex.pop_unchanged_parameter y5
+    stl.output 'B'
+    hex.pop_unchanged_parameter x5
+    stl.output 'C'
+    hex.pop res5
+    stl.output 'D'
 
     bit.bin2ascii ascii, res5
-    output '-'
+    stl.output '-'
     bit.print ascii
 
-    output '\n'
-    loop
+    stl.output '\n'
+    stl.loop
 
 // res = arg0 xor arg1
 func5:
     bit.zero __func5_res
-    bit.get_sp __func5_arg_ptr
-    output 'a'
+    stl.get_sp __func5_arg_ptr
+    stl.output 'a'
 
-    bit.dec_ptr __func5_arg_ptr
-    output 'b'
-    bit.xor_from_ptr __func5_res, __func5_arg_ptr
-    output 'c'
-    bit.dec_ptr __func5_arg_ptr
-    output 'd'
-    bit.xor_from_ptr __func5_res, __func5_arg_ptr
-    output 'e'
+    hex.ptr_dec __func5_arg_ptr
+    stl.output 'b'
+    hex.xor_from_ptr __func5_res, __func5_arg_ptr
+    stl.output 'c'
+    hex.ptr_dec __func5_arg_ptr
+    stl.output 'd'
+    hex.xor_from_ptr __func5_res, __func5_arg_ptr
+    stl.output 'e'
 
-    bit.dec_ptr __func5_arg_ptr
-    output 'f'
-    bit.xor_to_ptr __func5_arg_ptr, __func5_res
-    output 'g'
+    hex.ptr_dec __func5_arg_ptr
+    stl.output 'f'
+    hex.xor_to_ptr __func5_arg_ptr, __func5_res
+    stl.output 'g'
 
-    bit.return
+    stl.return
   __func5_res:
-    bit
+    bit.bit
   __func5_arg_ptr:
-    bit.vec w
+    hex.vec w/4
 
 
 x5:
-    bit 1
+    bit.bit 1
 y5:
-    bit 1
+    bit.bit 1
 res5:
-    bit 0
+    bit.bit 0
 
 ascii:
     bit.vec 8
-
-bit.ptr_init
-bit.stack 10

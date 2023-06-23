@@ -8,7 +8,7 @@
   "all_speed_ordered": [
     "fast",
     "medium",
-    "slow",
-    "hexlib"
+    "hexlib",
+    "slow"
   ]
 }

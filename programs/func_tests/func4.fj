@@ -1,43 +1,43 @@
-startup
+// Tests the ptr_flip_dbit and function calls
+
+
+stl.startup_and_init_all 10
 
 
 // Prints "ABCDEFGH-" and then 0/1, the invert of x4
 test4:
-    output 'A'
-    bit.push x4
-    output 'B'
+    stl.output 'A'
+    hex.push x4
+    stl.output 'B'
 
-    bit.call func4
+    stl.call func4
 
-    output 'G'
-    bit.pop_res x4
-    output 'H'
+    stl.output 'G'
+    hex.pop x4
+    stl.output 'H'
     bit.bin2ascii ascii, x4
-    output '-'
+    stl.output '-'
     bit.print ascii
 
-    output '\n'
-    loop
+    stl.output '\n'
+    stl.loop
 
 func4:
-    output 'C'
-    bit.get_sp __func4_arg_ptr
-    output 'D'
-    bit.dec_ptr __func4_arg_ptr
-    output 'E'
-    bit.ptr_flip_dbit __func4_arg_ptr
-    output 'F'
-    bit.return
+    stl.output 'C'
+    stl.get_sp __func4_arg_ptr
+    stl.output 'D'
+    hex.ptr_dec __func4_arg_ptr
+    stl.output 'E'
+    hex.ptr_flip_dbit __func4_arg_ptr
+    stl.output 'F'
+    stl.return
   __func4_arg_ptr:
-    bit.vec w, 0
+    hex.vec w/4, 0
 
 
 
 x4:
-    bit 0
+    bit.bit 0
 
 ascii:
     bit.vec 8
-
-bit.ptr_init
-bit.stack 10

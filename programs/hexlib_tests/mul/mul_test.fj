@@ -1,11 +1,13 @@
-startup
+stl.startup
 
 HexSize = NumSize / 4
 Flag = (1<<NumSize)-1
 BlockSize = 2*NumSize
-rep(Repetitions, i) test_mul HexSize, (Data>>(BlockSize*i))&Flag, (Data>>(BlockSize*i+NumSize))&Flag
+rep(Repetitions, i) test_mul HexSize, \
+    (Data>>(BlockSize*i))&Flag, \
+    (Data>>(BlockSize*i+NumSize))&Flag
 
-loop
+stl.loop
 
 
 hex.init
@@ -21,50 +23,50 @@ ret: ;0
 
 
 lt_print:
-    output '\n'
+    stl.output '\n'
     hex.print_uint 16, ah, 1, 0
-    output " * "
+    stl.output " * "
     hex.print_uint 16, bh, 1, 0
-    output " = "
+    stl.output " = "
     hex.print_uint 16, res, 1, 0
-    output " < "
+    stl.output " < "
     hex.print_uint 16, ch, 1, 0
-    output '\n'
-    fret ret
+    stl.output '\n'
+    stl.fret ret
 
 gt_print:
-    output '\n'
+    stl.output '\n'
     hex.print_uint 16, ah, 1, 0
-    output " * "
+    stl.output " * "
     hex.print_uint 16, bh, 1, 0
-    output " = "
+    stl.output " = "
     hex.print_uint 16, res, 1, 0
-    output " > "
+    stl.output " > "
     hex.print_uint 16, ch, 1, 0
-    output '\n'
-    fret ret
+    stl.output '\n'
+    stl.fret ret
 
 
 mul:
     hex.mul HexSize, res, ah, bh
-    fret ret
+    stl.fret ret
 
 
 def test_mul n, a, b @ lt, eq, gt,  end < ah, bh, res, ch, ret, lt_print, gt_print, mul {
     hex.set n, ah, a
     hex.set n, bh, b
     hex.set n, ch, (a*b)&((1<<(4*n))-1)
-    fcall mul, ret
+    stl.fcall mul, ret
     hex.cmp n, res, ch, lt, eq, gt
 
   lt:
-    fcall lt_print, ret
+    stl.fcall lt_print, ret
     ;end
   eq:
-    output "=\n"
+    stl.output "=\n"
     ;end
   gt:
-    fcall gt_print, ret
+    stl.fcall gt_print, ret
     ;end
   end:
 }

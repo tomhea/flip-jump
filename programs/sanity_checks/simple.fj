@@ -1,9 +1,11 @@
-    skip
-  IO:
+    stl.skip
+  ns stl {
+    IO:
+  }
     ;
     bit.not x
-    output '0'+#0b111
-    loop
+    stl.output '0'+#0b111
+    stl.loop
 
   x:
-    bit 0
+    bit.bit 0

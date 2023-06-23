@@ -1,7 +1,7 @@
-    startup
+    stl.startup
     bit.add 8, a, b
     bit.print a
-    loop
+    stl.loop
 
   a:
     bit.vec 8, '5'

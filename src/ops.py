@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import dataclasses
+import os
 from dataclasses import dataclass
 from typing import Union, Dict, Set, List, Tuple
 
@@ -21,6 +23,9 @@ class CodePosition:
 
     def short_str(self) -> str:
         return f"{self.file_short_name}:l{self.line}"
+
+    def __repr__(self) -> str:
+        return f"{os.path.basename(self.file)}:{self.line}"
 
 
 class MacroName:
@@ -44,6 +49,9 @@ class MacroName:
 
     def __eq__(self, other):
         return type(other) == MacroName and self.to_tuple() == other.to_tuple()
+
+    def __repr__(self):
+        return str(self)
 
 
 # The macro that holds the ops that are outside any macro.
@@ -212,6 +220,7 @@ class RepCall:
     """
     def __init__(self, repeat_times: Expr, iterator_name: str, macro_name: str, arguments: List[Expr],
                  code_position: CodePosition):
+        self.current_index = 0
         self.repeat_times = repeat_times
         self.iterator_name = iterator_name
         self.macro_name = MacroName(macro_name, len(arguments))
@@ -253,11 +262,11 @@ class RepCall:
         except FJExprException as e:
             raise FJExprException(f"Can't calculate rep arguments on {self.code_position}") from e
 
-    def trace_str(self, iter_value: int) -> str:
+    def trace_str(self) -> str:
         """
         @note assumes calculate_times successfully called before
         """
-        return f'rep({self.iterator_name}={iter_value}, out of 0..{int(self.repeat_times)-1}) ' \
+        return f'rep({self.iterator_name}={self.current_index}, out of 0..{int(self.repeat_times)-1}) ' \
                f'macro {self.macro_name}  ({self.code_position})'
 
 
@@ -295,6 +304,21 @@ def get_declared_labels(ops: List[Op]) -> Set[str]:
 
 # The input for the preprocessor
 Op = Union[FlipJump, WordFlip, Pad, Label, MacroCall, RepCall, Segment, Reserve]
+
+
+@dataclasses.dataclass
+class Macro:
+    """
+    The python representation of a .fj macro (macro declaration).
+    """
+    params: List[str]
+    local_params: List[str]
+    ops: List[Op]
+    namespace: str
+    code_position: CodePosition
+
+    def __repr__(self) -> str:
+        return f'{self.namespace}.MACRO({", ".join(self.params)})  ({repr(self.code_position)})'
 
 
 WFLIP_NOT_INSERTED_YET = -1

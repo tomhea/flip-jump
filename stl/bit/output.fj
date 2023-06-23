@@ -1,0 +1,221 @@
+ns bit {
+    // Complexity @+2
+    //   outputs the bit 'x'.
+    def output x @ label_ptr, base_jump_label, end < stl.IO {
+        .xor label_ptr, x
+      label_ptr:
+        ;base_jump_label
+        pad 2
+      base_jump_label:
+        stl.IO+0;end
+        stl.IO+1;
+        .not label_ptr
+      end:
+    }
+
+
+    // Complexity 8@+16
+    //   outputs a byte from x[:8] (a bit vector. from lsb to msb).
+    def print x {
+        rep(8, i) .output x+i*dw
+    }
+
+    // Complexity n(8@+16)
+    //   outputs n bytes from x[:8n] (a bit vector. from lsb to msb).
+    def print n, x {
+        rep(n, i) .print x+8*i*dw
+    }
+
+
+
+    // Complexity min(n, len+1)*(16@+32)
+    //   prints the string at x[:8n], or until the reaches the first '\0' (the earlier).
+    def print_str n, x @ end {
+        rep(n, i) ._.print_str_one_char x+8*i*dw, end
+      end:
+    }
+    ns _ {
+        def print_str_one_char char, end {
+            ..if0 8, char, end
+            ..print char
+        }
+    }
+
+
+    // Complexity: @+9
+    //   prints the ascii character '0'/'1', based on x's value.
+    // x is a bit.
+    def print_as_digit x {
+        .output x
+        rep(7, i) stl.output_bit ('0'>>(i+1)) & 1
+    }
+
+    // Complexity: @+9
+    //   prints x[:n] as n ascii-characters ('0's and '1's, lsb first).
+    // x is a bit[:n], and n is a size constant.
+    def print_as_digit n, x {
+        rep(n, i) .print_as_digit x+(n-1-i)*dw
+    }
+}
+
+
+
+// ---------- Print Hex Int
+
+
+ns bit {
+    // Complexity: n(7@+11)
+    //    print x[:n] as an unsigned hexadecimal number, without leading zeros (digits & capital-letters).
+    //
+    // x_prefix (constant): print with the "0x" prefix.
+    //
+    // @Assumes n can be divided by 4.
+    def print_hex_uint n, x, x_prefix @ after_print_x, printed_flag, end {
+        stl.comp_if0 x_prefix, after_print_x
+        stl.output '0'
+        stl.output 'x'
+      after_print_x:
+
+        .zero printed_flag
+        rep(n/4, i) .print_hex_uint.print_digit x+(n/4-1-i)*4*dw, printed_flag
+
+        .if1 printed_flag, end
+        stl.output '0'
+        ;end
+
+      printed_flag:
+        .bit
+      end:
+    }
+    //Comp: 29@+44
+    ns print_hex_uint {
+        def print_digit hex, printed_flag @ continue, ascii, end {
+            ..if1 4, hex, continue
+            ..if1 printed_flag, continue
+            ;end
+
+          continue:
+            ..one printed_flag
+            ..hex2ascii ascii, hex
+            ..print ascii
+            ;end
+
+          ascii:
+            ..vec 8
+          end:
+        }
+    }
+
+
+    // Complexity: n(9@+18)
+    //    print x[:n] as a signed hexadecimal number, without leading zeros (digits & capital-letters).
+    //
+    // x_prefix (constant): print with the "0x" prefix.
+    //
+    // @Assumes n can be divided by 4.
+    def print_hex_int n, x, x_prefix @ do_print {
+        .if0 x+(n-1)*dw, do_print
+        stl.output '-'
+        .neg n, x
+      do_print:
+        .print_hex_uint n, x, x_prefix
+    }
+}
+
+
+
+// ---------- Print Dec Int
+
+
+ns bit {
+    // Time  Complexity: n^2(2@+4)
+    // Space Complexity: n(14@+16)
+    //   prints x[:n] as an unsigned decimal number (without leading zeros).
+    //
+    // The number 28/93 is the ratio of the number of decimal digits and the number of binary digits.
+    // It's bigger than log(2)/log(10) by 0.015%, which is just enough.
+    def print_dec_uint n, x @ start_printing, xor, end_xor, dst, src, print_buffer, print_buffer_flag, \
+            div10, zero_flag, ret_reg, end {
+        .mov n, src, x
+        .zero zero_flag
+
+        // the next three takes ~ (28/93n)*(n(7@+12))            = n^2(2.11@+3.61) ~= n^2(2@+4) time
+        // the next three takes ~ (28/93n)*(@-1 + 11@-3 + 5@+12) = n(5.12@+2.41)   ~= n(5@+2.5) space
+
+        .zero n*28/93+1, print_buffer_flag   // all chars are off
+        // fill the print buffer with the decimal digits of src
+        rep(n*28/93+1, i) .print_dec_uint.div10_step div10, xor, ret_reg, src, \
+            print_buffer+i*4*dw, print_buffer_flag+i*dw, zero_flag, start_printing
+      start_printing:
+        rep(n*28/93+1, i) .print_dec_uint.print_char \
+            print_buffer+(n*28/93-i)*4*dw, \
+            print_buffer_flag+(n*28/93-i)*dw
+
+        ;end
+
+      div10:
+        .div10 n, dst, src
+        stl.fret ret_reg
+      xor:
+        .xor n, src, dst     // can double_exact_xor and zero dst too - so to save the "zero n dst" inside the next div10
+        .if1 n, dst, end_xor
+        .not zero_flag
+      end_xor:
+        stl.fret ret_reg
+
+        // takes n(2+28/93*5) = 3.5n space
+        dst: .vec n
+        src: .vec n
+        print_buffer:      .vec (n*28/93+1)*4
+        print_buffer_flag: .vec  n*28/93+1
+        zero_flag: .bit
+        ret_reg: 0;0
+      end:
+    }
+    ns print_dec_uint {
+        // Time  Complexity: n(7@+12)
+        // Space Complexity: 11@-3
+        //   if zero_flag:      // if src is already 0:
+        //     break the divide repetitions, and go straight to the printing.
+        //   set the char_flag (so that this digit will be printed)
+        //   ascii_res[:4] = src[:n] % 10       // (n from print_dec_uint)
+        //   src[:n] /= 10
+        //
+        //
+        // @Uses the label-functions div10 and xor (print_dec_uint implements them), and the return-register ret_reg.
+        // src and ascii_res are both bit[:4], and char_flag, zero_flag and start_printing are flags.
+        def div10_step div10, xor, ret_reg, src, ascii_res, char_flag, zero_flag, start_printing {
+            ..if1 zero_flag, start_printing
+            stl.fcall div10, ret_reg
+            ..zero 4, ascii_res
+            rep(4, i) ..double_exact_xor ascii_res+dbit+i*dw, src+dbit+i*dw, src+i*dw
+            ..not char_flag
+            stl.fcall xor, ret_reg
+        }
+
+        // Complexity: 5@+12
+        //   if char_flag:  print the ascii representation of the decimal digit ascii4[:4].
+        // ascii4 is bit[:4], char_flag is a bit.
+        def print_char ascii4, char_flag @ end {
+            ..if0 char_flag, end
+            rep(4, i) ..output ascii4+i*dw
+            rep(4, i) stl.output_bit (0x3>>i)&1
+          end:
+        }
+    }
+
+
+    // Time  Complexity: n^2(2@+4)
+    // Space Complexity: n(16@+23)
+    //   prints x[:n] as a signed decimal number (without leading zeros).
+    //
+    // The number 28/93 is the ratio of the number of decimal digits and the number of binary digits.
+    // It's bigger than log(2)/log(10) by 0.015%, which is just enough.
+    def print_dec_int n, x @ do_print {
+        .if0 x+(n-1)*dw, do_print
+        stl.output '-'
+        .neg n, x
+      do_print:
+        .print_dec_uint n, x
+    }
+}

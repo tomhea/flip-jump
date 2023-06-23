@@ -2,11 +2,12 @@ import lzma
 from queue import Queue
 from threading import Lock
 from pathlib import Path
+from typing import Optional
 
 from breakpoints import BreakpointHandler, load_labels_dictionary
 from src import assembler, fjm
 from src import fjm_run
-from src.defs import TerminationCause, get_stl_paths, io_bytes_encoding
+from src.defs import TerminationCause, get_stl_paths, io_bytes_encoding, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
 from src.io_devices.FixedIO import FixedIO
 
 CSV_TRUE = 'True'
@@ -31,10 +32,9 @@ class CompileTestArgs:
 
     num_of_csv_line_args = 8
 
-    def __init__(self, test_name: str, fj_paths: str, fjm_out_path: str,
+    def __init__(self, save_debug_info: bool, test_name: str, fj_paths: str, fjm_out_path: str,
                  word_size__str: str, version__str: str, flags__str: str,
-                 use_stl__str: str, warning_as_errors__str: str,
-                 save_debug_info: bool):
+                 use_stl__str: str, warning_as_errors__str: str):
         """
         handling a line.split() from a csv file
         """
@@ -101,10 +101,10 @@ class RunTestArgs:
 
     num_of_csv_line_args = 6
 
-    def __init__(self, test_name: str, fjm_path: str,
+    def __init__(self, save_debug_file: bool, debug_info_length: int, test_name: str, fjm_path: str,
                  in_file_path: str, out_file_path: str,
-                 read_in_as_binary__str: str, read_out_as_binary__str: str,
-                 use_debug_info: bool):
+                 read_in_as_binary__str: str, read_out_as_binary__str: str
+                 ):
         """
         @note handling a line.split() (each is stripped) from a csv file
         """
@@ -113,7 +113,8 @@ class RunTestArgs:
         self.read_in_as_binary = read_in_as_binary__str == CSV_TRUE
         self.read_out_as_binary = read_out_as_binary__str == CSV_TRUE
 
-        self.use_debug_info = use_debug_info
+        self.save_debug_file = save_debug_file
+        self.debug_info_length = debug_info_length
 
         self.test_name = test_name
         self.fjm_path = ROOT_PATH / fjm_path
@@ -172,15 +173,18 @@ def test_run(run_args: RunTestArgs) -> None:
     io_device = FixedIO(run_args.get_defined_input())
 
     breakpoint_handler = None
-    if run_args.use_debug_info:
+    if run_args.save_debug_file:
         label_to_address = load_labels_dictionary(Path(f'{run_args.fjm_path}{DEBUGGING_FILE_SUFFIX}'), True)
-        breakpoint_handler = BreakpointHandler({}, {label_to_address[label]: label for label in label_to_address})
+        breakpoint_handler = BreakpointHandler({}, {label_to_address[label]: label
+                                                    for label in tuple(label_to_address)[::-1]})
 
     termination_statistics = fjm_run.run(run_args.fjm_path,
                                          io_device=io_device,
-                                         time_verbose=True)
+                                         time_verbose=True,
+                                         last_ops_debugging_list_length=run_args.debug_info_length)
 
-    termination_statistics.print(labels_handler=breakpoint_handler)
+    termination_statistics.print(labels_handler=breakpoint_handler,
+                                 output_to_print=io_device.get_output(allow_incomplete_output=True))
 
     expected_termination_cause = TerminationCause.Looping
     assert termination_statistics.termination_cause == expected_termination_cause

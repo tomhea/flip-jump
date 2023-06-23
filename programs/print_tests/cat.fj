@@ -1,4 +1,4 @@
-    startup
+    stl.startup
 start:
     bit.input ascii
     bit.if0 8, ascii, end
@@ -9,7 +9,7 @@ print:
     bit.print ascii
     ;start
 end:
-    loop
+    stl.loop
 
 
 ascii:

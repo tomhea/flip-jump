@@ -7,7 +7,7 @@ import easygui
 
 import fjm
 
-from defs import macro_separator_string, RunStatistics, load_debugging_labels
+from defs import MACRO_SEPARATOR_STRING, RunStatistics, load_debugging_labels
 
 
 class BreakpointHandlerUnnecessary(Exception):
@@ -20,7 +20,7 @@ def display_message_box_and_get_answer(msg: str, title: str, choices: List[str])
 
 
 def get_nice_label_repr(label: str, pad: int = 0) -> str:
-    parts = label.split(macro_separator_string)
+    parts = label.split(MACRO_SEPARATOR_STRING)
     return ' ->\n'.join(f"{' '*(pad+i)}{part}" for i, part in enumerate(parts))
 
 
@@ -32,8 +32,8 @@ class BreakpointHandler:
         self.breakpoints = breakpoints
         self.address_to_label = address_to_label
 
-        if 0 not in self.address_to_label:
-            self.address_to_label[0] = 'memory_start_0x0000'
+        if self.address_to_label and 0 not in self.address_to_label:
+            self.address_to_label[0] = ':memory-start:'
 
         self.next_break = None
 
@@ -155,8 +155,8 @@ def update_breakpoints_from_breakpoint_contains_set(breakpoint_contains_labels: 
     """
     # TODO improve the speed of this part with suffix trees
     if breakpoint_contains_labels:
-        for bcl in breakpoint_contains_labels:
-            for label in label_to_address:
+        for label in tuple(label_to_address)[::-1]:
+            for bcl in breakpoint_contains_labels:
                 if bcl in label:
                     address = label_to_address[label]
                     breakpoints[address] = label
@@ -190,7 +190,7 @@ def load_labels_dictionary(debugging_file: Optional[Path], labels_file_needed: b
 
 
 def get_breakpoint_handler(debugging_file: Path, breakpoint_addresses: Set[int], breakpoint_labels: Set[str],
-                           breakpoint_contains_labels: Set[str]) -> Optional[BreakpointHandler]:
+                           breakpoint_contains_labels: Set[str]) -> BreakpointHandler:
     """
     generate the breakpoint handler from the debugging file and the breakpoint sets.
     @param debugging_file: the debug file path (created at assemble time)
@@ -202,7 +202,7 @@ def get_breakpoint_handler(debugging_file: Path, breakpoint_addresses: Set[int],
     labels_file_needed = any((breakpoint_addresses, breakpoint_contains_labels))
     label_to_address = load_labels_dictionary(debugging_file, labels_file_needed)
 
-    address_to_label = {label_to_address[label]: label for label in label_to_address}
+    address_to_label = {label_to_address[label]: label for label in tuple(label_to_address)[::-1]}
     breakpoints = get_breakpoints(breakpoint_addresses, breakpoint_labels, breakpoint_contains_labels, label_to_address)
 
-    return BreakpointHandler(breakpoints, address_to_label) if breakpoints else None
+    return BreakpointHandler(breakpoints, address_to_label)

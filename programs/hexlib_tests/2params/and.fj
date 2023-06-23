@@ -1,8 +1,8 @@
-startup
+stl.startup
 
 rep(256, i) test_and i&0xf, i>>4
 
-loop
+stl.loop
 
 
 hex.init
@@ -13,11 +13,11 @@ def test_and a, b @ ah, ah_copy, bh, end {
     hex.and bh, ah_copy
     hex.print_as_digit ah, 0
     hex.print_as_digit bh, 0
-    output '\n'
+    stl.output '\n'
     ;end
 
-  ah:      hex a
-  ah_copy: hex a
-  bh:      hex b
+  ah:      hex.hex a
+  ah_copy: hex.hex a
+  bh:      hex.hex b
   end:
 }

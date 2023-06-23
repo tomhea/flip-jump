@@ -1,0 +1,87 @@
+// ---------- Input Hex
+
+
+ns hex {
+    //  Time Complexity: 2@+7
+    // Space Complexity: 2@+18
+    //   hex := input(4bits)     // lsb first
+    def input_hex hex @ flip0, flip1, flip2, flip3, end < stl.IO {
+        // part0
+        .zero hex
+        wflip stl.IO+w, flip0, stl.IO
+
+        pad 8
+      flip0:
+        stl.IO+dbit+1;stl.IO        // part1
+        hex+dbit+0;flip0    //(part0.5)
+      flip1:
+        stl.IO+dbit+2;stl.IO        // part2
+        hex+dbit+1;flip1    //(part1.5)
+      flip3:
+        wflip stl.IO+w, flip3, end  // part4
+        hex+dbit+3;flip3        //(part3.5)
+      flip2:
+        stl.IO+dbit+1;stl.IO        // part3
+        hex+dbit+2;flip2    //(part2.5)
+      end:
+    }
+
+    //  Time Complexity: 4@+14
+    // Space Complexity: 4@+36
+    //   byte[:2] = input(8bits)   // lsb first
+    def input byte {
+        .input_hex byte
+        .input_hex byte+dw
+    }
+
+    //  Time Complexity: n(4@+14)
+    // Space Complexity: n(4@+36)
+    //   bytes[:2n] = input(8n-bits)   // lsb first
+    def input n, bytes {
+        rep(n, i) .input bytes+2*i*dw
+    }
+
+    //  Time Complexity: 7@+11
+    // Space Complexity: 8.5@+92
+    //   hex = hex_from_ascii(input(1byte))
+    // *supports 0-9,a-f,A-F.  if can't cast, jumps to error.
+    def input_as_hex hex, error @ try_dec, do_dec, do_hex, hex_switch, finish_hex, upper, end {
+        .input_hex hex
+        .input_hex upper
+        .if_flags upper, (1<<4)|(1<<6), try_dec, do_hex
+      try_dec:
+        .if_flags upper, (1<<3), error, do_dec
+
+      do_dec:   // if input==0x3i for 0<=i<=9, finish;    else, goto error.
+        .if_flags hex, (1<<10)-1, error, end
+
+      do_hex:   // if input==0x4i or input==0x6i:
+        wflip hex+w, hex_switch, hex
+
+      finish_hex:
+        hex+dbit+3;
+        wflip hex+w, hex_switch, end
+
+        pad 16
+      hex_switch:   // if 1<=hex<=6, hex+=9;    else, goto error.
+        wflip hex+w, hex_switch, error  //  0
+        hex+dbit+1;hex_switch+2*dw      //  1
+        hex+dbit+0;finish_hex           //  2
+        hex+dbit+2;hex_switch+1*dw      //  3
+        hex+dbit+0;finish_hex           //  4
+        hex+dbit+1;hex_switch+2*dw      //  5
+        hex+dbit+0;finish_hex           //  6
+        ;hex_switch                     //  7
+        ;hex_switch
+        ;hex_switch
+        ;hex_switch
+        ;hex_switch
+        ;hex_switch
+        ;hex_switch
+        ;hex_switch
+        ;hex_switch
+
+      upper: .hex
+      end:
+    }
+}

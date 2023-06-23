@@ -1,9 +1,9 @@
-startup
+stl.startup
 
 print_int v1
 print_int v2
 print_int v3
-loop
+stl.loop
 
 
 v1: bit.vec w, 123456
@@ -13,11 +13,11 @@ ret_reg: 0;0
 
 def print_int v < ret_reg, val, print_int {
     bit.mov w, val, v
-    fcall print_int, ret_reg
+    stl.fcall print_int, ret_reg
 }
 
 print_int:
     bit.print_dec_int w, val
-    output '\n'
-    fret ret_reg
+    stl.output '\n'
+    stl.fret ret_reg
     val: bit.vec w

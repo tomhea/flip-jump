@@ -1,4 +1,4 @@
-startup
+stl.startup
 
 
 get_aaaaN
@@ -8,4 +8,4 @@ print_chars N, 'T'
 
 println
 
-loop
+stl.loop

@@ -1,0 +1,57 @@
+// ---------- Logical Shifts
+
+
+ns bit {
+    // Complexity: n(2@-1)
+    //   x[:n] >>= 1
+    def shr n, x {
+        .shr n, 1, x
+    }
+
+    // Complexity: n(2@-1)
+    //   x[:n] >>= times
+    // times is a constant.
+    def shr n, times, x {
+        rep(n-times, i) .mov x+i*dw, x+(i+times)*dw
+        .zero times, x+(n-times)*dw
+    }
+
+
+    // Complexity: n(2@-1)
+    //   x[:n] <<= 1
+    def shl n, x {
+        .shl n, 1, x
+    }
+
+    // Complexity: n(2@-1)
+    //   x[:n] <<= times
+    // times is a constant.
+    def shl n, times, x {
+        rep(n-times, i) .mov x+(n-1-i)*dw, x+(n-1-i-times)*dw
+        .zero times, x
+    }
+
+
+    // Complexity: n(2@-1)
+    //   rotate x[:n] right by 1-bit
+    def ror n, x @ temp_bit {
+        .mov temp_bit, x
+        rep(n-1, i) .mov x+i*dw, x+(i+1)*dw
+        .mov x+(n-1)*dw, temp_bit
+        stl.skip
+      temp_bit:
+        .bit
+    }
+
+
+    // Complexity: n(2@-1)
+    //   rotate x[:n] left by 1-bit
+    def rol n, x @ temp_bit {
+        .mov temp_bit, x+(n-1)*dw
+        rep(n-1, i) .mov x+(n-1-i)*dw, x+(n-1-i-1)*dw
+        .mov x, temp_bit
+        stl.skip
+      temp_bit:
+        .bit
+    }
+}
