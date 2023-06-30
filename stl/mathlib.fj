@@ -142,13 +142,13 @@ ns hex {
     // .mul.add_carry_dst : res   +=   x * .mul.dst + .mul.add_carry_dst
     //
     // @requires hex.or.init (or hex.init)
-    def add_mul res, x @ ret < .mul.dst, .add.dst, .mul.ret, ._.res {
+    def add_mul res, x @ ret < .mul.dst, .add.dst, .mul.ret, .tables.res {
         .xor .mul.dst+4, x
         .xor .add.dst, res
         wflip .mul.ret+w, ret, .mul.dst
       ret:  // meanwhile - make phi+28 fj ops there
         wflip .mul.ret+w, ret
-        .xor_zero res, ._.res
+        .xor_zero res, .tables.res
     }
 
     //  Time Complexity: n(5phi+32)
@@ -220,15 +220,16 @@ ns hex {
         // @output-param ret: ... TODO document the output params
         // @output-param dst: ...
         // @output-param add_carry_dst: ...
+        // @requires hex.tables.init_shared (or hex.init)
         def init @ add_res, after_add, end,   switch_small_table, add_carry_small_table, set_carry_small_table, \
                 clean_small_table,   switch, set_carry_0, set_carry_1, clean,   add_carry, clean_add, clean_carry \
-                < ..add.dst, .._.ret > ret, dst, add_carry_dst {
+                < ..add.dst, ..tables.ret > ret, dst, add_carry_dst {
             // general progression (after jumping to hex.mul.dst with value d):
             //  dst           -> switch+d           (set lower4  mul result in add_carry_dst+4)                                                                     (5)
             //  add_carry_dst -> add_carry+?        (set         add result in hex.add.dst  +4. sets dst to set_carry_{0/1}. sets add_carry_dst to clean_add)       (6)
             //  add_carry_dst -> clean_add+?        (clears the all 8 bits of add_carry_dst.    sets add_carry_dst back to add_carry)                               (9)
             //  dst           -> set_carry_{0/1}+d  (set higher4 mul result in add_carry_dst+0. sets dst to clean)                                                  (5)
-            //  add_res       -> dst-table+??       (set         add result in hex._.res    +0)                                                                     (phi-4)
+            //  add_res       -> dst-table+??       (set         add result in hex.tables.res    +0)                                                                     (phi-4)
             //  dst           -> clean+d            (clears the higher4 bits of dst.            sets dst back to switch)                                            (6)
             //  hex.mul.ret   -> ...                                                                                                                                (1)
 
@@ -242,10 +243,10 @@ ns hex {
 
 
           add_res:
-            wflip .._.ret+w, after_add, ..add.dst
+            wflip ..tables.ret+w, after_add, ..add.dst
             pad 16
           after_add:
-            wflip .._.ret+w, after_add, .dst
+            wflip ..tables.ret+w, after_add, .dst
 
 
             pad 16  // not really needed

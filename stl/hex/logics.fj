@@ -163,7 +163,7 @@ ns hex {
     //
     // both dst,src are hexes.
     def or dst, src < .or.dst {
-        ._.jump_to_table_entry dst, src, .or.dst
+        .tables.jump_to_table_entry dst, src, .or.dst
     }
 
     //  Time Complexity: n(4@+10)
@@ -181,25 +181,26 @@ ns hex {
         // @output-param dst: This variable is an 8-bit variable (in a single op, [dbit,dbit+8)).
         //                    Its 8-bits are expected to be {src<<4 | dst} at the jump to it (for the src,dst hexes of the or operation).
         //                    Its 8-bits are expected to be 0 after the jump to it.
-        def init @ switch, clean_table_entry, end < .._.res > dst {
+        // @requires hex.tables.init_shared (or hex.init)
+        def init @ switch, clean_table_entry, end < ..tables.res > dst {
             ;end
           dst: ;.switch
 
             pad 256
           switch:
             // The next line is the bitwise-or flipping-table.
-            // The [src<<4 | dst] entry sets hex._.res (assumed to be 0) to (dst | src) ^ dst,
+            // The [src<<4 | dst] entry sets hex.tables.res (assumed to be 0) to (dst | src) ^ dst,
             //   so that xoring it with dst will update it to the or-result.
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
             // Space Complexity / total table ops: 337.
             rep(256, d) stl.wflip_macro \
-                .._.res+w, \
+                ..tables.res+w, \
                 (((d&0xf)|(d>>4))^(d&0xf))*dw, \
                 clean_table_entry+d*dw
 
           clean_table_entry:
             // xors back the table-entry from .dst
-            .._.clean_table_entry__table .dst
+            ..tables.clean_table_entry__table .dst
           end:
         }
     }
@@ -212,7 +213,7 @@ ns hex {
     // both dst,src are hexes.
     // @requires hex.and.init (or hex.init)
     def and dst, src < .and.dst {
-        ._.jump_to_table_entry dst, src, .and.dst
+        .tables.jump_to_table_entry dst, src, .and.dst
     }
 
     //  Time Complexity: n(4@+10)
@@ -230,25 +231,26 @@ ns hex {
         // @output-param dst: This variable is an 8-bit variable (in a single op, [dbit,dbit+8)).
         //                    Its 8-bits are expected to be {src<<4 | dst} at the jump to it (for the src,dst hexes of the and operation).
         //                    Its 8-bits are expected to be 0 after the jump to it.
-        def init @ switch, clean_table_entry, end < .._.res > dst {
+        // @requires hex.tables.init_shared (or hex.init)
+        def init @ switch, clean_table_entry, end < ..tables.res > dst {
             ;end
           dst: ;.switch
 
             pad 256
           switch:
             // The next line is the bitwise-and flipping-table.
-            // The [src<<4 | dst] entry sets hex._.res (assumed to be 0) to (dst & src) ^ dst,
+            // The [src<<4 | dst] entry sets hex.tables.res (assumed to be 0) to (dst & src) ^ dst,
             //   so that xoring it with dst will update it to the and-result.
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
             // Space Complexity / total table ops: 337.
             rep(256, d) stl.wflip_macro \
-                .._.res+w, \
+                ..tables.res+w, \
                 (((d&0xf)&(d>>4))^(d&0xf))*dw, \
                 clean_table_entry+d*dw
 
           clean_table_entry:
             // xors back the table-entry from .dst
-            .._.clean_table_entry__table .dst
+            ..tables.clean_table_entry__table .dst
           end:
         }
     }

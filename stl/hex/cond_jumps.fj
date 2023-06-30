@@ -80,19 +80,19 @@ ns hex {
     // a,b are hexes; lt/eq/gt are addresses.
     def cmp a, b, lt, eq, gt \
             @ ret, _eq, _gt, jumper_to_return_table, __lt, __eq, __gt \
-            < .cmp.dst, ._.ret {
+            < .cmp.dst, .tables.ret {
         //part1
         .xor .cmp.dst  , a
         .xor .cmp.dst+4, b
-        wflip ._.ret+w, ret, .cmp.dst
+        wflip .tables.ret+w, ret, .cmp.dst
 
 
         pad 4
         //part2
       ret:
-        wflip ._.ret+w, ret, jumper_to_return_table //part3
-        ._.ret+dbit  ;_eq
-        ._.ret+dbit+1;_gt
+        wflip .tables.ret+w, ret, jumper_to_return_table //part3
+        .tables.ret+dbit  ;_eq
+        .tables.ret+dbit+1;_gt
 
       _eq:  jumper_to_return_table+dbit  ;ret       //(part2.5)
       _gt:  jumper_to_return_table+dbit+1;ret
@@ -135,26 +135,27 @@ ns hex {
         // @output-param dst: This variable is an 8-bit variable (in a single op, [dbit,dbit+8)).
         //                    Its 8-bits are expected to be {src<<4 | dst} at the jump to it (for the src,dst hexes of the cmp operation).
         //                    Its 8-bits are expected to be 0 after the jump to it.
-        def init @ switch, clean_table_entry, end < .._.ret > dst {
+        // @requires hex.tables.init_shared (or hex.init)
+        def init @ switch, clean_table_entry, end < ..tables.ret > dst {
             ;end
           dst: ;.switch
 
             pad 256
           switch:
             // The next line is the compare flipping-table.
-            // The [src<<4 | dst] entry flips bits in hex._.ret:
+            // The [src<<4 | dst] entry flips bits in hex.tables.ret:
             //   if dst  > src:     flips dbit+1
             //   if dst == src:     flips dbit+0
             //   if dst  < src:     no flips
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
             rep(256, d) stl.fj  ((d&0xf) > (d>>4)) \
-                                 ? .._.ret+dbit+1 \
-                                 : (((d&0xf) == (d>>4)) ? .._.ret+dbit : 0),\
+                                 ? ..tables.ret+dbit+1 \
+                                 : (((d&0xf) == (d>>4)) ? ..tables.ret+dbit : 0),\
                                 clean_table_entry+d*dw
 
           clean_table_entry:
             // xors back the table-entry from .dst
-            .._.clean_table_entry__table .dst
+            ..tables.clean_table_entry__table .dst
           end:
         }
     }

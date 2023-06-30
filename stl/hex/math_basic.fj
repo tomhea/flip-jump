@@ -49,7 +49,7 @@ ns hex {
         pad 32
         //part5
       xor_switch:
-        ._.clean_table_entry__table 16, dst, after_add
+        .tables.clean_table_entry__table 16, dst, after_add
         rep(16, i) stl.fj    is_carry+dbit,    xor_switch+i*dw
 
       after_add:
