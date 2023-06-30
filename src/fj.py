@@ -3,7 +3,7 @@ import argparse
 import lzma
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Tuple, List, Callable
+from typing import Tuple, List, Callable, Optional
 
 import assembler
 import fjm_run
@@ -315,16 +315,17 @@ def get_argument_parser() -> argparse.ArgumentParser:
     )
 
 
-def parse_arguments() -> Tuple[argparse.Namespace, ErrorFunc]:
+def parse_arguments(*, cmd_line_args: Optional[List[str]] = None) -> Tuple[argparse.Namespace, ErrorFunc]:
     """
     parse the command line arguments.
+    @param cmd_line_args: if specified, the command line arguments will be retrieved from this list.
     @return: the parsed arguments, and the parser's error function
     """
     parser = get_argument_parser()
     add_arguments(parser)
-    args = parser.parse_args()
+    cmd_line_args = parser.parse_args(args=cmd_line_args)
 
-    return args, parser.error
+    return cmd_line_args, parser.error
 
 
 def execute_assemble_run(args: argparse.Namespace, error_func: ErrorFunc) -> None:
@@ -343,9 +344,19 @@ def execute_assemble_run(args: argparse.Namespace, error_func: ErrorFunc) -> Non
             run(in_fjm_path, debug_path, args, error_func)
 
 
-def main() -> None:
-    args, error_func = parse_arguments()
+def assemble_run_according_to_cmd_line_args(*, cmd_line_args: Optional[List[str]] = None) -> None:
+    """
+    parse the command line arguments, prepare temp files, and execute the assemble() / run() functions
+     (the command line arguments may indicate to execute only one of them, or to execute both).
+    @param cmd_line_args: if specified, the command line arguments will be retrieved from this list.
+    @note: call with cmd_line_args=['-h'] to get help.
+    """
+    args, error_func = parse_arguments(cmd_line_args=cmd_line_args)
     execute_assemble_run(args, error_func)
+
+
+def main() -> None:
+    assemble_run_according_to_cmd_line_args()
 
 
 if __name__ == '__main__':
