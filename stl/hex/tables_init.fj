@@ -10,15 +10,19 @@ ns hex {
     // @output-param ret: The return address. Jumps to it after finishing going through a table.
     // @output-param res: The result of the table calculation is written here.
     def init {
-        ._.init
+        .tables.init_all
     }
 
-    ns _ {
-        // This is the inner-macro of hex.init, and it's identical to it. see hex.init documentation.
-        def init @ end > ret, res {
-            ;end
+    ns tables {
+        def init_shared > ret, res {
           ret: ;0
           res: ..hex
+        }
+
+        // This is the inner-macro of hex.init, and it's identical to it. see hex.init documentation.
+        def init_all @ end {
+            ;end
+          .init_shared
           ..or.init     //  595
           ..and.init    //  595
           ..mul.init    // 1616+@
@@ -42,7 +46,7 @@ ns hex {
                 (d==((1<<(#d))>>1)) ? ret : clean+(d^((1<<(#d))>>1))*dw
         }
 
-        // A table. When jumping to entry d - it xors d into dst, and jumps to hex._.ret
+        // A table. When jumping to entry d - it xors d into dst, and jumps to hex.tables.ret
         //
         //  Time Complexity: 4
         // Space Complexity: 256
@@ -53,13 +57,13 @@ ns hex {
         }
 
         // The macro assumes that jumper_to_table is a fj-op that jumps to a 256-padded table.
-        //   This macro is used as a jumper to a table that sets hex._.res to some (calc(dst, src) ^ dst), and jumps back.
+        //   This macro is used as a jumper to a table that sets hex.tables.res to some (calc(dst, src) ^ dst), and jumps back.
         //
         //  Time Complexity: 4@+4
         // Space Complexity: 4@+52
         //
         // It jumps to the table, at entry (src<<4 | dst).
-        // At last, it xors the value of hex._.res into dst.
+        // At last, it xors the value of hex.tables.res into dst.
         //
         // both dst,src are hexes, and jumper_to_table is an address.
         def jump_to_table_entry dst, src, jumper_to_table @ return < .ret, .res {

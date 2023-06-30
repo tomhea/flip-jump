@@ -10,7 +10,7 @@ ns hex {
     // Relies on the add-carry, and updates it at the end.
     // @requires hex.add.init (or hex.init)
     def add dst, src < .add.dst {
-        ._.jump_to_table_entry dst, src, .add.dst
+        .tables.jump_to_table_entry dst, src, .add.dst
     }
 
     //  Time Complexity: n(4@+12)
@@ -69,23 +69,23 @@ ns hex {
         //  Time Complexity: 2@
         // Space Complexity: 2@+12
         //   carry = 0
-        def clear_carry @ ret < .._.ret, .dst, .._.res {
-            wflip .._.ret+w, ret, .dst
+        def clear_carry @ ret < ..tables.ret, .dst, ..tables.res {
+            wflip ..tables.ret+w, ret, .dst
           ret:
-            wflip .._.ret+w, ret
-            ..zero .._.res
+            wflip ..tables.ret+w, ret
+            ..zero ..tables.res
         }
 
         //  Time Complexity: 2@+1
         // Space Complexity: 2@+16
         //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
-        def clear_carry c0, c1 @ ret < .._.ret, .dst, .._.res {
-            wflip .._.ret+w, ret, .dst
+        def clear_carry c0, c1 @ ret < ..tables.ret, .dst, ..tables.res {
+            wflip ..tables.ret+w, ret, .dst
           ret:
-            wflip .._.ret+w, ret
+            wflip ..tables.ret+w, ret
             // carry is 0/1
-            ..if0 .._.res, c0
-            .._.res+dbit; c1
+            ..if0 ..tables.res, c0
+            ..tables.res+dbit; c1
         }
 
         // Complexity: 1
@@ -108,24 +108,25 @@ ns hex {
         // @output-param dst: This variable is an 9-bit variable (in a single op, [dbit,dbit+9)).
         //                    Its 9-bits are expected to be {carry<<8 | src<<4 | dst} at the jump to it (for the src,dst hexes, and the carry bit, of the add operation).
         //                    Its 9-bits are expected to be {new_carry<<8} after the jump to it.
-        def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < .._.res > dst {
+        // @requires hex.tables.init_shared (or hex.init)
+        def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < ..tables.res > dst {
             ;end
           dst: ;.switch__without_carry
 
             pad 512
             // The next lines are the addition flipping-tables.
-            // The [carry<<8 | src<<4 | dst] entry sets hex._.res (assumed to be 0) to (dst + src + carry) ^ dst,
+            // The [carry<<8 | src<<4 | dst] entry sets hex.tables.res (assumed to be 0) to (dst + src + carry) ^ dst,
             //   so that xoring it with dst will update it to the add-result.
             //   also, it updates the carry (.dst+dbit+8) to the next carry.
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
           switch__without_carry:
             // Space Complexity / total table ops: 528.
-            rep(256, d) stl.wflip_macro .._.res+w, \
+            rep(256, d) stl.wflip_macro ..tables.res+w, \
                 ((((d&0xf)+(d>>4)  )&0xf)^(d&0xf))*dw, \
                 (((d&0xf)+(d>>4)   > 0xf) ? (flip_carry+d*dw) : (clean_table_entry+d*dw))
           switch__with_carry:
             // Space Complexity / total table ops: 528.
-            rep(256, d) stl.wflip_macro .._.res+w, \
+            rep(256, d) stl.wflip_macro ..tables.res+w, \
                 ((((d&0xf)+(d>>4)+1)&0xf)^(d&0xf))*dw, \
                 (((d&0xf)+(d>>4)+1 > 0xf) ? (clean_table_entry+d*dw) : (flip_carry+d*dw))
 
@@ -135,7 +136,7 @@ ns hex {
             rep(256, i) stl.fj .dst+dbit+8, clean_table_entry+i*dw
           clean_table_entry:
             // xors back the table-entry from .dst
-            .._.clean_table_entry__table .dst
+            ..tables.clean_table_entry__table .dst
           end:
         }
     }
@@ -148,7 +149,7 @@ ns hex {
     // both dst,src are hexes.
     // @requires hex.sub.init (or hex.init)
     def sub dst, src < .sub.dst {
-        ._.jump_to_table_entry dst, src, .sub.dst
+        .tables.jump_to_table_entry dst, src, .sub.dst
     }
 
     //  Time Complexity: n(4@+12)
@@ -215,14 +216,14 @@ ns hex {
         //  Time Complexity: 2@+5
         // Space Complexity: 2@+20
         //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
-        def clear_carry c0, c1 @ ret < .._.ret, .dst, .._.res {
-            wflip .._.ret+w, ret, .dst
+        def clear_carry c0, c1 @ ret < ..tables.ret, .dst, ..tables.res {
+            wflip ..tables.ret+w, ret, .dst
           ret:
-            wflip .._.ret+w, ret
+            wflip ..tables.ret+w, ret
             // carry is 0/f
-            ..if0 .._.res, c0
+            ..if0 ..tables.res, c0
             .not_carry
-            wflip .._.res+w, 0xf*dw, c1
+            wflip ..tables.res+w, 0xf*dw, c1
         }
 
         // Complexity: 1
@@ -245,24 +246,25 @@ ns hex {
         // @output-param dst: This variable is an 9-bit variable (in a single op, [dbit,dbit+9)).
         //                    Its 9-bits are expected to be {carry<<8 | src<<4 | dst} at the jump to it (for the src,dst hexes, and the carry bit, of the sub operation).
         //                    Its 9-bits are expected to be {new_carry<<8} after the jump to it.
-        def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < .._.res > dst {
+        // @requires hex.tables.init_shared (or hex.init)
+        def init @ switch__without_carry, switch__with_carry, flip_carry, clean_table_entry, end < ..tables.res > dst {
             ;end
           dst: ;.switch__without_carry
 
             pad 512
             // The next lines are the subtraction flipping-tables.
-            // The [carry<<8 | src<<4 | dst] entry sets hex._.res (assumed to be 0) to (dst - src - carry) ^ dst,
+            // The [carry<<8 | src<<4 | dst] entry sets hex.tables.res (assumed to be 0) to (dst - src - carry) ^ dst,
             //   so that xoring it with dst will update it to the sub-result.
             //   also, it updates the carry (.dst+dbit+8) to the next carry. (subtraction's carry is also known as the borrow).
             // Upon entering here, .dst was xored with the correct table-entry, and was jumped into.
           switch__without_carry:
             // Space Complexity / total table ops: 528.
-            rep(256, d) stl.wflip_macro .._.res+w, \
+            rep(256, d) stl.wflip_macro ..tables.res+w, \
                 ((((d&0xf)-(d>>4)  )&0xf)^(d&0xf))*dw, \
                 (((d&0xf)-(d>>4)   < 0) ? (flip_carry+d*dw) : (clean_table_entry+d*dw))
           switch__with_carry:
             // Space Complexity / total table ops: 528.
-            rep(256, d) stl.wflip_macro .._.res+w, \
+            rep(256, d) stl.wflip_macro ..tables.res+w, \
                 ((((d&0xf)-(d>>4)-1)&0xf)^(d&0xf))*dw, \
                 (((d&0xf)-(d>>4)-1 < 0) ? (clean_table_entry+d*dw) : (flip_carry+d*dw))
 
@@ -272,7 +274,7 @@ ns hex {
             rep(256, i) stl.fj .dst+dbit+8, clean_table_entry+i*dw
           clean_table_entry:
             // xors back the table-entry from .dst
-            .._.clean_table_entry__table .dst
+            ..tables.clean_table_entry__table .dst
           end:
         }
     }
