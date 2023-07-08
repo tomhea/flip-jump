@@ -1,23 +1,9 @@
 from __future__ import annotations
 
-import argparse
-import json
-import lzma
 from collections import deque
-from enum import IntEnum    # IntEnum equality works between files.
-from pathlib import Path
+from enum import IntEnum
 from time import time
-from typing import List, Dict, Deque, Optional
-
-
-def get_stl_paths() -> List[Path]:
-    """
-    @return: list of the ordered standard-library paths
-    """
-    stl_path = Path(__file__).parent.parent / 'stl'
-    with open(stl_path / 'conf.json', 'r') as stl_json:
-        stl_options = json.load(stl_json)
-    return [stl_path / f'{lib}.fj' for lib in stl_options['all']]
+from typing import Optional, Deque
 
 
 class TerminationCause(IntEnum):
@@ -31,53 +17,6 @@ class TerminationCause(IntEnum):
 
     def __str__(self) -> str:
         return ['looping', 'EOF', 'ip<2w', 'unaligned-word', 'unaligned-op', 'runtime-memory-error'][self.value]
-
-
-MACRO_SEPARATOR_STRING = "---"
-STARTING_LABEL_IN_MACROS_STRING = ':start:'
-WFLIP_LABEL_PREFIX = ':wflips:'
-
-LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH = 10
-
-io_bytes_encoding = 'raw_unicode_escape'
-
-
-_debug_json_encoding = 'utf-8'
-_debug_json_lzma_format = lzma.FORMAT_RAW
-_debug_json_lzma_filters: List[Dict[str, int]] = [{"id": lzma.FILTER_LZMA2}]
-
-
-def check_int_positive(value):
-    ivalue = int(value)
-    if ivalue <= 0:
-        raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
-    return ivalue
-
-
-def save_debugging_labels(debugging_file_path: Path, labels: Dict[str, int]) -> None:
-    """
-    save the labels' dictionary to the debugging-file as lzma2-compressed json
-    @param debugging_file_path: the file's path
-    @param labels: the labels' dictionary
-    """
-    if debugging_file_path:
-        with open(debugging_file_path, 'wb') as f:
-            data = json.dumps(labels).encode(_debug_json_encoding)
-            compressed_data = lzma.compress(data, format=_debug_json_lzma_format, filters=_debug_json_lzma_filters)
-            f.write(compressed_data)
-
-
-def load_debugging_labels(debugging_file_path: Path) -> Dict[str, int]:
-    """
-    loads and decompresses the labels' dictionary from the lzma2-compressed debugging-file
-    @param debugging_file_path: the file's path
-    @return: the labels' dictionary
-    """
-    if debugging_file_path:
-        with open(debugging_file_path, 'rb') as f:
-            compressed_data = f.read()
-            data = lzma.decompress(compressed_data, format=_debug_json_lzma_format, filters=_debug_json_lzma_filters)
-            return json.loads(data.decode(_debug_json_encoding))
 
 
 class PrintTimer:

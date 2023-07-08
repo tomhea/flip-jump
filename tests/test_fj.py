@@ -1,14 +1,15 @@
-import lzma
 from queue import Queue
 from threading import Lock
 from pathlib import Path
-from typing import Optional
 
-from breakpoints import BreakpointHandler, load_labels_dictionary
-from src import assembler, fjm
-from src import fjm_run
-from src.defs import TerminationCause, get_stl_paths, io_bytes_encoding, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
-from src.io_devices.FixedIO import FixedIO
+from flipjump.debugging.breakpoints import BreakpointHandler, load_labels_dictionary
+from flipjump.assembler import assembler
+from flipjump.interpretter import fjm_run
+from flipjump.utils.constants import io_bytes_encoding
+from flipjump.utils.functions import get_stl_paths
+from flipjump.utils.classes import TerminationCause
+from flipjump.fjm.fjm_writer import Writer
+from flipjump.io_devices.FixedIO import FixedIO
 
 CSV_TRUE = 'True'
 CSV_FALSE = 'False'
@@ -82,8 +83,8 @@ def test_compile(compile_args: CompileTestArgs) -> None:
 
     create_parent_directories(compile_args.fjm_out_path)
 
-    fjm_writer = fjm.Writer(compile_args.fjm_out_path, compile_args.word_size, compile_args.version,
-                            flags=compile_args.flags)
+    fjm_writer = Writer(compile_args.fjm_out_path, compile_args.word_size, compile_args.version,
+                        flags=compile_args.flags)
 
     debugging_file_path = None
     if compile_args.save_debug_info:

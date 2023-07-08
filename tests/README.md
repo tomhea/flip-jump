@@ -49,7 +49,7 @@ The current macro-expansion started in the first non-stl compiled file, in line 
 
 You can get the entire "macro-stack" of the last executed addresses to get a better understanding of what happened.
 
-More information about the labels can be found [here](../src/README.md#generated-label-names).
+More information about the labels can be found [here](../src/flipjump/README.md#generated-label-names).
 
 ### Filter tests by their name 
 Using the next tests together will take the union of the relevant tests.

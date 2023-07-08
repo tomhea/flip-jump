@@ -128,19 +128,19 @@ Programs won't work on their first run. They just can't. That's why we support t
 - No debugging flags at all: Shows the last 10 executed addresses of tests that failed their run (i.e. finished not by looping). 
 - `-d [PATH]`: Save debug information: Adds [very extensive label names](tests/README.md#example-label-name-youll-get-with-using---debuginfo-len), Which are like a "**macro-stack**" for each of the last executed address. (can be used with `--debug-ops-list LEN`)
 - `--debug-ops-list LEN`: Shows the last _LEN_ executed addresses (instead of 10). (can be used with `-d`)
-- `-b NAME [NAME ...]`: Places breakpoints at every specified label NAMEs (note that label names are long: [more information about labels](src/README.md#generated-label-names)). (requires `-b`)
+- `-b NAME [NAME ...]`: Places breakpoints at every specified label NAMEs (note that label names are long: [more information about labels](src/flipjump/README.md#generated-label-names)). (requires `-b`)
 - `-B NAME [NAME ...]`: Places breakpoints at every label that contains one of the given NAMEs. (requires `-b`)
 
 # Project Structure
 
-**[src](src/README.md)** (assembler + interpreter source files):
+**[src](src/flipjump/README.md)** (assembler + interpreter source files):
   - fj.py           - the FlipJump Assembler & Interpreter script.
   - fjm.py          - read/write .fjm (flip-jump-memory) files.
   - fjm_run.py      - interpret / debug assembled fj files.
   - fj_parser.py    - pythonic lex/yacc parser.
   - preprocessor.py - unwind all macros and reps.
   - assembler.py    - assembles the macro-less fj file.
-  - [more...](src/README.md)
+  - [more...](src/flipjump/README.md)
 
 **[stl](stl/README.md)** (standard library files - macros. [list of all macros](https://esolangs.org/wiki/FlipJump#The_Standard_Library)):
   - runlib.fj   - constants and initialization macros. output constant strings.
@@ -177,7 +177,7 @@ A very extensive explanation can be found on the [GitHub wiki page](https://gith
 
 More detailed explanation and the **specifications of the FlipJump assembly** can be found on the [FlipJump esolangs page](https://esolangs.org/wiki/FlipJump).
 
-Read more about the [flip-jump source files](src/README.md) and [how to run the tests](tests/README.md). 
+Read more about the [flip-jump source files](src/flipjump/README.md) and [how to run the tests](tests/README.md). 
 
 If you want to contribute to this project, read the [CONTRIBUTING.md](CONTRIBUTING.md) file, and take a look at the [Discussions](https://github.com/tomhea/flip-jump/discussions/148).
 

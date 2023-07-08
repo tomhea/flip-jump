@@ -1,13 +1,12 @@
-import pickle
-from os import path
 from pathlib import Path
 from typing import Optional, List, Dict, Set
 
 import easygui
 
-import fjm
-
-from defs import MACRO_SEPARATOR_STRING, RunStatistics, load_debugging_labels
+from flipjump.fjm import fjm_reader
+from flipjump.utils.constants import MACRO_SEPARATOR_STRING
+from flipjump.utils.functions import load_debugging_labels
+from flipjump.utils.classes import RunStatistics
 
 
 class BreakpointHandlerUnnecessary(Exception):
@@ -55,13 +54,13 @@ class BreakpointHandler:
             except ValueError:
                 return f'{hex(address)}'
 
-    def get_message_box_body(self, ip: int, mem: fjm.Reader, op_counter: int) -> str:
+    def get_message_box_body(self, ip: int, mem: fjm_reader.Reader, op_counter: int) -> str:
         address = self.get_address_str(ip)
         flip = self.get_address_str(mem.get_word(ip))
         jump = self.get_address_str(mem.get_word(ip + mem.w))
         return f'Address {address}.\n\n{op_counter} ops executed.\n\nflip {flip}.\n\njump {jump}.'
 
-    def query_user_for_debug_action(self, ip: int, mem: fjm.Reader, op_counter: int) -> str:
+    def query_user_for_debug_action(self, ip: int, mem: fjm_reader.Reader, op_counter: int) -> str:
         title = "Breakpoint" if ip in self.breakpoints else "Debug Step"
         body = self.get_message_box_body(ip, mem, op_counter)
         actions = ['Single Step', 'Skip 10', 'Skip 100', 'Skip 1000', 'Continue', 'Continue All']
@@ -90,8 +89,8 @@ class BreakpointHandler:
             raise BreakpointHandlerUnnecessary()
 
 
-def handle_breakpoint(breakpoint_handler: BreakpointHandler, ip: int, mem: fjm.Reader, statistics: RunStatistics) \
-        -> BreakpointHandler:
+def handle_breakpoint(breakpoint_handler: BreakpointHandler, ip: int, mem: fjm_reader.Reader,
+                      statistics: RunStatistics) -> BreakpointHandler:
     """
     show debug message, query user for action, apply its action.
     @param breakpoint_handler: the breakpoint handler

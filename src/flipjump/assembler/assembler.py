@@ -3,13 +3,14 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Deque, List, Dict, Tuple, Optional
 
-import fjm
-from fj_parser import parse_macro_tree
-from preprocessor import resolve_macros
-
-from defs import PrintTimer, save_debugging_labels, WFLIP_LABEL_PREFIX
-from ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits, Padding
-from exceptions import FJAssemblerException, FJException, FJWriteFjmException
+from flipjump.fjm.fjm_writer import Writer
+from flipjump.utils.constants import WFLIP_LABEL_PREFIX
+from flipjump.utils.functions import save_debugging_labels
+from flipjump.utils.classes import PrintTimer
+from flipjump.assembler.fj_parser import parse_macro_tree
+from flipjump.inner_classes.exceptions import FJAssemblerException, FJException, FJWriteFjmException
+from flipjump.inner_classes.ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits, Padding
+from flipjump.assembler.preprocessor import resolve_macros
 
 
 def assert_address_in_memory(w: int, address: int):
@@ -27,7 +28,7 @@ def validate_addresses(w, first_address, last_address):
 
 
 def add_segment_to_fjm(w: int,
-                       fjm_writer: fjm.Writer,
+                       fjm_writer: Writer,
                        first_address: int, last_address: int,
                        fj_words: List[int], wflip_words: List[int]) -> None:
     validate_addresses(w, first_address, last_address)
@@ -44,7 +45,8 @@ def add_segment_to_fjm(w: int,
         fjm_writer.add_segment(segment_start_address, segment_length, data_start, len(data_words))
     except FJWriteFjmException as e:
         raise FJAssemblerException(f"failed to add the segment: "
-                                   f"{fjm_writer.get_segment_addresses_repr(segment_start_address, segment_length)}.") from e
+                                   f"{fjm_writer.get_segment_addresses_repr(segment_start_address, segment_length)}.") \
+            from e
 
     fj_words.clear()
     wflip_words.clear()
@@ -75,7 +77,7 @@ class BinaryData:
         self.padding_ops_indices: List[int] = []    # indices in self.fj_words
 
         # return_address -> { (f3, f2, f1, f0) -> start_flip_address }
-        self.wflips_dict: Dict[int, Dict[Tuple[int, ...],]] = defaultdict(lambda: {})
+        self.wflips_dict: Dict[int, Dict[Tuple[int, ...]]] = defaultdict(lambda: {})
 
     def get_wflip_spot(self) -> WFlipSpot:
         if self.padding_ops_indices:
@@ -87,7 +89,7 @@ class BinaryData:
         self.wflip_address += 2*self.w
         return wflip_spot
 
-    def close_and_add_segment(self, fjm_writer: fjm.Writer) -> None:
+    def close_and_add_segment(self, fjm_writer: Writer) -> None:
         add_segment_to_fjm(self.w, fjm_writer, self.first_address, self.wflip_address, self.fj_words, self.wflip_words)
 
     def _insert_wflip_label(self, address: int):
@@ -140,7 +142,7 @@ class BinaryData:
             self.fj_words += (0, 0)
         self.current_address += ops_count * (2*self.w)
 
-    def insert_new_segment(self, fjm_writer: fjm.Writer, first_address: int, wflip_first_address: int) -> None:
+    def insert_new_segment(self, fjm_writer: Writer, first_address: int, wflip_first_address: int) -> None:
         self.close_and_add_segment(fjm_writer)
 
         self.first_address = first_address
@@ -149,7 +151,7 @@ class BinaryData:
 
         self.padding_ops_indices.clear()
 
-    def insert_reserve_bits(self, fjm_writer: fjm.Writer, new_first_address: int) -> None:
+    def insert_reserve_bits(self, fjm_writer: Writer, new_first_address: int) -> None:
         add_segment_to_fjm(self.w, fjm_writer, self.first_address, new_first_address, self.fj_words, [])
 
         self.first_address = new_first_address
@@ -159,7 +161,7 @@ class BinaryData:
 
 
 def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
-                   w: int, fjm_writer: fjm.Writer) -> None:
+                   w: int, fjm_writer: Writer) -> None:
     """
     resolve the labels and expressions to get the list of fj ops, and add all the data and segments into the fjm_writer.
     @param ops:[in]: the list ops returned from the preprocessor stage
@@ -202,7 +204,7 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
     binary_data.close_and_add_segment(fjm_writer)
 
 
-def assemble(input_files: List[Tuple[str, Path]], w: int, fjm_writer: fjm.Writer, *,
+def assemble(input_files: List[Tuple[str, Path]], w: int, fjm_writer: Writer, *,
              warning_as_errors: bool = True, debugging_file_path: Optional[Path] = None,
              show_statistics: bool = False, print_time: bool = True)\
         -> None:

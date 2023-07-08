@@ -3,13 +3,13 @@ from __future__ import annotations
 import collections
 from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional
 
-from expr import Expr
-from defs import MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING
-from exceptions import FJPreprocessorException, FJExprException
-from ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
+from flipjump.debugging.macro_usage_graph import show_macro_usage_pie_graph
+from flipjump.utils.constants import MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING
+from flipjump.inner_classes.exceptions import FJPreprocessorException, FJExprException
+from flipjump.inner_classes.expr import Expr
+from flipjump.inner_classes.ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
     CodePosition, Macro, LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
     initial_macro_name, initial_args, initial_labels_prefix
-from macro_usage_graph import show_macro_usage_pie_graph
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
 
@@ -48,7 +48,8 @@ class PreprocessorData:
         def __enter__(self):
             macro_name = self.calling_op.macro_name
             if macro_name not in self.macros:
-                macro_resolve_error(self.curr_tree, f"macro {macro_name} is used but isn't defined. In {self.calling_op.code_position}.")
+                macro_resolve_error(self.curr_tree, f"macro {macro_name} is used but isn't defined. "
+                                                    f"In {self.calling_op.code_position}.")
             self.curr_tree.append(self.calling_op)
 
         def __exit__(self, exc_type, exc_val, exc_tb):
@@ -145,14 +146,16 @@ def get_rep_times(op: RepCall, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_times(preprocessor_data.labels)
     except FJExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree, f'rep {op.macro_name} failed. In {op.code_position}.', orig_exception=e)
+        macro_resolve_error(preprocessor_data.curr_tree, f'rep {op.macro_name} failed. In {op.code_position}.',
+                            orig_exception=e)
 
 
 def get_pad_ops_alignment(op: Pad, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_ops_alignment(preprocessor_data.labels)
     except FJExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree, f'pad {op.ops_alignment} failed. In {op.code_position}.', orig_exception=e)
+        macro_resolve_error(preprocessor_data.curr_tree, f'pad {op.ops_alignment} failed. In {op.code_position}.',
+                            orig_exception=e)
 
 
 def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData) -> int:

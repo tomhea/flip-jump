@@ -1,13 +1,20 @@
-from .IODevice import IODevice
-from .io_exceptions import IOReadOnEOF, IncompleteOutput
+from sys import stdin, stdout
+
+from flipjump.io_devices.IODevice import IODevice
+from flipjump.io_devices.io_exceptions import IOReadOnEOF, IncompleteOutput
+
+io_bytes_encoding = 'raw_unicode_escape'
 
 
-class FixedIO(IODevice):
+class StandardIO(IODevice):
     """
-    read from fixed input, don't output (with get_output functionality)
+    read from stdin, write to stdout
     """
-    def __init__(self, _input: bytes):
-        self.remaining_input = _input
+    def __init__(self, output_verbose: bool):
+        """
+        @param output_verbose: if true print program's output
+        """
+        self.output_verbose = output_verbose
         self._output = b''
 
         self.current_input_byte = 0
@@ -18,11 +25,11 @@ class FixedIO(IODevice):
 
     def read_bit(self) -> bool:
         if 0 == self.bits_to_read_in_input_byte:
-            if not self.remaining_input:
-                raise IOReadOnEOF("Read an empty input on fixed IO (EOF)")
+            read_bytes = stdin.read(1).encode(encoding=io_bytes_encoding)
+            if 0 == len(read_bytes):
+                raise IOReadOnEOF("Read an empty input on standard IO (EOF)")
 
-            self.current_input_byte = self.remaining_input[0]
-            self.remaining_input = self.remaining_input[1:]
+            self.current_input_byte = read_bytes[0]
             self.bits_to_read_in_input_byte = 8
 
         bit = (self.current_input_byte & 1) == 1
@@ -35,15 +42,15 @@ class FixedIO(IODevice):
         self.bits_to_write_in_output_byte += 1
 
         if 8 == self.bits_to_write_in_output_byte:
-            self._output += self.current_output_byte.to_bytes(1, 'little')
+            curr_output: bytes = self.current_output_byte.to_bytes(1, 'little')
+            if self.output_verbose:
+                stdout.write(curr_output.decode(encoding=io_bytes_encoding))
+                stdout.flush()
+            self._output += curr_output
             self.current_output_byte = 0
             self.bits_to_write_in_output_byte = 0
 
     def get_output(self, *, allow_incomplete_output=False) -> bytes:
-        """
-        @raise IncompleteOutput when the number of outputted bits can't be divided by 8
-        @return: full output until now
-        """
         if not allow_incomplete_output and 0 != self.bits_to_write_in_output_byte:
             raise IncompleteOutput("tries to get output when an unaligned number of bits was outputted "
                                    "(doesn't divide 8)")

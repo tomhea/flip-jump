@@ -9,8 +9,8 @@ from typing import List, Iterable, Callable, Tuple, Optional, Any
 
 import pytest
 
-from defs import check_int_positive
-from tests.test_fj import CompileTestArgs, RunTestArgs, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
+from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
+from tests.test_fj import CompileTestArgs, RunTestArgs
 
 
 build_tests_lock = Lock()
@@ -131,14 +131,14 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     colliding_keywords = set(TEST_TYPES) & SAVED_KEYWORDS
     assert not colliding_keywords
 
-    def check_int_positive_with_true(value):
+    def _check_int_positive_with_true(value):
         int_value = int(value)
         if int_value <= 0:
             raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
         return True, int_value
 
     # This is a tuple: (should_compile_tests_save_debugging_info, run_tests_debugging_ops_list_length)
-    parser.addoption(f"--{DEBUG_INFO_FLAG}", metavar='LENGTH', type=check_int_positive_with_true, nargs='?',
+    parser.addoption(f"--{DEBUG_INFO_FLAG}", metavar='LENGTH', type=_check_int_positive_with_true, nargs='?',
                      const=(True, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH),
                      default=(False, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH),
                      help=f"show the last LENGTH executed opcodes on tests that failed during their run "
@@ -149,7 +149,8 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
     for test_type in TEST_TYPES:
         parser.addoption(f"--{test_type}", action="store_true", help=f"run {test_type} tests")
-    parser.addoption(f"--{REGULAR_FLAG}", action="store_true", help=f"run all regular tests ({', '.join(REGULAR_TYPES)})")
+    parser.addoption(f"--{REGULAR_FLAG}", action="store_true",
+                     help=f"run all regular tests ({', '.join(REGULAR_TYPES)})")
     parser.addoption(f"--{ALL_FLAG}", action="store_true", help="run all tests")
 
     parser.addoption(f"--{COMPILE_FLAG}", action='store_true', help='only test compiling .fj files')
@@ -292,6 +293,7 @@ def pytest_collectreport(report):
     yield
 
 
+# noinspection PyUnusedLocal
 @pytest.hookimpl(hookwrapper=True)
 def pytest_collection_modifyitems(config, items):
     yield

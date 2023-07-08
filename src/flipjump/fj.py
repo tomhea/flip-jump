@@ -1,18 +1,19 @@
-import os
 import argparse
 import lzma
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Tuple, List, Callable, Optional
 
-import assembler
-import fjm_run
-import fjm
-from io_devices.StandardIO import StandardIO
-
-from defs import get_stl_paths, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, check_int_positive
-from exceptions import FJReadFjmException
-from breakpoints import get_breakpoint_handler
+from flipjump.interpretter import fjm_run
+from flipjump.assembler import assembler
+from flipjump.debugging.breakpoints import get_breakpoint_handler
+from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
+from flipjump.utils.functions import get_stl_paths
+from flipjump.fjm import fjm_consts
+from flipjump.fjm.fjm_writer import Writer
+from flipjump.inner_classes.exceptions import FJReadFjmException
+from flipjump.io_devices.StandardIO import StandardIO
 
 ErrorFunc = Callable[[str], None]
 
@@ -140,8 +141,8 @@ def get_version(version: Optional[int], is_outfile_specified: bool) -> int:
         return version
 
     if is_outfile_specified:
-        return fjm.CompressedVersion
-    return fjm.NormalVersion
+        return fjm_consts.CompressedVersion
+    return fjm_consts.NormalVersion
 
 
 def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, error_func: ErrorFunc) -> None:
@@ -155,8 +156,8 @@ def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, err
     file_tuples = get_file_tuples(args.files, no_stl=args.no_stl)
     verify_fj_files(error_func, file_tuples)
 
-    fjm_writer = fjm.Writer(out_fjm_file, args.width, get_version(args.version, args.outfile is not None),
-                            flags=args.flags, lzma_preset=args.lzma_preset)
+    fjm_writer = Writer(out_fjm_file, args.width, get_version(args.version, args.outfile is not None),
+                        flags=args.flags, lzma_preset=args.lzma_preset)
     assembler.assemble(file_tuples, args.width, fjm_writer,
                        warning_as_errors=args.werror, debugging_file_path=debug_file,
                        show_statistics=args.stats, print_time=not args.silent)
@@ -219,9 +220,15 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
     add the arguments that are usable in run time.
     @param parser: the parser
     """
+    def _check_int_positive(value):
+        ivalue = int(value)
+        if ivalue <= 0:
+            raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
+        return ivalue
+
     run_arguments = parser.add_argument_group('run arguments', 'Ignored when using the --assemble option')
 
-    run_arguments.add_argument('--debug-ops-list', metavar='LENGTH', type=check_int_positive,
+    run_arguments.add_argument('--debug-ops-list', metavar='LENGTH', type=_check_int_positive,
                                default=LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
                                help=f"show the last LENGTH executed opcodes on tests that failed during their run "
                                     f"({LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH} by default)."
@@ -248,17 +255,17 @@ def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
     asm_arguments.add_argument('-w', '--width', type=int, default=64, choices=[8, 16, 32, 64], metavar='WIDTH',
                                help="specify memory-width. 64 by default")
 
-    supported_versions = ', '.join(f"{version}: {name}" for version, name in fjm.SUPPORTED_VERSIONS.items())
+    supported_versions = ', '.join(f"{version}: {name}" for version, name in fjm_consts.SUPPORTED_VERSIONS.items())
     asm_arguments.add_argument('-v', '--version', metavar='VERSION', type=int, default=None,
-                               help=f"fjm version (default of {fjm.CompressedVersion}-compressed "
-                                    f"if --outfile specified; version {fjm.NormalVersion} otherwise). "
+                               help=f"fjm version (default of {fjm_consts.CompressedVersion}-compressed "
+                                    f"if --outfile specified; version {fjm_consts.NormalVersion} otherwise). "
                                     f"supported versions: {supported_versions}.")   # default enforced in get_version()
     asm_arguments.add_argument('-f', '--flags', help="the default .fjm unpacking & running flags", type=int, default=0)
 
     asm_arguments.add_argument('--lzma_preset', type=int, default=lzma.PRESET_DEFAULT, choices=list(range(10)),
                                help=f"The preset used for the LZMA2 algorithm compression ("
                                     f"{lzma.PRESET_DEFAULT} by default; "
-                                    f"used when version={fjm.CompressedVersion}).")
+                                    f"used when version={fjm_consts.CompressedVersion}).")
 
     asm_arguments.add_argument('--werror', help="treat all assemble warnings as errors", action='store_true')
     asm_arguments.add_argument('--no_stl', help="don't assemble/link the standard library files", action='store_true')

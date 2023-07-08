@@ -3,7 +3,7 @@ from typing import Dict, Tuple, List
 
 import plotly.graph_objects as go
 
-from defs import MACRO_SEPARATOR_STRING
+from flipjump.utils.constants import MACRO_SEPARATOR_STRING
 
 
 def _prepare_first_and_second_level_significant_macros(

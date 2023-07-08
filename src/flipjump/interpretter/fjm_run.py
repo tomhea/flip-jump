@@ -1,15 +1,13 @@
 from pathlib import Path
 from typing import Optional, Deque
 
-import fjm
-
-from defs import TerminationCause, PrintTimer, RunStatistics
-from breakpoints import BreakpointHandler, handle_breakpoint
-from exceptions import FJRuntimeMemoryException
-
-from io_devices.IODevice import IODevice
-from io_devices.BrokenIO import BrokenIO
-from io_devices.io_exceptions import IOReadOnEOF
+from flipjump.fjm import fjm_reader
+from flipjump.debugging.breakpoints import BreakpointHandler, handle_breakpoint
+from flipjump.utils.classes import TerminationCause, PrintTimer, RunStatistics
+from flipjump.inner_classes.exceptions import FJRuntimeMemoryException
+from flipjump.io_devices.BrokenIO import BrokenIO
+from flipjump.io_devices.IODevice import IODevice
+from flipjump.io_devices.io_exceptions import IOReadOnEOF
 
 
 class TerminationStatistics:
@@ -71,7 +69,7 @@ class TerminationStatistics:
               )
 
 
-def handle_input(io_device: IODevice, ip: int, mem: fjm.Reader, statistics: RunStatistics) -> None:
+def handle_input(io_device: IODevice, ip: int, mem: fjm_reader.Reader, statistics: RunStatistics) -> None:
     w = mem.w
     in_addr = 3 * w + w.bit_length()  # 3w + #w
 
@@ -116,7 +114,7 @@ def run(fjm_path: Path, *,
     @return: the run's termination-statistics
     """
     with PrintTimer('  loading memory:  ', print_time=time_verbose):
-        mem = fjm.Reader(fjm_path)
+        mem = fjm_reader.Reader(fjm_path)
 
     if io_device is None:
         io_device = BrokenIO()

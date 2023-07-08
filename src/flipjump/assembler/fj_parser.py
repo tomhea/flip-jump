@@ -3,12 +3,12 @@ from pathlib import Path
 from typing import Set, List, Tuple, Dict, Union
 
 import sly
-from sly.yacc import YaccProduction as ParsedRule
 from sly.lex import Token
+from sly.yacc import YaccProduction as ParsedRule
 
-from exceptions import FJExprException, FJParsingException
-from expr import Expr, get_minimized_expr
-from ops import get_used_labels, get_declared_labels, \
+from flipjump.inner_classes.exceptions import FJExprException, FJParsingException
+from flipjump.inner_classes.expr import Expr, get_minimized_expr
+from flipjump.inner_classes.ops import get_used_labels, get_declared_labels, \
     CodePosition, MacroName, Op, Macro, initial_macro_name, \
     MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, Pad
 
@@ -75,6 +75,7 @@ def get_char_value_and_length(s: str) -> Tuple[int, int]:
 
 
 class FJLexer(sly.Lexer):
+    # noinspection PyUnresolvedReferences
     tokens = {NS, DEF, REP,
               WFLIP, PAD, SEGMENT, RESERVE,
               ID, DOT_ID, NUMBER, STRING,
@@ -102,14 +103,21 @@ class FJLexer(sly.Lexer):
     NUMBER = number_re
     STRING = string_re
 
+    # noinspection PyUnresolvedReferences
     ID[r'def'] = DEF
+    # noinspection PyUnresolvedReferences
     ID[r'rep'] = REP
+    # noinspection PyUnresolvedReferences
     ID[r'ns'] = NS
 
+    # noinspection PyUnresolvedReferences
     ID[r'wflip'] = WFLIP
+    # noinspection PyUnresolvedReferences
     ID[r'pad'] = PAD
 
+    # noinspection PyUnresolvedReferences
     ID[r'segment'] = SEGMENT
+    # noinspection PyUnresolvedReferences
     ID[r'reserve'] = RESERVE
 
     LE = "<="
@@ -130,6 +138,7 @@ class FJLexer(sly.Lexer):
     def NUMBER(self, t: Token) -> Token:
         n = t.value
         if len(n) >= 2:
+            # noinspection PyUnresolvedReferences
             if n[0] == "'":
                 t.value = get_char_value_and_length(n[1:-1])[0]
             elif n[1] in 'xX':
@@ -172,6 +181,7 @@ def next_address() -> Expr:
     return Expr('$')
 
 
+# noinspection PyUnusedLocal,PyUnresolvedReferences
 class FJParser(sly.Parser):
     tokens = FJLexer.tokens
     # TODO add Unary Minus (-), Unary Not (~). Maybe add logical or (||) and logical and (&&). Maybe handle power (**).
@@ -238,7 +248,8 @@ class FJParser(sly.Parser):
     def validate_no_unused_labels(self, regular_labels: Set[str], global_labels: Set[str],
                                   labels_declared: Set[str], labels_used: Set[str],
                                   lineno: int, macro_name: MacroName) -> None:
-        unused_labels = regular_labels.union(global_labels) - labels_used.union(self.to_base_name(label) for label in labels_declared)
+        unused_labels = regular_labels.union(global_labels) - \
+                        labels_used.union(self.to_base_name(label) for label in labels_declared)
         if unused_labels:
             syntax_warning(lineno, self.warning_as_errors,
                            f"In macro {macro_name}:  "
@@ -309,7 +320,7 @@ class FJParser(sly.Parser):
         num_of_dots = len(base_name) - len(without_dots)
         if num_of_dots - 1 > len(curr_namespace):
             syntax_error(lineno, f'Used more leading dots than current namespace depth '
-                                   f'({num_of_dots}-1 > {len(curr_namespace)})')
+                                 f'({num_of_dots}-1 > {len(curr_namespace)})')
 
         return '.'.join(curr_namespace[:len(curr_namespace)-(num_of_dots-1)] + [without_dots])
 
@@ -322,19 +333,22 @@ class FJParser(sly.Parser):
         error_occurred = True
 
         if token is None:
-            error_string = f'Syntax Error in {get_position(self.line_position(None))}. Maybe missing }} or {{ before this line?'
+            error_string = f'Syntax Error in {get_position(self.line_position(None))}. ' \
+                           f'Maybe missing }} or {{ before this line?'
         else:
             error_string = f'Syntax Error in {get_position(token.lineno)}, token=("{token.type}", {token.value})'
 
         all_errors += f"{error_string}\n"
         print(error_string)
 
+    # Parsing Rules:
 
     @_('definable_line_statements')
     def program(self, p: ParsedRule) -> None:
         ops = p.definable_line_statements
         self.macros[initial_macro_name].ops += ops
 
+    # noinspection PyUnresolvedReferences
     @_('definable_line_statements NL definable_line_statement')
     def definable_line_statements(self, p: ParsedRule) -> List[Op]:
         if p.definable_line_statement:

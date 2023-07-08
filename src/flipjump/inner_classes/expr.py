@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import Union, Tuple, Set, Dict
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
+from typing import Union, Tuple, Set, Dict
 
-from defs import MACRO_SEPARATOR_STRING
-from exceptions import FJExprException
+from flipjump.inner_classes.exceptions import FJExprException
 
 
 # dictionary from a math-op string, to its pythonic function.

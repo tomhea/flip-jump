@@ -5,8 +5,8 @@ import os
 from dataclasses import dataclass
 from typing import Union, Dict, Set, List, Tuple
 
-from expr import Expr
-from exceptions import FJExprException
+from flipjump.inner_classes.exceptions import FJExprException
+from flipjump.inner_classes.expr import Expr
 
 
 @dataclass
@@ -205,7 +205,8 @@ class MacroCall:
         return f"macro call. {self.macro_name.name} {', '.join(map(str, self.arguments))}. at {self.code_position}"
 
     def eval_new(self, labels_dict: Dict[str, Expr]) -> MacroCall:
-        return MacroCall(self.macro_name.name, [arg.eval_new(labels_dict) for arg in self.arguments], self.code_position)
+        return MacroCall(self.macro_name.name, [arg.eval_new(labels_dict) for arg in self.arguments],
+                         self.code_position)
 
     def all_unknown_labels(self) -> Set[str]:
         return {label for expr in self.arguments for label in expr.all_unknown_labels()}
@@ -286,7 +287,8 @@ class Label:
             new_name = labels_dict[self.name].value
             if isinstance(new_name, str):
                 return new_name
-            raise FJExprException(f'Bad label swap (from {self.name} to {labels_dict[self.name]}) in {self.code_position}.')
+            raise FJExprException(
+                f'Bad label swap (from {self.name} to {labels_dict[self.name]}) in {self.code_position}.')
         return self.name
 
 
