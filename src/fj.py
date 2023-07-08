@@ -17,28 +17,29 @@ from breakpoints import get_breakpoint_handler
 ErrorFunc = Callable[[str], None]
 
 
-def get_temp_directory_suffix(args: argparse.Namespace) -> str:
+def get_temp_directory_suffix(files: List[str]) -> str:
     """
     create a suffix for the temp directory name, using args.
-    @param args: the parsed arguments
+    @param files: the list of fj-code files.
     @return: the suffix
     """
-    return f'__{"_".join(map(os.path.basename, args.files))}__temp_directory'
+    return f'__{"_".join(map(os.path.basename, files))}__temp_directory'
 
 
-def get_file_tuples(args: argparse.Namespace) -> List[Tuple[str, Path]]:
+def get_file_tuples(files: List[str], *, no_stl: bool = False) -> List[Tuple[str, Path]]:
     """
     get the list of .fj files to be assembled (stl + files).
-    @param args: the parsed arguments
+    @param files: the list of fj-code files.
+    @param no_stl: if True: don't include the standard library.
     @return: a list of file-tuples - (file_short_name, file_path)
     """
     file_tuples = []
 
-    if not args.no_stl:
+    if not no_stl:
         for i, stl_path in enumerate(get_stl_paths(), start=1):
             file_tuples.append((f"s{i}", stl_path))
 
-    for i, file in enumerate(args.files, start=1):
+    for i, file in enumerate(files, start=1):
         file_tuples.append((f"f{i}", Path(file)))
 
     return file_tuples
@@ -128,15 +129,17 @@ def run(in_fjm_path: Path, debug_file: Path, args: argparse.Namespace, error_fun
         exit(1)
 
 
-def get_version(args: argparse.Namespace) -> int:
+def get_version(version: Optional[int], is_outfile_specified: bool) -> int:
     """
-    @param args: the parsed arguments
-    @return: the chosen version, or default if not specified
+    @param version: the fjm version. if None the default version will be taken.
+    @param is_outfile_specified: if True, the default is the compressed-version.
+     else, the default is the normal version.
+    @return: the chosen version, or default if not specified.
     """
-    if args.version is not None:
-        return args.version
+    if version is not None:
+        return version
 
-    if args.outfile is not None:
+    if is_outfile_specified:
         return fjm.CompressedVersion
     return fjm.NormalVersion
 
@@ -149,10 +152,11 @@ def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, err
     @param args: the parsed arguments
     @param error_func: the parser's error function
     """
-    file_tuples = get_file_tuples(args)
+    file_tuples = get_file_tuples(args.files, no_stl=args.no_stl)
     verify_fj_files(error_func, file_tuples)
 
-    fjm_writer = fjm.Writer(out_fjm_file, args.width, get_version(args), flags=args.flags, lzma_preset=args.lzma_preset)
+    fjm_writer = fjm.Writer(out_fjm_file, args.width, get_version(args.version, args.outfile is not None),
+                            flags=args.flags, lzma_preset=args.lzma_preset)
     assembler.assemble(file_tuples, args.width, fjm_writer,
                        warning_as_errors=args.werror, debugging_file_path=debug_file,
                        show_statistics=args.stats, print_time=not args.silent)
@@ -248,7 +252,7 @@ def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
     asm_arguments.add_argument('-v', '--version', metavar='VERSION', type=int, default=None,
                                help=f"fjm version (default of {fjm.CompressedVersion}-compressed "
                                     f"if --outfile specified; version {fjm.NormalVersion} otherwise). "
-                                    f"supported versions: {supported_versions}.")   # as in get_version()
+                                    f"supported versions: {supported_versions}.")   # default enforced in get_version()
     asm_arguments.add_argument('-f', '--flags', help="the default .fjm unpacking & running flags", type=int, default=0)
 
     asm_arguments.add_argument('--lzma_preset', type=int, default=lzma.PRESET_DEFAULT, choices=list(range(10)),
@@ -334,7 +338,7 @@ def execute_assemble_run(args: argparse.Namespace, error_func: ErrorFunc) -> Non
     @param args: the parsed arguments
     @param error_func: parser's error function
     """
-    with TemporaryDirectory(suffix=get_temp_directory_suffix(args)) as temp_dir_name:
+    with TemporaryDirectory(suffix=get_temp_directory_suffix(args.files)) as temp_dir_name:
         debug_path, in_fjm_path, out_fjm_path = get_files_paths(args, error_func, temp_dir_name)
 
         if not args.run:

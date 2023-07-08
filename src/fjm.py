@@ -247,7 +247,8 @@ class Writer:
         repeat steps 1-2 until you finished updating the fjm
         3. write_to_file()
     """
-    def __init__(self, output_file: Path, w: int, version: int, *, flags: int = 0, lzma_preset: Optional[int] = None):
+    def __init__(self, output_file: Path, w: int, version: int,
+                 *, flags: int = 0, lzma_preset: int = lzma.PRESET_DEFAULT):
         """
         the .fjm-file writer
         @param output_file: [in,out]: the path to the .fjm file
@@ -266,7 +267,7 @@ class Writer:
         if BaseVersion == version and flags != 0:
             raise FJWriteFjmException(f"version 0 does not support the flags option")
         if CompressedVersion == version:
-            if lzma_preset is None or lzma_preset not in range(10):
+            if lzma_preset not in range(10):
                 raise FJWriteFjmException("version 3 requires an LZMA preset (0-9, faster->smaller).")
             else:
                 self.lzma_preset = lzma_preset

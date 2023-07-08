@@ -83,7 +83,7 @@ def test_compile(compile_args: CompileTestArgs) -> None:
     create_parent_directories(compile_args.fjm_out_path)
 
     fjm_writer = fjm.Writer(compile_args.fjm_out_path, compile_args.word_size, compile_args.version,
-                            flags=compile_args.flags, lzma_preset=lzma.PRESET_DEFAULT)
+                            flags=compile_args.flags)
 
     debugging_file_path = None
     if compile_args.save_debug_info:
