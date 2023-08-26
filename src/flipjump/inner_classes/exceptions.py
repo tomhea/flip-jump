@@ -1,30 +1,34 @@
-class FJException(Exception):
+class FlipJumpException(Exception):
     pass
 
 
-class FJParsingException(FJException):
+class FlipJumpParsingException(FlipJumpException):
     pass
 
 
-class FJPreprocessorException(FJException):
+class FlipJumpPreprocessorException(FlipJumpException):
     pass
 
 
-class FJExprException(FJException):
+class FlipJumpExprException(FlipJumpException):
     pass
 
 
-class FJAssemblerException(FJException):
+class FlipJumpAssemblerException(FlipJumpException):
     pass
 
 
-class FJReadFjmException(FJException):
+class FlipJumpReadFjmException(FlipJumpException):
     pass
 
 
-class FJWriteFjmException(FJException):
+class FlipJumpWriteFjmException(FlipJumpException):
     pass
 
 
-class FJRuntimeMemoryException(FJException):
+class FlipJumpRuntimeMemoryException(FlipJumpException):
+    pass
+
+
+class FlipJumpMissingImportException(FlipJumpException):
     pass

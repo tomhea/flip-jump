@@ -1,12 +1,12 @@
 from pathlib import Path
 from typing import Optional, List, Dict, Set
 
-import easygui
-
 from flipjump.fjm import fjm_reader
 from flipjump.utils.constants import MACRO_SEPARATOR_STRING
 from flipjump.utils.functions import load_debugging_labels
 from flipjump.utils.classes import RunStatistics
+
+from src.flipjump.inner_classes.exceptions import FlipJumpMissingImportException
 
 
 class BreakpointHandlerUnnecessary(Exception):
@@ -14,6 +14,12 @@ class BreakpointHandlerUnnecessary(Exception):
 
 
 def display_message_box_and_get_answer(msg: str, title: str, choices: List[str]) -> str:
+    try:
+        import easygui
+    except ImportError:
+        raise FlipJumpMissingImportException("This debug feature requires the easygui python library.\n"
+                                             "Try `pip install easygui`, and also install tkinter on your system.")
+
     # might generate an 'import from collections is deprecated' warning if using easygui-version <= 0.98.3.
     return easygui.buttonbox(msg, title, choices)
 

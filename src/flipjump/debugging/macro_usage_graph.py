@@ -1,9 +1,9 @@
 import collections
 from typing import Dict, Tuple, List
 
-import plotly.graph_objects as go
-
 from flipjump.utils.constants import MACRO_SEPARATOR_STRING
+
+from src.flipjump.inner_classes.exceptions import FlipJumpMissingImportException
 
 
 def _prepare_first_and_second_level_significant_macros(
@@ -54,6 +54,12 @@ def _choose_most_significant_macros(first_level: Dict[str, int], second_level: D
 
 
 def _show_macro_usage_graph(chosen_macros: List[Tuple[str, int]]) -> None:
+    try:
+        import plotly.graph_objects as go
+    except ImportError:
+        raise FlipJumpMissingImportException("This debug feature requires the plotly python library.\n"
+                                             "Try `pip install plotly`.")
+
     fig = go.Figure(data=[go.Pie(labels=[label for label, value in chosen_macros],
                                  values=[value for label, value in chosen_macros],
                                  textinfo='label+percent'
