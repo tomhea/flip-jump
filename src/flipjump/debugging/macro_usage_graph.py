@@ -57,8 +57,16 @@ def _show_macro_usage_graph(chosen_macros: List[Tuple[str, int]]) -> None:
     try:
         import plotly.graph_objects as go
     except ImportError:
-        raise FlipJumpMissingImportException("This debug feature requires the plotly python library.\n"
-                                             "Try `pip install plotly`.")
+        ordered_chosen_macros = sorted(chosen_macros, key=lambda name_count: name_count[1], reverse=True)
+        total_ops = sum([count for name, count in chosen_macros])
+
+        print('\n\n\nThe most used macros are:\n')
+        for macro_name, ops_count in ordered_chosen_macros:
+            print(f'  {macro_name}:  {ops_count:,} ops ({ops_count / total_ops:.2%})')
+        print("\n\n* The statistics can be displayed in an interactive graph - "
+              "that feature requires the plotly python library. *\n"
+              "  Try `pip install plotly`.\n")
+        return
 
     fig = go.Figure(data=[go.Pie(labels=[label for label, value in chosen_macros],
                                  values=[value for label, value in chosen_macros],
@@ -78,6 +86,7 @@ def show_macro_usage_pie_graph(macro_code_size: Dict[str, int], total_code_size:
     @param min_secondary_thresh: the fraction of the program's code-usage needed for a 2nd-level macro to be chosen.
     @param child_significance_min_thresh: the fraction of the 1st-level macro code-usage needed
      for its 2nd-level macro (son) needs to be chosen
+    @note: if plotly isn't installed - prints those macro names and their code-usage numbers.
     """
     main_thresh = min_main_thresh * total_code_size
     secondary_thresh = min_secondary_thresh * total_code_size

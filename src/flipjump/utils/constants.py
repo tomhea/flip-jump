@@ -5,9 +5,6 @@ from pathlib import Path
 from typing import List, Dict
 
 
-ROOT_DIR = Path(__file__).parent.parent.parent.parent
-
-
 MACRO_SEPARATOR_STRING = "---"
 STARTING_LABEL_IN_MACROS_STRING = ':start:'
 WFLIP_LABEL_PREFIX = ':wflips:'

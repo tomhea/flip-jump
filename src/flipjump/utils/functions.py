@@ -5,14 +5,15 @@ import lzma
 from pathlib import Path
 from typing import List, Dict
 
-from flipjump.utils.constants import ROOT_DIR, _debug_json_encoding, _debug_json_lzma_format, _debug_json_lzma_filters
+from flipjump.utils.constants import _debug_json_encoding, _debug_json_lzma_format, _debug_json_lzma_filters
+from importlib.resources import open_text
 
 
 def get_stl_paths() -> List[Path]:
     """
     @return: list of the ordered standard-library paths
     """
-    stl_path = ROOT_DIR / 'stl'
+    stl_path = Path(open_text('stl', 'conf.json').name).parent
     with open(stl_path / 'conf.json', 'r') as stl_json:
         stl_options = json.load(stl_json)
     return [stl_path / f'{lib}.fj' for lib in stl_options['all']]
