@@ -76,14 +76,19 @@ Note that all of these macros are already implemented in the standard library (a
 - output_char
 - output       (for printing string consts, e.g. output "Hello, World!")
 
-# How to download?
+# How to install?
 
-```bash
->>> git clone https://github.com/tomhea/flip-jump.git
-Cloning into 'flip-jump'...
->>> cd flip-jump
->>> pip install -r requirements.txt
+```shell
+pip install flipjump
 ```
+
+You can also install it with its extras:
+- **stats:** support for viewing macro usage in an interactive graph.
+- **tests:** all the testing libraries needed.
+```shell
+pip install flipjump[stats,tests]
+```
+
 
 Pycharm Extensions:
 - Add <span style="color:orange">syntax highlighting</span> support for *.fj files - just import the [PycharmHighlighting.zip](ide-extensions/pycharm/PycharmHighlighting.zip) settings.
@@ -91,25 +96,25 @@ Pycharm Extensions:
 
 # How to run?
 
-```bash
->>> python src/fj.py programs/hello_world.fj
-Hello, World!
+Use the `fj` utility:
+```shell
+fj hello_world.fj
 ```
+
 ![Hello World in FlipJump](res/hello.gif)
 
-  - The --no-stl flag tells the assembler not to include the standard library. for example: `python src/fj.py programs/hello_no-stl.fj --no-stl`.
+  - The --no-stl flag tells the assembler not to include the standard library. for example: `fj programs/print_tests/hello_no-stl.fj --no-stl`.
   - the -w [WIDTH] flag allows compiling the .fj files to a WIDTH-bits memory width. WIDTH is 64 by default.
   - You can use the -o flag to save the assembled file for later use too.
-  - you can find all the different flags with `python src/fj.py -h`.
+  - you can find all the different flags with `fj -h`.
 
 You can also **[Test the project](tests/README.md)** with the project's tests, and with your tests.
 
 You can also assemble and run separately:
 
 ```bash
->>> fj.py --asm hello.fj -o hello_world.fjm
->>> fj.py --run hello_world.fjm
-Hello, World!
+fj --asm hello.fj -o hello_world.fjm
+fj --run hello_world.fjm
 ```
 
 - The first line will assemble your code.
@@ -134,31 +139,31 @@ Programs won't work on their first run. They just can't. That's why we support t
 # Project Structure
 
 **[src](src/flipjump/README.md)** (assembler + interpreter source files):
-  - fj.py           - the FlipJump Assembler & Interpreter script.
-  - fjm.py          - read/write .fjm (flip-jump-memory) files.
-  - fjm_run.py      - interpret / debug assembled fj files.
-  - fj_parser.py    - pythonic lex/yacc parser.
+  - fj.py - the FlipJump Assembler & Interpreter script.
+  - fjm.py - read/write .fjm (flip-jump-memory) files.
+  - fjm_run.py - interpret / debug assembled fj files.
+  - fj_parser.py - pythonic lex/yacc parser.
   - preprocessor.py - unwind all macros and reps.
-  - assembler.py    - assembles the macro-less fj file.
+  - assembler.py - assembles the macro-less fj file.
   - [more...](src/flipjump/README.md)
 
 **[stl](stl/README.md)** (standard library files - macros. [list of all macros](https://esolangs.org/wiki/FlipJump#The_Standard_Library)):
-  - runlib.fj   - constants and initialization macros. output constant strings.
-  - [bit/](stl/README.md#bit)        - macros for io/manipulating binary variables and vectors (i.e. numbers).
-  - mathlib.fj  - advanced math macros (mul/div).
-  - [hex/](stl/README.md#hex)        - macros for io/manipulating hexadecimal variables and vectors.
-  - casting.fj  - casting between bit/hex.
-  - ptrlib.fj   - pointers, stack and functions.
-  - conf.json   - standard library list file.
+  - runlib.fj - constants and initialization macros. output constant strings.
+  - [bit/](stl/README.md#bit) - macros for io/manipulating binary variables and vectors (i.e. numbers).
+  - [hex/](stl/README.md#hex) - macros for io/manipulating hexadecimal variables and vectors.
+  - mathlib.fj - advanced math macros (mul/div).
+  - casting.fj - casting between bit/hex.
+  - ptrlib.fj - pointers, stack and functions.
+  - conf.json - standard library list file.
 
 **[programs](programs)** (FlipJump programs), for example:
-  - [hello_world.fj](programs/print_tests/hello_world.fj)  - prints hello world :)
-  - [calc.fj](programs/calc.fj)     - command line calculator for 2 hex/dec numbers: ```a [+-*/%] b```.
-  - [func_tests/](programs/func_tests)     - performs function calls and operations on stack.
-  - [hexlib_tests/](programs/hexlib_tests)   - tests for the macros in stl/hexlib.fj.
-  - [quine16.fj](programs/quine16.fj)  - a 16-bits quine by [lestrozi](https://github.com/lestrozi); when assembled with `-w16 -v0` - prints itself.
-  - [pair_ns.fj](programs/concept_checks/pair_ns.fj)  - simulating the concept of a Class using a namespace.
-  - [print_dec.fj](programs/print_tests/print_dec.fj)    - prints binary variables as decimals.
+  - [hello_world.fj](programs/print_tests/hello_world.fj) - prints hello world :)
+  - [calc.fj](programs/calc.fj) - command line calculator for 2 hex/dec numbers: ```a [+-*/%] b```.
+  - [func_tests/](programs/func_tests) - performs function calls and operations on stack.
+  - [hexlib_tests/](programs/hexlib_tests) - tests for the macros in stl/hexlib.fj.
+  - [quine16.fj](programs/quine16.fj) - a 16-bits quine by [lestrozi](https://github.com/lestrozi); when assembled with `-w16 -v0` - prints itself.
+  - [pair_ns.fj](programs/concept_checks/pair_ns.fj) - simulating the concept of a Class using a namespace.
+  - [print_dec.fj](programs/print_tests/print_dec.fj) - prints binary variables as decimals.
   - [multi_comp/](programs/multi_comp) - simulates a big project (compilation of multiple files).
 
 **[tests](tests/README.md)** (FlipJump programs), for example:

@@ -314,16 +314,16 @@ def get_argument_parser() -> argparse.ArgumentParser:
     """
     return argparse.ArgumentParser(
         description='Assemble and Run FlipJump programs.',
-        usage=f'fj.py [--asm | --run] [arguments] files [files ...]\n'
+        usage=f'fj [--asm | --run] [arguments] files [files ...]\n'
               f'example usage:\n'
-              f'  fj.py  a.fj b.fj                                      // assemble and run\n'
-              f'  fj.py  a.fj b.fj  -o out.fjm                          // assemble save and run\n'
-              f'  fj.py  code.fj  -d  -B swap_start exit_label          // assemble and debug\n\n'
-              f'  fj.py --asm  -o o.fjm a.fj  -d dir/debug.fjd          // assemble and save debug info\n'
-              f'  fj.py --asm  -o out.fjm  a.fj b.fj  --no_stl  -w 32   '
+              f'  fj  a.fj b.fj                                      // assemble and run\n'
+              f'  fj  a.fj b.fj  -o out.fjm                          // assemble save and run\n'
+              f'  fj  code.fj  -d  -B swap_start exit_label          // assemble and debug\n\n'
+              f'  fj --asm  -o o.fjm a.fj  -d dir/debug.fjd          // assemble and save debug info\n'
+              f'  fj --asm  -o out.fjm  a.fj b.fj  --no_stl  -w 32   '
               f'// assemble without the standard library, 32 bit memory\n\n'
-              f'  fj.py --run  prog.fjm                                 // just run\n'
-              f'  fj.py --run  o.fjm  -d dir/debug.fjd  -B label        // run and debug\n '
+              f'  fj --run  prog.fjm                                 // just run\n'
+              f'  fj --run  o.fjm  -d dir/debug.fjd  -B label        // run and debug\n '
     )
 
 
