@@ -4,7 +4,7 @@ from typing import Optional, Deque
 from flipjump.fjm import fjm_reader
 from flipjump.debugging.breakpoints import BreakpointHandler, handle_breakpoint
 from flipjump.utils.classes import TerminationCause, PrintTimer, RunStatistics
-from flipjump.inner_classes.exceptions import FJRuntimeMemoryException
+from flipjump.inner_classes.exceptions import FlipJumpRuntimeMemoryException
 from flipjump.io_devices.BrokenIO import BrokenIO
 from flipjump.io_devices.IODevice import IODevice
 from flipjump.io_devices.io_exceptions import IOReadOnEOF
@@ -160,5 +160,5 @@ def run(fjm_path: Path, *,
             # JUMP!
             ip = jump_address
 
-    except FJRuntimeMemoryException:
+    except FlipJumpRuntimeMemoryException:
         return TerminationStatistics(statistics, TerminationCause.RuntimeMemoryError)

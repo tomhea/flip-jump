@@ -5,7 +5,7 @@ from typing import List
 
 from flipjump.fjm.fjm_consts import FJ_MAGIC, _header_base_format, _header_extension_format, _segment_format, \
     BaseVersion, RelativeJumpVersion, CompressedVersion, SUPPORTED_VERSIONS, _LZMA_FORMAT, _lzma_compression_filters
-from flipjump.inner_classes.exceptions import FJWriteFjmException
+from flipjump.inner_classes.exceptions import FlipJumpWriteFjmException
 
 
 class Writer:
@@ -28,17 +28,17 @@ class Writer:
         @param lzma_preset: the preset to be used when compressing the .fjm data
         """
         if w not in (8, 16, 32, 64):
-            raise FJWriteFjmException(f"Word size {w} is not in {{8, 16, 32, 64}}.")
+            raise FlipJumpWriteFjmException(f"Word size {w} is not in {{8, 16, 32, 64}}.")
         if version not in SUPPORTED_VERSIONS:
-            raise FJWriteFjmException(
+            raise FlipJumpWriteFjmException(
                 f'Error: unsupported version ({version}, this program supports {str(SUPPORTED_VERSIONS)}).')
         if flags < 0 or flags >= (1 << 64):
-            raise FJWriteFjmException(f"flags must be a 64bit positive number, not {flags}")
+            raise FlipJumpWriteFjmException(f"flags must be a 64bit positive number, not {flags}")
         if BaseVersion == version and flags != 0:
-            raise FJWriteFjmException(f"version 0 does not support the flags option")
+            raise FlipJumpWriteFjmException(f"version 0 does not support the flags option")
         if CompressedVersion == version:
             if lzma_preset not in range(10):
-                raise FJWriteFjmException("version 3 requires an LZMA preset (0-9, faster->smaller).")
+                raise FlipJumpWriteFjmException("version 3 requires an LZMA preset (0-9, faster->smaller).")
             else:
                 self.lzma_preset = lzma_preset
 
@@ -56,7 +56,7 @@ class Writer:
             return lzma.compress(data, format=_LZMA_FORMAT,
                                  filters=_lzma_compression_filters(2 * self.word_size, self.lzma_preset))
         except lzma.LZMAError as e:
-            raise FJWriteFjmException(f'Error: Unable to compress the data.') from e
+            raise FlipJumpWriteFjmException(f'Error: Unable to compress the data.') from e
 
     def write_to_file(self) -> None:
         """
@@ -102,7 +102,7 @@ class Writer:
             segment_end = segment_start + segment_length - 1
 
             if self._is_collision(segment_start, segment_end, new_segment_start, new_segment_end):
-                raise FJWriteFjmException(
+                raise FlipJumpWriteFjmException(
                     f"Overlapping segments addresses: "
                     f"seg[{i}]={self.get_segment_addresses_repr(segment_start, segment_length)}"
                     f" and "
@@ -121,7 +121,7 @@ class Writer:
             data_end = data_start + data_length - 1
 
             if self._is_collision(data_start, data_end, new_data_start, new_data_end):
-                raise FJWriteFjmException(
+                raise FlipJumpWriteFjmException(
                     f"Overlapping segments data: "
                     f"seg[{i}]=data[{hex(data_start)}, {hex(data_end + 1)})"
                     f" and "
@@ -152,13 +152,13 @@ class Writer:
         segment_addresses_str = f'seg[{self.segments}]={self.get_segment_addresses_repr(segment_start, segment_length)}'
 
         if segment_length <= 0:
-            raise FJWriteFjmException(f"segment-length must be positive (in {segment_addresses_str}).")
+            raise FlipJumpWriteFjmException(f"segment-length must be positive (in {segment_addresses_str}).")
 
         if segment_length < data_length:
-            raise FJWriteFjmException(f"segment-length must be at-least data-length (in {segment_addresses_str}).")
+            raise FlipJumpWriteFjmException(f"segment-length must be at-least data-length (in {segment_addresses_str}).")
 
         if segment_start % 2 == 1 or segment_length % 2 == 1:
-            raise FJWriteFjmException(f"segment-start and segment-length must be 2*w aligned "
+            raise FlipJumpWriteFjmException(f"segment-start and segment-length must be 2*w aligned "
                                       f"(in {segment_addresses_str}).")
 
         self._validate_segment_not_overlapping(segment_start, segment_length, data_start, data_length)

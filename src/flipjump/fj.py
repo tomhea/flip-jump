@@ -12,8 +12,9 @@ from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
 from flipjump.utils.functions import get_stl_paths
 from flipjump.fjm import fjm_consts
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.inner_classes.exceptions import FJReadFjmException
+from flipjump.inner_classes.exceptions import FlipJumpReadFjmException
 from flipjump.io_devices.StandardIO import StandardIO
+
 
 ErrorFunc = Callable[[str], None]
 
@@ -124,7 +125,7 @@ def run(in_fjm_path: Path, debug_file: Path, args: argparse.Namespace, error_fun
         if not args.silent:
             termination_statistics.print(labels_handler=breakpoint_handler,
                                          output_to_print=io_device.get_output(allow_incomplete_output=True))
-    except FJReadFjmException as e:
+    except FlipJumpReadFjmException as e:
         print()
         print(e)
         exit(1)

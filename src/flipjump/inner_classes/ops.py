@@ -5,7 +5,7 @@ import os
 from dataclasses import dataclass
 from typing import Union, Dict, Set, List, Tuple
 
-from flipjump.inner_classes.exceptions import FJExprException
+from flipjump.inner_classes.exceptions import FlipJumpExprException
 from flipjump.inner_classes.expr import Expr
 
 
@@ -140,8 +140,8 @@ class Pad:
     def calculate_ops_alignment(self, labels: Dict[str, int]) -> int:
         try:
             return self.ops_alignment.exact_eval(labels)
-        except FJExprException as e:
-            raise FJExprException(f"Can't calculate pad ops_alignment on {self.code_position}") from e
+        except FlipJumpExprException as e:
+            raise FlipJumpExprException(f"Can't calculate pad ops_alignment on {self.code_position}") from e
 
 
 class Segment:
@@ -164,8 +164,8 @@ class Segment:
     def calculate_address(self, labels: Dict[str, int]) -> int:
         try:
             return self.start_address.exact_eval(labels)
-        except FJExprException as e:
-            raise FJExprException(f"Can't calculate segment address on {self.code_position}") from e
+        except FlipJumpExprException as e:
+            raise FlipJumpExprException(f"Can't calculate segment address on {self.code_position}") from e
 
 
 class Reserve:
@@ -188,8 +188,8 @@ class Reserve:
     def calculate_reserved_bit_size(self, labels: Dict[str, int]) -> int:
         try:
             return self.reserved_bit_size.exact_eval(labels)
-        except FJExprException as e:
-            raise FJExprException(f"Can't calculate reserved bits size on {self.code_position}") from e
+        except FlipJumpExprException as e:
+            raise FlipJumpExprException(f"Can't calculate reserved bits size on {self.code_position}") from e
 
 
 class MacroCall:
@@ -245,23 +245,23 @@ class RepCall:
     def get_times(self) -> int:
         try:
             return int(self.repeat_times)
-        except FJExprException as e:
-            raise FJExprException(f"Can't calculate rep times on {self.code_position}") from e
+        except FlipJumpExprException as e:
+            raise FlipJumpExprException(f"Can't calculate rep times on {self.code_position}") from e
 
     def calculate_times(self, labels: Dict[str, int]) -> int:
         try:
             times = self.repeat_times.exact_eval(labels)
             self.repeat_times = Expr(times)
             return times
-        except FJExprException as e:
-            raise FJExprException(f"Can't calculate rep times on {self.code_position}") from e
+        except FlipJumpExprException as e:
+            raise FlipJumpExprException(f"Can't calculate rep times on {self.code_position}") from e
 
     def calculate_arguments(self, iterator_value: int) -> Tuple[Expr, ...]:
         iterator_dict = {self.iterator_name: Expr(iterator_value)}
         try:
             return tuple(expr.eval_new(iterator_dict) for expr in self.arguments)
-        except FJExprException as e:
-            raise FJExprException(f"Can't calculate rep arguments on {self.code_position}") from e
+        except FlipJumpExprException as e:
+            raise FlipJumpExprException(f"Can't calculate rep arguments on {self.code_position}") from e
 
     def trace_str(self) -> str:
         """
@@ -287,7 +287,7 @@ class Label:
             new_name = labels_dict[self.name].value
             if isinstance(new_name, str):
                 return new_name
-            raise FJExprException(
+            raise FlipJumpExprException(
                 f'Bad label swap (from {self.name} to {labels_dict[self.name]}) in {self.code_position}.')
         return self.name
 

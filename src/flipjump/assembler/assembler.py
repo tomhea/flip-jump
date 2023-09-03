@@ -8,19 +8,19 @@ from flipjump.utils.constants import WFLIP_LABEL_PREFIX
 from flipjump.utils.functions import save_debugging_labels
 from flipjump.utils.classes import PrintTimer
 from flipjump.assembler.fj_parser import parse_macro_tree
-from flipjump.inner_classes.exceptions import FJAssemblerException, FJException, FJWriteFjmException
+from flipjump.inner_classes.exceptions import FlipJumpAssemblerException, FlipJumpException, FlipJumpWriteFjmException
 from flipjump.inner_classes.ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits, Padding
 from flipjump.assembler.preprocessor import resolve_macros
 
 
 def assert_address_in_memory(w: int, address: int):
     if address < 0 or address >= (1 << w):
-        raise FJAssemblerException(f"Not enough space with the {w}-width.")
+        raise FlipJumpAssemblerException(f"Not enough space with the {w}-width.")
 
 
 def validate_addresses(w, first_address, last_address):
     if first_address % w != 0 or last_address % w != 0:
-        raise FJAssemblerException(f'segment boundaries are unaligned: '
+        raise FlipJumpAssemblerException(f'segment boundaries are unaligned: '
                                    f'[{hex(first_address)}, {hex(last_address - 1)}].')
 
     assert_address_in_memory(w, first_address)
@@ -43,8 +43,8 @@ def add_segment_to_fjm(w: int,
 
     try:
         fjm_writer.add_segment(segment_start_address, segment_length, data_start, len(data_words))
-    except FJWriteFjmException as e:
-        raise FJAssemblerException(f"failed to add the segment: "
+    except FlipJumpWriteFjmException as e:
+        raise FlipJumpAssemblerException(f"failed to add the segment: "
                                    f"{fjm_writer.get_segment_addresses_repr(segment_start_address, segment_length)}.") \
             from e
 
@@ -171,7 +171,7 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
     """
     first_segment: NewSegment = ops.popleft()
     if not isinstance(first_segment, NewSegment):
-        raise FJAssemblerException(f"The first op must be of type NewSegment (and not {first_segment}).")
+        raise FlipJumpAssemblerException(f"The first op must be of type NewSegment (and not {first_segment}).")
 
     binary_data = BinaryData(w, first_segment, labels)
 
@@ -179,15 +179,15 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
         if isinstance(op, FlipJump):
             try:
                 binary_data.insert_fj_op(op.get_flip(labels), op.get_jump(labels))
-            except FJException as e:
-                raise FJAssemblerException(f"{e} in op {op}.")
+            except FlipJumpException as e:
+                raise FlipJumpAssemblerException(f"{e} in op {op}.")
 
         elif isinstance(op, WordFlip):
             try:
                 binary_data.insert_wflip_ops(op.get_word_address(labels), op.get_flip_value(labels),
                                              op.get_return_address(labels))
-            except FJException as e:
-                raise FJAssemblerException(f"{e} in op {op}.")
+            except FlipJumpException as e:
+                raise FlipJumpAssemblerException(f"{e} in op {op}.")
 
         elif isinstance(op, Padding):
             binary_data.insert_padding(op.ops_count)
@@ -199,7 +199,7 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
             binary_data.insert_reserve_bits(fjm_writer, op.first_address_after_reserved)
 
         else:
-            raise FJAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
+            raise FlipJumpAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
 
     binary_data.close_and_add_segment(fjm_writer)
 
@@ -210,13 +210,13 @@ def assemble(input_files: List[Tuple[str, Path]], w: int, fjm_writer: Writer, *,
         -> None:
     """
     runs the assembly pipeline. assembles the input files to a .fjm.
-    @param input_files:[in]: a list of (short_file_name, fj_file_path). The files will to be parsed in that given order.
-    @param w: the memory-width
-    @param fjm_writer:[out]: the .fjm file writer
-    @param warning_as_errors: treat warnings as errors (stop execution on warnings)
-    @param debugging_file_path:[out]: is specified, save debug information in this file
-    @param show_statistics: if true shows macro-usage statistics
-    @param print_time: if true prints the times of each assemble-stage
+    :param input_files:[in]: a list of (short_file_name, fj_file_path). The files will to be parsed in that given order.
+    :param w: the memory-width
+    :param fjm_writer:[out]: the .fjm file writer
+    :param warning_as_errors: treat warnings as errors (stop execution on warnings)
+    :param debugging_file_path:[out]: is specified, save debug information in this file
+    :param show_statistics: if true shows macro-usage statistics
+    :param print_time: if true prints the times of each assemble-stage
     """
     with PrintTimer('  parsing:         ', print_time=print_time):
         macros = parse_macro_tree(input_files, w, warning_as_errors)

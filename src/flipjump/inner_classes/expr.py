@@ -3,7 +3,7 @@ from __future__ import annotations
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
 from typing import Union, Tuple, Set, Dict
 
-from flipjump.inner_classes.exceptions import FJExprException
+from flipjump.inner_classes.exceptions import FlipJumpExprException
 
 
 # dictionary from a math-op string, to its pythonic function.
@@ -35,7 +35,7 @@ class Expr:
     def __int__(self):
         if self.is_int():
             return self.value
-        raise FJExprException(f"Can't resolve labels:  {', '.join(self.all_unknown_labels())}")
+        raise FlipJumpExprException(f"Can't resolve labels:  {', '.join(self.all_unknown_labels())}")
 
     def all_unknown_labels(self) -> Set[str]:
         """
@@ -52,7 +52,7 @@ class Expr:
         creates a new Expr, as minimal as possible.
         replaces every string it can with its dictionary value, and evaluates any op it can.
         @param params_dict: the label->ExprValue dictionary to be used
-        @raise FJExprException if math op failed
+        @raise FlipJumpExprException if math op failed
         @return: the new Expr
         """
         if isinstance(self.value, int):
@@ -69,14 +69,14 @@ class Expr:
             try:
                 return Expr(op_string_to_function[op](*(arg.value for arg in evaluated_args)))
             except Exception as e:
-                raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
+                raise FlipJumpExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
         return Expr((op, evaluated_args))
 
     def exact_eval(self, labels: Dict[str, int]) -> int:
         """
         evaluates the expression's value with the labels
         @param labels: the label->value dictionary to be used
-        @raise FJExprException if it can't evaluate
+        @raise FlipJumpExprException if it can't evaluate
         @return: the integer-value of the expression
         """
         if isinstance(self.value, int):
@@ -85,14 +85,14 @@ class Expr:
         if isinstance(self.value, str):
             if self.value in labels:
                 return labels[self.value]
-            raise FJExprException(f"Can't evaluate label {self.value} in expression {self}")
+            raise FlipJumpExprException(f"Can't evaluate label {self.value} in expression {self}")
 
         op, args = self.value
         evaluated_args: Tuple[int, ...] = tuple(e.exact_eval(labels) for e in args)
         try:
             return op_string_to_function[op](*evaluated_args)
         except Exception as e:
-            raise FJExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
+            raise FlipJumpExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
 
     def __str__(self) -> str:
         if isinstance(self.value, tuple):
@@ -110,7 +110,7 @@ class Expr:
             return self.value
         if isinstance(self.value, int):
             return str(self.value)
-        raise FJExprException(f'bad expression: {self.value} (of type {type(self.value)})')
+        raise FlipJumpExprException(f'bad expression: {self.value} (of type {type(self.value)})')
 
     def __repr__(self) -> str:
         return str(self)

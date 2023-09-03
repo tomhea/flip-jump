@@ -6,7 +6,7 @@ import sly
 from sly.lex import Token
 from sly.yacc import YaccProduction as ParsedRule
 
-from flipjump.inner_classes.exceptions import FJExprException, FJParsingException
+from flipjump.inner_classes.exceptions import FlipJumpExprException, FlipJumpParsingException
 from flipjump.inner_classes.expr import Expr, get_minimized_expr
 from flipjump.inner_classes.ops import get_used_labels, get_declared_labels, \
     CodePosition, MacroName, Op, Macro, initial_macro_name, \
@@ -537,7 +537,7 @@ class FJParser(sly.Parser):
         evaluated = p.expr.eval_new(self.consts)
         try:
             self.consts[name] = Expr(int(evaluated))
-        except FJExprException:
+        except FlipJumpExprException:
             syntax_error(p.lineno, f'Can\'t evaluate expression:  {str(evaluated)}.')
 
     @_('REP "(" expr "," ID ")" id')
@@ -670,19 +670,19 @@ class FJParser(sly.Parser):
 
 def exit_if_errors() -> None:
     if error_occurred:
-        raise FJParsingException(f'Errors found in file {curr_file}. Assembly stopped.\n\nThe Errors:\n{all_errors}')
+        raise FlipJumpParsingException(f'Errors found in file {curr_file}. Assembly stopped.\n\nThe Errors:\n{all_errors}')
 
 
 def validate_current_file(files_seen: Set[Union[str, Path]]) -> None:
     if not path.isfile(curr_file):
-        raise FJParsingException(f"No such file {curr_file}.")
+        raise FlipJumpParsingException(f"No such file {curr_file}.")
 
     if curr_file_short_name in files_seen:
-        raise FJParsingException(f"Short file name is repeated: '{curr_file_short_name}'.")
+        raise FlipJumpParsingException(f"Short file name is repeated: '{curr_file_short_name}'.")
 
     abs_path = curr_file.absolute()
     if abs_path in files_seen:
-        raise FJParsingException(f".fj file path is repeated: '{abs_path}'.")
+        raise FlipJumpParsingException(f".fj file path is repeated: '{abs_path}'.")
 
     files_seen.add(curr_file_short_name)
     files_seen.add(abs_path)

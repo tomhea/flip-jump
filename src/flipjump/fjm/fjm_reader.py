@@ -9,7 +9,7 @@ from typing import BinaryIO, List, Tuple
 from flipjump.fjm.fjm_consts import FJ_MAGIC, _reserved_dict_threshold, _header_base_format, _header_extension_format, \
     _header_base_size, _header_extension_size, _segment_format, _segment_size, BaseVersion, RelativeJumpVersion, \
     CompressedVersion, SUPPORTED_VERSIONS, _LZMA_FORMAT, _LZMA_DECOMPRESSION_FILTERS, _new_garbage_val
-from flipjump.inner_classes.exceptions import FJReadFjmException, FJRuntimeMemoryException
+from flipjump.inner_classes.exceptions import FlipJumpReadFjmException, FlipJumpRuntimeMemoryException
 
 
 class GarbageHandling(IntEnum):
@@ -42,7 +42,7 @@ class Reader:
                 data = self._read_decompressed_data(fjm_file)
                 self._init_memory(segments, data)
             except struct.error as se:
-                raise FJReadFjmException(f"Bad file {input_file}, can't unpack. Maybe it's not a .fjm file?") from se
+                raise FlipJumpReadFjmException(f"Bad file {input_file}, can't unpack. Maybe it's not a .fjm file?") from se
 
     def _init_header_fields(self, fjm_file: BinaryIO) -> None:
         self.magic, self.w, self.version, self.segment_num = \
@@ -57,19 +57,19 @@ class Reader:
 
     def _validate_header(self) -> None:
         if self.magic != FJ_MAGIC:
-            raise FJReadFjmException(f'Error: bad magic code ({hex(self.magic)}, should be {hex(FJ_MAGIC)}).')
+            raise FlipJumpReadFjmException(f'Error: bad magic code ({hex(self.magic)}, should be {hex(FJ_MAGIC)}).')
         if self.version not in SUPPORTED_VERSIONS:
-            raise FJReadFjmException(
+            raise FlipJumpReadFjmException(
                 f'Error: unsupported version ({self.version}, this program supports {str(SUPPORTED_VERSIONS)}).')
         if self.reserved != 0:
-            raise FJReadFjmException(f'Error: bad reserved value ({self.reserved}, should be 0).')
+            raise FlipJumpReadFjmException(f'Error: bad reserved value ({self.reserved}, should be 0).')
 
     @staticmethod
     def _decompress_data(compressed_data: bytes) -> bytes:
         try:
             return lzma.decompress(compressed_data, format=_LZMA_FORMAT, filters=_LZMA_DECOMPRESSION_FILTERS)
         except lzma.LZMAError as e:
-            raise FJReadFjmException(f'Error: The compressed data is damaged; Unable to decompress.') from e
+            raise FlipJumpReadFjmException(f'Error: The compressed data is damaged; Unable to decompress.') from e
 
     def _read_decompressed_data(self, fjm_file: BinaryIO) -> List[int]:
         """
@@ -119,7 +119,7 @@ class Reader:
             garbage_message = f'Reading garbage word at mem[{hex(word_address << self.w)[2:]}] = {hex(garbage_val)[2:]}'
 
             if GarbageHandling.Stop == self.garbage_handling:
-                raise FJRuntimeMemoryException(garbage_message)
+                raise FlipJumpRuntimeMemoryException(garbage_message)
             elif GarbageHandling.OnlyWarning == self.garbage_handling:
                 print(f'\nWarning:  {garbage_message}')
             elif GarbageHandling.SlowRead == self.garbage_handling:
@@ -177,7 +177,7 @@ class Reader:
         if bit_offset == 0:
             return self._get_memory_word(word_address)
         if word_address == ((1 << self.w) - 1):
-            raise FJRuntimeMemoryException(f'Accessed outside of memory (beyond the last bit).')
+            raise FlipJumpRuntimeMemoryException(f'Accessed outside of memory (beyond the last bit).')
 
         lsw = self._get_memory_word(word_address)
         msw = self._get_memory_word(word_address + 1)

@@ -5,7 +5,7 @@ from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional
 
 from flipjump.debugging.macro_usage_graph import show_macro_usage_pie_graph
 from flipjump.utils.constants import MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING
-from flipjump.inner_classes.exceptions import FJPreprocessorException, FJExprException
+from flipjump.inner_classes.exceptions import FlipJumpPreprocessorException, FlipJumpExprException
 from flipjump.inner_classes.expr import Expr
 from flipjump.inner_classes.ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
     CodePosition, Macro, LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
@@ -28,7 +28,7 @@ def macro_resolve_error(curr_tree: CurrTree, msg='', *, orig_exception: BaseExce
         error_str += 'Macro call trace:\n'
         for i, op in enumerate(curr_tree):
             error_str += f'  {i}) {op.trace_str()}\n'
-    raise FJPreprocessorException(error_str) from orig_exception
+    raise FlipJumpPreprocessorException(error_str) from orig_exception
 
 
 class PreprocessorData:
@@ -145,7 +145,7 @@ class PreprocessorData:
 def get_rep_times(op: RepCall, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_times(preprocessor_data.labels)
-    except FJExprException as e:
+    except FlipJumpExprException as e:
         macro_resolve_error(preprocessor_data.curr_tree, f'rep {op.macro_name} failed. In {op.code_position}.',
                             orig_exception=e)
 
@@ -153,7 +153,7 @@ def get_rep_times(op: RepCall, preprocessor_data: PreprocessorData) -> int:
 def get_pad_ops_alignment(op: Pad, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_ops_alignment(preprocessor_data.labels)
-    except FJExprException as e:
+    except FlipJumpExprException as e:
         macro_resolve_error(preprocessor_data.curr_tree, f'pad {op.ops_alignment} failed. In {op.code_position}.',
                             orig_exception=e)
 
@@ -165,7 +165,7 @@ def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData) -> 
             macro_resolve_error(preprocessor_data.curr_tree, f'segment ops must have a w-aligned address: '
                                                              f'{hex(next_segment_start)}. In {op.code_position}.')
         return next_segment_start
-    except FJExprException as e:
+    except FlipJumpExprException as e:
         macro_resolve_error(preprocessor_data.curr_tree, f'segment failed. In {op.code_position}.', orig_exception=e)
 
 
@@ -176,7 +176,7 @@ def get_reserved_bits_size(op: Reserve, preprocessor_data: PreprocessorData) -> 
             macro_resolve_error(preprocessor_data.curr_tree, f'reserve ops must have a w-aligned value: '
                                                              f'{hex(reserved_bits_size)}. In {op.code_position}.')
         return reserved_bits_size
-    except FJExprException as e:
+    except FlipJumpExprException as e:
         macro_resolve_error(preprocessor_data.curr_tree, f'reserve failed. In {op.code_position}.', orig_exception=e)
 
 
