@@ -3,8 +3,6 @@ from typing import Dict, Tuple, List
 
 from flipjump.utils.constants import MACRO_SEPARATOR_STRING
 
-from src.flipjump.inner_classes.exceptions import FlipJumpMissingImportException
-
 
 def _prepare_first_and_second_level_significant_macros(
         child_significance_min_thresh: float, macro_code_size: Dict[str, int],

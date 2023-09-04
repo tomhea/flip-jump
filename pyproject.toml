@@ -12,7 +12,7 @@ license = "BSD-2-Clause-Simplified"
 readme = "README.md"
 
 include = [
-    { path = "stl", format = "sdist" }
+    { path = "flipjump/stl", format = "sdist" }
 ]
 
 homepage = "https://esolangs.org/wiki/FlipJump"

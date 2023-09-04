@@ -1,6 +1,6 @@
 # FlipJump Standard Library
 
-The stl is a collection of FlipJump files, each a collection of **highly-optimized** and **[tested](../tests)** macros, that are free to use by any FlipJump program that may benefit from it.
+The stl is a collection of FlipJump files, each a collection of **highly-optimized** and **[tested](../../tests)** macros, that are free to use by any FlipJump program that may benefit from it.
 
 It mainly offers binary/hexadecimal data-structures, mathematical and logical operations, conditional jumps, pointers, casting, and input/output.
 
