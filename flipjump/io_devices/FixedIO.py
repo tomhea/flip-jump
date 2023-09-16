@@ -1,5 +1,5 @@
 from flipjump.io_devices.IODevice import IODevice
-from flipjump.io_devices.io_exceptions import IOReadOnEOF, IncompleteOutput
+from flipjump.inner_classes.exceptions import IOReadOnEOF, IncompleteOutput
 
 
 class FixedIO(IODevice):

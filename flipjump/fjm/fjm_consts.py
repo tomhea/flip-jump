@@ -1,11 +1,12 @@
 import lzma
+from enum import Enum
 from typing import List, Dict
 
 
 """
 struct {
     u16 fj_magic;   // 'F' + 'J'<<8  (0x4a46)
-    u16 word_size;  // in bits
+    u16 word_size;  // number of bits in the memory / a memory-word. also called "w". 
     u64 version;
     u64 segment_num;
     { // for versions > 0
@@ -38,15 +39,18 @@ _segment_format = '<QQQQ'
 _segment_size = 8 + 8 + 8 + 8
 
 
-BaseVersion = 0
-NormalVersion = 1
-RelativeJumpVersion = 2     # compress-friendly
-CompressedVersion = 3       # version 2 but data is lzma2-compressed
-SUPPORTED_VERSIONS = {
-    BaseVersion: 'Base',
-    NormalVersion: 'Normal',
-    RelativeJumpVersion: 'RelativeJump',
-    CompressedVersion: 'Compressed',
+class FJMVersion(Enum):
+    BaseVersion = 0
+    NormalVersion = 1
+    RelativeJumpVersion = 2     # compress-friendly
+    CompressedVersion = 3       # version 2 but data is lzma2-compressed
+
+
+SUPPORTED_VERSIONS_NAMES = {
+    FJMVersion.BaseVersion: 'Base',
+    FJMVersion.NormalVersion: 'Normal',
+    FJMVersion.RelativeJumpVersion: 'RelativeJump',
+    FJMVersion.CompressedVersion: 'Compressed',
 }
 
 

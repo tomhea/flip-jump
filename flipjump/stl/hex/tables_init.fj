@@ -5,7 +5,7 @@ ns hex {
     // Space Complexity: 6500   (6460+@)
     //                   It is 50/100KB (for w=32/64 bits)
     //                   It is 5KB in --version 3 (for both w=32/64 bits)
-    // This macro inits all truth tables for the hex-macros.
+    // This macro initializes all truth tables for the hex-macros.
     // Use this macro exactly once, and don't use it alongside any other hex.*.init macros, as it will declare those twice.
     // @output-param ret: The return address. Jumps to it after finishing going through a table.
     // @output-param res: The result of the table calculation is written here.

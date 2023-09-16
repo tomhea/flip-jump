@@ -7,13 +7,18 @@ from typing import Optional, Deque
 
 
 class TerminationCause(IntEnum):
-    Looping = 0             # Finished by jumping to the last op, without flipping it (the "regular" finish/exit)
-    EOF = 1                 # Finished by reading input when there is no more input
-    NullIP = 2              # Finished by jumping back to the initial op 0 (bad finish)
-    UnalignedWord = 3       # FOR FUTURE SUPPORT - tried to access an unaligned word (bad finish)
-    UnalignedOp = 4         # FOR FUTURE SUPPORT - tried to access a dword-unaligned op (bad finish)
-    RuntimeMemoryError = 5  # Finished by trying to read/write something out of the defined memory
-                            # (probably a bug in the fj-program)
+    # Finished by jumping to the last op, without flipping it (the "regular" finish/exit)
+    Looping = 0
+    # Finished by reading input when there is no more input
+    EOF = 1
+    # Finished by jumping back to the initial op 0 (bad finish)
+    NullIP = 2
+    # FOR FUTURE SUPPORT - tried to access an unaligned word (bad finish)
+    UnalignedWord = 3
+    # FOR FUTURE SUPPORT - tried to access a dword-unaligned op (bad finish)
+    UnalignedOp = 4
+    # Finished by trying to read/write something out of the defined memory (probably a bug in the fj-program)
+    RuntimeMemoryError = 5
 
     def __str__(self) -> str:
         return ['looping', 'EOF', 'ip<2w', 'unaligned-word', 'unaligned-op', 'runtime-memory-error'][self.value]
@@ -54,14 +59,14 @@ class RunStatistics:
         def __exit__(self, exc_type, exc_val, exc_tb):
             self.paused_time += time() - self.pause_start_time
 
-    def __init__(self, w: int, last_ops_debugging_list_length: Optional[int]):
+    def __init__(self, memory_width: int, last_ops_debugging_list_length: Optional[int]):
         """
         Saves statistics about the current run (and a queue of the last executed ops).
-        @param w: the memory bit-length
+        @param memory_width: the memory bit-length
         @param last_ops_debugging_list_length: The length of the last-ops list
         """
-        self._op_size = 2 * w
-        self._after_null_flip = 2 * w
+        self._op_size = 2 * memory_width
+        self._after_null_flip = 2 * memory_width
 
         self.op_counter = 0
         self.flip_counter = 0

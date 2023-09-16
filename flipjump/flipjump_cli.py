@@ -5,46 +5,16 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Tuple, List, Callable, Optional
 
-from flipjump.interpretter import fjm_run
+from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
-from flipjump.debugging.breakpoints import get_breakpoint_handler
-from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
-from flipjump.utils.functions import get_stl_paths
-from flipjump.fjm import fjm_consts
+from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.inner_classes.exceptions import FlipJumpReadFjmException
+from flipjump.inner_classes.exceptions import FlipJumpException
 from flipjump.io_devices.StandardIO import StandardIO
-
+from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
+from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
 
 ErrorFunc = Callable[[str], None]
-
-
-def get_temp_directory_suffix(files: List[str]) -> str:
-    """
-    create a suffix for the temp directory name, using args.
-    @param files: the list of fj-code files.
-    @return: the suffix
-    """
-    return f'__{"_".join(map(os.path.basename, files))}__temp_directory'
-
-
-def get_file_tuples(files: List[str], *, no_stl: bool = False) -> List[Tuple[str, Path]]:
-    """
-    get the list of .fj files to be assembled (stl + files).
-    @param files: the list of fj-code files.
-    @param no_stl: if True: don't include the standard library.
-    @return: a list of file-tuples - (file_short_name, file_path)
-    """
-    file_tuples = []
-
-    if not no_stl:
-        for i, stl_path in enumerate(get_stl_paths(), start=1):
-            file_tuples.append((f"s{i}", stl_path))
-
-    for i, file in enumerate(files, start=1):
-        file_tuples.append((f"f{i}", Path(file)))
-
-    return file_tuples
 
 
 def verify_file_exists(error_func: ErrorFunc, path: Path) -> None:
@@ -80,7 +50,8 @@ def verify_fjm_file(error_func: ErrorFunc, path: Path) -> None:
         error_func(f'file {path} is not a .fjm file.')
 
 
-def get_files_paths(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_name: str) -> Tuple[Path, Path, Path]:
+def get_files_paths(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_name: str) \
+        -> Tuple[Optional[Path], Path, Path]:
     """
     generate the files paths from args, and create temp paths under temp_dir_name if necessary.
     @param args: the parsed arguments
@@ -95,7 +66,7 @@ def get_files_paths(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_na
     return debug_path, in_fjm_path, out_fjm_path
 
 
-def run(in_fjm_path: Path, debug_file: Path, args: argparse.Namespace, error_func: ErrorFunc) -> None:
+def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace, error_func: ErrorFunc) -> None:
     """
     prepare and verify arguments and io_device, and run the .fjm program.
     @param in_fjm_path: the input .fjm-file path
@@ -107,31 +78,26 @@ def run(in_fjm_path: Path, debug_file: Path, args: argparse.Namespace, error_fun
     if debug_file:
         verify_file_exists(error_func, debug_file)
 
-    breakpoint_set = set(args.breakpoint)
-    breakpoint_contains_set = set(args.breakpoint_contains)
-
-    io_device = StandardIO(not args.no_output)
-
     try:
-        breakpoint_handler = get_breakpoint_handler(debug_file, set(), breakpoint_set, breakpoint_contains_set)
-        termination_statistics = fjm_run.run(
+        flipjump_quickstart.debug(
             in_fjm_path,
-            io_device=io_device,
+            debug_file,
+            breakpoints_addresses=set(),
+            breakpoints=set(args.breakpoint),
+            breakpoints_contains=set(args.breakpoint_contains),
+            io_device=StandardIO(not args.no_output),
             show_trace=args.trace,
-            time_verbose=not args.silent,
-            breakpoint_handler=breakpoint_handler if breakpoint_handler.breakpoints else None,
+            print_time=not args.silent,
+            print_termination=not args.silent,
             last_ops_debugging_list_length=args.debug_ops_list,
         )
-        if not args.silent:
-            termination_statistics.print(labels_handler=breakpoint_handler,
-                                         output_to_print=io_device.get_output(allow_incomplete_output=True))
-    except FlipJumpReadFjmException as e:
+    except FlipJumpException as e:
         print()
         print(e)
         exit(1)
 
 
-def get_version(version: Optional[int], is_outfile_specified: bool) -> int:
+def get_version(version: Optional[int], is_outfile_specified: bool) -> FJMVersion:
     """
     @param version: the fjm version. if None the default version will be taken.
     @param is_outfile_specified: if True, the default is the compressed-version.
@@ -139,11 +105,11 @@ def get_version(version: Optional[int], is_outfile_specified: bool) -> int:
     @return: the chosen version, or default if not specified.
     """
     if version is not None:
-        return version
+        return FJMVersion(version)
 
     if is_outfile_specified:
-        return fjm_consts.CompressedVersion
-    return fjm_consts.NormalVersion
+        return FJMVersion.CompressedVersion
+    return FJMVersion.NormalVersion
 
 
 def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, error_func: ErrorFunc) -> None:
@@ -184,13 +150,13 @@ def get_fjm_file_path(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_
     return Path(out_fjm_file)
 
 
-def get_debug_file_path(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_name: str) -> Path:
+def get_debug_file_path(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_name: str) -> Optional[Path]:
     """
     get the debug-file path from args. If unspecified, create a temporary file under temp_dir_name.
     @param args: the parsed arguments
     @param error_func: the parser's error function
     @param temp_dir_name: a temporary directory that files can safely be created in
-    @return: the debug-file path
+    @return: the debug-file path. If debug flag isn't set, and it's unneeded, return None
     """
     debug_file = args.debug
     debug_file_needed = not args.asm and any((args.breakpoint, args.breakpoint_contains))
@@ -221,11 +187,11 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
     add the arguments that are usable in run time.
     @param parser: the parser
     """
-    def _check_int_positive(value):
-        ivalue = int(value)
-        if ivalue <= 0:
+    def _check_int_positive(value: str):
+        int_value = int(value)
+        if int_value <= 0:
             raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
-        return ivalue
+        return int_value
 
     run_arguments = parser.add_argument_group('run arguments', 'Ignored when using the --assemble option')
 
@@ -256,20 +222,24 @@ def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
     asm_arguments.add_argument('-w', '--width', type=int, default=64, choices=[8, 16, 32, 64], metavar='WIDTH',
                                help="specify memory-width. 64 by default")
 
-    supported_versions = ', '.join(f"{version}: {name}" for version, name in fjm_consts.SUPPORTED_VERSIONS.items())
+    supported_versions = ', '.join(f"{version}: {name}"
+                                   for version, name in fjm_consts.SUPPORTED_VERSIONS_NAMES.items())
     asm_arguments.add_argument('-v', '--version', metavar='VERSION', type=int, default=None,
-                               help=f"fjm version (default of {fjm_consts.CompressedVersion}-compressed "
-                                    f"if --outfile specified; version {fjm_consts.NormalVersion} otherwise). "
+                               help=f"fjm version (default of {FJMVersion.CompressedVersion}-compressed "
+                                    f"if --outfile specified; version {FJMVersion.NormalVersion} otherwise). "
                                     f"supported versions: {supported_versions}.")   # default enforced in get_version()
-    asm_arguments.add_argument('-f', '--flags', help="the default .fjm unpacking & running flags", type=int, default=0)
+    asm_arguments.add_argument('-f', '--flags', help="the default .fjm unpacking & running flags",
+                               type=int, default=0)
 
     asm_arguments.add_argument('--lzma_preset', type=int, default=lzma.PRESET_DEFAULT, choices=list(range(10)),
                                help=f"The preset used for the LZMA2 algorithm compression ("
                                     f"{lzma.PRESET_DEFAULT} by default; "
-                                    f"used when version={fjm_consts.CompressedVersion}).")
+                                    f"used when version={FJMVersion.CompressedVersion}).")
 
-    asm_arguments.add_argument('--werror', help="treat all assemble warnings as errors", action='store_true')
-    asm_arguments.add_argument('--no_stl', help="don't assemble/link the standard library files", action='store_true')
+    asm_arguments.add_argument('--werror', help="treat all assemble warnings as errors",
+                               action='store_true')
+    asm_arguments.add_argument('--no_stl', help="don't assemble/link the standard library files",
+                               action='store_true')
     asm_arguments.add_argument('--stats', help="show macro code-size statistics", action='store_true')
 
 

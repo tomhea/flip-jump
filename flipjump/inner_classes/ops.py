@@ -15,7 +15,7 @@ class CodePosition:
     A position in the .fj files.
     """
     file: str
-    file_short_name: str    # shortened file name. usually s1,s2,.. for stl, and f1,f2,.. for the rest.
+    file_short_name: str    # shortened file name. usually s1,s2,... for stl, and f1,f2,... for the rest.
     line: int
 
     def __str__(self) -> str:
@@ -194,7 +194,7 @@ class Reserve:
 
 class MacroCall:
     """
-    The python representation of the "macro-call [args..]" fj-assembly op.
+    The python representation of the "macro-call [args...]" fj-assembly op.
     """
     def __init__(self, macro_name: str, arguments: List[Expr], code_position: CodePosition):
         self.macro_name = MacroName(macro_name, len(arguments))
@@ -217,7 +217,7 @@ class MacroCall:
 
 class RepCall:
     """
-    The python representation of the "rep(n, i) macro_call [args..]" fj-assembly op.
+    The python representation of the "rep(n, i) macro_call [args...]" fj-assembly op.
     """
     def __init__(self, repeat_times: Expr, iterator_name: str, macro_name: str, arguments: List[Expr],
                  code_position: CodePosition):

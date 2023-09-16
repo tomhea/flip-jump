@@ -54,17 +54,17 @@ On a rep-call (on index==i), the macro call string is:\
 short_file_name : line : rep{i} : macro_called\
 for example: f1:32:rep6:hex.print---f2:17:print_bit---print_label
 
-the short_file_name is (by default) s1,s2,s3,.. for the standard library files (in the order of [stl/conf.json - all](stl/conf.json)),
-and f1,f2,f3,.. for the compiled .fj files, in the order they are mentioned to the compiler (or appear in the test-line).
+the short_file_name is (by default) s1,s2,s3,... for the standard library files (in the order of [stl/conf.json - all](stl/conf.json)),
+and f1,f2,f3,... for the compiled .fj files, in the order they are mentioned to the compiler (or appear in the test-line).
 
 You can place breakpoints to stop on specific labels using the `-d`, followed by a  `-b` and a label name (or `-B` and a part of a label name). For example:
 ![Debugging Demo](../res/breakpoint.jpg)
 
 ## More Files
 
-- The [fj.py](fj.py) file is the main FlipJump cli-script. run with --help to see its capabilities.
-- The [fjm.py](fjm/fjm_reader.py) file helps to read and write a .fjm file.
-- The [defs.py](utils/constants.py) file contains functionality used across the source files, and the project's definitions.
+- The [flipjump_cli.py](flipjump_cli.py) file is the main FlipJump cli-script. run with --help to see its capabilities.
+- The [fjm_reader.py](fjm/fjm_reader.py) / [fjm_writer.py](fjm/fjm_writer.py) files help to read and write a .fjm file.
+- The [utils/](utils/) files contains functions and classes used in the entire project, and the project's definitions.
 - The [exceptions.py](inner_classes/exceptions.py) file contains exceptions definitions.
 - The [io_devices/](io_devices) folder contains modules for different Input/Output-handling classes. The standard one is [StandardIO.py](io_devices/StandardIO.py), and the tests uses the [FixedIO.py](io_devices/FixedIO.py).
 

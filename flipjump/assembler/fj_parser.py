@@ -199,8 +199,8 @@ class FJParser(sly.Parser):
     )
     # debugfile = 'src/parser.out'
 
-    def __init__(self, w: int, warning_as_errors: bool):
-        self.consts: Dict[str, Expr] = {'w': Expr(w)}
+    def __init__(self, memory_width: int, warning_as_errors: bool):
+        self.consts: Dict[str, Expr] = {'w': Expr(memory_width)}
         self.warning_as_errors: bool = warning_as_errors
         self.macros: Dict[MacroName, Macro] = {initial_macro_name: Macro([], [], [], '', None)}
 
@@ -700,13 +700,13 @@ def lex_parse_curr_file(lexer: FJLexer, parser: FJParser) -> None:
     exit_if_errors()
 
 
-def parse_macro_tree(input_files: List[Tuple[str, Path]], w: int, warning_as_errors: bool) \
+def parse_macro_tree(input_files: List[Tuple[str, Path]], memory_width: int, warning_as_errors: bool) \
         -> Dict[MacroName, Macro]:
     """
     parse the .fj files and create a macro-dictionary.
     The files will be parsed as if they were concatenated.
     @param input_files:[in]: a list of (short_file_name, fj_file_path). The files will to be parsed in that given order.
-    @param w:[in]: the memory-width
+    @param memory_width:[in]: the memory-width
     @param warning_as_errors:[in]: treat warnings as errors (stop execution on warnings)
     @return: the macro-dictionary.
     """
@@ -717,7 +717,7 @@ def parse_macro_tree(input_files: List[Tuple[str, Path]], w: int, warning_as_err
     files_seen: Set[Union[str, Path]] = set()
 
     lexer = FJLexer()
-    parser = FJParser(w, warning_as_errors)
+    parser = FJParser(memory_width, warning_as_errors)
 
     for curr_file_short_name, curr_file in input_files:
         validate_current_file(files_seen)

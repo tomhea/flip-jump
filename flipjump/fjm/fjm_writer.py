@@ -4,7 +4,7 @@ from struct import pack
 from typing import List
 
 from flipjump.fjm.fjm_consts import FJ_MAGIC, _header_base_format, _header_extension_format, _segment_format, \
-    BaseVersion, RelativeJumpVersion, CompressedVersion, SUPPORTED_VERSIONS, _LZMA_FORMAT, _lzma_compression_filters
+    SUPPORTED_VERSIONS_NAMES, _LZMA_FORMAT, _lzma_compression_filters, FJMVersion
 from flipjump.inner_classes.exceptions import FlipJumpWriteFjmException
 
 
@@ -12,38 +12,38 @@ class Writer:
     """
     Used for creating a .fjm file in memory.
     The process is:
-        1. add_data(..)
-        2. add_segment(..)
+        1. add_data(...)
+        2. add_segment(...)
         repeat steps 1-2 until you finished updating the fjm
         3. write_to_file()
     """
-    def __init__(self, output_file: Path, w: int, version: int,
+    def __init__(self, output_file: Path, memory_width: int, version: FJMVersion,
                  *, flags: int = 0, lzma_preset: int = lzma.PRESET_DEFAULT):
         """
         the .fjm-file writer
         @param output_file: [in,out]: the path to the .fjm file
-        @param w: the memory-width
+        @param memory_width: the memory-width
         @param version: the file's version
         @param flags: the file's flags
         @param lzma_preset: the preset to be used when compressing the .fjm data
         """
-        if w not in (8, 16, 32, 64):
-            raise FlipJumpWriteFjmException(f"Word size {w} is not in {{8, 16, 32, 64}}.")
-        if version not in SUPPORTED_VERSIONS:
+        if memory_width not in (8, 16, 32, 64):
+            raise FlipJumpWriteFjmException(f"Word size {memory_width} is not in {{8, 16, 32, 64}}.")
+        if version not in SUPPORTED_VERSIONS_NAMES:
             raise FlipJumpWriteFjmException(
-                f'Error: unsupported version ({version}, this program supports {str(SUPPORTED_VERSIONS)}).')
+                f'Error: unsupported version ({version}, this program supports {str(SUPPORTED_VERSIONS_NAMES)}).')
         if flags < 0 or flags >= (1 << 64):
             raise FlipJumpWriteFjmException(f"flags must be a 64bit positive number, not {flags}")
-        if BaseVersion == version and flags != 0:
+        if FJMVersion.BaseVersion == version and flags != 0:
             raise FlipJumpWriteFjmException(f"version 0 does not support the flags option")
-        if CompressedVersion == version:
+        if FJMVersion.CompressedVersion == version:
             if lzma_preset not in range(10):
                 raise FlipJumpWriteFjmException("version 3 requires an LZMA preset (0-9, faster->smaller).")
             else:
                 self.lzma_preset = lzma_preset
 
         self.output_file = output_file
-        self.word_size = w
+        self.word_size = memory_width
         self.version = version
         self.flags = flags
         self.reserved = 0
@@ -66,15 +66,15 @@ class Writer:
         write_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
 
         with open(self.output_file, 'wb') as f:
-            f.write(pack(_header_base_format, FJ_MAGIC, self.word_size, self.version, len(self.segments)))
-            if BaseVersion != self.version:
+            f.write(pack(_header_base_format, FJ_MAGIC, self.word_size, self.version.value, len(self.segments)))
+            if FJMVersion.BaseVersion != self.version:
                 f.write(pack(_header_extension_format, self.flags, self.reserved))
 
             for segment in self.segments:
                 f.write(pack(_segment_format, *segment))
 
             fjm_data = b''.join(pack(write_tag, word) for word in self.data)
-            if CompressedVersion == self.version:
+            if FJMVersion.CompressedVersion == self.version:
                 fjm_data = self._compress_data(fjm_data)
 
             f.write(fjm_data)
@@ -132,13 +132,13 @@ class Writer:
                                           data_start: int, data_length: int) -> None:
         self._validate_segment_addresses_not_overlapping(segment_start, segment_length)
 
-        if self.version in (RelativeJumpVersion, CompressedVersion):
+        if self.version in (FJMVersion.RelativeJumpVersion, FJMVersion.CompressedVersion):
             self._validate_segment_data_not_overlapping(data_start, data_length)
 
     def _update_to_relative_jumps(self, segment_start: int, data_start: int, data_length: int) -> None:
-        word = ((1 << self.word_size) - 1)
+        word_mask = ((1 << self.word_size) - 1)
         for i in range(1, data_length, 2):
-            self.data[data_start + i] = (self.data[data_start + i] - (segment_start + i) * self.word_size) & word
+            self.data[data_start + i] = (self.data[data_start + i] - (segment_start + i) * self.word_size) & word_mask
 
     def add_segment(self, segment_start: int, segment_length: int, data_start: int, data_length: int) -> None:
         """
@@ -155,15 +155,16 @@ class Writer:
             raise FlipJumpWriteFjmException(f"segment-length must be positive (in {segment_addresses_str}).")
 
         if segment_length < data_length:
-            raise FlipJumpWriteFjmException(f"segment-length must be at-least data-length (in {segment_addresses_str}).")
+            raise FlipJumpWriteFjmException(f"segment-length must be at-least data-length "
+                                            f"(in {segment_addresses_str}).")
 
         if segment_start % 2 == 1 or segment_length % 2 == 1:
-            raise FlipJumpWriteFjmException(f"segment-start and segment-length must be 2*w aligned "
-                                      f"(in {segment_addresses_str}).")
+            raise FlipJumpWriteFjmException(f"segment-start and segment-length must be 2*w (2 * memory-width) aligned "
+                                            f"(in {segment_addresses_str}).")
 
         self._validate_segment_not_overlapping(segment_start, segment_length, data_start, data_length)
 
-        if self.version in (RelativeJumpVersion, CompressedVersion):
+        if self.version in (FJMVersion.RelativeJumpVersion, FJMVersion.CompressedVersion):
             self._update_to_relative_jumps(segment_start, data_start, data_length)
 
         self.segments.append((segment_start, segment_length, data_start, data_length))

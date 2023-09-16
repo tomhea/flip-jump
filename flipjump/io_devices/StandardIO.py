@@ -1,9 +1,8 @@
 from sys import stdin, stdout
 
 from flipjump.io_devices.IODevice import IODevice
-from flipjump.io_devices.io_exceptions import IOReadOnEOF, IncompleteOutput
-
-io_bytes_encoding = 'raw_unicode_escape'
+from flipjump.inner_classes.exceptions import IOReadOnEOF, IncompleteOutput
+from flipjump.utils.constants import io_bytes_encoding
 
 
 class StandardIO(IODevice):

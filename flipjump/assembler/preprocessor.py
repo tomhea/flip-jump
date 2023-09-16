@@ -36,7 +36,7 @@ class PreprocessorData:
     maintains the preprocessor "global" data structures, throughout its recursion.
      e.g. current address, resulting ops, labels' dictionary, macros' dictionary...
     also offer many functions to manipulate its data.
-    @note should call finish before get_result..().
+    @note should call finish before get_result...().
     """
     class _PrepareMacroCall:
         def __init__(self, curr_tree: CurrTree,
@@ -55,8 +55,8 @@ class PreprocessorData:
         def __exit__(self, exc_type, exc_val, exc_tb):
             self.curr_tree.pop()
 
-    def __init__(self, w: int, macros: Dict[MacroName, Macro]):
-        self.w = w
+    def __init__(self, memory_width: int, macros: Dict[MacroName, Macro]):
+        self.memory_width = memory_width
         self.macros = macros
 
         self.curr_address: int = 0
@@ -136,7 +136,7 @@ class PreprocessorData:
             self.macro_code_size[macro_path] += self.curr_address - init_curr_address
 
     def align_current_address(self, ops_alignment: int) -> None:
-        op_size = 2 * self.w
+        op_size = 2 * self.memory_width
         ops_to_pad = (-self.curr_address // op_size) % ops_alignment
         self.curr_address += ops_to_pad * op_size
         self.result_ops.append(Padding(ops_to_pad))
@@ -161,8 +161,9 @@ def get_pad_ops_alignment(op: Pad, preprocessor_data: PreprocessorData) -> int:
 def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData) -> int:
     try:
         next_segment_start = op.calculate_address(preprocessor_data.labels)
-        if next_segment_start % preprocessor_data.w != 0:
-            macro_resolve_error(preprocessor_data.curr_tree, f'segment ops must have a w-aligned address: '
+        if next_segment_start % preprocessor_data.memory_width != 0:
+            macro_resolve_error(preprocessor_data.curr_tree, f'segment ops must have a w-aligned '
+                                                             f'(memory-width-aligned) address: '
                                                              f'{hex(next_segment_start)}. In {op.code_position}.')
         return next_segment_start
     except FlipJumpExprException as e:
@@ -172,8 +173,9 @@ def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData) -> 
 def get_reserved_bits_size(op: Reserve, preprocessor_data: PreprocessorData) -> int:
     try:
         reserved_bits_size = op.calculate_reserved_bit_size(preprocessor_data.labels)
-        if reserved_bits_size % preprocessor_data.w != 0:
-            macro_resolve_error(preprocessor_data.curr_tree, f'reserve ops must have a w-aligned value: '
+        if reserved_bits_size % preprocessor_data.memory_width != 0:
+            macro_resolve_error(preprocessor_data.curr_tree, f'reserve ops must have a w-aligned '
+                                                             f'(memory-width aligned) value: '
                                                              f'{hex(reserved_bits_size)}. In {op.code_position}.')
         return reserved_bits_size
     except FlipJumpExprException as e:
@@ -225,7 +227,7 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
             preprocessor_data.insert_label(op.eval_name(params_dict), op.code_position)
 
         elif isinstance(op, FlipJump) or isinstance(op, WordFlip):
-            preprocessor_data.curr_address += 2 * preprocessor_data.w
+            preprocessor_data.curr_address += 2 * preprocessor_data.memory_width
             params_dict['$'] = Expr(preprocessor_data.curr_address)
             preprocessor_data.result_ops.append(op.eval_new(params_dict))
             del params_dict['$']
@@ -272,17 +274,17 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
     preprocessor_data.register_macro_code_size(labels_prefix, init_curr_address)
 
 
-def resolve_macros(w: int, macros: Dict[MacroName, Macro], *, show_statistics: bool = False) \
+def resolve_macros(memory_width: int, macros: Dict[MacroName, Macro], *, show_statistics: bool = False) \
         -> Tuple[Deque[LastPhaseOp], Dict[str, int]]:
     """
     unwind the macro tree to a serialized-queue of ops,
     and creates a dictionary from label's name to its address.
-    @param w: the memory-width
+    @param memory_width: the memory-width
     @param macros: parser's result; the dictionary from the macro names to the macro declaration
     @param show_statistics: if True then prints the macro-usage statistics
     @return: tuple of the queue of ops, and the labels' dictionary
     """
-    preprocessor_data = PreprocessorData(w, macros)
+    preprocessor_data = PreprocessorData(memory_width, macros)
     resolve_macro_aux(preprocessor_data,
                       initial_macro_name, initial_args, initial_labels_prefix)
 

@@ -5,7 +5,7 @@
 ns hex {
     ns pointers {
         // Space Complexity: w/2+2
-        //   Inits the global opcodes and pointer-copies required for the pointers macros.
+        //   Initializes the global opcodes and pointer-copies required for the pointers macros.
         //
         // @output-param to_flip:  address of opcode that holds a flipping address in its first word. jumping into it will flip wanted bit.
         // @output-param to_flip_var:  the hex-vector (pointer) that also holds the flipping address.

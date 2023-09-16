@@ -13,7 +13,10 @@ class BreakpointHandlerUnnecessary(Exception):
     pass
 
 
-def display_message_box_and_get_answer(msg: str, title: str, choices: List[str]) -> str:
+def display_message_box_and_get_answer(body_message: str, title_message: str, choices: List[str]) -> str:
+    """
+    Displays the message box query, and return the answer. If easygui isn't installed correctly, raise an exception.
+    """
     try:
         import easygui
     except ImportError:
@@ -21,10 +24,13 @@ def display_message_box_and_get_answer(msg: str, title: str, choices: List[str])
                                              "Try `pip install easygui`, and also install tkinter on your system.")
 
     # might generate an 'import from collections is deprecated' warning if using easygui-version <= 0.98.3.
-    return easygui.buttonbox(msg, title, choices)
+    return easygui.buttonbox(body_message, title_message, choices)
 
 
 def get_nice_label_repr(label: str, pad: int = 0) -> str:
+    """
+    @return: a well-formed string that represents the label (padded with 'pad' spaces).
+    """
     parts = label.split(MACRO_SEPARATOR_STRING)
     return ' ->\n'.join(f"{' '*(pad+i)}{part}" for i, part in enumerate(parts))
 
@@ -40,12 +46,18 @@ class BreakpointHandler:
         if self.address_to_label and 0 not in self.address_to_label:
             self.address_to_label[0] = ':memory-start:'
 
-        self.next_break = None
+        self.next_break = None  # will break(point) when the number of executed ops reaches this number.
 
     def should_break(self, ip: int, op_counter: int) -> bool:
         return self.next_break == op_counter or ip in self.breakpoints
 
     def get_address_str(self, address: int) -> str:
+        """
+        @return: a string that the must debugging-useful information we know about a memory address, in a pretty way.
+        If this address has a label then return it.
+        Else, return the closest previous-address label to it, and state also the offset.
+        If cant be found, just return the address. All labels returned are more pretty-formatted.
+        """
         if address in self.breakpoints and self.breakpoints[address] is not None:
             label_repr = get_nice_label_repr(self.breakpoints[address], pad=4)
             return f'{hex(address)}:\n{label_repr}'
@@ -61,12 +73,19 @@ class BreakpointHandler:
                 return f'{hex(address)}'
 
     def get_message_box_body(self, ip: int, mem: fjm_reader.Reader, op_counter: int) -> str:
+        """
+        @return the message box body for the debug-action query, for the current ip.
+        """
         address = self.get_address_str(ip)
         flip = self.get_address_str(mem.get_word(ip))
-        jump = self.get_address_str(mem.get_word(ip + mem.w))
+        jump = self.get_address_str(mem.get_word(ip + mem.memory_width))
         return f'Address {address}.\n\n{op_counter} ops executed.\n\nflip {flip}.\n\njump {jump}.'
 
     def query_user_for_debug_action(self, ip: int, mem: fjm_reader.Reader, op_counter: int) -> str:
+        """
+        query the user for the next debug-action to make, while debugging (single-step, continue, ...)
+        @return: The chosen debug-action string.
+        """
         title = "Breakpoint" if ip in self.breakpoints else "Debug Step"
         body = self.get_message_box_body(ip, mem, op_counter)
         actions = ['Single Step', 'Skip 10', 'Skip 100', 'Skip 1000', 'Continue', 'Continue All']
@@ -181,6 +200,8 @@ def update_breakpoints_from_addresses_set(breakpoint_addresses: Optional[Set[int
 def load_labels_dictionary(debugging_file: Optional[Path], labels_file_needed: bool) -> Dict[str, int]:
     """
     load the labels_dictionary from debugging_file, if possible.
+    @param labels_file_needed: if True, prints a warning if debugging-file is None
+    @return: the label-to-address dictionary
     """
     if debugging_file is None:
         if labels_file_needed:
@@ -194,7 +215,7 @@ def load_labels_dictionary(debugging_file: Optional[Path], labels_file_needed: b
     return load_debugging_labels(debugging_file)
 
 
-def get_breakpoint_handler(debugging_file: Path, breakpoint_addresses: Set[int], breakpoint_labels: Set[str],
+def get_breakpoint_handler(debugging_file: Optional[Path], breakpoint_addresses: Set[int], breakpoint_labels: Set[str],
                            breakpoint_contains_labels: Set[str]) -> BreakpointHandler:
     """
     generate the breakpoint handler from the debugging file and the breakpoint sets.

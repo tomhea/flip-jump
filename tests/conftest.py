@@ -87,7 +87,7 @@ def get_compile_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str]
     @param xfail_list: list of tests names to mark with xfail (expected to fail)
     @param save_debug_info: should save the debugging info file
 
-    @return: the list of pytest.params(CompileTestArgs, )
+    @return: the list of pytest.params(CompileTestArgs, marks=...)
     """
     params = []
 
@@ -109,7 +109,7 @@ def get_run_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str],
     @param xfail_list: list of tests names to mark with xfail (expected to fail)
     @param save_debug_file: If not True: should use the debugging info file,
     @param debug_info_length: show the last {debug_info_length} fj-ops if the program failed running.
-    @return: the list of pytest.params(RunTestArgs, depends=)
+    @return: the list of pytest.params(RunTestArgs, marks=...)
     """
     params = []
 

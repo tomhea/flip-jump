@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import lzma
-from pathlib import Path
 from typing import List, Dict
 
 

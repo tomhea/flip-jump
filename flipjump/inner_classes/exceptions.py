@@ -32,3 +32,19 @@ class FlipJumpRuntimeMemoryException(FlipJumpException):
 
 class FlipJumpMissingImportException(FlipJumpException):
     pass
+
+
+class IODeviceException(IOError, FlipJumpException):
+    pass
+
+
+class BrokenIOUsed(IODeviceException):
+    pass
+
+
+class IOReadOnEOF(IODeviceException):
+    pass
+
+
+class IncompleteOutput(IODeviceException):
+    pass

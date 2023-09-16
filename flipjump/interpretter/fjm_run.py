@@ -4,10 +4,9 @@ from typing import Optional, Deque
 from flipjump.fjm import fjm_reader
 from flipjump.debugging.breakpoints import BreakpointHandler, handle_breakpoint
 from flipjump.utils.classes import TerminationCause, PrintTimer, RunStatistics
-from flipjump.inner_classes.exceptions import FlipJumpRuntimeMemoryException
+from flipjump.inner_classes.exceptions import FlipJumpRuntimeMemoryException, IOReadOnEOF
 from flipjump.io_devices.BrokenIO import BrokenIO
 from flipjump.io_devices.IODevice import IODevice
-from flipjump.io_devices.io_exceptions import IOReadOnEOF
 
 
 class TerminationStatistics:
@@ -26,13 +25,14 @@ class TerminationStatistics:
         self.termination_cause = termination_cause
 
     @staticmethod
-    def beautify_address(address: int, breakpoint_handler: Optional[BreakpointHandler]):
+    def beautify_address(address: int, breakpoint_handler: Optional[BreakpointHandler]) -> str:
         if not breakpoint_handler:
             return hex(address)
 
         return breakpoint_handler.get_address_str(address)
 
-    def print(self, *, labels_handler: Optional[BreakpointHandler] = None, output_to_print: Optional[bytes] = None):
+    def print(self, *,
+              labels_handler: Optional[BreakpointHandler] = None, output_to_print: Optional[bytes] = None) -> None:
         """
         Prints the termination cause, run times, ops-statistics.
         If ended not by looping - Then print the last-opcodes` addresses as well (and their label names if possible).
@@ -69,8 +69,11 @@ class TerminationStatistics:
               )
 
 
-def handle_input(io_device: IODevice, ip: int, mem: fjm_reader.Reader, statistics: RunStatistics) -> None:
-    w = mem.w
+def _handle_input(io_device: IODevice, ip: int, mem: fjm_reader.Reader, statistics: RunStatistics) -> None:
+    """
+    if the ip is in the input-bit range, read a bit from the io_device into the memory.
+    """
+    w = mem.memory_width
     in_addr = 3 * w + w.bit_length()  # 3w + #w
 
     if ip <= in_addr < ip + 2 * w:
@@ -79,18 +82,27 @@ def handle_input(io_device: IODevice, ip: int, mem: fjm_reader.Reader, statistic
         mem.write_bit(in_addr, input_bit)
 
 
-def handle_output(flip_address: int, io_device: IODevice, w: int):
+def _handle_output(flip_address: int, io_device: IODevice, w: int) -> None:
+    """
+    if the ip is in the output-bit range, output the corresponding bit to the io_device.
+    """
     out_addr = 2 * w
     if out_addr <= flip_address <= out_addr + 1:
         io_device.write_bit(out_addr + 1 == flip_address)
 
 
-def trace_jump(jump_address: int, show_trace: bool) -> None:
+def _trace_jump(jump_address: int, show_trace: bool) -> None:
+    """
+    if show_trace is enabled, print the current jump-address.
+    """
     if show_trace:
         print(hex(jump_address)[2:])
 
 
-def trace_flip(ip: int, flip_address: int, show_trace: bool) -> None:
+def _trace_flip(ip: int, flip_address: int, show_trace: bool) -> None:
+    """
+    if show_trace is enabled, print the current ip-address and flip-address.
+    """
     if show_trace:
         print(hex(ip)[2:].rjust(7), end=':   ')
         print(hex(flip_address)[2:], end='; ', flush=True)
@@ -100,7 +112,7 @@ def run(fjm_path: Path, *,
         breakpoint_handler: Optional[BreakpointHandler] = None,
         io_device: Optional[IODevice] = None,
         show_trace: bool = False,
-        time_verbose: bool = False,
+        print_time: bool = False,
         last_ops_debugging_list_length: Optional[int] = None) \
         -> TerminationStatistics:
     """
@@ -109,18 +121,18 @@ def run(fjm_path: Path, *,
     @param breakpoint_handler:[in]: the breakpoint handler (if not None - debug, and break on its breakpoints)
     @param io_device:[in,out]: the device handling input/output
     @param show_trace: if true print every opcode executed
-    @param time_verbose: if true print running times
+    @param print_time: if true print running times
     @param last_ops_debugging_list_length: The length of the last-ops list
     @return: the run's termination-statistics
     """
-    with PrintTimer('  loading memory:  ', print_time=time_verbose):
+    with PrintTimer('  loading memory:  ', print_time=print_time):
         mem = fjm_reader.Reader(fjm_path)
 
     if io_device is None:
         io_device = BrokenIO()
 
     ip = 0
-    w = mem.w
+    w = mem.memory_width
 
     statistics = RunStatistics(w, last_ops_debugging_list_length)
 
@@ -134,12 +146,12 @@ def run(fjm_path: Path, *,
 
             # read flip word
             flip_address = mem.get_word(ip)
-            trace_flip(ip, flip_address, show_trace)
+            _trace_flip(ip, flip_address, show_trace)
 
             # handle IO
-            handle_output(flip_address, io_device, w)
+            _handle_output(flip_address, io_device, w)
             try:
-                handle_input(io_device, ip, mem, statistics)
+                _handle_input(io_device, ip, mem, statistics)
             except IOReadOnEOF:
                 return TerminationStatistics(statistics, TerminationCause.EOF)
 
@@ -148,7 +160,7 @@ def run(fjm_path: Path, *,
 
             # read jump word
             jump_address = mem.get_word(ip+w)
-            trace_jump(jump_address, show_trace)
+            _trace_jump(jump_address, show_trace)
             statistics.register_op(ip, flip_address, jump_address)
 
             # check finish?

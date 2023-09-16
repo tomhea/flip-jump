@@ -6,9 +6,10 @@ from struct import unpack
 from time import sleep
 from typing import BinaryIO, List, Tuple
 
-from flipjump.fjm.fjm_consts import FJ_MAGIC, _reserved_dict_threshold, _header_base_format, _header_extension_format, \
-    _header_base_size, _header_extension_size, _segment_format, _segment_size, BaseVersion, RelativeJumpVersion, \
-    CompressedVersion, SUPPORTED_VERSIONS, _LZMA_FORMAT, _LZMA_DECOMPRESSION_FILTERS, _new_garbage_val
+from flipjump.fjm.fjm_consts import (FJ_MAGIC, _reserved_dict_threshold, _header_base_format, _header_extension_format,
+                                     _header_base_size, _header_extension_size, _segment_format, _segment_size,
+                                     SUPPORTED_VERSIONS_NAMES,
+                                     _LZMA_FORMAT, _LZMA_DECOMPRESSION_FILTERS, _new_garbage_val, FJMVersion)
 from flipjump.inner_classes.exceptions import FlipJumpReadFjmException, FlipJumpRuntimeMemoryException
 
 
@@ -42,12 +43,14 @@ class Reader:
                 data = self._read_decompressed_data(fjm_file)
                 self._init_memory(segments, data)
             except struct.error as se:
-                raise FlipJumpReadFjmException(f"Bad file {input_file}, can't unpack. Maybe it's not a .fjm file?") from se
+                exception_message = f"Bad file {input_file}, can't unpack. Maybe it's not a .fjm file?"
+                raise FlipJumpReadFjmException(exception_message) from se
 
     def _init_header_fields(self, fjm_file: BinaryIO) -> None:
-        self.magic, self.w, self.version, self.segment_num = \
+        self.magic, self.memory_width, self.version, self.segment_num = \
             unpack(_header_base_format, fjm_file.read(_header_base_size))
-        if BaseVersion == self.version:
+        self.version = FJMVersion(self.version)
+        if FJMVersion.BaseVersion == self.version:
             self.flags, self.reserved = 0, 0
         else:
             self.flags, self.reserved = unpack(_header_extension_format, fjm_file.read(_header_extension_size))
@@ -58,9 +61,9 @@ class Reader:
     def _validate_header(self) -> None:
         if self.magic != FJ_MAGIC:
             raise FlipJumpReadFjmException(f'Error: bad magic code ({hex(self.magic)}, should be {hex(FJ_MAGIC)}).')
-        if self.version not in SUPPORTED_VERSIONS:
+        if self.version not in SUPPORTED_VERSIONS_NAMES:
             raise FlipJumpReadFjmException(
-                f'Error: unsupported version ({self.version}, this program supports {str(SUPPORTED_VERSIONS)}).')
+                f'Error: unsupported version ({self.version}, this program supports {str(SUPPORTED_VERSIONS_NAMES)}).')
         if self.reserved != 0:
             raise FlipJumpReadFjmException(f'Error: bad reserved value ({self.reserved}, should be 0).')
 
@@ -76,11 +79,11 @@ class Reader:
         @param fjm_file: [in]: read from this file the data words.
         @return: list of the data words (decompressed if it was compressed).
         """
-        read_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.w]
-        word_bytes_size = self.w // 8
+        read_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.memory_width]
+        word_bytes_size = self.memory_width // 8
 
         file_data = fjm_file.read()
-        if CompressedVersion == self.version:
+        if FJMVersion.CompressedVersion == self.version:
             file_data = self._decompress_data(file_data)
 
         data = [unpack(read_tag, file_data[i:i + word_bytes_size])[0]
@@ -92,11 +95,11 @@ class Reader:
         self.zeros_boundaries = []
 
         for segment_start, segment_length, data_start, data_length in segments:
-            if self.version in (RelativeJumpVersion, CompressedVersion):
-                word = ((1 << self.w) - 1)
+            if self.version in (FJMVersion.RelativeJumpVersion, FJMVersion.CompressedVersion):
+                word = ((1 << self.memory_width) - 1)
                 for i in range(0, data_length, 2):
                     self.memory[segment_start + i] = data[data_start + i]
-                    self.memory[segment_start + i+1] = (data[data_start + i+1] + (segment_start + i+1) * self.w) & word
+                    self.memory[segment_start + i+1] = (data[data_start + i+1] + (segment_start + i+1) * self.memory_width) & word
             else:
                 for i in range(data_length):
                     self.memory[segment_start + i] = data[data_start + i]
@@ -108,7 +111,7 @@ class Reader:
                     self.zeros_boundaries.append((segment_start + data_length, segment_start + segment_length))
 
     def _get_memory_word(self, word_address: int) -> int:
-        word_address &= ((1 << self.w) - 1)
+        word_address &= ((1 << self.memory_width) - 1)
         if word_address not in self.memory:
             for start, end in self.zeros_boundaries:
                 if start <= word_address < end:
@@ -116,7 +119,7 @@ class Reader:
                     return 0
 
             garbage_val = _new_garbage_val()
-            garbage_message = f'Reading garbage word at mem[{hex(word_address << self.w)[2:]}] = {hex(garbage_val)[2:]}'
+            garbage_message = f'Reading garbage word at mem[{hex(word_address << self.memory_width)[2:]}] = {hex(garbage_val)[2:]}'
 
             if GarbageHandling.Stop == self.garbage_handling:
                 raise FlipJumpRuntimeMemoryException(garbage_message)
@@ -131,8 +134,8 @@ class Reader:
         return self.memory[word_address]
 
     def _set_memory_word(self, word_address: int, value: int) -> None:
-        word_address &= ((1 << self.w) - 1)
-        value &= ((1 << self.w) - 1)
+        word_address &= ((1 << self.memory_width) - 1)
+        value &= ((1 << self.memory_width) - 1)
         self.memory[word_address] = value
 
     def _bit_address_decompose(self, bit_address: int) -> Tuple[int, int]:
@@ -140,8 +143,8 @@ class Reader:
         @param bit_address: the address
         @return: tuple of the word address and the bit offset
         """
-        word_address = (bit_address >> (self.w.bit_length() - 1)) & ((1 << self.w) - 1)
-        bit_offset = bit_address & (self.w - 1)
+        word_address = (bit_address >> (self.memory_width.bit_length() - 1)) & ((1 << self.memory_width) - 1)
+        bit_offset = bit_address & (self.memory_width - 1)
         return word_address, bit_offset
 
     def read_bit(self, bit_address: int) -> bool:
@@ -164,7 +167,7 @@ class Reader:
         if bit_value:
             word_value |= (1 << bit_offset)
         else:
-            word_value &= ((1 << self.w) - 1 - (1 << bit_offset))
+            word_value &= ((1 << self.memory_width) - 1 - (1 << bit_offset))
         self._set_memory_word(word_address, word_value)
 
     def get_word(self, bit_address: int) -> int:
@@ -176,9 +179,9 @@ class Reader:
         word_address, bit_offset = self._bit_address_decompose(bit_address)
         if bit_offset == 0:
             return self._get_memory_word(word_address)
-        if word_address == ((1 << self.w) - 1):
+        if word_address == ((1 << self.memory_width) - 1):
             raise FlipJumpRuntimeMemoryException(f'Accessed outside of memory (beyond the last bit).')
 
         lsw = self._get_memory_word(word_address)
         msw = self._get_memory_word(word_address + 1)
-        return ((lsw >> bit_offset) | (msw << (self.w - bit_offset))) & ((1 << self.w) - 1)
+        return ((lsw >> bit_offset) | (msw << (self.memory_width - bit_offset))) & ((1 << self.memory_width) - 1)

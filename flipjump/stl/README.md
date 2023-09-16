@@ -131,6 +131,6 @@ The generic stl macro should look like `macro_name n dst src` for an n-bit/hex v
 
 # Read More
 
-You can explore the full list of all macros from the [esolang page](https://esolangs.org/wiki/FlipJump#The_Standard_Library).
+You can explore the full list of all macros from the [esolangs page](https://esolangs.org/wiki/FlipJump#The_Standard_Library).
 
 If you are new to the FlipJump standard-library, Start by reading the [bit/logics.fj](bit/logics.fj) standard library file (start with `xor`, `if`). That's where the FlipJump magic begins.
