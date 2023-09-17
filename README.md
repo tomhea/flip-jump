@@ -5,6 +5,7 @@
 [![GitHub Discussions](https://img.shields.io/github/discussions/tomhea/flip-jump)](https://github.com/tomhea/flip-jump/discussions)
 [![GitHub](https://img.shields.io/github/license/tomhea/flip-jump)](LICENSE)
 [![Website](https://img.shields.io/website?down_color=red&down_message=down&up_message=up&url=https%3A%2F%2Fesolangs.org%2Fwiki%2FFlipJump)](https://esolangs.org/wiki/FlipJump)
+[![PyPI - Version](https://img.shields.io/pypi/v/flipjump)](https://pypi.org/project/flipjump/)
 
 FlipJump is the simplest programing language.  
 Yet, it can do **any modern computation**.

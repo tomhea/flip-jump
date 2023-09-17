@@ -74,6 +74,7 @@ def get_char_value_and_length(s: str) -> Tuple[int, int]:
     return int(s[2:4], 16), 4
 
 
+# noinspection PyUnboundLocalVariable,PyRedeclaration
 class FJLexer(sly.Lexer):
     # noinspection PyUnresolvedReferences
     tokens = {NS, DEF, REP,
@@ -135,6 +136,7 @@ class FJLexer(sly.Lexer):
 
     ignore = ' \t'
 
+    # noinspection PyTypeChecker
     def NUMBER(self, t: Token) -> Token:
         n = t.value
         if len(n) >= 2:

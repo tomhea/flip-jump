@@ -49,4 +49,4 @@ stats = ["plotly"]
 #docs = [sphinx, sphinx_rtd_theme]
 
 [tool.poetry.scripts]
-fj = 'flipjump.fj:main'
+fj = 'flipjump.flipjump_cli:main'

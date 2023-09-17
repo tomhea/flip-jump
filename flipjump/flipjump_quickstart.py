@@ -11,7 +11,7 @@ from flipjump.interpretter.io_devices.FixedIO import FixedIO
 from flipjump.interpretter.io_devices.IODevice import IODevice
 from flipjump.interpretter.io_devices.StandardIO import StandardIO
 from flipjump.utils.classes import TerminationCause
-from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
+from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, io_bytes_encoding
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
 from flipjump.interpretter.fjm_run import TerminationStatistics
 
@@ -56,7 +56,7 @@ def assemble(fj_file_paths: List[Path],
 
 def run(fjm_path: Path,
         *,
-        debugging_file: Optional[Path],
+        debugging_file: Optional[Path] = None,
         io_device: Optional[IODevice] = None,
         show_trace: bool = False,
         print_time: bool = True,
@@ -146,7 +146,7 @@ def run_test_output(fjm_path: Path,
                     *,
                     expected_termination_cause: TerminationCause = TerminationCause.Looping,
                     should_raise_assertion_error: bool = False,
-                    debugging_file: Optional[Path],
+                    debugging_file: Optional[Path] = None,
                     show_trace: bool = False,
                     print_time: bool = True,
                     print_termination: bool = True,
@@ -183,7 +183,8 @@ def run_test_output(fjm_path: Path,
 
     try:
         assert expected_termination_cause == termination_statistics.termination_cause
-        assert expected_output == io_device.get_output(allow_incomplete_output=True)
+        assert expected_output.decode(io_bytes_encoding) == \
+               io_device.get_output(allow_incomplete_output=True).decode(io_bytes_encoding)
         return True
     except AssertionError as assertion_error:
         if should_raise_assertion_error:

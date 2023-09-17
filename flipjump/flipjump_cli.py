@@ -7,7 +7,7 @@ from typing import Tuple, List, Callable, Optional
 
 from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
-from flipjump.fjm.fjm_consts import FJMVersion
+from flipjump.fjm.fjm_consts import FJMVersion, SUPPORTED_VERSIONS_NAMES
 from flipjump.fjm.fjm_writer import Writer
 from flipjump.utils.exceptions import FlipJumpException
 from flipjump.interpretter.io_devices.StandardIO import StandardIO
@@ -223,7 +223,7 @@ def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
                                help="specify memory-width. 64 by default")
 
     supported_versions = ', '.join(f"{version}: {name}"
-                                   for version, name in fjm_consts.SUPPORTED_VERSIONS_NAMES.items())
+                                   for version, name in SUPPORTED_VERSIONS_NAMES.items())
     asm_arguments.add_argument('-v', '--version', metavar='VERSION', type=int, default=None,
                                help=f"fjm version (default of {FJMVersion.CompressedVersion}-compressed "
                                     f"if --outfile specified; version {FJMVersion.NormalVersion} otherwise). "

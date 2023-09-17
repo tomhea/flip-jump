@@ -29,7 +29,7 @@ The debugger can stop on the next breakpoint, or on a fixed number of executed o
 In order to call the debugger with the right labels, get familiar with the [generating label names](README.md#Generated-Label-Names) (and see the debugger-image there), and use the `-d`/`-b`/`-B` cli options.  
 More about [how to debug](../README.md#how-to-debug).
 
-The [macro_usage_graph.py](interpretter/debugging/macro_usage_graph.py) file exports a feature to present the macro-usage (which are the most used macros, and what % does they take from the overall flipjump ops) in a graph.  
+The [macro_usage_graph.py](interpretter/debugging/macro_usage_graph.py) file exports a feature to present the macro-usage (which are the most used macros, and what % do they take from the overall flipjump ops) in a graph.  
 In order to view it, run the assembler with `--stats` (requires plotly to be installed (installed automatically with `pip install flipjump[stats]`)).  
 For example:
 ![The macro-usage statistics of calc.fj](../res/calc_stats.png)
