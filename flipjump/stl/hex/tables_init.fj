@@ -1,0 +1,78 @@
+// ---------- Init The Truth Tables:
+
+
+ns hex {
+    // Space Complexity: 6500   (6460+@)
+    //                   It is 50/100KB (for w=32/64 bits)
+    //                   It is 5KB in --version 3 (for both w=32/64 bits)
+    // This macro initializes all truth tables for the hex-macros.
+    // Use this macro exactly once, and don't use it alongside any other hex.*.init macros, as it will declare those twice.
+    // @output-param ret: The return address. Jumps to it after finishing going through a table.
+    // @output-param res: The result of the table calculation is written here.
+    def init {
+        .tables.init_all
+    }
+
+    ns tables {
+        def init_shared > ret, res {
+          ret: ;0
+          res: ..hex
+        }
+
+        // This is the inner-macro of hex.init, and it's identical to it. see hex.init documentation.
+        def init_all @ end {
+            ;end
+          .init_shared
+          ..or.init     //  595
+          ..and.init    //  595
+          ..mul.init    // 1616+@
+          ..cmp.init    //  514
+          ..add.init    // 1570
+          ..sub.init    // 1570
+          end:
+        }
+
+        // @Assumes: n must be a power of 2, and it must be (1<<n)-padded.
+        // A table. When jumping to entry d - it xors d into dst, and jumps to ret.
+        //
+        //  Time Complexity: log(n) / 2     (an overage over all entries, of jumping to an entry in this table)
+        // Space Complexity: n
+        //
+        // n is a size-constant, dst/ret are hexes.
+        def clean_table_entry__table n, dst, ret @ clean {
+          clean:
+            rep(n, d) stl.fj \
+                d==0?0: (dst+dbit+(#d)-1), \
+                (d==((1<<(#d))>>1)) ? ret : clean+(d^((1<<(#d))>>1))*dw
+        }
+
+        // A table. When jumping to entry d - it xors d into dst, and jumps to hex.tables.ret
+        //
+        //  Time Complexity: 4
+        // Space Complexity: 256
+        //
+        // dst is a hex.
+        def clean_table_entry__table dst < .ret {
+            .clean_table_entry__table 256, dst, .ret
+        }
+
+        // The macro assumes that jumper_to_table is a fj-op that jumps to a 256-padded table.
+        //   This macro is used as a jumper to a table that sets hex.tables.res to some (calc(dst, src) ^ dst), and jumps back.
+        //
+        //  Time Complexity: 4@+4
+        // Space Complexity: 4@+52
+        //
+        // It jumps to the table, at entry (src<<4 | dst).
+        // At last, it xors the value of hex.tables.res into dst.
+        //
+        // both dst,src are hexes, and jumper_to_table is an address.
+        def jump_to_table_entry dst, src, jumper_to_table @ return < .ret, .res {
+            ..xor jumper_to_table  , dst
+            ..xor jumper_to_table+4, src
+            wflip .ret+w, return, jumper_to_table
+          return:
+            wflip .ret+w ,return
+            ..xor_zero dst, .res
+        }
+    }
+}

@@ -3,7 +3,7 @@ First off, thank you for considering contributing to FlipJump. It's people like 
 
 Following these guidelines helps to communicate that you respect the time of the developers managing and developing this open source project. In return, they should reciprocate that respect in addressing your issue, assessing changes, and helping you finalize your pull requests.
 
-FlipJump is an open source project, and we love to receive contributions from our community — you!<br> 
+FlipJump is an open source project, and we love to receive contributions from our community — you!   
 There are many ways to contribute, from writing tutorials or blog posts, writing new fj-programs, improving the documentation, submitting bug reports and feature requests or writing code which can be incorporated into the FlipJump source / standard-library itself.
 
 Also, please take 2 minutes to show this project to the people you know that would **see the magic in this language.**
@@ -19,7 +19,7 @@ Please, don't use the issue tracker for support-questions. Instead, use the [Que
  * Be welcoming to newcomers and encourage diverse new contributors from all backgrounds. See the [Python Community Code of Conduct](https://www.python.org/psf/codeofconduct/).
 
 ## Your First Contribution
-Unsure where to begin contributing to FlipJump? You can start by creating and running your own FlipJump programs, on your own repos, and spread the rumor :)<br>
+Unsure where to begin contributing to FlipJump? You can start by creating and running your own FlipJump programs, on your own repos, and spread the rumor :)  
 Also, please take a look at the [Contribution thread](https://github.com/tomhea/flip-jump/discussions/148).
 
 Working on your first Pull Request? You can learn how from this free series, [How to Contribute to an Open Source Project on GitHub](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github).

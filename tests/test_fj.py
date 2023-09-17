@@ -1,14 +1,14 @@
-import lzma
 from queue import Queue
 from threading import Lock
 from pathlib import Path
-from typing import Optional
 
-from breakpoints import BreakpointHandler, load_labels_dictionary
-from src import assembler, fjm
-from src import fjm_run
-from src.defs import TerminationCause, get_stl_paths, io_bytes_encoding, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
-from src.io_devices.FixedIO import FixedIO
+from flipjump import run_test_output
+from flipjump.assembler import assembler
+from flipjump.fjm.fjm_consts import FJMVersion
+from flipjump.utils.constants import io_bytes_encoding
+from flipjump.utils.functions import get_stl_paths
+from flipjump.fjm.fjm_writer import Writer
+
 
 CSV_TRUE = 'True'
 CSV_FALSE = 'False'
@@ -19,10 +19,6 @@ DEBUGGING_FILE_SUFFIX = '.fj_debugging_info'
 
 
 ROOT_PATH = Path(__file__).parent.parent
-
-
-compile_test_finish_lock = Lock()
-finished_compile_tests_queue = Queue()
 
 
 class CompileTestArgs:
@@ -82,8 +78,8 @@ def test_compile(compile_args: CompileTestArgs) -> None:
 
     create_parent_directories(compile_args.fjm_out_path)
 
-    fjm_writer = fjm.Writer(compile_args.fjm_out_path, compile_args.word_size, compile_args.version,
-                            flags=compile_args.flags, lzma_preset=lzma.PRESET_DEFAULT)
+    fjm_writer = Writer(compile_args.fjm_out_path, compile_args.word_size, FJMVersion(compile_args.version),
+                        flags=compile_args.flags)
 
     debugging_file_path = None
     if compile_args.save_debug_info:
@@ -142,22 +138,22 @@ class RunTestArgs:
                 return in_f.read()
         else:
             with open(self.in_file_path, 'r') as in_f:
-                return in_f.read().encode()
+                return in_f.read().encode(io_bytes_encoding)
 
-    def get_expected_output(self) -> str:
+    def get_expected_output(self) -> bytes:
         """
         get expected output from the output file.
         @return: string of the output-file's content
         """
         if not self.out_file_path:
-            return ''
+            return b''
 
         if self.read_out_as_binary:
             with open(self.out_file_path, 'rb') as out_f:
-                return out_f.read().decode(io_bytes_encoding)
+                return out_f.read()
         else:
             with open(self.out_file_path, 'r') as out_f:
-                return out_f.read()
+                return out_f.read().encode(io_bytes_encoding)
 
     def __repr__(self) -> str:
         return self.test_name
@@ -170,25 +166,12 @@ def test_run(run_args: RunTestArgs) -> None:
     """
     print(f'Running test {run_args.test_name}:')
 
-    io_device = FixedIO(run_args.get_defined_input())
-
-    breakpoint_handler = None
-    if run_args.save_debug_file:
-        label_to_address = load_labels_dictionary(Path(f'{run_args.fjm_path}{DEBUGGING_FILE_SUFFIX}'), True)
-        breakpoint_handler = BreakpointHandler({}, {label_to_address[label]: label
-                                                    for label in tuple(label_to_address)[::-1]})
-
-    termination_statistics = fjm_run.run(run_args.fjm_path,
-                                         io_device=io_device,
-                                         time_verbose=True,
-                                         last_ops_debugging_list_length=run_args.debug_info_length)
-
-    termination_statistics.print(labels_handler=breakpoint_handler,
-                                 output_to_print=io_device.get_output(allow_incomplete_output=True))
-
-    expected_termination_cause = TerminationCause.Looping
-    assert termination_statistics.termination_cause == expected_termination_cause
-
-    output = io_device.get_output().decode(io_bytes_encoding)
-    expected_output = run_args.get_expected_output()
-    assert output == expected_output
+    run_test_output(
+        run_args.fjm_path,
+        run_args.get_defined_input(),
+        run_args.get_expected_output(),
+        should_raise_assertion_error=True,
+        debugging_file=Path(f'{run_args.fjm_path}{DEBUGGING_FILE_SUFFIX}'),
+        print_time=True,
+        last_ops_debugging_list_length=run_args.debug_info_length,
+    )

@@ -1,0 +1,181 @@
+// ---------- Jump:
+
+
+ns bit {
+    ns pointers {
+        // Space Complexity: 2w+2
+        //   Initializes the global opcodes and pointer-copies required for the pointers macros.
+        //
+        // @output-param to_flip:  address of opcode that holds a flipping address in its first word. jumping into it will flip wanted bit.
+        // @output-param to_flip_var:  the bit-vector (pointer) that also holds the flipping address.
+        // @output-param to_jump:  address of opcode that holds a jumping address in its second word. jumping into it will jump to the wanted address.
+        // @output-param to_jump_var:  the bit-vector (pointer) that also holds the jumping address.
+        def ptr_init > to_flip, to_jump, to_flip_var, to_jump_var {
+          to_flip:
+            0;0
+          to_jump:
+            ;0
+
+          to_flip_var:
+            bit.vec w, 0
+          to_jump_var:
+            bit.vec w, 0
+        }
+
+        // Complexity: 2n@
+        //   Sets both to_jump and to_jump_var to point to the given pointer.
+        //   (  to_jump{_var} = ptr  )
+        // ptr is a bit[:w] that holds an address.
+        def set_jump_pointer ptr < .to_jump, .to_jump_var {
+            ..address_and_variable_xor w, .to_jump+w, .to_jump_var, .to_jump_var
+            ..address_and_variable_xor w, .to_jump+w, .to_jump_var, ptr
+        }
+
+
+        // Complexity: 2n@
+        //   Sets both to_flip and to_flip_var to point to the given pointer.
+        //   (  to_flip{_var} = ptr  )
+        // ptr is a bit[:w] that holds an address.
+        def set_flip_pointer ptr < .to_flip, .to_flip_var {
+            ..address_and_variable_xor w, .to_flip, .to_flip_var, .to_flip_var
+            ..address_and_variable_xor w, .to_flip, .to_flip_var, ptr
+        }
+    }
+}
+
+
+ns bit {
+    // Complexity: 2w@ + 2
+    //   like:  ;*ptr
+    //   Jump to the address the pointer points to.
+    // ptr is a bit[:w] that holds an address.
+    def ptr_jump ptr < bit.pointers.to_jump {
+        .pointers.set_jump_pointer ptr
+        ;bit.pointers.to_jump
+    }
+}
+
+
+
+// ---------- Flip:
+
+
+ns bit {
+    // Complexity: 2w@ + @
+    //   like:  *ptr;
+    //   Flip the address the pointer points to.
+    // ptr is a bit[:w] that holds an address.
+    def ptr_flip ptr @ cleanup < bit.pointers.to_flip {
+        wflip bit.pointers.to_flip+w, cleanup
+
+        .pointers.set_flip_pointer ptr
+        ;bit.pointers.to_flip
+
+        pad 4
+      cleanup:
+        wflip bit.pointers.to_flip+w, cleanup
+    }
+
+
+    // Complexity 2w@ + 2@
+    // The stl.comp_flip_if executes in ~##w, which should be much less than @/2 operations.
+    //   like:  (*ptr)+dbit;
+    //   Flip the address dbit-ahead of what the pointer points to.
+    // ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    def ptr_flip_dbit ptr {
+        rep(#dbit, i) stl.comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
+        .ptr_flip ptr
+        rep(#dbit, i) stl.comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
+    }
+
+    // Complexity 2w@ + 2@+2
+    //   like:  bit.xor *ptr, bit
+    // ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    def xor_to_ptr ptr, bit @ end {
+        .if0 bit, end
+        .ptr_flip_dbit ptr
+      end:
+    }
+
+
+    // Complexity 3w@  (actually a bit smaller, 2w@+3w + (@-2)^2)
+    //   like:  wflip *ptr, value
+    // ptr is a bit[:w] that holds an address, which we assume is w-aligned.
+    def ptr_wflip ptr, value {
+        .pointers.set_flip_pointer ptr
+        rep(w, i) .pointers.advance_by_one_and_flip__ptr_wflip (#(i^((i+1)%w))), (value>>i)&1
+    }
+    ns pointers {
+        // Advances *to_flip by 1 (which takes n flips, from bit0 to bit1, bit2,...).
+        // If do_flip (value) isn't 0 - than make a flip, like:  to_flip;advance.
+        def advance_by_one_and_flip__ptr_wflip n, do_flip @ cleanup, advance < bit.pointers.to_flip {
+            stl.comp_if0 do_flip, advance
+            wflip bit.pointers.to_flip+w, cleanup, bit.pointers.to_flip
+          cleanup:
+            wflip bit.pointers.to_flip+w, cleanup, advance
+
+            pad 4
+          advance:
+            rep(n, i) bit.exact_not bit.pointers.to_flip+i
+        }
+    }
+
+    // Complexity 3w@  (actually a bit smaller, 2w@+3w+2 + (@-2)^2)
+    //   like:  wflip (*ptr)+w, value
+    // ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    def ptr_wflip_2nd_word ptr, value {
+        .not ptr + dw*((#w)-1)
+        .ptr_wflip ptr, value
+        .not ptr + dw*((#w)-1)
+    }
+}
+
+
+
+// ---------- Xor
+
+
+ns bit {
+    // Complexity 7w@ (actually a bit smaller, 6w@+6w+8 + 2(@-2)^2)
+    //   like:  bit.xor dst, *ptr
+    // dst is a bit. ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    def xor_from_ptr dst, ptr {
+        .exact_xor_from_ptr dst+dbit, ptr
+    }
+
+    // Complexity 7w@ (actually a bit smaller, 6w@+6w+8 + 2(@-2)^2)
+    //   like:  bit.exact_xor dst, *ptr
+    // dst is a bit-address. ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    def exact_xor_from_ptr dst, ptr @ base_jump_label, cleanup {
+        .ptr_wflip_2nd_word ptr, base_jump_label
+
+        .ptr_jump ptr
+        pad 2
+      base_jump_label:
+        ;cleanup
+        dst;
+
+      cleanup:
+        .ptr_wflip_2nd_word ptr, base_jump_label
+
+    }
+}
+
+
+
+// ---------- Stack
+
+
+ns bit {
+    // Complexity: w(2@+6)      // actually (w-#w)(2@+6)
+    //   ptr[:n] += 2w
+    def ptr_inc ptr {
+        .inc w-#w, ptr+(#w)*dw
+    }
+
+    // Complexity: w(2@+8)      // actually (w-#w)(2@+8)
+    //   ptr[:n] -= 2w
+    def ptr_dec ptr {
+        .dec w-#w, ptr+(#w)*dw
+    }
+}

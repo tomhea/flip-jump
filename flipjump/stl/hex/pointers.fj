@@ -1,0 +1,227 @@
+// ---------- Jump:
+
+
+
+ns hex {
+    ns pointers {
+        // Space Complexity: w/2+2
+        //   Initializes the global opcodes and pointer-copies required for the pointers macros.
+        //
+        // @output-param to_flip:  address of opcode that holds a flipping address in its first word. jumping into it will flip wanted bit.
+        // @output-param to_flip_var:  the hex-vector (pointer) that also holds the flipping address.
+        // @output-param to_jump:  address of opcode that holds a jumping address in its second word. jumping into it will jump to the wanted address.
+        // @output-param to_jump_var:  the hex-vector (pointer) that also holds the jumping address.
+        def ptr_init > to_flip, to_jump, to_flip_var, to_jump_var {
+          to_flip:
+            0;0
+          to_jump:
+            ;0
+
+          to_flip_var:
+            hex.vec w/4, 0
+          to_jump_var:
+            hex.vec w/4, 0
+        }
+
+        //  Time Complexity: w(0.5@+2)
+        // Space Complexity: w(0.5@+14)
+        //   Sets both to_jump and to_jump_var to point to the given pointer.
+        //   (  to_jump{_var} = ptr  )
+        // ptr is a hex[:w/4] that holds an address.
+        def set_jump_pointer ptr < .to_jump, .to_jump_var {
+            ..address_and_variable_xor w/4, .to_jump+w, .to_jump_var, .to_jump_var
+            ..address_and_variable_xor w/4, .to_jump+w, .to_jump_var, ptr
+        }
+
+        //  Time Complexity: w(0.5@+2)
+        // Space Complexity: w(0.5@+14)
+        //   Sets both to_flip and to_flip_var to point to the given pointer.
+        //   (  to_flip{_var} = ptr  )
+        // ptr is a hex[:w/4] that holds an address.
+        def set_flip_pointer ptr < .to_flip, .to_flip_var {
+            ..address_and_variable_xor w/4, .to_flip, .to_flip_var, .to_flip_var
+            ..address_and_variable_xor w/4, .to_flip, .to_flip_var, ptr
+        }
+
+        // Space Complexity: n+w/4 + 330
+        //   Initializes a stack of size n (maximal capacity of n hexs / return-addresses).
+        // n is the size of the stack.
+        // @output-param sp: the stack pointer. sp always points to the last pushed value (at start - to stack[-1])
+        // @output-param stack: the global stack.
+        def stack_init n @ stack_error_handler > sp, stack {
+          sp:
+            hex.vec w/4, .stack
+
+            pad w
+          stack:
+            hex.hex stack_error_handler
+            hex.vec n, 0
+
+          stack_error_handler:
+            stl.output "\n\nERROR: You returned on an empty stack.\n"
+            ;0      // (would fail, so the stack trace would be printed).
+        }
+    }
+}
+
+
+ns hex {
+    //  Time Complexity: w(0.5@+2)
+    // Space Complexity: w(0.5@+14)
+        //   like:  ;*ptr
+    //   Jump to the address the pointer points to.
+    // ptr is a hex[:w/4] that holds an address.
+    def ptr_jump ptr < hex.pointers.to_jump {
+        .pointers.set_jump_pointer ptr
+        ;hex.pointers.to_jump
+    }
+}
+
+
+
+// ---------- Flip:
+
+
+ns hex {
+    //  Time Complexity: w(0.5@+2)  + @
+    // Space Complexity: w(0.5@+14) + @
+    //   like:  *ptr;
+    //   Flip the address the pointer points to.
+    // ptr is a hex[:w/4] that holds an address.
+    def ptr_flip ptr @ cleanup < hex.pointers.to_flip {
+        wflip hex.pointers.to_flip+w, cleanup
+
+        .pointers.set_flip_pointer ptr
+        ;hex.pointers.to_flip
+
+        pad 4
+      cleanup:
+        wflip hex.pointers.to_flip+w, cleanup
+    }
+
+
+    //  Time Complexity: w(0.5@+2)  + @+6
+    // Space Complexity: w(0.5@+14) + @+6
+    // The stl.comp_flip_if executes in ~##w, which should be much less than @/2 operations.
+    //   like:  (*ptr)+dbit;
+    //   Flip the address dbit-ahead of what the pointer points to.
+    // ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
+    def ptr_flip_dbit ptr < .pointers.to_flip {
+        wflip .pointers.to_flip, dbit
+        .ptr_flip ptr
+        wflip .pointers.to_flip, dbit
+    }
+
+
+    //  Time Complexity: w(0.5@+2)  + 5@+12
+    // Space Complexity: w(0.5@+14) + 5@+76
+    //   like:  hex.xor *ptr, hex
+    // ptr is a hex[:w/4] that holds an address, which we assume is an hex-variable, which is dw-aligned.
+    def xor_to_ptr ptr, hex @ prepare_flip_bit0, prepare_flip_bit1, prepare_flip_bit2, prepare_flip_bit3, \
+            after_flip_bit0, after_flip_bit1, after_flip_bit2, after_flip_bit3,  cleanup  < hex.pointers.to_flip {
+        .pointers.set_flip_pointer ptr
+        wflip hex.pointers.to_flip+w, after_flip_bit0, prepare_flip_bit0
+
+      prepare_flip_bit0:
+        wflip hex.pointers.to_flip, dbit+0
+        hex.if_flags hex, 0xAAAA, after_flip_bit0, hex.pointers.to_flip
+      prepare_flip_bit1:
+        wflip hex.pointers.to_flip, (dbit+0)^(dbit+1)
+        hex.if_flags hex, 0xCCCC, after_flip_bit1, hex.pointers.to_flip
+      prepare_flip_bit3:
+        wflip hex.pointers.to_flip, (dbit+1)^(dbit+3)
+        hex.if_flags hex, 0xFF00, after_flip_bit3, hex.pointers.to_flip
+      prepare_flip_bit2:
+        wflip hex.pointers.to_flip, (dbit+3)^(dbit+2)
+        hex.if_flags hex, 0xF0F0, after_flip_bit2, hex.pointers.to_flip
+
+        pad 4
+      after_flip_bit0:
+        hex.pointers.to_flip+dbit+0;prepare_flip_bit1
+      after_flip_bit1:
+        hex.pointers.to_flip+dbit+1;prepare_flip_bit3
+      after_flip_bit2:
+        wflip hex.pointers.to_flip, dbit+2, cleanup
+      after_flip_bit3:
+        hex.pointers.to_flip+dbit+0;prepare_flip_bit2
+
+      cleanup:
+        wflip hex.pointers.to_flip+w, after_flip_bit2
+    }
+
+    // Complexity 3w@  (actually a bit smaller, 2w@+3w + (@-2)^2)
+    //   like:  wflip *ptr, value
+    // ptr is a hex[:w/4] that holds an address, which we assume is w-aligned.
+    def ptr_wflip ptr, value {
+        .pointers.set_flip_pointer ptr
+        rep(w, i) .pointers.advance_by_one_and_flip__ptr_wflip (#(i^((i+1)%w))), (value>>i)&1
+    }
+    ns pointers {
+        // Advances *to_flip by 1 (which takes n flips, from bit0 to bit1, bit2,...).
+        // If do_flip (value) isn't 0 - than make a flip, like:  to_flip;advance.
+        def advance_by_one_and_flip__ptr_wflip n, do_flip @ cleanup, advance < hex.pointers.to_flip {
+            stl.comp_if0 do_flip, advance
+            wflip hex.pointers.to_flip+w, cleanup, hex.pointers.to_flip
+          cleanup:
+            wflip hex.pointers.to_flip+w, cleanup, advance
+
+            pad 4
+          advance:
+            rep(n, i) bit.exact_not hex.pointers.to_flip+i
+        }
+    }
+
+    // Complexity 3w@  (actually a bit smaller, 2w@+3w+2 + (@-2)^2)
+    //   like:  wflip (*ptr)+w, value
+    // ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
+    def ptr_wflip_2nd_word ptr, value {
+        ptr+dbit + ((#w-1)/4)*dw + (#w-1)%4;
+        hex.ptr_wflip ptr, value
+        ptr+dbit + ((#w-1)/4)*dw + (#w-1)%4;
+    }
+}
+
+
+
+// ---------- Xor
+
+
+ns hex {
+    // Complexity 5.5w@
+    //   like:  dst ^= *ptr
+    // dst is a hex. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
+    def xor_from_ptr dst, ptr {
+        .exact_xor_from_ptr dst+dbit+3, dst+dbit+2, dst+dbit+1, dst+dbit+0, ptr
+    }
+
+    //  Time Complexity: 5.5w@ (exact: 4.5w@+8w+11 + 2(@-2)^2)
+    // Space Complexity: 5.5w@ (exact: 4.5w@+8w+34 + 2(@-2)^2)
+    //   like:  {d3,d2,d1,d0} ^= *ptr
+    // d3,d2,d1,d0 are bit-addresses. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
+    def exact_xor_from_ptr d3, d2, d1, d0, ptr @ switch, end {
+        .ptr_wflip_2nd_word ptr, switch
+        .ptr_jump ptr
+
+        pad 16
+      switch:
+          ;end          //  0
+        d0;end          //  1
+        d1;end          //  2
+        d1;switch+1*dw  //  3
+        d2;end          //  4
+        d2;switch+1*dw  //  5
+        d2;switch+2*dw  //  6
+        d2;switch+3*dw  //  7
+        d3;end          //  8
+        d3;switch+1*dw  //  9
+        d3;switch+2*dw  // 10
+        d3;switch+3*dw  // 11
+        d3;switch+4*dw  // 12
+        d3;switch+5*dw  // 13
+        d3;switch+6*dw  // 14
+        d3;switch+7*dw  // 15
+
+      end:
+        .ptr_wflip_2nd_word ptr, switch
+    }
+}

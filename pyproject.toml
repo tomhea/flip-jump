@@ -1,0 +1,52 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry]
+name = "flipjump"
+version = "1.2.0"
+description = "The single instruction language - Flip a bit, then Jump"
+authors = ["Tom Herman <flipjumpproject@gmail.com>"]
+license = "BSD-2-Clause-Simplified"
+readme = "README.md"
+
+include = [
+    { path = "flipjump/stl", format = "sdist" }
+]
+
+homepage = "https://esolangs.org/wiki/FlipJump"
+repository = "https://github.com/tomhea/flip-jump"
+documentation = "https://github.com/tomhea/flip-jump/wiki"
+
+keywords = ["esolang", "oisc", "assembly"]
+classifiers = [
+    "Topic :: Education",
+    "Topic :: Software Development :: Assemblers",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Debuggers",
+    "Topic :: Software Development :: Interpreters",
+    "Topic :: Software Development :: Libraries",
+    "Programming Language :: Other",
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.7"
+sly = "^0.4"
+easygui = "^0.98.3"
+
+# statistics
+plotly = { version = "^5.16.1", optional = true }
+# developement
+pytest = { version = "^7.4.0", optional = true }
+pytest-ordering = { version = "^0.6", optional = true }
+pytest-xdist = { version = "^3.3.1", optional = true }
+
+[tool.poetry.extras]
+tests = ["pytest", "pytest-ordering", "pytest-xdist"]
+stats = ["plotly"]
+#docs = [sphinx, sphinx_rtd_theme]
+
+[tool.poetry.scripts]
+fj = 'flipjump.flipjump_cli:main'
