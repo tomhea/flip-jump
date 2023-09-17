@@ -21,10 +21,6 @@ DEBUGGING_FILE_SUFFIX = '.fj_debugging_info'
 ROOT_PATH = Path(__file__).parent.parent
 
 
-compile_test_finish_lock = Lock()
-finished_compile_tests_queue = Queue()
-
-
 class CompileTestArgs:
     """
     Arguments class for a compile test

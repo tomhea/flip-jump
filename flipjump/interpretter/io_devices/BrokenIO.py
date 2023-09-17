@@ -1,5 +1,5 @@
-from flipjump.io_devices.IODevice import IODevice
-from flipjump.inner_classes.exceptions import BrokenIOUsed
+from flipjump.interpretter.io_devices.IODevice import IODevice
+from flipjump.utils.exceptions import BrokenIOUsed
 
 
 class BrokenIO(IODevice):

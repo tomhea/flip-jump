@@ -3,7 +3,7 @@ from __future__ import annotations
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
 from typing import Union, Tuple, Set, Dict
 
-from flipjump.inner_classes.exceptions import FlipJumpExprException
+from flipjump.utils.exceptions import FlipJumpExprException
 
 
 # dictionary from a math-op string, to its pythonic function.

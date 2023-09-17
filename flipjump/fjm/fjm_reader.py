@@ -10,7 +10,7 @@ from flipjump.fjm.fjm_consts import (FJ_MAGIC, _reserved_dict_threshold, _header
                                      _header_base_size, _header_extension_size, _segment_format, _segment_size,
                                      SUPPORTED_VERSIONS_NAMES,
                                      _LZMA_FORMAT, _LZMA_DECOMPRESSION_FILTERS, _new_garbage_val, FJMVersion)
-from flipjump.inner_classes.exceptions import FlipJumpReadFjmException, FlipJumpRuntimeMemoryException
+from flipjump.utils.exceptions import FlipJumpReadFjmException, FlipJumpRuntimeMemoryException
 
 
 class GarbageHandling(IntEnum):

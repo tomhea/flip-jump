@@ -6,9 +6,9 @@ import sly
 from sly.lex import Token
 from sly.yacc import YaccProduction as ParsedRule
 
-from flipjump.inner_classes.exceptions import FlipJumpExprException, FlipJumpParsingException
-from flipjump.inner_classes.expr import Expr, get_minimized_expr
-from flipjump.inner_classes.ops import get_used_labels, get_declared_labels, \
+from flipjump.utils.exceptions import FlipJumpExprException, FlipJumpParsingException
+from flipjump.assembler.inner_classes.expr import Expr, get_minimized_expr
+from flipjump.assembler.inner_classes.ops import get_used_labels, get_declared_labels, \
     CodePosition, MacroName, Op, Macro, initial_macro_name, \
     MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, Pad
 

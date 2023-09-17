@@ -6,7 +6,7 @@ from flipjump.utils.constants import MACRO_SEPARATOR_STRING
 from flipjump.utils.functions import load_debugging_labels
 from flipjump.utils.classes import RunStatistics
 
-from flipjump.inner_classes.exceptions import FlipJumpMissingImportException
+from flipjump.utils.exceptions import FlipJumpMissingImportException
 
 
 class BreakpointHandlerUnnecessary(Exception):

@@ -3,11 +3,11 @@ from __future__ import annotations
 import collections
 from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional
 
-from flipjump.debugging.macro_usage_graph import show_macro_usage_pie_graph
+from flipjump.interpretter.debugging.macro_usage_graph import show_macro_usage_pie_graph
 from flipjump.utils.constants import MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING
-from flipjump.inner_classes.exceptions import FlipJumpPreprocessorException, FlipJumpExprException
-from flipjump.inner_classes.expr import Expr
-from flipjump.inner_classes.ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
+from flipjump.utils.exceptions import FlipJumpPreprocessorException, FlipJumpExprException
+from flipjump.assembler.inner_classes.expr import Expr
+from flipjump.assembler.inner_classes.ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
     CodePosition, Macro, LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
     initial_macro_name, initial_args, initial_labels_prefix
 

@@ -3,13 +3,13 @@ from tempfile import TemporaryDirectory
 from typing import List, Optional, Set
 
 from flipjump.assembler import assembler
-from flipjump.debugging.breakpoints import get_breakpoint_handler
+from flipjump.interpretter.debugging.breakpoints import get_breakpoint_handler
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_writer import Writer
 from flipjump.interpretter import fjm_run
-from flipjump.io_devices.FixedIO import FixedIO
-from flipjump.io_devices.IODevice import IODevice
-from flipjump.io_devices.StandardIO import StandardIO
+from flipjump.interpretter.io_devices.FixedIO import FixedIO
+from flipjump.interpretter.io_devices.IODevice import IODevice
+from flipjump.interpretter.io_devices.StandardIO import StandardIO
 from flipjump.utils.classes import TerminationCause
 from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix

@@ -8,8 +8,8 @@ from flipjump.utils.constants import WFLIP_LABEL_PREFIX
 from flipjump.utils.functions import save_debugging_labels
 from flipjump.utils.classes import PrintTimer
 from flipjump.assembler.fj_parser import parse_macro_tree
-from flipjump.inner_classes.exceptions import FlipJumpAssemblerException, FlipJumpException, FlipJumpWriteFjmException
-from flipjump.inner_classes.ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits, Padding
+from flipjump.utils.exceptions import FlipJumpAssemblerException, FlipJumpException, FlipJumpWriteFjmException
+from flipjump.assembler.inner_classes.ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits, Padding
 from flipjump.assembler.preprocessor import resolve_macros
 
 

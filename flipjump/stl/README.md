@@ -1,10 +1,10 @@
 # FlipJump Standard Library
 
-The stl is a collection of FlipJump files, each a collection of **highly-optimized** and **[tested](../../tests)** macros, that are free to use by any FlipJump program that may benefit from it.
+The stl (**ST**andard-**L**ibrary) is a collection of FlipJump files, each a collection of **highly-optimized** and **[tested](../../tests/README.md)** macros, that are free to use by any FlipJump program that may benefit from it.
 
 It mainly offers binary/hexadecimal data-structures, mathematical and logical operations, conditional jumps, pointers, casting, and input/output.
 
-These FlipJump files result from a lot of research, runs, and tests. 
+These FlipJump files result from a lot of research, runs, and many tests. 
 
 **@note**: The faster mathematical macros are under the `hex` namespace.
 
@@ -69,7 +69,7 @@ Also offers a stack and functions based on these pointers.
 A configurable json file that maintains ordered lists of the standard library files. 
 
 
-# Documentation
+# Documentation & Complexities
 Every macro is documented with:
 - Its **time complexity** (and if it's significantly different, the **space complexity** as well).
   - The complexities use the **@** sign, which is the log2 of the total number of fj ops in this program (can be it usually will be between 15-25).
@@ -80,7 +80,13 @@ Every macro is documented with:
   - if a parameter (in a macro declared under the bit/hex namespaces) is used in the documentation as an array (x[:n], ascii[:8], etc.) - it is a bit/hex vector of the specified size; and that size is a size-constant.
 - Optionally, what the macro assumes about the parameters, and what can you assume about the result.
 
-# Thing You Need To Know
+## Fast search:
+If you want to get to the source of a macro named some_macro (to view the macro's documentation, or its implementation), search in the stl/ folder for `'def some_macro '`.
+
+I created an [autohotkey script](../../ide-extensions/pycharm/fj-pycharm-def-finder.ahk) that jumps to the definition in pycharm by pressing Ctrl+Shift+Click on the macro name, inside the flipjump repo.
+
+
+# The Standard Library Basics
 
 ## Reserved Names
 The standard library reserves all the labels under the "stl", "bit", and "hex" namespaces.
@@ -128,9 +134,13 @@ The FlipJump stl should be minimalistic, efficient in both space and time, and o
 The generic stl macro should look like `macro_name n dst src` for an n-bit/hex variable, with dst being the destination-variable, and src being the source-variable.
 - e.g. the [hex/math.fj](hex/math.fj) / `hex.add n, dst, src`. 
 
+For more information about contributions, see [I-Want-To-Contribute Thread](https://github.com/tomhea/flip-jump/discussions/148) and [CONTRIBUTING.md](../../CONTRIBUTING.md).
+
 
 # Read More
 
 You can explore the full list of all macros from the [esolangs page](https://esolangs.org/wiki/FlipJump#The_Standard_Library).
 
-If you are new to the FlipJump standard-library, Start by reading the [bit/logics.fj](bit/logics.fj) standard library file (start with `xor`, `if`). That's where the FlipJump magic begins.
+If you are new to the FlipJump standard-library, Start by reading the [bit/logics.fj](bit/logics.fj) standard library file (start with `xor`). You can continue to the [bit.if](bit/cond_jumps.fj) macro afterwords. That's where the FlipJump magic begins.
+
+If you want to understand how the deep optimized hex macros work, understand how the next macros are implemented: [hex.exact_xor](hex/logics.fj), [hex.output](hex/output.fj), [hex.inc1](hex/math_basic.fj), and [hex.add](hex/math.fj) (understand the concept of the [lookup tables](https://esolangs.org/wiki/FlipJump#Lookup_Tables).

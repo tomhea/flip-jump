@@ -9,8 +9,8 @@ from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.inner_classes.exceptions import FlipJumpException
-from flipjump.io_devices.StandardIO import StandardIO
+from flipjump.utils.exceptions import FlipJumpException
+from flipjump.interpretter.io_devices.StandardIO import StandardIO
 from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
 

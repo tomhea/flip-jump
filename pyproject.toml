@@ -45,7 +45,7 @@ pytest-xdist = { version = "^3.3.1", optional = true }
 
 [tool.poetry.extras]
 tests = ["pytest", "pytest-ordering", "pytest-xdist"]
-stats = ['plotly']
+stats = ["plotly"]
 #docs = [sphinx, sphinx_rtd_theme]
 
 [tool.poetry.scripts]

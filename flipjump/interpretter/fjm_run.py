@@ -2,11 +2,11 @@ from pathlib import Path
 from typing import Optional, Deque
 
 from flipjump.fjm import fjm_reader
-from flipjump.debugging.breakpoints import BreakpointHandler, handle_breakpoint
+from flipjump.interpretter.debugging.breakpoints import BreakpointHandler, handle_breakpoint
 from flipjump.utils.classes import TerminationCause, PrintTimer, RunStatistics
-from flipjump.inner_classes.exceptions import FlipJumpRuntimeMemoryException, IOReadOnEOF
-from flipjump.io_devices.BrokenIO import BrokenIO
-from flipjump.io_devices.IODevice import IODevice
+from flipjump.utils.exceptions import FlipJumpRuntimeMemoryException, IOReadOnEOF
+from flipjump.interpretter.io_devices.BrokenIO import BrokenIO
+from flipjump.interpretter.io_devices.IODevice import IODevice
 
 
 class TerminationStatistics:

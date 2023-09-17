@@ -1,7 +1,7 @@
 from flipjump.flipjump_cli import assemble_run_according_to_cmd_line_args
 from flipjump.flipjump_quickstart import *
-from flipjump.inner_classes.exceptions import *
-from flipjump.io_devices import *
+from flipjump.utils.exceptions import *
+from flipjump.interpretter.io_devices import *
 
 
 __all__ = [

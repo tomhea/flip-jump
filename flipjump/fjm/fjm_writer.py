@@ -5,7 +5,7 @@ from typing import List
 
 from flipjump.fjm.fjm_consts import FJ_MAGIC, _header_base_format, _header_extension_format, _segment_format, \
     SUPPORTED_VERSIONS_NAMES, _LZMA_FORMAT, _lzma_compression_filters, FJMVersion
-from flipjump.inner_classes.exceptions import FlipJumpWriteFjmException
+from flipjump.utils.exceptions import FlipJumpWriteFjmException
 
 
 class Writer:

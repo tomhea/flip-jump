@@ -5,8 +5,8 @@ import os
 from dataclasses import dataclass
 from typing import Union, Dict, Set, List, Tuple
 
-from flipjump.inner_classes.exceptions import FlipJumpExprException
-from flipjump.inner_classes.expr import Expr
+from flipjump.utils.exceptions import FlipJumpExprException
+from flipjump.assembler.inner_classes.expr import Expr
 
 
 @dataclass
