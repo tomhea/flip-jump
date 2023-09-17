@@ -4,7 +4,8 @@ from typing import Optional, Deque
 from flipjump.fjm import fjm_reader
 from flipjump.interpretter.debugging.breakpoints import BreakpointHandler, handle_breakpoint
 from flipjump.utils.classes import TerminationCause, PrintTimer, RunStatistics
-from flipjump.utils.exceptions import FlipJumpRuntimeMemoryException, IOReadOnEOF
+from flipjump.utils.exceptions import FlipJumpRuntimeMemoryException, IOReadOnEOF, FlipJumpException, \
+    FlipJumpRuntimeException
 from flipjump.interpretter.io_devices.BrokenIO import BrokenIO
 from flipjump.interpretter.io_devices.IODevice import IODevice
 
@@ -108,7 +109,8 @@ def _trace_flip(ip: int, flip_address: int, show_trace: bool) -> None:
         print(hex(flip_address)[2:], end='; ', flush=True)
 
 
-def run(fjm_path: Path, *,
+def run(fjm_path: Path,
+        *,
         breakpoint_handler: Optional[BreakpointHandler] = None,
         io_device: Optional[IODevice] = None,
         show_trace: bool = False,
@@ -125,18 +127,18 @@ def run(fjm_path: Path, *,
     @param last_ops_debugging_list_length: The length of the last-ops list
     @return: the run's termination-statistics
     """
-    with PrintTimer('  loading memory:  ', print_time=print_time):
-        mem = fjm_reader.Reader(fjm_path)
-
-    if io_device is None:
-        io_device = BrokenIO()
-
-    ip = 0
-    w = mem.memory_width
-
-    statistics = RunStatistics(w, last_ops_debugging_list_length)
-
     try:
+        with PrintTimer('  loading memory:  ', print_time=print_time):
+            mem = fjm_reader.Reader(fjm_path)
+
+        if io_device is None:
+            io_device = BrokenIO()
+
+        ip = 0
+        w = mem.memory_width
+
+        statistics = RunStatistics(w, last_ops_debugging_list_length)
+
         while True:
             statistics.register_op_address(ip)
 
@@ -174,3 +176,8 @@ def run(fjm_path: Path, *,
 
     except FlipJumpRuntimeMemoryException:
         return TerminationStatistics(statistics, TerminationCause.RuntimeMemoryError)
+    except FlipJumpException as fj_exception:
+        raise fj_exception
+    except Exception as unknown_exception:
+        raise FlipJumpRuntimeException("Unknown exception during running an .fjm file, please report this bug") \
+            from unknown_exception

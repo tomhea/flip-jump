@@ -26,7 +26,11 @@ class FlipJumpWriteFjmException(FlipJumpException):
     pass
 
 
-class FlipJumpRuntimeMemoryException(FlipJumpException):
+class FlipJumpRuntimeException(FlipJumpException):
+    pass
+
+
+class FlipJumpRuntimeMemoryException(FlipJumpRuntimeException):
     pass
 
 

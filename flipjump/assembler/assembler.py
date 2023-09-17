@@ -15,7 +15,7 @@ from flipjump.assembler.preprocessor import resolve_macros
 
 def assert_address_in_memory(memory_width: int, address: int):
     if address < 0 or address >= (1 << memory_width):
-        raise FlipJumpAssemblerException(f"Not enough space with the {memory_width}-width.")
+        raise FlipJumpAssemblerException(f"Not enough space with the {memory_width}-bits memory-width.")
 
 
 def validate_addresses(memory_width, first_address, last_address):
@@ -104,6 +104,8 @@ class BinaryData:
         if 0 == flip_value:
             self.insert_fj_op(0, return_address)
         else:
+            assert_address_in_memory(self.memory_width, flip_value)
+
             return_dict = self.wflips_dict[return_address]
 
             # this is the order of flip_addresses (tested with many other orders) that produces the best
@@ -218,15 +220,22 @@ def assemble(input_files: List[Tuple[str, Path]], memory_width: int, fjm_writer:
     :param show_statistics: if true shows macro-usage statistics
     :param print_time: if true prints the times of each assemble-stage
     """
-    with PrintTimer('  parsing:         ', print_time=print_time):
-        macros = parse_macro_tree(input_files, memory_width, warning_as_errors)
+    try:
+        with PrintTimer('  parsing:         ', print_time=print_time):
+            macros = parse_macro_tree(input_files, memory_width, warning_as_errors)
 
-    with PrintTimer('  macro resolve:   ', print_time=print_time):
-        ops, labels = resolve_macros(memory_width, macros, show_statistics=show_statistics)
+        with PrintTimer('  macro resolve:   ', print_time=print_time):
+            ops, labels = resolve_macros(memory_width, macros, show_statistics=show_statistics)
 
-    with PrintTimer('  labels resolve:  ', print_time=print_time):
-        labels_resolve(ops, labels, memory_width, fjm_writer)
+        with PrintTimer('  labels resolve:  ', print_time=print_time):
+            labels_resolve(ops, labels, memory_width, fjm_writer)
 
-    with PrintTimer('  create binary:   ', print_time=print_time):
-        fjm_writer.write_to_file()
-        save_debugging_labels(debugging_file_path, labels)
+        with PrintTimer('  create binary:   ', print_time=print_time):
+            fjm_writer.write_to_file()
+            save_debugging_labels(debugging_file_path, labels)
+
+    except FlipJumpException as fj_exception:
+        raise fj_exception
+    except Exception as unknown_exception:
+        raise FlipJumpAssemblerException("Unknown exception during assembling the .fj files, please report this bug") \
+            from unknown_exception
