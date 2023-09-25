@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import List, Dict, Tuple, Union
 
-from flipjump.utils.constants import _debug_json_encoding, _debug_json_lzma_format, _debug_json_lzma_filters
+from flipjump.utils.constants import DEBUG_JSON_ENCODING, DEBUG_JSON_LZMA_FORMAT, DEBUG_JSON_LZMA_FILTERS
 from importlib.resources import path
 
 
@@ -28,8 +28,8 @@ def save_debugging_labels(debugging_file_path: Path, labels: Dict[str, int]) -> 
     """
     if debugging_file_path:
         with open(debugging_file_path, 'wb') as f:
-            data = json.dumps(labels).encode(_debug_json_encoding)
-            compressed_data = lzma.compress(data, format=_debug_json_lzma_format, filters=_debug_json_lzma_filters)
+            data = json.dumps(labels).encode(DEBUG_JSON_ENCODING)
+            compressed_data = lzma.compress(data, format=DEBUG_JSON_LZMA_FORMAT, filters=DEBUG_JSON_LZMA_FILTERS)
             f.write(compressed_data)
 
 
@@ -42,8 +42,8 @@ def load_debugging_labels(debugging_file_path: Path) -> Dict[str, int]:
     if debugging_file_path:
         with open(debugging_file_path, 'rb') as f:
             compressed_data = f.read()
-            data = lzma.decompress(compressed_data, format=_debug_json_lzma_format, filters=_debug_json_lzma_filters)
-            return json.loads(data.decode(_debug_json_encoding))
+            data = lzma.decompress(compressed_data, format=DEBUG_JSON_LZMA_FORMAT, filters=DEBUG_JSON_LZMA_FILTERS)
+            return json.loads(data.decode(DEBUG_JSON_ENCODING))
 
 
 def get_file_tuples(files: List[str], *, no_stl: bool = False) -> List[Tuple[str, Path]]:

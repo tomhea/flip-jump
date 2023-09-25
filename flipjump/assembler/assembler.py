@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Deque, List, Dict, Tuple, Optional
 
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.utils.constants import WFLIP_LABEL_PREFIX
+from flipjump.utils.constants import WFLIP_LABEL_PREFIX, DEFAULT_MAX_MACRO_RECURSION_DEPTH
 from flipjump.utils.functions import save_debugging_labels
 from flipjump.utils.classes import PrintTimer
 from flipjump.assembler.fj_parser import parse_macro_tree
@@ -90,7 +90,9 @@ class BinaryData:
         return wflip_spot
 
     def close_and_add_segment(self, fjm_writer: Writer) -> None:
-        add_segment_to_fjm(self.memory_width, fjm_writer, self.first_address, self.wflip_address, self.fj_words, self.wflip_words)
+        add_segment_to_fjm(self.memory_width, fjm_writer,
+                           self.first_address, self.wflip_address,
+                           self.fj_words, self.wflip_words)
 
     def _insert_wflip_label(self, address: int):
         self.labels[f'{WFLIP_LABEL_PREFIX}{self.wflips_so_far}'] = address
@@ -206,10 +208,16 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
     binary_data.close_and_add_segment(fjm_writer)
 
 
-def assemble(input_files: List[Tuple[str, Path]], memory_width: int, fjm_writer: Writer, *,
-             warning_as_errors: bool = True, debugging_file_path: Optional[Path] = None,
-             show_statistics: bool = False, print_time: bool = True)\
-        -> None:
+def assemble(input_files: List[Tuple[str, Path]],
+             memory_width: int,
+             fjm_writer: Writer,
+             *,
+             warning_as_errors: bool = True,
+             debugging_file_path: Optional[Path] = None,
+             show_statistics: bool = False,
+             print_time: bool = True,
+             max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+             ) -> None:
     """
     runs the assembly pipeline. assembles the input files to a .fjm.
     :param input_files:[in]: a list of (short_file_name, fj_file_path). The files will to be parsed in that given order.
@@ -219,13 +227,16 @@ def assemble(input_files: List[Tuple[str, Path]], memory_width: int, fjm_writer:
     :param debugging_file_path:[out]: is specified, save debug information in this file
     :param show_statistics: if true shows macro-usage statistics
     :param print_time: if true prints the times of each assemble-stage
+    :param max_recursion_depth: The compiler supports macros that recursively uses other macros,
+    up to the specified recursion depth. If None: no recursion depth restrictions are applied.
     """
     try:
         with PrintTimer('  parsing:         ', print_time=print_time):
             macros = parse_macro_tree(input_files, memory_width, warning_as_errors)
 
         with PrintTimer('  macro resolve:   ', print_time=print_time):
-            ops, labels = resolve_macros(memory_width, macros, show_statistics=show_statistics)
+            ops, labels = resolve_macros(memory_width, macros,
+                                         show_statistics=show_statistics, max_recursion_depth=max_recursion_depth)
 
         with PrintTimer('  labels resolve:  ', print_time=print_time):
             labels_resolve(ops, labels, memory_width, fjm_writer)
