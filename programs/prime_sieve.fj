@@ -1,0 +1,167 @@
+// This fj program prints all the prime numbers (as decimal numbers) up to a number n (given by input).
+
+hw = w/4
+PRIMES_MEMORY_START = (1 << (w-2))   // 1/4 of the memory
+PRIMES_MEMORY_LENGTH = (1 << (w-1))  // 1/2 of the memory
+MAX_PRIMES = PRIMES_MEMORY_LENGTH / dw
+stl.startup_and_init_all
+
+
+//set_primes_ptr five
+//hex.xor_to_ptr primes_ptr, two
+//set_primes_ptr four
+//hex.xor_to_ptr primes_ptr, two
+
+// The main program
+
+  input_max_prime n
+  // TODO check for n==2/3, then p=6k+-1   (hex.cmp hw, n, two, smaller_than_2, equals_2, print_2_3_then_start)
+prime_loop_if:
+  hex.cmp hw, p, n, prime_loop, prime_loop, after_prime_loop
+prime_loop:
+  set_primes_ptr p
+  if1_ptr primes_ptr, next_prime
+  print_int hw, p
+
+  // TODO mark every p*i as not primes
+
+next_prime:
+  hex.inc hw, p
+  ;prime_loop_if
+
+
+after_prime_loop:
+  stl.loop
+
+
+// Variables:
+
+n: hex.vec hw
+p: hex.vec hw, 2
+primes_ptr: hex.vec hw
+
+two: hex.vec hw, 2
+three: hex.vec hw, 3
+four: hex.vec hw, 4
+five: hex.vec hw, 5
+
+
+// Segments:
+
+segment PRIMES_MEMORY_START
+    reserve PRIMES_MEMORY_LENGTH
+
+
+// Macro definitions:
+
+
+// print hex[:n] as a decimal integer.
+def print_int n, hex @ bit, end{
+    stl.hex2bit n, bit, hex
+    bit.print_dec_int 4*n, bit
+    stl.output '\n'
+    ;end
+
+  bit: bit.vec 4*n
+
+  end:
+}
+
+
+// if *hex_ptr != 0 goto l1.
+def if1_ptr hex_ptr, l1 @ l0 {
+    if_ptr hex_ptr, l0, l1
+  l0:
+}
+
+
+// if *hex_ptr == 0 goto l0, else goto l1.
+def if_ptr hex_ptr, l0, l1 @ ptr_value {
+    hex.zero ptr_value
+    hex.xor_from_ptr ptr_value, hex_ptr
+    hex.if ptr_value, l0, l1
+
+  ptr_value: hex.hex
+}
+
+
+// primes_ptr = PRIMES_MEMORY_START + p*dw
+def set_primes_ptr p @ p_offset, end < primes_ptr {
+    hex.set hw, primes_ptr, PRIMES_MEMORY_START
+    hex.mov hw, p_offset, p
+    shl_hex hw, p_offset, #w
+    hex.add hw, primes_ptr, p_offset
+    ;end
+
+  p_offset: hex.vec hw
+
+  end:
+}
+
+
+// hex[:n] <<= shift
+def shl_hex n, hex, shift {
+    rep(shift/4, i) hex.shl_hex n, hex
+    rep(shift%4, i) hex.shl_bit n, hex
+}
+
+
+// n = input_decimal_number(). check that n is smaller than MAX_PRIMES.
+def input_max_prime n @ bit_n, max_n, raise_more_than_max_primes, end {
+    stl.output "Search primes up to: "
+    input_decimal_number w, bit_n
+    stl.bit2hex w, n, bit_n
+
+    hex.cmp hw, n, max_n, end, raise_more_than_max_primes, raise_more_than_max_primes
+
+  bit_n: bit.vec w
+  max_n: hex.vec hw, MAX_PRIMES
+
+  raise_more_than_max_primes:
+    raise_error "The input number should be less than ((1 << (w-2)) / w).\n  For w=16 it's 1024.\n  For w=32 it's ~33M.\n  For w=64 it's ~7e16."
+
+    end:
+}
+
+
+// bit[:n] = input_ascii_as_decimal. expects \n at finish, and no other characters other then '0'-'9'.
+//   example: for input "1234\n" does bit[:n]=1234.
+def input_decimal_number n, bit \
+        @ input_decimal_digit, end, dec_digit, is_error, ascii, i, i_start, \
+        error_handler, newline, raise_not_number_error {
+    bit.zero n, bit
+    bit.mov #n, i, i_start
+
+  input_decimal_digit:
+    bit.if0 #n, i, end
+    bit.input ascii
+    bit.ascii2dec is_error, dec_digit, ascii
+    bit.if1 is_error, error_handler
+    bit.mul10 n, bit
+    bit.add n, bit, dec_digit
+    bit.dec #n, i
+    ;input_decimal_digit
+
+  dec_digit: bit.vec n
+  newline: bit.vec 8, '\n'
+  is_error: bit.bit
+  ascii: bit.vec 8
+  i: bit.vec #n
+  i_start: bit.vec #n, n
+
+  error_handler:
+    bit.cmp 8, ascii, newline, raise_not_number_error, end, raise_not_number_error
+  raise_not_number_error:
+    raise_error "Bad number given. The number should be positive, only digits, and end with a new-line."
+
+  end:
+}
+
+
+// pretty way of printing an error and then exiting.
+def raise_error msg {
+    stl.output "\n\nError:\n"
+    stl.output msg
+    stl.output "\nExiting program.\n"
+    stl.loop
+}
