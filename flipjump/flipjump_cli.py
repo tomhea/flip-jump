@@ -11,7 +11,7 @@ from flipjump.fjm.fjm_consts import FJMVersion, SUPPORTED_VERSIONS_NAMES
 from flipjump.fjm.fjm_writer import Writer
 from flipjump.utils.exceptions import FlipJumpException
 from flipjump.interpretter.io_devices.StandardIO import StandardIO
-from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
+from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, DEFAULT_MAX_MACRO_RECURSION_DEPTH
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
 
 ErrorFunc = Callable[[str], None]
@@ -127,7 +127,8 @@ def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, err
                         flags=args.flags, lzma_preset=args.lzma_preset)
     assembler.assemble(file_tuples, args.width, fjm_writer,
                        warning_as_errors=args.werror, debugging_file_path=debug_file,
-                       show_statistics=args.stats, print_time=not args.silent)
+                       show_statistics=args.stats, print_time=not args.silent,
+                       max_recursion_depth=args.max_recursion_depth)
 
 
 def get_fjm_file_path(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_name: str) -> Path:
@@ -238,6 +239,9 @@ def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
 
     asm_arguments.add_argument('--werror', help="treat all assemble warnings as errors",
                                action='store_true')
+    asm_arguments.add_argument('--max_recursion_depth', type=int, default=DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+                               help='The compiler supports macros that recursively uses other macros, '
+                                    'up to the this specified depth')
     asm_arguments.add_argument('--no_stl', help="don't assemble/link the standard library files",
                                action='store_true')
     asm_arguments.add_argument('--stats', help="show macro code-size statistics", action='store_true')

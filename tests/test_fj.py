@@ -5,7 +5,7 @@ from pathlib import Path
 from flipjump import run_test_output
 from flipjump.assembler import assembler
 from flipjump.fjm.fjm_consts import FJMVersion
-from flipjump.utils.constants import io_bytes_encoding
+from flipjump.utils.constants import IO_BYTES_ENCODING
 from flipjump.utils.functions import get_stl_paths
 from flipjump.fjm.fjm_writer import Writer
 
@@ -138,7 +138,7 @@ class RunTestArgs:
                 return in_f.read()
         else:
             with open(self.in_file_path, 'r') as in_f:
-                return in_f.read().encode(io_bytes_encoding)
+                return in_f.read().encode(IO_BYTES_ENCODING)
 
     def get_expected_output(self) -> bytes:
         """
@@ -153,7 +153,7 @@ class RunTestArgs:
                 return out_f.read()
         else:
             with open(self.out_file_path, 'r') as out_f:
-                return out_f.read().encode(io_bytes_encoding)
+                return out_f.read().encode(IO_BYTES_ENCODING)
 
     def __repr__(self) -> str:
         return self.test_name

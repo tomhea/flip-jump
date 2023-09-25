@@ -11,7 +11,8 @@ from flipjump.interpretter.io_devices.FixedIO import FixedIO
 from flipjump.interpretter.io_devices.IODevice import IODevice
 from flipjump.interpretter.io_devices.StandardIO import StandardIO
 from flipjump.utils.classes import TerminationCause
-from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, io_bytes_encoding
+from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, IO_BYTES_ENCODING, \
+    DEFAULT_MAX_MACRO_RECURSION_DEPTH
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
 from flipjump.interpretter.fjm_run import TerminationStatistics
 
@@ -26,6 +27,7 @@ def assemble(fj_file_paths: List[Path],
              debugging_file_path: Optional[Path] = None,
              show_statistics: bool = False,
              print_time: bool = True,
+             max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
              ) -> None:
     """
     runs the assembly pipeline. assembles the input files to a .fjm.
@@ -38,6 +40,8 @@ def assemble(fj_file_paths: List[Path],
     :param debugging_file_path:[out]: is specified, save debug information in this file
     :param show_statistics: if true shows macro-usage statistics
     :param print_time: if true prints the times of each assemble-stage
+    :param max_recursion_depth: The compiler supports macros that recursively uses other macros,
+    up to the specified recursion depth. If None: no recursion depth restrictions are applied.
 
     :note: This is a wrapper function to the assembler.assemble() function.
     """
@@ -50,7 +54,8 @@ def assemble(fj_file_paths: List[Path],
         debugging_file_path=debugging_file_path,
         warning_as_errors=warning_as_errors,
         show_statistics=show_statistics,
-        print_time=print_time
+        print_time=print_time,
+        max_recursion_depth=max_recursion_depth,
     )
 
 
@@ -183,8 +188,8 @@ def run_test_output(fjm_path: Path,
 
     try:
         assert expected_termination_cause == termination_statistics.termination_cause
-        assert expected_output.decode(io_bytes_encoding) == \
-               io_device.get_output(allow_incomplete_output=True).decode(io_bytes_encoding)
+        assert expected_output.decode(IO_BYTES_ENCODING) == \
+               io_device.get_output(allow_incomplete_output=True).decode(IO_BYTES_ENCODING)
         return True
     except AssertionError as assertion_error:
         if should_raise_assertion_error:
@@ -200,6 +205,8 @@ def assemble_and_run(fj_file_paths: List[Path],
                      warning_as_errors: bool = True,
                      show_statistics: bool = False,
                      print_time: bool = True,
+                     max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+
                      io_device: Optional[IODevice] = None,
                      show_trace: bool = False,
                      print_termination: bool = True,
@@ -220,6 +227,8 @@ def assemble_and_run(fj_file_paths: List[Path],
         warning_as_errors=warning_as_errors,
         show_statistics=show_statistics,
         print_time=print_time,
+        max_recursion_depth=max_recursion_depth,
+
         io_device=io_device,
         show_trace=show_trace,
         print_termination=print_termination,
@@ -235,6 +244,7 @@ def assemble_and_debug(fj_file_paths: List[Path],
                        warning_as_errors: bool = True,
                        show_statistics: bool = False,
                        print_time: bool = True,
+                       max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
 
                        breakpoints_addresses: Optional[Set[int]] = None,
                        breakpoints: Optional[Set[str]] = None,
@@ -265,6 +275,7 @@ def assemble_and_debug(fj_file_paths: List[Path],
             debugging_file_path=debug_file,
             show_statistics=show_statistics,
             print_time=print_time,
+            max_recursion_depth=max_recursion_depth,
         )
 
         termination_statistics = debug(
@@ -293,6 +304,7 @@ def assemble_and_run_test_output(fj_file_paths: List[Path],
                                  warning_as_errors: bool = True,
                                  show_statistics: bool = False,
                                  print_time: bool = True,
+                                 max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
 
                                  expected_termination_cause: TerminationCause = TerminationCause.Looping,
                                  should_raise_assertion_error: bool = False,
@@ -302,7 +314,7 @@ def assemble_and_run_test_output(fj_file_paths: List[Path],
                                  ) -> bool:
     """
     assembles the .fj files into a temporary .fjm file, then runs it with the given input, and checks that
-    it finishes successfuly and generates the expected output.
+    it finishes successfully and generates the expected output.
     @note: This function combines the functionality of `assemble()` and `test()`.
     For more information about the parameters, see the documentation of these functions.
     @raises AssertionError: if should_raise_assertion_error, and the run finished unexpectedly or with an
@@ -324,6 +336,7 @@ def assemble_and_run_test_output(fj_file_paths: List[Path],
             debugging_file_path=debug_file,
             show_statistics=show_statistics,
             print_time=print_time,
+            max_recursion_depth=max_recursion_depth,
         )
 
         test_succeeded = run_test_output(
