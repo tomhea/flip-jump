@@ -7,44 +7,43 @@ MAX_PRIMES = PRIMES_MEMORY_LENGTH / dw
 stl.startup_and_init_all
 
 
-//set_primes_ptr five
-//hex.xor_to_ptr primes_ptr, two
-//set_primes_ptr four
-//hex.xor_to_ptr primes_ptr, two
+// in order to "mark", we'll use a different primes_ptr. maybe we need one for read, and one for write.
+//set_primes_ptr temp1
+//hex.xor_to_ptr primes_ptr, temp1
+//set_primes_ptr temp2
+//hex.xor_to_ptr primes_ptr, temp2
 
 // The main program
 
   input_max_prime n
-  // TODO check for n==2/3, then p=6k+-1   (hex.cmp hw, n, two, smaller_than_2, equals_2, print_2_3_then_start)
+  handle_small_n n, end
+//  hex.set hw, primes_ptr, PRIMES_MEMORY_START + 5 * dw
+
 prime_loop_if:
-  hex.cmp hw, p, n, prime_loop, prime_loop, after_prime_loop
+  hex.cmp hw, p, n, prime_loop, prime_loop, end
 prime_loop:
-  set_primes_ptr p
   if1_ptr primes_ptr, next_prime
-  print_int hw, p
+  print_int hw, p  // TODO save ton of times by declaring p "dec", with dec.vec, dec.set, dec.add and dec.print.
 
-  // TODO mark every p*i as not primes
-
+  // TODO mark every p*(p+i) as not prime (stop when reached > n)
 next_prime:
-  hex.inc hw, p
-  ;prime_loop_if
+  set_next_prime p, primes_ptr, is_add_4, prime_loop_if
 
 
-after_prime_loop:
+end:
   stl.loop
 
 
 // Variables:
 
 n: hex.vec hw
-p: hex.vec hw, 2
-primes_ptr: hex.vec hw
+p: hex.vec hw, 5
+primes_ptr: hex.vec hw, PRIMES_MEMORY_START + 5 * dw
 
-two: hex.vec hw, 2
-three: hex.vec hw, 3
-four: hex.vec hw, 4
-five: hex.vec hw, 5
+temp1: hex.vec hw, 37
+//temp2: hex.vec hw, 41
 
+is_add_4: bit.bit 0  // if 0: add 2, else: add 4.
 
 // Segments:
 
@@ -53,6 +52,37 @@ segment PRIMES_MEMORY_START
 
 
 // Macro definitions:
+
+
+// if n < 2, print nothing and exit. if n == 2 print 2 and exit. else, print 2,3 and continue.
+def handle_small_n n, finish_address @ equals_2, print_2_3_then_start, two, continue_address {
+    hex.cmp hw, n, two, finish_address, equals_2, print_2_3_then_start
+  equals_2:
+    stl.output "2\n"
+    ;finish_address
+  print_2_3_then_start:
+    stl.output "2\n3\n"
+    ;continue_address
+
+  two: hex.vec hw, 2
+
+  continue_address:
+}
+
+
+// Time Complexity:  19@+31
+//   p += 2/4 (depends on the is_add_4 flag). primes_ptr += 2/4 * dw. flip the flag, and jump to continue_address.
+def set_next_prime p, primes_ptr, is_add_4, continue_address @ p_add_2, p_add_4 {
+    bit.if is_add_4, p_add_2, p_add_4
+  p_add_2:
+    hex.add_constant hw, primes_ptr, 2 * dw
+    hex.add_constant hw, p, 2
+    is_add_4+dbit; continue_address
+  p_add_4:
+    hex.add_constant hw, primes_ptr, 4 * dw
+    hex.add_constant hw, p, 4
+    is_add_4+dbit; continue_address
+}
 
 
 // print hex[:n] as a decimal integer.
