@@ -7,27 +7,41 @@ ns bit {
     // Complexity: 2@+6
     //   {carry:dst}++
     // carry,dst are bits.
-    def inc1 dst, carry @ end {
-        .if0 carry, end
-        .not dst
-        .if0 dst, end
-        .not carry
-      end:
+    def inc1 dst, carry @ continue {
+        .inc.inc1_with_carry0_jump dst, carry, continue
+      continue:
     }
 
-    // Complexity: n(2@+6)
+    ns inc {
+        // Unsafe for dst==carry (but there is no reason in calling it that way)
+        // If carry was 0, jump to carry0_jump.
+        // Complexity: 2@+6
+        //   {carry:dst}++
+        // carry,dst are bits.
+        def inc1_with_carry0_jump dst, carry, carry0_jump @ end {
+            ..if0 carry, carry0_jump
+            ..not dst
+            ..if0 dst, end
+            ..not carry
+          end:
+        }
+    }
+
+    //  Time Complexity: 5@+12 in average
+    // Space Complexity: n(2@+6)
     //   x[:n]++
     // x is a bit[:n]
     def inc n, x @ carry, end {
         .one carry
-        rep(n, i) .inc1 x+i*dw, carry
+        rep(n, i) .inc.inc1_with_carry0_jump x+i*dw, carry, end
         ;end
       carry:
         .bit
       end:
     }
 
-    // Complexity: n(2@+8)
+    //  Time Complexity: 2n + 5@+12
+    // Space Complexity: n(2@+6)
     //   x[:n]--
     // x is a bit[:n]
     def dec n, x {
@@ -36,7 +50,8 @@ ns bit {
         .not n, x
     }
 
-    // Complexity: n(2@+7)
+    //  Time Complexity: n + 5@+12
+    // Space Complexity: n(2@+6)
     //   x[:n]--
     // x is a bit[:n]
     def neg n, x {

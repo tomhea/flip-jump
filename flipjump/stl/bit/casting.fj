@@ -35,8 +35,8 @@ ns bit {
     }
 
 
-    // Complexity: 16@+19
-    // Space:      21@+30
+    //  Time Complexity: 15@+7
+    // Space Complexity: 21@+30
     //   ascii := the ascii representation of the value of hex (digits & capital-letters).
     // ascii is bit[:8], hex is bit[:4].
     def hex2ascii ascii, hex @ dec_label, hex_label, nine4, end {
@@ -114,7 +114,7 @@ ns bit {
     }
 
 
-    // Complexity: 54@+92
+    // Complexity: 53@+86
     //   if ascii is '0'-'9'/'a'-'f'/'A'-'F', set hex to that hexadecimal digit value (end error=0).  else, set error=1.
     // ascii is bit[:8], hex in bit[:4], and error(output-param) is a bit.
     def ascii2hex error, hex, ascii \
