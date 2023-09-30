@@ -1,110 +1,176 @@
 // This fj program prints all the prime numbers (as decimal numbers) up to a number n (given by input).
 
+
+// Constants:
+
 hw = w/4
-PRIMES_MEMORY_START = (1 << (w-2))   // 1/4 of the memory
-PRIMES_MEMORY_LENGTH = (1 << (w-1))  // 1/2 of the memory   # TODO should work with 1/2 and 1/2. check where does the wflips go. it should be well documented.
+PRIMES_MEMORY_START = (1 << (w-1))   // 1/2 of the memory
+PRIMES_MEMORY_LENGTH = (1 << (w-1))  // 1/2 of the memory
 FIRST_PRIME = 5
 MAX_PRIMES = PRIMES_MEMORY_LENGTH / dw
-stl.startup_and_init_all
+NUMBER_OF_PRIMES_MESSAGE = "Number of prime numbers: "
 
 
-// TODO remove when finished. also remove temp1: and temp2:
-// in order to "mark", we'll use a different primes_ptr. maybe we need one for read, and one for write.
-//set_primes_ptr primes_ptr, temp1
-//hex.xor_to_ptr primes_ptr, temp1
-//set_primes_ptr primes_ptr, temp2
-//hex.xor_to_ptr primes_ptr, temp2
+// The Program:
 
-// The main program
-
-  input_max_prime n, primes_ptr_n
-  handle_small_n n, end
-
-prime_loop_if:
-  hex.cmp hw, p, n, prime_loop, prime_loop, end
-prime_loop:
-  debug.print_primes_ptr_index primes_ptr // TODO remove when complete
-  if1_ptr primes_ptr, next_prime
-  print_int hw, p  // TODO save ton of times by declaring p "dec", with dec.vec, dec.set, dec.add and dec.print.
-
-  // TODO mark every p*(p+i) as not prime (stop when reached > n)
-next_prime:
-  set_next_prime p, primes_ptr, mark_primes_ptr, is_add_4, prime_loop_if
-
-
-end:
-  stl.loop
-
-
-// Variables:
-
-n: hex.vec hw
-primes_ptr_n: hex.vec hw, PRIMES_MEMORY_START
-
-p: hex.vec hw, FIRST_PRIME
-primes_ptr: hex.vec hw, PRIMES_MEMORY_START + FIRST_PRIME * dw
-mark_primes_ptr: hex.vec hw, PRIMES_MEMORY_START + FIRST_PRIME*FIRST_PRIME * dw
-
-temp1: hex.vec hw, 37
-//temp2: hex.vec hw, 41
-
-is_add_4: bit.bit (FIRST_PRIME % 6) == 1  // if 0: add 2, else: add 4.
-ONE: hex.hex 1
-
-// Segments:
+prime_sieve_main
 
 segment PRIMES_MEMORY_START
-    reserve PRIMES_MEMORY_LENGTH
+    reserve PRIMES_MEMORY_LENGTH  // This is the prime sieve table - it is initialized (reserved) with zeros.
 
 
 // Macro definitions:
 
 
+// The main macro. Ask for an input N, and then prints all primes from 0 to N, and the number of primes found.
+//  This program runs the prime-sieve algorithm, and only checks (and marks) the 6k+-1 primes.
+def prime_sieve_main @ prime_loop_if, prime_loop, next_prime, end, \
+        n, primes_ptr_n, p, primes_ptr, mark_primes_ptr, p_2dw_offset, p_4dw_offset, num_of_primes, is_add_4 {
+    stl.startup_and_init_all
+    input_max_prime n, primes_ptr_n
+    handle_small_n n
+
+  prime_loop_if:  // for each p=6k+-1 upto n:
+    hex.cmp hw, p, n, prime_loop, prime_loop, end
+  prime_loop:
+    if1_ptr primes_ptr, next_prime
+  // if p is prime:
+    print_int hw, p  // TODO save ton of times by declaring p "dec", with dec.vec, dec.set, dec.add and dec.print.
+    hex.inc hw, num_of_primes
+    mark_primes mark_primes_ptr, primes_ptr_n, is_add_4, p_2dw_offset, p_4dw_offset
+  next_prime:
+    set_full_next_prime p, primes_ptr, mark_primes_ptr, p_2dw_offset, p_4dw_offset, is_add_4
+    is_add_4+dbit; prime_loop_if
+
+  end:
+    stl.output NUMBER_OF_PRIMES_MESSAGE
+    print_int hw, num_of_primes
+    stl.loop
+
+
+// Variables:
+
+  n: hex.vec hw
+  primes_ptr_n: hex.vec hw, PRIMES_MEMORY_START
+
+  p: hex.vec hw, FIRST_PRIME
+  primes_ptr: hex.vec hw, PRIMES_MEMORY_START + FIRST_PRIME * dw
+  mark_primes_ptr: hex.vec hw, PRIMES_MEMORY_START + FIRST_PRIME*FIRST_PRIME * dw
+
+  p_2dw_offset: hex.vec hw, FIRST_PRIME * 2 * dw
+  p_4dw_offset: hex.vec hw, FIRST_PRIME * 4 * dw
+
+  num_of_primes: hex.vec hw, 2  // The number of primes smaller than FIRST_PRIME
+
+  is_add_4: bit.bit (FIRST_PRIME % 6) == 1  // if 0: add 2 to p, else: add 4.
+}
+
+
+// Time Complexity: marks * w(9.25@+7)
+//   Mark all primes from p*p upto n.
+// mark_primes_ptr expected to point to p*p, primes_ptr_n to n, and p_dw_offset is p*dw.
+def mark_primes mark_primes_ptr, primes_ptr_n, p_is_add_4, p_2dw_offset, p_4dw_offset \
+        @ mark_loop_if, mark_loop, next_prime, curr_prime_ptr, is_add_4, ONE, end {
+    hex.mov hw, curr_prime_ptr, mark_primes_ptr
+    bit.mov is_add_4, p_is_add_4
+
+  mark_loop_if:
+    hex.cmp hw, curr_prime_ptr, primes_ptr_n, mark_loop, mark_loop, end
+  mark_loop:
+    if1_ptr curr_prime_ptr, next_prime
+    hex.xor_to_ptr curr_prime_ptr, ONE
+  next_prime:
+    advance_ptr_by_p_Xdw curr_prime_ptr, p_2dw_offset, p_4dw_offset, is_add_4
+    is_add_4+dbit; mark_loop_if
+
+  curr_prime_ptr: hex.vec hw
+  is_add_4: bit.bit
+  ONE: hex.hex 1
+
+  end:
+}
+
+
 // if n < 2, print nothing and exit. if n == 2 print 2 and exit. else, print 2,3 and continue.
-def handle_small_n n, finish_address @ equals_2, print_2_3_then_start, two, continue_address {
-    hex.cmp hw, n, two, finish_address, equals_2, print_2_3_then_start
+def handle_small_n n @ less_then_2, equals_2, print_2_3_then_start, TWO, continue_address {
+    hex.cmp hw, n, TWO, less_then_2, equals_2, print_2_3_then_start
+
+  less_then_2:
+    stl.output NUMBER_OF_PRIMES_MESSAGE
+    stl.output "0\n"
+    stl.loop
+
   equals_2:
     stl.output "2\n"
-    ;finish_address
+    stl.output NUMBER_OF_PRIMES_MESSAGE
+    stl.output "1\n"
+    stl.loop
+
   print_2_3_then_start:
     stl.output "2\n3\n"
     ;continue_address
 
-  two: hex.vec hw, 2
+  TWO: hex.vec hw, 2
 
   continue_address:
 }
 
 
-// Time Complexity: w(5.5@) + 24@+43
-//   p += 2/4 (depends on the is_add_4 flag).
-//   primes_ptr += 2/4 * dw. flip the flag, and jump to continue_address.
-def set_next_prime p, primes_ptr, mark_primes_ptr, is_add_4, continue_address @ p_add_2, p_add_4 {
+// Time Complexity: w(@+3) + @+3
+//   primes_ptr += 2p*dw / 4p*dw (depends on the is_add_4 flag).
+def advance_ptr_by_p_Xdw primes_ptr, p_2dw_offset, p_4dw_offset, is_add_4 @ p_add_2, p_add_4, end {
     bit.if is_add_4, p_add_2, p_add_4
   p_add_2:
-    set_next_prime_mark_ptr mark_primes_ptr, p, 0
-    hex.add_constant hw, primes_ptr, 2 * dw
-    hex.add_constant hw, p, 2
-    is_add_4+dbit; continue_address
+    hex.add hw, primes_ptr, p_2dw_offset
+    ;end
   p_add_4:
-    set_next_prime_mark_ptr mark_primes_ptr, p, 1
-    hex.add_constant hw, primes_ptr, 4 * dw
-    hex.add_constant hw, p, 4
-    is_add_4+dbit; continue_address
+    hex.add hw, primes_ptr, p_4dw_offset
+  end:
 }
 
 
+// Time Complexity: w(5.5@) + 42@+71
+//   Update all the prime variables and pointers by 2/4, depends on the is_add_4 flag:
+//     p += 2/4.
+//     primes_ptr += 2/4 * dw.
+//     p_2dw_offset += 2/4 * 2dw.
+//     p_4dw_offset += 2/4 * 4dw.
+//     update the mark_primes_ptr (will point to the new p*p)
+def set_full_next_prime p, primes_ptr, mark_primes_ptr, p_2dw_offset, p_4dw_offset, is_add_4 @ p_add_2, p_add_4, end {
+    bit.if is_add_4, p_add_2, p_add_4
+  p_add_2:
+    _set_next_prime_mark_ptr mark_primes_ptr, p, 0, 2+#w
+    hex.add_constant hw, primes_ptr, 2 * dw
+    hex.add_constant hw, p_2dw_offset, 2 * 2 * dw
+    hex.add_constant hw, p_4dw_offset, 2 * 4 * dw
+    hex.add_constant hw, p, 2
+    ;end
+  p_add_4:
+    _set_next_prime_mark_ptr mark_primes_ptr, p, 1, 3+#w
+    hex.add_constant hw, primes_ptr, 4 * dw
+    hex.add_constant hw, p_2dw_offset, 4 * 2 * dw
+    hex.add_constant hw, p_4dw_offset, 4 * 4 * dw
+    hex.add_constant hw, p, 4
+  end:
+}
+
+
+// Time Complexity: w(5.5@) + 6@+15
 // Advances mark_primes_ptr to point to the current PRIMES_MEMORY_START + p*p * dw.
 //   if is_add_2:  mark_primes_ptr += ((p+2)^2 - p^2) * dw
 //   if is_add_4:  mark_primes_ptr += ((p+4)^2 - p^2) * dw
-// note: must be called before p was incremented.
-def set_next_prime_mark_ptr mark_primes_ptr, p, is_add_4 {
-    _set_next_prime_mark_ptr mark_primes_ptr, p, is_add_4, is_add_4+2+#w
+def set_next_prime_mark_ptr mark_primes_ptr, p, is_add_4 @ p_add_2, p_add_4, end {
+    bit.if is_add_4, p_add_2, p_add_4
+  p_add_2:
+    _set_next_prime_mark_ptr mark_primes_ptr, p, 0, 2+#w
+    ;end
+  p_add_4:
+    _set_next_prime_mark_ptr mark_primes_ptr, p, 1, 3+#w
+  end:
 }
 // Time Complexity: w(5.5@) + 5@+12
 // Advances mark_primes_ptr to point to the current PRIMES_MEMORY_START + p*p * dw  (basically adds dw times 4p+4 / 8p+16, based on is_add_4).
 //   for p_add_2 call with (p,0,2+#w), for p_add_4 call with (p,1,3+#w)
-// note: must be called before p was incremented.
 def _set_next_prime_mark_ptr mark_primes_ptr, p, inc_offset, shift_size @ bit_p, p_squared_diff, end {
     stl.hex2bit hw, bit_p, p
     bit.inc w-inc_offset, bit_p + dw*inc_offset
