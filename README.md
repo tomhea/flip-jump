@@ -22,7 +22,7 @@ This project includes a **Macro Assembler**, an **Interpreter**, and a **Thoroug
 Additionally, it provides a **Python Library** that makes it easy to work with those components.
 
 This prime numbers program was coded only with FlipJump ([source](programs/prime_sieve.fj)):
-![Calculations using only FlipJump](res/prime_sieve.gif)
+![Printing prime numbers using only FlipJump](res/prime_sieve.gif)
 
 ## Hello, World!
 
