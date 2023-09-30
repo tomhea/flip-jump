@@ -21,8 +21,8 @@ The operation takes 2 memory addresses - it flips (inverts) the bit the first ad
 This project includes a **Macro Assembler**, an **Interpreter**, and a **Thoroughly Tested Standard Library** for the FlipJump language.  
 Additionally, it provides a **Python Library** that makes it easy to work with those components.
 
-This calculator was built with only FlipJump ([source](programs/calc.fj)):
-![Calculations using only FlipJump](res/calc.gif)
+This prime numbers program was coded only with FlipJump ([source](programs/prime_sieve.fj)):
+![Calculations using only FlipJump](res/prime_sieve.gif)
 
 ## Hello, World!
 
