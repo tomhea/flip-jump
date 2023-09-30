@@ -24,13 +24,17 @@ def validate_addresses(memory_width, first_address, last_address):
                                          f'[{hex(first_address)}, {hex(last_address - 1)}].')
 
     assert_address_in_memory(memory_width, first_address)
-    assert_address_in_memory(memory_width, last_address)
+    assert_address_in_memory(memory_width, last_address - 1)
 
 
 def add_segment_to_fjm(memory_width: int,
                        fjm_writer: Writer,
                        first_address: int, last_address: int,
                        fj_words: List[int], wflip_words: List[int]) -> None:
+    """
+    The new segment will be placed in [first_address, last_address),
+    And will include the next data: fj_words + wflip_words.
+    """
     validate_addresses(memory_width, first_address, last_address)
     if first_address == last_address:
         return
@@ -64,7 +68,7 @@ class BinaryData:
         self.memory_width = memory_width
 
         self.first_address = first_segment.start_address
-        self.wflip_address = first_segment.wflip_start_address
+        self.next_wflip_address = first_segment.wflip_start_address
 
         self.labels = labels
         self.wflips_so_far = 0
@@ -84,14 +88,17 @@ class BinaryData:
             index = self.padding_ops_indices.pop()
             return WFlipSpot(self.fj_words, index, self.first_address + self.memory_width * index)
 
-        wflip_spot = WFlipSpot(self.wflip_words, len(self.wflip_words), self.wflip_address)
+        wflip_spot = WFlipSpot(self.wflip_words, len(self.wflip_words), self.next_wflip_address)
         self.wflip_words += (0, 0)
-        self.wflip_address += 2*self.memory_width
+        self.next_wflip_address += 2 * self.memory_width
         return wflip_spot
 
     def close_and_add_segment(self, fjm_writer: Writer) -> None:
+        if self.next_wflip_address == self.first_address:
+            return
+
         add_segment_to_fjm(self.memory_width, fjm_writer,
-                           self.first_address, self.wflip_address,
+                           self.first_address, self.next_wflip_address,
                            self.fj_words, self.wflip_words)
 
     def _insert_wflip_label(self, address: int):
@@ -150,7 +157,7 @@ class BinaryData:
         self.close_and_add_segment(fjm_writer)
 
         self.first_address = first_address
-        self.wflip_address = wflip_first_address
+        self.next_wflip_address = wflip_first_address
         self.current_address = self.first_address
 
         self.padding_ops_indices.clear()
