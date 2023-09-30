@@ -1,0 +1,322 @@
+// This fj program prints all the prime numbers (as decimal numbers) up to a number n (given by input).
+
+
+// Constants:
+
+hw = w/4
+PRIMES_MEMORY_START = (1 << (w-1))   // 1/2 of the memory
+PRIMES_MEMORY_LENGTH = (1 << (w-1))  // 1/2 of the memory
+FIRST_PRIME = 5
+MAX_PRIMES = PRIMES_MEMORY_LENGTH / dw
+NUMBER_OF_PRIMES_MESSAGE = "Number of prime numbers: "
+
+
+// The Program:
+
+prime_sieve_main
+
+segment PRIMES_MEMORY_START
+    reserve PRIMES_MEMORY_LENGTH  // This is the prime sieve table - it is initialized (reserved) with zeros.
+
+
+// Macro definitions:
+
+
+// The main macro. Ask for an input N, and then prints all primes from 0 to N, and the number of primes found.
+//  This program runs the prime-sieve algorithm, and only checks (and marks) the 6k+-1 primes.
+def prime_sieve_main @ prime_loop_if, prime_loop, next_prime, end, \
+        n, primes_ptr_n, p, primes_ptr, mark_primes_ptr, p_2dw_offset, p_4dw_offset, num_of_primes, is_add_4 {
+    stl.startup_and_init_all
+    input_max_prime n, primes_ptr_n
+    handle_small_n n
+
+  prime_loop_if:  // for each p=6k+-1 upto n:
+    hex.cmp hw, p, n, prime_loop, prime_loop, end
+  prime_loop:
+    if1_ptr primes_ptr, next_prime
+  // if p is prime:
+    print_int hw, p  // TODO save ton of times by declaring p "dec", with dec.vec, dec.set, dec.add and dec.print.
+    hex.inc hw, num_of_primes
+    mark_primes mark_primes_ptr, primes_ptr_n, is_add_4, p_2dw_offset, p_4dw_offset
+  next_prime:
+    set_full_next_prime p, primes_ptr, mark_primes_ptr, p_2dw_offset, p_4dw_offset, is_add_4
+    is_add_4+dbit; prime_loop_if
+
+  end:
+    stl.output NUMBER_OF_PRIMES_MESSAGE
+    print_int hw, num_of_primes
+    stl.loop
+
+
+// Variables:
+
+  n: hex.vec hw
+  primes_ptr_n: hex.vec hw, PRIMES_MEMORY_START
+
+  p: hex.vec hw, FIRST_PRIME
+  primes_ptr: hex.vec hw, PRIMES_MEMORY_START + FIRST_PRIME * dw
+  mark_primes_ptr: hex.vec hw, PRIMES_MEMORY_START + FIRST_PRIME*FIRST_PRIME * dw
+
+  p_2dw_offset: hex.vec hw, FIRST_PRIME * 2 * dw
+  p_4dw_offset: hex.vec hw, FIRST_PRIME * 4 * dw
+
+  num_of_primes: hex.vec hw, 2  // The number of primes smaller than FIRST_PRIME
+
+  is_add_4: bit.bit (FIRST_PRIME % 6) == 1  // if 0: add 2 to p, else: add 4.
+}
+
+
+// Time Complexity: marks * w(9.25@+7)
+//   Mark all primes from p*p upto n.
+// mark_primes_ptr expected to point to p*p, primes_ptr_n to n, and p_dw_offset is p*dw.
+def mark_primes mark_primes_ptr, primes_ptr_n, p_is_add_4, p_2dw_offset, p_4dw_offset \
+        @ mark_loop_if, mark_loop, next_prime, curr_prime_ptr, is_add_4, ONE, end {
+    hex.mov hw, curr_prime_ptr, mark_primes_ptr
+    bit.mov is_add_4, p_is_add_4
+
+  mark_loop_if:
+    hex.cmp hw, curr_prime_ptr, primes_ptr_n, mark_loop, mark_loop, end
+  mark_loop:
+    if1_ptr curr_prime_ptr, next_prime
+    hex.xor_to_ptr curr_prime_ptr, ONE
+  next_prime:
+    advance_ptr_by_p_Xdw curr_prime_ptr, p_2dw_offset, p_4dw_offset, is_add_4
+    is_add_4+dbit; mark_loop_if
+
+  curr_prime_ptr: hex.vec hw
+  is_add_4: bit.bit
+  ONE: hex.hex 1
+
+  end:
+}
+
+
+// if n < 2, print nothing and exit. if n == 2 print 2 and exit. else, print 2,3 and continue.
+def handle_small_n n @ less_then_2, equals_2, print_2_3_then_start, TWO, continue_address {
+    hex.cmp hw, n, TWO, less_then_2, equals_2, print_2_3_then_start
+
+  less_then_2:
+    stl.output NUMBER_OF_PRIMES_MESSAGE
+    stl.output "0\n"
+    stl.loop
+
+  equals_2:
+    stl.output "2\n"
+    stl.output NUMBER_OF_PRIMES_MESSAGE
+    stl.output "1\n"
+    stl.loop
+
+  print_2_3_then_start:
+    stl.output "2\n3\n"
+    ;continue_address
+
+  TWO: hex.vec hw, 2
+
+  continue_address:
+}
+
+
+// Time Complexity: w(@+3) + @+3
+//   primes_ptr += 2p*dw / 4p*dw (depends on the is_add_4 flag).
+def advance_ptr_by_p_Xdw primes_ptr, p_2dw_offset, p_4dw_offset, is_add_4 @ p_add_2, p_add_4, end {
+    bit.if is_add_4, p_add_2, p_add_4
+  p_add_2:
+    hex.add hw, primes_ptr, p_2dw_offset
+    ;end
+  p_add_4:
+    hex.add hw, primes_ptr, p_4dw_offset
+  end:
+}
+
+
+// Time Complexity: w(5.5@) + 42@+71
+//   Update all the prime variables and pointers by 2/4, depends on the is_add_4 flag:
+//     p += 2/4.
+//     primes_ptr += 2/4 * dw.
+//     p_2dw_offset += 2/4 * 2dw.
+//     p_4dw_offset += 2/4 * 4dw.
+//     update the mark_primes_ptr (will point to the new p*p)
+def set_full_next_prime p, primes_ptr, mark_primes_ptr, p_2dw_offset, p_4dw_offset, is_add_4 @ p_add_2, p_add_4, end {
+    bit.if is_add_4, p_add_2, p_add_4
+  p_add_2:
+    _set_next_prime_mark_ptr mark_primes_ptr, p, 0, 2+#w
+    hex.add_constant hw, primes_ptr, 2 * dw
+    hex.add_constant hw, p_2dw_offset, 2 * 2 * dw
+    hex.add_constant hw, p_4dw_offset, 2 * 4 * dw
+    hex.add_constant hw, p, 2
+    ;end
+  p_add_4:
+    _set_next_prime_mark_ptr mark_primes_ptr, p, 1, 3+#w
+    hex.add_constant hw, primes_ptr, 4 * dw
+    hex.add_constant hw, p_2dw_offset, 4 * 2 * dw
+    hex.add_constant hw, p_4dw_offset, 4 * 4 * dw
+    hex.add_constant hw, p, 4
+  end:
+}
+
+
+// Time Complexity: w(5.5@) + 6@+15
+// Advances mark_primes_ptr to point to the current PRIMES_MEMORY_START + p*p * dw.
+//   if is_add_2:  mark_primes_ptr += ((p+2)^2 - p^2) * dw
+//   if is_add_4:  mark_primes_ptr += ((p+4)^2 - p^2) * dw
+def set_next_prime_mark_ptr mark_primes_ptr, p, is_add_4 @ p_add_2, p_add_4, end {
+    bit.if is_add_4, p_add_2, p_add_4
+  p_add_2:
+    _set_next_prime_mark_ptr mark_primes_ptr, p, 0, 2+#w
+    ;end
+  p_add_4:
+    _set_next_prime_mark_ptr mark_primes_ptr, p, 1, 3+#w
+  end:
+}
+// Time Complexity: w(5.5@) + 5@+12
+// Advances mark_primes_ptr to point to the current PRIMES_MEMORY_START + p*p * dw  (basically adds dw times 4p+4 / 8p+16, based on is_add_4).
+//   for p_add_2 call with (p,0,2+#w), for p_add_4 call with (p,1,3+#w)
+def _set_next_prime_mark_ptr mark_primes_ptr, p, inc_offset, shift_size @ bit_p, p_squared_diff, end {
+    stl.hex2bit hw, bit_p, p
+    bit.inc w-inc_offset, bit_p + dw*inc_offset
+    bit.shl w, shift_size, bit_p
+    stl.bit2hex w, p_squared_diff, bit_p
+    hex.add hw, mark_primes_ptr, p_squared_diff
+    ;end
+
+  bit_p: bit.vec w
+  p_squared_diff: hex.vec dw
+
+  end:
+}
+
+
+// print hex[:n] as a decimal integer.
+def print_int n, hex @ bit, end{
+    stl.hex2bit n, bit, hex
+    bit.print_dec_int 4*n, bit
+    stl.output '\n'
+    ;end
+
+  bit: bit.vec 4*n
+
+  end:
+}
+
+
+// if *hex_ptr != 0 goto l1.
+def if1_ptr hex_ptr, l1 @ l0 {
+    if_ptr hex_ptr, l0, l1
+  l0:
+}
+
+
+// if *hex_ptr == 0 goto l0, else goto l1.
+def if_ptr hex_ptr, l0, l1 @ ptr_value {
+    hex.zero ptr_value
+    hex.xor_from_ptr ptr_value, hex_ptr
+    hex.if ptr_value, l0, l1
+
+  ptr_value: hex.hex
+}
+
+
+// primes_ptr = PRIMES_MEMORY_START + p*dw
+def set_primes_ptr primes_ptr, p @ p_offset, end {
+    hex.set hw, primes_ptr, PRIMES_MEMORY_START
+    hex.mov hw, p_offset, p
+    shl_hex hw, p_offset, #w
+    hex.add hw, primes_ptr, p_offset
+    ;end
+
+  p_offset: hex.vec hw
+
+  end:
+}
+
+
+// hex[:n] <<= shift
+def shl_hex n, hex, shift {
+    rep(shift/4, i) hex.shl_hex n, hex
+    rep(shift%4, i) hex.shl_bit n, hex
+}
+
+
+// n = input_decimal_number(). check that n is smaller than MAX_PRIMES.
+// primes_ptr_n = PRIMES_MEMORY_START + n*dw
+def input_max_prime n, primes_ptr_n @ set_primes_ptr_n, bit_n, max_n, raise_more_than_max_primes, end {
+    stl.output "Search primes up to: "
+    input_decimal_number w, bit_n
+    stl.bit2hex w, n, bit_n
+
+    hex.cmp hw, n, max_n, set_primes_ptr_n, raise_more_than_max_primes, raise_more_than_max_primes
+  set_primes_ptr_n:
+    set_primes_ptr primes_ptr_n, n
+    ;end
+
+  bit_n: bit.vec w
+  max_n: hex.vec hw, MAX_PRIMES
+
+  raise_more_than_max_primes:
+    raise_error "The input number should be less than ((1 << (w-2)) / w).\n  For w=16 it's 1024.\n  For w=32 it's ~33M.\n  For w=64 it's ~7e16."
+
+    end:
+}
+
+
+// bit[:n] = input_ascii_as_decimal. expects \n at finish, and no other characters other then '0'-'9'.
+//   example: for input "1234\n" does bit[:n]=1234.
+def input_decimal_number n, bit \
+        @ input_decimal_digit, end, dec_digit, is_error, ascii, i, i_start, \
+        error_handler, validate_not_empty, newline, raise_not_number_error {
+    bit.zero n, bit
+    bit.mov #n, i, i_start
+
+  input_decimal_digit:
+    bit.if0 #n, i, end
+    bit.input ascii
+    bit.ascii2dec is_error, dec_digit, ascii
+    bit.if1 is_error, error_handler
+    bit.mul10 n, bit
+    bit.add n, bit, dec_digit
+    bit.dec #n, i
+    ;input_decimal_digit
+
+  dec_digit: bit.vec n
+  newline: bit.vec 8, '\n'
+  is_error: bit.bit
+  ascii: bit.vec 8
+  i: bit.vec #n
+  i_start: bit.vec #n, n
+
+  error_handler:
+    bit.cmp 8, ascii, newline, raise_not_number_error, validate_not_empty, raise_not_number_error
+  validate_not_empty:
+    bit.cmp #n, i, i_start, end, raise_not_number_error, end
+  raise_not_number_error:
+    raise_error "Bad number given. The number should be positive, only digits, and end with a new-line."
+
+  end:
+}
+
+
+// pretty way of printing an error and then exiting.
+def raise_error msg {
+    stl.output "\n\nError:\n"
+    stl.output msg
+    stl.output "\nExiting program.\n"
+    stl.loop
+}
+
+
+ns debug {
+    // For primes_ptr == (PRIMES_MEMORY_START_VAR + p * dw), print the p.
+    def print_primes_ptr_index primes_ptr @ bit_prime_index, PRIMES_MEMORY_START_VAR, end {
+        stl.output "primes_ptr = &primes["
+        stl.hex2bit hw, bit_prime_index, primes_ptr
+        bit.sub w, bit_prime_index, PRIMES_MEMORY_START_VAR
+        bit.shr w, #w, bit_prime_index
+        bit.print_dec_int w, bit_prime_index
+        stl.output "]\n"
+        ;end
+
+      bit_prime_index: hex.vec w
+      PRIMES_MEMORY_START_VAR: bit.vec w, PRIMES_MEMORY_START
+      end:
+    }
+}

@@ -175,7 +175,9 @@ def get_rep_times(op: RepCall, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_times(preprocessor_data.labels)
     except FlipJumpExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree, f'rep {op.macro_name} failed. In {op.code_position}.',
+        macro_resolve_error(preprocessor_data.curr_tree,
+                            f"Can't evaluate how many times to repeat in "
+                            f"'rep {op.macro_name}'. In {op.code_position}.",
                             orig_exception=e)
 
 
@@ -183,7 +185,9 @@ def get_pad_ops_alignment(op: Pad, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_ops_alignment(preprocessor_data.labels)
     except FlipJumpExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree, f'pad {op.ops_alignment} failed. In {op.code_position}.',
+        macro_resolve_error(preprocessor_data.curr_tree,
+                            f"Can't evaluate how much to pad in "
+                            f"'pad {op.ops_alignment}'. In {op.code_position}.",
                             orig_exception=e)
 
 

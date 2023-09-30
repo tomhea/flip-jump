@@ -107,7 +107,7 @@ ns bit {
     }
 
 
-    // Complexity: n(9@+18)
+    // Complexity: n(7@+13)
     //    print x[:n] as a signed hexadecimal number, without leading zeros (digits & capital-letters).
     //
     // x_prefix (constant): print with the "0x" prefix.

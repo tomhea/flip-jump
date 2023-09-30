@@ -167,7 +167,7 @@ ns hex {
     //  Time Complexity: n(n(3phi+8) + b(5phi+32)), for b the minimum of #on-bits in a,b (b<n/2, e.g. for n=16, b=7).
     //     (for n==b/2): n^2(5.5phi+24)
     // Space Complexity: n(#n(0.75phi+12) + 18.5phi+636)
-    // res[n] = a[n] * b[n]
+    // res[:n] = a[:n] * b[:n]
     //
     // @requires hex.or.init (or hex.init)
     def mul n, res, a, b @ a_less_1bits, b_less_1bits, loop, after_add, dst, src, a_1bits, b_1bits, end {

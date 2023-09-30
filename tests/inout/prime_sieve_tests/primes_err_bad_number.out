@@ -1,0 +1,5 @@
+Search primes up to: 
+
+Error:
+Bad number given. The number should be positive, only digits, and end with a new-line.
+Exiting program.
