@@ -263,7 +263,7 @@ def input_max_prime n, primes_ptr_n @ set_primes_ptr_n, bit_n, max_n, raise_more
 //   example: for input "1234\n" does bit[:n]=1234.
 def input_decimal_number n, bit \
         @ input_decimal_digit, end, dec_digit, is_error, ascii, i, i_start, \
-        error_handler, newline, raise_not_number_error {
+        error_handler, validate_not_empty, newline, raise_not_number_error {
     bit.zero n, bit
     bit.mov #n, i, i_start
 
@@ -285,7 +285,9 @@ def input_decimal_number n, bit \
   i_start: bit.vec #n, n
 
   error_handler:
-    bit.cmp 8, ascii, newline, raise_not_number_error, end, raise_not_number_error
+    bit.cmp 8, ascii, newline, raise_not_number_error, validate_not_empty, raise_not_number_error
+  validate_not_empty:
+    bit.cmp #n, i, i_start, end, raise_not_number_error, end
   raise_not_number_error:
     raise_error "Bad number given. The number should be positive, only digits, and end with a new-line."
 

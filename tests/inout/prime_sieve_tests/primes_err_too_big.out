@@ -1,0 +1,8 @@
+Search primes up to: 
+
+Error:
+The input number should be less than ((1 << (w-2)) / w).
+  For w=16 it's 1024.
+  For w=32 it's ~33M.
+  For w=64 it's ~7e16.
+Exiting program.
