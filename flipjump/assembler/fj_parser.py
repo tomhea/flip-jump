@@ -3,7 +3,9 @@ from pathlib import Path
 from typing import Set, List, Tuple, Dict, Union
 
 import sly
+# noinspection PyProtectedMember
 from sly.lex import Token
+# noinspection PyProtectedMember
 from sly.yacc import YaccProduction as ParsedRule
 
 from flipjump.utils.exceptions import FlipJumpExprException, FlipJumpParsingException
@@ -74,7 +76,7 @@ def get_char_value_and_length(s: str) -> Tuple[int, int]:
     return int(s[2:4], 16), 4
 
 
-# noinspection PyUnboundLocalVariable,PyRedeclaration
+# noinspection PyUnboundLocalVariable,PyRedeclaration,PyPep8Naming,PyMethodMayBeStatic
 class FJLexer(sly.Lexer):
     # noinspection PyUnresolvedReferences
     tokens = {NS, DEF, REP,
@@ -183,7 +185,12 @@ def next_address() -> Expr:
     return Expr('$')
 
 
-# noinspection PyUnusedLocal,PyUnresolvedReferences
+def _get_main_macro_code_position(first_file: Tuple[str, Path]) -> CodePosition:
+    (short_file_name, fj_file_path) = first_file
+    return CodePosition(str(fj_file_path.absolute()), short_file_name, 1)
+
+
+# noinspection PyUnusedLocal,PyUnresolvedReferences,PyPep8Naming
 class FJParser(sly.Parser):
     tokens = FJLexer.tokens
     # TODO add Unary Minus (-), Unary Not (~). Maybe add logical or (||) and logical and (&&). Maybe handle power (**).
@@ -201,10 +208,12 @@ class FJParser(sly.Parser):
     )
     # debugfile = 'src/parser.out'
 
-    def __init__(self, memory_width: int, warning_as_errors: bool):
+    def __init__(self, memory_width: int, warning_as_errors: bool, first_file: Tuple[str, Path]):
         self.consts: Dict[str, Expr] = {'w': Expr(memory_width)}
         self.warning_as_errors: bool = warning_as_errors
-        self.macros: Dict[MacroName, Macro] = {initial_macro_name: Macro([], [], [], '', None)}
+        self.macros: Dict[MacroName, Macro] = {
+            initial_macro_name: Macro([], [], [], '', _get_main_macro_code_position(first_file))
+        }
 
     def validate_free_macro_name(self, name: MacroName, lineno: int) -> None:
         if name in self.macros:
@@ -672,7 +681,8 @@ class FJParser(sly.Parser):
 
 def exit_if_errors() -> None:
     if error_occurred:
-        raise FlipJumpParsingException(f'Errors found in file {curr_file}. Assembly stopped.\n\nThe Errors:\n{all_errors}')
+        raise FlipJumpParsingException(f'Errors found in file {curr_file}. '
+                                       f'Assembly stopped.\n\nThe Errors:\n{all_errors}')
 
 
 def validate_current_file(files_seen: Set[Union[str, Path]]) -> None:
@@ -718,8 +728,11 @@ def parse_macro_tree(input_files: List[Tuple[str, Path]], memory_width: int, war
 
     files_seen: Set[Union[str, Path]] = set()
 
+    if not input_files:
+        raise FlipJumpParsingException(f"The FlipJump parser got an empty files list.")
+
     lexer = FJLexer()
-    parser = FJParser(memory_width, warning_as_errors)
+    parser = FJParser(memory_width, warning_as_errors, input_files[0])
 
     for curr_file_short_name, curr_file in input_files:
         validate_current_file(files_seen)

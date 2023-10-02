@@ -6,18 +6,16 @@ import os
 from pathlib import Path
 from typing import List, Dict, Tuple, Union
 
-from flipjump.utils.constants import DEBUG_JSON_ENCODING, DEBUG_JSON_LZMA_FORMAT, DEBUG_JSON_LZMA_FILTERS
-from importlib.resources import path
+from flipjump.utils.constants import DEBUG_JSON_ENCODING, DEBUG_JSON_LZMA_FORMAT, DEBUG_JSON_LZMA_FILTERS, STL_PATH
 
 
 def get_stl_paths() -> List[Path]:
     """
     @return: list of the ordered standard-library paths
     """
-    with path('flipjump', 'stl') as stl_path:
-        with open(stl_path / 'conf.json', 'r') as stl_json:
-            stl_options = json.load(stl_json)
-        return [stl_path / f'{lib}.fj' for lib in stl_options['all']]
+    with open(STL_PATH / 'conf.json') as stl_conf:
+        stl_options = json.load(stl_conf)
+    return [STL_PATH / f'{lib}.fj' for lib in stl_options['all']]
 
 
 def save_debugging_labels(debugging_file_path: Path, labels: Dict[str, int]) -> None:

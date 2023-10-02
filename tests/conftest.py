@@ -80,19 +80,19 @@ def argument_line_iterator(csv_file_path: Path, num_of_args: int) -> Iterable[Li
                 yield list(map(str.strip, line))
 
 
-def get_compile_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str], save_debug_info: bool) -> List:
+def get_compile_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str], save_debug_file: bool) -> List:
     """
     read the compile-tests from the csv
     @param csv_file_path: read tests from this csv
     @param xfail_list: list of tests names to mark with xfail (expected to fail)
-    @param save_debug_info: should save the debugging info file
+    @param save_debug_file: should save the debugging info file
 
     @return: the list of pytest.params(CompileTestArgs, marks=...)
     """
     params = []
 
     for line in argument_line_iterator(csv_file_path, CompileTestArgs.num_of_csv_line_args):
-        args = CompileTestArgs(save_debug_info, *line)
+        args = CompileTestArgs(save_debug_file, *line)
         test_marks = [pytest.mark.run(order=COMPILE_ORDER_INDEX)]
         if args.test_name in xfail_list:
             test_marks.append(pytest.mark.xfail())
