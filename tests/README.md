@@ -11,13 +11,13 @@ Use `--regulr` to run all the tests of stable parts.
 **====> Use `--all` to run all the tests. <====**  
 The default (no type flags) means `--fast`.
 
-![Running Pytest with --regular](../res/pytest.gif)
+![Running Pytest with --regular](../resources/pytest.gif)
 
 You can run the tests parallel with `-n auto` (using [xdist](https://github.com/pytest-dev/pytest-xdist)).  
 note that this option is only allowed while using exactly one of `--compile` / `--run`.  
 You can execute the `test_parallel` / `test_parallel.bat` to run parallel compile, and afterwords parallel run, with the given flags.
 
-![Running the test_parallel script with --regular](../res/test_parallel.gif)
+![Running the test_parallel script with --regular](../resources/test_parallel.gif)
 
 ### Debugging info
 When updating the codebase or adding new tests - Tests may fail, and it's a good thing. That way we can learn more about the code behavior. 
