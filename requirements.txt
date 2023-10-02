@@ -1,8 +1,0 @@
-sly>=0.4
-
-easygui>=0.98.3
-plotly>=5.16.1
-
-pytest>=7.4.0
-pytest-ordering>=0.6
-pytest-xdist>=3.3.1
