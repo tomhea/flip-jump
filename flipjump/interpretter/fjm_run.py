@@ -127,18 +127,18 @@ def run(fjm_path: Path,
     @param last_ops_debugging_list_length: The length of the last-ops list
     @return: the run's termination-statistics
     """
+    with PrintTimer('  loading memory:  ', print_time=print_time):
+        mem = fjm_reader.Reader(fjm_path)
+
+    if io_device is None:
+        io_device = BrokenIO()
+
+    ip = 0
+    w = mem.memory_width
+
+    statistics = RunStatistics(w, last_ops_debugging_list_length)
+
     try:
-        with PrintTimer('  loading memory:  ', print_time=print_time):
-            mem = fjm_reader.Reader(fjm_path)
-
-        if io_device is None:
-            io_device = BrokenIO()
-
-        ip = 0
-        w = mem.memory_width
-
-        statistics = RunStatistics(w, last_ops_debugging_list_length)
-
         while True:
             statistics.register_op_address(ip)
 

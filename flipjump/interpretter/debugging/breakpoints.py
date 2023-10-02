@@ -200,7 +200,8 @@ def update_breakpoints_from_addresses_set(breakpoint_addresses: Optional[Set[int
 def load_labels_dictionary(debugging_file: Optional[Path], labels_file_needed: bool) -> Dict[str, int]:
     """
     load the labels_dictionary from debugging_file, if possible.
-    @param labels_file_needed: if True, prints a warning if debugging-file is None
+    @param debugging_file: The debugging file. If None: return an empty dictionary.
+    @param labels_file_needed: If True, prints a warning if debugging-file is None
     @return: the label-to-address dictionary
     """
     if debugging_file is None:

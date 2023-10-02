@@ -35,16 +35,16 @@ class Reader:
         """
         self.garbage_handling = garbage_handling
 
-        with open(input_file, 'rb') as fjm_file:
-            try:
+        try:
+            with open(input_file, 'rb') as fjm_file:
                 self._init_header_fields(fjm_file)
                 self._validate_header()
                 segments = self._init_segments(fjm_file)
                 data = self._read_decompressed_data(fjm_file)
                 self._init_memory(segments, data)
-            except struct.error as se:
-                exception_message = f"Bad file {input_file}, can't unpack. Maybe it's not a .fjm file?"
-                raise FlipJumpReadFjmException(exception_message) from se
+        except struct.error as se:
+            exception_message = f"Bad file {input_file}, can't unpack. Maybe it's not a .fjm file?"
+            raise FlipJumpReadFjmException(exception_message) from se
 
     def _init_header_fields(self, fjm_file: BinaryIO) -> None:
         self.magic, self.memory_width, self.version, self.segment_num = \
@@ -99,7 +99,8 @@ class Reader:
                 word = ((1 << self.memory_width) - 1)
                 for i in range(0, data_length, 2):
                     self.memory[segment_start + i] = data[data_start + i]
-                    self.memory[segment_start + i+1] = (data[data_start + i+1] + (segment_start + i+1) * self.memory_width) & word
+                    self.memory[segment_start + i+1] =\
+                        (data[data_start + i+1] + (segment_start + i+1) * self.memory_width) & word
             else:
                 for i in range(data_length):
                     self.memory[segment_start + i] = data[data_start + i]
@@ -119,7 +120,8 @@ class Reader:
                     return 0
 
             garbage_val = _new_garbage_val()
-            garbage_message = f'Reading garbage word at mem[{hex(word_address << self.memory_width)[2:]}] = {hex(garbage_val)[2:]}'
+            garbage_message = (f'Reading garbage word at mem[{hex(word_address << self.memory_width)[2:]}]'
+                               f' = {hex(garbage_val)[2:]}')
 
             if GarbageHandling.Stop == self.garbage_handling:
                 raise FlipJumpRuntimeMemoryException(garbage_message)

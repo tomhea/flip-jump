@@ -30,6 +30,7 @@ prime_sieve_121, tests/compiled/prime_sieve.fjm, tests/inout/prime_sieve_tests/p
 prime_sieve_108, tests/compiled/prime_sieve.fjm, tests/inout/prime_sieve_tests/primes108.in,tests/inout/prime_sieve_tests/primes108.out, False,False
 prime_sieve_107, tests/compiled/prime_sieve.fjm, tests/inout/prime_sieve_tests/primes107.in,tests/inout/prime_sieve_tests/primes107.out, False,False
 prime_sieve_100, tests/compiled/prime_sieve.fjm, tests/inout/prime_sieve_tests/primes100.in,tests/inout/prime_sieve_tests/primes100.out, False,False
+prime_sieve_50, tests/compiled/prime_sieve.fjm, tests/inout/prime_sieve_tests/primes50.in,tests/inout/prime_sieve_tests/primes50.out, False,False
 prime_sieve_10, tests/compiled/prime_sieve.fjm, tests/inout/prime_sieve_tests/primes10.in,tests/inout/prime_sieve_tests/primes10.out, False,False
 prime_sieve_7, tests/compiled/prime_sieve.fjm, tests/inout/prime_sieve_tests/primes7.in,tests/inout/prime_sieve_tests/primes7.out, False,False
 prime_sieve_6, tests/compiled/prime_sieve.fjm, tests/inout/prime_sieve_tests/primes6.in,tests/inout/prime_sieve_tests/primes6.out, False,False
