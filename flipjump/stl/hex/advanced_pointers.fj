@@ -71,8 +71,8 @@ ns hex {
         .ptr_sub hex.pointers.sp, value
     }
 
-    //  Time Complexity: 4w@  (actually a bit smaller)
-    // Space Complexity: 4w@  (actually a bit smaller)
+    //  Time Complexity: w(1.5@+5) + 9@+14
+    // Space Complexity: w(1.875@+20) + 5@+55
     //   Like:  stack[++sp] = return_address
     //   Pushes the given return_address to the next cell in the stack (assumes it's zero). Increments sp.
     // return_address is a fj-op address, so we assume is dw-aligned.
@@ -81,8 +81,8 @@ ns hex {
         .ptr_wflip_2nd_word hex.pointers.sp, return_address
     }
 
-    //  Time Complexity: 4w@  (actually a bit smaller)
-    // Space Complexity: 4w@  (actually a bit smaller)
+    //  Time Complexity: w(1.5@+5) + 9@+23
+    // Space Complexity: w(1.875@+20) + 5@+67
     //   Like:  stack[sp--] = 0
     //   Pops the given return_address from the current cell in the stack (assumes it has the value of the return_address). Decrements sp.
     // return_address is a fj-op address, so we assume is dw-aligned.
@@ -128,8 +128,8 @@ ns hex {
     }
 
 
-    //  Time Complexity: w(6@+10)   (for w=64. exact: w(5@+10)        + 15@+43  + 2(@-2)^2)
-    // Space Complexity: w(6.5@+20) (for w=64. exact: w(5.375@+25.25) + 11@+173 + 2(@-2)^2)
+    //  Time Complexity: w(4@+14) + 14@+35
+    // Space Complexity: w(4.375@+65) + 10@+143
     //   Like:  hex = stack[sp]
     //          stack[sp--] = 0
     //   Pops the current stack cell into the the given hex. Decrements sp.

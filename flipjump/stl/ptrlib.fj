@@ -2,14 +2,15 @@
 
 
 ns stl {
-    // Complexity: 2.5w+4
+    // NOTE: must be placed just after the startup, so that the read_ptr_byte_table will be in address 256.
+    // Complexity: 2.5w+263
     def ptr_init {
-        bit.pointers.ptr_init
         hex.pointers.ptr_init
+        bit.pointers.ptr_init
     }
 
     // Space Complexity: n+w/4
-    //   Initializes a stack of size n (maximal capacity of n bits / hexs / return-addresses).
+    //   Initializes a stack of size n (maximal capacity of n hexes / return-addresses).
     // n is the size of the stack.
     def stack_init n {
         hex.pointers.stack_init n

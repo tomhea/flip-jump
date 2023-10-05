@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import collections
+import sys
 from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional
 
 from flipjump.interpretter.debugging.macro_usage_graph import show_macro_usage_pie_graph
 from flipjump.utils.constants import MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING, \
-    DEFAULT_MAX_MACRO_RECURSION_DEPTH
+    DEFAULT_MAX_MACRO_RECURSION_DEPTH, GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH
 from flipjump.utils.exceptions import FlipJumpPreprocessorException, FlipJumpExprException
 from flipjump.assembler.inner_classes.expr import Expr
 from flipjump.assembler.inner_classes.ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
@@ -105,6 +106,8 @@ class PreprocessorData:
         self.result_ops.append(first_segment)
 
         self.max_recursion_depth = max_recursion_depth
+        if max_recursion_depth + GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH < sys.getrecursionlimit():
+            sys.setrecursionlimit(max_recursion_depth + GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH)
 
     def patch_last_wflip_address(self) -> None:
         self.last_new_segment.wflip_start_address = self.curr_address

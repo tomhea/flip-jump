@@ -170,6 +170,10 @@ class FJLexer(sly.Lexer):
         self.lineno += 1
         return t
 
+    def ignore_line_continuation(self, t: Token) -> Token:
+        self.lineno += 1
+        return t
+
     def error(self, t: Token) -> None:
         global error_occurred, all_errors
         error_occurred = True
