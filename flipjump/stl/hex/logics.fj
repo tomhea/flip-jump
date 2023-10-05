@@ -139,8 +139,8 @@ ns hex {
         wflip src+w, first_flip
     }
 
-    //  Time Complexity: n(@+4)
-    // Space Complexity: n(@+28)
+    //  Time Complexity: n(@+12)
+    // Space Complexity: n(@+60)
     //   address1(bit_address) ^= src
     //   var1 ^= src
     //   address2(bit_address) ^= src

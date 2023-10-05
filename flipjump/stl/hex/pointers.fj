@@ -64,6 +64,18 @@ ns hex {
             ..address_and_variable_xor w/4, .to_flip, .to_flip_var, ptr
         }
 
+        //  Time Complexity: w(0.75@+5)
+        // Space Complexity: w(0.75@+29)
+        //   Sets both to_flip and to_flip_var, and to_jump and to_jump_var to point to the given pointer.
+        //   (  to_flip{_var} = ptr  )
+        //   (  to_jump{_var} = ptr  )
+        // ptr is a hex[:w/4] that holds an address.
+        def set_flip_and_jump_pointers ptr < .to_flip, .to_flip_var, .to_jump, .to_jump_var {
+            ..address_and_variable_xor w/4, .to_flip, .to_flip_var, .to_flip_var
+            ..address_and_variable_xor w/4, .to_jump+w, .to_jump_var, .to_jump_var
+            ..address_and_variable_double_xor w/4, .to_flip, .to_flip_var, .to_jump+w, .to_jump_var, ptr
+        }
+
         // Space Complexity: n+w/4 + 330
         //   Initializes a stack of size n (maximal capacity of n hexes / return-addresses).
         // n is the size of the stack.
@@ -220,58 +232,47 @@ ns hex {
 
 
 ns hex {
-    //  Time Complexity: w(3.5@+12)
-    // Space Complexity: w(3.5@+48)
+    //  Time Complexity: w(0.75@+ 5) + 6@+13
+    // Space Complexity: w(0.75@+29) + 6@+36
     //   like:  dst ^= *ptr
     // dst is a hex. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
-    def xor_from_ptr dst, ptr {
-        .exact_xor_from_ptr dst+dbit+3, dst+dbit+2, dst+dbit+1, dst+dbit+0, ptr
+    def xor_from_ptr dst, ptr < hex.pointers.read_byte {
+        .read_def_byte_from_ptr ptr
+        .xor dst, hex.pointers.read_byte
     }
 
-    //  Time Complexity: w(3.5@+12)
-    // Space Complexity: w(3.5@+48)
-    //   like:  {d3,d2,d1,d0} ^= *ptr
-    // d3,d2,d1,d0 are bit-addresses. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
-    def exact_xor_from_ptr d3,d2,d1,d0, ptr @ switch, end {
-//    def xor_def_byte_from_ptr ptr @ switch, end {
-//        .pointers.set_flip_pointer ptr
-//        .pointers.set_jump_pointer ptr  // TODO save 0.25w@ by using address_and_variable_double_xor
-//
-//        wflip hex.pointers.to_flip+w, cleanup
-//        wflip hex.pointers.to_flip, dbit+8, hex.pointers.to_flip
-//        ;hex.pointers.to_flip
-//        pad 4
-//      cleanup:
-//        // now flip_ptr -> ptr+dbit+8
-//        // now *(ptr+w) == 256
-//        wflip hex.pointers.to_flip+w, cleanup^end
-//
+    //  Time Complexity: w(0.75@+ 5) + 5@+13
+    // Space Complexity: w(0.75@+29) + 5@+24
+    //   like:  hex.pointers.read_byte = *ptr
+    //
+    //   it also:  set_flip_and_jump_pointers ptr
+    // ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
+    def read_def_byte_from_ptr ptr @ read_ptr_and_flip_back, cleanup \
+            < hex.pointers.ret_after_read_byte, hex.pointers.read_byte, hex.pointers.to_jump, hex.pointers.to_flip {
+        // 1.  setup:
+        //       zero read_byte.
+        //       to_flip   = ptr + dbit+8.
+        //       to_jump+w = ptr.
+        hex.zero 2, hex.pointers.read_byte
+        .pointers.set_flip_and_jump_pointers ptr
+        wflip hex.pointers.to_flip, dbit+8
 
-        .ptr_wflip_2nd_word ptr, switch
-        .ptr_jump ptr
+        // 2.  *(ptr+w)^=256, so that now *(ptr+w) == 256 + original_value.
+        wflip hex.pointers.to_flip+w, read_ptr_and_flip_back, hex.pointers.to_flip
 
-        pad 16
-      switch:
-          ;end          //  0
-        d0;end          //  1
-        d1;end          //  2
-        d1;switch+1*dw  //  3
-        d2;end          //  4
-        d2;switch+1*dw  //  5
-        d2;switch+2*dw  //  6
-        d2;switch+3*dw  //  7
-        d3;end          //  8
-        d3;switch+1*dw  //  9
-        d3;switch+2*dw  // 10
-        d3;switch+3*dw  // 11
-        d3;switch+4*dw  // 12
-        d3;switch+5*dw  // 13
-        d3;switch+6*dw  // 14
-        d3;switch+7*dw  // 15
+        pad 4
+      read_ptr_and_flip_back:
+        // 3.  Jump to *(ptr+w). It will xor the pointed original_value byte into hex.pointers.read_byte.
+        // 4.  Then jump to hex.pointers.to_flip to make *(ptr+w)==original_value back again.
+        // 5.  Then return to cleanup.
+        wflip hex.pointers.to_flip+w, read_ptr_and_flip_back^cleanup
+        wflip hex.pointers.ret_after_read_byte+w, hex.pointers.to_flip, hex.pointers.to_jump
 
-      end:
-//        wflip hex.pointers.to_flip, dbit+8
-//        wflip hex.pointers.to_flip+w, end
-        .ptr_wflip_2nd_word ptr, switch
+      cleanup:
+        // 6.  to_flip = ptr, clean jump-back addresses.
+        wflip hex.pointers.ret_after_read_byte+w, hex.pointers.to_flip
+        wflip hex.pointers.to_flip, dbit+8
+        wflip hex.pointers.to_flip+w, cleanup
     }
+
 }
