@@ -37,7 +37,7 @@ test2:
 test3:
     hex.set d3, 6
     hex.set d3_var, 0xD
-    hex.xor_from_ptr d3_var, p3
+    hex.xor_hex_from_ptr d3_var, p3
     hex.print_as_digit d3_var, 1
 
     stl.loop

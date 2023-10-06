@@ -78,7 +78,7 @@ def mark_primes mark_primes_ptr, primes_ptr_n, p_is_add_4, p_2dw_offset, p_4dw_o
     hex.cmp hw, curr_prime_ptr, primes_ptr_n, mark_loop, mark_loop, end
   mark_loop:
     if1_ptr curr_prime_ptr, next_prime
-    hex.xor_to_ptr curr_prime_ptr, ONE
+    hex.xor_hex_to_ptr curr_prime_ptr, ONE
   next_prime:
     advance_ptr_by_p_Xdw curr_prime_ptr, p_2dw_offset, p_4dw_offset, is_add_4
     is_add_4+dbit; mark_loop_if
@@ -92,10 +92,10 @@ def mark_primes mark_primes_ptr, primes_ptr_n, p_is_add_4, p_2dw_offset, p_4dw_o
 
 
 // if n < 2, print nothing and exit. if n == 2 print 2 and exit. else, print 2,3 and continue.
-def handle_small_n n @ less_then_2, equals_2, print_2_3_then_start, TWO, continue_address {
-    hex.cmp hw, n, TWO, less_then_2, equals_2, print_2_3_then_start
+def handle_small_n n @ less_than_2, equals_2, print_2_3_then_start, TWO, continue_address {
+    hex.cmp hw, n, TWO, less_than_2, equals_2, print_2_3_then_start
 
-  less_then_2:
+  less_than_2:
     stl.output NUMBER_OF_PRIMES_MESSAGE
     stl.output "0\n"
     stl.loop
@@ -209,7 +209,7 @@ def if1_ptr hex_ptr, l1 @ l0 {
 // if *hex_ptr == 0 goto l0, else goto l1.
 def if_ptr hex_ptr, l0, l1 @ ptr_value {
     hex.zero ptr_value
-    hex.xor_from_ptr ptr_value, hex_ptr
+    hex.xor_hex_from_ptr ptr_value, hex_ptr
     hex.if ptr_value, l0, l1
 
   ptr_value: hex.hex

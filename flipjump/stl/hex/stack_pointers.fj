@@ -78,6 +78,7 @@ ns hex {
     // return_address is a fj-op address, so we assume is dw-aligned.
     def push_ret_address return_address < hex.pointers.sp {
         .sp_inc
+        .zero_ptr hex.pointers.sp
         .ptr_wflip_2nd_word hex.pointers.sp, return_address
     }
 
@@ -96,9 +97,10 @@ ns hex {
     // Space Complexity: w(0.875@+5.25) + 10@+131
     //   Like:  stack[++sp] = hex    (assumes  stack[++sp] == 0  beforehand, which the stack-macros guarantee).
     //   Pushes the given hex to the next cell in the stack (assumes it's zero). Increments sp.
-    def push hex < hex.pointers.sp {
+    def push_hex hex < hex.pointers.sp {
         .sp_inc
-        .xor_to_ptr hex.pointers.sp, hex
+        .write_hex hex.pointers.sp, hex
+//        .xor_hex_to_ptr hex.pointers.sp, hex
     }
 
     //  Time Complexity: n(w(0.5@+2)      + 14@+26)
@@ -106,7 +108,7 @@ ns hex {
     //   Like:  stack[sp+1:][:n] = hex[:n];  sp += n    (assumes  stack[sp:sp+n] == 0  beforehand, which the stack-macros guarantee).
     //   Pushes the given hex[:n] to the next n cells in the stack (assumes they're zero). Increments sp by n.
     def push n, hex {
-        rep(n, i) .push hex+i*dw
+        rep(n, i) .push_hex hex+i*dw
     }
 
 
@@ -115,7 +117,7 @@ ns hex {
     //   Like:  stack[sp--] = 0   (assumes  stack[sp] == unchanged_hex  beforehand)
     //   Pops the given unchanged_hex (a hex) from the current cell in the stack (assumes it has the exact value of hex). Decrements sp.
     def pop_unchanged_parameter unchanged_hex < hex.pointers.sp {
-        .xor_to_ptr hex.pointers.sp, unchanged_hex
+        .xor_hex_to_ptr hex.pointers.sp, unchanged_hex
         .sp_dec
     }
 
@@ -132,12 +134,13 @@ ns hex {
     // Space Complexity: w(1.625@+46) + 17@+191
     //   Like:  hex = stack[sp]
     //          stack[sp--] = 0
-    //   Pops the current stack cell into the the given hex. Decrements sp.
+    //   Pops the current stack cell (only the least-significant-hex of it) into the the given hex. Decrements sp.
     // hex is only an output parameter
-    def pop hex < hex.pointers.sp {
+    def pop_hex hex < hex.pointers.sp {
         hex.zero hex
-        .xor_from_ptr hex, hex.pointers.sp
-        .pop_unchanged_parameter hex
+        .xor_hex_from_ptr hex, hex.pointers.sp
+//        .pop_unchanged_parameter hex
+        .sp_dec
     }
 
     //  Time Complexity: n(w(1.25@+7)   + 21@+48)
@@ -148,6 +151,6 @@ ns hex {
     //   Pops the current stack cell into the the given hex[:n]. Decrements sp by n.
     // hex[:n] is only an output parameter.
     def pop n, hex {
-        rep(n, i) .pop hex+(n-1-i)*dw
+        rep(n, i) .pop_hex hex+(n-1-i)*dw
     }
 }

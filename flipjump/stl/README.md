@@ -49,7 +49,7 @@ Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers):
 - [math_basic.fj](hex/math_basic.fj) - inc/dec, neg, count_bits, sign_extend
 - [math.fj](hex/math.fj) - add/sub, {add/sub}_shifted, {add/sub}_constant
 - [pointers.fj](hex/pointers.fj) - hex-vec pointers: flip, jump, xor_to, xor_from; stack/pointers init
-- [advanced_pointers.fj](hex/advanced_pointers.fj) - hex-vec pointers: ptr/sp - inc/dec/add/sub, all push/pop
+- [stack_pointers.fj](hex/stack_pointers.fj) - hex-vec pointers / stack operations: ptr/sp - inc/dec/add/sub, all push/pop
 - [tables_init.fj](hex/tables_init.fj) - initializes the "results-tables" for the next hex macros: or,and, add,sub, cmp, mul
 
 ### [mathlib.fj](mathlib.fj)

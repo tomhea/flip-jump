@@ -22,7 +22,7 @@
     "hex/input",
     "hex/output",
     "hex/pointers",
-    "hex/advanced_pointers",
+    "hex/stack_pointers",
 
     "casting",
     "ptrlib",

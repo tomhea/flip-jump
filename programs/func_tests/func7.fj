@@ -89,7 +89,6 @@ ns add_2N {
     hex.push 2*N, .res
     hex.sp_add 2*N+1
     stl.output "3-"
-
     stl.return
 
 res: hex.vec 2*N
@@ -175,7 +174,6 @@ ns square_distance {
     stl.call ..square_sub
     hex.pop 2*N, .res1
     stl.output 'E'
-
     // (y1-y2)**2
     hex.push N, .y1
     hex.push N, .y2
