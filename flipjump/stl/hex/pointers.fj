@@ -155,7 +155,26 @@ ns hex {
         .pointers.xor_hex_to_flip_ptr hex
     }
 
+    //  Time Complexity: w(0.5@+2)  + 5@+12
+    // Space Complexity: w(0.5@+14) + 5@+76
+    //   like:  hex.xor *ptr[:n], hex[:n]
+    // ptr is a hex[:w/4] that holds an address, which we assume is an hex-variable, which is dw-aligned.
+    def xor_hex_to_ptr n, ptr, hex {
+        rep(n, i) .pointers.xor_hex_to_ptr_and_inc ptr, hex + i*dw
+        .ptr_sub ptr, n
+    }
+
     ns pointers {
+        //  Time Complexity: w(0.5@+2)  + 5@+12
+        // Space Complexity: w(0.5@+14) + 5@+76
+        //   like:  hex.xor *ptr, hex
+        //          ptr += dw
+        // ptr is a hex[:w/4] that holds an address, which we assume is an hex-variable, which is dw-aligned.
+        def xor_hex_to_ptr_and_inc ptr, hex {
+            ..xor_hex_to_ptr ptr, hex
+            ..ptr_inc ptr
+        }
+
         //  Time Complexity: 5@+12
         // Space Complexity: 5@+76
         //   xors (the parameter hex) the hex pointed by the memory-word hex.pointers.to_flip.
@@ -293,6 +312,8 @@ ns hex {
 
 
 // Read & Write memory.
+// TODO document
+
 
 ns hex {
     // like:  dst = *ptr

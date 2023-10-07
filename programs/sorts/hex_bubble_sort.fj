@@ -1,0 +1,113 @@
+// This program inputs hexadecimal numbers (separated by spaces), sorts them, and prints them back sorted.
+// The sorting algorithm is bubble-sort.
+
+// This program is expected to compile with another file that defines the next macro:
+//     swap_adjacent entry_length, array_ptr, small_index_num, big_index_num
+// This macro can be found in the two "./utils/_swap_adjacent_using_*.fj files.
+//
+// This program tests the read_hex macro, and the write_hex / xor_hex_to_ptr macros (based on the swap_adjacent implementation).
+
+
+ARRAY_LEN = 11
+HEX_LEN = 4
+hw = w/4
+
+
+// Code:
+
+stl.startup_and_init_all
+input_array
+
+bubble_sort
+
+print_array
+stl.loop
+
+
+// Variables:
+
+array: hex.vec HEX_LEN * ARRAY_LEN
+
+
+// Macros:
+
+// Sorts the array (ARRAY_LEN hex entries, each of size HEX_LEN) using the bubble sort algorithm.
+def bubble_sort @ phase_loop, index_loop, finish_index_loop, swapped_flag, i, j, array_ptr, end < array {
+    hex.set hw, i, ARRAY_LEN - 1
+    phase_loop:
+        hex.zero hw, j
+        hex.set hw, array_ptr, array
+        hex.zero swapped_flag
+        index_loop:
+            swap_if_needed array_ptr, swapped_flag
+            hex.inc hw, j
+            hex.ptr_add array_ptr, HEX_LEN
+            hex.cmp hw, j, i, index_loop, finish_index_loop, finish_index_loop
+        finish_index_loop:
+
+        hex.dec hw, i
+        hex.if0 hw, i, end
+        hex.if swapped_flag, end, phase_loop
+
+swapped_flag: bit.bit
+i: hex.vec hw
+j: hex.vec hw
+array_ptr: hex.vec hw
+
+    end:
+}
+
+
+// swaps *ptr[:HEX_LEN] with *ptr[HEX_LEN:2*HEX_LEN] if the first is bigger than the latter.
+def swap_if_needed array_ptr, swapped_flag @ small_index_num, big_index_num, swap, end {
+    hex.read_hex 2 * HEX_LEN, small_index_num, array_ptr
+    hex.cmp HEX_LEN, small_index_num, big_index_num, end, end, swap
+
+  swap:
+    bit.one swapped_flag
+    swap_adjacent HEX_LEN, array_ptr, small_index_num, big_index_num
+    ;end
+
+  small_index_num:
+    hex.vec HEX_LEN
+  big_index_num:
+    hex.vec HEX_LEN
+
+  end:
+}
+
+
+// dst = hex(input(1-byte)). if it's not an hex digit - jump to error.
+def input_one_variable dst, error @ garbage, end {
+    hex.input_as_hex HEX_LEN, dst, error
+    hex.input garbage
+    ;end
+  garbage: hex.vec 2
+  end:
+}
+
+
+// array[:ARRAY_LEN] = hex(input(ARRAY_LEN-bytes)). If any char isn't an hex digit - print an error and exit.
+def input_array @ error, end < array {
+    rep(ARRAY_LEN, i) input_one_variable array + i*HEX_LEN*dw, error
+    ;end
+
+  error:
+    stl.output "Couldn't parse the input as hexadecimal numbers.\n"
+    stl.loop
+
+  end:
+}
+
+
+// print the src[:HEX_LEN] in its hexadecimal form.
+def print_one_variable src, is_end_of_line {
+    hex.print_as_digit HEX_LEN, src, 0
+    stl.output is_end_of_line ? '\n' : ' '
+}
+
+
+// print every hexadecimal number[:HEX_LEN] in the entire array.
+def print_array < array {
+    rep(ARRAY_LEN, i) print_one_variable array + i*HEX_LEN*dw, i == ARRAY_LEN-1
+}
