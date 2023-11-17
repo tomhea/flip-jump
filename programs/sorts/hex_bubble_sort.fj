@@ -8,7 +8,7 @@
 // This program tests the read_hex macro, and the write_hex / xor_hex_to_ptr macros (based on the swap_adjacent implementation).
 
 
-ARRAY_LEN = 11
+MAX_ARRAY_SIZE = 2000
 HEX_LEN = 4
 CELL_HEX_LEN = HEX_LEN / HEX_VARS_PER_MEMORY_CELL
 hw = w/4
@@ -27,15 +27,16 @@ stl.loop
 
 // Variables:
 
-array_len: hex.vec hw   // TODO as an input, not a constant
-array: hex.vec HEX_LEN * ARRAY_LEN
+array_len: hex.vec hw, 0   // TODO as an input, not a constant
+array: hex.vec HEX_LEN * MAX_ARRAY_SIZE
 
 
 // Macros:
 
-// Sorts the array (ARRAY_LEN hex entries, each of size HEX_LEN) using the bubble sort algorithm.
-def bubble_sort @ phase_loop, index_loop, finish_index_loop, swapped_flag, i, j, array_ptr, end < array {
-    hex.set hw, i, ARRAY_LEN - 1
+// Sorts the array (array_len hex entries, each of size HEX_LEN) using the bubble sort algorithm.
+def bubble_sort @ phase_loop, index_loop, finish_index_loop, swapped_flag, i, j, array_ptr, end < array, array_len {
+    hex.mov hw, i, array_len
+    hex.dec hw, i
     phase_loop:
         hex.zero hw, j
         hex.set hw, array_ptr, array
@@ -79,37 +80,79 @@ def swap_if_needed array_ptr, swapped_flag @ small_index_num, big_index_num, swa
 }
 
 
-// dst = hex(input(1-byte)). if it's not an hex digit - jump to error.
+// *array_ptr[:CELL_HEX_LEN] = hex(input(HEX_LEN byte)). if it's not an hex digit - jump to error.
+def input_one_variable_ptr array_ptr, error @ input, end {
+    input_one_variable input, error
+    write_to_ptr HEX_LEN, array_ptr, input
+    ;end
+
+  input: hex.vec HEX_LEN
+  end:
+}
+
+// dst[:HEX_LEN] = hex(input(HEX_LEN bytes)). if it's not an hex digit - jump to error.
 def input_one_variable dst, error @ garbage, end {
     hex.input_as_hex HEX_LEN, dst, error
     hex.input garbage
     ;end
+
   garbage: hex.vec 2
   end:
 }
 
 
-// array[:ARRAY_LEN] = hex(input(ARRAY_LEN-bytes)). If any char isn't an hex digit - print an error and exit.
-def input_array @ error, end < array {
-    rep(ARRAY_LEN, i) input_one_variable array + i*HEX_LEN*dw, error
-    ;end
+// array[:array_len] = hex(input(array_len bytes)). If any char isn't an hex digit - print an error and exit.
+def input_array @ input_loop, i, array_ptr, error, end < array, array_len {
+    input_one_variable array_len, error
+    hex.set hw, array_ptr, array
+    hex.zero hw, i
+
+  input_loop:
+    input_one_variable_ptr array_ptr, error
+    hex.ptr_add array_ptr, CELL_HEX_LEN
+    hex.inc hw, i
+    hex.cmp hw, i, array_len, input_loop, end, end
 
   error:
     stl.output "Couldn't parse the input as hexadecimal numbers.\n"
     stl.loop
+
+  i: hex.vec hw
+  array_ptr: hex.vec hw
 
   end:
 }
 
 
 // print the src[:HEX_LEN] in its hexadecimal form.
-def print_one_variable src, is_end_of_line {
-    hex.print_as_digit HEX_LEN, src, 0
-    stl.output is_end_of_line ? '\n' : ' '
+def print_one_variable_ptr array_ptr @ output, end {
+    read_from_ptr HEX_LEN, output, array_ptr
+    hex.print_as_digit HEX_LEN, output, 0
+    ;end
+
+  output: hex.vec HEX_LEN
+
+  end:
 }
 
 
 // print every hexadecimal number[:HEX_LEN] in the entire array.
-def print_array < array {
-    rep(ARRAY_LEN, i) print_one_variable array + i*HEX_LEN*dw, i == ARRAY_LEN-1
+def print_array @ print_loop, print_space, i, array_ptr, end < array, array_len {
+    hex.set hw, array_ptr, array
+    hex.zero hw, i
+
+  print_loop:
+    print_one_variable_ptr array_ptr
+    hex.ptr_add array_ptr, CELL_HEX_LEN
+    hex.inc hw, i
+    hex.cmp hw, i, array_len, print_space, end, end
+  print_space:
+    stl.output ' '
+    ;print_loop
+
+  i: hex.vec hw
+  array_ptr: hex.vec hw
+
+  end:
+    stl.output '\n'
 }

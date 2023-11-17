@@ -187,9 +187,9 @@ def run_test_output(fjm_path: Path,
                                  last_ops_debugging_list_length=last_ops_debugging_list_length)
 
     try:
-        assert expected_termination_cause == termination_statistics.termination_cause
-        assert expected_output.decode(IO_BYTES_ENCODING) == \
-               io_device.get_output(allow_incomplete_output=True).decode(IO_BYTES_ENCODING)
+        assert termination_statistics.termination_cause == expected_termination_cause
+        assert io_device.get_output(allow_incomplete_output=True).decode(IO_BYTES_ENCODING) == \
+               expected_output.decode(IO_BYTES_ENCODING)
         return True
     except AssertionError as assertion_error:
         if should_raise_assertion_error:
