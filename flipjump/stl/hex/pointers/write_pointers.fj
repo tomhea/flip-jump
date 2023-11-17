@@ -1,0 +1,58 @@
+// TODO document The entire file
+
+
+
+// ---------- Write Pointers
+
+
+ns hex {
+    // like:  *ptr = src
+    def write_hex ptr, src < hex.pointers.read_byte {
+        .pointers.set_flip_and_jump_pointers ptr
+        .pointers.read_byte_from_inners_ptrs
+        .xor hex.pointers.read_byte, src
+        .pointers.xor_hex_to_flip_ptr hex.pointers.read_byte
+    }
+
+    // like:  *ptr = 0
+    def zero_ptr ptr < hex.pointers.read_byte {
+        .pointers.set_flip_and_jump_pointers ptr
+        .pointers.read_byte_from_inners_ptrs
+        .pointers.xor_byte_to_flip_ptr hex.pointers.read_byte
+    }
+
+    // like:  *ptr = src[:2]
+    def write_byte ptr, src < hex.pointers.read_byte {
+        .pointers.set_flip_and_jump_pointers ptr
+        .pointers.read_byte_from_inners_ptrs
+        .xor 2, hex.pointers.read_byte, src
+        .pointers.xor_byte_to_flip_ptr hex.pointers.read_byte
+    }
+}
+
+
+
+// ---------- Multi Read Write Pointers
+
+
+ns hex {
+    def write_hex_and_inc ptr, src {
+        .write_hex ptr, src
+        .ptr_inc ptr
+    }
+
+    def write_hex n, ptr, src {
+        rep(n, i) .write_hex_and_inc ptr, src + i*dw
+        .ptr_sub ptr, n
+    }
+
+    def write_byte_and_inc ptr, src {
+        .write_byte ptr, src
+        .ptr_inc ptr
+    }
+
+    def write_byte n, ptr, src {
+        rep(n, i) .write_byte_and_inc ptr, src + i*dw
+        .ptr_sub ptr, n
+    }
+}

@@ -10,6 +10,7 @@
 
 ARRAY_LEN = 11
 HEX_LEN = 4
+CELL_HEX_LEN = HEX_LEN / HEX_VARS_PER_MEMORY_CELL
 hw = w/4
 
 
@@ -26,6 +27,7 @@ stl.loop
 
 // Variables:
 
+array_len: hex.vec hw   // TODO as an input, not a constant
 array: hex.vec HEX_LEN * ARRAY_LEN
 
 

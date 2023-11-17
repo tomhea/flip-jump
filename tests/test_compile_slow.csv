@@ -17,5 +17,5 @@ series_sum, programs/simple_math_checks/series_sum.fj,tests/compiled/simple_math
 
 prime_sieve, programs/prime_sieve.fj,tests/compiled/prime_sieve.fjm, 64,3,0, True,True
 
-bubble_sort__write_hex, programs/sorts/hex_bubble_sort.fj | programs/sorts/utils/_swap_adjacent_using_writes.fj,tests/compiled/sorts/bubble_sort__write_hex.fjm, 64,3,0, True,True
-bubble_sort__xor_hex  , programs/sorts/hex_bubble_sort.fj | programs/sorts/utils/_swap_adjacent_using_xors.fj  ,tests/compiled/sorts/bubble_sort__xor_hex.fjm  , 64,3,0, True,True
+bubble_sort__write_hex, programs/sorts/utils/_hex_memory_access.fj | programs/sorts/hex_bubble_sort.fj | programs/sorts/utils/_swap_adjacent_using_writes.fj ,tests/compiled/sorts/bubble_sort__write_hex.fjm, 64,3,0, True,True
+bubble_sort__xor_hex  , programs/sorts/utils/_hex_memory_access.fj | programs/sorts/hex_bubble_sort.fj | programs/sorts/utils/_swap_adjacent_using_xors.fj   ,tests/compiled/sorts/bubble_sort__xor_hex.fjm  , 64,3,0, True,True

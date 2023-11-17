@@ -1,0 +1,22 @@
+// Compile this file with (and before) the bubble_sort programs.
+// This file implements the xor/write-to / read-from pointer macros.
+//  Using the byte-pointer-access macros (it's a faster implementation than the one with hex-access).
+
+
+HEX_VARS_PER_MEMORY_CELL = 2
+
+
+// Xor:  hex.xor *ptr[:hex_length/2], hex[:hex_length]
+def xor_to_ptr hex_length, ptr, variable {
+    hex.xor_byte_to_ptr hex_length/2, ptr, variable
+}
+
+// Write:  *ptr[:hex_length/2] = variable[:hex_length]
+def write_to_ptr hex_length, ptr, variable {
+    hex.write_byte hex_length/2, ptr, variable
+}
+
+// Read:   variable[:hex_length] = *ptr[:hex_length/2]
+def read_from_ptr hex_length, variable, ptr {
+    hex.read_byte hex_length/2, variable, ptr
+}
