@@ -1,4 +1,4 @@
-// TODO document The entire file
+// TODO document complexities in the entire file
 
 
 
@@ -6,13 +6,19 @@
 
 
 ns hex {
-    // like:  dst = *ptr
+    //  Time Complexity:
+    // Space Complexity:
+    //   like:  dst = *ptr
+    // dst is a hex. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def read_hex dst, ptr {
         .zero dst
         .xor_hex_from_ptr dst, ptr
     }
 
-    // like:  dst[:2] = *ptr
+    //  Time Complexity:
+    // Space Complexity:
+    //   like:  dst[:2] = *ptr
+    // dst is a hex[:2]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def read_byte dst, ptr {
         .zero 2, dst
         .xor_byte_from_ptr dst, ptr
@@ -25,21 +31,39 @@ ns hex {
 
 
 ns hex {
+    //  Time Complexity:
+    // Space Complexity:
+    //   like:  dst = *ptr
+    //          ptr++
+    // dst is a hex. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def read_hex_and_inc dst, ptr {
         .read_hex dst, ptr
         .ptr_inc ptr
     }
 
+    //  Time Complexity:
+    // Space Complexity:
+    //   like:  dst[:n] = *ptr[:n]
+    // dst is a hex[:n]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def read_hex n, dst, ptr {
         rep(n, i) .read_hex_and_inc dst + i*dw, ptr
         .ptr_sub ptr, n
     }
 
+    //  Time Complexity:
+    // Space Complexity:
+    //   like:  dst[:2] = *ptr
+    //          ptr++
+    // dst is a hex[:2]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def read_byte_and_inc dst, ptr {
         .read_byte dst, ptr
         .ptr_inc ptr
     }
 
+    //  Time Complexity:
+    // Space Complexity:
+    //   like:  dst[:2n] = *ptr[:n]
+    // dst is a hex[:2n]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def read_byte n, dst, ptr {
         rep(n, i) .read_byte_and_inc dst + i*2*dw, ptr
         .ptr_sub ptr, n
