@@ -79,7 +79,7 @@ ns hex {
     //   like:  *ptr[:n] = src[:2n]
     // src is a hex[:2n]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def write_byte n, ptr, src {
-        rep(n, i) .write_byte_and_inc ptr, src + i*dw
+        rep(n, i) .write_byte_and_inc ptr, src + i*2*dw
         .ptr_sub ptr, n
     }
 }

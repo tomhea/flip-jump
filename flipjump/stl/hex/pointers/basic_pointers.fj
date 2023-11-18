@@ -21,7 +21,9 @@ ns hex {
           //                      (4 is for reading from an hex memory, 8 is for byte memory).
           read_ptr_byte_table:
             rep(256, d) stl.fj \
-                d==0?0: (.read_byte+dbit+(#d)-1), \
+                d==0?0: (#d)<=4 \
+                    ? (.read_byte   +dbit+(#d)-1) \
+                    : (.read_byte+dw+dbit+(#d)-5), \
                 (d==((1<<(#d))>>1)) ? .ret_after_read_byte : read_ptr_byte_table+(d^((1<<(#d))>>1))*dw
 
           read_byte:
