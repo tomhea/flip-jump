@@ -6,26 +6,75 @@ from flipjump.fjm import fjm_reader
 from flipjump.interpretter.debugging.message_boxes import (display_message_box,
                                                            display_message_box_and_get_text_answer,
                                                            display_message_box_with_choices_and_get_answer)
-from flipjump.utils.constants import MACRO_SEPARATOR_STRING
-from flipjump.utils.functions import load_debugging_labels
 from flipjump.utils.classes import RunStatistics
-
+from flipjump.utils.constants import MACRO_SEPARATOR_STRING
 from flipjump.utils.exceptions import FlipJumpException
+from flipjump.utils.functions import load_debugging_labels
 
 
 class BreakpointHandlerUnnecessary(Exception):
     pass
 
 
-def show_memory_address(variable_prefix: Optional[Tuple[str, int]], user_query: str,
+def calculate_variable_value(variable_prefix: Optional[Tuple[str, int, int]], address: int, mem: fjm_reader.Reader):
+    """
+    Read the variable related memory words (using 'mem'),
+     and return the value of the word created by this bit/hex/Byte vector.
+    The memory words are pointed by the given 'address' and 'variable_prefix'.
+    """
+    w = mem.memory_width
+    variable_type, variable_length, index = variable_prefix
+    index_offset_in_w = 2 * variable_length * index
+
+    first_address = address + index_offset_in_w * w
+    last_address = first_address + 2 * w * variable_length
+    variable_memory_words = [mem.get_word(current_address)
+                             for current_address in range(first_address + w, last_address, 2 * w)]
+    bits_per_word = {'b': 1, 'h': 4, 'B': 8}[variable_type]
+
+    value = 0
+    for word in variable_memory_words[::-1]:
+        data_bits = (word >> w.bit_length()) & ((1 << bits_per_word) - 1)
+        value = (value << bits_per_word) | data_bits
+
+    return value, first_address, last_address
+
+
+def handle_read_f_j(variable_prefix: Optional[Tuple[str, int, int]], address: int, label_name: Optional[str], w: int):
+    """
+    If variable_type is f/j, modify the address accordingly, them set variable_prefix = None.
+    Anyway, also create a label_name string and return the new one.
+    """
+    if variable_prefix and variable_prefix[0] in ('f', 'j'):
+        variable_type, variable_length, index = variable_prefix
+
+        added_w = 2 * variable_length * index
+        if variable_type == 'j':
+            added_w += 1
+        if label_name is not None and added_w != 0:
+            label_name += f' + {added_w}w'
+
+        address += w * added_w
+        variable_prefix = None
+
+    label_name = '' if label_name is None else f'\n\nThis address also goes by this label name:\n\n{label_name}'
+
+    return variable_prefix, address, label_name
+
+
+def show_memory_address(variable_prefix: Optional[Tuple[str, int, int]], user_query: str,
                         address: int, mem: fjm_reader.Reader, label_name: Optional[str]) -> None:
     """
     Shows the value of the requested memory address / variable.
     The function also support reading flipjump variables (saved in label+dbit+i*dw).
     Also shows the label-name of the address if the user entered an integer-address.
 
-    @param variable_prefix: if not None: the user asked for a flipjump variable:
-     tuple (variable_type - 'b'/'h'/'B' for bit/hex/byte, variable_length - number of memory-ops).
+    @param variable_prefix: if not None: the user asked for a flipjump variable: tuple
+     (
+      variable_type - 'b'/'h'/'B' for bit/hex/byte,
+      variable_length - number of memory-ops,
+      index - the index of the variable, in an array starting from address, and of cells variable_type[:variable_length]
+     ).
     @param user_query: the string the user entered.
     @param address: the address resolved from user_query string.
     @param mem: the fjm_reader.Reader for the current running fj. Used for reading the actual memory values
@@ -33,45 +82,43 @@ def show_memory_address(variable_prefix: Optional[Tuple[str, int]], user_query: 
     @param label_name: if not None - the user asked for an integer address, and this its label-name,
      or the closest label to it.
     """
-    if address % mem.memory_width != 0 or address < 0 or address >= (1 << mem.memory_width):
+    w = mem.memory_width
+
+    if address % w != 0 or address < 0 or address >= (1 << w):
         display_message_box(
             body_message=f"Failed while trying to read {user_query}:\n"
                          f" The requested memory address ({address}) must be aligned"
-                         f" (must be divisible by {mem.memory_width}),\n"
-                         f" Can't be negative, and must be smaller than {hex(1 << mem.memory_width)}.",
+                         f" (must be divisible by {w}),\n"
+                         f" Can't be negative, and must be smaller than {hex(1 << w)}.",
             title_message='Bad memory address')
-    else:
-        label_name = '' if label_name is None else f'\n\nThis address also goes by this label name:\n\n{label_name}'
+        return
 
-        try:
-            if not variable_prefix:
-                memory_word_value = mem.get_word(address)
-                display_message_box(
-                    body_message=f'Reading {user_query}:\n'
-                                 f'memory[{hex(address)}] = {memory_word_value}  (or {hex(memory_word_value)}).'
-                                 f'{label_name}',
-                    title_message='Read Memory')
-            else:
-                variable_type, variable_length = variable_prefix
-                variable_memory_words = [mem.get_word(address + (2*i+1) * mem.memory_width)
-                                         for i in range(variable_length)]
-                bits_per_word = {'b': 1, 'h': 4, 'B': 8}[variable_type]
-                value = 0
-                for word in variable_memory_words[::-1]:
-                    data_bits = (word >> mem.memory_width.bit_length()) & ((1 << bits_per_word) - 1)
-                    value = (value << bits_per_word) | data_bits
-                display_message_box(
-                    body_message=f'Reading the variable {user_query}:\n'
-                                 f'memory[{hex(address)}, {hex(address + 2 * variable_length * mem.memory_width)})'
-                                 f' = {value}  (or {hex(value)}).'
-                                 f'{label_name}',
-                    title_message='Reading FlipJump Variable')
-        except FlipJumpException as fje:
+    try:
+        variable_prefix, address, label_name = handle_read_f_j(variable_prefix, address, label_name, w)
+
+        if not variable_prefix:
+            memory_word_value = mem.get_word(address)
             display_message_box(
-                body_message=f"Failed while trying to read {user_query}:\n"
-                             f"Failed to read address {address}, with the error: {fje}.\n"
-                             f"Maybe this memory region isn't initialized in the currently running .fjm?",
-                title_message='Read Memory Failure')
+                body_message=f'Reading {user_query}:\n'
+                             f'memory[{hex(address)}] = {memory_word_value}  (or {hex(memory_word_value)}).'
+                             f'{label_name}',
+                title_message='Read Memory')
+            return
+
+        value, first_address, last_address = calculate_variable_value(variable_prefix, address, mem)
+        display_message_box(
+            body_message=f'Reading the variable {user_query}:\n'
+                         f'memory[{hex(first_address)}, {hex(last_address)})'
+                         f' = {value}  (or {hex(value)}).'
+                         f'{label_name}',
+            title_message='Reading FlipJump Variable')
+
+    except FlipJumpException as fje:
+        display_message_box(
+            body_message=f"Failed while trying to read {user_query}:\n"
+                         f"Failed to read address {address}, with the error: {fje}.\n"
+                         f"Maybe this memory region isn't initialized in the currently running .fjm?",
+            title_message='Read Memory Failure')
 
 
 def get_nice_label_repr(label: str, pad: int = 0) -> str:
@@ -79,13 +126,14 @@ def get_nice_label_repr(label: str, pad: int = 0) -> str:
     @return: a well-formed string that represents the label (padded with 'pad' spaces).
     """
     parts = label.split(MACRO_SEPARATOR_STRING)
-    return ' ->\n'.join(f"{' '*(pad+i)}{part}" for i, part in enumerate(parts))
+    return ' ->\n'.join(f"{' ' * (pad + i)}{part}" for i, part in enumerate(parts))
 
 
 class BreakpointHandler:
     """
     Handle breakpoints (know when breakpoints happen, query user for action).
     """
+
     def __init__(self, breakpoints: Dict[int, str], address_to_label: Dict[int, str], label_to_address: Dict[str, int]):
         self.breakpoints = breakpoints
         self.address_to_label = address_to_label
@@ -144,23 +192,32 @@ class BreakpointHandler:
                          "Use any of these options:\n"
                          "- Decimal number\n"
                          "- Hexadecimal number with the '0x' prefix\n"
-                         "- A full label name\n"
+                         "- A full label name\n\n"
+                         'You can read the jump-words of a label by using the  ":j:"  prefix.\n\n'
                          "You can also read flipjump variables (like bit.vec, hex.vec, ..),\n"
                          " with the following prefixes to the address:\n"
                          '- :bN: read bit variable (like ":b32:integer_label")\n'
                          '- :hN: read hex variable (like ":h8:integer_label")\n'
                          '- :BN: read byte variable (holds 8 bits after the dbit)'
-                         ' (like ":B4:integer_label")\n',
+                         ' (like ":B4:integer_label")\n\n'
+                         "Also, you can index a variable in an array, by using the ':*:N:* prefix':\n"
+                         '- (like ":B4:7:integer_array_label" - this will access the 7th integer\n'
+                         '   in the array, so starting from byte 28 of the array\'s variables)\n'
+                         '- (you can also use the ":f/j:N:label" to skip N ops forward,\n'
+                         '   and also ":f/j:n:label:N" to skip n*N ops forward)\n',
             title_message='Debug: read memory address')
         if result is None:
             return
 
         variable_prefix = None
         query = result
-        match = re.match(':([bhB])(\\d+):(.*)', result)
+        match = re.match(r':([bhBfj])(\d*):(\d+:)?([^:]*)', result)
         if match:
-            variable_type, variable_length, result = match.groups()
-            variable_prefix = (variable_type, int(variable_length))
+            variable_type, variable_length, index_string, result = match.groups()
+            if variable_length == '':
+                variable_length = '1'
+            index = int(index_string[:-1]) if index_string else 0
+            variable_prefix = (variable_type, int(variable_length), index)
 
         if result in self.label_to_address:
             show_memory_address(variable_prefix, query, self.label_to_address[result], mem, None)
@@ -240,7 +297,7 @@ def handle_breakpoint(breakpoint_handler: BreakpointHandler, ip: int, mem: fjm_r
 def get_breakpoints(breakpoint_addresses: Optional[Set[int]],
                     breakpoint_labels: Optional[Set[str]],
                     breakpoint_contains_labels: Optional[Set[str]],
-                    label_to_address: Dict[str, int])\
+                    label_to_address: Dict[str, int]) \
         -> Dict[int, str]:
     """
     generate the breakpoints' dictionary
