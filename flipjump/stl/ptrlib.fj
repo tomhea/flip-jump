@@ -24,8 +24,8 @@ ns stl {
 
 // @requires the stack_init.
 ns stl {
-    //  Time Complexity: ~1.5@  (exact: w(1.5@+5)    + 9@+15)
-    // Space Complexity: <2@    (exact: w(1.875@+20) + 5@+55)
+    //  Time Complexity: ~2.5w@  (exact: w(2.25@+10)   + 24@+51)
+    // Space Complexity: <3w@    (exact: w(2.625@+49) + 20@+231)
     //   Saves the return address to the stack and jumps to the given "address".
     //   When returned, it removes the return-address from the stack.
     //
@@ -40,21 +40,21 @@ ns stl {
         hex.pop_ret_address return_label
     }
 
-    //  Time Complexity: <2@  (exact: w(1.5@+5)    + 22@+20)
-    // Space Complexity: <2@  (exact: w(1.875@+20) + 28@+75)
+    //  Time Complexity: <3w@  (exact: w(2.25@+10)  + 37@+57)
+    // Space Complexity: <3w@  (exact: w(2.625@+49) + 43@+251)
     //   Saves the return address to the stack and jumps to the given "address".
-    //   When returned, it removes the value from the stack, and pops "params_hex_length" variables from the stack.
+    //   When returned, it removes the return-address from the stack, and pops "params_stack_length" cells from the stack.
     //
     // note: the pop_ret_address is for the future return (counts as space, but not time, complexity).
     // @requires the stack_init.
-    def call address, params_hex_length @ return_label {
+    def call address, params_stack_length @ return_label {
         hex.push_ret_address return_label
         ;address
 
         pad 2
       return_label:
         hex.pop_ret_address return_label
-        hex.sp_sub params_hex_length
+        hex.sp_sub params_stack_length
     }
 
 

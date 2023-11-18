@@ -1,4 +1,4 @@
-// Tests push/pop_unchanged_parameter with an empty function call
+// Tests push_hex/pop_hex (unchanged hex) with an empty function call
 
 
 stl.startup_and_init_all 10
@@ -11,7 +11,7 @@ test3:
     stl.output 'B'
     stl.call func3
     stl.output 'D'
-    hex.pop_unchanged_parameter x3
+    hex.pop_hex x3
     stl.output 'E'
 
     stl.output '\n'

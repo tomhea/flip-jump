@@ -18,9 +18,9 @@ test5:
     stl.output ' '
 
     stl.output 'A'
-    hex.pop_unchanged_parameter y5
+    hex.pop_hex y5
     stl.output 'B'
-    hex.pop_unchanged_parameter x5
+    hex.pop_hex x5
     stl.output 'C'
     hex.pop_hex res5
     stl.output 'D'
