@@ -24,6 +24,8 @@ def _prepare_first_and_second_level_significant_macros(
             parent, name = k_split
             if float(v) / macro_code_size[parent] < child_significance_min_thresh:
                 continue
+            if len(name.split(':')) == 4:   # if it's a rep
+                continue
             second_level[parent][name] = v
     return first_level, second_level
 
@@ -74,7 +76,7 @@ def _show_macro_usage_graph(chosen_macros: List[Tuple[str, int]]) -> None:
 
 
 def show_macro_usage_pie_graph(macro_code_size: Dict[str, int], total_code_size: int, *,
-                               min_main_thresh: float = 0.05, min_secondary_thresh: float = 0.01,
+                               min_main_thresh: float = 0.01, min_secondary_thresh: float = 0.001,
                                child_significance_min_thresh: float = 0.1) -> None:
     """
     choose and present in a pie graph the macros with the most code-usage

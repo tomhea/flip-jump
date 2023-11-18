@@ -48,3 +48,9 @@ prime_sieve_err_abc, tests/compiled/prime_sieve.fjm, tests/inout/prime_sieve_tes
 prime_sieve_err_empty, tests/compiled/prime_sieve.fjm, tests/inout/prime_sieve_tests/primes_err_empty.in,tests/inout/prime_sieve_tests/primes_err_bad_number.out, False,False
 prime_sieve_err_minus5, tests/compiled/prime_sieve.fjm, tests/inout/prime_sieve_tests/primes_err_minus5.in,tests/inout/prime_sieve_tests/primes_err_bad_number.out, False,False
 
+bubble_sort__write_hex_1,  tests/compiled/sorts/bubble_sort__write_hex.fjm,  tests/inout/sorts/bubble_sort_1.in,tests/inout/sorts/bubble_sort_1.out, False,False
+bubble_sort__xor_hex_1,    tests/compiled/sorts/bubble_sort__xor_hex.fjm,    tests/inout/sorts/bubble_sort_1.in,tests/inout/sorts/bubble_sort_1.out, False,False
+bubble_sort__xor_hex_2,    tests/compiled/sorts/bubble_sort__xor_hex.fjm,    tests/inout/sorts/bubble_sort_2.in,tests/inout/sorts/bubble_sort_2.out, False,False
+bubble_sort__write_byte_1, tests/compiled/sorts/bubble_sort__write_byte.fjm, tests/inout/sorts/bubble_sort_1.in,tests/inout/sorts/bubble_sort_1.out, False,False
+bubble_sort__xor_byte_1,   tests/compiled/sorts/bubble_sort__xor_byte.fjm,   tests/inout/sorts/bubble_sort_1.in,tests/inout/sorts/bubble_sort_1.out, False,False
+bubble_sort__xor_byte_2,   tests/compiled/sorts/bubble_sort__xor_byte.fjm,   tests/inout/sorts/bubble_sort_2.in,tests/inout/sorts/bubble_sort_2.out, False,False

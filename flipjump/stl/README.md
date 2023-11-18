@@ -48,9 +48,9 @@ Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers):
 - [shifts.fj](hex/shifts.fj) - shift left/right by 1 bit/hex
 - [math_basic.fj](hex/math_basic.fj) - inc/dec, neg, count_bits, sign_extend
 - [math.fj](hex/math.fj) - add/sub, {add/sub}_shifted, {add/sub}_constant
-- [pointers.fj](hex/pointers.fj) - hex-vec pointers: flip, jump, xor_to, xor_from; stack/pointers init
-- [advanced_pointers.fj](hex/advanced_pointers.fj) - hex-vec pointers: ptr/sp - inc/dec/add/sub, all push/pop
 - [tables_init.fj](hex/tables_init.fj) - initializes the "results-tables" for the next hex macros: or,and, add,sub, cmp, mul
+- [pointers/](hex/pointers/) - hex-vec pointers subdirectory: [flip](hex/pointers/xor_to_pointer.fj), [jump](hex/pointers/basic_pointers.fj), [xor_to](hex/pointers/xor_to_pointer.fj), [xor_from](hex/pointers/xor_from_pointer.fj); [stack](hex/pointers/stack.fj)/[pointers](hex/pointers/basic_pointers.fj) init. [pointer arithmetics](hex/pointers/pointer_arithmetics.fj), [stack arithmetics + push/pop](hex/pointers/stack.fj).
+
 
 ### [mathlib.fj](mathlib.fj)
 Offers multiplication and division macros for bit/hex variables.

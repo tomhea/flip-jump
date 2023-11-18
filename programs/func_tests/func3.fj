@@ -7,7 +7,7 @@ stl.startup_and_init_all 10
 // Prints "ABCDE"
 test3:
     stl.output 'A'
-    hex.push x3
+    hex.push_hex x3
     stl.output 'B'
     stl.call func3
     stl.output 'D'

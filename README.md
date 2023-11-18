@@ -152,6 +152,7 @@ Programs won't work on their first run. They just can't. That's why we support t
 - `-b NAME [NAME ...]`: Places breakpoints at every specified label NAMEs (note that label names are long: [more information about labels](flipjump/README.md#generated-label-names)). (requires `-b`)
 - `-B NAME [NAME ...]`: Places breakpoints at every label that contains one of the given NAMEs. (requires `-b`)
 
+The debugger can single-step, read-memory, read flipjump variables (bit/hex/byte, and their vectors), continue, or skip forward a fixed number of opcodes.
 
 # Get Started with FlipJump
 - Install flipjump: `pip install flipjump`

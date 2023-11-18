@@ -21,8 +21,14 @@
     "hex/tables_init",
     "hex/input",
     "hex/output",
-    "hex/pointers",
-    "hex/advanced_pointers",
+
+    "hex/pointers/basic_pointers",
+    "hex/pointers/xor_to_pointer",
+    "hex/pointers/xor_from_pointer",
+    "hex/pointers/read_pointers",
+    "hex/pointers/write_pointers",
+    "hex/pointers/stack",
+    "hex/pointers/pointer_arithmetics",
 
     "casting",
     "ptrlib",

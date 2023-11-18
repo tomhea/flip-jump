@@ -84,4 +84,12 @@ ns hex {
       upper: .hex
       end:
     }
+
+    //  Time Complexity: n(7@+11)
+    // Space Complexity: n(8.5@+92)
+    //   hex[:n] = hex_from_ascii(input(n-bytes))
+    // *supports 0-9,a-f,A-F.  if can't cast, jumps to error.
+    def input_as_hex n, hex, error {
+        rep(n, i) .input_as_hex hex + (n-1-i)*dw, error
+    }
 }

@@ -51,6 +51,8 @@ You can get the entire "macro-stack" of the last executed addresses to get a bet
 
 More information about the labels can be found [here](../flipjump/README.md#generated-label-names).
 
+More information about debugging with flipjump in general: [how to debug](../README.md#how-to-debug).
+
 ### Filter tests by their name 
 
 You can filter the running tests. No filter means that all the tests in the chosen test type (--regular, --all, etc.) will run.  

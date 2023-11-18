@@ -170,6 +170,10 @@ class FJLexer(sly.Lexer):
         self.lineno += 1
         return t
 
+    def ignore_line_continuation(self, t: Token) -> Token:
+        self.lineno += 1
+        return t
+
     def error(self, t: Token) -> None:
         global error_occurred, all_errors
         error_occurred = True
@@ -193,7 +197,8 @@ def _get_main_macro_code_position(first_file: Tuple[str, Path]) -> CodePosition:
 # noinspection PyUnusedLocal,PyUnresolvedReferences,PyPep8Naming
 class FJParser(sly.Parser):
     tokens = FJLexer.tokens
-    # TODO add Unary Minus (-), Unary Not (~). Maybe add logical or (||) and logical and (&&). Maybe handle power (**).
+    # TODO #249 - add Unary Minus (-), Unary Not (~).
+    #  Maybe add logical or (||) and logical and (&&). Maybe handle power (**).
     precedence = (
         ('right', '?', ':'),
         ('left', '|'),

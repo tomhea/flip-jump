@@ -9,7 +9,6 @@ from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
 from flipjump.fjm.fjm_consts import FJMVersion, SUPPORTED_VERSIONS_NAMES
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.utils.exceptions import FlipJumpException
 from flipjump.interpretter.io_devices.StandardIO import StandardIO
 from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, DEFAULT_MAX_MACRO_RECURSION_DEPTH
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
@@ -78,23 +77,18 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
     if debug_file:
         verify_file_exists(error_func, debug_file)
 
-    try:
-        flipjump_quickstart.debug(
-            in_fjm_path,
-            debug_file,
-            breakpoints_addresses=set(),
-            breakpoints=set(args.breakpoint),
-            breakpoints_contains=set(args.breakpoint_contains),
-            io_device=StandardIO(not args.no_output),
-            show_trace=args.trace,
-            print_time=not args.silent,
-            print_termination=not args.silent,
-            last_ops_debugging_list_length=args.debug_ops_list,
-        )
-    except FlipJumpException as e:
-        print()
-        print(e)
-        exit(1)
+    flipjump_quickstart.debug(
+        in_fjm_path,
+        debug_file,
+        breakpoints_addresses=set(),
+        breakpoints=set(args.breakpoint),
+        breakpoints_contains=set(args.breakpoint_contains),
+        io_device=StandardIO(not args.no_output),
+        show_trace=args.trace,
+        print_time=not args.silent,
+        print_termination=not args.silent,
+        last_ops_debugging_list_length=args.debug_ops_list,
+    )
 
 
 def get_version(version: Optional[int], is_outfile_specified: bool) -> FJMVersion:

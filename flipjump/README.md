@@ -24,10 +24,14 @@ The whole interpretation is done within the [run()](interpretter/fjm_run.py) fun
 More about [how to run](../README.md#how-to-run).
 ![Running the compiled calculator](../res/calc__run.jpg)
 
-The Interpreter has a built-in debugger, and it's activated by specifying breakpoints when called (via the [breakpoints.py](interpretter/debugging/breakpoints.py)'s `BreakpointHandler`).
-The debugger can stop on the next breakpoint, or on a fixed number of executed ops after the current breakpoint.
+### The Debugger
+
+The Interpreter has a built-in debugger, and it's activated by specifying breakpoints when called (via the [breakpoints.py](interpretter/debugging/breakpoints.py)'s `BreakpointHandler`).  
+The debugger can stop on the next breakpoint, read memory, read flipjump variables, or on a fixed number of executed ops after the current breakpoint.    
 In order to call the debugger with the right labels, get familiar with the [generating label names](README.md#Generated-Label-Names) (and see the debugger-image there), and use the `-d`/`-b`/`-B` cli options.  
 More about [how to debug](../README.md#how-to-debug).
+
+### Macro Usage
 
 The [macro_usage_graph.py](interpretter/debugging/macro_usage_graph.py) file exports a feature to present the macro-usage (which are the most used macros, and what % do they take from the overall flipjump ops) in a graph.  
 In order to view it, run the assembler with `--stats` (requires plotly to be installed (installed automatically with `pip install flipjump[stats]`)).  
