@@ -1,15 +1,23 @@
 // This program inputs hexadecimal numbers (separated by spaces), sorts them, and prints them back sorted.
+//   It first inputs a 'length' variable, and then inputs 'length' more numbers.
 // The sorting algorithm is bubble-sort.
 
-// This program is expected to compile with another file that defines the next macro:
-//     swap_adjacent entry_length, array_ptr, small_index_num, big_index_num
-// This macro can be found in the two "./utils/_swap_adjacent_using_*.fj files.
+// This program is expected to compile with the next files that define the next macros:
+// - One of the two "./utils/_swap_adjacent_using_{writes/xors}.fj" files:
+//     * swap_adjacent entry_length, array_ptr, small_index_num, big_index_num
+// - One of the two "./utils/_{hex/byte}_memory_access.fj" files:
+//     * The HEX_VARS_PER_MEMORY_CELL constant.
+//     * Macros:  xor_to_ptr / write_to_ptr / read_from_ptr
 //
-// This program tests the read_hex macro, and the write_hex / xor_hex_to_ptr macros (based on the swap_adjacent implementation).
+// This program tests the read_hex  macro, and the write_hex  / xor_hex_to_ptr  macros.
+// It also      tests the read_byte macro, and the write_byte / xor_byte_to_ptr macros.
+// It also tests the vectored xor/read/write macros, .
+// It's all based on the swap_adjacent implementation, and the memory-access implementation.
 
 
 MAX_ARRAY_SIZE = 2000
 HEX_LEN = 4
+
 CELL_HEX_LEN = HEX_LEN / HEX_VARS_PER_MEMORY_CELL
 hw = w/4
 
@@ -27,7 +35,7 @@ stl.loop
 
 // Variables:
 
-array_len: hex.vec hw, 0   // TODO as an input, not a constant
+array_len: hex.vec hw, 0
 array: hex.vec HEX_LEN * MAX_ARRAY_SIZE
 
 
@@ -40,11 +48,11 @@ def bubble_sort @ phase_loop, index_loop, finish_index_loop, swapped_flag, i, j,
     phase_loop:
         hex.zero hw, j
         hex.set hw, array_ptr, array
-        hex.zero swapped_flag
+        bit.zero swapped_flag
         index_loop:
             swap_if_needed array_ptr, swapped_flag
             hex.inc hw, j
-            hex.ptr_add array_ptr, HEX_LEN
+            hex.ptr_add array_ptr, CELL_HEX_LEN
             hex.cmp hw, j, i, index_loop, finish_index_loop, finish_index_loop
         finish_index_loop:
 
@@ -63,7 +71,7 @@ array_ptr: hex.vec hw
 
 // swaps *ptr[:HEX_LEN] with *ptr[HEX_LEN:2*HEX_LEN] if the first is bigger than the latter.
 def swap_if_needed array_ptr, swapped_flag @ small_index_num, big_index_num, swap, end {
-    hex.read_hex 2 * HEX_LEN, small_index_num, array_ptr
+    read_from_ptr 2 * HEX_LEN, small_index_num, array_ptr
     hex.cmp HEX_LEN, small_index_num, big_index_num, end, end, swap
 
   swap:
