@@ -1,13 +1,9 @@
-// TODO document complexities in the entire file
-
-
-
 // ---------- Read Pointers
 
 
 ns hex {
-    //  Time Complexity:
-    // Space Complexity:
+    //  Time Complexity: w(0.75@+ 5) + 7@+13
+    // Space Complexity: w(0.75@+29) + 7@+48
     //   like:  dst = *ptr
     // dst is a hex. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def read_hex dst, ptr {
@@ -15,8 +11,8 @@ ns hex {
         .xor_hex_from_ptr dst, ptr
     }
 
-    //  Time Complexity:
-    // Space Complexity:
+    //  Time Complexity: w(0.75@+ 5) + 9@+13
+    // Space Complexity: w(0.75@+29) + 9@+72
     //   like:  dst[:2] = *ptr
     // dst is a hex[:2]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def read_byte dst, ptr {
@@ -31,8 +27,8 @@ ns hex {
 
 
 ns hex {
-    //  Time Complexity:
-    // Space Complexity:
+    //  Time Complexity: w(0.75@+ 5) + 16@+27
+    // Space Complexity: w(1.13@+32) + 12@+103
     //   like:  dst = *ptr
     //          ptr++
     // dst is a hex. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
@@ -41,8 +37,8 @@ ns hex {
         .ptr_inc ptr
     }
 
-    //  Time Complexity:
-    // Space Complexity:
+    //  Time Complexity: n(w(0.75@+ 5) + 16@+27)
+    // Space Complexity: n(w(1.13@+32) + 12@+103)
     //   like:  dst[:n] = *ptr[:n]
     // dst is a hex[:n]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def read_hex n, dst, ptr {
@@ -50,8 +46,8 @@ ns hex {
         .ptr_sub ptr, n
     }
 
-    //  Time Complexity:
-    // Space Complexity:
+    //  Time Complexity: w(0.75@+ 5) + 18@+27
+    // Space Complexity: w(1.13@+32) + 14@+127
     //   like:  dst[:2] = *ptr
     //          ptr++
     // dst is a hex[:2]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
@@ -60,8 +56,8 @@ ns hex {
         .ptr_inc ptr
     }
 
-    //  Time Complexity:
-    // Space Complexity:
+    //  Time Complexity: n(w(0.75@+ 5) + 18@+27)
+    // Space Complexity: n(w(1.13@+32) + 14@+127)
     //   like:  dst[:2n] = *ptr[:n]
     // dst is a hex[:2n]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     def read_byte n, dst, ptr {
