@@ -4,6 +4,7 @@
 
 stl.startup_and_init_all 100
 N = 2
+STACK_N = (N+1)/2
 
 hex.set N, p1_x, 9
 hex.set N, p1_y, 0-54
@@ -38,7 +39,7 @@ def calc_dist_squared x1, y1, x2, y2, prefix_distance_string @ end, res < math.s
     hex.push N, y2
     stl.output 'B'
 
-    stl.call math.square_distance, 2*N
+    stl.call math.square_distance, 2*STACK_N
     stl.output 'I'
 
     hex.pop 2*N, res
@@ -67,7 +68,7 @@ ns sub {
     stl.output '2'
 
     hex.push N, .res
-    hex.sp_add N+1
+    hex.sp_add STACK_N+1
     stl.output "3-"
 
     stl.return
@@ -87,7 +88,7 @@ ns add_2N {
     stl.output '2'
 
     hex.push 2*N, .res
-    hex.sp_add 2*N+1
+    hex.sp_add 2*STACK_N+1
     stl.output "3-"
     stl.return
 
@@ -129,12 +130,12 @@ ns square_sub {
     hex.sp_dec
     hex.pop N, .b
     hex.pop N, .a
-    hex.sp_add 2*N+1
+    hex.sp_add 2*STACK_N+1
     stl.output 'a'
 
     hex.push N, .a
     hex.push N, .b
-    stl.call ..sub, N
+    stl.call ..sub, STACK_N
     hex.pop N, .res
     stl.output 'b'
 
@@ -144,7 +145,7 @@ ns square_sub {
     hex.pop 2*N, .res
     stl.output 'c'
 
-    hex.sp_sub 2*N+1
+    hex.sp_sub 2*STACK_N+1
     hex.push 2*N, .res
     hex.sp_inc
     stl.output "d\n"
@@ -165,7 +166,7 @@ ns square_distance {
     hex.pop N, .x2
     hex.pop N, .y1
     hex.pop N, .x1
-    hex.sp_add 4*N+1
+    hex.sp_add 4*STACK_N+1
     stl.output 'D'
 
     // (x1-x2)**2
@@ -184,13 +185,13 @@ ns square_distance {
     // (x1-x2)**2 + (y1-y2)**2
     hex.push 2*N, .res1
     hex.push 2*N, .res2
-    stl.call ..add_2N, 2*N
+    stl.call ..add_2N, 2*STACK_N
     hex.pop 2*N, .res1
     stl.output 'G'
 
-    hex.sp_sub 4*N+1
+    hex.sp_sub 4*STACK_N+1
     hex.push 2*N, .res1
-    hex.sp_add 2*N+1
+    hex.sp_add 2*STACK_N+1
     stl.output 'H'
 
     stl.return

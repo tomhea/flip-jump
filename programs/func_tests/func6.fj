@@ -2,6 +2,7 @@
 
 
 N = 4
+STACK_N = (N+1)/2
 stl.startup_and_init_all 100
 
 hex.set N, x, 7438
@@ -10,7 +11,7 @@ hex.set N, y, 2524
 
 hex.push N, x
 hex.push N, y
-stl.call math.add, N
+stl.call math.add, STACK_N
 hex.pop N, res
 hex.print_as_digit N, res, 1
 stl.output '\n'
@@ -28,7 +29,7 @@ add:
     hex.add N, .res, .temp
 
     hex.push N, .res
-    hex.sp_add N+1
+    hex.sp_add STACK_N+1
 
     stl.return
 
