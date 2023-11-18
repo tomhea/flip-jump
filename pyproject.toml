@@ -28,7 +28,6 @@ classifiers = [
     "Topic :: Software Development :: Interpreters",
     "Topic :: Software Development :: Libraries",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -43,7 +42,7 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 sly = "^0.4"
 easygui = "^0.98.3"
 
