@@ -453,8 +453,10 @@ ns bit {
 
 
 ns hex {
-    // TODO #191 - hex.div fails tests. for example, 0xc3 / 0xe fails.
-    def div n, nb, q, _r, _a, _b, div0 @ loop, after_loop,   do_cmp_sub_func, do_sub, jump_to_flip, flip_op,   \
+    // q = a/b
+    // r = a%b
+    def div n, nb, q, _r, _a, _b, div0 @ loop, continue_loop, after_loop,\
+            do_cmp_sub_func, do_sub, jump_to_flip, flip_op,   \
             r, b, a, i, ret,   end {
         .if0 nb, _b, div0
 
@@ -468,8 +470,7 @@ ns hex {
 
       loop:
         .shl_hex nb+1, b
-
-        .shl_hex n, r
+        .shl_hex nb+1, r
         .xor r, a+(n-1)*dw
 
         stl.fcall do_cmp_sub_func, ret
@@ -481,11 +482,13 @@ ns hex {
         stl.fcall do_cmp_sub_func, ret
         jump_to_flip+dbit+1;
 
+        .dec #n, i
+        .sign #n, i, after_loop, continue_loop
+
+      continue_loop:
         .shl_hex n, a
         .shl_hex n, q
-
-        .dec #n, i
-        .sign #n, i, after_loop, loop
+        ;loop
 
       do_cmp_sub_func:
         hex.shr_bit nb+1, b
@@ -497,10 +500,10 @@ ns hex {
         ;flip_op
         pad 4
       flip_op:
-        q+dbit+0; ret
-        q+dbit+1; ret
         q+dbit+3; ret
         q+dbit+2; ret
+        q+dbit+0; ret
+        q+dbit+1; ret
 
       r:  .vec nb+1
       b:  .vec nb+1
