@@ -1,0 +1,158 @@
+// ---------- Divide:
+// q = a/b
+// r = a%b
+
+ns bit {
+    //  Time Complexity: n^2(2@+8) + n*nb(34@+92)   so if nb==n:  n^2(36@+100)
+    // Space Complexity: n(4@+81)  + nb(16@+243)    so if nb==n:  n(20@+324)
+    //   if b==0: goto div0
+    //   q = a/b
+    //   r = a%b
+    // q,a are hex[:n], while r,b are hex[:nb]. div0 is the bit-address this function will jump to in-case b is zero.
+    // @requires hex.sub.init & hex.cmp.init (or hex.init)
+
+
+    def idiv n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
+        .mov negative_a, a+dw*(n-1)
+        .mov negative_b, b+dw*(n-1)
+        .zero one_negative
+
+        .if0 negative_a, neg_b_1
+        .not one_negative
+        .neg n, a
+      neg_b_1:
+        .if0 negative_b, do_div
+        .not one_negative
+        .neg n, b
+      do_div:
+        .div n, a, b, q, r
+
+        .if0 negative_a, neg_b_2
+        .neg n, a
+        .neg n, r
+      neg_b_2:
+        .if0 negative_b, neg_ans
+        .neg n, b
+      neg_ans:
+        .if0 one_negative, end
+        .neg n, q
+        ;end
+
+      negative_a:
+        .bit
+      negative_b:
+        .bit
+      one_negative:
+        .bit
+      end:
+    }
+
+
+    // Complexity: n^2(10phi+43)
+    // Space Complexity:  ~O(50n^2)
+    def div n, a, b, q, r @ Q, R, end {
+        .if0 n, b, end
+        .zero 2*n, R
+        .zero   n, Q
+
+        rep(n, i) _.div_step n,  a+(n-1-i)*dw,  b,  R+(n-1-i)*dw,  Q+(n-1-i)*dw
+
+        .mov n, r, R
+        .mov n, q, Q
+        ;end
+
+      R:
+        .vec 2*n
+      Q:
+        var   n
+      end:
+    }
+    ns _ {
+        def div_step n, N, D, R, Q @ do_sub, end {
+            ..xor R, N
+            ..cmp n, R, D, end, do_sub, do_sub
+          do_sub:
+            ..sub n, R, D
+            ..not Q
+          end:
+        }
+    }
+
+
+
+    def idiv_loop n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
+        .mov negative_a, a+dw*(n-1)
+        .mov negative_b, b+dw*(n-1)
+        .zero one_negative
+
+        .if0 negative_a, neg_b_1
+        .not one_negative
+        .neg n, a
+      neg_b_1:
+        .if0 negative_b, do_div
+        .not one_negative
+        .neg n, b
+      do_div:
+        .div_loop n, a, b, q, r
+
+        .if0 negative_a, neg_b_2
+        .neg n, a
+        .neg n, r
+      neg_b_2:
+        .if0 negative_b, neg_ans
+        .neg n, b
+      neg_ans:
+        .if0 one_negative, end
+        .neg n, q
+        ;end
+
+      negative_a:
+        .bit
+      negative_b:
+        .bit
+      one_negative:
+        .bit
+      end:
+    }
+
+
+    // Complexity: n^2(18phi+64)
+    // Space Complexity:  ~O(120n)
+    def div_loop n, a, b, q, r @ loop, do_sub, loop_end, after_loop, A, Q, R, i, end {
+        .if0 n, b, end
+        .zero n, R
+        .zero n, Q
+        .mov n, A, a
+        .zero n, i
+        .not i+(n-1)*dw
+
+      loop:
+        .if0 n, i, after_loop                 //Comp: n(phi+4)
+        .shl n, R                            //Comp: n(2phi+5)
+        .xor R, A+(n-1)*dw
+        .cmp n, R, b, loop_end, do_sub, do_sub   //Comp: n(2phi+8)
+      do_sub:
+        .sub n, R, b                          //Comp: n(8phi+35)
+        .xor n, Q, i                          //Comp: n(phi+2)
+      loop_end:
+        .shr n, i                            //Comp: n(2phi+5)
+        .shl n, A                            //Comp: n(2phi+5)
+        ;loop
+
+      after_loop:
+        .mov n, r, R
+        .mov n, q, Q
+        ;end
+
+      A:
+        .vec n
+      R:
+        .vec n
+      Q:
+        .vec n
+      i:
+        .vec n
+
+      end:
+    }
+}

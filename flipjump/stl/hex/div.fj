@@ -2,8 +2,10 @@ ns hex {
     //  Time Complexity: n^2(2@+8) + n*nb(34@+92)   so if nb==n:  n^2(36@+100)
     // Space Complexity: n(4@+81)  + nb(16@+243)    so if nb==n:  n(20@+324)
     //   if b==0: goto div0
-    //   q = a/b
-    //   r = a%b
+    //   q = a/b  (unsigned division)
+    //   r = a%b  (unsigned modulo)
+    // @NOTE: a,b are UNSIGNED numbers. If you want a division with signed ints, use the idiv macro.
+    //
     // q,a are hex[:n], while r,b are hex[:nb]. div0 is the bit-address this function will jump to in-case b is zero.
     // @requires hex.sub.init & hex.cmp.init (or hex.init)
     def div n, nb, q, r, a, b, div0 @ loop, after_loop,\
@@ -64,6 +66,58 @@ ns hex {
 
       after_loop:
         .mov nb, r, _r
+      end:
+    }
+
+    //  Time Complexity: n^2(2@+8) + n*nb(34@+92)   so if nb==n:  n^2(36@+100)
+    // Space Complexity: n(8.5@+132)  + nb(21.5@+309)    so if nb==n:  n(30@+441)
+    //   if b==0: goto div0
+    //   q = a/b  (signed division)
+    //   r = a%b  (signed modulo - sign(r)==sign(b))
+    // @NOTE: a,b are SIGNED numbers. If you want a division with signed ints, use the idiv macro.
+    //
+    // q,a are hex[:n], while r,b are hex[:nb]. div0 is the bit-address this function will jump to in-case b is zero.
+    // @requires hex.sub.init & hex.cmp.init (or hex.init)
+    def idiv n, nb, q, r, a, b, div0 @ set_negative_a, test_b, set_negative_b,\
+            negative_a, negative_b, one_negative, do_div, neg_b_2, neg_ans, end {
+        .if0 nb, b, div0
+
+        bit.zero negative_a
+        bit.zero negative_b
+        bit.zero one_negative
+
+        .sign n, a, set_negative_a, test_b
+      set_negative_a:
+        bit.not negative_a
+        bit.not one_negative
+        .neg n, a
+      test_b:
+        .sign nb, b, set_negative_b, do_div
+      set_negative_b:
+        bit.not negative_b
+        bit.not one_negative
+        .neg nb, b
+
+      do_div:
+        .div n, nb, q, r, a, b, div0
+
+        bit.if0 negative_a, neg_b_2
+        .neg n, a
+      neg_b_2:
+        bit.if0 negative_b, neg_ans
+        .neg nb, b
+        .neg nb, r
+      neg_ans:
+        bit.if0 one_negative, end
+        .neg n, q
+        ;end
+
+      negative_a:
+        bit.bit
+      negative_b:
+        bit.bit
+      one_negative:
+        bit.bit
       end:
     }
 }

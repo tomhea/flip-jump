@@ -11,6 +11,7 @@
     "bit/output",
     "bit/casting",
     "bit/pointers",
+    "bit/div",
 
     "hex/memory",
     "hex/logics",
@@ -21,7 +22,6 @@
     "hex/tables_init",
     "hex/input",
     "hex/output",
-
     "hex/div",
 
     "hex/pointers/basic_pointers",
