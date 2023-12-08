@@ -1,0 +1,69 @@
+ns hex {
+    //  Time Complexity: n^2(2@+8) + n*nb(34@+92)   so if nb==n:  n^2(36@+100)
+    // Space Complexity: n(4@+81)  + nb(16@+243)    so if nb==n:  n(20@+324)
+    //   if b==0: goto div0
+    //   q = a/b
+    //   r = a%b
+    // q,a are hex[:n], while r,b are hex[:nb]. div0 is the bit-address this function will jump to in-case b is zero.
+    // @requires hex.sub.init & hex.cmp.init (or hex.init)
+    def div n, nb, q, r, a, b, div0 @ loop, after_loop,\
+            half_b__sub_if_bigger, do_sub, jump_to_flip, flip_op,   \
+            _r, _b, _a, i, ret,   end {
+        .if0 nb, b, div0
+
+        // init all inner variables
+        .zero nb+1, _r
+        .mov nb, _b, b
+        .mov n, _a, a
+
+        // loop n times
+        .set #n, i, n-1
+      loop:
+        // {_r:_a} <<= 4
+        .shl_hex n+nb+1, _a
+
+        // q <<= 4.  (now q's 4 ls-bits are cleared, to be filled later with _r/_b).
+        .shl_hex n, q
+
+        // This next section makes:  q += _r/_b  &&  _r %= _b.
+        .shl_hex nb+1, _b     // b*=16
+        stl.fcall half_b__sub_if_bigger, ret
+        jump_to_flip+dbit+0;  // set do_sub to point to q+1
+        stl.fcall half_b__sub_if_bigger, ret
+        jump_to_flip+dbit+1;  // set do_sub to point to q+3
+        stl.fcall half_b__sub_if_bigger, ret
+        jump_to_flip+dbit+0;  // set do_sub to point to q+2
+        stl.fcall half_b__sub_if_bigger, ret
+        jump_to_flip+dbit+1;  // set do_sub to point to q
+
+        .dec #n, i
+        .sign #n, i, after_loop, loop
+
+        // _b<<=1;  if _r>=_b: goto do_sub.
+      half_b__sub_if_bigger:
+        hex.shr_bit nb+1, _b
+        hex.cmp nb+1, _r, _b, ret, do_sub, do_sub
+
+      do_sub:
+        hex.sub nb+1, _r, _b
+        // In this part q gets another "1" bit, depends on where "jump_to_flip" points to:
+      jump_to_flip:
+        ;flip_op
+        pad 4
+      flip_op:
+        q+dbit+3; ret
+        q+dbit+2; ret
+        q+dbit+0; ret
+        q+dbit+1; ret
+
+      _b:  .vec nb+1
+      _a:  .vec n
+      _r:  .vec nb+1
+      i:  .vec #n
+      ret: ;0
+
+      after_loop:
+        .mov nb, r, _r
+      end:
+    }
+}

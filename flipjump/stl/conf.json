@@ -22,6 +22,8 @@
     "hex/input",
     "hex/output",
 
+    "hex/div",
+
     "hex/pointers/basic_pointers",
     "hex/pointers/xor_to_pointer",
     "hex/pointers/xor_from_pointer",
