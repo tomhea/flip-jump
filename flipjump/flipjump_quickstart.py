@@ -176,6 +176,12 @@ def run_test_output(fjm_path: Path,
     unexpected output.
 
     :note: This is a wrapper function to the fjm_run.run() function.
+
+    :note: If you run this function in an external pytest (not the flipjump one),
+           In order to see the assertions errors values and mismatches,
+           add the next 2 lines to the __init__.py in your test folder:
+               import pytest
+               pytest.register_assert_rewrite("flipjump.flipjump_quickstart")
     """
     io_device = FixedIO(fixed_input)
     termination_statistics = run(fjm_path,
@@ -321,6 +327,12 @@ def assemble_and_run_test_output(fj_file_paths: List[Path],
     unexpected output.
 
     @return: True if the run finished successfully, and with the expected output.
+
+    :note: If you run this function in an external pytest (not the flipjump one),
+           In order to see the assertions errors values and mismatches,
+           add the next 2 lines to the __init__.py in your test folder:
+               import pytest
+               pytest.register_assert_rewrite("flipjump.flipjump_quickstart")
     """
     with TemporaryDirectory(suffix=get_temp_directory_suffix(fj_file_paths)) as temp_dir_name:
         fjm_file = Path(temp_dir_name) / 'out.fjm'
