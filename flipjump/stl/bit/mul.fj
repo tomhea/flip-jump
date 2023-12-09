@@ -1,0 +1,79 @@
+ns bit {
+    // Complexity n(14@+10)
+    //   x[:n] *= 10
+    // @NOTE: this implementation works with both signed and unsigned numbers.
+    def mul10 n, x @ twice, end {
+        .shl n, x
+        .mov n, twice, x
+        .shl n, 2, x
+        .add n, x, twice
+        ;end
+
+      twice:
+        .vec n
+      end:
+    }
+
+
+    //  Time Complexity:  n^2(6@+2) + n*b(8@+14)    if b==n/2:  n^2(10@+9)
+    // Space Complexity:  n(21@+11)
+    //   dst[:n] *= src[:n]
+    // b is the number of 1-bits in src.
+    // @NOTE: this implementation works with both signed and unsigned numbers.
+    // @NOTE: this is slower, yet it saves space, compared to the mul macro.
+    def mul_loop n, dst, src @ start, after_add, src_copy, res, end {
+        .zero n, res
+        .mov n, src_copy, src
+
+      start:
+        .if0 src, after_add
+        .add n, res, dst          //Comp: n(8@+14)
+      after_add:
+        .shl n, dst               //Comp: n(2@-1)
+        .shr n, src               //Comp: n(2@-1)
+        .if0 n, dst, end          //Comp: n(@+2)
+        .if0 n, src, end          //Comp: n(@+2)
+        ;start
+
+      src_copy:
+        .vec n
+      res:
+        .vec n
+      end:
+        .mov n, src, src_copy
+        .mov n, dst, res
+    }
+
+
+    //  Time Complexity:  n*b(8@+14)    if b==n/2:  n^2(4@+7)
+    // Space Complexity:  n^2(8@+14)
+    //   dst[:n] *= src[:n]
+    // b is the number of 1-bits in src.
+    // @NOTE: this implementation works with both signed and unsigned numbers.
+    // @NOTE: this is faster, yet WASTEFUL in space, compared to the mul_loop macro.
+    def mul n, dst, src @ shifted_src, res, end {
+        .zero n, res
+        .zero n, shifted_src
+        .mov n, shifted_src+dw*n, src
+        rep(n, i) mul.mul_add_if n, dst+i*dw, res, shifted_src+(n-i)*dw
+        .mov n, dst, res
+        ;end
+
+      shifted_src:
+        .vec 2*n
+      res:
+        .vec n
+      end:
+    }
+    ns mul {
+        // Complexity: n(8@+14)
+        //   if flag:
+        //     dst[:n] += src[:n]
+        // flag is a bit.
+        def mul_add_if n, flag, dst, src @ end {
+            ..if0 flag, end
+            ..add n, dst, src
+          end:
+        }
+    }
+}

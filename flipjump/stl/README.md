@@ -31,6 +31,8 @@ Offers macros for manipulating binary variables and vectors (i.e. numbers):
 - [output.fj](bit/output.fj) - output bits, bytes; print as hex/decimal
 - [shifts.fj](bit/shifts.fj) - bit-shift left/right, bit-rotate left/right
 - [math.fj](bit/math.fj) - inc, dec, add, sub
+- [mul.fj](bit/mul.fj) - mul10, mul, mul_loop
+- [div.fj](bit/div.fj) - div10, {i}div, {i}div_loop (i stands for signed)
 - [pointers.fj](bit/pointers.fj) - bit-vec pointers: flip, jump, xor_to, xor_from, inc/dec; pointers init
 
 ### [hex/](hex/)
@@ -48,22 +50,16 @@ Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers):
 - [shifts.fj](hex/shifts.fj) - shift left/right by 1 bit/hex
 - [math_basic.fj](hex/math_basic.fj) - inc/dec, neg, count_bits, sign_extend
 - [math.fj](hex/math.fj) - add/sub, {add/sub}_shifted, {add/sub}_constant
+- [mul.fj](hex/mul.fj) - add_mul, mul (works for signed & unsigned)
+- [div.fj](hex/div.fj) - div, idiv (signed)
 - [tables_init.fj](hex/tables_init.fj) - initializes the "results-tables" for the next hex macros: or,and, add,sub, cmp, mul
 - [pointers/](hex/pointers/) - hex-vec pointers subdirectory: [flip](hex/pointers/xor_to_pointer.fj), [jump](hex/pointers/basic_pointers.fj), [xor_to](hex/pointers/xor_to_pointer.fj), [xor_from](hex/pointers/xor_from_pointer.fj); [stack](hex/pointers/stack.fj)/[pointers](hex/pointers/basic_pointers.fj) init. [pointer arithmetics](hex/pointers/pointer_arithmetics.fj), [stack arithmetics + push/pop](hex/pointers/stack.fj).
-
-
-### [mathlib.fj](mathlib.fj)
-Offers multiplication and division macros for bit/hex variables.
-
-**@note**: The hex.div fails test as for now. You can use the bit version and castings.
 
 ### [casting.fj](casting.fj)
 Offers casting between bits and hexes.
 
 ### [ptrlib.fj](ptrlib.fj)
-Offers the concept of pointers, i.e. reading, jumping to, and flipping bits, directly from a pointer (i.e. a bit-variable that holds an address).
-
-Also offers a stack and functions based on these pointers.
+Init macros for pointers, stack and call/ret functions based on hex.pointers. Also offers fast call/ret macros.
 
 ### [conf.json](conf.json)
 A configurable json file that maintains ordered lists of the standard library files. 

@@ -52,6 +52,14 @@ neq_mod_print:
     stl.fret ret
 
 
+// signed division
+def test_idiv n, nb, div_label, a, b {
+    test_div n, nb, div_label, \
+        (a&(1<<(4*n-1))) ? ((1<<(4*n))-a) : a, \
+        (b&(1<<((4*nb)-1))) ? ((1<<(4*nb))-b) : b
+}
+
+
 def test_div n, nb, div_label, a, b @ neq_div, eq_div,  cmp_mod,  neq_mod, eq_mod,  end \
         < ah, bh, res, ch,  mod, mh,  ret,  neq_div_print, neq_mod_print {
     hex.set   n, ah, a
