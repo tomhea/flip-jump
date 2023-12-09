@@ -1,11 +1,58 @@
 ns bit {
+    // Complexity: n(5@+11)
+    //   dst[:n], src[:n] = src[:n] / 10, src[:n] % 10.
+    def div10 n, dst, src @ zero, end {
+        .zero n, dst
+        .div10.cmp_sub_10 zero, src+(n-4)*dw, dst+(n-4)*dw
+        rep(n-4, i) .div10.cmp_sub_10 src+(n-1-i)*dw, src+(n-5-i)*dw, dst+(n-5-i)*dw
+        ;end
+      zero: .bit 0  // this bit is never modified
+      end:
+    }
+    ns div10 {
+        // Complexity: 4@+12
+        //   if (val > 10) {
+        //     val -= 10;
+        //     res  = !res;
+        //   }
+        // for val4:val[3,2,1,0] of length 5, and Assumes val <= 19.
+        // This macro is getting called on consecutive 5-bits, shifting the 5-bit-frame 1 bit right at a time.
+        def cmp_sub_10 val4, val, res @ yes, no, _1xxxx, _1xx0x, _1xx1x, _01x1x, _0110x {
+            ..if1 val4, _1xxxx
+            ..if0 val+3*dw, no
+            ..if1 val+  dw, _01x1x
+            ..if0 val+2*dw, no
+
+          _0110x:
+            ..not val+2*dw
+            val+3*dw+dbit; yes
+
+          _01x1x:
+            val+3*dw+dbit; yes
+
+          _1xxxx:
+            ..not val4
+            ..if val+dw, _1xx0x, _1xx1x
+          _1xx0x:
+            val+2*dw+dbit; yes
+          _1xx1x:
+            val+3*dw+dbit; yes
+
+          yes:
+            ..not val+dw
+            ..not res
+          no:
+        }
+    }
+
+
     //  Time Complexity: n^2(10@+20)
     // Space Complexity: n^2(11@+22)
     //   if b==0: goto end (do nothing)
     //   q = a/b  (signed division)
     //   r = a%b  (signed modulo - sign(r)==sign(b))
     // @NOTE: a,b are SIGNED numbers. If you want a division with unsigned ints, use the div macro.
-    // @NOTE: this division implementation is wasteful in space, yet saves running time, compared to div_loop.
+    // @NOTE: this division implementation is WASTEFUL in space, yet saves running time, compared to div_loop.
     // @NOTE: For a faster division see hex.div.
     // q,a,b,r are bit[:n].
     def idiv n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
@@ -50,7 +97,7 @@ ns bit {
     //   q = a/b  (unsigned division)
     //   r = a%b  (unsigned modulo)
     // @NOTE: a,b are UNSIGNED numbers. If you want a division with signed ints, use the idiv macro.
-    // @NOTE: this division implementation is wasteful in space, yet saves running time, compared to div_loop.
+    // @NOTE: this division implementation is WASTEFUL in space, yet saves running time, compared to div_loop.
     // @NOTE: For a faster division see hex.div.
     // q,a,b,r are bit[:n].
     def div n, a, b, q, r @ Q, R, end {
