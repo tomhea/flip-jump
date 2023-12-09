@@ -1,26 +1,25 @@
-// TODO #223 - update complexities in this file
-
-
 ns hex {
-    //  Time Complexity: 5phi+32
-    // Space Complexity: 4phi+96
-    // .mul.add_carry_dst : res   +=   x * .mul.dst + .mul.add_carry_dst
+    //  Time Complexity: 5@+26
+    // Space Complexity: 4@+52
+    //   .mul.add_carry_dst : res   +=   x * .mul.dst + .mul.add_carry_dst
     //
-    // @requires hex.or.init (or hex.init)
+    // .mul.add_carry_dst, res, x, .mul.dst, they are all hex.
+    // @requires hex.add.init (or hex.init)
     def add_mul res, x @ ret < .mul.dst, .add.dst, .mul.ret, .tables.res {
         .xor .mul.dst+4, x
         .xor .add.dst, res
         wflip .mul.ret+w, ret, .mul.dst
-      ret:  // meanwhile - make phi+28 fj ops there
+        pad 4
+      ret:  // meanwhile - make @+24 fj ops there
         wflip .mul.ret+w, ret
         .xor_zero res, .tables.res
     }
 
-    //  Time Complexity: n(5phi+32)
-    // Space Complexity: n(4phi+96)
-    // res[n] += a[n] * b[1]
+    //  Time Complexity: n(5@+26)
+    // Space Complexity: n(4@+52)
+    //   res[n] += a[n] * b[1]
     //
-    // @requires hex.or.init (or hex.init)
+    // @requires hex.add.init (or hex.init)
     def add_mul n, res, a, b < .mul.dst {
         .mul.clear_carry
         .xor .mul.dst, b
@@ -29,18 +28,20 @@ ns hex {
         .mul.clear_carry
     }
 
-    //  Time Complexity: n(n(3phi+8) + b(5phi+32)), for b the minimum of #on-bits in a,b (b<n/2, e.g. for n=16, b=7).
-    //     (for n==b/2): n^2(5.5phi+24)
-    // Space Complexity: n(#n(0.75phi+12) + 18.5phi+636)
-    // res[:n] = a[:n] * b[:n]
+    //  Time Complexity: n^2(3@+7) + n*b(5@+26)
+    //       for n==b/2: n^2(5.5@+20)
+    // Space Complexity: n(21@+479)
     //
-    // @requires hex.or.init (or hex.init)
+    //   res[:n] = a[:n] * b[:n]
+    //
+    // b is the minimum of #on-bits in a,b (b<n/2 on average, e.g. b=7 for n=16).
+    // @requires hex.add.init (or hex.init)
     def mul n, res, a, b @ a_less_1bits, b_less_1bits, loop, after_add, dst, src, a_1bits, b_1bits, end {
         .zero n, dst
         .zero n, src
         .zero n, res
 
-        // if a has less 1 bits - jump to a_less_1bits. else jump to b_less_1bits
+        // if a has less 1(on) bits - jump to a_less_1bits. else jump to b_less_1bits
         .count_bits n, a_1bits, a
         .count_bits n, b_1bits, b
         .cmp ((#(n*4))+3)/4, a, b, a_less_1bits, a_less_1bits, b_less_1bits
@@ -72,31 +73,35 @@ ns hex {
     }
 
     ns mul {
-        // Complexity: 3phi+3
+        // Complexity: 3@+1
         def clear_carry @ return < .ret, .add_carry_dst {
             ..add.clear_carry
             wflip .ret+w, return
             .add_carry_dst+dbit+9; .add_carry_dst
+            pad 16
           return:
             wflip .ret+w, return
         }
 
-        // Space Complexity: 1616+@
-        // @output-param ret: ... TODO #223 - document the output params
-        // @output-param dst: ...
-        // @output-param add_carry_dst: ...
-        // @requires hex.tables.init_shared (or hex.init)
+        //  Time Complexity: @+24 (when jumping to dst, until finished)
+        // Space Complexity: 1620+@
+        // This is where the add_mul "truth" tables are.
+        // @output-param ret: The return address. Jumps to it after finishing the add_mul flow.
+        // @output-param dst: hex[:2] variable. The code calculates dst[0]*dst[1] + add_carry_dst.
+        //                    dst[1] is zeroed after finishing this multiplication.
+        // @output-param add_carry_dst: hex variable. It's value is added to dst[0]*dst[1], and the carry is written back to it.
+        // @requires hex.tables.init_shared & hex.add.init (or hex.init)
         def init @ add_res, after_add, end,   switch_small_table, add_carry_small_table, set_carry_small_table, \
                 clean_small_table,   switch, set_carry_0, set_carry_1, clean,   add_carry, clean_add, clean_carry \
                 < ..add.dst, ..tables.ret > ret, dst, add_carry_dst {
             // general progression (after jumping to hex.mul.dst with value d):
-            //  dst           -> switch+d           (set lower4  mul result in add_carry_dst+4)                                                                     (5)
-            //  add_carry_dst -> add_carry+?        (set         add result in hex.add.dst  +4. sets dst to set_carry_{0/1}. sets add_carry_dst to clean_add)       (6)
-            //  add_carry_dst -> clean_add+?        (clears the all 8 bits of add_carry_dst.    sets add_carry_dst back to add_carry)                               (9)
-            //  dst           -> set_carry_{0/1}+d  (set higher4 mul result in add_carry_dst+0. sets dst to clean)                                                  (5)
-            //  add_res       -> dst-table+??       (set         add result in hex.tables.res    +0)                                                                     (phi-4)
-            //  dst           -> clean+d            (clears the higher4 bits of dst.            sets dst back to switch)                                            (6)
-            //  hex.mul.ret   -> ...                                                                                                                                (1)
+            //  1. dst           -> switch+d          (set lower4  mul result in add_carry_dst+4)                                                                     (runtime=5)
+            //  2. add_carry_dst -> add_carry+?       (set         add result in hex.add.dst  +4. sets dst to set_carry_{0/1}. sets add_carry_dst to clean_add)       (runtime=6)
+            //  3. add_carry_dst -> clean_add+?       (clears the all 8 bits of add_carry_dst.    sets add_carry_dst back to add_carry)                               (runtime=9)
+            //  4. dst           -> set_carry_{0/1}+d (set higher4 mul result in add_carry_dst+0. sets dst to clean)                                                  (runtime=5)
+            //  5. add_res       -> dst-table+??      (set         add result in hex.tables.res    +0)                                                                (runtime=@-8)
+            //  6. dst           -> clean+d           (clears the higher4 bits of dst.            sets dst back to switch)                                            (runtime=6)
+            //  7. hex.mul.ret   -> ...                                                                                                                               (runtime=1)
 
 
             ;end
@@ -109,7 +114,7 @@ ns hex {
 
           add_res:
             wflip ..tables.ret+w, after_add, ..add.dst
-            pad 16
+            pad 256
           after_add:
             wflip ..tables.ret+w, after_add, .dst
 
@@ -144,7 +149,7 @@ ns hex {
             rep(256, d) stl.fj    .dst+dbit+8,    clean_small_table     +    (d>>4) * dw
 
 
-          // needs to be 1024-padded
+            pad 1024  // needs to be 1024-padded
           add_carry:
             rep(256, d) stl.fj \
                 .dst+dbit + (((d&0xf)+(d>>4) > 0xf) ? 9 : 8), \
