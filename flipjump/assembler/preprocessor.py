@@ -20,7 +20,8 @@ LabelsDict = Dict[str, int]
 wflip_start_label = '_.wflip_area_start_'
 
 
-def macro_resolve_error(curr_tree: CurrTree, msg='', *, orig_exception: Optional[BaseException] = None) -> NoReturn:
+def macro_resolve_error(curr_tree: CurrTree, msg: str = '', *,
+                        orig_exception: Optional[BaseException] = None) -> NoReturn:
     """
     raise a descriptive error (with the macro-expansion trace).
     @param curr_tree: the ops in the macro-calling path to arrive in this macro
@@ -61,7 +62,7 @@ class PreprocessorData:
             self.macros = macros
             self.max_recursion_depth = max_recursion_depth
 
-        def __enter__(self):
+        def __enter__(self) -> None:
             macro_name = self.calling_op.macro_name
             if macro_name not in self.macros:
                 macro_resolve_error(self.curr_tree, f"macro {macro_name} is used but isn't defined. "
@@ -71,7 +72,7 @@ class PreprocessorData:
                 macro_resolve_error(self.curr_tree, "The maximal macro-expansion recursive depth was reached. "
                                                     "change the max_recursion_depth variable.")
 
-        def __exit__(self, exc_type, exc_val, exc_tb):
+        def __exit__(self, exc_type, exc_val, exc_tb):  # type: ignore[no-untyped-def]
             self.curr_tree.pop()
 
     def __init__(self,
@@ -158,7 +159,7 @@ class PreprocessorData:
         """
         self.macro_start_labels.append((self.curr_address, label, code_position))
 
-    def insert_macro_start_labels_if_their_address_not_used(self):
+    def insert_macro_start_labels_if_their_address_not_used(self) -> None:
         for address, label, code_position in self.macro_start_labels[::-1]:
             if address not in self.addresses_with_labels:
                 self.insert_label(label, code_position, address=address)

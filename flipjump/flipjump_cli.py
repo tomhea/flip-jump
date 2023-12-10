@@ -3,7 +3,7 @@ import lzma
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Tuple, List, Callable, Optional, Union
+from typing import Tuple, List, Callable, Optional
 
 from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
@@ -182,7 +182,7 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
     add the arguments that are usable in run time.
     @param parser: the parser
     """
-    def _check_int_positive(value: str):
+    def _check_int_positive(value: str) -> int:
         int_value = int(value)
         if int_value <= 0:
             raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")

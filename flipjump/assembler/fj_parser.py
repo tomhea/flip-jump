@@ -26,7 +26,7 @@ def get_position(lineno: int) -> CodePosition:
     return CodePosition(str(curr_file), curr_file_short_name, lineno)
 
 
-def syntax_error(lineno: int, msg='') -> None:
+def syntax_error(lineno: int, msg: str = '') -> None:
     global error_occurred, all_errors
     error_occurred = True
     curr_position = get_position(lineno)

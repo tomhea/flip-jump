@@ -16,7 +16,8 @@ class BreakpointHandlerUnnecessary(Exception):
     pass
 
 
-def calculate_variable_value(variable_prefix: Tuple[str, int, int], address: int, mem: fjm_reader.Reader):
+def calculate_variable_value(variable_prefix: Tuple[str, int, int], address: int, mem: fjm_reader.Reader)\
+        -> Tuple[int, int, int]:
     """
     Read the variable related memory words (using 'mem'),
      and return the value of the word created by this bit/hex/Byte vector.
@@ -40,7 +41,8 @@ def calculate_variable_value(variable_prefix: Tuple[str, int, int], address: int
     return value, first_address, last_address
 
 
-def handle_read_f_j(variable_prefix: Optional[Tuple[str, int, int]], address: int, label_name: Optional[str], w: int):
+def handle_read_f_j(variable_prefix: Optional[Tuple[str, int, int]], address: int, label_name: Optional[str], w: int)\
+        -> Tuple[Optional[Tuple[str, int, int]], int, str]:
     """
     If variable_type is f/j, modify the address accordingly, them set variable_prefix = None.
     Anyway, also create a label_name string and return the new one.

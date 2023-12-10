@@ -63,7 +63,7 @@ class Reader:
         else:
             self.flags, self.reserved = unpack(_header_extension_format, fjm_file.read(_header_extension_size))
 
-    def _init_segments(self, fjm_file: BinaryIO) -> List[Tuple]:
+    def _init_segments(self, fjm_file: BinaryIO) -> List[Tuple[int, int, int, int]]:
         return [unpack(_segment_format, fjm_file.read(_segment_size)) for _ in range(self.segment_num)]
 
     def _validate_header(self) -> None:
@@ -98,7 +98,7 @@ class Reader:
                 for i in range(0, len(file_data), word_bytes_size)]
         return data
 
-    def _init_memory(self, segments: List[Tuple], data: List[int]) -> None:
+    def _init_memory(self, segments: List[Tuple[int, int, int, int]], data: List[int]) -> None:
         self.memory = {}
         self.zeros_boundaries = []
 

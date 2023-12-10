@@ -12,7 +12,7 @@ class BrokenIO(IODevice):
     def write_bit(self, bit: bool) -> None:
         raise BrokenIOUsed(f"program tried to write a bit ({int(bit)}) to the BrokenIO device")
 
-    def get_output(self, *, allow_incomplete_output=False) -> bytes:
-        raise BrokenIOUsed(f"program tried to get current output from a BrokenIO device")
+    def get_output(self, *, allow_incomplete_output: bool = False) -> bytes:
+        raise BrokenIOUsed("program tried to get current output from a BrokenIO device")
 
     # default __del__

@@ -13,12 +13,12 @@ from flipjump.assembler.inner_classes.ops import FlipJump, WordFlip, LastPhaseOp
 from flipjump.assembler.preprocessor import resolve_macros
 
 
-def assert_address_in_memory(memory_width: int, address: int):
+def assert_address_in_memory(memory_width: int, address: int) -> None:
     if address < 0 or address >= (1 << memory_width):
         raise FlipJumpAssemblerException(f"Not enough space with the {memory_width}-bits memory-width.")
 
 
-def validate_addresses(memory_width, first_address, last_address):
+def validate_addresses(memory_width: int, first_address: int, last_address: int) -> None:
     if first_address % memory_width != 0 or last_address % memory_width != 0:
         raise FlipJumpAssemblerException(f'segment boundaries are unaligned: '
                                          f'[{hex(first_address)}, {hex(last_address - 1)}].')
@@ -101,7 +101,7 @@ class BinaryData:
                            self.first_address, self.next_wflip_address,
                            self.fj_words, self.wflip_words)
 
-    def _insert_wflip_label(self, address: int):
+    def _insert_wflip_label(self, address: int) -> None:
         self.labels[f'{WFLIP_LABEL_PREFIX}{self.wflips_so_far}'] = address
         self.wflips_so_far += 1
 

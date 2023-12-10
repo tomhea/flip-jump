@@ -35,9 +35,9 @@ class Expr:
     def is_int(self) -> bool:
         return isinstance(self.value, int)
 
-    def __int__(self):
+    def __int__(self) -> int:
         if self.is_int():
-            return self.value
+            return self.value  # type: ignore[return-value]
         raise FlipJumpExprException(f"Can't resolve labels:  {', '.join(self.all_unknown_labels())}")
 
     def all_unknown_labels(self) -> Set[str]:
