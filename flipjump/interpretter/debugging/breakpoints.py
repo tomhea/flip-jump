@@ -16,7 +16,7 @@ class BreakpointHandlerUnnecessary(Exception):
     pass
 
 
-def calculate_variable_value(variable_prefix: Optional[Tuple[str, int, int]], address: int, mem: fjm_reader.Reader):
+def calculate_variable_value(variable_prefix: Tuple[str, int, int], address: int, mem: fjm_reader.Reader):
     """
     Read the variable related memory words (using 'mem'),
      and return the value of the word created by this bit/hex/Byte vector.
@@ -96,7 +96,7 @@ def show_memory_address(variable_prefix: Optional[Tuple[str, int, int]], user_qu
     try:
         variable_prefix, address, label_name = handle_read_f_j(variable_prefix, address, label_name, w)
 
-        if not variable_prefix:
+        if variable_prefix is None:
             memory_word_value = mem.get_word(address)
             display_message_box(
                 body_message=f'Reading {user_query}:\n'
@@ -134,7 +134,8 @@ class BreakpointHandler:
     Handle breakpoints (know when breakpoints happen, query user for action).
     """
 
-    def __init__(self, breakpoints: Dict[int, str], address_to_label: Dict[int, str], label_to_address: Dict[str, int]):
+    def __init__(self, breakpoints: Dict[int, Optional[str]], address_to_label: Dict[int, str],
+                 label_to_address: Dict[str, int]):
         self.breakpoints = breakpoints
         self.address_to_label = address_to_label
         self.label_to_address = label_to_address
@@ -142,7 +143,7 @@ class BreakpointHandler:
         if self.address_to_label and 0 not in self.address_to_label:
             self.address_to_label[0] = ':memory-start:'
 
-        self.next_break = None  # will break(point) when the number of executed ops reaches this number.
+        self.next_break: Optional[int] = None  # will break(point) when the number of executed ops reaches this number.
 
     def should_break(self, ip: int, op_counter: int) -> bool:
         return self.next_break == op_counter or ip in self.breakpoints
@@ -155,7 +156,7 @@ class BreakpointHandler:
         If cant be found, just return the address. All labels returned are more pretty-formatted.
         """
         if address in self.breakpoints and self.breakpoints[address] is not None:
-            label_repr = get_nice_label_repr(self.breakpoints[address], pad=4)
+            label_repr = get_nice_label_repr(self.breakpoints[address], pad=4)  # type: ignore[arg-type]
             return f'{hex(address)}:\n{label_repr}'
         elif address in self.address_to_label:
             label_repr = get_nice_label_repr(self.address_to_label[address], pad=4)
@@ -272,7 +273,7 @@ class BreakpointHandler:
 
 
 def handle_breakpoint(breakpoint_handler: BreakpointHandler, ip: int, mem: fjm_reader.Reader,
-                      statistics: RunStatistics) -> BreakpointHandler:
+                      statistics: RunStatistics) -> Optional[BreakpointHandler]:
     """
     show debug message, query user for action, apply its action.
     @param breakpoint_handler: the breakpoint handler
@@ -288,21 +289,20 @@ def handle_breakpoint(breakpoint_handler: BreakpointHandler, ip: int, mem: fjm_r
 
     try:
         breakpoint_handler.apply_debug_action(action, statistics.op_counter)
+        return breakpoint_handler
     except BreakpointHandlerUnnecessary:
-        breakpoint_handler = None
-
-    return breakpoint_handler
+        return None
 
 
 def get_breakpoints(breakpoint_addresses: Optional[Set[int]],
                     breakpoint_labels: Optional[Set[str]],
                     breakpoint_contains_labels: Optional[Set[str]],
                     label_to_address: Dict[str, int]) \
-        -> Dict[int, str]:
+        -> Dict[int, Optional[str]]:
     """
     generate the breakpoints' dictionary
     """
-    breakpoints = {}
+    breakpoints: Dict[int, Optional[str]] = {}
 
     update_breakpoints_from_addresses_set(breakpoint_addresses, breakpoints)
     update_breakpoints_from_breakpoint_contains_set(breakpoint_contains_labels, breakpoints, label_to_address)
@@ -373,8 +373,9 @@ def load_labels_dictionary(debugging_file: Optional[Path], labels_file_needed: b
     return load_debugging_labels(debugging_file)
 
 
-def get_breakpoint_handler(debugging_file: Optional[Path], breakpoint_addresses: Set[int], breakpoint_labels: Set[str],
-                           breakpoint_contains_labels: Set[str]) -> BreakpointHandler:
+def get_breakpoint_handler(debugging_file: Optional[Path], breakpoint_addresses: Optional[Set[int]],
+                           breakpoint_labels: Optional[Set[str]],
+                           breakpoint_contains_labels: Optional[Set[str]]) -> BreakpointHandler:
     """
     generate the breakpoint handler from the debugging file and the breakpoint sets.
     @param debugging_file: the debug file path (created at assemble time)
@@ -386,7 +387,7 @@ def get_breakpoint_handler(debugging_file: Optional[Path], breakpoint_addresses:
     labels_file_needed = any((breakpoint_addresses, breakpoint_contains_labels))
     label_to_address = load_labels_dictionary(debugging_file, labels_file_needed)
 
-    address_to_label = {}
+    address_to_label: Dict[int, str] = {}
     for label, address in label_to_address.items():
         if address in address_to_label:
             if len(label) >= len(address_to_label[address]):

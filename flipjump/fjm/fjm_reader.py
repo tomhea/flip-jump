@@ -4,7 +4,7 @@ from enum import IntEnum
 from pathlib import Path
 from struct import unpack
 from time import sleep
-from typing import BinaryIO, List, Tuple
+from typing import BinaryIO, List, Tuple, Dict
 
 from flipjump.fjm.fjm_consts import (FJ_MAGIC, _reserved_dict_threshold, _header_base_format, _header_extension_format,
                                      _header_base_size, _header_extension_size, _segment_format, _segment_size,
@@ -27,6 +27,14 @@ class Reader:
     """
     Used for reading a .fjm file from memory.
     """
+    garbage_handling: GarbageHandling
+    magic: int
+    memory_width: int
+    version: FJMVersion
+    segment_num: int
+    memory: Dict[int, int]
+    zeros_boundaries: List[Tuple[int, int]]
+
     def __init__(self, input_file: Path, *, garbage_handling: GarbageHandling = GarbageHandling.Stop):
         """
         The .fjm-file reader
@@ -47,9 +55,9 @@ class Reader:
             raise FlipJumpReadFjmException(exception_message) from se
 
     def _init_header_fields(self, fjm_file: BinaryIO) -> None:
-        self.magic, self.memory_width, self.version, self.segment_num = \
+        self.magic, self.memory_width, version, self.segment_num = \
             unpack(_header_base_format, fjm_file.read(_header_base_size))
-        self.version = FJMVersion(self.version)
+        self.version = FJMVersion(version)
         if FJMVersion.BaseVersion == self.version:
             self.flags, self.reserved = 0, 0
         else:

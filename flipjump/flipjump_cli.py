@@ -3,7 +3,7 @@ import lzma
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Tuple, List, Callable, Optional
+from typing import Tuple, List, Callable, Optional, Union
 
 from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
@@ -106,7 +106,7 @@ def get_version(version: Optional[int], is_outfile_specified: bool) -> FJMVersio
     return FJMVersion.NormalVersion
 
 
-def assemble(out_fjm_file: Path, debug_file: Path, args: argparse.Namespace, error_func: ErrorFunc) -> None:
+def assemble(out_fjm_file: Path, debug_file: Optional[Path], args: argparse.Namespace, error_func: ErrorFunc) -> None:
     """
     prepare and verify arguments, and assemble the .fj files.
     @param out_fjm_file: the to-be-compiled .fjm-file path
@@ -153,7 +153,7 @@ def get_debug_file_path(args: argparse.Namespace, error_func: ErrorFunc, temp_di
     @param temp_dir_name: a temporary directory that files can safely be created in
     @return: the debug-file path. If debug flag isn't set, and it's unneeded, return None
     """
-    debug_file = args.debug
+    debug_file: Optional[str] = args.debug  # can be None, '' (should be temp), or path_string
     debug_file_needed = not args.asm and any((args.breakpoint, args.breakpoint_contains))
 
     if debug_file is None and debug_file_needed:
@@ -162,19 +162,19 @@ def get_debug_file_path(args: argparse.Namespace, error_func: ErrorFunc, temp_di
             if args.werror:
                 error_func(parser_warning)
             print(f"{parser_warning} Debugging data will be saved.")
-        debug_file = True
+        debug_file = ''
 
-    if debug_file is True:
+    if debug_file == '':
         if args.asm:
             error_func('assemble-only is used with the debug flag, but no debug file is specified.')
         if args.run:
             error_func('run-only is used with the debug flag, but no debug file is specified.')
         debug_file = os.path.join(temp_dir_name, 'debug.fjd')
 
-    if isinstance(debug_file, str):
-        debug_file = Path(debug_file)
+    if debug_file is None:
+        return None
 
-    return debug_file
+    return Path(debug_file)
 
 
 def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
@@ -249,7 +249,7 @@ def add_universal_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('files', help="the .fj files to assemble (if run-only, the .fjm file to run)", nargs='+')
     parser.add_argument('-s', '--silent', action='store_true',
                         help="don't show assemble & run times, and run statistics")
-    parser.add_argument('-d', '--debug', nargs='?', const=True, metavar='PATH',
+    parser.add_argument('-d', '--debug', nargs='?', const='', metavar='PATH', type=str,
                         help="debug-file path (used for breakpoints). If you both assemble & run, "
                              "you may use this option without specifying a path, and a temporary file will be used")
 
@@ -303,9 +303,9 @@ def parse_arguments(*, cmd_line_args: Optional[List[str]] = None) -> Tuple[argpa
     """
     parser = get_argument_parser()
     add_arguments(parser)
-    cmd_line_args = parser.parse_args(args=cmd_line_args)
+    parsed_args = parser.parse_args(args=cmd_line_args)
 
-    return cmd_line_args, parser.error
+    return parsed_args, parser.error
 
 
 def execute_assemble_run(args: argparse.Namespace, error_func: ErrorFunc) -> None:

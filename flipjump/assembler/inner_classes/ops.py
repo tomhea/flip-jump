@@ -55,9 +55,9 @@ class MacroName:
 
 
 # The macro that holds the ops that are outside any macro.
-initial_macro_name = MacroName('')
-initial_args = []
-initial_labels_prefix = ''
+INITIAL_MACRO_NAME = MacroName('')
+INITIAL_ARGS: List[Expr] = []
+INITIAL_LABELS_PREFIX = ''
 
 
 class FlipJump:

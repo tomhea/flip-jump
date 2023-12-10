@@ -21,7 +21,7 @@ class TerminationStatistics:
         self.op_counter = run_statistics.op_counter
         self.flip_counter = run_statistics.flip_counter
         self.jump_counter = run_statistics.jump_counter
-        self.last_ops_addresses: Deque[int] = run_statistics.last_ops_addresses
+        self.last_ops_addresses: Optional[Deque[int]] = run_statistics.last_ops_addresses
 
         self.termination_cause = termination_cause
 
@@ -56,7 +56,7 @@ class TerminationStatistics:
                                + '\n  '.join([self.beautify_address(address, labels_handler)
                                               for address in self.last_ops_addresses][::-1])
             if output_to_print is not None:
-                output_str = f"Program's output before it was terminated:  {output_to_print}\n\n"
+                output_str = f"Program's output before it was terminated:  {output_to_print!r}\n\n"
 
         print(f'\n'
               f'{output_str}'

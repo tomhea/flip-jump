@@ -81,7 +81,7 @@ class BinaryData:
         self.padding_ops_indices: List[int] = []    # indices in self.fj_words
 
         # return_address -> { (f3, f2, f1, f0) -> start_flip_address }
-        self.wflips_dict: Dict[int, Dict[Tuple[int, ...]]] = defaultdict(lambda: {})
+        self.wflips_dict: Dict[int, Dict[Tuple[int, ...], int]] = defaultdict(lambda: {})
 
     def get_wflip_spot(self) -> WFlipSpot:
         if self.padding_ops_indices:
@@ -180,7 +180,7 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
     @param memory_width: the memory-width
     @param fjm_writer: [out]: the .fjm file writer
     """
-    first_segment: NewSegment = ops.popleft()
+    first_segment = ops.popleft()
     if not isinstance(first_segment, NewSegment):
         raise FlipJumpAssemblerException(f"The first op must be of type NewSegment (and not {first_segment}).")
 
@@ -223,7 +223,7 @@ def assemble(input_files: List[Tuple[str, Path]],
              debugging_file_path: Optional[Path] = None,
              show_statistics: bool = False,
              print_time: bool = True,
-             max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+             max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
              ) -> None:
     """
     runs the assembly pipeline. assembles the input files to a .fjm.

@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_
-from typing import Union, Tuple, Set, Dict
+from typing import Union, Tuple, Set, Dict, Callable
 
 from flipjump.utils.exceptions import FlipJumpExprException
 
 
 # dictionary from a math-op string, to its pythonic function.
 # @note: if changed, update Expr.__str__().
-op_string_to_function = {
+UNARY_TYPE = Callable[[int], int]
+BINARY_TYPE = Callable[[int, int], int]
+TRINARY_TYPE = Callable[[int, int, int], int]
+op_string_to_function: Dict[str, Union[UNARY_TYPE, BINARY_TYPE, TRINARY_TYPE]] = {
     '+': add, '-': sub, '*': mul, '/': floordiv, '%': mod,
     '<<': lshift, '>>': rshift, '^': xor, '|': or_, '&': and_,
     '#': lambda x: x.bit_length(),
@@ -67,7 +70,7 @@ class Expr:
         evaluated_args: Tuple[Expr, ...] = tuple(e.eval_new(params_dict) for e in args)
         if all(isinstance(e.value, int) for e in evaluated_args):
             try:
-                return Expr(op_string_to_function[op](*(arg.value for arg in evaluated_args)))
+                return Expr(op_string_to_function[op](*(arg.value for arg in evaluated_args)))  # type: ignore[arg-type]
             except Exception as e:
                 raise FlipJumpExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
         return Expr((op, evaluated_args))

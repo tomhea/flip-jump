@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import collections
 import sys
-from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional
+from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional, NoReturn
 
 from flipjump.interpretter.debugging.macro_usage_graph import show_macro_usage_pie_graph
 from flipjump.utils.constants import MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING, \
@@ -11,7 +11,7 @@ from flipjump.utils.exceptions import FlipJumpPreprocessorException, FlipJumpExp
 from flipjump.assembler.inner_classes.expr import Expr
 from flipjump.assembler.inner_classes.ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
     CodePosition, Macro, LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
-    initial_macro_name, initial_args, initial_labels_prefix
+    INITIAL_MACRO_NAME, INITIAL_ARGS, INITIAL_LABELS_PREFIX
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
 OpsQueue = Deque[LastPhaseOp]
@@ -20,7 +20,7 @@ LabelsDict = Dict[str, int]
 wflip_start_label = '_.wflip_area_start_'
 
 
-def macro_resolve_error(curr_tree: CurrTree, msg='', *, orig_exception: BaseException = None) -> None:
+def macro_resolve_error(curr_tree: CurrTree, msg='', *, orig_exception: Optional[BaseException] = None) -> NoReturn:
     """
     raise a descriptive error (with the macro-expansion trace).
     @param curr_tree: the ops in the macro-calling path to arrive in this macro
@@ -77,7 +77,7 @@ class PreprocessorData:
     def __init__(self,
                  memory_width: int,
                  macros: Dict[MacroName, Macro],
-                 max_recursion_depth: Optional[int]):
+                 max_recursion_depth: int):
         """
         @param memory_width: the memory-width
         @param macros: parser's result; the dictionary from the macro names to the macro declaration
@@ -89,7 +89,7 @@ class PreprocessorData:
 
         self.curr_address: int = 0
 
-        self.macro_code_size = collections.defaultdict(lambda: 0)
+        self.macro_code_size: Dict[str, int] = collections.defaultdict(lambda: 0)
 
         self.curr_tree: CurrTree = collections.deque()
 
@@ -317,7 +317,7 @@ def resolve_macros(memory_width: int,
                    macros: Dict[MacroName, Macro],
                    *,
                    show_statistics: bool = False,
-                   max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+                   max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
                    ) -> Tuple[OpsQueue, LabelsDict]:
     """
     unwind the macro tree to a serialized-queue of ops,
@@ -330,7 +330,7 @@ def resolve_macros(memory_width: int,
     @return: tuple of the queue of ops, and the labels' dictionary
     """
     preprocessor_data = PreprocessorData(memory_width, macros, max_recursion_depth)
-    resolve_macro_aux(preprocessor_data, initial_macro_name, initial_args, initial_labels_prefix)
+    resolve_macro_aux(preprocessor_data, INITIAL_MACRO_NAME, INITIAL_ARGS, INITIAL_LABELS_PREFIX)
 
     preprocessor_data.finish(show_statistics)
     return preprocessor_data.get_result_ops_and_labels()

@@ -14,7 +14,7 @@ from tests.test_fj import CompileTestArgs, RunTestArgs
 
 
 build_tests_lock = Lock()
-build_tests_queue = Queue()
+build_tests_queue: Queue[Tuple[List, List]] = Queue()
 
 
 COMPILE_ARGUMENTS_FIXTURE = "compile_args"

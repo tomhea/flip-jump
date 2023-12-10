@@ -9,7 +9,7 @@ def _prepare_first_and_second_level_significant_macros(
         main_thresh: float, secondary_thresh: float)\
         -> Tuple[Dict[str, int], Dict[str, Dict[str, int]]]:
     first_level = {}
-    second_level = collections.defaultdict(lambda: dict())
+    second_level: Dict[str, Dict[str, int]] = collections.defaultdict(lambda: dict())
     for k, v in macro_code_size.items():
         if MACRO_SEPARATOR_STRING not in k:
             if v < main_thresh:

@@ -1,7 +1,7 @@
 import lzma
 from pathlib import Path
 from struct import pack
-from typing import List
+from typing import List, Tuple
 
 from flipjump.fjm.fjm_consts import FJ_MAGIC, _header_base_format, _header_extension_format, _segment_format, \
     SUPPORTED_VERSIONS_NAMES, _LZMA_FORMAT, _lzma_compression_filters, FJMVersion
@@ -46,10 +46,10 @@ class Writer:
         self.word_size = memory_width
         self.version = version
         self.flags = flags
-        self.reserved = 0
+        self.reserved: int = 0
 
-        self.segments = []
-        self.data = []  # words array
+        self.segments: List[Tuple[int, int, int, int]] = []
+        self.data: List[int] = []  # words array
 
     def _compress_data(self, data: bytes) -> bytes:
         try:

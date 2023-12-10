@@ -80,7 +80,7 @@ class RunStatistics:
         self.pause_timer = self.PauseTimer()
 
     def get_run_time(self) -> float:
-        return time() - self._start_time - self.pause_timer.paused_time
+        return time() - self._start_time - float(self.pause_timer.paused_time)
 
     def register_op_address(self, ip: int):
         if self.last_ops_addresses is not None:
