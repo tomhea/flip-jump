@@ -137,7 +137,7 @@ def get_fjm_file_path(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_
 
     if out_fjm_file is None:
         if args.asm:
-            error_func(f'assemble-only is used, but no outfile is specified.')
+            error_func('assemble-only is used, but no outfile is specified.')
         out_fjm_file = os.path.join(temp_dir_name, 'out.fjm')
     elif not args.run and not out_fjm_file.endswith('.fjm'):
         error_func(f'output file {out_fjm_file} is not a .fjm file.')
@@ -282,16 +282,16 @@ def get_argument_parser() -> argparse.ArgumentParser:
     """
     return argparse.ArgumentParser(
         description='Assemble and Run FlipJump programs.',
-        usage=f'fj [--asm | --run] [arguments] files [files ...]\n'
-              f'example usage:\n'
-              f'  fj  a.fj b.fj                                      // assemble and run\n'
-              f'  fj  a.fj b.fj  -o out.fjm                          // assemble save and run\n'
-              f'  fj  code.fj  -d  -B swap_start exit_label          // assemble and debug\n\n'
-              f'  fj --asm  -o o.fjm a.fj  -d dir/debug.fjd          // assemble and save debug info\n'
-              f'  fj --asm  -o out.fjm  a.fj b.fj  --no_stl  -w 32   '
-              f'// assemble without the standard library, 32 bit memory\n\n'
-              f'  fj --run  prog.fjm                                 // just run\n'
-              f'  fj --run  o.fjm  -d dir/debug.fjd  -B label        // run and debug\n '
+        usage='fj [--asm | --run] [arguments] files [files ...]\n'
+              'example usage:\n'
+              '  fj  a.fj b.fj                                      // assemble and run\n'
+              '  fj  a.fj b.fj  -o out.fjm                          // assemble save and run\n'
+              '  fj  code.fj  -d  -B swap_start exit_label          // assemble and debug\n\n'
+              '  fj --asm  -o o.fjm a.fj  -d dir/debug.fjd          // assemble and save debug info\n'
+              '  fj --asm  -o out.fjm  a.fj b.fj  --no_stl  -w 32   '
+              '// assemble without the standard library, 32 bit memory\n\n'
+              '  fj --run  prog.fjm                                 // just run\n'
+              '  fj --run  o.fjm  -d dir/debug.fjd  -B label        // run and debug\n '
     )
 
 

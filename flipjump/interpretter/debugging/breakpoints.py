@@ -363,7 +363,7 @@ def load_labels_dictionary(debugging_file: Optional[Path], labels_file_needed: b
     """
     if debugging_file is None:
         if labels_file_needed:
-            print(f"Warning:  debugging labels can't be found! no debugging file specified.")
+            print("Warning:  debugging labels can't be found! no debugging file specified.")
         return {}
 
     if not debugging_file.is_file():

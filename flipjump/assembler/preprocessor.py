@@ -27,7 +27,7 @@ def macro_resolve_error(curr_tree: CurrTree, msg='', *, orig_exception: BaseExce
     @param msg: the message to show on error
     @param orig_exception: if not None, raise from this base error.
     """
-    error_str = f"Macro Resolve Error" + (f':\n  {msg}\n' if msg else '.\n')
+    error_str = "Macro Resolve Error" + (f':\n  {msg}\n' if msg else '.\n')
     if curr_tree:
         error_str += 'Macro call trace:\n'
         for i, op in enumerate(curr_tree):
@@ -68,8 +68,8 @@ class PreprocessorData:
                                                     f"In {self.calling_op.code_position}.")
             self.curr_tree.append(self.calling_op)
             if self.max_recursion_depth is not None and len(self.curr_tree) > self.max_recursion_depth:
-                macro_resolve_error(self.curr_tree, f"The maximal macro-expansion recursive depth was reached. "
-                                                    f"change the max_recursion_depth variable.")
+                macro_resolve_error(self.curr_tree, "The maximal macro-expansion recursive depth was reached. "
+                                                    "change the max_recursion_depth variable.")
 
         def __exit__(self, exc_type, exc_val, exc_tb):
             self.curr_tree.pop()

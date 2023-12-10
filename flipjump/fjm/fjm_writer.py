@@ -35,7 +35,7 @@ class Writer:
         if flags < 0 or flags >= (1 << 64):
             raise FlipJumpWriteFjmException(f"flags must be a 64bit positive number, not {flags}")
         if FJMVersion.BaseVersion == version and flags != 0:
-            raise FlipJumpWriteFjmException(f"version 0 does not support the flags option")
+            raise FlipJumpWriteFjmException("version 0 does not support the flags option")
         if FJMVersion.CompressedVersion == version:
             if lzma_preset not in range(10):
                 raise FlipJumpWriteFjmException("version 3 requires an LZMA preset (0-9, faster->smaller).")
@@ -56,7 +56,7 @@ class Writer:
             return lzma.compress(data, format=_LZMA_FORMAT,
                                  filters=_lzma_compression_filters(2 * self.word_size, self.lzma_preset))
         except lzma.LZMAError as e:
-            raise FlipJumpWriteFjmException(f'Error: Unable to compress the data.') from e
+            raise FlipJumpWriteFjmException('Error: Unable to compress the data.') from e
 
     def write_to_file(self) -> None:
         """

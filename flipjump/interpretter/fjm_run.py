@@ -49,7 +49,7 @@ class TerminationStatistics:
         if TerminationCause.Looping != self.termination_cause:
             if self.last_ops_addresses is not None:
                 labels_handler_missing_string = '' if labels_handler is not None and labels_handler.address_to_label \
-                    else f'**** You may want to use debugging flags for more debugging info ****\n\n'
+                    else '**** You may want to use debugging flags for more debugging info ****\n\n'
                 last_ops_str = f'\n\n{labels_handler_missing_string}' \
                                f'Last {len(self.last_ops_addresses)} ops were at these addresses ' \
                                f'(The most-recent op, the one that failed, is first):\n  ' \

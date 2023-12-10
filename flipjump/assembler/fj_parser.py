@@ -734,7 +734,7 @@ def parse_macro_tree(input_files: List[Tuple[str, Path]], memory_width: int, war
     files_seen: Set[Union[str, Path]] = set()
 
     if not input_files:
-        raise FlipJumpParsingException(f"The FlipJump parser got an empty files list.")
+        raise FlipJumpParsingException("The FlipJump parser got an empty files list.")
 
     lexer = FJLexer()
     parser = FJParser(memory_width, warning_as_errors, input_files[0])

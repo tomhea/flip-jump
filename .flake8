@@ -1,0 +1,16 @@
+[flake8]
+exclude =
+    .git,
+    __pycache__,
+    .tox,
+    tests/inout
+    tests/compiled
+    venv
+
+max-line-length=120
+
+per-file-ignores =
+    # imported but unused
+    flipjump/__init__.py: F401
+    # redefinition of unused / undefined name
+    flipjump/assembler/fj_parser.py: F811, F821

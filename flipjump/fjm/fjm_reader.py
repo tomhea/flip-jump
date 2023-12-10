@@ -72,7 +72,7 @@ class Reader:
         try:
             return lzma.decompress(compressed_data, format=_LZMA_FORMAT, filters=_LZMA_DECOMPRESSION_FILTERS)
         except lzma.LZMAError as e:
-            raise FlipJumpReadFjmException(f'Error: The compressed data is damaged; Unable to decompress.') from e
+            raise FlipJumpReadFjmException('Error: The compressed data is damaged; Unable to decompress.') from e
 
     def _read_decompressed_data(self, fjm_file: BinaryIO) -> List[int]:
         """
@@ -182,7 +182,7 @@ class Reader:
         if bit_offset == 0:
             return self._get_memory_word(word_address)
         if word_address == ((1 << self.memory_width) - 1):
-            raise FlipJumpRuntimeMemoryException(f'Accessed outside of memory (beyond the last bit).')
+            raise FlipJumpRuntimeMemoryException('Accessed outside of memory (beyond the last bit).')
 
         lsw = self._get_memory_word(word_address)
         msw = self._get_memory_word(word_address + 1)

@@ -48,7 +48,7 @@ class MacroName:
         return hash(self.to_tuple())
 
     def __eq__(self, other):
-        return type(other) == MacroName and self.to_tuple() == other.to_tuple()
+        return isinstance(other, MacroName) and self.to_tuple() == other.to_tuple()
 
     def __repr__(self):
         return str(self)
