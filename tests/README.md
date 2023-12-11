@@ -7,6 +7,9 @@ The project has a CI tests suit, that runs on each pull-request (using [tox](htt
    - They run for each os, with the latest supported python.
 3. `pytest --all` in parallel.
    - Runs on the latest supported python, on ubuntu.
+   - The results are printed as a table in the workflow summery ([for example](https://github.com/tomhea/flip-jump/actions/runs/7170673166/attempts/1#summary-19523946921)).
+
+Any PR to the main branch must succeed in all of these tests, in order to be merged.
 
 ## Run the Linters
 - `tox` - will run anything: all the linters + `pytest --regular` for all python versions + `pytest-all`.
@@ -34,7 +37,8 @@ You can run the tests parallel with `-n auto` (using [xdist](https://github.com/
 note that this option is only allowed while using exactly one of `--compile` / `--run`.  
 You can execute the `test_parallel` / `test_parallel.bat` to run parallel compile, and afterwords parallel run, with the given flags.
 
-![Running the test_parallel script with --regular](../resources/test_parallel.gif)
+`test_parallel --all` example:
+![Running the test_parallel script with --all, x4 speed](../resources/test_parallel.gif)
 
 ### Debugging info
 When updating the codebase or adding new tests - Tests may fail, and it's a good thing. That way we can learn more about the code behavior. 
