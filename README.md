@@ -1,11 +1,11 @@
 # FlipJump
 
-[![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/tomhea/flip-jump)](https://github.com/tomhea/flip-jump#project-structure)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/tomhea/flip-jump)](https://github.com/tomhea/flip-jump/releases/latest)
-[![GitHub Discussions](https://img.shields.io/github/discussions/tomhea/flip-jump)](https://github.com/tomhea/flip-jump/discussions)
-[![GitHub](https://img.shields.io/github/license/tomhea/flip-jump)](LICENSE)
-[![Website](https://img.shields.io/website?down_color=red&down_message=down&up_message=up&url=https%3A%2F%2Fesolangs.org%2Fwiki%2FFlipJump)](https://esolangs.org/wiki/FlipJump)
+[![Tests](https://github.com/tomhea/flip-jump/actions/workflows/tests.yml/badge.svg)](https://github.com/tomhea/flip-jump/actions/workflows/tests.yml)
 [![PyPI - Version](https://img.shields.io/pypi/v/flipjump)](https://pypi.org/project/flipjump/)
+[![Website](https://img.shields.io/website?down_color=red&down_message=down&up_message=up&url=https%3A%2F%2Fesolangs.org%2Fwiki%2FFlipJump)](https://esolangs.org/wiki/FlipJump)
+[![GitHub Discussions](https://img.shields.io/github/discussions/tomhea/flip-jump)](https://github.com/tomhea/flip-jump/discussions)
+[![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/tomhea/flip-jump)](https://github.com/tomhea/flip-jump#project-structure)
+[![GitHub](https://img.shields.io/github/license/tomhea/flip-jump)](LICENSE)
 
 FlipJump is the simplest programing language.  
 Yet, it can do **any modern computation**.
@@ -19,7 +19,7 @@ The operation takes 2 memory addresses - it flips (inverts) the bit the first ad
 
 
 This project includes a **Macro Assembler**, an **Interpreter**, and a **Thoroughly Tested Standard Library** for the FlipJump language.  
-Additionally, it provides a **Python Library** that makes it easy to work with those components.
+Additionally, it provides a [**Python Library**](https://pypi.org/project/flipjump/) that makes it easy to work with those components.
 
 This calculator was built with only FlipJump ([source](programs/calc.fj)):
 ![Calculations using only FlipJump](res/calc.gif)
