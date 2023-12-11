@@ -11,7 +11,7 @@ The assembler has 4 steps:
 - writing the binary data into the executable ([fjm_writer.py](fjm/fjm_writer.py)).
 
 The whole process is executed within the [assemble()](assembler/assembler.py) function.
-![Assembly of calc.fj](../res/calc__asm.jpg)
+![Assembly of calc.fj](../resources/calc__asm.jpg)
 
 - The [ops.py](assembler/inner_classes/ops.py) file contains the classes of the different assembly ops.
 - The [expr.py](assembler/inner_classes/expr.py) file contains the expression class (Expr), which is the code's representation of the assembly mathematical expressions. The expressions are based on numbers and labels.
@@ -22,7 +22,7 @@ The Interpreter ([fjm_run.py](interpretter/fjm_run.py)) stores the entire memory
 
 The whole interpretation is done within the [run()](interpretter/fjm_run.py) function (also uses the [fjm_reader.py](fjm/fjm_reader.py) to read the fjm file - i.e. to get the flipjump program memory from the compiled fjm file).  
 More about [how to run](../README.md#how-to-run).
-![Running the compiled calculator](../res/calc__run.jpg)
+![Running the compiled calculator](../resources/calc__run.jpg)
 
 ### The Debugger
 
@@ -36,7 +36,7 @@ More about [how to debug](../README.md#how-to-debug).
 The [macro_usage_graph.py](interpretter/debugging/macro_usage_graph.py) file exports a feature to present the macro-usage (which are the most used macros, and what % do they take from the overall flipjump ops) in a graph.  
 In order to view it, run the assembler with `--stats` (requires plotly to be installed (installed automatically with `pip install flipjump[stats]`)).  
 For example:
-![The macro-usage statistics of calc.fj](../res/calc_stats.png)
+![The macro-usage statistics of calc.fj](../resources/calc_stats.png)
 
 ## The Using-FlipJump Files
 
@@ -73,7 +73,7 @@ the short_file_name is (by default) s1,s2,s3,... for the standard library files 
 and f1,f2,f3,... for the compiled .fj files, in the order they are mentioned to the compiler (or appear in the test-line).
 
 You can place breakpoints to stop on specific labels using the `-d`, followed by a  `-b` and a label name (or `-B` and a part of a label name). For example:
-![Debugging Demo](../res/breakpoint.jpg)
+![Debugging Demo](../resources/breakpoint.jpg)
 
 ## More Files
 

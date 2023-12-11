@@ -21,8 +21,8 @@ The operation takes 2 memory addresses - it flips (inverts) the bit the first ad
 This project includes a **Macro Assembler**, an **Interpreter**, and a **Thoroughly Tested Standard Library** for the FlipJump language.  
 Additionally, it provides a [**Python Library**](https://pypi.org/project/flipjump/) that makes it easy to work with those components.
 
-This calculator was built with only FlipJump ([source](programs/calc.fj)):
-![Calculations using only FlipJump](res/calc.gif)
+This prime numbers program was coded only with FlipJump ([source](programs/prime_sieve.fj)):
+![Printing prime numbers using only FlipJump](resources/prime_sieve.gif)
 
 ## Hello, World!
 
@@ -117,7 +117,7 @@ Use the `fj` utility:
 fj hello_world.fj
 ```
 
-![Hello World in FlipJump](res/hello.gif)
+![Hello World in FlipJump](resources/hello.gif)
 
   - The --no-stl flag tells the assembler not to include the standard library. for example: `fj programs/print_tests/hello_no-stl.fj --no-stl`.
   - the -w [WIDTH] flag allows compiling the .fj files to a WIDTH-bits memory width. WIDTH is 64 by default.
