@@ -2,14 +2,15 @@
 
 
 ns stl {
-    // Complexity: 2.5w+4
+    // NOTE: must be placed just after the startup, so that the read_ptr_byte_table will be in address 256.
+    // Complexity: 2.5w+263
     def ptr_init {
-        bit.pointers.ptr_init
         hex.pointers.ptr_init
+        bit.pointers.ptr_init
     }
 
     // Space Complexity: n+w/4
-    //   Initializes a stack of size n (maximal capacity of n bits / hexs / return-addresses).
+    //   Initializes a stack of size n (maximal capacity of n hexes / return-addresses).
     // n is the size of the stack.
     def stack_init n {
         hex.pointers.stack_init n
@@ -21,10 +22,15 @@ ns stl {
 // ---------- Functions
 
 
+// @requires the stack_init.
 ns stl {
-    //  Time Complexity: 4w@  (actually a bit smaller)
-    // Space Complexity: 8w@  (actually a bit smaller)
+    //  Time Complexity: ~2.5w@  (exact: w(2.25@+10)   + 24@+51)
+    // Space Complexity: <3w@    (exact: w(2.625@+49) + 20@+231)
+    //   Saves the return address to the stack and jumps to the given "address".
+    //   When returned, it removes the return-address from the stack.
+    //
     // note: the pop_ret_address is for the future return (counts as space, but not time, complexity).
+    // @requires the stack_init.
     def call address @ return_label {
         hex.push_ret_address return_label
         ;address
@@ -34,24 +40,30 @@ ns stl {
         hex.pop_ret_address return_label
     }
 
-    //  Time Complexity: 4w@    (actually a bit smaller)
-    // Space Complexity: 8.5w@  (actually a bit smaller)
+    //  Time Complexity: <3w@  (exact: w(2.25@+10)  + 37@+57)
+    // Space Complexity: <3w@  (exact: w(2.625@+49) + 43@+251)
+    //   Saves the return address to the stack and jumps to the given "address".
+    //   When returned, it removes the return-address from the stack, and pops "params_stack_length" cells from the stack.
     //
     // note: the pop_ret_address is for the future return (counts as space, but not time, complexity).
-    def call address, params_hex_length @ return_label {
+    // @requires the stack_init.
+    def call address, params_stack_length @ return_label {
         hex.push_ret_address return_label
         ;address
 
         pad 2
       return_label:
         hex.pop_ret_address return_label
-        hex.sp_sub params_hex_length
+        hex.sp_sub params_stack_length
     }
 
 
-    //  Time Complexity: w(7phi+29)
-    // Space Complexity: 2w@
-    // note: jumps to the last-call's pop_ret_address (which counts as time, but not space, complexity).
+    //  Time Complexity: w(2@+7)      + 9@+23
+    // Space Complexity: w(2.375@+34) + 5@+67
+    //   Returns to the calling function (gets the return-address from the top of the stack).
+    //
+    // note: jumps to the last-call's pop_ret_address (which this macro counts as time, but not space, complexity).
+    // @requires the stack_init.
     def return < hex.pointers.sp {
         hex.ptr_jump hex.pointers.sp
     }
@@ -59,8 +71,9 @@ ns stl {
 
     //  Time Complexity: n(2@)
     // Space Complexity: n(2@+24)
-    // (Unsafe if dst is hex.pointers.sp).
+    // (Unsafe if dst overlaps with hex.pointers.sp).
     //   dst[:w/4] = sp
+    // @requires the stack_init.
     def get_sp dst < hex.pointers.sp {
         hex.mov w/4, dst, hex.pointers.sp
     }
@@ -73,6 +86,7 @@ ns stl {
 
 ns stl {
     // Complexity: @-1
+    //   Jumps to label, and saves the return address in the given "ret_reg" variable.
     def fcall label, ret_reg @ ret {
         wflip ret_reg+w, ret, label
         pad 2
@@ -81,6 +95,7 @@ ns stl {
     }
 
     // Complexity: 1
+    //   Return into the address written in the "ret_reg" variable.
     def fret ret_reg {
         ;ret_reg
     }

@@ -2,7 +2,7 @@
 
 
 ns hex {
-    // Space Complexity: 6500   (6460+@)
+    // Space Complexity: 6500   (6464+@)
     //                   It is 50/100KB (for w=32/64 bits)
     //                   It is 5KB in --version 3 (for both w=32/64 bits)
     // This macro initializes all truth tables for the hex-macros.
@@ -25,7 +25,7 @@ ns hex {
           .init_shared
           ..or.init     //  595
           ..and.init    //  595
-          ..mul.init    // 1616+@
+          ..mul.init    // 1620+@
           ..cmp.init    //  514
           ..add.init    // 1570
           ..sub.init    // 1570

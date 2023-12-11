@@ -32,7 +32,7 @@ ns bit {
         }
 
 
-        // Complexity: 2n@
+        // Complexity: 2w@
         //   Sets both to_flip and to_flip_var to point to the given pointer.
         //   (  to_flip{_var} = ptr  )
         // ptr is a bit[:w] that holds an address.
@@ -98,7 +98,7 @@ ns bit {
     }
 
 
-    // Complexity 3w@  (actually a bit smaller, 2w@+3w + (@-2)^2)
+    // Complexity 3w@  (actually a bit smaller, 3w@+3w)
     //   like:  wflip *ptr, value
     // ptr is a bit[:w] that holds an address, which we assume is w-aligned.
     def ptr_wflip ptr, value {
@@ -120,7 +120,7 @@ ns bit {
         }
     }
 
-    // Complexity 3w@  (actually a bit smaller, 2w@+3w+2 + (@-2)^2)
+    // Complexity 3w@
     //   like:  wflip (*ptr)+w, value
     // ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
     def ptr_wflip_2nd_word ptr, value {
@@ -136,14 +136,14 @@ ns bit {
 
 
 ns bit {
-    // Complexity 7w@ (actually a bit smaller, 6w@+6w+8 + 2(@-2)^2)
+    // Complexity 8w@
     //   like:  bit.xor dst, *ptr
     // dst is a bit. ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
     def xor_from_ptr dst, ptr {
         .exact_xor_from_ptr dst+dbit, ptr
     }
 
-    // Complexity 7w@ (actually a bit smaller, 6w@+6w+8 + 2(@-2)^2)
+    // Complexity 8w@
     //   like:  bit.exact_xor dst, *ptr
     // dst is a bit-address. ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
     def exact_xor_from_ptr dst, ptr @ base_jump_label, cleanup {

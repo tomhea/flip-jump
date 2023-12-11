@@ -1,11 +1,11 @@
 # FlipJump
 
-[![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/tomhea/flip-jump)](https://github.com/tomhea/flip-jump#project-structure)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/tomhea/flip-jump)](https://github.com/tomhea/flip-jump/releases/latest)
-[![GitHub Discussions](https://img.shields.io/github/discussions/tomhea/flip-jump)](https://github.com/tomhea/flip-jump/discussions)
-[![GitHub](https://img.shields.io/github/license/tomhea/flip-jump)](LICENSE)
-[![Website](https://img.shields.io/website?down_color=red&down_message=down&up_message=up&url=https%3A%2F%2Fesolangs.org%2Fwiki%2FFlipJump)](https://esolangs.org/wiki/FlipJump)
+[![Tests](https://github.com/tomhea/flip-jump/actions/workflows/tests.yml/badge.svg)](https://github.com/tomhea/flip-jump/actions/workflows/tests.yml)
 [![PyPI - Version](https://img.shields.io/pypi/v/flipjump)](https://pypi.org/project/flipjump/)
+[![Website](https://img.shields.io/website?down_color=red&down_message=down&up_message=up&url=https%3A%2F%2Fesolangs.org%2Fwiki%2FFlipJump)](https://esolangs.org/wiki/FlipJump)
+[![GitHub Discussions](https://img.shields.io/github/discussions/tomhea/flip-jump)](https://github.com/tomhea/flip-jump/discussions)
+[![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/tomhea/flip-jump)](https://github.com/tomhea/flip-jump#project-structure)
+[![GitHub](https://img.shields.io/github/license/tomhea/flip-jump)](LICENSE)
 
 FlipJump is the simplest programing language.  
 Yet, it can do **any modern computation**.
@@ -19,7 +19,7 @@ The operation takes 2 memory addresses - it flips (inverts) the bit the first ad
 
 
 This project includes a **Macro Assembler**, an **Interpreter**, and a **Thoroughly Tested Standard Library** for the FlipJump language.  
-Additionally, it provides a **Python Library** that makes it easy to work with those components.
+Additionally, it provides a [**Python Library**](https://pypi.org/project/flipjump/) that makes it easy to work with those components.
 
 This prime numbers program was coded only with FlipJump ([source](programs/prime_sieve.fj)):
 ![Printing prime numbers using only FlipJump](resources/prime_sieve.gif)
@@ -124,7 +124,7 @@ fj hello_world.fj
   - You can use the -o flag to save the assembled file for later use too.
   - you can find all the different flags with `fj -h`.
 
-You can also **[Test the project](tests/README.md)** with the project's tests, and with your tests.
+You can also **[Test the project](tests/README.md#run-the-tests)** with the project's tests, and with your own tests.
 
 You can also assemble and run separately:
 
@@ -152,6 +152,7 @@ Programs won't work on their first run. They just can't. That's why we support t
 - `-b NAME [NAME ...]`: Places breakpoints at every specified label NAMEs (note that label names are long: [more information about labels](flipjump/README.md#generated-label-names)). (requires `-b`)
 - `-B NAME [NAME ...]`: Places breakpoints at every label that contains one of the given NAMEs. (requires `-b`)
 
+The debugger can single-step, read-memory, read flipjump variables (bit/hex/byte, and their vectors), continue, or skip forward a fixed number of opcodes.
 
 # Get Started with FlipJump
 - Install flipjump: `pip install flipjump`

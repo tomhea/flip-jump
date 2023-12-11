@@ -1,6 +1,5 @@
-from queue import Queue
-from threading import Lock
 from pathlib import Path
+from typing import Optional
 
 from flipjump import run_test_output
 from flipjump.assembler import assembler
@@ -28,7 +27,7 @@ class CompileTestArgs:
 
     num_of_csv_line_args = 8
 
-    def __init__(self, save_debug_info: bool, test_name: str, fj_paths: str, fjm_out_path: str,
+    def __init__(self, save_debug_file: bool, test_name: str, fj_paths: str, fjm_out_path: str,
                  word_size__str: str, version__str: str, flags__str: str,
                  use_stl__str: str, warning_as_errors__str: str):
         """
@@ -38,8 +37,6 @@ class CompileTestArgs:
         assert warning_as_errors__str in CSV_BOOLEAN
         self.use_stl = use_stl__str == CSV_TRUE
         self.warning_as_errors = warning_as_errors__str == CSV_TRUE
-
-        self.save_debug_info = save_debug_info
 
         self.test_name = test_name
 
@@ -52,6 +49,9 @@ class CompileTestArgs:
         self.fj_files_tuples = included_files_tuples + fj_paths_tuples
 
         self.fjm_out_path = ROOT_PATH / fjm_out_path
+        self.debugging_file_path = None
+        if save_debug_file:
+            self.debugging_file_path = Path(f'{self.fjm_out_path.absolute()}{DEBUGGING_FILE_SUFFIX}')
 
         self.word_size = int(word_size__str)
         self.version = int(version__str)
@@ -81,13 +81,9 @@ def test_compile(compile_args: CompileTestArgs) -> None:
     fjm_writer = Writer(compile_args.fjm_out_path, compile_args.word_size, FJMVersion(compile_args.version),
                         flags=compile_args.flags)
 
-    debugging_file_path = None
-    if compile_args.save_debug_info:
-        debugging_file_path = Path(f'{compile_args.fjm_out_path}{DEBUGGING_FILE_SUFFIX}')
-
     assembler.assemble(compile_args.fj_files_tuples, compile_args.word_size, fjm_writer,
                        warning_as_errors=compile_args.warning_as_errors,
-                       debugging_file_path=debugging_file_path)
+                       debugging_file_path=compile_args.debugging_file_path)
 
 
 class RunTestArgs:
@@ -109,21 +105,16 @@ class RunTestArgs:
         self.read_in_as_binary = read_in_as_binary__str == CSV_TRUE
         self.read_out_as_binary = read_out_as_binary__str == CSV_TRUE
 
-        self.save_debug_file = save_debug_file
         self.debug_info_length = debug_info_length
 
         self.test_name = test_name
         self.fjm_path = ROOT_PATH / fjm_path
+        self.debugging_file_path = None
+        if save_debug_file:
+            self.debugging_file_path = Path(f'{self.fjm_path.absolute()}{DEBUGGING_FILE_SUFFIX}')
 
-        if in_file_path:
-            self.in_file_path = ROOT_PATH / in_file_path
-        else:
-            self.in_file_path = None
-
-        if out_file_path:
-            self.out_file_path = ROOT_PATH / out_file_path
-        else:
-            self.out_file_path = None
+        self.in_file_path: Optional[Path] = ROOT_PATH / in_file_path if in_file_path else None
+        self.out_file_path: Optional[Path] = ROOT_PATH / out_file_path if out_file_path else None
 
     def get_defined_input(self) -> bytes:
         """
@@ -171,7 +162,7 @@ def test_run(run_args: RunTestArgs) -> None:
         run_args.get_defined_input(),
         run_args.get_expected_output(),
         should_raise_assertion_error=True,
-        debugging_file=Path(f'{run_args.fjm_path}{DEBUGGING_FILE_SUFFIX}'),
+        debugging_file=run_args.debugging_file_path,
         print_time=True,
         last_ops_debugging_list_length=run_args.debug_info_length,
     )

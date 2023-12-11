@@ -27,7 +27,7 @@ def assemble(fj_file_paths: List[Path],
              debugging_file_path: Optional[Path] = None,
              show_statistics: bool = False,
              print_time: bool = True,
-             max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+             max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
              ) -> None:
     """
     runs the assembly pipeline. assembles the input files to a .fjm.
@@ -176,6 +176,12 @@ def run_test_output(fjm_path: Path,
     unexpected output.
 
     :note: This is a wrapper function to the fjm_run.run() function.
+
+    :note: If you run this function in an external pytest (not the flipjump one),
+           In order to see the assertions errors values and mismatches,
+           add the next 2 lines to the __init__.py in your test folder:
+               import pytest
+               pytest.register_assert_rewrite("flipjump.flipjump_quickstart")
     """
     io_device = FixedIO(fixed_input)
     termination_statistics = run(fjm_path,
@@ -187,9 +193,9 @@ def run_test_output(fjm_path: Path,
                                  last_ops_debugging_list_length=last_ops_debugging_list_length)
 
     try:
-        assert expected_termination_cause == termination_statistics.termination_cause
-        assert expected_output.decode(IO_BYTES_ENCODING) == \
-               io_device.get_output(allow_incomplete_output=True).decode(IO_BYTES_ENCODING)
+        assert termination_statistics.termination_cause == expected_termination_cause
+        assert io_device.get_output(allow_incomplete_output=True).decode(IO_BYTES_ENCODING) == \
+               expected_output.decode(IO_BYTES_ENCODING)
         return True
     except AssertionError as assertion_error:
         if should_raise_assertion_error:
@@ -205,7 +211,7 @@ def assemble_and_run(fj_file_paths: List[Path],
                      warning_as_errors: bool = True,
                      show_statistics: bool = False,
                      print_time: bool = True,
-                     max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+                     max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
 
                      io_device: Optional[IODevice] = None,
                      show_trace: bool = False,
@@ -244,7 +250,7 @@ def assemble_and_debug(fj_file_paths: List[Path],
                        warning_as_errors: bool = True,
                        show_statistics: bool = False,
                        print_time: bool = True,
-                       max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+                       max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
 
                        breakpoints_addresses: Optional[Set[int]] = None,
                        breakpoints: Optional[Set[str]] = None,
@@ -304,7 +310,7 @@ def assemble_and_run_test_output(fj_file_paths: List[Path],
                                  warning_as_errors: bool = True,
                                  show_statistics: bool = False,
                                  print_time: bool = True,
-                                 max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+                                 max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
 
                                  expected_termination_cause: TerminationCause = TerminationCause.Looping,
                                  should_raise_assertion_error: bool = False,
@@ -321,6 +327,12 @@ def assemble_and_run_test_output(fj_file_paths: List[Path],
     unexpected output.
 
     @return: True if the run finished successfully, and with the expected output.
+
+    :note: If you run this function in an external pytest (not the flipjump one),
+           In order to see the assertions errors values and mismatches,
+           add the next 2 lines to the __init__.py in your test folder:
+               import pytest
+               pytest.register_assert_rewrite("flipjump.flipjump_quickstart")
     """
     with TemporaryDirectory(suffix=get_temp_directory_suffix(fj_file_paths)) as temp_dir_name:
         fjm_file = Path(temp_dir_name) / 'out.fjm'

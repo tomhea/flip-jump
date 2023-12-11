@@ -1,4 +1,4 @@
-// Tests the xor_from_ptr, xor_to_ptr and function calls
+// Tests the xor_hex_from_ptr, xor_hex_to_ptr and function calls
 
 
 stl.startup_and_init_all 10
@@ -7,22 +7,22 @@ stl.startup_and_init_all 10
 // Prints "ABC abcdefg ABCD-", and then 0/1, the xor of x5,y5
 test5:
     stl.output 'A'
-    hex.push res5
+    hex.push_hex res5
     stl.output 'B'
-    hex.push x5
+    hex.push_hex x5
     stl.output 'C'
-    hex.push y5
+    hex.push_hex y5
 
     stl.output ' '
     stl.call func5
     stl.output ' '
 
     stl.output 'A'
-    hex.pop_unchanged_parameter y5
+    hex.pop_hex y5
     stl.output 'B'
-    hex.pop_unchanged_parameter x5
+    hex.pop_hex x5
     stl.output 'C'
-    hex.pop res5
+    hex.pop_hex res5
     stl.output 'D'
 
     bit.bin2ascii ascii, res5
@@ -40,16 +40,16 @@ func5:
 
     hex.ptr_dec __func5_arg_ptr
     stl.output 'b'
-    hex.xor_from_ptr __func5_res, __func5_arg_ptr
+    hex.xor_hex_from_ptr __func5_res, __func5_arg_ptr
     stl.output 'c'
     hex.ptr_dec __func5_arg_ptr
     stl.output 'd'
-    hex.xor_from_ptr __func5_res, __func5_arg_ptr
+    hex.xor_hex_from_ptr __func5_res, __func5_arg_ptr
     stl.output 'e'
 
     hex.ptr_dec __func5_arg_ptr
     stl.output 'f'
-    hex.xor_to_ptr __func5_arg_ptr, __func5_res
+    hex.xor_hex_to_ptr __func5_arg_ptr, __func5_res
     stl.output 'g'
 
     stl.return

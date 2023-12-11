@@ -4,6 +4,7 @@
 
 stl.startup_and_init_all 100
 N = 2
+STACK_N = (N+1)/2
 
 hex.set N, p1_x, 9
 hex.set N, p1_y, 0-54
@@ -32,16 +33,16 @@ p3_y: hex.vec N
 
 def calc_dist_squared x1, y1, x2, y2, prefix_distance_string @ end, res < math.square_distance {
     stl.output 'A'
-    hex.push N, x1
-    hex.push N, y1
-    hex.push N, x2
-    hex.push N, y2
+    pushN x1
+    pushN y1
+    pushN x2
+    pushN y2
     stl.output 'B'
 
-    stl.call math.square_distance, 2*N
+    stl.call math.square_distance, 2*STACK_N
     stl.output 'I'
 
-    hex.pop 2*N, res
+    pop2N res
     stl.output "J\n"
 
     stl.output prefix_distance_string
@@ -59,15 +60,15 @@ ns math {
 sub:
 ns sub {
     hex.sp_dec
-    hex.pop N, .res
-    hex.pop N, .temp
+    popN .res
+    popN .temp
     stl.output "-1"
 
     hex.sub N, .res, .temp
     stl.output '2'
 
-    hex.push N, .res
-    hex.sp_add N+1
+    pushN .res
+    hex.sp_add STACK_N+1
     stl.output "3-"
 
     stl.return
@@ -79,17 +80,16 @@ temp: hex.vec N
 add_2N:
 ns add_2N {
     hex.sp_dec
-    hex.pop 2*N, .res
-    hex.pop 2*N, .temp
+    pop2N .res
+    pop2N .temp
     stl.output "-1"
 
     hex.add 2*N, .res, .temp
     stl.output '2'
 
-    hex.push 2*N, .res
-    hex.sp_add 2*N+1
+    push2N .res
+    hex.sp_add 2*STACK_N+1
     stl.output "3-"
-
     stl.return
 
 res: hex.vec 2*N
@@ -103,17 +103,17 @@ ns mul {
     hex.sp_dec
 
     stl.output '2'
-    hex.pop N, .temp1
+    popN .temp1
     hex.sign_extend 2*N, N, .temp1
     stl.output '3'
-    hex.pop N, .temp2
+    popN .temp2
     hex.sign_extend 2*N, N, .temp2
 
     stl.output '4'
     hex.mul 2*N, .res, .temp1, .temp2
 
     stl.output '5'
-    hex.push 2*N, .res
+    push2N .res
     hex.sp_inc
 
     stl.output "6-"
@@ -128,25 +128,25 @@ res: hex.vec 2*N
 square_sub:
 ns square_sub {
     hex.sp_dec
-    hex.pop N, .b
-    hex.pop N, .a
-    hex.sp_add 2*N+1
+    popN .b
+    popN .a
+    hex.sp_add 2*STACK_N+1
     stl.output 'a'
 
-    hex.push N, .a
-    hex.push N, .b
-    stl.call ..sub, N
-    hex.pop N, .res
+    pushN .a
+    pushN .b
+    stl.call ..sub, STACK_N
+    popN .res
     stl.output 'b'
 
-    hex.push N, .res
-    hex.push N, .res
+    pushN .res
+    pushN .res
     stl.call ..mul
-    hex.pop 2*N, .res
+    pop2N .res
     stl.output 'c'
 
-    hex.sp_sub 2*N+1
-    hex.push 2*N, .res
+    hex.sp_sub 2*STACK_N+1
+    push2N .res
     hex.sp_inc
     stl.output "d\n"
 
@@ -162,37 +162,36 @@ square_distance:
 ns square_distance {
     stl.output 'C'
     hex.sp_dec
-    hex.pop N, .y2
-    hex.pop N, .x2
-    hex.pop N, .y1
-    hex.pop N, .x1
-    hex.sp_add 4*N+1
+    popN .y2
+    popN .x2
+    popN .y1
+    popN .x1
+    hex.sp_add 4*STACK_N+1
     stl.output 'D'
 
     // (x1-x2)**2
-    hex.push N, .x1
-    hex.push N, .x2
+    pushN .x1
+    pushN .x2
     stl.call ..square_sub
-    hex.pop 2*N, .res1
+    pop2N .res1
     stl.output 'E'
-
     // (y1-y2)**2
-    hex.push N, .y1
-    hex.push N, .y2
+    pushN .y1
+    pushN .y2
     stl.call ..square_sub
-    hex.pop 2*N, .res2
+    pop2N .res2
     stl.output 'F'
 
     // (x1-x2)**2 + (y1-y2)**2
-    hex.push 2*N, .res1
-    hex.push 2*N, .res2
-    stl.call ..add_2N, 2*N
-    hex.pop 2*N, .res1
+    push2N .res1
+    push2N .res2
+    stl.call ..add_2N, 2*STACK_N
+    pop2N .res1
     stl.output 'G'
 
-    hex.sp_sub 4*N+1
-    hex.push 2*N, .res1
-    hex.sp_add 2*N+1
+    hex.sp_sub 4*STACK_N+1
+    push2N .res1
+    hex.sp_add 2*STACK_N+1
     stl.output 'H'
 
     stl.return
@@ -205,3 +204,46 @@ res1: hex.vec 2*N
 res2: hex.vec 2*N
 }
 }
+
+
+// Push+Pop fast-functions
+
+def pushN variable < pushN, stack_variable, pushed_ret {
+    hex.mov N, stack_variable, variable
+    stl.fcall pushN, pushed_ret
+}
+
+def push2N variable < push2N, stack_variable, pushed_ret {
+    hex.mov 2*N, stack_variable, variable
+    stl.fcall push2N, pushed_ret
+}
+
+def popN variable < popN, stack_variable, pushed_ret {
+    stl.fcall popN, pushed_ret
+    hex.mov N, variable, stack_variable
+}
+
+def pop2N variable < pop2N, stack_variable, pushed_ret {
+    stl.fcall pop2N, pushed_ret
+    hex.mov 2*N, variable, stack_variable
+}
+
+
+stack_variable: hex.vec 2*N
+pushed_ret: bit.bit
+
+pushN:
+hex.push N, stack_variable
+stl.fret pushed_ret
+
+push2N:
+hex.push 2*N, stack_variable
+stl.fret pushed_ret
+
+popN:
+hex.pop N, stack_variable
+stl.fret pushed_ret
+
+pop2N:
+hex.pop 2*N, stack_variable
+stl.fret pushed_ret

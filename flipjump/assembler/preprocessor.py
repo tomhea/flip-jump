@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 import collections
-from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional
+import sys
+from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional, NoReturn
 
 from flipjump.interpretter.debugging.macro_usage_graph import show_macro_usage_pie_graph
 from flipjump.utils.constants import MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING, \
-    DEFAULT_MAX_MACRO_RECURSION_DEPTH
+    DEFAULT_MAX_MACRO_RECURSION_DEPTH, GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH
 from flipjump.utils.exceptions import FlipJumpPreprocessorException, FlipJumpExprException
 from flipjump.assembler.inner_classes.expr import Expr
 from flipjump.assembler.inner_classes.ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
     CodePosition, Macro, LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
-    initial_macro_name, initial_args, initial_labels_prefix
+    INITIAL_MACRO_NAME, INITIAL_ARGS, INITIAL_LABELS_PREFIX
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
 OpsQueue = Deque[LastPhaseOp]
@@ -19,14 +20,15 @@ LabelsDict = Dict[str, int]
 wflip_start_label = '_.wflip_area_start_'
 
 
-def macro_resolve_error(curr_tree: CurrTree, msg='', *, orig_exception: BaseException = None) -> None:
+def macro_resolve_error(curr_tree: CurrTree, msg: str = '', *,
+                        orig_exception: Optional[BaseException] = None) -> NoReturn:
     """
     raise a descriptive error (with the macro-expansion trace).
     @param curr_tree: the ops in the macro-calling path to arrive in this macro
     @param msg: the message to show on error
     @param orig_exception: if not None, raise from this base error.
     """
-    error_str = f"Macro Resolve Error" + (f':\n  {msg}\n' if msg else '.\n')
+    error_str = "Macro Resolve Error" + (f':\n  {msg}\n' if msg else '.\n')
     if curr_tree:
         error_str += 'Macro call trace:\n'
         for i, op in enumerate(curr_tree):
@@ -60,23 +62,23 @@ class PreprocessorData:
             self.macros = macros
             self.max_recursion_depth = max_recursion_depth
 
-        def __enter__(self):
+        def __enter__(self) -> None:
             macro_name = self.calling_op.macro_name
             if macro_name not in self.macros:
                 macro_resolve_error(self.curr_tree, f"macro {macro_name} is used but isn't defined. "
                                                     f"In {self.calling_op.code_position}.")
             self.curr_tree.append(self.calling_op)
             if self.max_recursion_depth is not None and len(self.curr_tree) > self.max_recursion_depth:
-                macro_resolve_error(self.curr_tree, f"The maximal macro-expansion recursive depth was reached. "
-                                                    f"change the max_recursion_depth variable.")
+                macro_resolve_error(self.curr_tree, "The maximal macro-expansion recursive depth was reached. "
+                                                    "change the max_recursion_depth variable.")
 
-        def __exit__(self, exc_type, exc_val, exc_tb):
+        def __exit__(self, exc_type, exc_val, exc_tb):  # type: ignore[no-untyped-def]
             self.curr_tree.pop()
 
     def __init__(self,
                  memory_width: int,
                  macros: Dict[MacroName, Macro],
-                 max_recursion_depth: Optional[int]):
+                 max_recursion_depth: int):
         """
         @param memory_width: the memory-width
         @param macros: parser's result; the dictionary from the macro names to the macro declaration
@@ -88,7 +90,7 @@ class PreprocessorData:
 
         self.curr_address: int = 0
 
-        self.macro_code_size = collections.defaultdict(lambda: 0)
+        self.macro_code_size: Dict[str, int] = collections.defaultdict(lambda: 0)
 
         self.curr_tree: CurrTree = collections.deque()
 
@@ -105,6 +107,8 @@ class PreprocessorData:
         self.result_ops.append(first_segment)
 
         self.max_recursion_depth = max_recursion_depth
+        if max_recursion_depth + GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH < sys.getrecursionlimit():
+            sys.setrecursionlimit(max_recursion_depth + GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH)
 
     def patch_last_wflip_address(self) -> None:
         self.last_new_segment.wflip_start_address = self.curr_address
@@ -155,7 +159,7 @@ class PreprocessorData:
         """
         self.macro_start_labels.append((self.curr_address, label, code_position))
 
-    def insert_macro_start_labels_if_their_address_not_used(self):
+    def insert_macro_start_labels_if_their_address_not_used(self) -> None:
         for address, label, code_position in self.macro_start_labels[::-1]:
             if address not in self.addresses_with_labels:
                 self.insert_label(label, code_position, address=address)
@@ -314,7 +318,7 @@ def resolve_macros(memory_width: int,
                    macros: Dict[MacroName, Macro],
                    *,
                    show_statistics: bool = False,
-                   max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+                   max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
                    ) -> Tuple[OpsQueue, LabelsDict]:
     """
     unwind the macro tree to a serialized-queue of ops,
@@ -327,7 +331,7 @@ def resolve_macros(memory_width: int,
     @return: tuple of the queue of ops, and the labels' dictionary
     """
     preprocessor_data = PreprocessorData(memory_width, macros, max_recursion_depth)
-    resolve_macro_aux(preprocessor_data, initial_macro_name, initial_args, initial_labels_prefix)
+    resolve_macro_aux(preprocessor_data, INITIAL_MACRO_NAME, INITIAL_ARGS, INITIAL_LABELS_PREFIX)
 
     preprocessor_data.finish(show_statistics)
     return preprocessor_data.get_result_ops_and_labels()

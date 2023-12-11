@@ -13,12 +13,12 @@ from flipjump.assembler.inner_classes.ops import FlipJump, WordFlip, LastPhaseOp
 from flipjump.assembler.preprocessor import resolve_macros
 
 
-def assert_address_in_memory(memory_width: int, address: int):
+def assert_address_in_memory(memory_width: int, address: int) -> None:
     if address < 0 or address >= (1 << memory_width):
         raise FlipJumpAssemblerException(f"Not enough space with the {memory_width}-bits memory-width.")
 
 
-def validate_addresses(memory_width, first_address, last_address):
+def validate_addresses(memory_width: int, first_address: int, last_address: int) -> None:
     if first_address % memory_width != 0 or last_address % memory_width != 0:
         raise FlipJumpAssemblerException(f'segment boundaries are unaligned: '
                                          f'[{hex(first_address)}, {hex(last_address - 1)}].')
@@ -81,7 +81,7 @@ class BinaryData:
         self.padding_ops_indices: List[int] = []    # indices in self.fj_words
 
         # return_address -> { (f3, f2, f1, f0) -> start_flip_address }
-        self.wflips_dict: Dict[int, Dict[Tuple[int, ...]]] = defaultdict(lambda: {})
+        self.wflips_dict: Dict[int, Dict[Tuple[int, ...], int]] = defaultdict(lambda: {})
 
     def get_wflip_spot(self) -> WFlipSpot:
         if self.padding_ops_indices:
@@ -101,7 +101,7 @@ class BinaryData:
                            self.first_address, self.next_wflip_address,
                            self.fj_words, self.wflip_words)
 
-    def _insert_wflip_label(self, address: int):
+    def _insert_wflip_label(self, address: int) -> None:
         self.labels[f'{WFLIP_LABEL_PREFIX}{self.wflips_so_far}'] = address
         self.wflips_so_far += 1
 
@@ -180,7 +180,7 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
     @param memory_width: the memory-width
     @param fjm_writer: [out]: the .fjm file writer
     """
-    first_segment: NewSegment = ops.popleft()
+    first_segment = ops.popleft()
     if not isinstance(first_segment, NewSegment):
         raise FlipJumpAssemblerException(f"The first op must be of type NewSegment (and not {first_segment}).")
 
@@ -223,7 +223,7 @@ def assemble(input_files: List[Tuple[str, Path]],
              debugging_file_path: Optional[Path] = None,
              show_statistics: bool = False,
              print_time: bool = True,
-             max_recursion_depth: Optional[int] = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+             max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
              ) -> None:
     """
     runs the assembly pipeline. assembles the input files to a .fjm.

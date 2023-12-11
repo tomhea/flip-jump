@@ -1,0 +1,113 @@
+ns hex {
+    ns pointers {
+        // NOTE: must be placed just after the startup, so that the read_ptr_byte_table will be in address 256.
+        //
+        // Space Complexity: w/2+261
+        //   Initializes the global opcodes and pointer-copies required for the pointers macros.
+        //   Initializes the read-byte-handling table and the result/return variables to the read-byte table.
+        //
+        // @output-param read_byte:  hex[:2] variable. You want to zero it before jumping into ptr_jump.
+        //                           After jumping into ptr_jump, it's xored with the read byte.
+        // @output_param ret_after_read_byte:  The return address. Jumps to it after finishing reading a byte.
+        //
+        // @output-param to_flip:  address of opcode that holds a flipping address in its first word. jumping into it will flip wanted bit.
+        // @output-param to_flip_var:  the hex-vector (pointer) that also holds the flipping address.
+        // @output-param to_jump:  address of opcode that holds a jumping address in its second word. jumping into it will jump to the wanted address.
+        // @output-param to_jump_var:  the hex-vector (pointer) that also holds the jumping address.
+        def ptr_init @ read_ptr_byte_table > to_flip, to_jump, to_flip_var, to_jump_var, \
+                                             read_byte, ret_after_read_byte {
+            pad 256
+          // Time Complexity: 4/8 (when jumping to hex.pointers.to_jump, until finished)
+          //                      (4 is for reading from an hex memory, 8 is for byte memory).
+          read_ptr_byte_table:
+            rep(256, d) stl.fj \
+                d==0?0: (#d)<=4 \
+                    ? (.read_byte   +dbit+(#d)-1) \
+                    : (.read_byte+dw+dbit+(#d)-5), \
+                (d==((1<<(#d))>>1)) ? .ret_after_read_byte : read_ptr_byte_table+(d^((1<<(#d))>>1))*dw
+
+          read_byte:
+            hex.vec 2
+          ret_after_read_byte:
+            ;0
+
+          to_flip:
+            0;0
+          to_jump:
+            ;0
+
+          to_flip_var:
+            hex.vec w/4, 0
+          to_jump_var:
+            hex.vec w/4, 0
+        }
+
+        //  Time Complexity: w(0.5@+2)
+        // Space Complexity: w(0.5@+14)
+        //   Sets both to_jump and to_jump_var to point to the given pointer.
+        //   (  to_jump{_var} = ptr  )
+        // ptr is a hex[:w/4] that holds an address.
+        def set_jump_pointer ptr < .to_jump, .to_jump_var {
+            ..address_and_variable_xor w/4, .to_jump+w, .to_jump_var, .to_jump_var
+            ..address_and_variable_xor w/4, .to_jump+w, .to_jump_var, ptr
+        }
+
+        //  Time Complexity: w(0.5@+2)
+        // Space Complexity: w(0.5@+14)
+        //   Sets both to_flip and to_flip_var to point to the given pointer.
+        //   (  to_flip{_var} = ptr  )
+        // ptr is a hex[:w/4] that holds an address.
+        def set_flip_pointer ptr < .to_flip, .to_flip_var {
+            ..address_and_variable_xor w/4, .to_flip, .to_flip_var, .to_flip_var
+            ..address_and_variable_xor w/4, .to_flip, .to_flip_var, ptr
+        }
+
+        //  Time Complexity: w(0.75@+5)
+        // Space Complexity: w(0.75@+29)
+        //   Sets both to_flip and to_flip_var, and to_jump and to_jump_var to point to the given pointer.
+        //   (  to_flip{_var} = ptr  )
+        //   (  to_jump{_var} = ptr  )
+        // ptr is a hex[:w/4] that holds an address.
+        def set_flip_and_jump_pointers ptr < .to_flip, .to_flip_var, .to_jump, .to_jump_var {
+            ..address_and_variable_xor w/4, .to_flip, .to_flip_var, .to_flip_var
+            ..address_and_variable_xor w/4, .to_jump+w, .to_jump_var, .to_jump_var
+            ..address_and_variable_double_xor w/4, .to_flip, .to_flip_var, .to_jump+w, .to_jump_var, ptr
+        }
+
+        // Space Complexity: n+w/4 + 330
+        //   Initializes a stack of size n (maximal capacity of n hexes / return-addresses).
+        // n is the size of the stack.
+        // @output-param sp: the stack pointer. sp always points to the last pushed value (at start - to stack[-1])
+        // @output-param stack: the global stack.
+        def stack_init n @ stack_error_handler > sp, stack {
+          sp:
+            hex.vec w/4, .stack
+
+            pad w
+          stack:
+            hex.hex stack_error_handler
+            hex.vec n, 0
+
+          stack_error_handler:
+            stl.output "\n\nERROR: You returned on an empty stack.\n"
+            ;0      // (would fail, so the stack trace would be printed).
+        }
+    }
+}
+
+
+
+// ---------- Jump:
+
+
+ns hex {
+    //  Time Complexity: w(0.5@+2)
+    // Space Complexity: w(0.5@+14)
+        //   like:  ;*ptr
+    //   Jump to the address the pointer points to.
+    // ptr is a hex[:w/4] that holds an address.
+    def ptr_jump ptr < hex.pointers.to_jump {
+        .pointers.set_jump_pointer ptr
+        ;hex.pointers.to_jump
+    }
+}

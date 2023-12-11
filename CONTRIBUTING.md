@@ -11,8 +11,8 @@ Also, please take 2 minutes to show this project to the people you know that wou
 Please, don't use the issue tracker for support-questions. Instead, use the [Questions thread](https://github.com/tomhea/flip-jump/discussions/176), or the [Discussions](https://github.com/tomhea/flip-jump/discussions) in general. 
 
 ## Responsibilities
- * Ensure cross-platform compatibility for every change that's accepted. Windows & Ubuntu Linux.
- * Ensure that code that goes into core passes the --regular [tests](tests/README.md).
+ * Ensure cross-platform compatibility for every change that's accepted. Windows & Ubuntu & Macos.
+ * Ensure that code that goes into core passes the [ci-tests](tests/README.md#the-ci).
  * Create issues (+Discussions) for any major changes and enhancements that you wish to make. Discuss things transparently and get community feedback.
  * Don't change the stl-api, only offer new options. feel free to discuss it first.
  * Keep each PR as small as possible, preferably one new change/feature per PR.
@@ -33,7 +33,7 @@ If a maintainer asks you to "rebase" your PR, they're saying that a lot of code 
 2. Do the changes in your fork (keep them minimal).
 3. If you like the change and think the project could use it:
     * Be sure you have followed the [code style](CONTRIBUTING.md#clean-code) for the project.
-    * be sure your project passes the --regular [tests](tests/README.md).
+    * be sure your project passes the [ci-tests](tests/README.md#the-ci).
     * Send a pull request.
 
 If you have **small or "obvious" fixes**, include SMALLFIX in the PR/issue name.
@@ -42,7 +42,7 @@ such fixes can be:
 * Typo correction, white space and formatting changes
 * Comment clean up
 * Functions/Classes rearrangements in the same file
-It should still pass the --regular tests.
+It should still pass the [ci-tests](tests/README.md#the-ci).
 
 # How to report a bug
 When filing an issue, make sure to answer these five questions:

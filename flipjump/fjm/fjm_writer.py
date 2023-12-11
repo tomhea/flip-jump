@@ -1,7 +1,7 @@
 import lzma
 from pathlib import Path
 from struct import pack
-from typing import List
+from typing import List, Tuple
 
 from flipjump.fjm.fjm_consts import FJ_MAGIC, _header_base_format, _header_extension_format, _segment_format, \
     SUPPORTED_VERSIONS_NAMES, _LZMA_FORMAT, _lzma_compression_filters, FJMVersion
@@ -35,7 +35,7 @@ class Writer:
         if flags < 0 or flags >= (1 << 64):
             raise FlipJumpWriteFjmException(f"flags must be a 64bit positive number, not {flags}")
         if FJMVersion.BaseVersion == version and flags != 0:
-            raise FlipJumpWriteFjmException(f"version 0 does not support the flags option")
+            raise FlipJumpWriteFjmException("version 0 does not support the flags option")
         if FJMVersion.CompressedVersion == version:
             if lzma_preset not in range(10):
                 raise FlipJumpWriteFjmException("version 3 requires an LZMA preset (0-9, faster->smaller).")
@@ -46,17 +46,17 @@ class Writer:
         self.word_size = memory_width
         self.version = version
         self.flags = flags
-        self.reserved = 0
+        self.reserved: int = 0
 
-        self.segments = []
-        self.data = []  # words array
+        self.segments: List[Tuple[int, int, int, int]] = []
+        self.data: List[int] = []  # words array
 
     def _compress_data(self, data: bytes) -> bytes:
         try:
             return lzma.compress(data, format=_LZMA_FORMAT,
                                  filters=_lzma_compression_filters(2 * self.word_size, self.lzma_preset))
         except lzma.LZMAError as e:
-            raise FlipJumpWriteFjmException(f'Error: Unable to compress the data.') from e
+            raise FlipJumpWriteFjmException('Error: Unable to compress the data.') from e
 
     def write_to_file(self) -> None:
         """

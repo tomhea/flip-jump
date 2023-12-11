@@ -1,42 +1,73 @@
 // w = ??       // memory and operands width. Is defined at compile time.
 dw   = 2 * w    // double word size
-dbit = w + #w   // the bit-distance from the variable's start, to the bit value (w + w_width)
+dbit = w + #w   // the bit-distance from the variable's start, to the bit/hex value (w + dw-width)
+
+
+// More info about the FlipJump input / output in: https://esolangs.org/wiki/FlipJump#Input_/_Output
 
 
 ns stl {
     // Complexity: 2
-    // startup Macro - should be the first piece of code in your program.
-    // @output-param IO: the address of the opcode that's reserved for Input/Output. More info in https://esolangs.org/wiki/FlipJump#Input_/_Output
-    def startup @ code_start > IO {
-        ;.code_start    // 0w;1w : first code to run
-      IO:
-        ;0              // 2w;3w : sets the io_handler to address 0 (good for a future wflip)
-
+    // startup Macro - Should be the first piece of code in your program.
+    //                 Inits the IO variable, and jumps to the next instruction.
+    def startup @ code_start {
+        stl.startup code_start
       code_start:
-                        // 4w;5w : start of code
     }
 
-    // Complexity: ~7000  (7094 for w=64, 6962 for w=16)
-    // startup Macro, that initialize anything needed for the standard library - should be the first piece of code in your program.
+    // Complexity: 2
+    // startup Macro - Should be the first piece of code in your program.
+    //                 Inits the IO variable, and jumps to the given code start.
     // @output-param IO: the address of the opcode that's reserved for Input/Output. More info in https://esolangs.org/wiki/FlipJump#Input_/_Output
+    def startup code_start > IO {
+        ;code_start    // 0w;1w : first code to run
+      IO:
+        ;0             // 2w;3w : sets the io_handler to address 0 (good for a future wflip)
+    }
+
+    // Complexity: 2.5w+265
+    // startup Macro - Should be the first piece of code in your program.
+    //                 Inits the IO variable, and the pointers globals.
+    //                 Jumps to the next instruction.
+    def startup_and_init_pointers @ code_start {
+        stl.startup_and_init_pointers code_start
+      code_start:
+    }
+
+    // Complexity: 2.5w+265
+    // startup Macro - Should be the first piece of code in your program.
+    //                 Inits the IO variable, and the pointers globals.
+    //                 Jumps to the given code_start.
+    def startup_and_init_pointers code_start {
+        stl.startup code_start
+        // NOTE: must be placed just after the startup, so that the read_ptr_byte_table will be in address 256.
+        stl.ptr_init
+    }
+
+    // Complexity: ~7000  (7026 for w=64, 6894 for w=16)
+    // startup Macro - Should be the first piece of code in your program.
+    //                 Initialize anything needed for the standard library.
     def startup_and_init_all {
         .startup_and_init_all 100
     }
 
-    // Complexity: 6793 + 2.75w+@ + n
-    // startup Macro, that initialize anything needed for the standard library - should be the first piece of code in your program.
+    // Complexity: 6725 + 2.75w+@ + n
+    // startup Macro - Should be the first piece of code in your program.
+    //                 Initialize anything needed for the standard library.
     // stack_bit_size is the size of the global-stack (will hold this number of bits / return-addresses).
-    // @output-param IO: the address of the opcode that's reserved for Input/Output. More info in https://esolangs.org/wiki/FlipJump#Input_/_Output
-    def startup_and_init_all stack_bit_size @ code_start > IO {
-        ;.code_start    // 0w;1w : first code to run
-      IO:
-        ;0              // 2w;3w : sets the io_handler to address 0 (good for a future wflip)
-
-        hex.init
-        stl.ptr_init
-        stl.stack_init stack_bit_size
-
+    def startup_and_init_all stack_bit_size @ code_start {
+        .startup_and_init_all code_start, stack_bit_size
       code_start:
+    }
+
+    // Complexity: 6725 + 2.75w+@ + n
+    // startup Macro - Should be the first piece of code in your program.
+    //                 Initialize anything needed for the standard library.
+    // stack_bit_size is the size of the global-stack (will hold this number of hexes / return-addresses).
+    def startup_and_init_all code_start, stack_bit_size {
+        stl.startup_and_init_pointers code_start
+        hex.init
+        stl.stack_init stack_bit_size
     }
 
 
@@ -110,32 +141,6 @@ ns stl {
     // finish (loop to self)
     def loop {
         ;$ - dw
-    }
-
-
-
-    // ---------- Input Handler
-
-
-    // sets the input handlers. When inputting 0 - in0_handler will be called, and for 1 - in1_handler will be called.
-    //
-    // @note, most of the programs won't use this macro, as they'll use (at the place they want to input) bit.input_bit,
-    // or most likely, something like the next code:
-    //    wflip stl.IO+w, input_0, stl.IO
-    //    pad 2
-    //   input_0:
-    //    wflip stl.IO+w, input_0, jump_to_input_0_handling
-    //   input_1:
-    //    wflip stl.IO+w, input_0, jump_to_input_0_handling
-    //
-    // @note that if you use this macro, you can't touch stl.IO yourself, or use macros that does it; so know what you are doing.
-    def default_input in0_handler, in1_handler @ io_handler, end < .IO {
-        wflip .IO+w, io_handler, end
-        pad 2
-      io_handler:
-        ;in0_handler
-        ;in1_handler
-      end:
     }
 
 

@@ -1,0 +1,12 @@
+// Compile this file with the bubble_sort programs (and with a _{hex/byte}_memory_access.fj util file).
+// This file implements the swap_adjacent macro
+//  (swaps *array_ptr[:entry_length] with *array_ptr[entry_length:2*entry_length]. entry_length is the hex-length)
+//  Using the hex.write_{hex/byte} function (it's a slower implementation than the one with hex.xor_{hex/byte}_to_ptr).
+
+
+def swap_adjacent entry_length, array_ptr, small_index_num, big_index_num {
+    write_to_ptr entry_length, array_ptr, big_index_num
+    hex.ptr_add array_ptr, entry_length / HEX_VARS_PER_MEMORY_CELL
+    write_to_ptr entry_length, array_ptr, small_index_num
+    hex.ptr_sub array_ptr, entry_length / HEX_VARS_PER_MEMORY_CELL
+}

@@ -39,7 +39,7 @@ class FixedIO(IODevice):
             self.current_output_byte = 0
             self.bits_to_write_in_output_byte = 0
 
-    def get_output(self, *, allow_incomplete_output=False) -> bytes:
+    def get_output(self, *, allow_incomplete_output: bool = False) -> bytes:
         """
         @raise IncompleteOutput when the number of outputted bits can't be divided by 8
         @return: full output until now

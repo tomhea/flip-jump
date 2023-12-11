@@ -9,7 +9,7 @@ def _prepare_first_and_second_level_significant_macros(
         main_thresh: float, secondary_thresh: float)\
         -> Tuple[Dict[str, int], Dict[str, Dict[str, int]]]:
     first_level = {}
-    second_level = collections.defaultdict(lambda: dict())
+    second_level: Dict[str, Dict[str, int]] = collections.defaultdict(lambda: dict())
     for k, v in macro_code_size.items():
         if MACRO_SEPARATOR_STRING not in k:
             if v < main_thresh:
@@ -23,6 +23,8 @@ def _prepare_first_and_second_level_significant_macros(
                 continue
             parent, name = k_split
             if float(v) / macro_code_size[parent] < child_significance_min_thresh:
+                continue
+            if len(name.split(':')) == 4:   # if it's a rep
                 continue
             second_level[parent][name] = v
     return first_level, second_level
@@ -53,7 +55,7 @@ def _choose_most_significant_macros(first_level: Dict[str, int], second_level: D
 
 def _show_macro_usage_graph(chosen_macros: List[Tuple[str, int]]) -> None:
     try:
-        import plotly.graph_objects as go
+        import plotly.graph_objects as go  # type: ignore[import-not-found,unused-ignore]
     except ImportError:
         ordered_chosen_macros = sorted(chosen_macros, key=lambda name_count: name_count[1], reverse=True)
         total_ops = sum([count for name, count in chosen_macros])
@@ -74,7 +76,7 @@ def _show_macro_usage_graph(chosen_macros: List[Tuple[str, int]]) -> None:
 
 
 def show_macro_usage_pie_graph(macro_code_size: Dict[str, int], total_code_size: int, *,
-                               min_main_thresh: float = 0.05, min_secondary_thresh: float = 0.01,
+                               min_main_thresh: float = 0.01, min_secondary_thresh: float = 0.001,
                                child_significance_min_thresh: float = 0.1) -> None:
     """
     choose and present in a pie graph the macros with the most code-usage

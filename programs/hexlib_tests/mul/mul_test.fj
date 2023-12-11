@@ -3,7 +3,7 @@ stl.startup
 HexSize = NumSize / 4
 Flag = (1<<NumSize)-1
 BlockSize = 2*NumSize
-rep(Repetitions, i) test_mul HexSize, \
+rep(Repetitions, i) test_mul_aux HexSize, IsNegative, \
     (Data>>(BlockSize*i))&Flag, \
     (Data>>(BlockSize*i+NumSize))&Flag
 
@@ -50,6 +50,13 @@ gt_print:
 mul:
     hex.mul HexSize, res, ah, bh
     stl.fret ret
+
+
+def test_mul_aux n, is_negative, a, b {
+    test_mul n,\
+            (is_negative & a>=(1<<(NumSize-1))) ? (1<<NumSize)-a : a,\
+            (is_negative & b>=(1<<(NumSize-1))) ? (1<<NumSize)-b : b
+}
 
 
 def test_mul n, a, b @ lt, eq, gt,  end < ah, bh, res, ch, ret, lt_print, gt_print, mul {

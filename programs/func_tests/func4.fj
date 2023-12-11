@@ -7,13 +7,13 @@ stl.startup_and_init_all 10
 // Prints "ABCDEFGH-" and then 0/1, the invert of x4
 test4:
     stl.output 'A'
-    hex.push x4
+    hex.push_hex x4
     stl.output 'B'
 
     stl.call func4
 
     stl.output 'G'
-    hex.pop x4
+    hex.pop_hex x4
     stl.output 'H'
     bit.bin2ascii ascii, x4
     stl.output '-'
