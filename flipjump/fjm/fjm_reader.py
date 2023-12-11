@@ -4,7 +4,7 @@ from enum import IntEnum
 from pathlib import Path
 from struct import unpack
 from time import sleep
-from typing import BinaryIO, List, Tuple
+from typing import BinaryIO, List, Tuple, Dict
 
 from flipjump.fjm.fjm_consts import (FJ_MAGIC, _reserved_dict_threshold, _header_base_format, _header_extension_format,
                                      _header_base_size, _header_extension_size, _segment_format, _segment_size,
@@ -27,6 +27,14 @@ class Reader:
     """
     Used for reading a .fjm file from memory.
     """
+    garbage_handling: GarbageHandling
+    magic: int
+    memory_width: int
+    version: FJMVersion
+    segment_num: int
+    memory: Dict[int, int]
+    zeros_boundaries: List[Tuple[int, int]]
+
     def __init__(self, input_file: Path, *, garbage_handling: GarbageHandling = GarbageHandling.Stop):
         """
         The .fjm-file reader
@@ -47,15 +55,15 @@ class Reader:
             raise FlipJumpReadFjmException(exception_message) from se
 
     def _init_header_fields(self, fjm_file: BinaryIO) -> None:
-        self.magic, self.memory_width, self.version, self.segment_num = \
+        self.magic, self.memory_width, version, self.segment_num = \
             unpack(_header_base_format, fjm_file.read(_header_base_size))
-        self.version = FJMVersion(self.version)
+        self.version = FJMVersion(version)
         if FJMVersion.BaseVersion == self.version:
             self.flags, self.reserved = 0, 0
         else:
             self.flags, self.reserved = unpack(_header_extension_format, fjm_file.read(_header_extension_size))
 
-    def _init_segments(self, fjm_file: BinaryIO) -> List[Tuple]:
+    def _init_segments(self, fjm_file: BinaryIO) -> List[Tuple[int, int, int, int]]:
         return [unpack(_segment_format, fjm_file.read(_segment_size)) for _ in range(self.segment_num)]
 
     def _validate_header(self) -> None:
@@ -72,7 +80,7 @@ class Reader:
         try:
             return lzma.decompress(compressed_data, format=_LZMA_FORMAT, filters=_LZMA_DECOMPRESSION_FILTERS)
         except lzma.LZMAError as e:
-            raise FlipJumpReadFjmException(f'Error: The compressed data is damaged; Unable to decompress.') from e
+            raise FlipJumpReadFjmException('Error: The compressed data is damaged; Unable to decompress.') from e
 
     def _read_decompressed_data(self, fjm_file: BinaryIO) -> List[int]:
         """
@@ -90,7 +98,7 @@ class Reader:
                 for i in range(0, len(file_data), word_bytes_size)]
         return data
 
-    def _init_memory(self, segments: List[Tuple], data: List[int]) -> None:
+    def _init_memory(self, segments: List[Tuple[int, int, int, int]], data: List[int]) -> None:
         self.memory = {}
         self.zeros_boundaries = []
 
@@ -182,7 +190,7 @@ class Reader:
         if bit_offset == 0:
             return self._get_memory_word(word_address)
         if word_address == ((1 << self.memory_width) - 1):
-            raise FlipJumpRuntimeMemoryException(f'Accessed outside of memory (beyond the last bit).')
+            raise FlipJumpRuntimeMemoryException('Accessed outside of memory (beyond the last bit).')
 
         lsw = self._get_memory_word(word_address)
         msw = self._get_memory_word(word_address + 1)

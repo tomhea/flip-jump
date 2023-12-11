@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "flipjump"
-version = "1.2.1"
+version = "1.2.2"
 description = "The single instruction language - Flip a bit, then Jump"
 authors = ["Tom Herman <flipjumpproject@gmail.com>"]
 license = "BSD-2-Clause-Simplified"
@@ -28,7 +28,6 @@ classifiers = [
     "Topic :: Software Development :: Interpreters",
     "Topic :: Software Development :: Libraries",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -42,7 +41,7 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8.1"
 sly = "^0.4"
 easygui = "^0.98.3"
 
@@ -52,11 +51,26 @@ plotly = { version = "^5.16.1", optional = true }
 pytest = { version = "^7.4.0", optional = true }
 pytest-ordering = { version = "^0.6", optional = true }
 pytest-xdist = { version = "^3.3.1", optional = true }
+mypy = { version = "^1.7.1", optional = true }
+flake8 = { version = "^6.1.0", optional = true }
+tox = { version = "^4.11.4", optional = true }
 
 [tool.poetry.extras]
-tests = ["pytest", "pytest-ordering", "pytest-xdist"]
+tests = [
+    "pytest", "pytest-ordering", "pytest-xdist",
+    "mypy", "flake8", "tox"
+]
 stats = ["plotly"]
 #docs = [sphinx, sphinx_rtd_theme]
 
 [tool.poetry.scripts]
 fj = 'flipjump.flipjump_cli:main'
+
+
+[tool.mypy]
+strict = true
+disable_error_code = ["import-untyped"]
+
+[[tool.mypy.overrides]]
+module = "flipjump.assembler.fj_parser"
+disable_error_code = ["name-defined", "no-redef", "index", "no-any-return", "misc"]

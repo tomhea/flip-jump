@@ -40,7 +40,7 @@ class PrintTimer:
             self.start_time = time()
             print(self.init_message, end='', flush=True)
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:  # type: ignore[no-untyped-def]
         if self.print_time:
             print(f'{time() - self.start_time:.3f}s')
 
@@ -50,13 +50,13 @@ class RunStatistics:
     maintains times and counters of the current run.
     """
     class PauseTimer:
-        def __init__(self):
-            self.paused_time = 0
+        def __init__(self) -> None:
+            self.paused_time: float = 0.0
 
-        def __enter__(self):
+        def __enter__(self) -> None:
             self.pause_start_time = time()
 
-        def __exit__(self, exc_type, exc_val, exc_tb):
+        def __exit__(self, exc_type, exc_val, exc_tb):  # type: ignore[no-untyped-def]
             self.paused_time += time() - self.pause_start_time
 
     def __init__(self, memory_width: int, last_ops_debugging_list_length: Optional[int]):
@@ -80,9 +80,9 @@ class RunStatistics:
         self.pause_timer = self.PauseTimer()
 
     def get_run_time(self) -> float:
-        return time() - self._start_time - self.pause_timer.paused_time
+        return time() - self._start_time - float(self.pause_timer.paused_time)
 
-    def register_op_address(self, ip: int):
+    def register_op_address(self, ip: int) -> None:
         if self.last_ops_addresses is not None:
             self.last_ops_addresses.append(ip)
 

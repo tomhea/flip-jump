@@ -21,7 +21,7 @@ class TerminationStatistics:
         self.op_counter = run_statistics.op_counter
         self.flip_counter = run_statistics.flip_counter
         self.jump_counter = run_statistics.jump_counter
-        self.last_ops_addresses: Deque[int] = run_statistics.last_ops_addresses
+        self.last_ops_addresses: Optional[Deque[int]] = run_statistics.last_ops_addresses
 
         self.termination_cause = termination_cause
 
@@ -49,14 +49,14 @@ class TerminationStatistics:
         if TerminationCause.Looping != self.termination_cause:
             if self.last_ops_addresses is not None:
                 labels_handler_missing_string = '' if labels_handler is not None and labels_handler.address_to_label \
-                    else f'**** You may want to use debugging flags for more debugging info ****\n\n'
+                    else '**** You may want to use debugging flags for more debugging info ****\n\n'
                 last_ops_str = f'\n\n{labels_handler_missing_string}' \
                                f'Last {len(self.last_ops_addresses)} ops were at these addresses ' \
                                f'(The most-recent op, the one that failed, is first):\n  ' \
                                + '\n  '.join([self.beautify_address(address, labels_handler)
                                               for address in self.last_ops_addresses][::-1])
             if output_to_print is not None:
-                output_str = f"Program's output before it was terminated:  {output_to_print}\n\n"
+                output_str = f"Program's output before it was terminated:  {output_to_print!r}\n\n"
 
         print(f'\n'
               f'{output_str}'

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from flipjump import run_test_output
 from flipjump.assembler import assembler
@@ -112,15 +113,8 @@ class RunTestArgs:
         if save_debug_file:
             self.debugging_file_path = Path(f'{self.fjm_path.absolute()}{DEBUGGING_FILE_SUFFIX}')
 
-        if in_file_path:
-            self.in_file_path = ROOT_PATH / in_file_path
-        else:
-            self.in_file_path = None
-
-        if out_file_path:
-            self.out_file_path = ROOT_PATH / out_file_path
-        else:
-            self.out_file_path = None
+        self.in_file_path: Optional[Path] = ROOT_PATH / in_file_path if in_file_path else None
+        self.out_file_path: Optional[Path] = ROOT_PATH / out_file_path if out_file_path else None
 
     def get_defined_input(self) -> bytes:
         """

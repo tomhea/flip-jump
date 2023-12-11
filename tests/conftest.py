@@ -5,16 +5,22 @@ from os import environ
 from queue import Queue
 from threading import Lock
 from pathlib import Path
-from typing import List, Iterable, Callable, Tuple, Optional, Any
+from typing import List, Iterable, Callable, Tuple, Optional, Any, Union
 
 import pytest
+from _pytest.config import Config
+from _pytest.mark import ParameterSet
+from _pytest.nodes import Item, Collector
+from _pytest.python import Metafunc
+from _pytest.reports import CollectReport
 
 from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
 from tests.test_fj import CompileTestArgs, RunTestArgs
 
+TestsType = Tuple[List[ParameterSet], List[ParameterSet]]
 
 build_tests_lock = Lock()
-build_tests_queue = Queue()
+build_tests_queue: "Queue[TestsType]" = Queue()
 
 
 COMPILE_ARGUMENTS_FIXTURE = "compile_args"
@@ -80,7 +86,8 @@ def argument_line_iterator(csv_file_path: Path, num_of_args: int) -> Iterable[Li
                 yield list(map(str.strip, line))
 
 
-def get_compile_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str], save_debug_file: bool) -> List:
+def get_compile_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str], save_debug_file: bool) \
+        -> List[ParameterSet]:
     """
     read the compile-tests from the csv
     @param csv_file_path: read tests from this csv
@@ -102,7 +109,7 @@ def get_compile_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str]
 
 
 def get_run_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str],
-                                  save_debug_file: bool, debug_info_length: int) -> List:
+                                  save_debug_file: bool, debug_info_length: int) -> List[ParameterSet]:
     """
     read the run-tests from the csv
     @param csv_file_path: read tests from this csv
@@ -131,7 +138,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     colliding_keywords = set(TEST_TYPES) & SAVED_KEYWORDS
     assert not colliding_keywords
 
-    def _check_int_positive_with_true(value):
+    def _check_int_positive_with_true(value: str) -> Tuple[bool, int]:
         int_value = int(value)
         if int_value <= 0:
             raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
@@ -242,7 +249,8 @@ def is_test_name_ok(name: str, exact: Optional[List[str]], contains: Optional[Li
     return False
 
 
-def filter_by_test_name(tests_args: List, get_option: Callable[[str], Optional[List[str]]]) -> List:
+def filter_by_test_name(tests_args: List[ParameterSet],
+                        get_option: Callable[[str], Optional[List[str]]]) -> List[ParameterSet]:
     """
     filter the test list by the test names (and the namings flags)
     @param tests_args: the tests
@@ -257,16 +265,16 @@ def filter_by_test_name(tests_args: List, get_option: Callable[[str], Optional[L
     if all(filter_list is None for filter_list in (exact, contains, startswith, endswith)):
         return tests_args
 
-    return [args for args in tests_args if
-            is_test_name_ok(args.values[0].test_name, exact, contains, startswith, endswith)]
+    return [args for args in tests_args if is_test_name_ok(
+        args.values[0].test_name, exact, contains, startswith, endswith)]  # type: ignore[union-attr]
 
 
-def pytest_generate_tests(metafunc) -> None:
+def pytest_generate_tests(metafunc: Metafunc) -> None:
     """
     gather the tests from the csvs, and parametrize the compile-tests and run-tests fixtures with it.
     @param metafunc: enables to get-flags, parametrize-fixtures
     """
-    def get_option(opt):
+    def get_option(opt: str) -> Any:
         return metafunc.config.getoption(opt)
 
     compile_tests__heavy_first, run_tests__heavy_first = get_tests_from_csvs__heavy_first__execute_once(get_option)
@@ -278,7 +286,7 @@ def pytest_generate_tests(metafunc) -> None:
         metafunc.parametrize(RUN_ARGUMENTS_FIXTURE, run_tests__heavy_first, ids=repr)
 
 
-def is_not_skipped(test) -> bool:
+def is_not_skipped(test: Union[Item, Collector]) -> bool:
     if hasattr(test, 'callspec') and hasattr(test.callspec, 'params'):
         params = test.callspec.params
         for fixture_name, fixture_type in fixtures_name_to_type.items():
@@ -288,19 +296,19 @@ def is_not_skipped(test) -> bool:
 
 
 @pytest.hookimpl(hookwrapper=True)
-def pytest_collectreport(report):
-    report.result = filter(is_not_skipped, report.result)
+def pytest_collectreport(report: CollectReport) -> Iterable[None]:
+    report.result = list(filter(is_not_skipped, report.result))
     yield
 
 
 # noinspection PyUnusedLocal
 @pytest.hookimpl(hookwrapper=True)
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(config: Config, items: List[Item]) -> Iterable[None]:
     yield
     items[:] = filter(is_not_skipped, items)
 
 
-def get_tests_from_csvs__heavy_first__execute_once(get_option: Callable[[str], Any]) -> Tuple[List, List]:
+def get_tests_from_csvs__heavy_first__execute_once(get_option: Callable[[str], Any]) -> TestsType:
     """
     get the tests from the csv. heavy first.
     if more than 1 worker - only one worker will do the work, and distribute the result to the other workers.
@@ -319,7 +327,7 @@ def get_tests_from_csvs__heavy_first__execute_once(get_option: Callable[[str], A
         return tests
 
 
-def get_tests_from_csvs(get_option: Callable[[str], Any]) -> Tuple[List, List]:
+def get_tests_from_csvs(get_option: Callable[[str], Any]) -> TestsType:
     """
     get the tests from the csv. heavy first.
     @param get_option: function that returns the flags values
@@ -336,7 +344,7 @@ def get_tests_from_csvs(get_option: Callable[[str], Any]) -> Tuple[List, List]:
     if is_parallel_active():
         save_debug_file = False
 
-    compile_tests = []
+    compile_tests: List[ParameterSet] = []
     if check_compile_tests:
         compiles_csvs = {test_type: TESTS_PATH / f"test_compile_{test_type}.csv"
                          for test_type in types_to_run__heavy_first}
@@ -345,7 +353,7 @@ def get_tests_from_csvs(get_option: Callable[[str], Any]) -> Tuple[List, List]:
                                                                    save_debug_file))
         compile_tests = filter_by_test_name(compile_tests, get_option)
 
-    run_tests = []
+    run_tests: List[ParameterSet] = []
     if check_run_tests:
         run_csvs = {test_type: TESTS_PATH / f"test_run_{test_type}.csv"
                     for test_type in types_to_run__heavy_first}

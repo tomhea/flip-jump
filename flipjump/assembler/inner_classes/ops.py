@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import os
 from dataclasses import dataclass
-from typing import Union, Dict, Set, List, Tuple
+from typing import Union, Dict, Set, List, Tuple, Any
 
 from flipjump.utils.exceptions import FlipJumpExprException
 from flipjump.assembler.inner_classes.expr import Expr
@@ -41,23 +41,23 @@ class MacroName:
             return self.name
         return f"{self.name}({self.parameter_num})"
 
-    def to_tuple(self):
+    def to_tuple(self) -> Tuple[str, int]:
         return self.name, self.parameter_num
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.to_tuple())
 
-    def __eq__(self, other):
-        return type(other) == MacroName and self.to_tuple() == other.to_tuple()
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, MacroName) and self.to_tuple() == other.to_tuple()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
 
 # The macro that holds the ops that are outside any macro.
-initial_macro_name = MacroName('')
-initial_args = []
-initial_labels_prefix = ''
+INITIAL_MACRO_NAME = MacroName('')
+INITIAL_ARGS: List[Expr] = []
+INITIAL_LABELS_PREFIX = ''
 
 
 class FlipJump:
@@ -69,7 +69,7 @@ class FlipJump:
         self.jump = jump
         self.code_position = code_position
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Flip: {self.flip}, Jump: {self.jump}, at {self.code_position}"
 
     def eval_new(self, labels_dict: Dict[str, Expr]) -> FlipJump:
@@ -97,7 +97,7 @@ class WordFlip:
         self.return_address = return_address
         self.code_position = code_position
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Flip Word {self.word_address} by {self.flip_value}, and return to {self.return_address}. " \
                f"at {self.code_position}"
 
@@ -128,7 +128,7 @@ class Pad:
         self.ops_alignment = ops_alignment
         self.code_position = code_position
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Pad {self.ops_alignment} ops, at {self.code_position}"
 
     def eval_new(self, labels_dict: Dict[str, Expr]) -> Pad:
@@ -152,7 +152,7 @@ class Segment:
         self.start_address = start_address
         self.code_position = code_position
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Segment {self.start_address}, at {self.code_position}"
 
     def eval_new(self, labels_dict: Dict[str, Expr]) -> Segment:
@@ -176,7 +176,7 @@ class Reserve:
         self.reserved_bit_size = reserved_bit_size
         self.code_position = code_position
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Reserve {self.reserved_bit_size}, at {self.code_position}"
 
     def eval_new(self, labels_dict: Dict[str, Expr]) -> Reserve:
@@ -201,7 +201,7 @@ class MacroCall:
         self.arguments = arguments
         self.code_position = code_position
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"macro call. {self.macro_name.name} {', '.join(map(str, self.arguments))}. at {self.code_position}"
 
     def eval_new(self, labels_dict: Dict[str, Expr]) -> MacroCall:
@@ -228,7 +228,7 @@ class RepCall:
         self.arguments = arguments
         self.code_position = code_position
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"rep call. rep({self.repeat_times}, {self.iterator_name}) {self.macro_name.name} " \
                f"{', '.join(map(str, self.arguments))}. at {self.code_position}"
 
@@ -279,7 +279,7 @@ class Label:
         self.name = name
         self.code_position = code_position
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'Label "{self.name}:", at {self.code_position}'
 
     def eval_name(self, labels_dict: Dict[str, Expr]) -> str:

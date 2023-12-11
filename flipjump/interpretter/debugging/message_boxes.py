@@ -19,7 +19,7 @@ def display_message_box_with_choices_and_get_answer(body_message: str, title_mes
     except ImportError:
         raise FlipJumpMissingImportException(EASYGUI_NOT_INSTALLED_MESSAGE)
 
-    answer = easygui.buttonbox(body_message, title_message, choices)
+    answer: Optional[str] = easygui.buttonbox(body_message, title_message, choices)
     if answer is None:
         return default_cancel_answer
     return answer
@@ -50,4 +50,5 @@ def display_message_box_and_get_text_answer(body_message: str, title_message: st
     except ImportError:
         raise FlipJumpMissingImportException(EASYGUI_NOT_INSTALLED_MESSAGE)
 
-    return easygui.enterbox(msg=body_message, title=title_message)
+    answer: Optional[str] = easygui.enterbox(msg=body_message, title=title_message)
+    return answer

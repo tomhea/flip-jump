@@ -6,7 +6,7 @@ from typing import List, Dict
 """
 struct {
     u16 fj_magic;   // 'F' + 'J'<<8  (0x4a46)
-    u16 word_size;  // number of bits in the memory / a memory-word. also called "w". 
+    u16 word_size;  // number of bits in the memory / a memory-word. also called "w".
     u64 version;
     u64 segment_num;
     { // for versions > 0
