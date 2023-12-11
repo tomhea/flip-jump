@@ -97,9 +97,9 @@ To add a new test, create your .fj programs, and you predefined input and expect
 Then choose the relevant csv file.  
 The rule of thumb (for the sum of compile+run times, in seconds):
 
-| fast         | medium       | slow |
-|--------------|--------------|------|
-| 0 &rarr; 0.5 | 0.5 &rarr; 5 | else |
+| fast         | medium         | slow | hexlib         |
+|--------------|----------------|------|----------------|
+| 0 &rarr; 0.2 | 0.2 &rarr; 0.7 | 0.7+ | tests `ns hex` |
 
 Then add a new line to the relevant compile-csv and run-csv files, according to the next formats.
 
