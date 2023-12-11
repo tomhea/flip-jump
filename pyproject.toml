@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "flipjump"
-version = "1.2.1"
+version = "1.2.2"
 description = "The single instruction language - Flip a bit, then Jump"
 authors = ["Tom Herman <flipjumpproject@gmail.com>"]
 license = "BSD-2-Clause-Simplified"
@@ -28,7 +28,6 @@ classifiers = [
     "Topic :: Software Development :: Interpreters",
     "Topic :: Software Development :: Libraries",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -42,7 +41,7 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8.1"
 sly = "^0.4"
 easygui = "^0.98.3"
 
@@ -60,7 +59,7 @@ tox = { version = "^4.11.4", optional = true }
 [tool.poetry.extras]
 tests = [
     "pytest", "pytest-ordering", "pytest-xdist", "pytest-cov",
-    "mypy", "flake8", "tox",
+    "mypy", "flake8", "tox", "python381",
 ]
 stats = ["plotly"]
 #docs = [sphinx, sphinx_rtd_theme]
