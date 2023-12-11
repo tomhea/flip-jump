@@ -11,7 +11,7 @@ The assembler has 4 steps:
 - writing the binary data into the executable ([fjm_writer.py](fjm/fjm_writer.py)).
 
 The whole process is executed within the [assemble()](assembler/assembler.py) function.
-![Assembly of calc.fj](../resources/calc__asm.jpg)
+![Assembly of calc.fj](../resources/calc__asm.png)
 
 - The [ops.py](assembler/inner_classes/ops.py) file contains the classes of the different assembly ops.
 - The [expr.py](assembler/inner_classes/expr.py) file contains the expression class (Expr), which is the code's representation of the assembly mathematical expressions. The expressions are based on numbers and labels.
@@ -22,7 +22,7 @@ The Interpreter ([fjm_run.py](interpretter/fjm_run.py)) stores the entire memory
 
 The whole interpretation is done within the [run()](interpretter/fjm_run.py) function (also uses the [fjm_reader.py](fjm/fjm_reader.py) to read the fjm file - i.e. to get the flipjump program memory from the compiled fjm file).  
 More about [how to run](../README.md#how-to-run).
-![Running the compiled calculator](../resources/calc__run.jpg)
+![Running the compiled calculator](../resources/calc__run.png)
 
 ### The Debugger
 
