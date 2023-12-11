@@ -69,6 +69,7 @@ fj = 'flipjump.flipjump_cli:main'
 
 
 [tool.mypy]
+files = "flipjump"
 strict = true
 disable_error_code = ["import-untyped"]
 

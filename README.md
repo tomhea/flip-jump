@@ -124,7 +124,7 @@ fj hello_world.fj
   - You can use the -o flag to save the assembled file for later use too.
   - you can find all the different flags with `fj -h`.
 
-You can also **[Test the project](tests/README.md)** with the project's tests, and with your tests.
+You can also **[Test the project](tests/README.md#run-the-tests)** with the project's tests, and with your own tests.
 
 You can also assemble and run separately:
 

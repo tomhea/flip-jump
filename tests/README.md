@@ -1,13 +1,30 @@
 # The Testing Arena
 
-## Run the tests:
+## The CI
+The project has a CI tests suit, that runs on each pull-request (using [tox](https://tox.wiki/)):
+1. `--regular` tests for all supported python versions, for each os of windows, ubuntu, macos.
+2. Linters: [mypy](https://mypy-lang.org/), [flake8](https://flake8.pycqa.org/en/latest/), [bandit](https://bandit.readthedocs.io/en/latest/).
+   - They run for each os, with the latest supported python.
+3. `pytest --all` in parallel.
+   - Runs on the latest supported python, on ubuntu.
 
-run `pytest` to run the fast tests.
+## Run the Linters
+- `tox` - will run anything: all the linters + `pytest --regular` for all python versions + `pytest-all`.
+- `mypy` - search for types related errors.
+- `flake8` - search for style and syntax errors.
+- `bandit --ini tox.ini` - search for common security issues.
+
+# Run the tests:
+
+**Run `test_parallel --all` to run all the tests, in parallel.**
+
+Run `pytest --all` to run all the tests.  
+Run `pytest` to run the fast tests.
 
 Run with `--compile` / `--run` for testing only the compilation / the run.
 
 Add a combination of `--fast`, `--medium`, `--slow`, `--hexlib` to run tests of different types.  
-Use `--regulr` to run all the tests of stable parts.  
+Use `--regular` to run all the fast&medium tests.  
 **====> Use `--all` to run all the tests. <====**  
 The default (no type flags) means `--fast`.
 
