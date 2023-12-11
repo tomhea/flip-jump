@@ -2,8 +2,11 @@ name: Tests
 
 on: pull_request
 
+env:
+  COLUMNS: 120
+
 jobs:
-  test_all_versions:
+  test_py_os_variations:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -20,5 +23,27 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install tox tox-gh-actions
-    - name: Test with tox
-      run: tox
+    - name: Test with tox py${{ matrix.python-version }}-${{ matrix.os }}
+      run: tox -v
+
+  test_full:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[tests]
+      - name: Test pytest
+        run: |
+          pytest --compile -n auto --all  --junitxml=./compile-test-results.xml
+          pytest --run -n auto --all  --junitxml=./run-test-results.xml
+      - name: Show tests results
+        if: always()
+        uses: pmeier/pytest-results-action@main
+        with:
+          path: ./*-test-results.xml
