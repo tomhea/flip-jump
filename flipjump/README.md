@@ -2,6 +2,8 @@
 
 In this documentation file you could find information about every python source file in the flipjump module.
 
+> [Visualization of the flipjump codebase](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=Tomhea%2Fflip-jump)
+
 ## The FlipJump Macro-Assembler
 
 The assembler has 4 steps:
