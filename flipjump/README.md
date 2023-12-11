@@ -72,8 +72,15 @@ for example: f1:32:rep6:hex.print---f2:17:print_bit---print_label
 the short_file_name is (by default) s1,s2,s3,... for the standard library files (in the order of [stl/conf.json - all](stl/conf.json)),
 and f1,f2,f3,... for the compiled .fj files, in the order they are mentioned to the compiler (or appear in the test-line).
 
-You can place breakpoints to stop on specific labels using the `-d`, followed by a  `-b` and a label name (or `-B` and a part of a label name). For example:
-![Debugging Demo](../resources/breakpoint.jpg)
+You can place breakpoints to stop on specific labels using the `-d`, followed by a  `-b` and a label name. You cal also use `-B` instead of `-d` in order to stop on all labels that contain a substring. 
+
+For example stopping on the label "start":
+![Debugging Demo](../resources/breakpoint.png)
+Read memory (You can read the memory as if it was flipjump variables):
+![Debugging Demo](../resources/debug_read_memory.png)
+Notice that `:b8:ascii` is 0x36, which is the ascii of `'6'`, which was the input to the program:
+![Debugging Demo](../resources/debug_read_memory_result.png)
+
 
 ## More Files
 
