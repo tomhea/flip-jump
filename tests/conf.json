@@ -2,8 +2,7 @@
   "default_type": "fast",
   "regular_speed_ordered": [
     "fast",
-    "medium",
-    "slow"
+    "medium"
   ],
   "all_speed_ordered": [
     "fast",
