@@ -11,24 +11,28 @@ from flipjump.interpretter.io_devices.FixedIO import FixedIO
 from flipjump.interpretter.io_devices.IODevice import IODevice
 from flipjump.interpretter.io_devices.StandardIO import StandardIO
 from flipjump.utils.classes import TerminationCause
-from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, IO_BYTES_ENCODING, \
-    DEFAULT_MAX_MACRO_RECURSION_DEPTH
+from flipjump.utils.constants import (
+    LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
+    IO_BYTES_ENCODING,
+    DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+)
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
 from flipjump.interpretter.fjm_run import TerminationStatistics
 
 
-def assemble(fj_file_paths: List[Path],
-             output_fjm_path: Path,
-             *,
-             memory_width: int = 64,
-             use_stl: bool = True,
-             fjm_version: FJMVersion = FJMVersion.CompressedVersion,
-             warning_as_errors: bool = True,
-             debugging_file_path: Optional[Path] = None,
-             show_statistics: bool = False,
-             print_time: bool = True,
-             max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
-             ) -> None:
+def assemble(
+    fj_file_paths: List[Path],
+    output_fjm_path: Path,
+    *,
+    memory_width: int = 64,
+    use_stl: bool = True,
+    fjm_version: FJMVersion = FJMVersion.CompressedVersion,
+    warning_as_errors: bool = True,
+    debugging_file_path: Optional[Path] = None,
+    show_statistics: bool = False,
+    print_time: bool = True,
+    max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+) -> None:
     """
     runs the assembly pipeline. assembles the input files to a .fjm.
     :param fj_file_paths:[in]: the list of flipjump code files to compile.
@@ -59,15 +63,16 @@ def assemble(fj_file_paths: List[Path],
     )
 
 
-def run(fjm_path: Path,
-        *,
-        debugging_file: Optional[Path] = None,
-        io_device: Optional[IODevice] = None,
-        show_trace: bool = False,
-        print_time: bool = True,
-        print_termination: bool = True,
-        last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH) \
-        -> TerminationStatistics:
+def run(
+    fjm_path: Path,
+    *,
+    debugging_file: Optional[Path] = None,
+    io_device: Optional[IODevice] = None,
+    show_trace: bool = False,
+    print_time: bool = True,
+    print_termination: bool = True,
+    last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
+) -> TerminationStatistics:
     """
     runs a .fjm file (with the FlipJump interpreter)
     @param fjm_path:[in]: the path to the .fjm file
@@ -95,18 +100,19 @@ def run(fjm_path: Path,
     )
 
 
-def debug(fjm_path: Path,
-          debugging_file: Optional[Path],
-          *,
-          breakpoints_addresses: Optional[Set[int]] = None,
-          breakpoints: Optional[Set[str]] = None,
-          breakpoints_contains: Optional[Set[str]] = None,
-          io_device: Optional[IODevice] = None,
-          show_trace: bool = False,
-          print_time: bool = True,
-          print_termination: bool = True,
-          last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
-          ) -> TerminationStatistics:
+def debug(
+    fjm_path: Path,
+    debugging_file: Optional[Path],
+    *,
+    breakpoints_addresses: Optional[Set[int]] = None,
+    breakpoints: Optional[Set[str]] = None,
+    breakpoints_contains: Optional[Set[str]] = None,
+    io_device: Optional[IODevice] = None,
+    show_trace: bool = False,
+    print_time: bool = True,
+    print_termination: bool = True,
+    last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
+) -> TerminationStatistics:
     """
     debugs a .fjm file (with the FlipJump interpreter+debugger)
     @param fjm_path:[in]: the path to the .fjm file
@@ -128,8 +134,9 @@ def debug(fjm_path: Path,
     if io_device is None:
         io_device = StandardIO(True)
 
-    breakpoint_handler = get_breakpoint_handler(debugging_file, breakpoints_addresses,
-                                                breakpoints, breakpoints_contains)
+    breakpoint_handler = get_breakpoint_handler(
+        debugging_file, breakpoints_addresses, breakpoints, breakpoints_contains
+    )
     termination_statistics = fjm_run.run(
         fjm_path,
         io_device=io_device,
@@ -139,23 +146,26 @@ def debug(fjm_path: Path,
         last_ops_debugging_list_length=last_ops_debugging_list_length,
     )
     if print_termination:
-        termination_statistics.print(labels_handler=breakpoint_handler,
-                                     output_to_print=io_device.get_output(allow_incomplete_output=True))
+        termination_statistics.print(
+            labels_handler=breakpoint_handler, output_to_print=io_device.get_output(allow_incomplete_output=True)
+        )
 
     return termination_statistics
 
 
-def run_test_output(fjm_path: Path,
-                    fixed_input: bytes,
-                    expected_output: bytes,
-                    *,
-                    expected_termination_cause: TerminationCause = TerminationCause.Looping,
-                    should_raise_assertion_error: bool = False,
-                    debugging_file: Optional[Path] = None,
-                    show_trace: bool = False,
-                    print_time: bool = True,
-                    print_termination: bool = True,
-                    last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH) -> bool:
+def run_test_output(
+    fjm_path: Path,
+    fixed_input: bytes,
+    expected_output: bytes,
+    *,
+    expected_termination_cause: TerminationCause = TerminationCause.Looping,
+    should_raise_assertion_error: bool = False,
+    debugging_file: Optional[Path] = None,
+    show_trace: bool = False,
+    print_time: bool = True,
+    print_termination: bool = True,
+    last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
+) -> bool:
     """
     runs a .fjm file (with the FlipJump interpreter) with the given input, and checks that it finished successfuly and
      generates the expected output.
@@ -184,18 +194,21 @@ def run_test_output(fjm_path: Path,
                pytest.register_assert_rewrite("flipjump.flipjump_quickstart")
     """
     io_device = FixedIO(fixed_input)
-    termination_statistics = run(fjm_path,
-                                 debugging_file=debugging_file,
-                                 io_device=io_device,
-                                 show_trace=show_trace,
-                                 print_time=print_time,
-                                 print_termination=print_termination,
-                                 last_ops_debugging_list_length=last_ops_debugging_list_length)
+    termination_statistics = run(
+        fjm_path,
+        debugging_file=debugging_file,
+        io_device=io_device,
+        show_trace=show_trace,
+        print_time=print_time,
+        print_termination=print_termination,
+        last_ops_debugging_list_length=last_ops_debugging_list_length,
+    )
 
     try:
         assert termination_statistics.termination_cause == expected_termination_cause
-        assert io_device.get_output(allow_incomplete_output=True).decode(IO_BYTES_ENCODING) == \
-               expected_output.decode(IO_BYTES_ENCODING)
+        assert io_device.get_output(allow_incomplete_output=True).decode(IO_BYTES_ENCODING) == expected_output.decode(
+            IO_BYTES_ENCODING
+        )
         return True
     except AssertionError as assertion_error:
         if should_raise_assertion_error:
@@ -203,21 +216,21 @@ def run_test_output(fjm_path: Path,
         return False
 
 
-def assemble_and_run(fj_file_paths: List[Path],
-                     *,
-                     memory_width: int = 64,
-                     use_stl: bool = True,
-                     fjm_version: FJMVersion = FJMVersion.CompressedVersion,
-                     warning_as_errors: bool = True,
-                     show_statistics: bool = False,
-                     print_time: bool = True,
-                     max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
-
-                     io_device: Optional[IODevice] = None,
-                     show_trace: bool = False,
-                     print_termination: bool = True,
-                     last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
-                     ) -> TerminationStatistics:
+def assemble_and_run(
+    fj_file_paths: List[Path],
+    *,
+    memory_width: int = 64,
+    use_stl: bool = True,
+    fjm_version: FJMVersion = FJMVersion.CompressedVersion,
+    warning_as_errors: bool = True,
+    show_statistics: bool = False,
+    print_time: bool = True,
+    max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+    io_device: Optional[IODevice] = None,
+    show_trace: bool = False,
+    print_termination: bool = True,
+    last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
+) -> TerminationStatistics:
     """
     assembles the .fj files into a temporary .fjm file, then runs it.
     @note: This function combines the functionality of `assemble()` and `run()`.
@@ -234,7 +247,6 @@ def assemble_and_run(fj_file_paths: List[Path],
         show_statistics=show_statistics,
         print_time=print_time,
         max_recursion_depth=max_recursion_depth,
-
         io_device=io_device,
         show_trace=show_trace,
         print_termination=print_termination,
@@ -242,24 +254,24 @@ def assemble_and_run(fj_file_paths: List[Path],
     )
 
 
-def assemble_and_debug(fj_file_paths: List[Path],
-                       *,
-                       memory_width: int = 64,
-                       use_stl: bool = True,
-                       fjm_version: FJMVersion = FJMVersion.CompressedVersion,
-                       warning_as_errors: bool = True,
-                       show_statistics: bool = False,
-                       print_time: bool = True,
-                       max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
-
-                       breakpoints_addresses: Optional[Set[int]] = None,
-                       breakpoints: Optional[Set[str]] = None,
-                       breakpoints_contains: Optional[Set[str]] = None,
-                       io_device: Optional[IODevice] = None,
-                       show_trace: bool = False,
-                       print_termination: bool = True,
-                       last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
-                       ) -> TerminationStatistics:
+def assemble_and_debug(
+    fj_file_paths: List[Path],
+    *,
+    memory_width: int = 64,
+    use_stl: bool = True,
+    fjm_version: FJMVersion = FJMVersion.CompressedVersion,
+    warning_as_errors: bool = True,
+    show_statistics: bool = False,
+    print_time: bool = True,
+    max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+    breakpoints_addresses: Optional[Set[int]] = None,
+    breakpoints: Optional[Set[str]] = None,
+    breakpoints_contains: Optional[Set[str]] = None,
+    io_device: Optional[IODevice] = None,
+    show_trace: bool = False,
+    print_termination: bool = True,
+    last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
+) -> TerminationStatistics:
     """
     assembles the .fj files into a temporary .fjm file, then runs and debugs it.
     @note: This function combines the functionality of `assemble()` and `debug()`.
@@ -300,24 +312,24 @@ def assemble_and_debug(fj_file_paths: List[Path],
         return termination_statistics
 
 
-def assemble_and_run_test_output(fj_file_paths: List[Path],
-                                 fixed_input: bytes,
-                                 expected_output: bytes,
-                                 *,
-                                 memory_width: int = 64,
-                                 use_stl: bool = True,
-                                 fjm_version: FJMVersion = FJMVersion.CompressedVersion,
-                                 warning_as_errors: bool = True,
-                                 show_statistics: bool = False,
-                                 print_time: bool = True,
-                                 max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
-
-                                 expected_termination_cause: TerminationCause = TerminationCause.Looping,
-                                 should_raise_assertion_error: bool = False,
-                                 show_trace: bool = False,
-                                 print_termination: bool = True,
-                                 last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
-                                 ) -> bool:
+def assemble_and_run_test_output(
+    fj_file_paths: List[Path],
+    fixed_input: bytes,
+    expected_output: bytes,
+    *,
+    memory_width: int = 64,
+    use_stl: bool = True,
+    fjm_version: FJMVersion = FJMVersion.CompressedVersion,
+    warning_as_errors: bool = True,
+    show_statistics: bool = False,
+    print_time: bool = True,
+    max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+    expected_termination_cause: TerminationCause = TerminationCause.Looping,
+    should_raise_assertion_error: bool = False,
+    show_trace: bool = False,
+    print_termination: bool = True,
+    last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
+) -> bool:
     """
     assembles the .fj files into a temporary .fjm file, then runs it with the given input, and checks that
     it finishes successfully and generates the expected output.

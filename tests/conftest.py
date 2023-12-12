@@ -33,6 +33,7 @@ fixtures_name_to_type = {
 
 
 TESTS_PATH = Path(__file__).parent
+TESTS_TABLES_PATH = TESTS_PATH / 'tests_tables'
 with open(TESTS_PATH / 'conf.json', 'r') as tests_json:
     TESTS_OPTIONS = json.load(tests_json)
 
@@ -57,9 +58,15 @@ NAME_EXACT_FLAG = 'name'
 NAME_CONTAINS_FLAG = 'contains'
 NAME_STARTSWITH_FLAG = 'startswith'
 NAME_ENDSWITH_FLAG = 'endswith'
-SAVED_KEYWORDS = {ALL_FLAG, COMPILE_FLAG, RUN_FLAG,
-                  NAME_EXACT_FLAG, NAME_CONTAINS_FLAG,
-                  NAME_STARTSWITH_FLAG, NAME_ENDSWITH_FLAG}
+SAVED_KEYWORDS = {
+    ALL_FLAG,
+    COMPILE_FLAG,
+    RUN_FLAG,
+    NAME_EXACT_FLAG,
+    NAME_CONTAINS_FLAG,
+    NAME_STARTSWITH_FLAG,
+    NAME_ENDSWITH_FLAG,
+}
 
 
 def is_parallel_active() -> bool:
@@ -81,13 +88,16 @@ def argument_line_iterator(csv_file_path: Path, num_of_args: int) -> Iterable[Li
     with open(csv_file_path, 'r') as csv_file:
         for line_index, line in enumerate(csv.reader(csv_file)):
             if line:
-                assert len(line) == num_of_args, f'expects {num_of_args} args, got {len(line)} ' \
-                                                 f'(file {Path(csv_file_path).absolute()}, line {line_index + 1})'
+                assert len(line) == num_of_args, (
+                    f'expects {num_of_args} args, got {len(line)} '
+                    f'(file {Path(csv_file_path).absolute()}, line {line_index + 1})'
+                )
                 yield list(map(str.strip, line))
 
 
-def get_compile_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str], save_debug_file: bool) \
-        -> List[ParameterSet]:
+def get_compile_tests_params_from_csv(
+    csv_file_path: Path, xfail_list: List[str], save_debug_file: bool
+) -> List[ParameterSet]:
     """
     read the compile-tests from the csv
     @param csv_file_path: read tests from this csv
@@ -108,8 +118,9 @@ def get_compile_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str]
     return params
 
 
-def get_run_tests_params_from_csv(csv_file_path: Path, xfail_list: List[str],
-                                  save_debug_file: bool, debug_info_length: int) -> List[ParameterSet]:
+def get_run_tests_params_from_csv(
+    csv_file_path: Path, xfail_list: List[str], save_debug_file: bool, debug_info_length: int
+) -> List[ParameterSet]:
     """
     read the run-tests from the csv
     @param csv_file_path: read tests from this csv
@@ -145,32 +156,36 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         return True, int_value
 
     # This is a tuple: (should_compile_tests_save_debugging_info, run_tests_debugging_ops_list_length)
-    parser.addoption(f"--{DEBUG_INFO_FLAG}", metavar='LENGTH', type=_check_int_positive_with_true, nargs='?',
-                     const=(True, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH),
-                     default=(False, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH),
-                     help=f"show the last LENGTH executed opcodes on tests that failed during their run "
-                          f"({LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH} by default). "
-                          f"(if this option is unspecified"
-                          f" - the tests will be ~20% faster, and will takes ~30% of their size). "
-                          f"This option is irrelevant (doesn't show last executed opcodes) on parallel tests.")
+    parser.addoption(
+        f"--{DEBUG_INFO_FLAG}",
+        metavar='LENGTH',
+        type=_check_int_positive_with_true,
+        nargs='?',
+        const=(True, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH),
+        default=(False, LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH),
+        help=f"show the last LENGTH executed opcodes on tests that failed during their run "
+        f"({LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH} by default). "
+        f"(if this option is unspecified"
+        f" - the tests will be ~20% faster, and will takes ~30% of their size). "
+        f"This option is irrelevant (doesn't show last executed opcodes) on parallel tests.",
+    )
 
     for test_type in TEST_TYPES:
         parser.addoption(f"--{test_type}", action="store_true", help=f"run {test_type} tests")
-    parser.addoption(f"--{REGULAR_FLAG}", action="store_true",
-                     help=f"run all regular tests ({', '.join(REGULAR_TYPES)})")
+    parser.addoption(
+        f"--{REGULAR_FLAG}", action="store_true", help=f"run all regular tests ({', '.join(REGULAR_TYPES)})"
+    )
     parser.addoption(f"--{ALL_FLAG}", action="store_true", help="run all tests")
 
     parser.addoption(f"--{COMPILE_FLAG}", action='store_true', help='only test compiling .fj files')
     parser.addoption(f"--{RUN_FLAG}", action='store_true', help='only test running .fjm files')
 
-    parser.addoption(f'--{NAME_EXACT_FLAG}', nargs='+',
-                     help='only run tests with one of these names')
-    parser.addoption(f'--{NAME_CONTAINS_FLAG}', nargs='+',
-                     help='only run tests that contains one of these strings')
-    parser.addoption(f'--{NAME_STARTSWITH_FLAG}', nargs='+',
-                     help='only run tests that starts with one of these strings')
-    parser.addoption(f'--{NAME_ENDSWITH_FLAG}', nargs='+',
-                     help='only run tests that ends with one of these strings')
+    parser.addoption(f'--{NAME_EXACT_FLAG}', nargs='+', help='only run tests with one of these names')
+    parser.addoption(f'--{NAME_CONTAINS_FLAG}', nargs='+', help='only run tests that contains one of these strings')
+    parser.addoption(
+        f'--{NAME_STARTSWITH_FLAG}', nargs='+', help='only run tests that starts with one of these strings'
+    )
+    parser.addoption(f'--{NAME_ENDSWITH_FLAG}', nargs='+', help='only run tests that ends with one of these strings')
 
 
 def get_test_compile_run(get_option: Callable[[str], bool]) -> Tuple[bool, bool]:
@@ -187,9 +202,11 @@ def get_test_compile_run(get_option: Callable[[str], bool]) -> Tuple[bool, bool]
         check_compile_tests, check_run_tests = True, True
 
     if check_compile_tests and check_run_tests and is_parallel_active():
-        pytest.exit("Can't run both compile and run (both --compile --run flags / none of them) "
-                    "in parallel (-n auto/number>1), "
-                    "as the run tests depends on the compile tests")
+        pytest.exit(
+            "Can't run both compile and run (both --compile --run flags / none of them) "
+            "in parallel (-n auto/number>1), "
+            "as the run tests depends on the compile tests"
+        )
 
     return check_compile_tests, check_run_tests
 
@@ -214,8 +231,13 @@ def get_test_types_to_run__heavy_first(get_option: Callable[[str], bool]) -> Lis
     return types_to_run
 
 
-def is_test_name_ok(name: str, exact: Optional[List[str]], contains: Optional[List[str]],
-                    startswith: Optional[List[str]], endswith: Optional[List[str]]) -> bool:
+def is_test_name_ok(
+    name: str,
+    exact: Optional[List[str]],
+    contains: Optional[List[str]],
+    startswith: Optional[List[str]],
+    endswith: Optional[List[str]],
+) -> bool:
     """
     Check whether this test should be run (by the test's name).
     True if at least one of the checks below succeeds (checked if not None).
@@ -249,8 +271,9 @@ def is_test_name_ok(name: str, exact: Optional[List[str]], contains: Optional[Li
     return False
 
 
-def filter_by_test_name(tests_args: List[ParameterSet],
-                        get_option: Callable[[str], Optional[List[str]]]) -> List[ParameterSet]:
+def filter_by_test_name(
+    tests_args: List[ParameterSet], get_option: Callable[[str], Optional[List[str]]]
+) -> List[ParameterSet]:
     """
     filter the test list by the test names (and the namings flags)
     @param tests_args: the tests
@@ -265,8 +288,9 @@ def filter_by_test_name(tests_args: List[ParameterSet],
     if all(filter_list is None for filter_list in (exact, contains, startswith, endswith)):
         return tests_args
 
-    return [args for args in tests_args if is_test_name_ok(
-        args.values[0].test_name, exact, contains, startswith, endswith)]  # type: ignore[union-attr]
+    return [
+        args for args in tests_args if is_test_name_ok(args.values[0].test_name, exact, contains, startswith, endswith)
+    ]  # type: ignore[union-attr]
 
 
 def pytest_generate_tests(metafunc: Metafunc) -> None:
@@ -274,6 +298,7 @@ def pytest_generate_tests(metafunc: Metafunc) -> None:
     gather the tests from the csvs, and parametrize the compile-tests and run-tests fixtures with it.
     @param metafunc: enables to get-flags, parametrize-fixtures
     """
+
     def get_option(opt: str) -> Any:
         return metafunc.config.getoption(opt)
 
@@ -337,8 +362,8 @@ def get_tests_from_csvs(get_option: Callable[[str], Any]) -> TestsType:
 
     types_to_run__heavy_first = get_test_types_to_run__heavy_first(get_option)
 
-    compile_xfail_list = [line[0] for line in argument_line_iterator(TESTS_PATH / "xfail_compile.csv", 1)]
-    run_xfail_list = [line[0] for line in argument_line_iterator(TESTS_PATH / "xfail_run.csv", 1)]
+    compile_xfail_list = [line[0] for line in argument_line_iterator(TESTS_TABLES_PATH / "xfail_compile.csv", 1)]
+    run_xfail_list = [line[0] for line in argument_line_iterator(TESTS_TABLES_PATH / "xfail_run.csv", 1)]
 
     save_debug_file, debug_info_length = get_option(DEBUG_INFO_FLAG)
     if is_parallel_active():
@@ -346,20 +371,24 @@ def get_tests_from_csvs(get_option: Callable[[str], Any]) -> TestsType:
 
     compile_tests: List[ParameterSet] = []
     if check_compile_tests:
-        compiles_csvs = {test_type: TESTS_PATH / f"test_compile_{test_type}.csv"
-                         for test_type in types_to_run__heavy_first}
+        compiles_csvs = {
+            test_type: TESTS_TABLES_PATH / f"test_compile_{test_type}.csv" for test_type in types_to_run__heavy_first
+        }
         for test_type in types_to_run__heavy_first:
-            compile_tests.extend(get_compile_tests_params_from_csv(compiles_csvs[test_type], compile_xfail_list,
-                                                                   save_debug_file))
+            compile_tests.extend(
+                get_compile_tests_params_from_csv(compiles_csvs[test_type], compile_xfail_list, save_debug_file)
+            )
         compile_tests = filter_by_test_name(compile_tests, get_option)
 
     run_tests: List[ParameterSet] = []
     if check_run_tests:
-        run_csvs = {test_type: TESTS_PATH / f"test_run_{test_type}.csv"
-                    for test_type in types_to_run__heavy_first}
+        run_csvs = {
+            test_type: TESTS_TABLES_PATH / f"test_run_{test_type}.csv" for test_type in types_to_run__heavy_first
+        }
         for test_type in types_to_run__heavy_first:
-            run_tests.extend(get_run_tests_params_from_csv(run_csvs[test_type], run_xfail_list,
-                                                           save_debug_file, debug_info_length))
+            run_tests.extend(
+                get_run_tests_params_from_csv(run_csvs[test_type], run_xfail_list, save_debug_file, debug_info_length)
+            )
         run_tests = filter_by_test_name(run_tests, get_option)
 
     return compile_tests, run_tests

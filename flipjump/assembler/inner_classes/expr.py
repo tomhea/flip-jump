@@ -12,8 +12,16 @@ UNARY_TYPE = Callable[[int], int]
 BINARY_TYPE = Callable[[int, int], int]
 TRINARY_TYPE = Callable[[int, int, int], int]
 op_string_to_function: Dict[str, Union[UNARY_TYPE, BINARY_TYPE, TRINARY_TYPE]] = {
-    '+': add, '-': sub, '*': mul, '/': floordiv, '%': mod,
-    '<<': lshift, '>>': rshift, '^': xor, '|': or_, '&': and_,
+    '+': add,
+    '-': sub,
+    '*': mul,
+    '/': floordiv,
+    '%': mod,
+    '<<': lshift,
+    '>>': rshift,
+    '^': xor,
+    '|': or_,
+    '&': and_,
     '#': lambda x: x.bit_length(),
     '?:': lambda a, b, c: b if a else c,
     '<': lambda a, b: 1 if a < b else 0,
@@ -29,6 +37,7 @@ class Expr:
     """
     The python representation of a .fj expression (from labels, consts and math-ops)
     """
+
     def __init__(self, expr: Union[int, str, Tuple[str, Tuple[Expr, ...]]]):
         self.value = expr
 

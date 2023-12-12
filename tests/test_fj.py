@@ -27,9 +27,18 @@ class CompileTestArgs:
 
     num_of_csv_line_args = 8
 
-    def __init__(self, save_debug_file: bool, test_name: str, fj_paths: str, fjm_out_path: str,
-                 word_size__str: str, version__str: str, flags__str: str,
-                 use_stl__str: str, warning_as_errors__str: str):
+    def __init__(
+        self,
+        save_debug_file: bool,
+        test_name: str,
+        fj_paths: str,
+        fjm_out_path: str,
+        word_size__str: str,
+        version__str: str,
+        flags__str: str,
+        use_stl__str: str,
+        warning_as_errors__str: str,
+    ):
         """
         handling a line.split() from a csv file
         """
@@ -78,12 +87,17 @@ def test_compile(compile_args: CompileTestArgs) -> None:
 
     create_parent_directories(compile_args.fjm_out_path)
 
-    fjm_writer = Writer(compile_args.fjm_out_path, compile_args.word_size, FJMVersion(compile_args.version),
-                        flags=compile_args.flags)
+    fjm_writer = Writer(
+        compile_args.fjm_out_path, compile_args.word_size, FJMVersion(compile_args.version), flags=compile_args.flags
+    )
 
-    assembler.assemble(compile_args.fj_files_tuples, compile_args.word_size, fjm_writer,
-                       warning_as_errors=compile_args.warning_as_errors,
-                       debugging_file_path=compile_args.debugging_file_path)
+    assembler.assemble(
+        compile_args.fj_files_tuples,
+        compile_args.word_size,
+        fjm_writer,
+        warning_as_errors=compile_args.warning_as_errors,
+        debugging_file_path=compile_args.debugging_file_path,
+    )
 
 
 class RunTestArgs:
@@ -93,10 +107,17 @@ class RunTestArgs:
 
     num_of_csv_line_args = 6
 
-    def __init__(self, save_debug_file: bool, debug_info_length: int, test_name: str, fjm_path: str,
-                 in_file_path: str, out_file_path: str,
-                 read_in_as_binary__str: str, read_out_as_binary__str: str
-                 ):
+    def __init__(
+        self,
+        save_debug_file: bool,
+        debug_info_length: int,
+        test_name: str,
+        fjm_path: str,
+        in_file_path: str,
+        out_file_path: str,
+        read_in_as_binary__str: str,
+        read_out_as_binary__str: str,
+    ):
         """
         @note handling a line.split() (each is stripped) from a csv file
         """

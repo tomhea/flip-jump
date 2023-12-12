@@ -3,7 +3,7 @@
 ## The CI
 The project has a CI tests suit, that runs on each pull-request (using [tox](https://tox.wiki/)):
 1. `--regular` tests for all supported python versions, for each os of windows, ubuntu, macos.
-2. Linters: [mypy](https://mypy-lang.org/), [flake8](https://flake8.pycqa.org/en/latest/), [bandit](https://bandit.readthedocs.io/en/latest/).
+2. Linters: [mypy](https://mypy-lang.org/), [flake8](https://flake8.pycqa.org/en/latest/), [bandit](https://bandit.readthedocs.io/en/latest/), [black](https://github.com/psf/black).
    - They run for each os, with the latest supported python.
 3. `pytest --all` in parallel.
    - Runs on the latest supported python, on ubuntu.
@@ -16,6 +16,7 @@ Any PR to the main branch must succeed in all of these tests, in order to be mer
 - `mypy` - search for types related errors.
 - `flake8` - search for style and syntax errors.
 - `bandit --ini tox.ini` - search for common security issues.
+- `black . --check --color --diff` - search for code-formatting issues. 
 
 # Run the tests:
 
@@ -105,7 +106,7 @@ Then add a new line to the relevant compile-csv and run-csv files, according to 
 
 ### Compile CSVs format:
 
-(files with the next format: ```test_compile_*.csv```)
+(files with the next format: ```tests_tables/test_compile_*.csv```)
 
 | test name    | .fj paths                                                   | out .fjm path                | memory width | version | flags | use stl | treat warnings as errors |
 |--------------|-------------------------------------------------------------|------------------------------|--------------|---------|-------|---------|--------------------------|
@@ -117,7 +118,7 @@ Note that you can specify a single file, or a '|' separated list of files in the
 
 ### Run CSVs format:
 
-(files with the next format: ```test_run_*.csv```)
+(files with the next format: ```tests_tables/test_run_*.csv```)
 
 | test name    | .fjm path                    | input file path           | output file path            | is input a binary file | is output a binary file |
 |--------------|------------------------------|---------------------------|-----------------------------|------------------------|-------------------------|
@@ -129,6 +130,6 @@ Note that you can also emit specifying a file in the input/output cell, and leav
 
 ### Xfail Lists
 
-If you want to add your test, but you want it to [xfail](https://docs.pytest.org/en/7.1.x/how-to/skipping.html#xfail-mark-test-functions-as-expected-to-fail), you can add your test name to:
-- ```xfail_compile.csv``` - to mark its compilation as expected to fail.
-- ```xfail_run.csv``` - to mark its run as expected to fail.
+If you want to add your test, but you want it to [xfail](https://docs.pytest.org/en/7.1.x/how-to/skipping.html#xfail-mark-test-functions-as-expected-to-fail), you can add your test name (in its own line) to:
+- ```tests_tables/xfail_compile.csv``` - to mark its compilation as expected to fail.
+- ```tests_tables/xfail_run.csv``` - to mark its run as expected to fail.

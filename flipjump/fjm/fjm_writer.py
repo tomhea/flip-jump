@@ -3,8 +3,16 @@ from pathlib import Path
 from struct import pack
 from typing import List, Tuple
 
-from flipjump.fjm.fjm_consts import FJ_MAGIC, _header_base_format, _header_extension_format, _segment_format, \
-    SUPPORTED_VERSIONS_NAMES, _LZMA_FORMAT, _lzma_compression_filters, FJMVersion
+from flipjump.fjm.fjm_consts import (
+    FJ_MAGIC,
+    _header_base_format,
+    _header_extension_format,
+    _segment_format,
+    SUPPORTED_VERSIONS_NAMES,
+    _LZMA_FORMAT,
+    _lzma_compression_filters,
+    FJMVersion,
+)
 from flipjump.utils.exceptions import FlipJumpWriteFjmException
 
 
@@ -17,8 +25,16 @@ class Writer:
         repeat steps 1-2 until you finished updating the fjm
         3. write_to_file()
     """
-    def __init__(self, output_file: Path, memory_width: int, version: FJMVersion,
-                 *, flags: int = 0, lzma_preset: int = lzma.PRESET_DEFAULT):
+
+    def __init__(
+        self,
+        output_file: Path,
+        memory_width: int,
+        version: FJMVersion,
+        *,
+        flags: int = 0,
+        lzma_preset: int = lzma.PRESET_DEFAULT,
+    ):
         """
         the .fjm-file writer
         @param output_file: [in,out]: the path to the .fjm file
@@ -31,7 +47,8 @@ class Writer:
             raise FlipJumpWriteFjmException(f"Word size {memory_width} is not in {{8, 16, 32, 64}}.")
         if version not in SUPPORTED_VERSIONS_NAMES:
             raise FlipJumpWriteFjmException(
-                f'Error: unsupported version ({version}, this program supports {str(SUPPORTED_VERSIONS_NAMES)}).')
+                f'Error: unsupported version ({version}, this program supports {str(SUPPORTED_VERSIONS_NAMES)}).'
+            )
         if flags < 0 or flags >= (1 << 64):
             raise FlipJumpWriteFjmException(f"flags must be a 64bit positive number, not {flags}")
         if FJMVersion.BaseVersion == version and flags != 0:
@@ -53,8 +70,9 @@ class Writer:
 
     def _compress_data(self, data: bytes) -> bytes:
         try:
-            return lzma.compress(data, format=_LZMA_FORMAT,
-                                 filters=_lzma_compression_filters(2 * self.word_size, self.lzma_preset))
+            return lzma.compress(
+                data, format=_LZMA_FORMAT, filters=_lzma_compression_filters(2 * self.word_size, self.lzma_preset)
+            )
         except lzma.LZMAError as e:
             raise FlipJumpWriteFjmException('Error: Unable to compress the data.') from e
 
@@ -85,8 +103,10 @@ class Writer:
         @param word_length: the number of words the segment takes in memory
         @return: a nice looking segment-representation string by its addresses
         """
-        return f'[{hex(self.word_size * word_start_address)}, ' \
-               f'{hex(self.word_size * (word_start_address + word_length))})'
+        return (
+            f'[{hex(self.word_size * word_start_address)}, '
+            f'{hex(self.word_size * (word_start_address + word_length))})'
+        )
 
     @staticmethod
     def _is_collision(start1: int, end1: int, start2: int, end2: int) -> bool:
@@ -128,15 +148,16 @@ class Writer:
                     f"seg[{len(self.segments)}]=data[{hex(new_data_start)}, {hex(new_data_end + 1)})"
                 )
 
-    def _validate_segment_not_overlapping(self, segment_start: int, segment_length: int,
-                                          data_start: int, data_length: int) -> None:
+    def _validate_segment_not_overlapping(
+        self, segment_start: int, segment_length: int, data_start: int, data_length: int
+    ) -> None:
         self._validate_segment_addresses_not_overlapping(segment_start, segment_length)
 
         if self.version in (FJMVersion.RelativeJumpVersion, FJMVersion.CompressedVersion):
             self._validate_segment_data_not_overlapping(data_start, data_length)
 
     def _update_to_relative_jumps(self, segment_start: int, data_start: int, data_length: int) -> None:
-        word_mask = ((1 << self.word_size) - 1)
+        word_mask = (1 << self.word_size) - 1
         for i in range(1, data_length, 2):
             self.data[data_start + i] = (self.data[data_start + i] - (segment_start + i) * self.word_size) & word_mask
 
@@ -155,12 +176,15 @@ class Writer:
             raise FlipJumpWriteFjmException(f"segment-length must be positive (in {segment_addresses_str}).")
 
         if segment_length < data_length:
-            raise FlipJumpWriteFjmException(f"segment-length must be at-least data-length "
-                                            f"(in {segment_addresses_str}).")
+            raise FlipJumpWriteFjmException(
+                f"segment-length must be at-least data-length " f"(in {segment_addresses_str})."
+            )
 
         if segment_start % 2 == 1 or segment_length % 2 == 1:
-            raise FlipJumpWriteFjmException(f"segment-start and segment-length must be 2*w (2 * memory-width) aligned "
-                                            f"(in {segment_addresses_str}).")
+            raise FlipJumpWriteFjmException(
+                f"segment-start and segment-length must be 2*w (2 * memory-width) aligned "
+                f"(in {segment_addresses_str})."
+            )
 
         self._validate_segment_not_overlapping(segment_start, segment_length, data_start, data_length)
 

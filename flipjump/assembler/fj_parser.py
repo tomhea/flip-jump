@@ -3,16 +3,32 @@ from pathlib import Path
 from typing import Set, List, Tuple, Dict, Union
 
 import sly
+
 # noinspection PyProtectedMember
 from sly.lex import Token
+
 # noinspection PyProtectedMember
 from sly.yacc import YaccProduction as ParsedRule
 
 from flipjump.utils.exceptions import FlipJumpExprException, FlipJumpParsingException
 from flipjump.assembler.inner_classes.expr import Expr, get_minimized_expr
-from flipjump.assembler.inner_classes.ops import get_used_labels, get_declared_labels, \
-    CodePosition, MacroName, Op, Macro, INITIAL_MACRO_NAME, \
-    MacroCall, RepCall, FlipJump, WordFlip, Label, Segment, Reserve, Pad
+from flipjump.assembler.inner_classes.ops import (
+    get_used_labels,
+    get_declared_labels,
+    CodePosition,
+    MacroName,
+    Op,
+    Macro,
+    INITIAL_MACRO_NAME,
+    MacroCall,
+    RepCall,
+    FlipJump,
+    WordFlip,
+    Label,
+    Segment,
+    Reserve,
+    Pad,
+)
 
 curr_file: Path
 curr_file_short_name: str
@@ -64,8 +80,21 @@ bin_num = r'0[bB][01]+'
 hex_num = r'0[xX][0-9a-fA-F]+'
 dec_num = r'[0-9]+'
 
-char_escape_dict = {'0': 0x0, 'a': 0x7, 'b': 0x8, 'e': 0x1b, 'f': 0xc, 'n': 0xa, 'r': 0xd, 't': 0x9, 'v': 0xb,
-                    '\\': 0x5c, "'": 0x27, '"': 0x22, '?': 0x3f}
+char_escape_dict = {
+    '0': 0x0,
+    'a': 0x7,
+    'b': 0x8,
+    'e': 0x1B,
+    'f': 0xC,
+    'n': 0xA,
+    'r': 0xD,
+    't': 0x9,
+    'v': 0xB,
+    '\\': 0x5C,
+    "'": 0x27,
+    '"': 0x22,
+    '?': 0x3F,
+}
 escape_chars = ''.join(k for k in char_escape_dict)
 char = fr'[ -~]|\\[{escape_chars}]|\\[xX][0-9a-fA-F]{{2}}'
 
@@ -84,23 +113,32 @@ def get_char_value_and_length(s: str) -> Tuple[int, int]:
 # noinspection PyUnboundLocalVariable,PyRedeclaration,PyPep8Naming,PyMethodMayBeStatic
 class FJLexer(sly.Lexer):
     # noinspection PyUnresolvedReferences
-    tokens = {NS, DEF, REP,
-              WFLIP, PAD, SEGMENT, RESERVE,
-              ID, DOT_ID, NUMBER, STRING,
-              LE, GE, EQ, NEQ,
-              SHL, SHR,
-              NL, SC}
+    tokens = {NS, DEF, REP, WFLIP, PAD, SEGMENT, RESERVE, ID, DOT_ID, NUMBER, STRING, LE, GE, EQ, NEQ, SHL, SHR, NL, SC}
 
-    literals = {'=', '+', '-', '*', '/', '%',
-                '(', ')',
-                '$',
-                '^', '|', '&',
-                '?', ':',
-                '<', '>',
-                '"',
-                '#',
-                '{', '}',
-                "@", ","}
+    literals = {
+        '=',
+        '+',
+        '-',
+        '*',
+        '/',
+        '%',
+        '(',
+        ')',
+        '$',
+        '^',
+        '|',
+        '&',
+        '?',
+        ':',
+        '<',
+        '>',
+        '"',
+        '#',
+        '{',
+        '}',
+        "@",
+        ",",
+    }
 
     ignore_ending_comment = r'//.*'
     ignore_line_continuation = r'\\[ \t]*\n'
@@ -168,7 +206,7 @@ class FJLexer(sly.Lexer):
             val, length = get_char_value_and_length(s[i:])
             chars.append(val)
             i += length
-        t.value = sum(val << (i*8) for i, val in enumerate(chars))
+        t.value = sum(val << (i * 8) for i, val in enumerate(chars))
         return t
 
     def NL(self, t: Token) -> Token:
@@ -227,14 +265,18 @@ class FJParser(sly.Parser):
 
     def validate_free_macro_name(self, name: MacroName, lineno: int) -> None:
         if name in self.macros:
-            syntax_error(lineno, f'macro {name} is declared twice! '
-                                 f'also declared in {self.macros[name].code_position}.')
+            syntax_error(
+                lineno, f'macro {name} is declared twice! ' f'also declared in {self.macros[name].code_position}.'
+            )
 
     def validate_params(self, ids: List[str], macro_name: MacroName, lineno: int) -> None:
         for param_id in ids:
             if param_id in self.consts:
-                syntax_error(lineno, f'parameter {param_id} in macro {macro_name}) '
-                                     f'is also defined as a constant variable (with value {self.consts[param_id]})')
+                syntax_error(
+                    lineno,
+                    f'parameter {param_id} in macro {macro_name}) '
+                    f'is also defined as a constant variable (with value {self.consts[param_id]})',
+                )
         seen_ids = set()
         for _id in ids:
             if _id in seen_ids:
@@ -242,66 +284,113 @@ class FJParser(sly.Parser):
             else:
                 seen_ids.add(_id)
 
-    def validate_label_usage(self, labels_used: Set[str], labels_declared: Set[str],
-                             regular_labels: Set[str], extern_labels: Set[str], global_labels: Set[str],
-                             lineno: int, macro_name: MacroName) -> None:
+    def validate_label_usage(
+        self,
+        labels_used: Set[str],
+        labels_declared: Set[str],
+        regular_labels: Set[str],
+        extern_labels: Set[str],
+        global_labels: Set[str],
+        lineno: int,
+        macro_name: MacroName,
+    ) -> None:
         self.validate_labels_groups(extern_labels, global_labels, regular_labels, lineno, macro_name)
 
         self.validate_no_unused_labels(regular_labels, global_labels, labels_declared, labels_used, lineno, macro_name)
-        self.validate_no_unknown_label_uses(regular_labels, global_labels, labels_declared, labels_used,
-                                            lineno, macro_name)
+        self.validate_no_unknown_label_uses(
+            regular_labels, global_labels, labels_declared, labels_used, lineno, macro_name
+        )
         self.validate_no_bad_label_declarations(regular_labels, extern_labels, labels_declared, lineno, macro_name)
         self.validate_all_extern_labels_are_declared(extern_labels, labels_declared, lineno, macro_name)
 
     @staticmethod
-    def validate_labels_groups(extern_labels: Set[str], global_labels: Set[str], regular_labels: Set[str],
-                               lineno: int, macro_name: MacroName) -> None:
+    def validate_labels_groups(
+        extern_labels: Set[str], global_labels: Set[str], regular_labels: Set[str], lineno: int, macro_name: MacroName
+    ) -> None:
         if global_labels & extern_labels:
-            syntax_error(lineno, f"In macro {macro_name}:  "
-                                 f"extern labels can't be global labels: " + ', '.join(global_labels & extern_labels))
+            syntax_error(
+                lineno,
+                f"In macro {macro_name}:  "
+                f"extern labels can't be global labels: " + ', '.join(global_labels & extern_labels),
+            )
         if global_labels & regular_labels:
-            syntax_error(lineno, f"In macro {macro_name}:  "
-                                 f"extern labels can't be regular labels: " + ', '.join(global_labels & regular_labels))
+            syntax_error(
+                lineno,
+                f"In macro {macro_name}:  "
+                f"extern labels can't be regular labels: " + ', '.join(global_labels & regular_labels),
+            )
         if extern_labels & regular_labels:
-            syntax_error(lineno, f"In macro {macro_name}:  "
-                                 f"global labels can't be regular labels: " + ', '.join(extern_labels & regular_labels))
+            syntax_error(
+                lineno,
+                f"In macro {macro_name}:  "
+                f"global labels can't be regular labels: " + ', '.join(extern_labels & regular_labels),
+            )
 
-    def validate_no_unused_labels(self, regular_labels: Set[str], global_labels: Set[str],
-                                  labels_declared: Set[str], labels_used: Set[str],
-                                  lineno: int, macro_name: MacroName) -> None:
-        unused_labels = regular_labels.union(global_labels) - \
-                        labels_used.union(self.to_base_name(label) for label in labels_declared)
+    def validate_no_unused_labels(
+        self,
+        regular_labels: Set[str],
+        global_labels: Set[str],
+        labels_declared: Set[str],
+        labels_used: Set[str],
+        lineno: int,
+        macro_name: MacroName,
+    ) -> None:
+        unused_labels = regular_labels.union(global_labels) - labels_used.union(
+            self.to_base_name(label) for label in labels_declared
+        )
         if unused_labels:
-            syntax_warning(lineno, self.warning_as_errors,
-                           f"In macro {macro_name}:  "
-                           f"unused labels: {', '.join(unused_labels)}.")
+            syntax_warning(
+                lineno,
+                self.warning_as_errors,
+                f"In macro {macro_name}:  " f"unused labels: {', '.join(unused_labels)}.",
+            )
 
-    def validate_all_extern_labels_are_declared(self, extern_labels: Set[str], labels_declared: Set[str],
-                                                lineno: int, macro_name: MacroName) -> None:
+    def validate_all_extern_labels_are_declared(
+        self, extern_labels: Set[str], labels_declared: Set[str], lineno: int, macro_name: MacroName
+    ) -> None:
         unused_labels = extern_labels - {self.to_base_name(label) for label in labels_declared}
         if unused_labels:
-            syntax_warning(lineno, self.warning_as_errors,
-                           f"In macro {macro_name}:  "
-                           f"undeclared extern label: {', '.join(unused_labels)}.")
+            syntax_warning(
+                lineno,
+                self.warning_as_errors,
+                f"In macro {macro_name}:  " f"undeclared extern label: {', '.join(unused_labels)}.",
+            )
 
-    def validate_no_bad_label_declarations(self, regular_labels: Set[str], extern_labels: Set[str],
-                                           labels_declared: Set[str],
-                                           lineno: int, macro_name: MacroName) -> None:
+    def validate_no_bad_label_declarations(
+        self,
+        regular_labels: Set[str],
+        extern_labels: Set[str],
+        labels_declared: Set[str],
+        lineno: int,
+        macro_name: MacroName,
+    ) -> None:
         bad_declarations = labels_declared - set(
-            self.ns_full_name(label) for label in extern_labels.union(regular_labels))
+            self.ns_full_name(label) for label in extern_labels.union(regular_labels)
+        )
         if bad_declarations:
-            syntax_warning(lineno, self.warning_as_errors,
-                           f"In macro {macro_name}:  "
-                           f"Declared a not extern/parameter label: {', '.join(bad_declarations)}.")
+            syntax_warning(
+                lineno,
+                self.warning_as_errors,
+                f"In macro {macro_name}:  " f"Declared a not extern/parameter label: {', '.join(bad_declarations)}.",
+            )
 
-    def validate_no_unknown_label_uses(self, regular_labels: Set[str], global_labels: Set[str],
-                                       labels_declared: Set[str], labels_used: Set[str],
-                                       lineno: int, macro_name: MacroName) -> None:
+    def validate_no_unknown_label_uses(
+        self,
+        regular_labels: Set[str],
+        global_labels: Set[str],
+        labels_declared: Set[str],
+        labels_used: Set[str],
+        lineno: int,
+        macro_name: MacroName,
+    ) -> None:
         bad_uses = labels_used - global_labels - regular_labels - set(labels_declared) - {'$'}
         if bad_uses:
-            syntax_warning(lineno, self.warning_as_errors,
-                           f"In macro {macro_name}:  "
-                           f"Used a not global/parameter/declared-extern label: {', '.join(bad_uses)}.")
+            syntax_warning(
+                lineno,
+                self.warning_as_errors,
+                f"In macro {macro_name}:  "
+                f"Used a not global/parameter/declared-extern label: {', '.join(bad_uses)}.",
+            )
 
     @staticmethod
     def validate_no_segment_or_reserve(ops: List[Op], macro_name: MacroName) -> None:
@@ -311,16 +400,29 @@ class FJParser(sly.Parser):
             if isinstance(op, Reserve):
                 syntax_error(op.code_position.line, f"reserve can't be declared inside a macro ({macro_name}).")
 
-    def validate_macro_declaration(self, name: MacroName, ops: List[Op], lineno: int,
-                                   params: List[str], local_params: List[str],
-                                   global_params: Set[str], extern_params: Set[str]) -> None:
+    def validate_macro_declaration(
+        self,
+        name: MacroName,
+        ops: List[Op],
+        lineno: int,
+        params: List[str],
+        local_params: List[str],
+        global_params: Set[str],
+        extern_params: Set[str],
+    ) -> None:
         self.validate_free_macro_name(name, lineno)
 
         regular_params = params + local_params
         self.validate_params(regular_params, name, lineno)
-        self.validate_label_usage(get_used_labels(ops), get_declared_labels(ops),
-                                  set(regular_params), set(extern_params), set(global_params),
-                                  lineno, name)
+        self.validate_label_usage(
+            get_used_labels(ops),
+            get_declared_labels(ops),
+            set(regular_params),
+            set(extern_params),
+            set(global_params),
+            lineno,
+            name,
+        )
 
         self.validate_no_segment_or_reserve(ops, name)
 
@@ -340,10 +442,12 @@ class FJParser(sly.Parser):
 
         num_of_dots = len(base_name) - len(without_dots)
         if num_of_dots - 1 > len(curr_namespace):
-            syntax_error(lineno, f'Used more leading dots than current namespace depth '
-                                 f'({num_of_dots}-1 > {len(curr_namespace)})')
+            syntax_error(
+                lineno,
+                f'Used more leading dots than current namespace depth ' f'({num_of_dots}-1 > {len(curr_namespace)})',
+            )
 
-        return '.'.join(curr_namespace[:len(curr_namespace)-(num_of_dots-1)] + [without_dots])
+        return '.'.join(curr_namespace[: len(curr_namespace) - (num_of_dots - 1)] + [without_dots])
 
     @staticmethod
     def to_base_name(name: str) -> str:
@@ -354,8 +458,10 @@ class FJParser(sly.Parser):
         error_occurred = True
 
         if token is None:
-            error_string = f'Syntax Error in {get_position(self.line_position(None))}. ' \
-                           f'Maybe missing }} or {{ before this line?'
+            error_string = (
+                f'Syntax Error in {get_position(self.line_position(None))}. '
+                f'Maybe missing }} or {{ before this line?'
+            )
         else:
             error_string = f'Syntax Error in {get_position(token.lineno)}, token=("{token.type}", {token.value})'
 
@@ -691,8 +797,9 @@ class FJParser(sly.Parser):
 
 def exit_if_errors() -> None:
     if error_occurred:
-        raise FlipJumpParsingException(f'Errors found in file {curr_file}. '
-                                       f'Assembly stopped.\n\nThe Errors:\n{all_errors}')
+        raise FlipJumpParsingException(
+            f'Errors found in file {curr_file}. ' f'Assembly stopped.\n\nThe Errors:\n{all_errors}'
+        )
 
 
 def validate_current_file(files_seen: Set[Union[str, Path]]) -> None:
@@ -722,8 +829,9 @@ def lex_parse_curr_file(lexer: FJLexer, parser: FJParser) -> None:
     exit_if_errors()
 
 
-def parse_macro_tree(input_files: List[Tuple[str, Path]], memory_width: int, warning_as_errors: bool) \
-        -> Dict[MacroName, Macro]:
+def parse_macro_tree(
+    input_files: List[Tuple[str, Path]], memory_width: int, warning_as_errors: bool
+) -> Dict[MacroName, Macro]:
     """
     parse the .fj files and create a macro-dictionary.
     The files will be parsed as if they were concatenated.

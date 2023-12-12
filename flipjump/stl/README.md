@@ -18,7 +18,7 @@ Offers outputting constant chars/strings.
 
 **@note**: It should be the first file in the compilation order.
 
-### [bit/](bit/)
+### [bit/](bit)
 Defines the `bit` data-structure (for binary variables).
 
 Offers macros for manipulating binary variables and vectors (i.e. numbers):
@@ -35,7 +35,7 @@ Offers macros for manipulating binary variables and vectors (i.e. numbers):
 - [div.fj](bit/div.fj) - div10, {i}div, {i}div_loop (i stands for signed)
 - [pointers.fj](bit/pointers.fj) - bit-vec pointers: flip, jump, xor_to, xor_from, inc/dec; pointers init
 
-### [hex/](hex/)
+### [hex/](hex)
 Defines the `hex` data-structure (for hexadecimal variables).
 
 **They are smaller and faster than 4 `bit`s.** 
@@ -53,7 +53,7 @@ Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers):
 - [mul.fj](hex/mul.fj) - add_mul, mul (works for signed & unsigned)
 - [div.fj](hex/div.fj) - div, idiv (signed)
 - [tables_init.fj](hex/tables_init.fj) - initializes the "results-tables" for the next hex macros: or,and, add,sub, cmp, mul
-- [pointers/](hex/pointers/) - hex-vec pointers subdirectory: [flip](hex/pointers/xor_to_pointer.fj), [jump](hex/pointers/basic_pointers.fj), [xor_to](hex/pointers/xor_to_pointer.fj), [xor_from](hex/pointers/xor_from_pointer.fj); [stack](hex/pointers/stack.fj)/[pointers](hex/pointers/basic_pointers.fj) init. [pointer arithmetics](hex/pointers/pointer_arithmetics.fj), [stack arithmetics + push/pop](hex/pointers/stack.fj).
+- [pointers/](hex/pointers) - hex-vec pointers subdirectory: [flip](hex/pointers/xor_to_pointer.fj), [jump](hex/pointers/basic_pointers.fj), [xor_to](hex/pointers/xor_to_pointer.fj), [xor_from](hex/pointers/xor_from_pointer.fj); [stack](hex/pointers/stack.fj)/[pointers](hex/pointers/basic_pointers.fj) init. [pointer arithmetics](hex/pointers/pointer_arithmetics.fj), [stack arithmetics + push/pop](hex/pointers/stack.fj).
 
 ### [casting.fj](casting.fj)
 Offers casting between bits and hexes.

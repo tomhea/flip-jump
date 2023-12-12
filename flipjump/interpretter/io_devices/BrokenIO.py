@@ -6,6 +6,7 @@ class BrokenIO(IODevice):
     """
     IO device that raises error on any IO action
     """
+
     def read_bit(self) -> bool:
         raise BrokenIOUsed("program tried to read a bit from the BrokenIO device")
 

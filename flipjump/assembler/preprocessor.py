@@ -5,13 +5,34 @@ import sys
 from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional, NoReturn
 
 from flipjump.interpretter.debugging.macro_usage_graph import show_macro_usage_pie_graph
-from flipjump.utils.constants import MACRO_SEPARATOR_STRING, STARTING_LABEL_IN_MACROS_STRING, \
-    DEFAULT_MAX_MACRO_RECURSION_DEPTH, GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH
+from flipjump.utils.constants import (
+    MACRO_SEPARATOR_STRING,
+    STARTING_LABEL_IN_MACROS_STRING,
+    DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+    GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH,
+)
 from flipjump.utils.exceptions import FlipJumpPreprocessorException, FlipJumpExprException
 from flipjump.assembler.inner_classes.expr import Expr
-from flipjump.assembler.inner_classes.ops import FlipJump, WordFlip, Label, Segment, Reserve, MacroCall, RepCall, \
-    CodePosition, Macro, LastPhaseOp, MacroName, NewSegment, ReserveBits, Pad, Padding, \
-    INITIAL_MACRO_NAME, INITIAL_ARGS, INITIAL_LABELS_PREFIX
+from flipjump.assembler.inner_classes.ops import (
+    FlipJump,
+    WordFlip,
+    Label,
+    Segment,
+    Reserve,
+    MacroCall,
+    RepCall,
+    CodePosition,
+    Macro,
+    LastPhaseOp,
+    MacroName,
+    NewSegment,
+    ReserveBits,
+    Pad,
+    Padding,
+    INITIAL_MACRO_NAME,
+    INITIAL_ARGS,
+    INITIAL_LABELS_PREFIX,
+)
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
 OpsQueue = Deque[LastPhaseOp]
@@ -20,8 +41,9 @@ LabelsDict = Dict[str, int]
 wflip_start_label = '_.wflip_area_start_'
 
 
-def macro_resolve_error(curr_tree: CurrTree, msg: str = '', *,
-                        orig_exception: Optional[BaseException] = None) -> NoReturn:
+def macro_resolve_error(
+    curr_tree: CurrTree, msg: str = '', *, orig_exception: Optional[BaseException] = None
+) -> NoReturn:
     """
     raise a descriptive error (with the macro-expansion trace).
     @param curr_tree: the ops in the macro-calling path to arrive in this macro
@@ -43,12 +65,15 @@ class PreprocessorData:
     also offer many functions to manipulate its data.
     @note should call finish before get_result...().
     """
+
     class _PrepareMacroCall:
-        def __init__(self,
-                     curr_tree: CurrTree,
-                     calling_op: Union[MacroCall, RepCall],
-                     macros: Dict[MacroName, Macro],
-                     max_recursion_depth: Optional[int]):
+        def __init__(
+            self,
+            curr_tree: CurrTree,
+            calling_op: Union[MacroCall, RepCall],
+            macros: Dict[MacroName, Macro],
+            max_recursion_depth: Optional[int],
+        ):
             """
             Validates that the called macro exists, and that the macro depth is ok. Updates the curr_tree variable.
             @param curr_tree: the ops in the macro-calling path to arrive in this macro (not including the calling op)
@@ -65,20 +90,22 @@ class PreprocessorData:
         def __enter__(self) -> None:
             macro_name = self.calling_op.macro_name
             if macro_name not in self.macros:
-                macro_resolve_error(self.curr_tree, f"macro {macro_name} is used but isn't defined. "
-                                                    f"In {self.calling_op.code_position}.")
+                macro_resolve_error(
+                    self.curr_tree,
+                    f"macro {macro_name} is used but isn't defined. " f"In {self.calling_op.code_position}.",
+                )
             self.curr_tree.append(self.calling_op)
             if self.max_recursion_depth is not None and len(self.curr_tree) > self.max_recursion_depth:
-                macro_resolve_error(self.curr_tree, "The maximal macro-expansion recursive depth was reached. "
-                                                    "change the max_recursion_depth variable.")
+                macro_resolve_error(
+                    self.curr_tree,
+                    "The maximal macro-expansion recursive depth was reached. "
+                    "change the max_recursion_depth variable.",
+                )
 
         def __exit__(self, exc_type, exc_val, exc_tb):  # type: ignore[no-untyped-def]
             self.curr_tree.pop()
 
-    def __init__(self,
-                 memory_width: int,
-                 macros: Dict[MacroName, Macro],
-                 max_recursion_depth: int):
+    def __init__(self, memory_width: int, macros: Dict[MacroName, Macro], max_recursion_depth: int):
         """
         @param memory_width: the memory-width
         @param macros: parser's result; the dictionary from the macro names to the macro declaration
@@ -100,7 +127,7 @@ class PreprocessorData:
         self.result_ops: Deque[LastPhaseOp] = collections.deque()
         self.labels: Dict[str, int] = {}
         self.addresses_with_labels: Set[int] = set()
-        self.macro_start_labels: List[Tuple[int, str, CodePosition]] = []   # (address, label, code_position)
+        self.macro_start_labels: List[Tuple[int, str, CodePosition]] = []  # (address, label, code_position)
 
         first_segment: NewSegment = NewSegment(0)
         self.last_new_segment: NewSegment = first_segment
@@ -147,8 +174,9 @@ class PreprocessorData:
 
         if label in self.labels:
             other_position = self.labels_code_positions[label]
-            macro_resolve_error(self.curr_tree, f'label declared twice - "{label}" on '
-                                                f'{code_position} and {other_position}')
+            macro_resolve_error(
+                self.curr_tree, f'label declared twice - "{label}" on ' f'{code_position} and {other_position}'
+            )
         self.labels_code_positions[label] = code_position
         self.labels[label] = address
         self.addresses_with_labels.add(address)
@@ -179,29 +207,34 @@ def get_rep_times(op: RepCall, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_times(preprocessor_data.labels)
     except FlipJumpExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree,
-                            f"Can't evaluate how many times to repeat in "
-                            f"'rep {op.macro_name}'. In {op.code_position}.",
-                            orig_exception=e)
+        macro_resolve_error(
+            preprocessor_data.curr_tree,
+            f"Can't evaluate how many times to repeat in " f"'rep {op.macro_name}'. In {op.code_position}.",
+            orig_exception=e,
+        )
 
 
 def get_pad_ops_alignment(op: Pad, preprocessor_data: PreprocessorData) -> int:
     try:
         return op.calculate_ops_alignment(preprocessor_data.labels)
     except FlipJumpExprException as e:
-        macro_resolve_error(preprocessor_data.curr_tree,
-                            f"Can't evaluate how much to pad in "
-                            f"'pad {op.ops_alignment}'. In {op.code_position}.",
-                            orig_exception=e)
+        macro_resolve_error(
+            preprocessor_data.curr_tree,
+            f"Can't evaluate how much to pad in " f"'pad {op.ops_alignment}'. In {op.code_position}.",
+            orig_exception=e,
+        )
 
 
 def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData) -> int:
     try:
         next_segment_start = op.calculate_address(preprocessor_data.labels)
         if next_segment_start % preprocessor_data.memory_width != 0:
-            macro_resolve_error(preprocessor_data.curr_tree, f'segment ops must have a w-aligned '
-                                                             f'(memory-width-aligned) address: '
-                                                             f'{hex(next_segment_start)}. In {op.code_position}.')
+            macro_resolve_error(
+                preprocessor_data.curr_tree,
+                f'segment ops must have a w-aligned '
+                f'(memory-width-aligned) address: '
+                f'{hex(next_segment_start)}. In {op.code_position}.',
+            )
         return next_segment_start
     except FlipJumpExprException as e:
         macro_resolve_error(preprocessor_data.curr_tree, f'segment failed. In {op.code_position}.', orig_exception=e)
@@ -211,16 +244,20 @@ def get_reserved_bits_size(op: Reserve, preprocessor_data: PreprocessorData) -> 
     try:
         reserved_bits_size = op.calculate_reserved_bit_size(preprocessor_data.labels)
         if reserved_bits_size % preprocessor_data.memory_width != 0:
-            macro_resolve_error(preprocessor_data.curr_tree, f'reserve ops must have a w-aligned '
-                                                             f'(memory-width aligned) value: '
-                                                             f'{hex(reserved_bits_size)}. In {op.code_position}.')
+            macro_resolve_error(
+                preprocessor_data.curr_tree,
+                f'reserve ops must have a w-aligned '
+                f'(memory-width aligned) value: '
+                f'{hex(reserved_bits_size)}. In {op.code_position}.',
+            )
         return reserved_bits_size
     except FlipJumpExprException as e:
         macro_resolve_error(preprocessor_data.curr_tree, f'reserve failed. In {op.code_position}.', orig_exception=e)
 
 
-def get_params_dictionary(current_macro: Macro, args: Iterable[Expr], namespace: str, labels_prefix: str) \
-        -> Dict[str, Expr]:
+def get_params_dictionary(
+    current_macro: Macro, args: Iterable[Expr], namespace: str, labels_prefix: str
+) -> Dict[str, Expr]:
     """
     generates the dictionary between the labels (params and local-params) defined by the macro, and their Expr-values.
     @param current_macro: the current macro
@@ -241,11 +278,12 @@ def get_params_dictionary(current_macro: Macro, args: Iterable[Expr], namespace:
     return params_dict
 
 
-def resolve_macro_aux(preprocessor_data: PreprocessorData,
-                      macro_name: MacroName,
-                      args: Iterable[Expr],
-                      labels_prefix: str,
-                      ) -> None:
+def resolve_macro_aux(
+    preprocessor_data: PreprocessorData,
+    macro_name: MacroName,
+    args: Iterable[Expr],
+    labels_prefix: str,
+) -> None:
     """
     recursively unwind the current macro into a serialized stream of ops and add them to the result_ops-queue.
     also add every label's value to the labels-dictionary. both saved in preprocessor_data.
@@ -259,10 +297,10 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
     params_dict = get_params_dictionary(current_macro, args, current_macro.namespace, labels_prefix)
 
     preprocessor_data.insert_macro_start_label(
-        f'{labels_prefix}{MACRO_SEPARATOR_STRING}{STARTING_LABEL_IN_MACROS_STRING}', current_macro.code_position)
+        f'{labels_prefix}{MACRO_SEPARATOR_STRING}{STARTING_LABEL_IN_MACROS_STRING}', current_macro.code_position
+    )
 
     for op in current_macro.ops:
-
         if isinstance(op, Label):
             preprocessor_data.insert_label(op.eval_name(params_dict), op.code_position)
 
@@ -279,24 +317,26 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
 
         elif isinstance(op, MacroCall):
             op = op.eval_new(params_dict)
-            next_macro_path = (f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else "") + \
-                f"{op.code_position.short_str()}:{op.macro_name}"
+            next_macro_path = (
+                f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else ""
+            ) + f"{op.code_position.short_str()}:{op.macro_name}"
             with preprocessor_data.prepare_macro_call(op):
-                resolve_macro_aux(preprocessor_data,
-                                  op.macro_name, op.arguments, next_macro_path)
+                resolve_macro_aux(preprocessor_data, op.macro_name, op.arguments, next_macro_path)
 
         elif isinstance(op, RepCall):
             op = op.eval_new(params_dict)
             rep_times = get_rep_times(op, preprocessor_data)
             if rep_times == 0:
                 continue
-            next_macro_path = (f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else "") + \
-                f"{op.code_position.short_str()}:rep{{}}:{op.macro_name}"
+            next_macro_path = (
+                f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else ""
+            ) + f"{op.code_position.short_str()}:rep{{}}:{op.macro_name}"
             with preprocessor_data.prepare_macro_call(op):
                 for i in range(rep_times):
                     op.current_index = i
-                    resolve_macro_aux(preprocessor_data,
-                                      op.macro_name, op.calculate_arguments(i), next_macro_path.format(i))
+                    resolve_macro_aux(
+                        preprocessor_data, op.macro_name, op.calculate_arguments(i), next_macro_path.format(i)
+                    )
 
         elif isinstance(op, Segment):
             op = op.eval_new(params_dict)
@@ -314,12 +354,13 @@ def resolve_macro_aux(preprocessor_data: PreprocessorData,
     preprocessor_data.register_macro_code_size(labels_prefix, init_curr_address)
 
 
-def resolve_macros(memory_width: int,
-                   macros: Dict[MacroName, Macro],
-                   *,
-                   show_statistics: bool = False,
-                   max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
-                   ) -> Tuple[OpsQueue, LabelsDict]:
+def resolve_macros(
+    memory_width: int,
+    macros: Dict[MacroName, Macro],
+    *,
+    show_statistics: bool = False,
+    max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+) -> Tuple[OpsQueue, LabelsDict]:
     """
     unwind the macro tree to a serialized-queue of ops,
     and creates a dictionary from label's name to its address.
