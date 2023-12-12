@@ -3,7 +3,7 @@
 ## The CI
 The project has a CI tests suit, that runs on each pull-request (using [tox](https://tox.wiki/)):
 1. `--regular` tests for all supported python versions, for each os of windows, ubuntu, macos.
-2. Linters: [mypy](https://mypy-lang.org/), [flake8](https://flake8.pycqa.org/en/latest/), [bandit](https://bandit.readthedocs.io/en/latest/).
+2. Linters: [mypy](https://mypy-lang.org/), [flake8](https://flake8.pycqa.org/en/latest/), [bandit](https://bandit.readthedocs.io/en/latest/), [black](https://github.com/psf/black).
    - They run for each os, with the latest supported python.
 3. `pytest --all` in parallel.
    - Runs on the latest supported python, on ubuntu.
@@ -16,6 +16,7 @@ Any PR to the main branch must succeed in all of these tests, in order to be mer
 - `mypy` - search for types related errors.
 - `flake8` - search for style and syntax errors.
 - `bandit --ini tox.ini` - search for common security issues.
+- `black . --check --color --diff` - search for code-formatting issues. 
 
 # Run the tests:
 

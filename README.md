@@ -2,6 +2,8 @@
 
 [![Tests](https://github.com/tomhea/flip-jump/actions/workflows/tests.yml/badge.svg)](https://github.com/tomhea/flip-jump/actions/workflows/tests.yml)
 [![PyPI - Version](https://img.shields.io/pypi/v/flipjump)](https://pypi.org/project/flipjump/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)  
 [![Website](https://img.shields.io/website?down_color=red&down_message=down&up_message=up&url=https%3A%2F%2Fesolangs.org%2Fwiki%2FFlipJump)](https://esolangs.org/wiki/FlipJump)
 [![GitHub Discussions](https://img.shields.io/github/discussions/tomhea/flip-jump)](https://github.com/tomhea/flip-jump/discussions)
 [![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/tomhea/flip-jump)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=Tomhea%2Fflip-jump)
