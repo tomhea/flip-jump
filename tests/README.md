@@ -106,7 +106,7 @@ Then add a new line to the relevant compile-csv and run-csv files, according to 
 
 ### Compile CSVs format:
 
-(files with the next format: ```test_compile_*.csv```)
+(files with the next format: ```tests_tables/test_compile_*.csv```)
 
 | test name    | .fj paths                                                   | out .fjm path                | memory width | version | flags | use stl | treat warnings as errors |
 |--------------|-------------------------------------------------------------|------------------------------|--------------|---------|-------|---------|--------------------------|
@@ -118,7 +118,7 @@ Note that you can specify a single file, or a '|' separated list of files in the
 
 ### Run CSVs format:
 
-(files with the next format: ```test_run_*.csv```)
+(files with the next format: ```tests_tables/test_run_*.csv```)
 
 | test name    | .fjm path                    | input file path           | output file path            | is input a binary file | is output a binary file |
 |--------------|------------------------------|---------------------------|-----------------------------|------------------------|-------------------------|
@@ -130,6 +130,6 @@ Note that you can also emit specifying a file in the input/output cell, and leav
 
 ### Xfail Lists
 
-If you want to add your test, but you want it to [xfail](https://docs.pytest.org/en/7.1.x/how-to/skipping.html#xfail-mark-test-functions-as-expected-to-fail), you can add your test name to:
-- ```xfail_compile.csv``` - to mark its compilation as expected to fail.
-- ```xfail_run.csv``` - to mark its run as expected to fail.
+If you want to add your test, but you want it to [xfail](https://docs.pytest.org/en/7.1.x/how-to/skipping.html#xfail-mark-test-functions-as-expected-to-fail), you can add your test name (in its own line) to:
+- ```tests_tables/xfail_compile.csv``` - to mark its compilation as expected to fail.
+- ```tests_tables/xfail_run.csv``` - to mark its run as expected to fail.

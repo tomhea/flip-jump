@@ -210,10 +210,11 @@ _You can also use the `flipjump.assemble_run_according_to_cmd_line_args(cmd_line
   - inout/ - Contains the .in and .out files for each test.
   - conftest.py - The pytest configuration file. The tests are being generated here.
   - test_fj.py - The base test functions for compilation and running ([how to run](tests/README.md#run-the-tests)).
-  - test_compile_*.csv - Arguments for the compile tests ([compile test arguments format](tests/README.md#compile-csvs-format)).
-  - test_run_*.csv - Arguments for the run tests ([run test arguments format](tests/README.md#run-csvs-format)).
   - conf.json - The tests groups+order lists.
-  - xfail_*.csv - [xfail](https://docs.pytest.org/en/7.1.x/how-to/skipping.html#xfail-mark-test-functions-as-expected-to-fail) these tests.
+  - [tests_tables/](tests/tests_tables)
+    - test_compile_*.csv - Arguments for the compile tests ([compile test arguments format](tests/README.md#compile-csvs-format)).
+    - test_run_*.csv - Arguments for the run tests ([run test arguments format](tests/README.md#run-csvs-format)).
+    - xfail_*.csv - [xfail](https://docs.pytest.org/en/7.1.x/how-to/skipping.html#xfail-mark-test-functions-as-expected-to-fail) these tests.
 
 
 # Read More - Extra Documentation
