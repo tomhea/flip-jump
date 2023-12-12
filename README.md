@@ -233,6 +233,12 @@ If you want to understand how the deep optimized hex macros work, understand how
 
 You can also write and run programs for yourself! It is just [that](README.md#how-to-run) easy :)
 
+## Turing Complete?
+As the language expects a finite memory, like most of today's programming languages, it's technically not Turing complete. 
+Yet, It's very capable.
+
+I wrote a [Brainfuck to Flipjump Compiler (bf2fj)](https://github.com/tomhea/bf2fj) to emphasize just that. 
+Brainfuck is indeed Turing complete, and the compiler proves that flipjump can run any program that brainfuck runs (besides those that require an unbounded memory).
 
 # Contribute
 
