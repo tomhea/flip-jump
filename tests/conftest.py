@@ -289,8 +289,10 @@ def filter_by_test_name(
         return tests_args
 
     return [
-        args for args in tests_args if is_test_name_ok(args.values[0].test_name, exact, contains, startswith, endswith)
-    ]  # type: ignore[union-attr]
+        args
+        for args in tests_args
+        if is_test_name_ok(args.values[0].test_name, exact, contains, startswith, endswith)  # type: ignore[union-attr]
+    ]
 
 
 def pytest_generate_tests(metafunc: Metafunc) -> None:
