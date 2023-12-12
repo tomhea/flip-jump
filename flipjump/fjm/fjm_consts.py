@@ -40,9 +40,9 @@ _segment_size = 8 + 8 + 8 + 8
 
 
 class FJMVersion(Enum):
-    BaseVersion = 0
-    NormalVersion = 1
-    RelativeJumpVersion = 2  # compress-friendly
+    BaseVersion = 0  # initial version, minimal structure
+    NormalVersion = 1  # added flags and reserved
+    RelativeJumpVersion = 2  # compress-friendly: jumps in data are saved relative to their address
     CompressedVersion = 3  # version 2 but data is lzma2-compressed
 
 
