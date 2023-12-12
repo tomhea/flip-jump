@@ -1,10 +1,10 @@
 # The Testing Arena
 
 ## The CI
-The project has a CI tests suit, that runs on each pull-request (using [tox](https://tox.wiki/)):
-1. `--regular` tests for all supported python versions, for each os of windows, ubuntu, macos.
+The project has a CI tests suit, that runs on each pull-request:
+1. `--regular` tests for all supported python versions, for each os of windows, ubuntu, macos (using [tox](https://tox.wiki/)).
 2. Linters: [mypy](https://mypy-lang.org/), [flake8](https://flake8.pycqa.org/en/latest/), [bandit](https://bandit.readthedocs.io/en/latest/), [black](https://github.com/psf/black).
-   - They run for each os, with the latest supported python.
+   - They run on the latest supported python, on ubuntu.
 3. `pytest --all` in parallel.
    - Runs on the latest supported python, on ubuntu.
    - The results are printed as a table in the workflow summery ([for example](https://github.com/tomhea/flip-jump/actions/runs/7170673166/attempts/1#summary-19523946921)).

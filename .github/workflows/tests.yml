@@ -1,3 +1,5 @@
+# Note: add all job names to the deploy-status.needs.
+
 name: Tests
 
 on:
@@ -30,6 +32,21 @@ jobs:
     - name: Test with tox py${{ matrix.python-version }}-${{ matrix.os }}
       run: tox -v
 
+  linters_checkers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[tests]
+      - name: Mypy, Flake, Bandit, Black
+        run: tox -e mypy,flake8,bandit,black
+
   test_full:
     runs-on: ubuntu-latest
     steps:
@@ -55,7 +72,7 @@ jobs:
   # This allows us to have a branch protection rule this entire workflow
   deploy-status:
     runs-on: ubuntu-latest
-    needs: [ test_py_os_variations, test_full ]
+    needs: [ test_py_os_variations, linters_checkers, test_full ]
     if: always()
     steps:
       - name: Successful deploy
