@@ -363,7 +363,8 @@ def get_tests_from_csvs(get_option: Callable[[str], Any]) -> TestsType:
     types_to_run__heavy_first = get_test_types_to_run__heavy_first(get_option)
 
     compile_xfail_list = [line[0] for line in argument_line_iterator(TESTS_TABLES_PATH / "xfail_compile.csv", 1)]
-    run_xfail_list = [line[0] for line in argument_line_iterator(TESTS_TABLES_PATH / "xfail_run.csv", 1)]
+    run_xfail_list = [line[0] for line in
+                      argument_line_iterator(TESTS_TABLES_PATH / "xfail_run.csv", 1)]
 
     save_debug_file, debug_info_length = get_option(DEBUG_INFO_FLAG)
     if is_parallel_active():
