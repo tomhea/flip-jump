@@ -49,8 +49,9 @@ def verify_fjm_file(error_func: ErrorFunc, path: Path) -> None:
         error_func(f'file {path} is not a .fjm file.')
 
 
-def get_files_paths(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_name: str) \
-        -> Tuple[Optional[Path], Path, Path]:
+def get_files_paths(
+    args: argparse.Namespace, error_func: ErrorFunc, temp_dir_name: str
+) -> Tuple[Optional[Path], Path, Path]:
     """
     generate the files paths from args, and create temp paths under temp_dir_name if necessary.
     @param args: the parsed arguments
@@ -117,12 +118,23 @@ def assemble(out_fjm_file: Path, debug_file: Optional[Path], args: argparse.Name
     file_tuples = get_file_tuples(args.files, no_stl=args.no_stl)
     verify_fj_files(error_func, file_tuples)
 
-    fjm_writer = Writer(out_fjm_file, args.width, get_version(args.version, args.outfile is not None),
-                        flags=args.flags, lzma_preset=args.lzma_preset)
-    assembler.assemble(file_tuples, args.width, fjm_writer,
-                       warning_as_errors=args.werror, debugging_file_path=debug_file,
-                       show_statistics=args.stats, print_time=not args.silent,
-                       max_recursion_depth=args.max_recursion_depth)
+    fjm_writer = Writer(
+        out_fjm_file,
+        args.width,
+        get_version(args.version, args.outfile is not None),
+        flags=args.flags,
+        lzma_preset=args.lzma_preset,
+    )
+    assembler.assemble(
+        file_tuples,
+        args.width,
+        fjm_writer,
+        warning_as_errors=args.werror,
+        debugging_file_path=debug_file,
+        show_statistics=args.stats,
+        print_time=not args.silent,
+        max_recursion_depth=args.max_recursion_depth,
+    )
 
 
 def get_fjm_file_path(args: argparse.Namespace, error_func: ErrorFunc, temp_dir_name: str) -> Path:
@@ -182,6 +194,7 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
     add the arguments that are usable in run time.
     @param parser: the parser
     """
+
     def _check_int_positive(value: str) -> int:
         int_value = int(value)
         if int_value <= 0:
@@ -190,19 +203,29 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
 
     run_arguments = parser.add_argument_group('run arguments', 'Ignored when using the --assemble option')
 
-    run_arguments.add_argument('--debug-ops-list', metavar='LENGTH', type=_check_int_positive,
-                               default=LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
-                               help=f"show the last LENGTH executed opcodes on tests that failed during their run "
-                                    f"({LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH} by default)."
-                               )
+    run_arguments.add_argument(
+        '--debug-ops-list',
+        metavar='LENGTH',
+        type=_check_int_positive,
+        default=LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
+        help=f"show the last LENGTH executed opcodes on tests that failed during their run "
+        f"({LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH} by default).",
+    )
 
     run_arguments.add_argument('-t', '--trace', help="output every running opcode", action='store_true')
     run_arguments.add_argument('--no_output', help="don't print the program's output", action='store_true')
 
-    run_arguments.add_argument('-b', '--breakpoint', metavar='NAME', default=[], nargs="+",
-                               help="pause when reaching this label")
-    run_arguments.add_argument('-B', '--breakpoint_contains', metavar='NAME', default=[], nargs="+",
-                               help="pause when reaching any label containing this")
+    run_arguments.add_argument(
+        '-b', '--breakpoint', metavar='NAME', default=[], nargs="+", help="pause when reaching this label"
+    )
+    run_arguments.add_argument(
+        '-B',
+        '--breakpoint_contains',
+        metavar='NAME',
+        default=[],
+        nargs="+",
+        help="pause when reaching any label containing this",
+    )
 
 
 def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
@@ -214,30 +237,47 @@ def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
 
     asm_arguments.add_argument('-o', '--outfile', metavar='PATH', help="output assembled file")
 
-    asm_arguments.add_argument('-w', '--width', type=int, default=64, choices=[8, 16, 32, 64], metavar='WIDTH',
-                               help="specify memory-width. 64 by default")
+    asm_arguments.add_argument(
+        '-w',
+        '--width',
+        type=int,
+        default=64,
+        choices=[8, 16, 32, 64],
+        metavar='WIDTH',
+        help="specify memory-width. 64 by default",
+    )
 
-    supported_versions = ', '.join(f"{version}: {name}"
-                                   for version, name in SUPPORTED_VERSIONS_NAMES.items())
-    asm_arguments.add_argument('-v', '--version', metavar='VERSION', type=int, default=None,
-                               help=f"fjm version (default of {FJMVersion.CompressedVersion}-compressed "
-                                    f"if --outfile specified; version {FJMVersion.NormalVersion} otherwise). "
-                                    f"supported versions: {supported_versions}.")   # default enforced in get_version()
-    asm_arguments.add_argument('-f', '--flags', help="the default .fjm unpacking & running flags",
-                               type=int, default=0)
+    supported_versions = ', '.join(f"{version}: {name}" for version, name in SUPPORTED_VERSIONS_NAMES.items())
+    asm_arguments.add_argument(
+        '-v',
+        '--version',
+        metavar='VERSION',
+        type=int,
+        default=None,  # default enforced in get_version()
+        help=f"fjm version (default of {FJMVersion.CompressedVersion}-compressed "
+        f"if --outfile specified; version {FJMVersion.NormalVersion} otherwise). "
+        f"supported versions: {supported_versions}.",
+    )
+    asm_arguments.add_argument('-f', '--flags', help="the default .fjm unpacking & running flags", type=int, default=0)
 
-    asm_arguments.add_argument('--lzma_preset', type=int, default=lzma.PRESET_DEFAULT, choices=list(range(10)),
-                               help=f"The preset used for the LZMA2 algorithm compression ("
-                                    f"{lzma.PRESET_DEFAULT} by default; "
-                                    f"used when version={FJMVersion.CompressedVersion}).")
+    asm_arguments.add_argument(
+        '--lzma_preset',
+        type=int,
+        default=lzma.PRESET_DEFAULT,
+        choices=list(range(10)),
+        help=f"The preset used for the LZMA2 algorithm compression ("
+        f"{lzma.PRESET_DEFAULT} by default; "
+        f"used when version={FJMVersion.CompressedVersion}).",
+    )
 
-    asm_arguments.add_argument('--werror', help="treat all assemble warnings as errors",
-                               action='store_true')
-    asm_arguments.add_argument('--max_recursion_depth', type=int, default=DEFAULT_MAX_MACRO_RECURSION_DEPTH,
-                               help='The compiler supports macros that recursively uses other macros, '
-                                    'up to the this specified depth')
-    asm_arguments.add_argument('--no_stl', help="don't assemble/link the standard library files",
-                               action='store_true')
+    asm_arguments.add_argument('--werror', help="treat all assemble warnings as errors", action='store_true')
+    asm_arguments.add_argument(
+        '--max_recursion_depth',
+        type=int,
+        default=DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+        help='The compiler supports macros that recursively uses other macros, ' 'up to the this specified depth',
+    )
+    asm_arguments.add_argument('--no_stl', help="don't assemble/link the standard library files", action='store_true')
     asm_arguments.add_argument('--stats', help="show macro code-size statistics", action='store_true')
 
 
@@ -247,11 +287,19 @@ def add_universal_arguments(parser: argparse.ArgumentParser) -> None:
     @param parser: the parser
     """
     parser.add_argument('files', help="the .fj files to assemble (if run-only, the .fjm file to run)", nargs='+')
-    parser.add_argument('-s', '--silent', action='store_true',
-                        help="don't show assemble & run times, and run statistics")
-    parser.add_argument('-d', '--debug', nargs='?', const='', metavar='PATH', type=str,
-                        help="debug-file path (used for breakpoints). If you both assemble & run, "
-                             "you may use this option without specifying a path, and a temporary file will be used")
+    parser.add_argument(
+        '-s', '--silent', action='store_true', help="don't show assemble & run times, and run statistics"
+    )
+    parser.add_argument(
+        '-d',
+        '--debug',
+        nargs='?',
+        const='',
+        metavar='PATH',
+        type=str,
+        help="debug-file path (used for breakpoints). If you both assemble & run, "
+        "you may use this option without specifying a path, and a temporary file will be used",
+    )
 
 
 def add_command_arguments(parser: argparse.ArgumentParser) -> None:
@@ -283,15 +331,15 @@ def get_argument_parser() -> argparse.ArgumentParser:
     return argparse.ArgumentParser(
         description='Assemble and Run FlipJump programs.',
         usage='fj [--asm | --run] [arguments] files [files ...]\n'
-              'example usage:\n'
-              '  fj  a.fj b.fj                                      // assemble and run\n'
-              '  fj  a.fj b.fj  -o out.fjm                          // assemble save and run\n'
-              '  fj  code.fj  -d  -B swap_start exit_label          // assemble and debug\n\n'
-              '  fj --asm  -o o.fjm a.fj  -d dir/debug.fjd          // assemble and save debug info\n'
-              '  fj --asm  -o out.fjm  a.fj b.fj  --no_stl  -w 32   '
-              '// assemble without the standard library, 32 bit memory\n\n'
-              '  fj --run  prog.fjm                                 // just run\n'
-              '  fj --run  o.fjm  -d dir/debug.fjd  -B label        // run and debug\n '
+        'example usage:\n'
+        '  fj  a.fj b.fj                                      // assemble and run\n'
+        '  fj  a.fj b.fj  -o out.fjm                          // assemble save and run\n'
+        '  fj  code.fj  -d  -B swap_start exit_label          // assemble and debug\n\n'
+        '  fj --asm  -o o.fjm a.fj  -d dir/debug.fjd          // assemble and save debug info\n'
+        '  fj --asm  -o out.fjm  a.fj b.fj  --no_stl  -w 32   '
+        '// assemble without the standard library, 32 bit memory\n\n'
+        '  fj --run  prog.fjm                                 // just run\n'
+        '  fj --run  o.fjm  -d dir/debug.fjd  -B label        // run and debug\n ',
     )
 
 

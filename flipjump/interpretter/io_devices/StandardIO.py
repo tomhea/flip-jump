@@ -9,6 +9,7 @@ class StandardIO(IODevice):
     """
     read from stdin, write to stdout
     """
+
     def __init__(self, output_verbose: bool):
         """
         @param output_verbose: if true print program's output
@@ -51,7 +52,8 @@ class StandardIO(IODevice):
 
     def get_output(self, *, allow_incomplete_output: bool = False) -> bytes:
         if not allow_incomplete_output and 0 != self.bits_to_write_in_output_byte:
-            raise IncompleteOutput("tries to get output when an unaligned number of bits was outputted "
-                                   "(doesn't divide 8)")
+            raise IncompleteOutput(
+                "tries to get output when an unaligned number of bits was outputted " "(doesn't divide 8)"
+            )
 
         return self._output

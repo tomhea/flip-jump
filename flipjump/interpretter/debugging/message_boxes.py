@@ -3,12 +3,15 @@ from typing import List, Optional
 from flipjump.utils.exceptions import FlipJumpMissingImportException
 
 
-EASYGUI_NOT_INSTALLED_MESSAGE = "This debug feature requires the easygui python library.\n"\
-                                "Try `pip install easygui`, and also install tkinter on your system."
+EASYGUI_NOT_INSTALLED_MESSAGE = (
+    "This debug feature requires the easygui python library.\n"
+    "Try `pip install easygui`, and also install tkinter on your system."
+)
 
 
-def display_message_box_with_choices_and_get_answer(body_message: str, title_message: str,
-                                                    choices: List[str], default_cancel_answer: str) -> str:
+def display_message_box_with_choices_and_get_answer(
+    body_message: str, title_message: str, choices: List[str], default_cancel_answer: str
+) -> str:
     """
     Displays the message box query (with fixed choices), and return the answer.
     If easygui isn't installed correctly, raises an exception.

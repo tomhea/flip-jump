@@ -5,6 +5,7 @@ class IODevice(ABC):
     """
     abstract IO device
     """
+
     @abstractmethod
     def read_bit(self) -> bool:
         return False

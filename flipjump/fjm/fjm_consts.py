@@ -42,8 +42,8 @@ _segment_size = 8 + 8 + 8 + 8
 class FJMVersion(Enum):
     BaseVersion = 0
     NormalVersion = 1
-    RelativeJumpVersion = 2     # compress-friendly
-    CompressedVersion = 3       # version 2 but data is lzma2-compressed
+    RelativeJumpVersion = 2  # compress-friendly
+    CompressedVersion = 3  # version 2 but data is lzma2-compressed
 
 
 SUPPORTED_VERSIONS_NAMES = {
@@ -63,4 +63,4 @@ def _lzma_compression_filters(dw: int, preset: int) -> List[Dict[str, int]]:
 
 
 def _new_garbage_val() -> int:
-    return 0        # The value read when reading a word outside any segment.
+    return 0  # The value read when reading a word outside any segment.

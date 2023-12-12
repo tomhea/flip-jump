@@ -6,6 +6,7 @@ class FixedIO(IODevice):
     """
     read from fixed input, don't output (with get_output functionality)
     """
+
     def __init__(self, _input: bytes):
         self.remaining_input = _input
         self._output = b''
@@ -45,7 +46,8 @@ class FixedIO(IODevice):
         @return: full output until now
         """
         if not allow_incomplete_output and 0 != self.bits_to_write_in_output_byte:
-            raise IncompleteOutput("tries to get output when an unaligned number of bits was outputted "
-                                   "(doesn't divide 8)")
+            raise IncompleteOutput(
+                "tries to get output when an unaligned number of bits was outputted " "(doesn't divide 8)"
+            )
 
         return self._output

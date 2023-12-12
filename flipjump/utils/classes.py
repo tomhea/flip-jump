@@ -31,6 +31,7 @@ class PrintTimer:
     with PrintTimer('long_function time: '):
         long_function()
     """
+
     def __init__(self, init_message: str, *, print_time: bool = True):
         self.init_message = init_message
         self.print_time = print_time
@@ -49,6 +50,7 @@ class RunStatistics:
     """
     maintains times and counters of the current run.
     """
+
     class PauseTimer:
         def __init__(self) -> None:
             self.paused_time: float = 0.0

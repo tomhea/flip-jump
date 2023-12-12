@@ -20,17 +20,22 @@ def assert_address_in_memory(memory_width: int, address: int) -> None:
 
 def validate_addresses(memory_width: int, first_address: int, last_address: int) -> None:
     if first_address % memory_width != 0 or last_address % memory_width != 0:
-        raise FlipJumpAssemblerException(f'segment boundaries are unaligned: '
-                                         f'[{hex(first_address)}, {hex(last_address - 1)}].')
+        raise FlipJumpAssemblerException(
+            f'segment boundaries are unaligned: ' f'[{hex(first_address)}, {hex(last_address - 1)}].'
+        )
 
     assert_address_in_memory(memory_width, first_address)
     assert_address_in_memory(memory_width, last_address - 1)
 
 
-def add_segment_to_fjm(memory_width: int,
-                       fjm_writer: Writer,
-                       first_address: int, last_address: int,
-                       fj_words: List[int], wflip_words: List[int]) -> None:
+def add_segment_to_fjm(
+    memory_width: int,
+    fjm_writer: Writer,
+    first_address: int,
+    last_address: int,
+    fj_words: List[int],
+    wflip_words: List[int],
+) -> None:
     """
     The new segment will be placed in [first_address, last_address),
     And will include the next data: fj_words + wflip_words.
@@ -48,8 +53,10 @@ def add_segment_to_fjm(memory_width: int,
     try:
         fjm_writer.add_segment(segment_start_address, segment_length, data_start, len(data_words))
     except FlipJumpWriteFjmException as e:
-        exception_message = (f"failed to add the segment: "
-                             f"{fjm_writer.get_segment_addresses_repr(segment_start_address, segment_length)}.")
+        exception_message = (
+            f"failed to add the segment: "
+            f"{fjm_writer.get_segment_addresses_repr(segment_start_address, segment_length)}."
+        )
         raise FlipJumpAssemblerException(exception_message) from e
 
     fj_words.clear()
@@ -78,7 +85,7 @@ class BinaryData:
         self.fj_words: List[int] = []
         self.wflip_words: List[int] = []
 
-        self.padding_ops_indices: List[int] = []    # indices in self.fj_words
+        self.padding_ops_indices: List[int] = []  # indices in self.fj_words
 
         # return_address -> { (f3, f2, f1, f0) -> start_flip_address }
         self.wflips_dict: Dict[int, Dict[Tuple[int, ...], int]] = defaultdict(lambda: {})
@@ -97,9 +104,9 @@ class BinaryData:
         if self.next_wflip_address == self.first_address:
             return
 
-        add_segment_to_fjm(self.memory_width, fjm_writer,
-                           self.first_address, self.next_wflip_address,
-                           self.fj_words, self.wflip_words)
+        add_segment_to_fjm(
+            self.memory_width, fjm_writer, self.first_address, self.next_wflip_address, self.fj_words, self.wflip_words
+        )
 
     def _insert_wflip_label(self, address: int) -> None:
         self.labels[f'{WFLIP_LABEL_PREFIX}{self.wflips_so_far}'] = address
@@ -107,7 +114,7 @@ class BinaryData:
 
     def insert_fj_op(self, flip: int, jump: int) -> None:
         self.fj_words += (flip, jump)
-        self.current_address += 2*self.memory_width
+        self.current_address += 2 * self.memory_width
 
     def insert_wflip_ops(self, word_address: int, flip_value: int, return_address: int) -> None:
         if 0 == flip_value:
@@ -171,8 +178,7 @@ class BinaryData:
         self.padding_ops_indices.clear()
 
 
-def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
-                   memory_width: int, fjm_writer: Writer) -> None:
+def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int], memory_width: int, fjm_writer: Writer) -> None:
     """
     resolve the labels and expressions to get the list of fj ops, and add all the data and segments into the fjm_writer.
     @param ops:[in]: the list ops returned from the preprocessor stage
@@ -195,8 +201,9 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
 
         elif isinstance(op, WordFlip):
             try:
-                binary_data.insert_wflip_ops(op.get_word_address(labels), op.get_flip_value(labels),
-                                             op.get_return_address(labels))
+                binary_data.insert_wflip_ops(
+                    op.get_word_address(labels), op.get_flip_value(labels), op.get_return_address(labels)
+                )
             except FlipJumpException as e:
                 raise FlipJumpAssemblerException(f"{e} in op {op}.")
 
@@ -215,16 +222,17 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int],
     binary_data.close_and_add_segment(fjm_writer)
 
 
-def assemble(input_files: List[Tuple[str, Path]],
-             memory_width: int,
-             fjm_writer: Writer,
-             *,
-             warning_as_errors: bool = True,
-             debugging_file_path: Optional[Path] = None,
-             show_statistics: bool = False,
-             print_time: bool = True,
-             max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
-             ) -> None:
+def assemble(
+    input_files: List[Tuple[str, Path]],
+    memory_width: int,
+    fjm_writer: Writer,
+    *,
+    warning_as_errors: bool = True,
+    debugging_file_path: Optional[Path] = None,
+    show_statistics: bool = False,
+    print_time: bool = True,
+    max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+) -> None:
     """
     runs the assembly pipeline. assembles the input files to a .fjm.
     :param input_files:[in]: a list of (short_file_name, fj_file_path). The files will to be parsed in that given order.
@@ -242,8 +250,9 @@ def assemble(input_files: List[Tuple[str, Path]],
             macros = parse_macro_tree(input_files, memory_width, warning_as_errors)
 
         with PrintTimer('  macro resolve:   ', print_time=print_time):
-            ops, labels = resolve_macros(memory_width, macros,
-                                         show_statistics=show_statistics, max_recursion_depth=max_recursion_depth)
+            ops, labels = resolve_macros(
+                memory_width, macros, show_statistics=show_statistics, max_recursion_depth=max_recursion_depth
+            )
 
         with PrintTimer('  labels resolve:  ', print_time=print_time):
             labels_resolve(ops, labels, memory_width, fjm_writer)
@@ -255,5 +264,6 @@ def assemble(input_files: List[Tuple[str, Path]],
     except FlipJumpException as fj_exception:
         raise fj_exception
     except Exception as unknown_exception:
-        raise FlipJumpAssemblerException("Unknown exception during assembling the .fj files, please report this bug") \
-            from unknown_exception
+        raise FlipJumpAssemblerException(
+            "Unknown exception during assembling the .fj files, please report this bug"
+        ) from unknown_exception

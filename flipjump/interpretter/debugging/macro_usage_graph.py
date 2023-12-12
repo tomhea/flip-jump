@@ -5,9 +5,8 @@ from flipjump.utils.constants import MACRO_SEPARATOR_STRING
 
 
 def _prepare_first_and_second_level_significant_macros(
-        child_significance_min_thresh: float, macro_code_size: Dict[str, int],
-        main_thresh: float, secondary_thresh: float)\
-        -> Tuple[Dict[str, int], Dict[str, Dict[str, int]]]:
+    child_significance_min_thresh: float, macro_code_size: Dict[str, int], main_thresh: float, secondary_thresh: float
+) -> Tuple[Dict[str, int], Dict[str, Dict[str, int]]]:
     first_level = {}
     second_level: Dict[str, Dict[str, int]] = collections.defaultdict(lambda: dict())
     for k, v in macro_code_size.items():
@@ -24,7 +23,7 @@ def _prepare_first_and_second_level_significant_macros(
             parent, name = k_split
             if float(v) / macro_code_size[parent] < child_significance_min_thresh:
                 continue
-            if len(name.split(':')) == 4:   # if it's a rep
+            if len(name.split(':')) == 4:  # if it's a rep
                 continue
             second_level[parent][name] = v
     return first_level, second_level
@@ -34,8 +33,9 @@ def _clean_name_for_pie_graph(macro_name: str) -> str:
     return macro_name
 
 
-def _choose_most_significant_macros(first_level: Dict[str, int], second_level: Dict[str, Dict[str, int]],
-                                    secondary_thresh: float, total_code_size: int) -> List[Tuple[str, int]]:
+def _choose_most_significant_macros(
+    first_level: Dict[str, int], second_level: Dict[str, Dict[str, int]], secondary_thresh: float, total_code_size: int
+) -> List[Tuple[str, int]]:
     chosen = []
     for k, v in sorted(first_level.items(), key=lambda x: x[1], reverse=True):
         k_name = _clean_name_for_pie_graph(k)
@@ -63,21 +63,33 @@ def _show_macro_usage_graph(chosen_macros: List[Tuple[str, int]]) -> None:
         print('\n\n\nThe most used macros are:\n')
         for macro_name, ops_count in ordered_chosen_macros:
             print(f'  {macro_name}:  {ops_count:,} ops ({ops_count / total_ops:.2%})')
-        print("\n\n* The statistics can be displayed in an interactive graph - "
-              "that feature requires the plotly python library. *\n"
-              "  Try `pip install plotly`.\n")
+        print(
+            "\n\n* The statistics can be displayed in an interactive graph - "
+            "that feature requires the plotly python library. *\n"
+            "  Try `pip install plotly`.\n"
+        )
         return
 
-    fig = go.Figure(data=[go.Pie(labels=[label for label, value in chosen_macros],
-                                 values=[value for label, value in chosen_macros],
-                                 textinfo='label+percent'
-                                 )])
+    fig = go.Figure(
+        data=[
+            go.Pie(
+                labels=[label for label, value in chosen_macros],
+                values=[value for label, value in chosen_macros],
+                textinfo='label+percent',
+            )
+        ]
+    )
     fig.show()
 
 
-def show_macro_usage_pie_graph(macro_code_size: Dict[str, int], total_code_size: int, *,
-                               min_main_thresh: float = 0.01, min_secondary_thresh: float = 0.001,
-                               child_significance_min_thresh: float = 0.1) -> None:
+def show_macro_usage_pie_graph(
+    macro_code_size: Dict[str, int],
+    total_code_size: int,
+    *,
+    min_main_thresh: float = 0.01,
+    min_secondary_thresh: float = 0.001,
+    child_significance_min_thresh: float = 0.1,
+) -> None:
     """
     choose and present in a pie graph the macros with the most code-usage
     @param macro_code_size: dictionary between macro-paths and their code-size.
