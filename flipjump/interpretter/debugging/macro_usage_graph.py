@@ -21,7 +21,7 @@ def _prepare_first_and_second_level_significant_macros(
             if len(k_split) != 2:
                 continue
             parent, name = k_split
-            if float(v) / macro_code_size[parent] < child_significance_min_thresh:
+            if macro_code_size[parent] == 0 or float(v) / macro_code_size[parent] < child_significance_min_thresh:
                 continue
             if len(name.split(':')) == 4:  # if it's a rep
                 continue
@@ -60,9 +60,10 @@ def _show_macro_usage_graph(chosen_macros: List[Tuple[str, int]]) -> None:
         ordered_chosen_macros = sorted(chosen_macros, key=lambda name_count: name_count[1], reverse=True)
         total_ops = sum([count for name, count in chosen_macros])
 
-        print('\n\n\nThe most used macros are:\n')
-        for macro_name, ops_count in ordered_chosen_macros:
-            print(f'  {macro_name}:  {ops_count:,} ops ({ops_count / total_ops:.2%})')
+        if total_ops > 0:
+            print('\n\n\nThe most used macros are:\n')
+            for macro_name, ops_count in ordered_chosen_macros:
+                print(f'  {macro_name}:  {ops_count:,} ops ({ops_count / total_ops:.2%})')
         print(
             "\n\n* The statistics can be displayed in an interactive graph - "
             "that feature requires the plotly python library. *\n"
