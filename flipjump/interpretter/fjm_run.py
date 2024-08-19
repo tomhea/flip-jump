@@ -47,8 +47,12 @@ class TerminationStatistics:
         @param output_to_print: if specified and terminated not by looping - print the given output.
         """
 
-        flips_percentage = self.flip_counter / self.op_counter * 100
-        jumps_percentage = self.jump_counter / self.op_counter * 100
+        if self.op_counter:
+            flips_percentage = self.flip_counter / self.op_counter * 100
+            jumps_percentage = self.jump_counter / self.op_counter * 100
+        else:
+            flips_percentage = 0
+            jumps_percentage = 0
 
         last_ops_str = ''
         output_str = ''
