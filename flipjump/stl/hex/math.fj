@@ -41,8 +41,10 @@ ns hex {
     //   dst[:dst_n] += const
     // @requires hex.add.init (or hex.init)
     // n_const is the hex-length of const, without all of it's least-significant-hexes zeros.
-    def add_constant n, dst, const {
+    def add_constant n, dst, const @ end {
+        stl.comp_if0 const, end
         .add.add_constant_with_leading_zeros n, dst, const, (#(const&(0-const)))-1
+      end:
     }
     ns add {
         def add_constant_with_leading_zeros n, dst, const, leading_lsb_const_zeros {
