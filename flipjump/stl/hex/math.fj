@@ -38,12 +38,11 @@ ns hex {
 
     //  Time Complexity: n_const(4@+12)   + 5@+2
     // Space Complexity: n_const(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+29
-    //   dst[:dst_n] += const
+    //   dst[:n] += const
     // @requires hex.add.init (or hex.init)
     // n_const is the hex-length of const, without all of it's least-significant-hexes zeros.
     def add_constant n, dst, const @ end {
-        stl.comp_if0 const, end
-        .add.add_constant_with_leading_zeros n, dst, const, (#(const&(0-const)))-1
+        rep(const!=0, _) .add.add_constant_with_leading_zeros n, dst, const, (#(const&(0-const)))-1
       end:
     }
     ns add {
