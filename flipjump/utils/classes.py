@@ -19,9 +19,12 @@ class TerminationCause(IntEnum):
     UnalignedOp = 4
     # Finished by trying to read/write something out of the defined memory (probably a bug in the fj-program)
     RuntimeMemoryError = 5
+    # Finished by keyboard interrupt from the user
+    KeyboardInterrupt = 6
 
     def __str__(self) -> str:
-        return ['looping', 'EOF', 'ip<2w', 'unaligned-word', 'unaligned-op', 'runtime-memory-error'][self.value]
+        return ['looping', 'EOF', 'ip<2w', 'unaligned-word', 'unaligned-op',
+                'runtime-memory-error', "keyboard-interrupt"][self.value]
 
 
 class PrintTimer:
