@@ -23,8 +23,15 @@ class TerminationCause(IntEnum):
     KeyboardInterrupt = 6
 
     def __str__(self) -> str:
-        return ['looping', 'EOF', 'ip<2w', 'unaligned-word', 'unaligned-op',
-                'runtime-memory-error', "keyboard-interrupt"][self.value]
+        return [
+            'looping',
+            'EOF',
+            'ip<2w',
+            'unaligned-word',
+            'unaligned-op',
+            'runtime-memory-error',
+            "keyboard-interrupt",
+        ][self.value]
 
 
 class PrintTimer:
