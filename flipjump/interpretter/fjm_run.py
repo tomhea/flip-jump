@@ -196,6 +196,8 @@ def run(
         return TerminationStatistics(statistics, TerminationCause.RuntimeMemoryError)
     except FlipJumpException as fj_exception:
         raise fj_exception
+    except KeyboardInterrupt:
+        return TerminationStatistics(statistics, TerminationCause.KeyboardInterrupt)
     except Exception as unknown_exception:
         raise FlipJumpRuntimeException(
             "Unknown exception during running an .fjm file, please report this bug"
