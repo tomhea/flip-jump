@@ -1,5 +1,7 @@
 hex_func7, programs/func_tests/func7.fj,tests/compiled/func_tests/func7.fjm, 64,3,0, True,True
 
+shra, programs/simple_math_checks/shra.fj,tests/compiled/simple_math_checks/shra.fjm, 64,3,0, True,True
+
 calc, programs/calc.fj,tests/compiled/calc.fjm, 64,3,0, True,True
 
 hex_func1, programs/func_tests/func1.fj,tests/compiled/func_tests/func1.fjm, 64,3,0, True,True
