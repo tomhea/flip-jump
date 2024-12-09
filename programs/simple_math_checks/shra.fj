@@ -1,0 +1,29 @@
+stl.startup
+
+SHRA_BIT_NUM = 0xe71e3e4a716549fb31fc565d0dbb2f96c846c32ee4018325d1cd59436959489e67e9c48d3c4861da188988ead4f9fefab18e0c51c22c7241405f456ff95023b9cec204245f9bc9285cdead281e5aef9458296a4036cdb03ffcece333cb5c2d05fd66ddf091b82de8e16bc08b648ab018a3f05a1d812f94223419680ea44e0b11121da44b5bdf7f55a1346ea0d69a244177005a266bfb233372c7e12a8b6f76a39c1364624820a19d395f224d19d91fb6f535c8d485420d4c6520065687092d730d5257944ce12a5e
+rep(25, i) test_shra 32, (SHRA_BIT_NUM>>(37*i))&((1<<32)-1), (SHRA_BIT_NUM>>(37*i + 32))&((1<<5)-1)
+
+stl.loop
+
+
+hex.init
+
+def test_shra n, x, shift @ lt, eq, gt, xh, ch, end {
+    bit.shra n, shift, xh
+    bit.cmp n, xh, ch, lt, eq, gt
+
+  lt:
+    stl.output '<'
+    ;end
+  eq:
+    stl.output '='
+    ;end
+  gt:
+    stl.output '>'
+    ;end
+
+  xh: bit.vec n, x
+  ch: bit.vec n, x&(1<<(n-1)) ? ((x>>shift)&((1<<n)-1)) | (((1<<shift)-1) << (n-shift)) : (x>>shift)&((1<<n)-1)
+  end:
+    stl.output '\n'
+}

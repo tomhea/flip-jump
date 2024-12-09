@@ -1,5 +1,7 @@
 hex_func7, tests/compiled/func_tests/func7.fjm, ,tests/inout/func_tests/func7.out, False,False
 
+shra, tests/compiled/simple_math_checks/shra.fjm, ,tests/inout/simple_math_checks/25equals.out, False,False
+
 calc1, tests/compiled/calc.fjm, tests/inout/calc_tests/calc1.in,tests/inout/calc_tests/calc1.out, False,False
 calc2, tests/compiled/calc.fjm, tests/inout/calc_tests/calc2.in,tests/inout/calc_tests/calc2.out, False,False
 calc3, tests/compiled/calc.fjm, tests/inout/calc_tests/calc3.in,tests/inout/calc_tests/calc3.out, False,False
