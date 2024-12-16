@@ -31,7 +31,9 @@ class FlipJumpRuntimeException(FlipJumpException):
 
 
 class FlipJumpRuntimeMemoryException(FlipJumpRuntimeException):
-    pass
+    def __init__(self, message: str, memory_address: int):
+        super().__init__(message)
+        self.memory_address = memory_address
 
 
 class FlipJumpMissingImportException(FlipJumpException):
