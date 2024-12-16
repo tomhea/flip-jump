@@ -40,6 +40,7 @@ ns hex {
     // Space Complexity: n_const(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+29
     //   dst[:n] += const
     // @requires hex.add.init (or hex.init)
+    // const must be a positive constant.
     // n_const is the hex-length of const, without all of it's least-significant-hexes zeros.
     def add_constant n, dst, const @ end {
         rep(const!=0, _) .add.add_constant_with_leading_zeros n, dst, const, (#(const&(0-const)))-1
