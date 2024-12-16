@@ -20,8 +20,13 @@ class TerminationStatistics:
     also saves the program's output.
     """
 
-    def __init__(self, run_statistics: RunStatistics, termination_cause: TerminationCause,
-                 *, memory_error_address: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        run_statistics: RunStatistics,
+        termination_cause: TerminationCause,
+        *,
+        memory_error_address: Optional[int] = None,
+    ) -> None:
         self.run_time = run_statistics.get_run_time()
 
         self.op_counter = run_statistics.op_counter
@@ -198,8 +203,9 @@ def run(
             ip = jump_address
 
     except FlipJumpRuntimeMemoryException as mem_e:
-        return TerminationStatistics(statistics, TerminationCause.RuntimeMemoryError,
-                                     memory_error_address=mem_e.memory_address)
+        return TerminationStatistics(
+            statistics, TerminationCause.RuntimeMemoryError, memory_error_address=mem_e.memory_address
+        )
     except FlipJumpException as fj_exception:
         raise fj_exception
     except KeyboardInterrupt:

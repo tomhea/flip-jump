@@ -147,10 +147,7 @@ class Reader:
 
             garbage_val = _new_garbage_val()
             memory_address = word_address << self.memory_width
-            garbage_message = (
-                f'Reading garbage word at mem[{hex(memory_address)[2:]}]'
-                f' = {hex(garbage_val)[2:]}'
-            )
+            garbage_message = f'Reading garbage word at mem[{hex(memory_address)[2:]}] = {hex(garbage_val)[2:]}'
 
             if GarbageHandling.Stop == self.garbage_handling:
                 raise FlipJumpRuntimeMemoryException(garbage_message, memory_address)
