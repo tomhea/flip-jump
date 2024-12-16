@@ -83,7 +83,7 @@ class TerminationStatistics:
 
         termination_cause_str = str(self.termination_cause)
         if self.termination_cause == TerminationCause.RuntimeMemoryError:
-            termination_cause_str += f" (address {self.memory_error_address:08x})"
+            termination_cause_str += f" (address {hex(self.memory_error_address)})"
         print(
             f'\n'
             f'{output_str}'
