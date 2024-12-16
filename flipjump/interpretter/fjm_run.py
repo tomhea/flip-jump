@@ -82,7 +82,7 @@ class TerminationStatistics:
                 output_str = f"Program's output before it was terminated:  {output_to_print!r}\n\n"
 
         termination_cause_str = str(self.termination_cause)
-        if self.termination_cause == TerminationCause.RuntimeMemoryError:
+        if self.memory_error_address is not None:
             termination_cause_str += f" (address {hex(self.memory_error_address)})"
         print(
             f'\n'
