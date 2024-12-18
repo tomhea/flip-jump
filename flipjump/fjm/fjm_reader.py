@@ -146,13 +146,11 @@ class Reader:
                     return 0
 
             garbage_val = _new_garbage_val()
-            garbage_message = (
-                f'Reading garbage word at mem[{hex(word_address << self.memory_width)[2:]}]'
-                f' = {hex(garbage_val)[2:]}'
-            )
+            memory_address = word_address << self.memory_width
+            garbage_message = f'Reading garbage word at mem[{hex(memory_address)[2:]}] = {hex(garbage_val)[2:]}'
 
             if GarbageHandling.Stop == self.garbage_handling:
-                raise FlipJumpRuntimeMemoryException(garbage_message)
+                raise FlipJumpRuntimeMemoryException(garbage_message, memory_address)
             elif GarbageHandling.OnlyWarning == self.garbage_handling:
                 print(f'\nWarning:  {garbage_message}')
             elif GarbageHandling.SlowRead == self.garbage_handling:
@@ -210,7 +208,7 @@ class Reader:
         if bit_offset == 0:
             return self._get_memory_word(word_address)
         if word_address == ((1 << self.memory_width) - 1):
-            raise FlipJumpRuntimeMemoryException('Accessed outside of memory (beyond the last bit).')
+            raise FlipJumpRuntimeMemoryException('Accessed outside of memory (beyond the last bit).', bit_address)
 
         lsw = self._get_memory_word(word_address)
         msw = self._get_memory_word(word_address + 1)

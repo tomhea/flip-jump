@@ -20,7 +20,13 @@ class TerminationStatistics:
     also saves the program's output.
     """
 
-    def __init__(self, run_statistics: RunStatistics, termination_cause: TerminationCause):
+    def __init__(
+        self,
+        run_statistics: RunStatistics,
+        termination_cause: TerminationCause,
+        *,
+        memory_error_address: Optional[int] = None,
+    ) -> None:
         self.run_time = run_statistics.get_run_time()
 
         self.op_counter = run_statistics.op_counter
@@ -29,6 +35,7 @@ class TerminationStatistics:
         self.last_ops_addresses: Optional[Deque[int]] = run_statistics.last_ops_addresses
 
         self.termination_cause = termination_cause
+        self.memory_error_address = memory_error_address
 
     @staticmethod
     def beautify_address(address: int, breakpoint_handler: Optional[BreakpointHandler]) -> str:
@@ -74,10 +81,13 @@ class TerminationStatistics:
             if output_to_print is not None:
                 output_str = f"Program's output before it was terminated:  {output_to_print!r}\n\n"
 
+        termination_cause_str = str(self.termination_cause)
+        if self.memory_error_address is not None:
+            termination_cause_str += f" (address {hex(self.memory_error_address)})"
         print(
             f'\n'
             f'{output_str}'
-            f'Finished by {str(self.termination_cause)} after {self.run_time:.3f}s '
+            f'Finished by {termination_cause_str} after {self.run_time:.3f}s '
             f'('
             f'{self.op_counter:,} ops executed; '
             f'{flips_percentage:.2f}% flips, '
@@ -192,8 +202,10 @@ def run(
             # JUMP!
             ip = jump_address
 
-    except FlipJumpRuntimeMemoryException:
-        return TerminationStatistics(statistics, TerminationCause.RuntimeMemoryError)
+    except FlipJumpRuntimeMemoryException as mem_e:
+        return TerminationStatistics(
+            statistics, TerminationCause.RuntimeMemoryError, memory_error_address=mem_e.memory_address
+        )
     except FlipJumpException as fj_exception:
         raise fj_exception
     except KeyboardInterrupt:
