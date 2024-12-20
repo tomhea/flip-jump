@@ -146,7 +146,7 @@ class Reader:
                     return 0
 
             garbage_val = _new_garbage_val()
-            memory_address = word_address << self.memory_width
+            memory_address = word_address << (self.memory_width.bit_length() - 1)
             garbage_message = f'Reading garbage word at mem[{hex(memory_address)[2:]}] = {hex(garbage_val)[2:]}'
 
             if GarbageHandling.Stop == self.garbage_handling:
