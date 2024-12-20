@@ -1,6 +1,6 @@
 stl.startup
 
-rep(256, i) test_shr_hex 2, i
+rep(256, i) test_shr_hex 2, 1, i
 
 stl.loop
 

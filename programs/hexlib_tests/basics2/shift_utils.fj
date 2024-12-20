@@ -39,8 +39,8 @@ def test_shr_bit n, x @ lt, eq, gt, xh, ch, end {
 }
 
 
-def test_shl_hex n, x @ lt, eq, gt, xh, ch, end {
-    hex.shl_hex n, xh
+def test_shl_hex n, times, x @ lt, eq, gt, xh, ch, end {
+    hex.shl_hex n, times, xh
     hex.cmp n, xh, ch, lt, eq, gt
 
   lt:
@@ -54,13 +54,13 @@ def test_shl_hex n, x @ lt, eq, gt, xh, ch, end {
     ;end
 
   xh: hex.vec n, x
-  ch: hex.vec n, (x<<4)&((1<<(4*n))-1)
+  ch: hex.vec n, (x<<(4*times)) & ((1<<(4*n))-1)
   end:
     stl.output '\n'
 }
 
-def test_shr_hex n, x @ lt, eq, gt, xh, ch, end {
-    hex.shr_hex n, xh
+def test_shr_hex n, times, x @ lt, eq, gt, xh, ch, end {
+    hex.shr_hex n, times, xh
     hex.cmp n, xh, ch, lt, eq, gt
 
   lt:
@@ -74,7 +74,7 @@ def test_shr_hex n, x @ lt, eq, gt, xh, ch, end {
     ;end
 
   xh: hex.vec n, x
-  ch: hex.vec n, (x>>4)&((1<<(4*n))-1)
+  ch: hex.vec n, (x>>(4*times)) & ((1<<(4*n))-1)
   end:
     stl.output '\n'
 }

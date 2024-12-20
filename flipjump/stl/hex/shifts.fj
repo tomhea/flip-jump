@@ -22,10 +22,19 @@ ns hex {
 
     //  Time Complexity: n(@+4)
     // Space Complexity: n(@+28)
-    // dst[:n] <<= 4
+    //   dst[:n] <<= 4
     def shl_hex n, dst {
-        .zero dst+(n-1)*dw
-        rep(n-1, i) .xor_zero dst+(n-1-i)*dw, dst+(n-2-i)*dw
+        .shl_hex n, 1, dst
+    }
+
+    //  Time Complexity: n(@+4)
+    // Space Complexity: n(@+28)
+    //   dst[:n] <<= 4*times
+    def shl_hex n, times, dst @ end {
+        stl.comp_if0 times, end
+        .zero times, dst+(n-times)*dw
+        rep(n-times, i) .xor_zero dst+(n-1-i)*dw, dst+(n-1-times-i)*dw
+      end:
     }
 
 
@@ -33,8 +42,17 @@ ns hex {
     // Space Complexity: n(@+28)
     //   dst[:n] >>= 4
     def shr_hex n, dst {
-        .zero dst
-        rep(n-1, i) .xor_zero dst+i*dw, dst+(i+1)*dw
+        .shr_hex n, 1, dst
+    }
+
+    //  Time Complexity: n(@+4)
+    // Space Complexity: n(@+28)
+    //   dst[:n] >>= 4*times
+    def shr_hex n, times, dst @ end {
+        stl.comp_if0 times, end
+        .zero times, dst
+        rep(n-times, i) .xor_zero dst+i*dw, dst+(i+times)*dw
+      end:
     }
 }
 

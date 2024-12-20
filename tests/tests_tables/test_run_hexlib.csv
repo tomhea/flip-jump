@@ -13,8 +13,10 @@ hexlib-shr_bit, tests/compiled/hexlib_tests/basics2/shr_bit.fjm, ,tests/inout/he
 hexlib-shr_bit_n, tests/compiled/hexlib_tests/basics2/shr_bit_n.fjm, ,tests/inout/hexlib_tests/basics2/25equals.out, False,False
 hexlib-shl_hex, tests/compiled/hexlib_tests/basics2/shl_hex.fjm, ,tests/inout/hexlib_tests/basics2/256equals.out, False,False
 hexlib-shl_hex_n, tests/compiled/hexlib_tests/basics2/shl_hex_n.fjm, ,tests/inout/hexlib_tests/basics2/25equals.out, False,False
+hexlib-shl_hex_big, tests/compiled/hexlib_tests/basics2/shl_hex_big.fjm, ,tests/inout/hexlib_tests/basics2/25equals.out, False,False
 hexlib-shr_hex, tests/compiled/hexlib_tests/basics2/shr_hex.fjm, ,tests/inout/hexlib_tests/basics2/256equals.out, False,False
 hexlib-shr_hex_n, tests/compiled/hexlib_tests/basics2/shr_hex_n.fjm, ,tests/inout/hexlib_tests/basics2/25equals.out, False,False
+hexlib-shr_hex_big, tests/compiled/hexlib_tests/basics2/shr_hex_big.fjm, ,tests/inout/hexlib_tests/basics2/25equals.out, False,False
 
 hexlib-cmp, tests/compiled/hexlib_tests/2params/cmp.fjm, ,tests/inout/hexlib_tests/2params/cmp.out, False,False
 hexlib-cmp_n, tests/compiled/hexlib_tests/2params/cmp_n.fjm, ,tests/inout/hexlib_tests/2params/cmp_n.out, False,False

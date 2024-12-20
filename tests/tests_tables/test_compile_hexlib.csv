@@ -13,8 +13,10 @@ hexlib-shr_bit, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_t
 hexlib-shr_bit_n, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shr_bit_n.fj, tests/compiled/hexlib_tests/basics2/shr_bit_n.fjm, 64,3,0, True,True
 hexlib-shl_hex, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shl_hex.fj, tests/compiled/hexlib_tests/basics2/shl_hex.fjm, 64,3,0, True,True
 hexlib-shl_hex_n, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shl_hex_n.fj, tests/compiled/hexlib_tests/basics2/shl_hex_n.fjm, 64,3,0, True,True
+hexlib-shl_hex_big, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shl_hex_big.fj, tests/compiled/hexlib_tests/basics2/shl_hex_big.fjm, 64,3,0, True,True
 hexlib-shr_hex, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shr_hex.fj, tests/compiled/hexlib_tests/basics2/shr_hex.fjm, 64,3,0, True,True
 hexlib-shr_hex_n, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shr_hex_n.fj, tests/compiled/hexlib_tests/basics2/shr_hex_n.fjm, 64,3,0, True,True
+hexlib-shr_hex_big, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexlib_tests/basics2/shr_hex_big.fj, tests/compiled/hexlib_tests/basics2/shr_hex_big.fjm, 64,3,0, True,True
 
 hexlib-cmp, programs/hexlib_tests/2params/cmp.fj,tests/compiled/hexlib_tests/2params/cmp.fjm, 64,3,0, True,True
 hexlib-cmp_n, programs/hexlib_tests/2params/cmp_n.fj,tests/compiled/hexlib_tests/2params/cmp_n.fjm, 64,3,0, True,True
