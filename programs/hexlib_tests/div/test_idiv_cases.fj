@@ -1,0 +1,56 @@
+test_idiv_opt 20, 12, 1, 8, idiv_opt0
+
+test_idiv_opt 20, 12, 1, 8, idiv_opt1
+
+test_idiv_opt 20, 12, 1, 8, idiv_opt2
+
+
+stl.loop
+
+
+idiv_opt0:
+    hex.idiv 4, 4, res, mod, ah, bh, div0, 0
+    stl.fret ret
+
+idiv_opt1:
+    hex.idiv 4, 4, res, mod, ah, bh, div0, 1
+    stl.fret ret
+
+idiv_opt2:
+    hex.idiv 4, 4, res, mod, ah, bh, div0, 2
+    stl.fret ret
+
+
+def test_idiv_opt a, b, expected_res, expected_mod, idiv_label\
+        @ res_bad, res_good, mod_bad, mod_good, check_mod, expected_res_var, expected_mod_var, end\
+        < ah, bh, ret, res, mod {
+    hex.set 4, ah, a
+    hex.set 4, bh, b
+    stl.fcall idiv_label, ret
+
+    hex.cmp 4, res, expected_res_var, res_bad, res_good, res_bad
+  res_good:
+    stl.output '='
+    ;check_mod
+  res_bad:
+    stl.output '!'
+    ;check_mod
+
+  check_mod:
+    hex.cmp 4, mod, expected_mod_var, mod_bad, mod_good, mod_bad
+
+  mod_good:
+    stl.output '='
+    ;end
+  mod_bad:
+    stl.output '!'
+    ;end
+
+  expected_res_var:
+    hex.vec 4, expected_res
+  expected_mod_var:
+    hex.vec 4, expected_mod
+
+  end:
+    stl.output '\n'
+}

@@ -73,13 +73,20 @@ ns hex {
     // Space Complexity: n(8.5@+132)  + nb(21.5@+309)    so if nb==n:  n(30@+441)
     //   if b==0: goto div0
     //   q = a/b  (signed division)
-    //   r = a%b  (signed modulo - sign(r)==sign(b))
-    // @NOTE: a,b are SIGNED numbers. If you want a division with signed ints, use the idiv macro.
+    //   r = a%b  (signed modulo - signed according to rem_opt:)
+    //     if rem_opt is 0: sign(r)==sign(b)  // Most programming languages implement this option.
+    //     if rem_opt is 1: sign(r)==sign(a)
+    //     if rem_opt is 0: sign(r) is always positive
+    //     Anyway, a == q*b + r.
+    // @NOTE: a,b are SIGNED numbers. If you want a division with unsigned ints, use the div macro.
+    //
     //
     // q,a are hex[:n], while r,b are hex[:nb]. div0 is the bit-address this function will jump to in-case b is zero.
     // @requires hex.sub.init & hex.cmp.init (or hex.init)
-    def idiv n, nb, q, r, a, b, div0 @ set_negative_a, test_b, set_negative_b,\
+    def idiv n, nb, q, r, a, b, div0, rem_opt @ set_negative_a, test_b, set_negative_b,\
             negative_a, negative_b, one_negative, do_div, neg_b_2, neg_ans, end {
+        stl.comp_if1 rem_opt == 444, end    // TODO remove when the 3 rem_opts are implemented
+
         .if0 nb, b, div0
 
         bit.zero negative_a

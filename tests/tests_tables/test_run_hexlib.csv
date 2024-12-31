@@ -48,3 +48,4 @@ hexlib-div-8_2, tests/compiled/hexlib_tests/div/test8_2.fjm, ,tests/inout/hexlib
 hexlib-div-8_4, tests/compiled/hexlib_tests/div/test8_4.fjm, ,tests/inout/hexlib_tests/div/test8_4.out, False,False
 hexlib-div-8_8, tests/compiled/hexlib_tests/div/test8_8.fjm, ,tests/inout/hexlib_tests/div/test8_8.out, False,False
 hexlib-idiv, tests/compiled/hexlib_tests/div/test_idiv.fjm, ,tests/inout/hexlib_tests/div/test_idiv.out, False,False
+hexlib-idiv-cases, tests/compiled/hexlib_tests/div/test_idiv_cases.fjm, ,tests/inout/hexlib_tests/div/test_idiv_cases.out, False,False
