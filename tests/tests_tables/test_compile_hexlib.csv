@@ -49,3 +49,4 @@ hexlib-div-8_2, programs/hexlib_tests/div/hexlib_div.fj | programs/hexlib_tests/
 hexlib-div-8_4, programs/hexlib_tests/div/hexlib_div.fj | programs/hexlib_tests/div/test8_4.fj, tests/compiled/hexlib_tests/div/test8_4.fjm, 64,3,0, True,True
 hexlib-div-8_8, programs/hexlib_tests/div/hexlib_div.fj | programs/hexlib_tests/div/test8_8.fj, tests/compiled/hexlib_tests/div/test8_8.fjm, 64,3,0, True,True
 hexlib-idiv, programs/hexlib_tests/div/hexlib_div.fj | programs/hexlib_tests/div/test_idiv.fj, tests/compiled/hexlib_tests/div/test_idiv.fjm, 64,3,0, True,True
+hexlib-idiv-cases, programs/hexlib_tests/div/hexlib_div.fj | programs/hexlib_tests/div/test_idiv_cases.fj, tests/compiled/hexlib_tests/div/test_idiv_cases.fjm, 64,3,0, True,True

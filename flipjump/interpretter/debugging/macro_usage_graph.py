@@ -89,7 +89,7 @@ def show_macro_usage_pie_graph(
     *,
     min_main_thresh: float = 0.01,
     min_secondary_thresh: float = 0.001,
-    child_significance_min_thresh: float = 0.1,
+    child_significance_min_thresh: float = 0.01,
 ) -> None:
     """
     choose and present in a pie graph the macros with the most code-usage

@@ -7,10 +7,10 @@ stl.loop
 
 
 idiv4_2:
-    hex.idiv 4, 2, res, mod, ah, bh, div0
+    hex.idiv 4, 2, res, mod, ah, bh, div0, 0
     stl.fret ret
 
 
 idiv4_4:
-    hex.idiv 4, 4, res, mod, ah, bh, div0
+    hex.idiv 4, 4, res, mod, ah, bh, div0, 0
     stl.fret ret
