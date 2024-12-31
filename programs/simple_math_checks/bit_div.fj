@@ -1,0 +1,83 @@
+stl.startup
+
+test_generic_div 20, 12, 1, 8, div
+test_generic_div 20, 12, 1, 8, div_loop
+
+test_generic_div 20, 12, 1, 8, idiv
+test_generic_div 20, (0-12), (0-1), 8, idiv
+test_generic_div (0-20), 12, (0-1), (0-8), idiv
+test_generic_div (0-20), (0-12), 1, (0-8), idiv
+
+test_generic_div 20, 12, 1, 8, idiv_loop
+test_generic_div 20, (0-12), (0-1), 8, idiv_loop
+test_generic_div (0-20), 12, (0-1), (0-8), idiv_loop
+test_generic_div (0-20), (0-12), 1, (0-8), idiv_loop
+
+
+stl.loop
+
+
+div:
+    bit.div 8, ah, bh, res, mod
+    stl.fret ret
+
+div_loop:
+    bit.div_loop 8, ah, bh, res, mod
+    stl.fret ret
+
+idiv:
+    bit.idiv 8, ah, bh, res, mod
+    stl.fret ret
+
+idiv_loop:
+    bit.idiv_loop 8, ah, bh, res, mod
+    stl.fret ret
+
+
+res: bit.vec 8
+mod: bit.vec 8
+ah: bit.vec 8
+bh: bit.vec 8
+ret: 0;0
+
+div0:
+   stl.output "0"
+   stl.fret ret
+
+def test_generic_div a, b, expected_res, expected_mod, idiv_label\
+        @ res_bad, res_good, mod_bad, mod_good, check_mod, expected_res_var, expected_mod_var, a_var, b_var, end\
+        < ah, bh, ret, res, mod {
+    bit.mov 8, ah, a_var
+    bit.mov 8, bh, b_var
+    stl.fcall idiv_label, ret
+
+    bit.cmp 8, res, expected_res_var, res_bad, res_good, res_bad
+  res_good:
+    stl.output '='
+    ;check_mod
+  res_bad:
+    stl.output '!'
+    ;check_mod
+
+  check_mod:
+    bit.cmp 8, mod, expected_mod_var, mod_bad, mod_good, mod_bad
+
+  mod_good:
+    stl.output '='
+    ;end
+  mod_bad:
+    stl.output '!'
+    ;end
+
+  expected_res_var:
+    bit.vec 8, expected_res
+  expected_mod_var:
+    bit.vec 8, expected_mod
+  a_var:
+    bit.vec 8, a
+  b_var:
+    bit.vec 8, b
+
+  end:
+    stl.output '\n'
+}

@@ -50,10 +50,13 @@ ns bit {
     // Space Complexity: n^2(11@+22)
     //   if b==0: goto end (do nothing)
     //   q = a/b  (signed division)
-    //   r = a%b  (signed modulo - sign(r)==sign(b))
+    //   r = a%b  (signed modulo - sign(r)==sign(a))
     // @NOTE: a,b are SIGNED numbers. If you want a division with unsigned ints, use the div macro.
     // @NOTE: this division implementation is WASTEFUL in space, yet saves running time, compared to div_loop.
-    // @NOTE: For a faster division see hex.div.
+    //
+    // @NOTE: There is a better version: This one is slow, big, and doesn't error on b==0.
+    //        Also it supports only one convention for the sign of the reminder.
+    //        For a faster & better division see hex.div, hex.idiv.
     // q,a,b,r are bit[:n].
     def idiv n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
         .mov negative_a, a+dw*(n-1)
@@ -98,14 +101,16 @@ ns bit {
     //   r = a%b  (unsigned modulo)
     // @NOTE: a,b are UNSIGNED numbers. If you want a division with signed ints, use the idiv macro.
     // @NOTE: this division implementation is WASTEFUL in space, yet saves running time, compared to div_loop.
-    // @NOTE: For a faster division see hex.div.
+    //
+    // @NOTE: There is a better version: This one is slow, big, and doesn't error on b==0.
+    //        For a faster & better division see hex.div, hex.idiv.
     // q,a,b,r are bit[:n].
     def div n, a, b, q, r @ Q, R, end {
         .if0 n, b, end
         .zero 2*n, R
         .zero   n, Q
 
-        rep(n, i) div.div_step n,  a+(n-1-i)*dw,  b,  R+(n-1-i)*dw,  Q+(n-1-i)*dw
+        rep(n, i) .div.div_step n,  a+(n-1-i)*dw,  b,  R+(n-1-i)*dw,  Q+(n-1-i)*dw
 
         .mov n, r, R
         .mov n, q, Q
@@ -114,7 +119,7 @@ ns bit {
       R:
         .vec 2*n
       Q:
-        var   n
+        .vec n
       end:
     }
     ns div {
@@ -141,10 +146,13 @@ ns bit {
     // Space Complexity: n(37@+58)
     //   if b==0: goto end (do nothing)
     //   q = a/b  (signed division)
-    //   r = a%b  (signed modulo - sign(r)==sign(b))
+    //   r = a%b  (signed modulo - sign(r)==sign(a))
     // @NOTE: a,b are SIGNED numbers. If you want a division with unsigned ints, use the div_loop macro.
     // @NOTE: this division implementation saves space, yet is slower, compared to div.
-    // @NOTE: For a faster division see hex.div.
+    //
+    // @NOTE: There is a better version: This one is slow, big, and doesn't error on b==0.
+    //        Also it supports only one convention for the sign of the reminder.
+    //        For a faster & better division see hex.div, hex.idiv.
     // q,a,b,r are bit[:n].
     def idiv_loop n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
         .mov negative_a, a+dw*(n-1)
@@ -189,7 +197,9 @@ ns bit {
     //   r = a%b  (unsigned modulo)
     // @NOTE: a,b are UNSIGNED numbers. If you want a division with signed ints, use the idiv_loop macro.
     // @NOTE: this division implementation saves space, yet is slower, compared to div.
-    // @NOTE: For a faster division see hex.div.
+    //
+    // @NOTE: There is a better version: This one is slow, big, and doesn't error on b==0.
+    //        For a faster division see hex.div, hex.idiv.
     // q,a,b,r are bit[:n].
     def div_loop n, a, b, q, r @ loop, do_sub, loop_end, after_loop, A, Q, R, i, end {
         .if0 n, b, end
