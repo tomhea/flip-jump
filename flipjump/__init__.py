@@ -8,9 +8,10 @@ from flipjump.flipjump_quickstart import (
     assemble_and_debug,
     assemble_and_run_test_output,
 )
-from flipjump.fjm.fjm_consts import FJMVersion
+from flipjump.fjm.fjm_consts import FJMVersion, FJ_MAGIC
 from flipjump.interpretter.fjm_run import TerminationStatistics
 from flipjump.utils.classes import TerminationCause
+from flipjump.utils.functions import get_stl_paths
 from flipjump.utils.exceptions import IODeviceException, FlipJumpException
 from flipjump.interpretter.io_devices.IODevice import IODevice
 from flipjump.interpretter.io_devices.FixedIO import FixedIO
@@ -28,7 +29,9 @@ __all__ = [
     'assemble_and_debug',
     'assemble_and_run_test_output',
     'FJMVersion',
+    'FJ_MAGIC',
     'TerminationCause',
     'TerminationStatistics',
     'FlipJumpException',
+    'get_stl_paths',
 ]
