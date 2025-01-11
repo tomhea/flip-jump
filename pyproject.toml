@@ -33,6 +33,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Other",
     "Intended Audience :: Developers",
     "Intended Audience :: Education",
@@ -81,6 +82,6 @@ disable_error_code = ["name-defined", "no-redef", "index", "no-any-return", "mis
 
 [tool.black]
 line-length = 120
-target-version = ["py38", "py39", "py310", "py311", "py312"]
+target-version = ["py38", "py39", "py310", "py311", "py312", "py313"]
 safe = true
 skip-string-normalization = true
