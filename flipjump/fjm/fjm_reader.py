@@ -42,6 +42,7 @@ class MemorySegment:
     """
     Start and length are in word addresses, not bit addresses.
     """
+
     segment_start: int
     segment_length: int
 
@@ -132,8 +133,12 @@ class Reader:
 
         self.memory_segments = []
         for segment_start, segment_length, data_start, data_length in segments:
-            self.memory_segments.append(MemorySegment(segment_start << (self.memory_width.bit_length() - 1),
-                                                      segment_length << (self.memory_width.bit_length() - 1)))
+            self.memory_segments.append(
+                MemorySegment(
+                    segment_start << (self.memory_width.bit_length() - 1),
+                    segment_length << (self.memory_width.bit_length() - 1),
+                )
+            )
             if self.version in (FJMVersion.RelativeJumpVersion, FJMVersion.CompressedVersion):
                 word = (1 << self.memory_width) - 1
                 for i in range(0, data_length, 2):
