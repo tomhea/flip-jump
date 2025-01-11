@@ -1,5 +1,7 @@
+import dataclasses
 import lzma
 import struct
+from collections import defaultdict
 from enum import IntEnum
 from pathlib import Path
 from struct import unpack
@@ -33,6 +35,16 @@ class GarbageHandling(IntEnum):
     SlowRead = 1  # Continue after a small waiting time, very slow and print a warning
     OnlyWarning = 2  # Continue and print a warning
     Continue = 3  # Continue normally
+
+
+@dataclasses.dataclass
+class MemorySegment:
+    """
+    Start and length are in word addresses, not bit addresses.
+    """
+
+    segment_start: int
+    segment_length: int
 
 
 class Reader:
@@ -119,7 +131,14 @@ class Reader:
         self.memory = {}
         self.zeros_boundaries = []
 
+        self.memory_segments = []
         for segment_start, segment_length, data_start, data_length in segments:
+            self.memory_segments.append(
+                MemorySegment(
+                    segment_start << (self.memory_width.bit_length() - 1),
+                    segment_length << (self.memory_width.bit_length() - 1),
+                )
+            )
             if self.version in (FJMVersion.RelativeJumpVersion, FJMVersion.CompressedVersion):
                 word = (1 << self.memory_width) - 1
                 for i in range(0, data_length, 2):
@@ -213,3 +232,11 @@ class Reader:
         lsw = self._get_memory_word(word_address)
         msw = self._get_memory_word(word_address + 1)
         return ((lsw >> bit_offset) | (msw << (self.memory_width - bit_offset))) & ((1 << self.memory_width) - 1)
+
+    def get_memory(self) -> Dict[int, int]:
+        """
+        Return a dictionary from word_address to word_value (e.g. word address 3 is bit_address 3*w).
+        Note that it ignores "garbage handling", and it's ment to be used to just read the memory.
+        Uninitialized addresses will return zero.
+        """
+        return defaultdict(lambda: 0, self.memory)
