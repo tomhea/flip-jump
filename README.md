@@ -10,7 +10,7 @@
 [![GitHub](https://img.shields.io/github/license/tomhea/flip-jump)](LICENSE)
 
 FlipJump is the simplest programing language.  
-Yet, it can do **any modern computation**.
+Yet, it can do **any modern computation**. See the [C -> FlipJump compiler](https://github.com/tomhea/c2fj).
 
 It's an Esoteric language ([FlipJump esolangs page](https://esolangs.org/wiki/FlipJump)), with just 1 operation `a;b`:  
 - `not *a; jump b`
@@ -239,6 +239,9 @@ Yet, It's very capable.
 
 I wrote a [Brainfuck to Flipjump Compiler (bf2fj)](https://github.com/tomhea/bf2fj) to emphasize just that. 
 Brainfuck is indeed Turing complete, and the compiler proves that flipjump can run any program that brainfuck runs (besides those that require an unbounded memory).
+
+A newer project is [c2fj](https://github.com/tomhea/c2fj) - It can compile any C program to FlipJump.  
+Take a look at the [prime numbers c program](https://github.com/tomhea/c2fj/blob/main/tests/programs/primes/main.c) that can be compiled to fj just as is.
 
 # Contribute
 
