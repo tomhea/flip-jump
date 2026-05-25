@@ -114,6 +114,7 @@ ns hex {
         //   does:       .xor *ptr, hex<<bit_shift    (as it uses the address in to_flip)
         // It assumes that the value in the memory-word to_flip is a dw-aligned address to an hex-variable.
         // bit_shift is a constant that's assumed to be divisible by 4.
+        // @Assumes: bit_shift is divisible by 4.
         def xor_hex_to_flip_ptr hex, bit_shift @ prepare_flip_bit0, prepare_flip_bit1, prepare_flip_bit2, prepare_flip_bit3, \
                 after_flip_bit0, after_flip_bit1, after_flip_bit2, after_flip_bit3,  cleanup  < hex.pointers.to_flip {
             wflip hex.pointers.to_flip+w, after_flip_bit0, prepare_flip_bit0

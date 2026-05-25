@@ -54,7 +54,7 @@ ns stl {
     // Complexity: 6725 + 2.75w+@ + n
     // startup Macro - Should be the first piece of code in your program.
     //                 Initialize anything needed for the standard library.
-    // stack_bit_size is the size of the global-stack (will hold this number of bits / return-addresses).
+    // stack_bit_size is the size of the global-stack (will hold this number of hexes / return-addresses).
     def startup_and_init_all stack_bit_size @ code_start {
         .startup_and_init_all code_start, stack_bit_size
       code_start:

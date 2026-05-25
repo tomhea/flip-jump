@@ -49,6 +49,7 @@ ns bit {
     //   like:  ;*ptr
     //   Jump to the address the pointer points to.
     // ptr is a bit[:w] that holds an address.
+    // @requires bit.pointers.ptr_init
     def ptr_jump ptr < bit.pointers.to_jump {
         .pointers.set_jump_pointer ptr
         ;bit.pointers.to_jump
@@ -65,6 +66,7 @@ ns bit {
     //   like:  *ptr;
     //   Flip the address the pointer points to.
     // ptr is a bit[:w] that holds an address.
+    // @requires bit.pointers.ptr_init
     def ptr_flip ptr @ cleanup < bit.pointers.to_flip {
         wflip bit.pointers.to_flip+w, cleanup
 
@@ -82,6 +84,7 @@ ns bit {
     //   like:  (*ptr)+dbit;
     //   Flip the address dbit-ahead of what the pointer points to.
     // ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    // @requires bit.pointers.ptr_init
     def ptr_flip_dbit ptr {
         rep(#dbit, i) stl.comp_flip_if ptr+dbit+i*dw, (dbit>>i)&1
         .ptr_flip ptr
@@ -91,6 +94,7 @@ ns bit {
     // Complexity 2w@ + 2@+2
     //   like:  bit.xor *ptr, bit
     // ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    // @requires bit.pointers.ptr_init
     def xor_to_ptr ptr, bit @ end {
         .if0 bit, end
         .ptr_flip_dbit ptr
@@ -101,6 +105,7 @@ ns bit {
     // Complexity 3w@  (actually a bit smaller, 3w@+3w)
     //   like:  wflip *ptr, value
     // ptr is a bit[:w] that holds an address, which we assume is w-aligned.
+    // @requires bit.pointers.ptr_init
     def ptr_wflip ptr, value {
         .pointers.set_flip_pointer ptr
         rep(w, i) .pointers.advance_by_one_and_flip__ptr_wflip (#(i^((i+1)%w))), (value>>i)&1
@@ -123,6 +128,7 @@ ns bit {
     // Complexity 3w@
     //   like:  wflip (*ptr)+w, value
     // ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    // @requires bit.pointers.ptr_init
     def ptr_wflip_2nd_word ptr, value {
         .not ptr + dw*((#w)-1)
         .ptr_wflip ptr, value
@@ -139,6 +145,7 @@ ns bit {
     // Complexity 8w@
     //   like:  bit.xor dst, *ptr
     // dst is a bit. ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    // @requires bit.pointers.ptr_init
     def xor_from_ptr dst, ptr {
         .exact_xor_from_ptr dst+dbit, ptr
     }
@@ -146,6 +153,7 @@ ns bit {
     // Complexity 8w@
     //   like:  bit.exact_xor dst, *ptr
     // dst is a bit-address. ptr is a bit[:w] that holds an address, which we assume is dw-aligned.
+    // @requires bit.pointers.ptr_init
     def exact_xor_from_ptr dst, ptr @ base_jump_label, cleanup {
         .ptr_wflip_2nd_word ptr, base_jump_label
 

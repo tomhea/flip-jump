@@ -30,6 +30,7 @@ ns hex {
     //  Time Complexity: n(@+4)
     // Space Complexity: n(@+28)
     //   dst[:n] <<= 4*times
+    // @Assumes: times <= n
     def shl_hex n, times, dst @ end {
         stl.comp_if0 times, end
         .zero times, dst+(n-times)*dw
@@ -48,6 +49,7 @@ ns hex {
     //  Time Complexity: n(@+4)
     // Space Complexity: n(@+28)
     //   dst[:n] >>= 4*times
+    // @Assumes: times <= n
     def shr_hex n, times, dst @ end {
         stl.comp_if0 times, end
         .zero times, dst

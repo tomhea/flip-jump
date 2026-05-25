@@ -21,7 +21,7 @@ ns bit {
 
 
     // Complexity: n(16@-16)
-    //   input n bytes into dst[:8n] (lsb first)
+    //   Effectively inputs an 8*n bits little endian number into dst[:8n].
     // dst is an output parameter.
     def input n, dst {
         rep(n, i) .input dst+8*(n-1-i)*dw
