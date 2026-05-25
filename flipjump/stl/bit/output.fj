@@ -119,12 +119,19 @@ ns bit {
     // x_prefix (constant): print with the "0x" prefix.
     //
     // @Assumes n can be divided by 4.
-    def print_hex_int n, x, x_prefix @ do_print {
+    def print_hex_int n, x, x_prefix @ do_print, end, neg {
+        .zero neg
         .if0 x+(n-1)*dw, do_print
+        .not neg
         stl.output '-'
         .neg n, x
       do_print:
         .print_hex_uint n, x, x_prefix
+        .if0 neg, end
+        .neg n, x
+        ;end
+      neg: .bit
+      end:
     }
 }
 
@@ -217,11 +224,18 @@ ns bit {
     //
     // The number 28/93 is the ratio of the number of decimal digits and the number of binary digits.
     // It's bigger than log(2)/log(10) by 0.015%, which is just enough.
-    def print_dec_int n, x @ do_print {
+    def print_dec_int n, x @ do_print, end, neg {
+        .zero neg
         .if0 x+(n-1)*dw, do_print
+        .not neg
         stl.output '-'
         .neg n, x
       do_print:
         .print_dec_uint n, x
+        .if0 neg, end
+        .neg n, x
+        ;end
+      neg: .bit
+      end:
     }
 }
