@@ -149,7 +149,7 @@ ns stl {
 
 
     // Complexity: 1
-    // bit is a constant. 0 will output o, anything else will output 1.
+    // bit is a constant. 0 will output 0, anything else will output 1.
     def output_bit bit < .IO {
         .IO + (bit ? 1 : 0);
     }

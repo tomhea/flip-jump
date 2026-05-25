@@ -112,7 +112,7 @@ ns bit {
     }
     ns pointers {
         // Advances *to_flip by 1 (which takes n flips, from bit0 to bit1, bit2,...).
-        // If do_flip (value) isn't 0 - than make a flip, like:  to_flip;advance.
+        // If do_flip (value) isn't 0 - then make a flip, like:  to_flip;advance.
         def advance_by_one_and_flip__ptr_wflip n, do_flip @ cleanup, advance < bit.pointers.to_flip {
             stl.comp_if0 do_flip, advance
             wflip bit.pointers.to_flip+w, cleanup, bit.pointers.to_flip

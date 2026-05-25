@@ -14,7 +14,7 @@ ns bit {
     }
 
 
-    // Complexity 8@+16
+    // Complexity: 8@+16
     //   outputs a byte from x[:8] (a bit vector. from lsb to msb).
     def print x {
         rep(8, i) .output x+i*dw
