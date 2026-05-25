@@ -12,6 +12,8 @@
 FlipJump is the simplest programing language.  
 Yet, it can do **any modern computation**. See the [C -> FlipJump compiler](https://github.com/tomhea/c2fj).
 
+**Try for yourself — [Online IDE](https://fj.tomhe.app).** No install needed.
+
 It's an Esoteric language ([FlipJump esolangs page](https://esolangs.org/wiki/FlipJump)), with just 1 operation `a;b`:  
 - `not *a; jump b`
 
@@ -99,6 +101,8 @@ Note that all of these macros are already implemented in the standard library (a
 ```shell
 pip install flipjump
 ```
+
+…and jump right into the [**FlipJump Docs**](https://fjdocs.tomhe.app) site!
 
 You can also install it with its extras:
 - flipjump[**stats**]: support for viewing macro usage in an interactive graph.
