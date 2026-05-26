@@ -22,8 +22,8 @@ This folder builds bit-oriented variables, arithmetic, I/O, and pointers on top 
 
 - A **bit** is a single bit stored at one `dw`-aligned address.
 - A **`bit[:n]`** (or `bit.vec n`) is `n` bits, slot `i` at address `base + i*dw`.
-- Macros with an `n` parameter operate on the first `n` slots from a base address.
-- Variables intended as data (`bit`, `bit.vec`) must be placed in a region of memory that is **never executed** — typically below `stl.loop`. Running them is undefined behaviour.
+- Macros with an `n` parameter operate on the first `n` slots from a base address. `n > 0` is always assumed — passing `n = 0` to any vector macro is undefined behaviour.
+- Variables intended as data (`bit`, `bit.vec`) must be placed in a region of memory that is **never executed** — typically below `stl.loop`. Running them as-is is undefined behaviour.
 - Macros that depend on init state (`bit.pointers.ptr_init`) carry a `// @requires` line.
 - Macros with non-obvious preconditions (e.g. `times <= n` in shifts) carry a `// @Assumes:` line.
 

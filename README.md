@@ -102,7 +102,7 @@ Note that all of these macros are already implemented in the standard library (a
 pip install flipjump
 ```
 
-…and jump right into the [**FlipJump Docs**](https://fjdocs.tomhe.app) site!
+And jump right into the neat [**FlipJump Docs**](https://fjdocs.tomhe.app) site!
 
 You can also install it with its extras:
 - flipjump[**stats**]: support for viewing macro usage in an interactive graph.
