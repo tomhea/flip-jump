@@ -70,7 +70,7 @@ ns bit {
         .if b, gt, eq
     }
 
-    //  TIme Complexity: n(2@+4)
+    //  Time Complexity: n(2@+4)
     // Space Complexity: n(3@+6)
     //   jump to:
     //     a[:n] < b[:n]:  lt

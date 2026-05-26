@@ -1,5 +1,5 @@
 ns bit {
-    // Complexity n(14@+10)
+    // Complexity: n(14@+10)
     //   x[:n] *= 10
     // @NOTE: this implementation works with both signed and unsigned numbers.
     def mul10 n, x @ twice, end {

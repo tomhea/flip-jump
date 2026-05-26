@@ -11,6 +11,7 @@ ns bit {
     // Complexity: n(2@-1)
     //   x[:n] >>= times
     // times is a constant.
+    // @Assumes: times <= n
     def shr n, times, x {
         rep(n-times, i) .mov x+i*dw, x+(i+times)*dw
         .zero times, x+(n-times)*dw
@@ -19,6 +20,7 @@ ns bit {
     // Complexity: n(2@-1)
     //   x[:n] >>= times (arithmetic shift right)
     // times is a constant.
+    // @Assumes: times <= n
     def shra n, times, x {
         rep(n-times, i) .mov x+i*dw, x+(i+times)*dw
         rep(times-1, i) .mov x+(n-1-(i+1))*dw, x+(n-1)*dw
@@ -34,6 +36,7 @@ ns bit {
     // Complexity: n(2@-1)
     //   x[:n] <<= times
     // times is a constant.
+    // @Assumes: times <= n
     def shl n, times, x {
         rep(n-times, i) .mov x+(n-1-i)*dw, x+(n-1-i-times)*dw
         .zero times, x

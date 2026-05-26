@@ -90,7 +90,7 @@ ns hex {
     //  Time Complexity: w(0.75@+ 5) + 16@+ 36
     // Space Complexity: w(1.13@+32) + 12@+115
     //   Like:  hex = stack[sp--]
-    //   Pops the current stack cell (only the least-significant-hex of it) into the the given hex. Decrements sp.
+    //   Pops the current stack cell (only the least-significant-hex of it) into the given hex. Decrements sp.
     // hex is only an output parameter.
     def pop_hex hex < hex.pointers.sp {
         .read_hex hex, hex.pointers.sp
@@ -100,7 +100,7 @@ ns hex {
     //  Time Complexity: w(0.75@+ 5) + 18@+ 36
     // Space Complexity: w(1.13@+32) + 14@+139
     //   Like:  byte[:2] = stack[sp--]
-    //   Pops the current stack cell into the the given byte. Decrements sp.
+    //   Pops the current stack cell into the given byte. Decrements sp.
     // byte is hex[:2], and it's only an output parameter.
     def pop_byte byte < hex.pointers.sp {
         .read_byte byte, hex.pointers.sp
@@ -111,7 +111,7 @@ ns hex {
     // Space Complexity: n(w(0.56@+16) + 7@+70)
     //   Like:  sp -= M
     //          hex[:n] = stack[sp+1:][:M]
-    //   Pops multiple stack cell into the the given hex[:n]. Decrements sp by M.
+    //   Pops multiple stack cell into the given hex[:n]. Decrements sp by M.
     // M is (n+1)/2, which is because the function pops all the parameters as bytes.
     //
     // Note: The pops assume that they were pushed as bytes to the stack (2 hexs in one stack-cell).
