@@ -886,6 +886,219 @@ CR-ist found 4 overlaps; 96 APPROVED.
 | APPROVED | memory_layout | stack_clear_demo | No input. Pushes 3 values onto a stack, then clears the stack (pops all without using results), then attempts to pop and prints `Stack empty\n` because pop on empty stack must report empty. |
 | APPROVED | memory_layout | show_local_vs_global | No input. Declares a global variable `g = 100` and a local variable inside `main` `l = 200`. Prints `Local: 200\nGlobal: 100\n`. |
 
+## Batch 9 — language_demos + games + memory_layout + language_meta + recursion (95 approved + 4 overlap + 1 clarified)
+
+Categories: language_demos (30 net), games (28 net of 30), memory_layout (13 net of 15), language_meta (15 net), recursion (9 net of 10).
+CR-ist: 95 APPROVED, 4 OVERLAP, 1 UNCLEAR-tightened.
+
+| status | category | name | description |
+|---|---|---|---|
+| APPROVED | language_demos | demo_bit_swap | Reads two single bits `0`/`1` (each on own line). Uses `bit.swap` STL macro to swap them in place. Prints them in swapped order as `<b>\n<a>\n`. |
+| APPROVED | language_demos | demo_bit_inc_4bit | Reads a 4-char `0`/`1` binary string + `\n`. Uses `bit.inc` (4-bit). Prints result as 4-char binary + `\n` (mod 16). |
+| APPROVED | language_demos | demo_bit_dec_4bit | Same as `demo_bit_inc_4bit` but with `bit.dec`. |
+| APPROVED | language_demos | demo_bit_mov | Reads a 4-char binary + `\n`. Uses `bit.mov` to copy it into another variable, then prints the copy as 4-char binary + `\n`. |
+| APPROVED | language_demos | demo_bit_cmp_4bit | Reads two 4-char binary strings (each on own line). Uses `bit.cmp`. Prints `<`, `=`, or `>` + `\n`. |
+| APPROVED | language_demos | demo_bit_shl_4bit | Reads a 4-char binary + `\n`, then digit `0`-`3` + `\n` (shift count). Uses `bit.shl`. Prints result as 4-char binary + `\n`. |
+| APPROVED | language_demos | demo_bit_shr_4bit | Same as `demo_bit_shl_4bit` but with `bit.shr`. |
+| APPROVED | language_demos | demo_bit_mul10_8bit | Reads an 8-char binary + `\n`. Uses `bit.mul10`. Prints the result as decimal + `\n` (assume no overflow). |
+| APPROVED | language_demos | demo_bit_print_dec_uint | No input. Declares an internal 8-bit value `123`. Uses `bit.print_dec_uint` to print it as `123\n`. |
+| APPROVED | language_demos | demo_bit_print_hex_uint | No input. Declares an internal 8-bit value `255`. Uses `bit.print_hex_uint` to print it as `ff\n`. |
+| APPROVED | language_demos | demo_hex_add | Reads two lowercase hex chars (each on own line). Uses `hex.add`. Prints the result hex + `\n` (mod 16, carry discarded). |
+| APPROVED | language_demos | demo_hex_sub | Same I/O as `demo_hex_add` but uses `hex.sub`. |
+| APPROVED | language_demos | demo_hex_xor | Same I/O but uses `hex.xor`. |
+| APPROVED | language_demos | demo_hex_and | Same I/O but uses `hex.and`. |
+| APPROVED | language_demos | demo_hex_or | Same I/O but uses `hex.or`. |
+| APPROVED | language_demos | demo_hex_not | Reads one lowercase hex char + `\n`. Uses `hex.not` (XOR with `f`). Prints result hex + `\n`. |
+| APPROVED | language_demos | demo_hex_inc | Reads one hex char + `\n`. Uses `hex.inc`. Prints result hex + `\n` (`f` wraps to `0`). |
+| APPROVED | language_demos | demo_hex_dec | Same as `demo_hex_inc` but uses `hex.dec` (`0` wraps to `f`). |
+| APPROVED | language_demos | demo_hex_cmp | Reads two hex chars (each own line). Uses `hex.cmp`. Prints `<`, `=`, or `>` + `\n`. |
+| APPROVED | language_demos | demo_hex_shl | Reads one hex char + `\n`, then shift count `0`-`3` + `\n`. Uses `hex.shl`. Prints result hex + `\n`. |
+| APPROVED | language_demos | demo_hex_shr | Same as `demo_hex_shl` but uses `hex.shr`. |
+| APPROVED | language_demos | demo_hex_mul | Reads two hex chars. Uses `hex.mul`. Prints product as 2 hex chars + `\n` (high then low nibble). |
+| APPROVED | language_demos | demo_hex_div | Reads two hex chars (dividend then divisor, divisor non-zero). Uses `hex.div`. Prints quotient hex + `\n`. |
+| APPROVED | language_demos | demo_stl_output_string | No input. Uses `stl.output "Hello, FlipJump!\n"` to print the string. |
+| APPROVED | language_demos | demo_rep_5_stars | No input. Uses `rep(5, i) stl.output('*')` then `stl.output('\n')` to print `*****\n`. |
+| APPROVED | language_demos | demo_rep_10_dashes | No input. Uses `rep(10, i) stl.output('-')` then `\n`. Prints `----------\n`. |
+| APPROVED | language_demos | demo_segment_reserve | Uses `segment` + `reserve` to set up a small memory region of 8 bytes initialized to zero. Reads no input. Prints the first byte's value (which is `0`) + `\n`. |
+| APPROVED | language_demos | demo_compile_time_expr | No input. Internally uses a compile-time expression `(1 + 2) * (3 + 4)` to produce constant `21`. Uses `bit.print_dec_uint` to print `21\n`. |
+| APPROVED | language_demos | demo_macro_one_arg | Defines a macro `print_byte(b)` that calls `stl.output(b)`. The top-level invokes `print_byte('A')`. Prints `A\n`. |
+| APPROVED | language_demos | demo_namespace_usage | Defines `ns mathops { def add_one(x) { bit.inc x } }` and uses `mathops.add_one` on a 4-bit value `0011`. Prints result as 4-char binary + `\n`. |
+| APPROVED | games | tic_tac_toe_status | Reads 3 lines of 3 chars each (board state with `X`, `O`, `.`). Prints exactly one of `X wins\n`, `O wins\n`, `Draw\n` (board full, no winner), or `In progress\n` (no winner, board not full). |
+| APPROVED | games | hangman_state_print | Reads a `\n`-terminated secret word ≤ 10 chars (lowercase letters), then a `\n`-terminated string of guessed letters ≤ 26 chars. Prints the secret with un-guessed letters as `_` (e.g. secret `hello`, guesses `el` → `_ell_\n`). |
+| APPROVED | games | hangman_lives_check | Reads a digit `0`-`6` + `\n` (number of wrong guesses so far). Prints `<lives>\n` where `lives = 6 - wrong`. If `lives == 0`, additionally prints `Game over!\n` on a second line. |
+| APPROVED | games | blackjack_hand_value | Reads digit N `1`-`9` + `\n`, then N card-value codes (each one of `A`, `2`-`9`, `T`, `J`, `Q`, `K` on its own line). Computes the best total (`A` is `1` or `11`, face cards `J`/`Q`/`K` are `10`). Prints the best total `≤ 21` (or, if even with `A=1` all hands bust, prints the minimum bust total). |
+| APPROVED | games | blackjack_bust_check | Reads digit N `1`-`9` + `\n`, then N card-value codes (same alphabet as `blackjack_hand_value`). Prints `1\n` if minimum total (treating all aces as 1) exceeds 21, else `0\n`. |
+| APPROVED | games | coin_toss_streak | Reads a `\n`-terminated string of `H`/`T` chars (≤ 20). Prints the length of the longest run of consecutive identical results as decimal + `\n`. |
+| APPROVED | games | dice_three_rolls | Reads exactly 3 bytes (no separators). For each byte `b`, prints `(b mod 6) + 1` as decimal on its own line (3 lines of output). |
+| APPROVED | games | card_blackjack_value | Reads exactly one card-value char (`A`, `2`-`9`, `T`, `J`, `Q`, `K`). Prints the blackjack value: `A` → `1`, `2`-`9` → that digit, `T`/`J`/`Q`/`K` → `10`. Output is decimal + `\n`. |
+| APPROVED | games | minesweeper_count_center | Reads 3 lines of 3 chars each (each char `M` for mine or `.` for empty). Prints the count of mines (`M`) in the 8 cells around the center `(1,1)` (excluding center itself) as decimal + `\n`. |
+| APPROVED | games | minesweeper_count_grid | Reads 3 lines of 3 chars each (chars are `M` for mine, `.` for empty). Prints a 3×3 output grid where each cell shows the number of mine-neighbors (`0`-`8`) if not a mine, or `*` if it is a mine. 3 lines of 3 chars each + `\n`. |
+| APPROVED | games | game_2048_one_merge_row | Reads exactly 4 single-digit decimals `0`-`9` (each own line) representing 4 values in a row. Applies one 2048 merge step (slide non-zero values left, merge adjacent equal pairs once left-to-right, then slide again). Prints the resulting 4 values on one line, space-separated, + `\n`. |
+| APPROVED | games | game_2048_check_done | Reads a 4×4 grid of decimal digits `0`-`9` (4 lines, each 4 chars). Prints `1\n` if no moves are possible (no zeros AND no two adjacent-equal pairs horizontally or vertically), else `0\n`. |
+| APPROVED | games | othello_count_pieces | Reads a 4×4 board: 4 lines of 4 chars each (`B`, `W`, or `.`). Prints `B: <b>\nW: <w>\n` where `b` and `w` are the counts of `B` and `W` cells. |
+| APPROVED | games | battleship_hit_check | Reads a 4×4 grid (`S` = ship, `.` = water): 4 lines of 4 chars each. Then reads a hit coordinate `r c` (each digit `0`-`3` on its own line). Prints `hit\n` if grid[r][c] is `S`, else `miss\n`. |
+| APPROVED | games | battleship_ships_remaining | Reads a 4×4 grid (4 lines, each 4 chars; `S` = ship cell, `.` = water), then a `\n`-terminated stream of `H`/`M` chars (each char represents the outcome at the corresponding `S` cell, in row-major order, skipping `.` cells). Prints the count of `S` cells that received `M` (or no value) — i.e. ship cells NOT hit yet — as decimal + `\n`. |
+| APPROVED | games | rps_play_3_rounds | Reads 6 chars (3 pairs): player 1 then player 2 for each of 3 rounds (each char on own line; `r`/`p`/`s`). Determines round winner for each (P1, P2, or tie). Prints final summary `P1: <p1_wins>\nP2: <p2_wins>\nTies: <ties>\n`. |
+| APPROVED | games | word_guess_reveal | Reads a `\n`-terminated secret word ≤ 8 chars (lowercase) and a `\n`-terminated guess char (single lowercase letter). Prints the secret with un-revealed letters as `_` (only the guess char is "revealed"; others stay as `_`). E.g. secret `apple`, guess `p` → `_pp__\n`. |
+| APPROVED | games | nim_winner_three_heaps | Reads 3 decimals (each `0`-`7`, own line) representing heap sizes. Prints `first\n` if first player has a winning strategy (XOR of heaps != 0), else `second\n`. |
+| APPROVED | games | chess_piece_count | Reads exactly 8 lines, each 8 chars, where each char is a chess piece (`P`/`R`/`N`/`B`/`Q`/`K` for white, lowercase for black, `.` for empty). Prints `white: <w>\nblack: <b>\n` with counts. |
+| APPROVED | games | chess_pawn_at_promotion | Reads 2 decimals `r c` (each `0`-`7`, own line) — a white pawn's position. Prints `1\n` if `r == 0` (white pawn at promotion row), else `0\n`. |
+| OVERLAP | games | checkers_piece_count | OVERLAP with othello_count_pieces: same count-two-piece-chars algorithm; differs only in alphabet case and grid size. Dropped. |
+| APPROVED | games | spelling_bee_check | Reads a `\n`-terminated set of 7 lowercase letters (the allowed letters), then a `\n`-terminated candidate word ≤ 10 chars. Prints `1\n` if every letter of the word is in the allowed set, else `0\n`. |
+| APPROVED | games | wordle_feedback | Reads a `\n`-terminated secret word (exactly 5 lowercase letters), then a `\n`-terminated guess (exactly 5 lowercase letters). Prints exactly 5 feedback chars + `\n`: `G` for green (right letter, right position), `Y` for yellow (right letter, wrong position; track multiplicity correctly per standard Wordle rules), `_` for grey. |
+| APPROVED | games | mastermind_feedback | Reads a `\n`-terminated 4-char secret code (each char `1`-`6`) and a `\n`-terminated 4-char guess. Prints `<black> <white>\n` where `black` = exact position matches, `white` = right color wrong position (with proper multiplicity per Mastermind rules). |
+| APPROVED | games | game_of_life_count_alive_5x5 | Reads a 5×5 binary grid (5 lines of 5 chars `0`/`1`). Prints the count of `1` cells as decimal + `\n`. |
+| APPROVED | games | snake_eat_food | Reads two decimals `pos_snake` `pos_food` (each `0`-`9`, own line). Prints `1\n` if equal (snake eats food), else `0\n`. |
+| APPROVED | games | tetris_piece_rotate | Reads a 2×2 piece description (2 lines of 2 chars `*`/`.`). Prints the piece rotated 90° clockwise (still 2×2). |
+| APPROVED | games | pong_paddle_decision | Reads two decimals `ball_y` `paddle_y` (each `0`-`9`, own line). If `ball_y < paddle_y`, prints `move up\n`. If `ball_y > paddle_y`, prints `move down\n`. If equal, prints `stay\n`. |
+| APPROVED | memory_layout | ptr_advance_demo | Reads decimal base address `0`-`15` + `\n`, then offset `0`-`15` + `\n`. Prints `(base + offset) mod 16` as decimal + `\n` (simulates pointer advance with wraparound). |
+| APPROVED | memory_layout | ptr_read_at_offset | Reads 16 decimals (each `0`-`255`, own line) representing a 16-byte array, then a base index `0`-`15` + `\n`, then an offset `0`-`15` + `\n`. Prints `array[(base + offset) mod 16]` as decimal + `\n`. |
+| APPROVED | memory_layout | ptr_write_at_offset | Reads a base index `0`-`15` + `\n`, then offset `0`-`15` + `\n`, then a value `0`-`255` + `\n`. Writes the value at `(base + offset) mod 16` in an initially-zero 16-byte array, then prints the array as 16 decimals space-separated + `\n`. |
+| APPROVED | memory_layout | memcpy_short | Reads digit N `1`-`8` + `\n`, then N source bytes (each on own line as decimal `0`-`255`). Copies the bytes into a destination buffer of size N, then prints the destination as N decimals space-separated + `\n`. |
+| APPROVED | memory_layout | memset_short | Reads digit N `1`-`9` + `\n`, then decimal value V `0`-`255` + `\n`. Fills an N-byte buffer with V, then prints all N bytes as decimals space-separated + `\n`. |
+| APPROVED | memory_layout | memcmp_short | Reads digit N `1`-`5` + `\n`, then N decimals (`0`-`255`, own line) for array A, then N decimals for array B. Prints `1\n` if all N pairs match, else `0\n`. |
+| APPROVED | memory_layout | struct_two_fields | Reads two decimals `a` `b` (each `0`-`99`, own line) representing a 2-field struct `{a, b}`. Prints `field1=<a> field2=<b>\n`. |
+| OVERLAP | memory_layout | struct_array_3 | OVERLAP with struct_two_fields: same read-pair-print-formatted algorithm scaled 3x; no new memory-layout concept. Dropped. |
+| APPROVED | memory_layout | array_2d_access_3x3 | Reads 9 decimals (3×3 grid, row-major, each on own line), then a row `0`-`2` + `\n`, then a col `0`-`2` + `\n`. Prints `grid[row][col]` as decimal + `\n`. |
+| APPROVED | memory_layout | array_2d_assign_3x3 | Reads 9 decimals (3×3 grid), then row `0`-`2`, col `0`-`2`, value (each own line). Updates the cell, then prints the new grid as 3 lines of 3 decimals space-separated + `\n` each. |
+| APPROVED | memory_layout | linked_list_insert_at_head | No input. Starts with fixed list `[10, 20, 30]`. Inserts `99` at the head (so list becomes `[99, 10, 20, 30]`). Prints the new list values one per line. |
+| APPROVED | memory_layout | linked_list_reverse | No input. Starts with fixed list `[10, 20, 30]`. Reverses by in-place pointer manipulation (head becomes 30). Prints `[30, 20, 10]` one value per line. |
+| APPROVED | memory_layout | stack_of_stacks_demo | No input. Has two stacks `A` and `B`. Pushes `[1, 2, 3]` onto A and `[4, 5]` onto B. Then pops all from A printing each, then pops all from B printing each. Output: `3\n2\n1\n5\n4\n`. |
+| OVERLAP | memory_layout | array_init_with_pattern | OVERLAP with batch8/memory_layout/memory_dump_zero_to_15: same init-with-pattern algorithm; differs only in array length, multiplier, and output format. Dropped. |
+| APPROVED | language_meta | print_word_size_compile_time | No input. Uses the compile-time constant `#w` to print the program's word size as decimal + `\n` (e.g. `64\n` if compiled with `w=64`, `32\n` if `w=32`). |
+| APPROVED | language_meta | print_motto | No input. Prints `Flip a bit, then jump.\n`. |
+| APPROVED | language_meta | print_one_instruction_explanation | No input. Prints `The only operation is: a;b (flip bit at a, jump to b).\n`. |
+| APPROVED | language_meta | print_self_description_short | No input. Prints `I am a FlipJump program.\n`. |
+| APPROVED | language_meta | print_self_description_long | No input. Prints a 4-line self-description: `I am a FlipJump program.\nMy only operation is flip-and-jump.\nI was assembled from macros.\nI run in a finite memory.\n`. |
+| APPROVED | language_meta | print_compile_time_factorial_5 | No input. Internally computes `5! = 120` at compile time (using a `rep`-based multiplicative chain). Prints `120\n`. |
+| APPROVED | language_meta | print_compile_time_fibonacci_8 | No input. Internally computes `F(8) = 21` at compile time. Prints `21\n`. |
+| APPROVED | language_meta | macro_arg_substitution_demo | Defines a macro `outer(x) { inner(x, x) }` and `inner(a, b) { stl.output(a); stl.output(b) }`. Top-level invokes `outer('X')`. Output: `XX\n`. |
+| APPROVED | language_meta | namespace_isolation_demo | Defines two namespaces `foo` and `bar`, each with a macro `say()` printing different text. Top-level invokes `foo.say()` then `bar.say()`. Output: `from foo\nfrom bar\n`. |
+| APPROVED | language_meta | print_macro_call_count_static | No input. The program defines a macro `count()` that increments a runtime variable and calls itself nothing further (just bumps a counter). The macro is invoked 5 times at top level. After the 5th call, the program prints the final counter value as decimal + `\n` (i.e. `5\n`). |
+| APPROVED | language_meta | print_label_address_modulo | No input. Defines a label `here`, then prints `<address-of-here> mod 256` as decimal + `\n`. (The value depends on the compiled layout but is deterministic per build.) |
+| APPROVED | language_meta | print_address_difference | No input. Defines two labels `a` and `b` with `b` placed 4 ops after `a`. Prints the byte-distance `b - a` as decimal + `\n` (deterministic per FJM encoding). |
+| APPROVED | language_meta | rep_print_compile_time_unwind | No input. Uses `rep(8, i) stl.output('0' + i)` to print `01234567\n`. Demonstrates compile-time loop expansion. |
+| APPROVED | language_meta | compile_time_string_length | No input. Internally has the string `"FlipJump"`. Uses `#"FlipJump"` or `strlen` macro to compute its length at compile time. Prints `8\n`. |
+| APPROVED | language_meta | infinite_loop_explanation | No input. Prints `A FlipJump program ends with a self-loop.\n`, then enters `stl.loop`. |
+| APPROVED | recursion | gcd_recursive_with_steps | Reads two decimals `a`, `b` (each `1`-`50`, own line). Computes `gcd(a, b)` via recursive macro and prints each step `a b\n` (current pair after `a = b, b = a % b`), terminating with `<gcd> 0\n`. (Different from `gcd_recursive` which prints only final value.) |
+| APPROVED | recursion | sum_of_digits_recursive | Reads decimal N in `0`-`999` + `\n`. Computes sum of digits via recursive macro `digit_sum(N) = (N == 0) ? 0 : (N % 10) + digit_sum(N / 10)`. Prints decimal sum + `\n`. |
+| APPROVED | recursion | reverse_digits_recursive | Reads decimal N in `0`-`999` + `\n`. Computes the decimal reverse via recursive macro (each level extracts last digit and recurses on N/10). Prints reversed digits + `\n`. |
+| APPROVED | recursion | binary_search_recursive | Reads digit N `1`-`9` + `\n`, then N sorted decimals (each on own line), then target. Implements binary search via recursive macro that halves the search interval. Prints 0-based index + `\n` or `not found\n`. |
+| OVERLAP | recursion | count_down_print_recursive | OVERLAP with batch3/recursion/count_down_recursive: identical I/O and identical recursion strategy. Same program. Dropped. |
+| APPROVED | recursion | mutual_recursion_ping_pong | No input. Two mutually-recursive macros: `ping(N) { stl.output "ping\n"; if N>0: pong(N-1) }` and `pong(N) { stl.output "pong\n"; if N>0: ping(N-1) }`. Top-level invokes `ping(3)`. Output: `ping\npong\nping\npong\n`. |
+| APPROVED | recursion | count_down_recursive_no_print | Reads digit N `1`-`9` + `\n`. Recursive macro that counts down without printing intermediate steps; at base case (N=0) prints `done\n`. Demonstrates pure recursion without side effects in the chain. |
+| APPROVED | recursion | binary_to_decimal_recursive | Reads an 8-char `0`/`1` binary string + `\n`. Computes its decimal value via recursive macro `b2d(s) = head(s) * 2^(len-1) + b2d(tail(s))`. Prints decimal `0`-`255` + `\n`. |
+| APPROVED | recursion | tail_recursion_demo | Reads decimal N `0`-`9` + `\n`. Uses tail-recursive macro to compute `2^N` (each call doubles an accumulator). Prints decimal + `\n`. Demonstrates tail-call pattern. |
+| APPROVED | recursion | depth_of_recursion_proof | Reads digit N `0`-`9` + `\n`. Recursive macro that just decrements N to 0, then prints `Reached depth <N>\n` from the deepest call. Output: `Reached depth N\n`. |
+
+## Batch 10 — calendar_time + misc + more bits/logic/sequences (80 approved + 19 overlap + 1 clarified)
+
+Categories: calendar_time (23 net of 25), misc (27 net of 40), bits (9 net of 10), logic (13 net of 15), sequences (8 net of 10).
+CR-ist: 80 APPROVED, 19 OVERLAP, 1 UNCLEAR-tightened. Higher overlap rate signals diminishing returns.
+
+| status | category | name | description |
+|---|---|---|---|
+| APPROVED | calendar_time | day_of_week_from_date | Reads year `1900`-`2099`, month `1`-`12`, day `1`-`31` (each on own line). Computes day-of-week via Zeller's congruence. Prints `0`-`6` + `\n` (Sunday=0). |
+| APPROVED | calendar_time | day_of_week_word | Reads year, month, day (own line each). Computes day-of-week and prints `Sunday`/`Monday`/.../`Saturday` + `\n`. |
+| APPROVED | calendar_time | days_in_month | Reads year `1900`-`2099` then month `1`-`12` (each own line). Prints number of days `28`-`31` + `\n` (accounts for leap year). |
+| APPROVED | calendar_time | days_in_year | Reads year `1900`-`2099` + `\n`. Prints `366\n` if leap year, else `365\n`. |
+| APPROVED | calendar_time | is_valid_date | Reads year `1900`-`2099`, month, day (each own line). Prints `1\n` if all three form a valid Gregorian date (month `1`-`12`, day within month accounting for leap), else `0\n`. |
+| APPROVED | calendar_time | dec_year_2digit_to_4digit | Reads 2-digit decimal `00`-`99` + `\n`. Interprets via "pivot 50" rule: `50`-`99` → `1950`-`1999`, `00`-`49` → `2000`-`2049`. Prints 4-digit year + `\n`. |
+| APPROVED | calendar_time | format_date_iso | Reads year `1900`-`2099`, month `1`-`12`, day `1`-`31` (each own line). Prints `YYYY-MM-DD\n` with zero padding for MM and DD. |
+| APPROVED | calendar_time | parse_date_iso_validate | Reads `YYYY-MM-DD\n` (10 chars + `\n`). Prints `1\n` if it parses as a valid date in `1900`-`2099`, else `0\n`. |
+| APPROVED | calendar_time | format_time_12_hour | Reads 24-hour time as `HH:MM\n` (HH `00`-`23`, MM `00`-`59`). Prints `<H>:<MM> AM\n` or `<H>:<MM> PM\n` (12-hour format; midnight is `12:00 AM`, noon is `12:00 PM`; H is 1-12, no zero padding; MM stays zero-padded). |
+| APPROVED | calendar_time | format_time_24_hour | Reads 12-hour time as `<H>:<MM> AM\n` or `<H>:<MM> PM\n` (H `1`-`12`, MM `00`-`59`). Prints 24-hour format `HH:MM\n` with both fields zero-padded. |
+| APPROVED | calendar_time | seconds_to_clock_hms | Reads decimal total seconds `0`-`86399` + `\n`. Prints `HH:MM:SS\n` (all three fields zero-padded to 2 digits). |
+| APPROVED | calendar_time | clock_hms_to_seconds | Reads `HH:MM:SS\n` (8 chars + `\n`, each field zero-padded to 2 digits). Prints total seconds as decimal `0`-`86399` + `\n`. |
+| APPROVED | calendar_time | month_to_short_name | Reads decimal `1`-`12` + `\n`. Prints `Jan`, `Feb`, ..., `Dec` followed by `\n`. |
+| APPROVED | calendar_time | short_name_to_month | Reads a 3-char month abbreviation (`Jan`-`Dec`) + `\n`. Prints decimal `1`-`12` + `\n`. |
+| APPROVED | calendar_time | day_of_year | Reads year `1900`-`2099`, month, day (each own line). Prints day-of-year `1`-`366` + `\n` (accounts for leap). |
+| APPROVED | calendar_time | date_from_day_of_year | Reads year `1900`-`2099` + `\n`, then day-of-year `1`-`366` + `\n`. Prints `<month> <day>\n` (no zero padding) for the date. |
+| APPROVED | calendar_time | days_between_dates_same_year | Reads year, month1, day1, month2, day2 (each own line). Both dates in the same year; date2 ≥ date1. Prints absolute day difference as decimal + `\n`. |
+| APPROVED | calendar_time | weekend_check | Reads year, month, day (each own line). Prints `1\n` if the date falls on Saturday or Sunday (computed via Zeller's), else `0\n`. |
+| APPROVED | calendar_time | business_days_in_month | Reads year `1900`-`2099`, month `1`-`12` (each own line). Prints count of Mon-Fri days in that month as decimal + `\n`. |
+| APPROVED | calendar_time | quarter_of_year | Reads month `1`-`12` + `\n`. Prints quarter `1`-`4` + `\n` (Jan-Mar=1, Apr-Jun=2, Jul-Sep=3, Oct-Dec=4). |
+| OVERLAP | calendar_time | age_from_birth_year | OVERLAP with batch1/sub_two_decimals: same a-b algorithm with year-bounded subrange. Dropped (same precedent as age_in_dog_years vs mul_by_7). |
+| APPROVED | calendar_time | days_since_epoch_2000 | Reads year `2000`-`2099`, month, day (each own line). Prints days since `2000-01-01` (which is day 0) as decimal + `\n`. |
+| APPROVED | calendar_time | epoch_to_date_2000 | Reads decimal days since `2000-01-01` (`0`-`36524`, own line). Prints `<year> <month> <day>\n` for the corresponding Gregorian date. |
+| APPROVED | calendar_time | time_of_day_period | Reads decimal hour `0`-`23` + `\n`. Prints `morning\n` (5-11), `afternoon\n` (12-16), `evening\n` (17-20), or `night\n` (21-4). |
+| APPROVED | calendar_time | days_to_next_weekday | Reads day-of-week `0`-`6` (Sun=0) + `\n`, then target day-of-week `0`-`6` + `\n`. Prints `(target - today + 7) mod 7` as decimal `0`-`6` + `\n` (the number of days from today to the next occurrence of target; `0` if target equals today). |
+| OVERLAP | misc | fizzbuzz_1_to_100 | OVERLAP with batch3/loops/fizzbuzz_to_15 + fizzbuzz_to_20: third bound-only variant beyond the kept pair. Dropped. |
+| APPROVED | misc | bottles_of_beer_5 | No input. Prints 5 verses of the "X bottles of beer on the wall" song counting down from 5 to 1. Each verse follows the canonical 2-line refrain. |
+| APPROVED | misc | bottles_of_beer_n | Reads digit N `1`-`9` + `\n`. Prints N verses counting down from N to 1 (same per-verse format as `bottles_of_beer_5`). |
+| APPROVED | misc | random_quote_picker | Reads exactly one byte. Picks one of 5 hardcoded short quotes based on `byte mod 5`. Prints the selected quote + `\n`. |
+| OVERLAP | misc | seasonal_greeting | OVERLAP with batch3/season_from_month: same month→season-bucket; differs only in output template. Dropped. |
+| APPROVED | misc | zodiac_western | Reads month `1`-`12` then day `1`-`31` (each own line). Prints the corresponding western zodiac sign (`Aries`, `Taurus`, ..., `Pisces`) + `\n`. |
+| APPROVED | misc | zodiac_chinese | Reads year `1900`-`2099` + `\n`. Prints the corresponding Chinese zodiac animal (`Rat`, `Ox`, ..., `Pig`) + `\n`. |
+| APPROVED | misc | roman_to_arabic_30 | Reads Roman numeral string (one of `I`-`XXX`, valid up to 30) + `\n`. Prints decimal `1`-`30` + `\n`. |
+| APPROVED | misc | arabic_to_roman_30 | Reads decimal `1`-`30` + `\n`. Prints corresponding Roman numeral + `\n`. |
+| OVERLAP | misc | fortune_cookie_picker | OVERLAP with misc/random_quote_picker: identical byte mod 5 → 5-string-table algorithm; only content differs. Dropped. |
+| OVERLAP | misc | animal_sound | OVERLAP with batch6/menu_selection: same byte→fixed-string-table algorithm. Dropped. |
+| OVERLAP | misc | season_to_color | OVERLAP with batch6/menu_selection: same byte→fixed-string-table algorithm. Dropped. |
+| APPROVED | misc | country_flag_short | Reads a 3-letter country code `USA`/`FRA`/`JPN` + `\n`. Prints a 2-line ASCII flag for that country (each row a string of pattern blocks). Hardcoded for 3 countries. |
+| OVERLAP | misc | mood_emoji | OVERLAP with batch6/menu_selection: same digit→fixed-string-table algorithm. Dropped. |
+| APPROVED | misc | join_words_with_space | Reads digit N `1`-`9` + `\n`, then N `\n`-terminated words. Prints them joined by single space + `\n`. |
+| OVERLAP | misc | join_words_with_comma | OVERLAP with join_words_with_space: same algorithm; differs only in separator. Dropped (same precedent as base16_with_dash_separator). |
+| APPROVED | misc | random_choice_pick_3 | Reads 3 `\n`-terminated lines (each ≤ 20 chars) then one byte. Prints one of the 3 lines based on `byte mod 3`, followed by `\n`. |
+| APPROVED | misc | lucky_sum_check | Reads 3 decimals `1`-`9` (each own line). Prints `1\n` if their sum is divisible by 7, else `0\n`. |
+| APPROVED | misc | lucky_year_has_7 | Reads year `1900`-`2099` + `\n`. Prints `1\n` if its decimal representation contains the digit `7` anywhere, else `0\n`. |
+| APPROVED | misc | magic_number_8 | Reads decimal N `0`-`999` + `\n`. Prints `magic!\n` if N mod 8 == 0, else `not magic\n`. |
+| OVERLAP | misc | weekly_activity | OVERLAP with batch6/menu_selection: same byte→fixed-string-table algorithm. Dropped. |
+| APPROVED | misc | word_acronym_check | Reads two `\n`-terminated lines: first an acronym (uppercase, ≤ 6 chars), second a sentence (≤ 40 chars). Prints `1\n` if the acronym matches the uppercased first letter of each whitespace-separated word in the sentence (in order), else `0\n`. |
+| APPROVED | misc | is_valid_username | Reads `\n`-terminated string ≤ 20 chars. Prints `1\n` if its length is `3`-`12` and every byte is alphanumeric (`A`-`Z`/`a`-`z`/`0`-`9`), else `0\n`. |
+| APPROVED | misc | count_emoji_pairs | Reads `\n`-terminated line ≤ 40 chars. Prints `<smileys> <frowns>\n` where smileys is the count of `:)` and frowns is the count of `:(` substrings (non-overlapping, scanning left-to-right). |
+| APPROVED | misc | is_pangram | Reads `\n`-terminated line ≤ 80 chars. Prints `1\n` if the line contains every letter `a`-`z` at least once (case-insensitive), else `0\n`. |
+| OVERLAP | misc | sentence_ends_with_question | OVERLAP with batch2/strings/ends_with_period: same last-byte-check algorithm; differs only in target byte. Dropped. |
+| APPROVED | misc | count_paragraphs | Reads multi-line input terminated by EOF (or two consecutive `\n` characters as the final paragraph terminator). A paragraph is a maximal run of non-empty lines separated from other paragraphs by one or more empty lines. Prints the count of paragraphs as decimal + `\n`. |
+| APPROVED | misc | is_cli_flag | Reads `\n`-terminated string ≤ 20 chars. Prints `1\n` if it starts with `-` (single-dash flag) OR `--` (long flag), else `0\n`. |
+| APPROVED | misc | count_non_alphanumeric | Reads `\n`-terminated line ≤ 80 chars. Prints the count of bytes that are NEITHER letters NOR digits (excluding terminating `\n`) as decimal + `\n`. |
+| OVERLAP | misc | reverse_word_order_in_line | OVERLAP with batch5/text_processing/reverse_words_in_line: identical specification. Dropped. |
+| OVERLAP | misc | titlecase_simple | OVERLAP with batch5/text_processing/capitalize_words: same algorithm. Dropped. |
+| APPROVED | misc | dollar_amount_to_words | Reads decimal `0`-`99` + `\n`. Prints the English-words form `<tens_word> <ones_word>\n` (e.g. `42` → `forty two\n`; `7` → `seven\n`; `10` → `ten\n`; `20` → `twenty\n`). |
+| OVERLAP | misc | print_thanks_n_times | OVERLAP with batch1/hello/hello_n_times: same `read digit, print fixed string N times` algorithm; differs only in output string. Dropped. |
+| APPROVED | misc | print_zigzag_3_lines | No input. Prints a fixed 3-line zigzag of `*` characters: `*       *\n  *   *  \n    *    \n`. |
+| APPROVED | misc | letter_position_word | Reads `\n`-terminated string ≤ 10 chars (letters only). Prints the 0-based alphabetic position of each letter (as decimal), space-separated, followed by `\n`. Example: `abc\n` → `0 1 2\n`. |
+| APPROVED | misc | greet_three_times | Reads `\n`-terminated name (≤ 15 chars). Prints `Hello, <name>!\n` three times (3 lines of output). |
+| APPROVED | misc | day_progress_percent | Reads decimal hour `0`-`23` + `\n`, minute `0`-`59` + `\n`. Prints `(hour * 60 + minute) * 100 / 1440` (floor) as decimal + `\n` (= percent of day elapsed). |
+| APPROVED | misc | print_progress_bar_10 | Reads digit `0`-`10` + `\n`. Prints a 10-char progress bar: `<percent>` `#` characters followed by `(10 - percent)` `.` characters, then `\n`. (e.g. `3` → `###.......\n`.) |
+| APPROVED | misc | is_prime_or_one | Reads decimal `1`-`50` + `\n`. Prints `prime\n` if N is prime OR equals 1, else `composite\n`. (Variant: treats 1 as "kind of prime" for fun.) |
+| APPROVED | misc | bits_to_emoji_face | Reads two bits `e1 e2` (eye states, each `0` closed or `1` open, own line), then one bit `m` (mouth state, `0` frown / `1` smile, own line). Prints a 3-char emoji face combining these: e.g. `1 1 1` → `:)\n`; `0 0 1` → `XD\n`; `1 1 0` → `:(\n`; `0 0 0` → `XO\n`. |
+| APPROVED | bits | swap_two_bytes | Reads exactly 2 bytes. Outputs them in reverse order (byte2 first, then byte1) as raw bytes. |
+| APPROVED | bits | min_two_bytes | Reads exactly 2 bytes. Outputs the byte with smaller numeric value (treating as unsigned 0-255) as a raw byte. |
+| APPROVED | bits | max_two_bytes | Reads exactly 2 bytes. Outputs the byte with larger numeric value as a raw byte. |
+| APPROVED | bits | xor_three_bytes | Reads exactly 3 bytes. Outputs `b1 XOR b2 XOR b3` as one raw byte. |
+| APPROVED | bits | and_three_bytes | Reads exactly 3 bytes. Outputs `b1 AND b2 AND b3` as one raw byte. |
+| APPROVED | bits | or_three_bytes | Reads exactly 3 bytes. Outputs `b1 OR b2 OR b3` as one raw byte. |
+| OVERLAP | bits | byte_count_zero_bits | OVERLAP with batch1/bits/popcount_byte: `8 - popcount`; trivial constant adjustment. Dropped (same precedent as msb_position vs count_leading_zeros). |
+| APPROVED | bits | byte_high_eq_low_nibble | Reads exactly 1 byte. Prints `1\n` if the high nibble equals the low nibble (e.g. `0xAA`, `0x33`), else `0\n`. |
+| APPROVED | bits | byte_is_bit_palindrome | Reads exactly 1 byte. Prints `1\n` if the byte's 8-bit binary representation reads the same forward and backward (e.g. `0x99` = `10011001`), else `0\n`. |
+| APPROVED | bits | byte_reverse_each_nibble | Reads exactly 1 byte. Reverses the bits within each nibble independently (high nibble reversed in place, low nibble reversed in place). Outputs the resulting byte as raw. |
+| APPROVED | logic | logic_implies | Reads two `0`/`1` ASCII bits (each on own line). Prints `(NOT A) OR B` as `0` or `1` + `\n` (A → B). |
+| OVERLAP | logic | logic_biconditional | OVERLAP with batch1/logic/xnor_gate: biconditional A iff B is exactly XNOR. Dropped. |
+| APPROVED | logic | boolean_xor_three | Reads three ASCII bits. Prints their XOR (= 1 iff odd number of 1s) + `\n`. |
+| APPROVED | logic | boolean_majority_three | Reads three ASCII bits. Prints `1\n` if at least 2 of them are `1`, else `0\n`. |
+| OVERLAP | logic | boolean_minority_three | OVERLAP with boolean_majority_three: minority = NOT majority; same count algorithm with negated output. Dropped. |
+| APPROVED | logic | boolean_none_three | Reads three ASCII bits. Prints `1\n` if all three are `0`, else `0\n`. |
+| APPROVED | logic | boolean_exactly_one | Reads three ASCII bits. Prints `1\n` if exactly one of them is `1`, else `0\n`. |
+| APPROVED | logic | boolean_exactly_two | Reads three ASCII bits. Prints `1\n` if exactly two are `1`, else `0\n`. |
+| APPROVED | logic | multiplexer_2to1 | Reads a selector bit + 2 data bits (each on own line). Outputs `data0` if selector is `0`, else `data1`, as one ASCII bit + `\n`. |
+| APPROVED | logic | demultiplexer_1to2 | Reads a data bit + selector bit. Outputs two bits separated by space + `\n`: if selector is `0`, prints `<data> 0\n`; if `1`, prints `0 <data>\n`. |
+| APPROVED | logic | mux_4to1 | Reads two selector bits + 4 data bits (each on own line). Outputs the selected data bit (selector encodes 0-3 as `s1*2+s0`) + `\n`. |
+| APPROVED | logic | encoder_4to2 | Reads 4 bits (assumed one-hot input, exactly one is `1`). Prints 2 bits as `<s1><s0>\n` (e.g. position 0 → `00`, position 3 → `11`). |
+| APPROVED | logic | decoder_2to4 | Reads 2 bits `s1 s0`. Prints 4 bits: position `s1*2+s0` is `1`, others are `0`. Output is 4 chars + `\n`. |
+| APPROVED | logic | full_adder | Reads three ASCII bits `a b c_in` (each own line). Prints `<sum> <c_out>\n` where `sum = a XOR b XOR c_in` and `c_out = (a AND b) OR (c_in AND (a XOR b))`. |
+| APPROVED | logic | nand_universality_or | Reads two ASCII bits `a b` (each own line). Computes `OR(a, b)` using ONLY `NAND` gates (no native AND/OR/NOT). Prints result + `\n`. |
+| OVERLAP | sequences | nat_first_n_spaced | OVERLAP with batch2/count_up_to_n: same algorithm; differs only in delimiter (space vs newline). Dropped. |
+| APPROVED | sequences | evens_first_n | Reads digit N `1`-`9` + `\n`. Prints first N positive even numbers `2, 4, ..., 2N` space-separated + `\n`. |
+| APPROVED | sequences | odds_first_n | Reads digit N `1`-`9` + `\n`. Prints first N positive odd numbers `1, 3, ..., 2N-1` space-separated + `\n`. |
+| APPROVED | sequences | powers_of_2_first_n | Reads digit N `1`-`7` + `\n`. Prints `2^0, 2^1, ..., 2^(N-1)` space-separated + `\n`. |
+| APPROVED | sequences | powers_of_3_first_n | Reads digit N `1`-`5` + `\n`. Prints `3^0, 3^1, ..., 3^(N-1)` space-separated + `\n`. |
+| OVERLAP | sequences | squares_first_n_lines | OVERLAP with batch5/sequences/square_first_n: same algorithm; differs only in delimiter. Dropped. |
+| OVERLAP | sequences | cubes_first_n_lines | OVERLAP with batch5/sequences/cube_first_n: same algorithm; differs only in delimiter. Dropped. |
+| APPROVED | sequences | fibonacci_pairs_first_n | Reads digit N `1`-`8` + `\n`. Prints `<F(i)> <F(i+1)>\n` for `i = 0..N-1` (N lines of consecutive Fibonacci pairs). |
+| APPROVED | sequences | mersenne_first_n | Reads digit N `1`-`7` + `\n`. Prints first N Mersenne numbers `M(k) = 2^k - 1` for `k = 1..N`, space-separated + `\n`. |
+| APPROVED | sequences | triangular_inverse_n | Reads decimal triangular number `1`-`55` + `\n` (i.e. one of `1, 3, 6, 10, 15, 21, 28, 36, 45, 55`). Prints the index `k` such that `T(k) == input`, else `-1` if input isn't triangular. |
+
 ## Retired rows (Phase 3)
 
 When a row cannot be implemented within budget and gets replaced, mark it
