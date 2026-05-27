@@ -231,16 +231,9 @@ def get_test_types_to_run__heavy_first(get_option: Callable[[str], bool]) -> Lis
     regular_test_types_heavy_first = REGULAR_TYPES[::-1]
     catalog_test_types_heavy_first = CATALOG_TYPES[::-1]
 
+    # --catalog is intended to be used alone (disjoint from --all/--regular/individual type flags).
+    # That's a convention, not a runtime guard -- combining flags will simply use the catalog branch.
     if get_option(CATALOG_FLAG):
-        conflicting = [
-            f for f in [ALL_FLAG, REGULAR_FLAG] + list(TEST_TYPES) if get_option(f)
-        ]
-        if conflicting:
-            pytest.exit(
-                f"--{CATALOG_FLAG} is mutually exclusive with "
-                f"--{ALL_FLAG} / --{REGULAR_FLAG} / individual type flags "
-                f"(got: {', '.join('--' + c for c in conflicting)})"
-            )
         return list(catalog_test_types_heavy_first)
 
     if get_option(ALL_FLAG):
