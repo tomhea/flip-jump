@@ -347,6 +347,330 @@ CR-ist found 2 overlaps + 2 UNCLEAR descriptions (clarified in place); the other
 | APPROVED | recursion | is_even_mutual_recursive | Reads decimal N `0`-`10` and prints `1\n` if even else `0\n`, computed via mutual recursion: `is_even(0)=1`, `is_even(N) = is_odd(N-1)`, `is_odd(N) = is_even(N-1)`. |
 | APPROVED | recursion | is_odd_mutual_recursive | Reads decimal N `0`-`10` and prints `1\n` if odd else `0\n`, computed via the same mutual recursion as `is_even_mutual_recursive` but with the role swapped (entry point is `is_odd`). |
 
+## Batch 4 — data_structures + conversion + more bits (98 approved + 2 overlap)
+
+Categories: data_structures (50 net), conversion (30 net), bits (18 net of 20 proposed).
+CR-ist found 2 overlaps within batch 4 (msb_position ≡ count_leading_zeros, lsb_position ≡ count_trailing_zeros); other 98 are APPROVED.
+
+| status | category | name | description |
+|---|---|---|---|
+| APPROVED | data_structures | stack_push_pop_demo | Reads digit N `1`-`9` + `\n`. Pushes integers `1..N` onto a stack, then pops all and prints each on its own line. Output is `N\n(N-1)\n...\n1\n` (reverse order). |
+| APPROVED | data_structures | queue_enqueue_dequeue | Reads digit N `1`-`9` + `\n`. Enqueues integers `1..N` then dequeues all, printing each on its own line. Output is `1\n2\n...\nN\n` (FIFO order). |
+| APPROVED | data_structures | stack_reverse_line | Reads a `\n`-terminated line ≤ 40 chars. Uses an explicit push-all-then-pop-all stack pattern (LIFO) to reverse the line; prints the reversed bytes followed by `\n`. The stack demonstration is the point. |
+| APPROVED | data_structures | array_sum_5 | Reads exactly 5 decimal integers, each on its own line, and prints their sum + `\n`. |
+| APPROVED | data_structures | array_sum_10 | Reads exactly 10 decimal integers, each on its own line, and prints their sum + `\n`. |
+| APPROVED | data_structures | array_max_5 | Reads exactly 5 decimals (each own line) and prints the maximum + `\n`. |
+| APPROVED | data_structures | array_max_10 | Reads exactly 10 decimals (each own line) and prints the maximum + `\n`. |
+| APPROVED | data_structures | array_min_5 | Reads exactly 5 decimals and prints the minimum + `\n`. |
+| APPROVED | data_structures | array_min_10 | Reads exactly 10 decimals and prints the minimum + `\n`. |
+| APPROVED | data_structures | array_avg_5 | Reads exactly 5 decimals and prints `floor(sum / 5)` + `\n`. |
+| APPROVED | data_structures | array_avg_10 | Reads exactly 10 decimals and prints `floor(sum / 10)` + `\n`. |
+| APPROVED | data_structures | array_count_zeros | Reads digit N `1`-`9` + `\n`, then N decimal integers each own line. Prints the count of zeros as decimal + `\n`. |
+| APPROVED | data_structures | array_count_negatives | Reads digit N `1`-`9` + `\n`, then N signed decimal integers. Prints the count of values `< 0` + `\n`. |
+| APPROVED | data_structures | array_count_positives | Reads digit N `1`-`9` + `\n`, then N signed decimal integers. Prints the count of values `> 0` + `\n`. |
+| APPROVED | data_structures | array_reverse_5 | Reads 5 decimals (each own line) and prints them in reverse order, one per line. |
+| APPROVED | data_structures | array_double_each | Reads digit N `1`-`9` + `\n`, then N decimals. Prints `2*a_i` for each input on its own line, in the same order. |
+| APPROVED | data_structures | array_increment_each | Reads digit N `1`-`9` + `\n`, then N decimals. Prints `a_i + 1` for each input on its own line, in the same order. |
+| APPROVED | data_structures | array_first_3 | Reads digit N `3`-`9` + `\n`, then N decimals. Prints just the first 3 values, one per line. |
+| APPROVED | data_structures | array_last_3 | Reads digit N `3`-`9` + `\n`, then N decimals. Prints just the last 3 values, one per line. |
+| APPROVED | data_structures | bubble_sort_5 | Reads exactly 5 decimals and prints them sorted ascending (one per line), implemented as bubble sort (adjacent-swap passes). The algorithm choice is the point. |
+| APPROVED | data_structures | insertion_sort_5 | Reads exactly 5 decimals and prints them sorted ascending (one per line), implemented as insertion sort (extend prefix one element at a time). |
+| APPROVED | data_structures | selection_sort_5 | Reads exactly 5 decimals and prints them sorted ascending (one per line), implemented as selection sort (find-min-and-swap each pass). |
+| APPROVED | data_structures | queue_print_order | Reads digit N `1`-`9` + `\n`, then exactly N bytes (no separator). Enqueues each byte then dequeues all, outputting them in original input order (FIFO demo). |
+| APPROVED | data_structures | parens_matched | Reads a `\n`-terminated string ≤ 40 chars containing only `(` and `)`. Prints `1\n` if the parentheses are balanced (every `(` has a matching `)` in order), else `0\n`. |
+| APPROVED | data_structures | brackets_matched | Reads a `\n`-terminated string ≤ 40 chars containing only `[` and `]`. Prints `1\n` if balanced, else `0\n`. |
+| APPROVED | data_structures | mixed_brackets_matched | Reads a `\n`-terminated string ≤ 40 chars containing only `()[]{}`. Prints `1\n` if all three bracket types are balanced AND properly nested (e.g. `([])` valid, `([)]` invalid), else `0\n`. Use an explicit stack. |
+| APPROVED | data_structures | count_distinct_bytes | Reads a `\n`-terminated line ≤ 80 chars and prints the count of distinct byte values in the line (excluding the terminating `\n`) as decimal + `\n`. |
+| APPROVED | data_structures | array_dedupe_sorted | Reads digit N `1`-`9` + `\n`, then N decimals already sorted ascending. Prints the unique values in order, one per line. |
+| APPROVED | data_structures | array_contains | Reads digit N `1`-`9` + `\n`, then N decimals, then one more decimal `target`. Prints `1\n` if target appears in the N-element array, else `0\n`. |
+| APPROVED | data_structures | linear_search | Reads digit N `1`-`9` + `\n`, then N decimals, then `target`. Prints the 0-based index of the first match + `\n`, or `not found\n` if absent. |
+| APPROVED | data_structures | binary_search_sorted | Reads digit N `1`-`9` + `\n`, then N decimals already sorted ascending, then `target`. Prints the 0-based index of the match + `\n` (any if duplicates), or `not found\n`. Uses binary search. |
+| APPROVED | data_structures | min_index_5 | Reads exactly 5 decimals and prints the 0-based index of the minimum value + `\n`. Ties: prints the smallest index among tied positions. |
+| APPROVED | data_structures | max_index_5 | Reads exactly 5 decimals and prints the 0-based index of the maximum value + `\n`. Ties: smallest index among tied positions. |
+| APPROVED | data_structures | swap_first_last_5 | Reads exactly 5 decimals and prints them with positions 0 and 4 swapped, one per line. |
+| APPROVED | data_structures | swap_adjacent_pairs_6 | Reads exactly 6 decimals and prints them with each adjacent pair swapped (positions 0↔1, 2↔3, 4↔5), one per line in the new order. |
+| APPROVED | data_structures | rotate_left_5 | Reads exactly 5 decimals and prints them rotated left by 1 (input `a b c d e` → output `b\nc\nd\ne\na\n`). |
+| APPROVED | data_structures | rotate_right_5 | Reads exactly 5 decimals and prints them rotated right by 1 (input `a b c d e` → output `e\na\nb\nc\nd\n`). |
+| APPROVED | data_structures | shift_right_zero_fill_5 | Reads exactly 5 decimals and prints them shifted right by 1 with 0-fill on the left (input `a b c d e` → output `0\na\nb\nc\nd\n`). |
+| APPROVED | data_structures | array_sum_evens | Reads digit N `1`-`9` + `\n`, then N decimals. Prints the sum of even-valued elements + `\n`. |
+| APPROVED | data_structures | array_sum_odds | Reads digit N `1`-`9` + `\n`, then N decimals. Prints the sum of odd-valued elements + `\n`. |
+| APPROVED | data_structures | array_count_above_threshold | Reads digit N `1`-`9` + `\n`, then `threshold` (signed decimal) + `\n`, then N signed decimals. Prints the count of values strictly greater than threshold + `\n`. |
+| APPROVED | data_structures | histogram_5 | Reads exactly 5 ASCII digits `0`-`5` (each followed by `\n`). For each input value `v`, prints `v` `*` characters then `\n` (5 lines of output total). |
+| APPROVED | data_structures | running_max | Reads digit N `1`-`9` + `\n`, then N signed decimals (each own line). After each input, prints the running maximum so far on its own line (N lines of output). |
+| APPROVED | data_structures | running_min | Reads digit N `1`-`9` + `\n`, then N signed decimals. After each input, prints the running minimum so far on its own line. |
+| APPROVED | data_structures | is_sorted_ascending | Reads digit N `1`-`9` + `\n`, then N decimals. Prints `1\n` if the sequence is non-decreasing, else `0\n`. |
+| APPROVED | data_structures | is_sorted_descending | Reads digit N `1`-`9` + `\n`, then N decimals. Prints `1\n` if the sequence is non-increasing, else `0\n`. |
+| APPROVED | data_structures | array_range | Reads digit N `1`-`9` + `\n`, then N decimals. Prints `max - min` + `\n`. |
+| APPROVED | data_structures | partial_sums | Reads digit N `1`-`9` + `\n`, then N decimals. Prints the running cumulative sum after each input, one per line (N lines). |
+| APPROVED | data_structures | count_inversions_5 | Reads exactly 5 decimals and prints the count of inversions (pairs `(i, j)` with `i < j` and `a_i > a_j`) as decimal + `\n`. |
+| APPROVED | data_structures | array_median_5 | Reads exactly 5 decimals (any order) and prints the median (middle value when sorted) as decimal + `\n`. |
+| APPROVED | conversion | dec_to_hex | Reads decimal `0`-`255` + `\n` and prints exactly two lowercase hex digits (no `0x` prefix), followed by `\n`. |
+| APPROVED | conversion | hex_to_dec | Reads exactly two lowercase hex digits + `\n` and prints the decimal `0`-`255` + `\n`. |
+| APPROVED | conversion | dec_to_binary | Reads decimal `0`-`255` + `\n` and prints an 8-char binary string of `0` and `1` (MSB first), followed by `\n`. |
+| APPROVED | conversion | binary_to_dec | Reads an 8-char binary string of `0`/`1` + `\n` and prints the decimal `0`-`255` + `\n`. |
+| APPROVED | conversion | dec_to_octal | Reads decimal `0`-`63` + `\n` and prints exactly two octal digits + `\n`. |
+| APPROVED | conversion | octal_to_dec | Reads exactly two octal digits + `\n` and prints the decimal `0`-`63` + `\n`. |
+| APPROVED | conversion | binary_to_hex | Reads an 8-char binary string + `\n` and prints exactly two lowercase hex digits + `\n`. |
+| APPROVED | conversion | hex_to_binary | Reads exactly two lowercase hex digits + `\n` and prints an 8-char binary string + `\n`. |
+| APPROVED | conversion | celsius_to_fahrenheit | Reads a signed decimal Celsius temperature (range `-100`..`100`) + `\n` and prints `floor(C * 9 / 5 + 32)` as a signed decimal + `\n`. |
+| APPROVED | conversion | fahrenheit_to_celsius | Reads a signed decimal Fahrenheit temperature (range `-148`..`212`) + `\n` and prints `floor((F - 32) * 5 / 9)` as a signed decimal + `\n`. |
+| APPROVED | conversion | km_to_miles | Reads decimal kilometers `0`-`100` + `\n` and prints `floor(km * 5 / 8)` as decimal miles + `\n`. |
+| APPROVED | conversion | miles_to_km | Reads decimal miles `0`-`60` + `\n` and prints `floor(miles * 8 / 5)` as decimal km + `\n`. |
+| APPROVED | conversion | minutes_to_hours_minutes | Reads decimal total minutes `0`-`999` + `\n` and prints `<H>:<MM>\n`, where `H` is `total / 60` (no leading zero) and `MM` is `total % 60` zero-padded to 2 digits. |
+| APPROVED | conversion | seconds_to_minutes_seconds | Reads decimal total seconds `0`-`3599` + `\n` and prints `<M>:<SS>\n`, with `MM` zero-padded to 2 digits. |
+| APPROVED | conversion | hours_to_minutes | Reads decimal hours `0`-`24` + `\n` and prints `hours * 60` as decimal + `\n`. |
+| APPROVED | conversion | days_to_hours | Reads decimal days `0`-`30` + `\n` and prints `days * 24` as decimal + `\n`. |
+| APPROVED | conversion | dec_to_thousands_grouped | Reads decimal `0`-`999999` + `\n` and prints the value with thousands separators (commas), then `\n`. Examples: `7` → `7\n`, `1000` → `1,000\n`, `12345` → `12,345\n`, `999999` → `999,999\n`. |
+| APPROVED | conversion | word_zero_to_nine | Reads a single ASCII digit `0`-`9` + `\n` and prints its English word (`zero`, `one`, `two`, ..., `nine`) + `\n`. |
+| APPROVED | conversion | word_to_digit | Reads one of the English number words `zero`, `one`, `two`, ..., `nine` (terminated by `\n`) and prints the corresponding ASCII digit `0`-`9` + `\n`. |
+| APPROVED | conversion | zero_pad_to_4 | Reads decimal `0`-`9999` + `\n` and prints a 4-character zero-padded representation + `\n`. Examples: `7` → `0007\n`, `1234` → `1234\n`. |
+| APPROVED | conversion | roman_numeral_1_to_10 | Reads decimal `1`-`10` + `\n` and prints the corresponding Roman numeral (`I`, `II`, ..., `X`) + `\n`. |
+| APPROVED | conversion | roman_to_dec_1_to_10 | Reads a Roman numeral string (one of `I`, `II`, ..., `X`) + `\n` and prints the decimal `1`-`10` + `\n`. |
+| APPROVED | conversion | lowercase_letter_to_index | Reads exactly one byte `a`-`z` and prints its 0-based alphabet index (`a`→`0`, ..., `z`→`25`) as decimal + `\n`. |
+| APPROVED | conversion | index_to_lowercase_letter | Reads decimal `0`-`25` + `\n` and outputs exactly one byte: the corresponding lowercase letter (`0`→`a`, `25`→`z`). No trailing `\n` after the byte. |
+| APPROVED | conversion | uppercase_letter_to_index | Reads exactly one byte `A`-`Z` and prints its 0-based alphabet index (`A`→`0`, ..., `Z`→`25`) as decimal + `\n`. |
+| APPROVED | conversion | dollars_to_cents | Reads decimal dollars `0`-`99` + `\n` and prints `dollars * 100` as decimal + `\n`. |
+| APPROVED | conversion | cents_to_dollars_cents | Reads decimal cents `0`-`9999` + `\n` and prints `<dollars>.<cc>\n`, where `cc` is `cents % 100` zero-padded to 2 digits. |
+| APPROVED | conversion | nibble_to_hex_char | Reads decimal `0`-`15` + `\n` and outputs exactly one byte: the corresponding lowercase hex char (`0`-`9` or `a`-`f`), followed by `\n`. |
+| APPROVED | conversion | hex_char_to_nibble | Reads exactly one byte that's a lowercase hex char (`0`-`9` or `a`-`f`) + `\n` and prints the decimal `0`-`15` + `\n`. |
+| APPROVED | conversion | dec_with_explicit_sign | Reads a signed decimal `-9999`..`9999` + `\n` and prints it with an always-explicit sign byte (`+` or `-`) prefix, followed by `\n`. Examples: `5` → `+5\n`, `0` → `+0\n`, `-3` → `-3\n`. |
+| APPROVED | bits | toggle_bit_at_position | Reads one byte, then one ASCII digit `0`-`7` + `\n`. Outputs the byte with the bit at that position XOR'd (toggled). Convention: position `0` is the LSB (matches `bit_at_position`). |
+| APPROVED | bits | count_leading_zeros | Reads one byte and prints the count of zero bits before the first `1` (counting from the MSB downward), `0`-`8`, + `\n`. The zero byte yields `8`. |
+| APPROVED | bits | count_trailing_zeros | Reads one byte and prints the count of zero bits before the first `1` (counting from the LSB upward), `0`-`8`, + `\n`. The zero byte yields `8`. |
+| OVERLAP | bits | msb_position | OVERLAP with count_leading_zeros: same scan algorithm; msb_position = 7 - count_leading_zeros for non-zero bytes. Dropped. |
+| OVERLAP | bits | lsb_position | OVERLAP with count_trailing_zeros: identical output for non-zero bytes; same scan from LSB. Dropped. |
+| APPROVED | bits | byte_to_binary_string | Reads one byte (raw) and prints an 8-char binary string of `0`/`1` (MSB first), followed by `\n`. Differs from `conversion/dec_to_binary` (which reads a decimal text representation). |
+| APPROVED | bits | binary_string_to_byte | Reads an 8-char binary string of `0`/`1` + `\n` and outputs the corresponding raw byte (no trailing `\n`). Inverse of `byte_to_binary_string`. |
+| APPROVED | bits | byte_to_hex_string | Reads one byte (raw) and prints exactly two lowercase hex chars (no `0x` prefix) + `\n`. Differs from `io/char_to_hex` (which prints `0xNN\n`) and `conversion/dec_to_hex` (which reads a decimal text representation). |
+| APPROVED | bits | is_byte_zero | Reads one byte and prints `1\n` if it equals `0x00`, else `0\n`. |
+| APPROVED | bits | is_byte_full | Reads one byte and prints `1\n` if it equals `0xFF`, else `0\n`. |
+| APPROVED | bits | xor_with_constant_55 | Reads one byte and outputs `byte XOR 0x55`, as one raw byte. |
+| APPROVED | bits | and_with_constant_0f | Reads one byte and outputs `byte AND 0x0F` (low nibble preserved, high nibble zeroed), as one raw byte. |
+| APPROVED | bits | or_with_constant_80 | Reads one byte and outputs `byte OR 0x80` (MSB set, other bits preserved), as one raw byte. |
+| APPROVED | bits | byte_decrement_wrap | Reads one byte and outputs `(byte - 1) mod 256` as one raw byte (e.g. `0x00` → `0xFF`). |
+| APPROVED | bits | rotate_left_byte | Reads one byte and outputs the byte rotated left by 1 bit (MSB wraps around to LSB), as one raw byte. |
+| APPROVED | bits | rotate_right_byte | Reads one byte and outputs the byte rotated right by 1 bit (LSB wraps around to MSB), as one raw byte. |
+| APPROVED | bits | byte_concat_to_hex_word | Reads exactly two bytes (high then low) and prints 4 lowercase hex chars (no `0x` prefix) + `\n`. The first byte's hex appears first. |
+| APPROVED | bits | byte_split_from_hex_word | Reads exactly 4 lowercase hex chars + `\n` and outputs two raw bytes: the high byte first, then the low byte. |
+| APPROVED | bits | count_bits_in_three_bytes | Reads exactly 3 bytes and prints the total 1-bit count across all 24 bits as decimal `0`-`24` + `\n`. |
+| APPROVED | bits | dominant_bit | Reads one byte. Prints `1\n` if it has more 1-bits than 0-bits (popcount > 4), `0\n` if more 0-bits than 1-bits (popcount < 4), or `tie\n` if popcount equals 4. |
+
+## Batch 5 — algorithms + sequences + text_processing (93 approved + 5 overlap + 2 clarified)
+
+Categories: algorithms (45 net of 50), sequences (28 net of 30), text_processing (20 net).
+CR-ist found 5 overlaps (4 bubble-variant sorts + insertion-point dup of first-match) + 2 UNCLEAR (tightened in place); other 93 APPROVED.
+
+| status | category | name | description |
+|---|---|---|---|
+| APPROVED | algorithms | quicksort_5 | Reads exactly 5 decimal integers (each on own line) and prints them sorted ascending (one per line). Implementation: quicksort (recursive partition around a pivot). |
+| APPROVED | algorithms | mergesort_5 | Reads exactly 5 decimals and prints them sorted ascending (one per line). Implementation: merge sort (recursive split + merge). |
+| APPROVED | algorithms | heap_sort_5 | Reads exactly 5 decimals and prints them sorted ascending (one per line). Implementation: heap sort (build max-heap, repeatedly extract max). |
+| APPROVED | algorithms | counting_sort_n_small | Reads digit N `1`-`9` + `\n`, then N single-digit decimals `0`-`9`. Prints them sorted ascending (one per line) via counting sort (tally each value then emit in order). |
+| APPROVED | algorithms | radix_sort_n_small | Reads digit N `1`-`9` + `\n`, then N two-digit decimals `0`-`99`. Prints them sorted ascending (one per line) via radix sort (two passes: ones then tens). |
+| OVERLAP | algorithms | cocktail_sort_5 | OVERLAP with batch4/bubble_sort_5: bidirectional bubble — same adjacent-swap kernel. Dropped. |
+| OVERLAP | algorithms | gnome_sort_5 | OVERLAP with batch4/insertion_sort_5: walk-back-swap reformulation of insertion sort. Dropped. |
+| APPROVED | algorithms | shell_sort_5 | Reads exactly 5 decimals and prints them sorted ascending. Implementation: shell sort with gap sequence `2, 1`. |
+| OVERLAP | algorithms | odd_even_sort_5 | OVERLAP with batch4/bubble_sort_5: pass-pair split of bubble's adjacent-swap kernel. Dropped. |
+| OVERLAP | algorithms | comb_sort_5 | OVERLAP with batch5/shell_sort_5: bubble with shrinking gap; shell already covers the gap-sequence idea. Dropped. |
+| APPROVED | algorithms | cycle_sort_5 | Reads exactly 5 decimals and prints them sorted ascending. Implementation: cycle sort (minimum-write sort — find each element's correct position and place via cycle following). |
+| APPROVED | algorithms | pancake_sort_5 | Reads exactly 5 decimals and prints them sorted ascending. Implementation: pancake sort — only prefix reversals (no swaps). |
+| APPROVED | algorithms | linear_search_count | Reads digit N `1`-`9` + `\n`, then N decimals (each own line), then a target decimal. Prints the count of occurrences of the target in the array as decimal + `\n`. |
+| APPROVED | algorithms | linear_search_last | Reads digit N `1`-`9` + `\n`, then N decimals, then target. Prints the 0-based index of the LAST occurrence + `\n`, or `not found\n` if absent. |
+| APPROVED | algorithms | binary_search_first_match | Reads digit N `1`-`9` + `\n`, then N decimals sorted ascending (may have duplicates), then target. Prints the 0-based index of the FIRST occurrence (lower-bound) + `\n`, or `not found\n`. |
+| APPROVED | algorithms | binary_search_last_match | Reads digit N `1`-`9` + `\n`, then N decimals sorted ascending (may have duplicates), then target. Prints the 0-based index of the LAST occurrence (upper-bound-1) + `\n`, or `not found\n`. |
+| OVERLAP | algorithms | binary_search_insertion_point | OVERLAP with binary_search_first_match: lower-bound is exactly the first-match index whether target is present or absent. Same lower-bound algorithm with cosmetic output difference. Dropped. |
+| APPROVED | algorithms | jump_search_sorted | Reads digit N `1`-`9` + `\n`, then N decimals sorted ascending, then target. Prints the 0-based index of any match + `\n`, or `not found\n`. Implementation: jump search (block size ~√N, linear scan within block). |
+| APPROVED | algorithms | exponential_search_sorted | Reads digit N `1`-`9` + `\n`, then N decimals sorted ascending, then target. Prints the 0-based index of any match + `\n`, or `not found\n`. Implementation: exponential search (find range by doubling i, then binary search within range). |
+| APPROVED | algorithms | ternary_search_sorted | Reads digit N `1`-`9` + `\n`, then N decimals sorted ascending, then target. Prints the 0-based index of any match + `\n`, or `not found\n`. Implementation: ternary search (divide range into thirds). |
+| APPROVED | algorithms | sieve_of_eratosthenes_30 | No input. Prints the primes in `[2, 30]` space-separated on one line + `\n`: `2 3 5 7 11 13 17 19 23 29\n`. Implementation: sieve of Eratosthenes (mark composites). |
+| APPROVED | algorithms | sieve_of_eratosthenes_50 | No input. Prints the primes in `[2, 50]` space-separated + `\n`. Implementation: sieve of Eratosthenes. |
+| APPROVED | algorithms | euclidean_gcd_with_steps | Reads two positive decimals `a`, `b` each `1`-`100` (own lines). Prints each step of Euclidean GCD as `a b\n` (current pair after `a = b, b = a % b`), terminating with `<gcd> 0\n`. |
+| APPROVED | algorithms | extended_gcd_small | Reads two positive decimals `a`, `b` each `1`-`30` (own lines). Prints `g x y\n` such that `a*x + b*y = g = gcd(a, b)`, where `x`, `y` may be signed integers. |
+| APPROVED | algorithms | fast_exponentiation | Reads `base` `2`-`5`, `exp` `0`-`10`, `mod` `1`-`100` (each own line). Prints `(base^exp) mod mod` as decimal + `\n`. Implementation: exponentiation-by-squaring. |
+| APPROVED | algorithms | min_max_one_pass | Reads digit N `1`-`9` + `\n`, then N signed decimals. Prints `<min>\n<max>\n` using a single pass (pair-compare optimization). |
+| APPROVED | algorithms | mode_of_5 | Reads exactly 5 decimals and prints the most frequent value + `\n`. Ties broken by smallest value among the most frequent. |
+| APPROVED | algorithms | mean_median_mode_5 | Reads exactly 5 decimals and prints `<mean>\n<median>\n<mode>\n` (floor mean; median = middle of sorted; mode = most frequent value, ties broken by smallest). |
+| APPROVED | algorithms | dutch_flag_3way | Reads digit N `1`-`9` + `\n`, then N values each `0`, `1`, or `2` (one per line). Prints the values partitioned in order so all 0s come first, then all 1s, then all 2s (one per line). |
+| APPROVED | algorithms | moore_voting_majority | Reads digit N `1`-`9` + `\n`, then N decimals. Prints the majority element (value appearing strictly more than N/2 times) + `\n`, or `none\n` if no majority. Implementation: Boyer-Moore voting (one-pass + verify). |
+| APPROVED | algorithms | kadane_max_subarray | Reads digit N `1`-`9` + `\n`, then N signed decimals. Prints the maximum contiguous subarray sum as signed decimal + `\n`. Implementation: Kadane's algorithm. |
+| APPROVED | algorithms | two_sum_unsorted | Reads digit N `2`-`9` + `\n`, then N decimals, then `target`. Prints `i j\n` (0-based, `i < j`) of any pair summing to target, or `not found\n`. Implementation: nested loop. |
+| APPROVED | algorithms | two_sum_sorted_two_pointers | Reads digit N `2`-`9` + `\n`, then N decimals sorted ascending, then `target`. Prints `i j\n` (0-based, `i < j`) of any pair summing to target, or `not found\n`. Implementation: two-pointer (left, right). |
+| APPROVED | algorithms | three_sum_zero | Reads digit N `3`-`9` + `\n`, then N signed decimals. Prints `i j k\n` (0-based, `i < j < k`) of any triple summing to 0, or `none\n`. |
+| APPROVED | algorithms | max_product_pair | Reads digit N `2`-`9` + `\n`, then N signed decimals. Prints the maximum product of any two distinct-indexed elements as signed decimal + `\n`. |
+| APPROVED | algorithms | min_product_pair | Reads digit N `2`-`9` + `\n`, then N signed decimals. Prints the minimum product of any two distinct-indexed elements + `\n`. |
+| APPROVED | algorithms | longest_run_length | Reads digit N `1`-`9` + `\n`, then N decimals. Prints the length of the longest run of equal consecutive elements as decimal + `\n`. |
+| APPROVED | algorithms | count_distinct_elements | Reads digit N `1`-`9` + `\n`, then N decimals. Prints the count of distinct values + `\n`. |
+| APPROVED | algorithms | is_palindrome_array | Reads digit N `1`-`9` + `\n`, then N decimals. Prints `1\n` if the sequence reads the same forward and backward, else `0\n`. |
+| APPROVED | algorithms | zigzag_array_check | Reads digit N `1`-`9` + `\n`, then N decimals. Prints `1\n` if the sequence strictly alternates `a[0] < a[1] > a[2] < a[3] > ...` (starting with rise), else `0\n`. |
+| APPROVED | algorithms | count_local_maxima | Reads digit N `3`-`9` + `\n`, then N decimals. Prints the count of strict local maxima (positions `i` with `0 < i < N-1` and `a[i-1] < a[i] > a[i+1]`) + `\n`. |
+| APPROVED | algorithms | count_local_minima | Reads digit N `3`-`9` + `\n`, then N decimals. Prints the count of strict local minima + `\n`. |
+| APPROVED | algorithms | wave_array_arrange | Reads digit N `1`-`9` + `\n`, then N decimals. Prints them rearranged in wave pattern (sorted ascending, then adjacent pairs swapped: `a[0] >= a[1] <= a[2] >= a[3] <= ...`), one per line. |
+| APPROVED | algorithms | is_permutation_1_to_n | Reads digit N `1`-`9` + `\n`, then N decimals. Prints `1\n` if the sequence is a permutation of `{1, 2, ..., N}`, else `0\n`. |
+| APPROVED | algorithms | find_missing_in_sequence | Reads digit N `2`-`9` + `\n`, then `N-1` decimals which are some permutation of `{1, 2, ..., N}` with exactly one value missing. Prints the missing value + `\n`. |
+| APPROVED | algorithms | find_duplicate_in_sequence | Reads digit N `2`-`9` + `\n`, then N decimals from `{1, 2, ..., N-1}` with exactly one value duplicated. Prints the duplicated value + `\n`. |
+| APPROVED | algorithms | tortoise_hare_cycle | Reads `start` `0`-`15` (own line). Iterates `x = (2*x + 1) mod 16` starting from `start`. Uses Floyd's tortoise-and-hare to detect when the sequence enters a cycle, then prints the cycle length as decimal + `\n`. |
+| APPROVED | algorithms | matrix_transpose_3x3 | Reads 9 decimals (3 rows × 3 cols, row-major, each own line). Prints the transposed 3×3 matrix in row-major order, one row per output line with space-separated values + `\n` per row (3 lines total). |
+| APPROVED | algorithms | matrix_diagonal_sum_3x3 | Reads 9 decimals (3×3 row-major). Prints the sum of the main diagonal `a[0][0] + a[1][1] + a[2][2]` as decimal + `\n`. |
+| APPROVED | algorithms | matrix_is_symmetric_3x3 | Reads 9 decimals (3×3 row-major). Prints `1\n` if the matrix equals its transpose, else `0\n`. |
+| APPROVED | sequences | triangular_first_n | Reads digit N `1`-`9` + `\n`. Prints the first N triangular numbers `T(k) = k(k+1)/2` for `k = 1..N`, space-separated, ending with `\n`. |
+| APPROVED | sequences | square_first_n | Reads digit N `1`-`9` + `\n`. Prints the first N positive squares `1, 4, 9, ..., N²`, space-separated, + `\n`. |
+| APPROVED | sequences | pentagonal_first_n | Reads digit N `1`-`9` + `\n`. Prints the first N pentagonal numbers `P(k) = k(3k - 1)/2`, space-separated, + `\n`. |
+| APPROVED | sequences | hexagonal_first_n | Reads digit N `1`-`9` + `\n`. Prints the first N hexagonal numbers `H(k) = k(2k - 1)`, space-separated, + `\n`. |
+| APPROVED | sequences | cube_first_n | Reads digit N `1`-`9` + `\n`. Prints the first N positive cubes `1, 8, 27, ..., N³`, space-separated, + `\n`. |
+| APPROVED | sequences | tetrahedral_first_n | Reads digit N `1`-`9` + `\n`. Prints the first N tetrahedral numbers `Te(k) = k(k+1)(k+2)/6`, space-separated, + `\n`. |
+| APPROVED | sequences | catalan_first_5 | No input. Prints the first 5 Catalan numbers `1 1 2 5 14\n`. |
+| APPROVED | sequences | bell_first_5 | No input. Prints the first 5 Bell numbers `1 1 2 5 15\n`. |
+| APPROVED | sequences | derangement_first_5 | No input. Prints the first 5 derangement numbers `D(n)` for `n = 1..5`: `0 1 2 9 44\n`. |
+| APPROVED | sequences | lucas_first_n | Reads digit N `1`-`9` + `\n`. Prints `L(0), L(1), ..., L(N-1)` (where `L(0)=2, L(1)=1`), space-separated, + `\n`. |
+| APPROVED | sequences | perrin_first_10 | No input. Prints the first 10 Perrin sequence values starting `P(0)=3, P(1)=0, P(2)=2`: `3 0 2 3 2 5 5 7 10 12\n`. |
+| APPROVED | sequences | padovan_first_10 | No input. Prints the first 10 Padovan sequence values starting `1 1 1 2 2 3 4 5 7 9\n`. |
+| APPROVED | sequences | jacobsthal_first_8 | No input. Prints the first 8 Jacobsthal numbers `J(n)` starting `0 1 1 3 5 11 21 43\n`. |
+| APPROVED | sequences | pell_first_8 | No input. Prints the first 8 Pell numbers `P(n)` starting `0 1 2 5 12 29 70 169\n`. |
+| APPROVED | sequences | tribonacci_first_10 | No input. Prints the first 10 Tribonacci values starting `T(0)=T(1)=0, T(2)=1`: `0 0 1 1 2 4 7 13 24 44\n`. |
+| APPROVED | sequences | tetranacci_first_8 | No input. Prints the first 8 Tetranacci values starting `0 0 0 1 1 2 4 8\n`. |
+| APPROVED | sequences | fibonacci_even_first_5 | No input. Prints the first 5 even Fibonacci numbers: `0 2 8 34 144\n`. |
+| APPROVED | sequences | fibonacci_odd_first_5 | No input. Prints the first 5 odd Fibonacci numbers: `1 1 3 5 13\n`. |
+| APPROVED | sequences | fibonacci_sum_first_n | Reads digit N `1`-`12` + `\n`. Prints `F(1) + F(2) + ... + F(N)` (with `F(1)=1, F(2)=1, ...`) as decimal + `\n`. |
+| APPROVED | sequences | fibonacci_squares_first_5 | No input. Prints `F(1)² F(2)² ... F(5)²` = `1 1 4 9 25` space-separated + `\n`. |
+| APPROVED | sequences | fibonacci_modulo_10 | Reads decimal N in `1`-`20` (one or two ASCII digits, terminated by `\n`). Prints `F(N) mod 10` as a single decimal digit + `\n`. |
+| APPROVED | sequences | partition_first_5 | No input. Prints the first 5 integer-partition counts `p(1), ..., p(5)` = `1 2 3 5 7` space-separated + `\n`. |
+| APPROVED | sequences | mersenne_first_5 | No input. Prints the first 5 Mersenne numbers `M(n) = 2^n - 1` for `n = 1..5`: `1 3 7 15 31` space-separated + `\n`. |
+| APPROVED | sequences | mersenne_prime_first_3 | No input. Prints the first 3 Mersenne primes: `3 7 31` space-separated + `\n`. |
+| APPROVED | sequences | fermat_first_4 | No input. Prints the first 4 Fermat numbers `F(n) = 2^(2^n) + 1` for `n = 0..3`: `3 5 17 257` space-separated + `\n`. |
+| APPROVED | sequences | mersenne_check | Reads decimal N in `2`-`17` (one or two ASCII digits, terminated by `\n`). Prints `1\n` if `2^N - 1` is prime, else `0\n`. (Upper bound `17` keeps trial division ≤ √(2^17 - 1) ≈ 362, well within runtime budget.) |
+| APPROVED | sequences | lazy_caterers_first_8 | No input. Prints the first 8 lazy caterer's numbers (max regions with N cuts of a disc): `1 2 4 7 11 16 22 29` space-separated + `\n`. |
+| APPROVED | sequences | centered_triangular_first_5 | No input. Prints the first 5 centered triangular numbers: `1 4 10 19 31` space-separated + `\n`. |
+| APPROVED | sequences | centered_square_first_5 | No input. Prints the first 5 centered square numbers: `1 5 13 25 41` space-separated + `\n`. |
+| APPROVED | sequences | centered_hexagonal_first_5 | No input. Prints the first 5 centered hexagonal numbers: `1 7 19 37 61` space-separated + `\n`. |
+| APPROVED | text_processing | word_count_multiline | Reads stdin until an empty line (`\n` alone). Prints the total count of whitespace-separated tokens across all non-empty lines as decimal + `\n`. Whitespace = `' '`, `'\t'`, `'\n'`; runs collapse; leading/trailing whitespace introduce no empty tokens. |
+| APPROVED | text_processing | char_freq_table | Reads a `\n`-terminated line ≤ 80 chars. Prints each distinct byte value (excluding `\n`) and its count, one `<byte> <count>\n` per line, in ascending byte-value order. |
+| APPROVED | text_processing | word_length_avg | Reads a `\n`-terminated line ≤ 80 chars. Computes lengths of whitespace-separated tokens (space/tab/newline whitespace, runs collapse). Prints the floor of (sum of word lengths) / (word count) as decimal + `\n`. If no words, prints `0\n`. |
+| APPROVED | text_processing | word_length_max | Reads a `\n`-terminated line ≤ 80 chars. Prints the length of the longest whitespace-separated token as decimal + `\n`. Empty input → `0\n`. |
+| APPROVED | text_processing | word_length_min | Reads a `\n`-terminated line ≤ 80 chars. Prints the length of the shortest whitespace-separated token as decimal + `\n`. Empty input → `0\n`. |
+| APPROVED | text_processing | longest_word | Reads a `\n`-terminated line ≤ 80 chars. Prints the longest whitespace-separated token + `\n`. Ties: prints the first such word. Empty input → empty line `\n`. |
+| APPROVED | text_processing | shortest_word | Reads a `\n`-terminated line ≤ 80 chars. Prints the shortest whitespace-separated token + `\n`. Ties: prints the first such word. Empty input → empty line `\n`. |
+| APPROVED | text_processing | word_with_most_vowels | Reads a `\n`-terminated line ≤ 80 chars. Prints the word with the most vowels (`aeiouAEIOU`) + `\n`. Ties: first such word. Empty input → empty line `\n`. |
+| APPROVED | text_processing | count_word_occurrences | Reads a `\n`-terminated target word (no whitespace), then a `\n`-terminated line ≤ 80 chars. Prints the count of whitespace-separated tokens in the line that exactly equal the target (case-sensitive) + `\n`. |
+| APPROVED | text_processing | period_sentence_count | Reads a `\n`-terminated line ≤ 80 chars. Prints the count of `.` bytes in the line (excluding `\n`) as decimal + `\n`. (Approximates sentence count by period count.) |
+| APPROVED | text_processing | capitalize_first_letter | Reads a `\n`-terminated line ≤ 80 chars. If the first byte is `a`-`z`, outputs it uppercased; the rest of the line is unchanged. Includes final `\n`. |
+| APPROVED | text_processing | capitalize_words | Reads a `\n`-terminated line ≤ 80 chars. Outputs the line with the first letter of each whitespace-separated word uppercased; all other letters lowercased. Whitespace and non-letters unchanged. Includes final `\n`. |
+| APPROVED | text_processing | uncapitalize_first | Reads a `\n`-terminated line ≤ 80 chars. If the first byte is `A`-`Z`, outputs it lowercased; the rest of the line is unchanged. Includes final `\n`. |
+| APPROVED | text_processing | reverse_words_in_line | Reads a `\n`-terminated line ≤ 80 chars. Splits on whitespace (single-space separator), prints the words in reverse order separated by single spaces, then `\n`. Example: `hello world foo` → `foo world hello\n`. |
+| APPROVED | text_processing | count_unique_words | Reads a `\n`-terminated line ≤ 80 chars. Splits on whitespace (case-sensitive, runs collapse). Prints the count of distinct words as decimal + `\n`. |
+| APPROVED | text_processing | longest_common_prefix_two | Reads two `\n`-terminated lines (each ≤ 40 chars). Prints the longest common prefix + `\n`. If no common prefix, prints just `\n`. |
+| APPROVED | text_processing | longest_common_suffix_two | Reads two `\n`-terminated lines (each ≤ 40 chars). Prints the longest common suffix (compared between the lines' contents, excluding their `\n`s) + `\n`. If none, prints just `\n`. |
+| APPROVED | text_processing | line_starts_with_substring | Reads a `\n`-terminated prefix (≤ 20 chars), then a `\n`-terminated line (≤ 60 chars). Prints `1\n` if the line starts with the prefix exactly, else `0\n`. |
+| APPROVED | text_processing | line_ends_with_substring | Reads a `\n`-terminated suffix (≤ 20 chars), then a `\n`-terminated line (≤ 60 chars). Prints `1\n` if the line's content (excluding `\n`) ends with the suffix exactly, else `0\n`. |
+| APPROVED | text_processing | count_substring_occurrences | Reads a `\n`-terminated pattern (≤ 20 chars), then a `\n`-terminated text (≤ 60 chars). Prints the count of non-overlapping left-to-right occurrences of pattern in text as decimal + `\n`. Empty pattern → `0\n`. |
+
+## Batch 6 — interactive + encoding + state_machines (91 approved + 9 overlap)
+
+Categories: interactive (35 net of 40), encoding (36 net of 40), state_machines (20 net).
+CR-ist found 9 overlaps within batch or with prior batches; other 91 are APPROVED.
+
+| status | category | name | description |
+|---|---|---|---|
+| APPROVED | interactive | echo_bot | Reads each `\n`-terminated input line until an empty line (just `\n`). For each non-empty line, prints `> <line>\n`. |
+| APPROVED | interactive | greeting_bot | Reads a name (`\n`-terminated, ≤ 20 chars) and prints `Hello, <name>!\nGoodbye, <name>!\n`. |
+| APPROVED | interactive | magic_eight_ball | Reads any `\n`-terminated question (≤ 60 chars). Prints exactly one of 5 fixed answers selected by `(input_length_excluding_newline) mod 5`: `0→Yes\n`, `1→No\n`, `2→Maybe\n`, `3→Ask again later\n`, `4→Definitely\n`. |
+| APPROVED | interactive | yes_no_validator | Reads `y` or `n` + `\n` (any case is treated as exact byte). Prints `Affirmative\n` for `y`, `Negative\n` for `n`, otherwise `Please answer y or n\n`. |
+| APPROVED | interactive | guess_one_round | Reads a single decimal digit `1`-`9` + `\n`. Secret value is `7`. Prints `correct!\n` if `7`, `too low\n` if `<7`, `too high\n` if `>7`. |
+| APPROVED | interactive | menu_selection | Reads a single digit `1`-`4` + `\n`. Prints `Pizza\n`, `Burger\n`, `Salad\n`, or `Soup\n` for `1`/`2`/`3`/`4` respectively. |
+| APPROVED | interactive | password_check | Reads a `\n`-terminated string ≤ 20 chars. Prints `Access granted\n` if the line content (excluding `\n`) equals the literal `flipjump`, else `Access denied\n`. |
+| APPROVED | interactive | addition_quiz | Reads two single-digit decimals (each `\n`-terminated), then a decimal answer (`\n`-terminated, may be 1-2 digits). Prints `correct\n` if the answer equals the sum of the two digits, else `wrong (expected <S>)\n` with `S` the actual sum. |
+| APPROVED | interactive | multiplication_quiz | Same I/O shape as `addition_quiz` but for multiplication. Prints `correct\n` if the answer equals the product, else `wrong (expected <P>)\n`. |
+| APPROVED | interactive | choose_path | Reads digit `1`-`3` + `\n`. For each choice prints a fixed 2-line story ending: `1`→`You chose the cave.\nA bat flies out!\n`; `2`→`You chose the river.\nA fish jumps high!\n`; `3`→`You chose the forest.\nA deer appears.\n`. |
+| APPROVED | interactive | interactive_calc | Reads one operator byte `+`, `-`, or `*` + `\n`, then two decimal integers (each `\n`-terminated). Prints the integer result + `\n`. (For `-`, prints signed result.) |
+| APPROVED | interactive | user_input_loop_3 | Reads exactly 3 `\n`-terminated lines (each ≤ 30 chars). Prints `1: <line1>\n2: <line2>\n3: <line3>\n`. |
+| APPROVED | interactive | coin_flip_pseudo | Reads exactly one byte. Prints `Heads\n` if its value is even, `Tails\n` if odd. (Pseudo-random via input parity.) |
+| APPROVED | interactive | dice_roll_pseudo | Reads exactly one byte. Prints decimal `(byte mod 6) + 1` + `\n` (range `1`-`6`). |
+| APPROVED | interactive | lucky_seven | Reads exactly one byte. Prints `Lucky!\n` if `byte mod 7 == 0`, else `Try again\n`. |
+| APPROVED | interactive | trivia_capital_france | First prints `What's the capital of France?\n` on stdout. Then reads a `\n`-terminated answer (≤ 20 chars). Prints `correct!\n` if the answer is exactly `Paris`, else `wrong\n`. |
+| APPROVED | interactive | trivia_largest_planet | First prints `What's the largest planet?\n`. Then reads a `\n`-terminated answer. Prints `correct!\n` if exactly `Jupiter`, else `wrong\n`. |
+| APPROVED | interactive | trivia_math | First prints `What's 2+2?\n`. Then reads a decimal `\n`-terminated answer. Prints `correct!\n` if exactly `4`, else `wrong\n`. |
+| APPROVED | interactive | balance_check | Reads decimal `0`-`9999` + `\n`. Prints `low\n` if `<100`, `ok\n` if `100`-`999`, `high\n` if `>=1000`. |
+| OVERLAP | interactive | weather_report | OVERLAP with menu_selection: same digit→fixed-string-table algorithm; only the output strings differ. Dropped. |
+| APPROVED | interactive | tip_calculator | Reads decimal bill `0`-`99` + `\n`. Prints `(bill * 120) / 100` (20% tip, integer division) + `\n`. |
+| APPROVED | interactive | tax_calculator | Reads decimal amount `0`-`999` + `\n`. Prints `(amount * 110) / 100` (10% tax, integer division) + `\n`. |
+| OVERLAP | interactive | age_in_dog_years | OVERLAP with batch2/arithmetic/mul_by_7: same a*7 algorithm and subrange. Dropped. |
+| APPROVED | interactive | simple_login | Reads a `\n`-terminated username, then a `\n`-terminated password (each ≤ 20 chars). Prints `Welcome!\n` if username is exactly `admin` and password is exactly `root`, else `Denied\n`. |
+| APPROVED | interactive | survey_two_q | Reads two `\n`-terminated `y`/`n` answers. Prints `Definitely\n` for `y/y`, `Maybe\n` for `y/n`, `Probably not\n` for `n/y`, `Definitely not\n` for `n/n`. |
+| APPROVED | interactive | story_branch_2 | Reads one byte. If its value is even, prints `You chose left.\nYou found a treasure!\n`; if odd, prints `You chose right.\nYou met a dragon.\n`. |
+| APPROVED | interactive | cheer_team | Reads digit `1`-`3` + `\n`. Prints `Go team <N>!\n` exactly three times. |
+| APPROVED | interactive | quiz_show_score | Reads three single-digit decimals `0` or `1` (each `\n`-terminated; `1` = correct, `0` = wrong for 3 rounds). Prints `Total: <S>\nGrade: <G>\n`, where `S` is the sum (0-3) and `G` is `A`/`B`/`C`/`F` for `3`/`2`/`1`/`0`. |
+| APPROVED | interactive | customer_rating | Reads digit `1`-`5` + `\n`. Prints `Thank you for your <N>-star review!\n`. |
+| APPROVED | interactive | clock_set | Reads two decimals on separate lines: hour `0`-`23` then minute `0`-`59`. Prints `Time set to <HH>:<MM>\n` (each zero-padded to 2 digits). |
+| APPROVED | interactive | greeting_user_age | Reads a `\n`-terminated name (≤ 20 chars) then a decimal age `0`-`120` + `\n`. Prints `Hello, <name>! You are <age> years old.\n`. |
+| APPROVED | interactive | todo_add | Reads a `\n`-terminated task description (≤ 40 chars). Prints `Added: <task>\n`. |
+| OVERLAP | interactive | todo_complete | OVERLAP with todo_add: identical read-line-then-prefix-and-echo; differs only in the prefix word. Dropped. |
+| APPROVED | interactive | shopping_cart_check | Reads decimal price `0`-`999` + `\n` then decimal budget `0`-`999` + `\n`. If `price <= budget` prints `affordable\n`, else prints `over budget by <X>\n` where `X = price - budget`. |
+| APPROVED | interactive | number_guess_three_tries | Secret value is `5`. Reads up to 3 decimal guesses `1`-`10` (each `\n`-terminated). After each guess prints `too low\n`, `too high\n`, or `correct!\n` then exits on correct. If 3 wrong guesses, prints `Out of tries. Secret was 5.\n` and exits. |
+| APPROVED | interactive | odd_one_out | Reads three decimals (each `\n`-terminated). If exactly two are equal, prints the third (unique) value + `\n`. Otherwise prints `none\n` (covers both all-equal and all-different cases). |
+| APPROVED | interactive | chatbot_simple_reply | Reads a `\n`-terminated line ≤ 40 chars. If equals `hi`, prints `Hello!\n`. If equals `bye`, prints `Goodbye!\n`. Otherwise prints `I don't understand.\n`. |
+| OVERLAP | interactive | simple_meal_planner | OVERLAP with menu_selection: same digit→fixed-string-table algorithm (subset by N=3). Dropped. |
+| APPROVED | interactive | interactive_addition_three | Reads three decimals (each `\n`-terminated). Prints the human-readable expression `<a> + <b> + <c> = <sum>\n`. |
+| OVERLAP | interactive | user_choice_length | OVERLAP with batch2/strings/string_length: same line-count algorithm; only the output template differs. Dropped. |
+| APPROVED | encoding | hex_dump_line | Reads a `\n`-terminated line ≤ 16 chars. For each byte (excluding `\n`), prints its 2-char lowercase hex, with space separators between bytes, then `\n`. Example: input `hi\n` → output `68 69\n`. Empty input → just `\n`. |
+| APPROVED | encoding | binary_dump_line | Reads a `\n`-terminated line ≤ 16 chars. For each byte (excluding `\n`), prints its 8-char binary representation (MSB first), space-separated, then `\n`. |
+| APPROVED | encoding | octal_dump_line | Reads a `\n`-terminated line ≤ 16 chars. For each byte (excluding `\n`), prints its 3-char octal representation (zero-padded), space-separated, then `\n`. |
+| APPROVED | encoding | decimal_dump_line | Reads a `\n`-terminated line ≤ 16 chars. For each byte (excluding `\n`), prints its decimal value (1-3 chars, no zero padding), space-separated, then `\n`. |
+| APPROVED | encoding | ascii_table_printable_32_126 | No input. Prints lines `<code> <char>\n` for each ASCII code 32-126 (printable range, 95 lines total). |
+| APPROVED | encoding | run_length_encode_simple | Reads a `\n`-terminated lowercase-letter string ≤ 30 chars (runs of length ≤ 9). Prints run-length encoding as alternating `<letter><count>` concatenated, then `\n`. Example: `aabcccccaaa` → `a2b1c5a3\n`. |
+| APPROVED | encoding | run_length_decode_simple | Reads a `\n`-terminated RLE string of alternating `<letter><digit 1-9>` ≤ 30 chars. Prints decoded string + `\n`. Example: `a2b1c5` → `aabccccc\n`. |
+| OVERLAP | encoding | base16_encode_short | OVERLAP with ascii_to_hex_concat: same algorithm; differs only in uppercase vs lowercase hex. Dropped (case is an impl-time toggle). |
+| OVERLAP | encoding | base16_decode_short | OVERLAP with hex_concat_to_ascii: same algorithm; uppercase vs lowercase input. Dropped. |
+| APPROVED | encoding | percent_encode_space | Reads a `\n`-terminated line ≤ 40 chars. Replaces each space byte (` `) with `%20`. Other bytes unchanged. Prints result + `\n`. |
+| APPROVED | encoding | percent_decode_space | Reads a `\n`-terminated line ≤ 60 chars (may contain `%20` sequences). Replaces each `%20` triplet with a single space. Other bytes unchanged. Prints result + `\n`. |
+| APPROVED | encoding | html_entity_encode_basic | Reads a `\n`-terminated line ≤ 40 chars. Replaces `&` with `&amp;`, `<` with `&lt;`, `>` with `&gt;`. Other bytes unchanged. Prints result + `\n`. |
+| APPROVED | encoding | html_entity_decode_basic | Reads a `\n`-terminated line ≤ 80 chars (may contain `&amp;`/`&lt;`/`&gt;` sequences). Replaces each with `&`/`<`/`>` respectively. Other bytes unchanged. Prints result + `\n`. |
+| APPROVED | encoding | atbash_cipher | Reads a `\n`-terminated line ≤ 80 chars. For each letter, maps `a↔z`, `b↔y`, ..., `m↔n` (and the same within `A-Z`). Non-letters unchanged. Prints result + `\n`. |
+| APPROVED | encoding | nato_phonetic_letter | Reads exactly one byte `A`-`Z` (no `\n` required). Prints the NATO phonetic word for that letter (`Alpha`/`Bravo`/`Charlie`/.../`Zulu`) followed by `\n`. |
+| APPROVED | encoding | nato_phonetic_word | Reads a `\n`-terminated NATO phonetic word (one of the 26 standard words, exactly as spelled, capitalized). Prints the corresponding single uppercase letter (`A`-`Z`) + `\n`. |
+| APPROVED | encoding | xor_key_07_roundtrip | Reads a `\n`-terminated line ≤ 30 chars. XORs each byte (excluding `\n`) with `0x07`. Outputs the XORed bytes followed by `\n`. (Self-inverse — running twice on the same input yields original.) |
+| APPROVED | encoding | checksum_byte_sum | Reads a `\n`-terminated line ≤ 30 chars. Prints the sum of the byte values (excluding `\n`) modulo 256 as decimal + `\n`. |
+| APPROVED | encoding | checksum_xor | Reads a `\n`-terminated line ≤ 30 chars. Prints the XOR of all byte values (excluding `\n`) as two lowercase hex chars + `\n`. |
+| APPROVED | encoding | parity_byte_compute | Reads exactly 7 ASCII bits (each `0` or `1` byte, all on one `\n`-terminated line, e.g. `1010101\n`). Prints `0\n` if the count of 1s among the 7 input bits is even, `1\n` if odd. (This is the parity bit that, when appended, makes total ones EVEN.) |
+| APPROVED | encoding | nibble_dump_hex_colon | Reads a `\n`-terminated line ≤ 16 chars. For each byte (excluding `\n`), prints `<high>:<low>` where `<high>` is the high nibble's hex char and `<low>` is the low nibble's. Entries are space-separated; final `\n`. Example: input `Aa\n` → output `4:1 6:1\n`. |
+| APPROVED | encoding | quoted_printable_simple | Reads a `\n`-terminated line ≤ 20 chars. Each byte (excluding `\n`) that is NOT printable ASCII (`0x20`-`0x7e`) becomes `=NN` where `NN` is its 2-char uppercase hex. Printable bytes unchanged. Prints result + `\n`. |
+| APPROVED | encoding | count_chars_per_class | Reads a `\n`-terminated line ≤ 80 chars. Prints `digits: <D>\nletters: <L>\nspaces: <S>\nother: <O>\n` where `D`/`L`/`S`/`O` are the counts of digits, letters, spaces, and other byte classes respectively (excluding the terminating `\n`). |
+| APPROVED | encoding | csv_split_one_field | Reads a `\n`-terminated CSV line ≤ 60 chars (no embedded commas in fields, no quotes). Prints each comma-separated field on its own line. |
+| APPROVED | encoding | tsv_to_csv | Reads a `\n`-terminated TSV line ≤ 60 chars (tab-separated). Outputs the same line with each `\t` replaced by `,`. Final `\n` preserved. |
+| APPROVED | encoding | csv_to_tsv | Reads a `\n`-terminated CSV line ≤ 60 chars (no quoted commas). Outputs the same line with each `,` replaced by `\t`. Final `\n` preserved. |
+| APPROVED | encoding | ascii_to_hex_concat | Reads a `\n`-terminated line ≤ 20 chars. Prints all bytes (excluding `\n`) as concatenated lowercase hex (no separators) followed by `\n`. Example: `Hi\n` → `4869\n`. |
+| APPROVED | encoding | hex_concat_to_ascii | Reads a `\n`-terminated lowercase-hex string ≤ 40 chars (even length). Prints decoded bytes + `\n`. |
+| APPROVED | encoding | xor_encrypt_cycling_key | Reads a `\n`-terminated key (`≤ 8 chars`), then a `\n`-terminated message (`≤ 30 chars`). XORs each message byte (excluding terminating `\n`) with `key[i mod key_length]`. Outputs the XOR'd bytes followed by `\n`. |
+| OVERLAP | encoding | base16_with_dash_separator | OVERLAP with hex_dump_line: same algorithm; differs only in separator character (dash vs space). Dropped. |
+| APPROVED | encoding | ascii_to_morse_letter | Reads exactly one byte (a single lowercase letter `a`-`z` or digit `0`-`9`). Prints the International Morse Code representation using `.` and `-` (no spaces) + `\n`. Example: `a` → `.-\n`; `0` → `-----\n`. |
+| APPROVED | encoding | morse_to_ascii_letter | Reads a `\n`-terminated Morse Code sequence (using only `.` and `-`, ≤ 6 chars, one of the 36 lowercase-letter / digit codes). Prints the decoded ASCII byte (no extra `\n`). |
+| APPROVED | encoding | nibble_to_base64_char | Reads a decimal `0`-`15` + `\n`. Prints the corresponding base64 alphabet character (`A` for 0, `B` for 1, ..., `P` for 15), followed by `\n`. |
+| APPROVED | encoding | emoji_smiley_or_frown | Reads exactly one byte `0` or `1` followed by `\n`. Prints `:)\n` for `1`, `:(\n` for `0`. |
+| APPROVED | encoding | byte_class_counts | Reads a `\n`-terminated line ≤ 80 chars. Prints `printable: <P>\ncontrol: <C>\n` where `P` is the count of printable bytes (`0x20`-`0x7e`) and `C` is the count of control bytes (`<0x20` or `0x7f`), all excluding the terminating `\n`. |
+| APPROVED | encoding | binary_xor_two_inputs | Reads two `\n`-terminated 8-char binary strings (each on its own line, each is 8 chars of `0`/`1`). Prints their bitwise XOR as an 8-char binary string + `\n`. |
+| APPROVED | encoding | binary_and_two_inputs | Same I/O shape as `binary_xor_two_inputs` but prints bitwise AND. |
+| APPROVED | encoding | binary_or_two_inputs | Same I/O shape as `binary_xor_two_inputs` but prints bitwise OR. |
+| OVERLAP | encoding | ascii_to_decimal_codes | OVERLAP with decimal_dump_line: byte-for-byte identical specification (as the description acknowledged). Dropped. |
+| APPROVED | encoding | xxd_style_dump | Reads a `\n`-terminated line ≤ 16 chars. Prints one line: 4-digit zero-padded offset `0000`, two spaces, then hex bytes (lowercase, space-separated, max 16 bytes), then 2 spaces, then the printable ASCII (non-printables as `.`), then `\n`. Example: input `hi\n` → `0000  68 69  hi\n`. |
+| APPROVED | state_machines | traffic_light_cycle | Reads digit N `1`-`9` + `\n`. Prints the traffic-light states cycling `Red\nGreen\nYellow\n` (starting with Red), totaling exactly N lines. |
+| APPROVED | state_machines | dfa_even_zeros | Reads a `\n`-terminated binary string of `0`/`1` (≤ 30 chars). Prints `1\n` if the count of `0` bytes (excluding `\n`) is even, else `0\n`. |
+| APPROVED | state_machines | dfa_odd_ones | Reads a `\n`-terminated binary string of `0`/`1` (≤ 30 chars). Prints `1\n` if the count of `1` bytes (excluding `\n`) is odd, else `0\n`. |
+| APPROVED | state_machines | dfa_ends_with_01 | Reads a `\n`-terminated binary string of `0`/`1` (≤ 30 chars). Prints `1\n` if the string ends with the two-byte pattern `01` (immediately before the `\n`), else `0\n`. |
+| APPROVED | state_machines | dfa_contains_substring_abc | Reads a `\n`-terminated ASCII string ≤ 40 chars. Prints `1\n` if the string contains the substring `abc` anywhere, else `0\n`. Use a 4-state DFA. |
+| APPROVED | state_machines | dfa_starts_a_ends_z | Reads a `\n`-terminated ASCII string of length ≥ 2 ≤ 30 chars. Prints `1\n` if first byte is `a` and last byte (immediately before `\n`) is `z`, else `0\n`. |
+| APPROVED | state_machines | mealy_invert_bits | Reads a `\n`-terminated sequence of bits `0`/`1` (≤ 30 chars). For each input bit, outputs the inverted bit (Mealy machine: output depends on input transition). Prints all output bits as one concatenated string + `\n`. |
+| APPROVED | state_machines | moore_count_state_mod4 | Reads a `\n`-terminated sequence of bits `0`/`1` (≤ 20 chars). State starts at `0`; each input bit increments state modulo 4. After each input, prints the current state (`0`-`3`); states are space-separated on a single line + `\n`. (Moore machine: output depends on current state.) |
+| APPROVED | state_machines | lexer_digit_letter_other | Reads a `\n`-terminated ASCII string ≤ 40 chars. For each byte, prints `D` if digit, `L` if letter, `O` otherwise. All output chars on one line, then `\n`. |
+| APPROVED | state_machines | vending_machine_state | Reads digit codes `1`/`2`/`3` (each `\n`-terminated; `1`=nickel(5¢), `2`=dime(10¢), `3`=quarter(25¢)) up to 10 inputs. Accumulates total; as soon as total ≥ 25, prints `Soda dispensed (change: <change>)\n` (where `change = total - 25`) and exits. If 10 inputs reached without 25, prints `Insufficient: <total>\n` and exits. |
+| APPROVED | state_machines | matching_parens_depth_track | Reads a `\n`-terminated string of `(` and `)` (≤ 30 chars). Tracks depth starting at 0. After each input char, prints depth as decimal, comma-separated entries on one line + `\n`. Example: `(())` → `1,2,1,0\n`. |
+| APPROVED | state_machines | ping_pong_toggle_state | Reads a `\n`-terminated bit string (`0`/`1`, ≤ 20 chars). State starts at `Ping`. On each `1` input, state toggles (`Ping↔Pong`); on each `0`, state stays. After each input, prints the current state + `\n` (one state per line). |
+| APPROVED | state_machines | password_state_machine | Reads bytes one per line (`\n`-terminated; one byte per line) until either: state-accumulated last 4 bytes form the string `open` (then prints `Unlocked!\n` and exits) or 10 bytes have been read without forming `open` (then prints `Locked\n` and exits). |
+| APPROVED | state_machines | dfa_divisible_by_3 | Reads a `\n`-terminated decimal-digit string ≤ 6 chars representing a non-negative integer N. Prints `1\n` if N is divisible by 3, else `0\n`. Implementation: 3-state DFA on digit stream (state = current N mod 3). |
+| APPROVED | state_machines | dfa_divisible_by_2 | Reads a `\n`-terminated decimal-digit string ≤ 6 chars. Prints `1\n` if the represented N is divisible by 2, else `0\n`. Implementation: track last-digit parity (no need for multi-state). |
+| APPROVED | state_machines | dfa_divisible_by_5 | Reads a `\n`-terminated decimal-digit string ≤ 6 chars. Prints `1\n` if the represented N is divisible by 5 (last digit is `0` or `5`), else `0\n`. |
+| APPROVED | state_machines | nfa_a_or_b_then_c | Reads a `\n`-terminated string of exactly 2 lowercase letters. Prints `1\n` if the string matches the regex `(a|b)c` (first byte is `a` or `b`, second byte is `c`), else `0\n`. Demonstrates a simple NFA / regex matcher. |
+| APPROVED | state_machines | regex_star_a | Reads a `\n`-terminated string of lowercase letters ≤ 30 chars. Prints `1\n` if the string matches `a*` (zero or more `a`s, no other characters), else `0\n`. |
+| APPROVED | state_machines | regex_aa_repeated | Reads a `\n`-terminated string of lowercase letters ≤ 30 chars. Prints `1\n` if the string matches `(aa)*` (zero or more `aa` pairs, even count of `a`s, no other characters), else `0\n`. |
+| APPROVED | state_machines | dfa_third_last_is_one | Reads a `\n`-terminated bit string of length ≥ 3, ≤ 30 chars. Prints `1\n` if the third-to-last bit (i.e. the bit two positions before the final bit, before `\n`) is `1`, else `0\n`. Implementation: 8-state DFA tracking last 3 bits. |
+
 ## Retired rows (Phase 3)
 
 When a row cannot be implemented within budget and gets replaced, mark it
