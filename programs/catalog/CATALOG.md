@@ -671,6 +671,221 @@ CR-ist found 9 overlaps within batch or with prior batches; other 91 are APPROVE
 | APPROVED | state_machines | regex_aa_repeated | Reads a `\n`-terminated string of lowercase letters ≤ 30 chars. Prints `1\n` if the string matches `(aa)*` (zero or more `aa` pairs, even count of `a`s, no other characters), else `0\n`. |
 | APPROVED | state_machines | dfa_third_last_is_one | Reads a `\n`-terminated bit string of length ≥ 3, ≤ 30 chars. Prints `1\n` if the third-to-last bit (i.e. the bit two positions before the final bit, before `\n`) is `1`, else `0\n`. Implementation: 8-state DFA tracking last 3 bits. |
 
+## Batch 7 — geometry + simulation + puzzles (92 approved + 4 overlap + 3 clarified)
+
+Categories: geometry (27 net of 30), simulation (27 net of 28), puzzles (41 net).
+CR-ist found 4 overlaps + 3 UNCLEAR (clarified in place). 92 APPROVED. Bookkeeping: section header said 100 rows but actual is 99 (simulation 28 not 30).
+
+| status | category | name | description |
+|---|---|---|---|
+| APPROVED | geometry | manhattan_distance | Reads 4 decimals `x1 y1 x2 y2` (each own line). Prints `|x2-x1| + |y2-y1|` as decimal + `\n`. |
+| APPROVED | geometry | chebyshev_distance | Reads 4 decimals (each own line). Prints `max(|x2-x1|, |y2-y1|)` + `\n`. |
+| APPROVED | geometry | euclidean_distance_floor | Reads 4 decimals `x1 y1 x2 y2` (each `0`-`9`, own line). Prints `floor(sqrt((x2-x1)^2 + (y2-y1)^2))` as decimal + `\n`. Squared distance ≤ 162, so integer sqrt via linear scan (`k` while `k² <= d`) stays trivially within compile budget. |
+| APPROVED | geometry | dot_product_2d | Reads 4 decimals `a b c d` (each own line) representing vectors `(a,b)` and `(c,d)`. Prints `a*c + b*d` as signed decimal + `\n`. |
+| APPROVED | geometry | cross_product_2d_scalar | Reads 4 decimals (each own line) representing two 2D vectors. Prints the scalar cross product `a*d - b*c` as signed decimal + `\n`. |
+| APPROVED | geometry | midpoint_2d | Reads 4 decimals `x1 y1 x2 y2` (each own line). Prints `<mx> <my>\n` where `mx = (x1+x2)/2` and `my = (y1+y2)/2` (floor division). |
+| APPROVED | geometry | is_origin | Reads 2 decimals `x y` (each own line). Prints `1\n` if both are `0`, else `0\n`. |
+| APPROVED | geometry | is_on_x_axis | Reads 2 decimals (each own line). Prints `1\n` if `y == 0`, else `0\n`. |
+| APPROVED | geometry | is_on_y_axis | Reads 2 decimals (each own line). Prints `1\n` if `x == 0`, else `0\n`. |
+| APPROVED | geometry | is_collinear_3 | Reads 6 decimals representing 3 points `(x1,y1) (x2,y2) (x3,y3)` (each coordinate on its own line). Prints `1\n` if collinear (i.e. `(x2-x1)*(y3-y1) - (y2-y1)*(x3-x1) == 0`), else `0\n`. |
+| APPROVED | geometry | signed_triangle_area_2x | Reads 6 decimals (3 vertices, each coord own line). Prints `x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2)` as signed decimal + `\n` (this is exactly 2× the signed area). |
+| APPROVED | geometry | rectangle_area | Reads two decimals `width` `height` (each own line, `0`-`100`). Prints `width * height` + `\n`. |
+| APPROVED | geometry | rectangle_perimeter | Reads `width` `height` (each own line, `0`-`100`). Prints `2 * (width + height)` + `\n`. |
+| APPROVED | geometry | circle_area_approx | Reads decimal radius `0`-`9` + `\n`. Prints `(r * r * 314) / 100` (integer approximation of π·r²) + `\n`. |
+| APPROVED | geometry | circle_circumference_approx | Reads decimal radius `0`-`9` + `\n`. Prints `(2 * r * 314) / 100` (integer approximation of 2πr) + `\n`. |
+| OVERLAP | geometry | square_area | OVERLAP with batch1/arithmetic/square_small: same read-N-print-N² algorithm; geometric framing only. Dropped. |
+| APPROVED | geometry | square_perimeter | Reads decimal side `0`-`100` + `\n`. Prints `4 * side` + `\n`. |
+| OVERLAP | geometry | cube_volume | OVERLAP with batch1/arithmetic/cube_small: same read-N-print-N³ algorithm. Dropped. |
+| APPROVED | geometry | cube_surface_area | Reads decimal side `0`-`20` + `\n`. Prints `6 * side * side` + `\n`. |
+| APPROVED | geometry | is_point_inside_rect | Reads 6 decimals (each own line): point `x y` then rect `xmin ymin xmax ymax`. Prints `1\n` if `xmin <= x <= xmax` and `ymin <= y <= ymax`, else `0\n`. |
+| APPROVED | geometry | is_point_inside_circle | Reads 5 decimals (each own line): point `x y`, center `cx cy`, radius `r` (all `0`-`50`). Prints `1\n` if `(x-cx)^2 + (y-cy)^2 <= r^2`, else `0\n`. |
+| APPROVED | geometry | is_right_triangle_from_sides | Reads 3 decimals `a b c` (each own line, each `1`-`50`) representing triangle side lengths in any order. Prints `1\n` if some permutation satisfies `a^2 + b^2 == c^2`, else `0\n`. |
+| APPROVED | geometry | is_isosceles | Reads 3 decimals (each on own line) representing triangle side lengths. Prints `1\n` if at least two of the three sides are equal (i.e. equilateral triangles also qualify), else `0\n`. |
+| APPROVED | geometry | is_equilateral | Reads 3 decimals. Prints `1\n` if all three sides equal, else `0\n`. |
+| APPROVED | geometry | is_scalene | Reads 3 decimals. Prints `1\n` if all three sides are distinct, else `0\n`. |
+| APPROVED | geometry | perpendicular_vectors_check | Reads 4 decimals (two 2D vectors). Prints `1\n` if their dot product is `0` (perpendicular), else `0\n`. |
+| APPROVED | geometry | parallel_vectors_check | Reads 4 decimals (two 2D vectors). Prints `1\n` if their scalar cross product is `0` (parallel or anti-parallel), else `0\n`. |
+| APPROVED | geometry | slope_int_or_undefined | Reads 4 decimals `x1 y1 x2 y2` (each own line, signed). If `x1 == x2`, prints `undefined\n`. Otherwise prints `(y2 - y1) / (x2 - x1)` as signed integer division + `\n`. |
+| OVERLAP | geometry | is_within_squared_distance | OVERLAP with is_point_inside_circle: same squared-distance vs squared-threshold kernel; only parameter labeling differs. Dropped. |
+| APPROVED | geometry | counts_inside_unit_circle_grid_3x3 | No input. Counts how many of the 9 lattice points `(i,j)` for `i,j ∈ {-1,0,1}` satisfy `i^2 + j^2 <= 1`. Prints the count as decimal + `\n` (answer: 5). |
+| APPROVED | simulation | rule_30_one_step | Reads an 8-char binary string `0`/`1` + `\n` (initial cellular state). Computes the next generation using Wolfram Rule 30 with periodic boundary conditions (cell `i` depends on cells `i-1`, `i`, `i+1` modulo 8). Prints the resulting 8-char binary string + `\n`. |
+| APPROVED | simulation | rule_90_one_step | Same I/O as `rule_30_one_step` but applies Rule 90. |
+| APPROVED | simulation | rule_110_one_step | Same I/O but Rule 110. |
+| APPROVED | simulation | rule_184_one_step | Same I/O but Rule 184 (traffic-flow CA). |
+| APPROVED | simulation | rule_30_n_steps | Reads an 8-char binary string + `\n`, then a digit N `1`-`5` + `\n`. Prints N successive generations of Rule 30 (one per line, each an 8-char binary string + `\n`). |
+| APPROVED | simulation | rule_90_n_steps | Same shape, Rule 90. |
+| APPROVED | simulation | rule_110_n_steps | Same shape, Rule 110. |
+| APPROVED | simulation | game_of_life_one_step_5x5 | Reads a 5×5 binary grid: 5 lines, each 5 chars of `0`/`1` + `\n`. Applies one Conway's Game of Life step with dead-boundary (cells outside grid treated as 0). Prints the resulting 5×5 grid in the same format. |
+| APPROVED | simulation | game_of_life_blinker_3 | No input. Prints 3 successive generations of a fixed blinker pattern on a 5×5 grid (initial state: middle row `00100\n00100\n00100\n` framed by blank rows). Each generation is 5 lines of 5 chars + `\n`; generations separated by an empty line `\n`. |
+| APPROVED | simulation | game_of_life_glider_5 | No input. Prints 5 successive generations of a fixed glider pattern on a 7×7 grid. Each generation is 7 lines of 7 chars + `\n`; generations separated by an empty line. |
+| APPROVED | simulation | langton_ant_5_steps | No input. Simulates 5 steps of Langton's ant on a 7×7 grid (all cells initially white `.`), starting at center facing up. Prints the resulting grid (7 lines of 7 chars, where `.`=white, `#`=black) + `\n`. |
+| APPROVED | simulation | langton_ant_10_steps | No input. Same as `langton_ant_5_steps` but 10 steps. |
+| APPROVED | simulation | brownian_walk_1d | Reads digit N `1`-`9` + `\n`, then N raw bytes. Starts at position 0. For each byte, advances position by `+1` if byte value is even, `-1` if odd. Prints the final position as signed decimal + `\n`. |
+| APPROVED | simulation | random_walk_grid_2d | Reads digit N `1`-`9` + `\n`, then N raw bytes. Starts at `(0,0)`. For each byte, moves according to `byte mod 4`: `0`=up (`y+1`), `1`=right (`x+1`), `2`=down (`y-1`), `3`=left (`x-1`). Prints final `<x> <y>\n`. |
+| APPROVED | simulation | bouncing_ball_1d | Reads `pos` `0`-`9`, `velo` `-3` to `3` (signed), `steps` `1`-`9` (each own line). The ball moves on positions `0..9`; on hitting position `0` or `9`, velocity reverses sign. Prints the position after each of the `steps` steps, one per line. |
+| APPROVED | simulation | bouncing_ball_2d | Same as `bouncing_ball_1d` but in 2D: reads `x` `y` `vx` `vy` `steps`. Both axes bounce independently at `[0,9]`. Prints `<x> <y>\n` after each step. |
+| APPROVED | simulation | snake_advance_one_step | Reads a `\n`-terminated string of length `1`-`5` representing the snake's body positions on a 1D 10-cell line (`H` head, `B` body); positions separated by `.` for empty cells. Then reads one direction byte `L` or `R` + `\n`. Moves the head by 1 in that direction (no wrap; clamp to bounds); body follows. Prints the new state + `\n`. |
+| APPROVED | simulation | tetris_print_empty_board_6x10 | No input. Prints an empty 6-row × 10-column Tetris board: 6 lines of `..........\n`. |
+| APPROVED | simulation | tetris_drop_piece_o | Reads column `0`-`8` + `\n`. Drops an O-piece (2×2 square) at that column into an otherwise empty 6×10 board. Prints the resulting board (6 lines of 10 chars each, `.` empty, `#` occupied). |
+| APPROVED | simulation | forest_fire_spread_3x3 | Reads a 3×3 grid: 3 lines of 3 chars each, where chars are `T` (tree), `F` (fire), `.` (empty). Applies one step: each `F` stays `F`, each `T` adjacent (4-neighborhood, no diagonal) to an `F` becomes `F`, all other cells unchanged. Prints the new 3×3 grid. |
+| APPROVED | simulation | predator_prey_one_step | Reads `prey` `0`-`50`, `pred` `0`-`20` (each own line). Applies one Lotka-Volterra-inspired step: `prey' = prey + prey/4 - pred`, `pred' = pred + prey/10 - pred/4` (integer divisions, clamp at 0). Prints `<prey'> <pred'>\n`. |
+| APPROVED | simulation | epidemic_si_one_step | Reads `S` `0`-`99`, `I` `0`-`99` (each own line). Applies one SI-model step: `new_infections = S * I / 100` (clamp to remaining S), `S' = S - new_infections`, `I' = I + new_infections`. Prints `<S'> <I'>\n`. |
+| APPROVED | simulation | bacteria_double_n_times | Reads `pop` `1`-`99` (own line), `N` `0`-`6` (own line). Prints `pop * 2^N` as decimal + `\n`. |
+| APPROVED | simulation | radioactive_decay_half_n | Reads `count` `0`-`9999` (own line), `N` `0`-`9` (own line). Prints `count / 2^N` (integer halving N times) as decimal + `\n`. |
+| APPROVED | simulation | queue_advance_n_customers | Reads digit N `1`-`9` + `\n`. Prints N lines `serving customer K\n` for `K = 1..N`. |
+| OVERLAP | simulation | cellular_avg_3 | OVERLAP with batch2/arithmetic/avg_three: identical floor((a+b+c)/3) algorithm and I/O contract. Dropped. |
+| APPROVED | simulation | percolation_2x2 | Reads a 2×2 binary grid: 2 lines of 2 chars `0`/`1` each (1 = open, 0 = blocked). Prints `1\n` if there's a 4-connected path from any top-row open cell to any bottom-row open cell, else `0\n`. |
+| APPROVED | simulation | flock_1d_step | Reads digit N `2`-`5` + `\n`, then N decimals `0`-`9` (each own line) representing positions on a 1D line. Computes the mean position (floor). Then each cell moves +1 if it's below mean, -1 if above, unchanged if equal. Prints the new positions, one per line. |
+| APPROVED | puzzles | n_queens_4_count | No input. Prints the number of distinct solutions to the 4-queens problem (`2`) + `\n`. |
+| APPROVED | puzzles | n_queens_5_count | No input. Prints the number of distinct solutions to the 5-queens problem (`10`) + `\n`. |
+| APPROVED | puzzles | n_queens_6_count | No input. Prints the number of distinct solutions to the 6-queens problem (`4`) + `\n`. |
+| APPROVED | puzzles | eight_queens_solution_count | No input. Prints `92` + `\n` (the number of distinct solutions to the 8-queens problem). |
+| APPROVED | puzzles | eight_queens_one_solution | No input. Prints one valid 8-queens solution as 8 column indices `0`-`7` for rows 0..7, space-separated, then `\n`. (Use a canonical first solution.) |
+| APPROVED | puzzles | magic_square_check_3x3 | Reads 9 decimals (3×3 row-major, each on own line). Prints `1\n` if all 3 rows, all 3 columns, and both diagonals have the same sum, else `0\n`. |
+| APPROVED | puzzles | magic_square_fill_missing | Reads 9 decimals (3×3 row-major, each on own line) representing a known-valid 3×3 magic square with EXACTLY ONE cell replaced by `0` (the missing value). Prints the missing value as decimal + `\n`. |
+| APPROVED | puzzles | magic_constant_for_n | Reads digit N `3`-`9` + `\n`. Prints `N * (N^2 + 1) / 2` (the magic constant for an N×N magic square containing `1..N²`) + `\n`. |
+| APPROVED | puzzles | sudoku_row_check_9 | Reads 9 decimals `1`-`9` (each on own line). Prints `1\n` if all 9 values are distinct (a valid Sudoku row/column/block), else `0\n`. |
+| APPROVED | puzzles | sudoku_full_validation | Reads 9 lines, each 9 decimals (separated by spaces) representing a 9×9 Sudoku grid filled with `1`-`9`. Prints `1\n` if all 9 rows AND all 9 columns AND all 9 3×3 boxes contain `1..9` (every row/col/box has 9 distinct values), else `0\n`. |
+| APPROVED | puzzles | tic_tac_toe_winner | Reads 3 lines of 3 chars each (`X`, `O`, or `.`) representing a tic-tac-toe board. Prints `X\n` if X has won (three in a row/col/diag), `O\n` if O has won, else `none\n`. (Assume at most one side has won.) |
+| APPROVED | puzzles | tic_tac_toe_board_full | Reads 3 lines of 3 chars each. Prints `1\n` if no `.` chars remain (board is full), else `0\n`. |
+| APPROVED | puzzles | tic_tac_toe_simulate_moves | Reads digit N `1`-`9` + `\n`, then N moves (each one digit `0`-`8` on its own line, indicating cell position 0=top-left, row-major). Players alternate starting with `X`. Prints the final 3×3 board (3 lines of 3 chars each, `.` for unmoved cells). |
+| APPROVED | puzzles | tower_of_hanoi_count | Reads digit N `1`-`9` + `\n`. Prints `2^N - 1` (minimum moves) + `\n`. |
+| APPROVED | puzzles | tower_of_hanoi_print_moves_3 | No input. Prints all 7 moves for the 3-disk Tower of Hanoi (from peg `A` to peg `C` using `B`), one per line, formatted `<disk>: <src>-><dst>\n`. Example first move: `1: A->C\n`. |
+| APPROVED | puzzles | tower_of_hanoi_print_moves_4 | No input. Same format as `tower_of_hanoi_print_moves_3` but for 4 disks (15 moves total). |
+| APPROVED | puzzles | word_anagram_check | Reads two `\n`-terminated lowercase words (each ≤ 10 chars). Prints `1\n` if they are anagrams (same multiset of letters), else `0\n`. |
+| APPROVED | puzzles | permutation_check_n | Reads digit N `1`-`9` + `\n`, then N decimals (each own line), then another N decimals. Prints `1\n` if the second N-tuple is a permutation of the first (same multiset), else `0\n`. |
+| APPROVED | puzzles | arithmetic_progression_check_5 | Reads exactly 5 signed decimals (each own line). Prints `1\n` if they form an arithmetic progression (constant difference between consecutive elements), else `0\n`. |
+| APPROVED | puzzles | geometric_progression_check_4 | Reads exactly 4 decimals each `1`-`50` (own line). Prints `1\n` if they form a geometric progression with integer common ratio `>= 2` (i.e. `a[i+1] = a[i] * r` for some integer `r >= 2`), else `0\n`. |
+| APPROVED | puzzles | fibonacci_5_check | Reads exactly 5 decimals (each own line). Prints `1\n` if they match the first 5 Fibonacci values `0 1 1 2 3` exactly in order, else `0\n`. |
+| APPROVED | puzzles | find_missing_arith_progression | Reads exactly 4 decimals (each own line) with the value `0` representing a single missing element of a 4-element arithmetic progression. The remaining 3 values are in their correct AP positions; the `0` is the placeholder. Prints the missing value as decimal + `\n`. |
+| APPROVED | puzzles | find_missing_geom_progression | Reads exactly 4 decimals `1`-`50` with one being `0` (the missing entry) of a 4-element geometric progression with integer common ratio `>= 2`. Prints the missing value + `\n`. |
+| APPROVED | puzzles | counting_squares_2x2 | No input. Prints `5\n` (the number of squares in a 2×2 lattice grid: four unit squares + one 2×2 square). |
+| APPROVED | puzzles | counting_squares_3x3 | No input. Prints `14\n` (number of squares in a 3×3 lattice grid: 9 unit + 4 of side 2 + 1 of side 3). |
+| APPROVED | puzzles | counting_rectangles_3x3 | No input. Prints `36\n` (number of rectangles in a 3×3 lattice grid). |
+| APPROVED | puzzles | coin_change_count_small | Reads decimal amount `1`-`20` + `\n`. Prints the number of distinct ways to make `amount` cents using coins of denominations `{1, 5, 10}` (order doesn't matter) + `\n`. |
+| APPROVED | puzzles | eight_puzzle_check_solved | Reads 9 decimals (each `0`-`8`, own line) representing a 3×3 8-puzzle state (0 = blank). Prints `1\n` if it equals the solved state `1 2 3 4 5 6 7 8 0` (row-major), else `0\n`. |
+| APPROVED | puzzles | fifteen_puzzle_check_solved | Reads 16 decimals (each `0`-`15`, own line) representing a 4×4 15-puzzle state (0 = blank). Prints `1\n` if it equals the solved state `1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 0` (row-major), else `0\n`. |
+| APPROVED | puzzles | cryptarithm_one_plus_one | Reads exactly 3 decimal digits `a b c` (each `0`-`9`, own line). Prints `1\n` if `a + b == c` (i.e. the cryptarithm `a + b = c` is satisfied), else `0\n`. |
+| APPROVED | puzzles | river_crossing_count_classic | No input. Prints `7\n` (the minimum number of trips for the classic farmer-wolf-goat-cabbage river crossing puzzle). |
+| APPROVED | puzzles | bishop_attack_check | Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line) — the two bishops' chessboard positions. Prints `1\n` if they're on the same diagonal (i.e. `|r1-r2| == |c1-c2|`), else `0\n`. |
+| APPROVED | puzzles | rook_attack_check | Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line). Prints `1\n` if they're on the same row or same column, else `0\n`. |
+| APPROVED | puzzles | knight_attack_check | Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line). Prints `1\n` if they're one knight's move apart (i.e. `(|Δr|, |Δc|) == (1,2)` or `(2,1)`), else `0\n`. |
+| APPROVED | puzzles | queen_attack_check | Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line). Prints `1\n` if same row OR same column OR same diagonal, else `0\n`. |
+| APPROVED | puzzles | king_attack_check | Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line). Prints `1\n` if `max(|r1-r2|, |c1-c2|) == 1` (king's move neighbors), else `0\n`. |
+| APPROVED | puzzles | pawn_white_move_count | Reads 2 decimals `r c` (each `0`-`7`, own line) — a white pawn's position. Prints the number of legal forward moves (`1` from a non-starting row, `2` from row 6, `0` from row 0). |
+| APPROVED | puzzles | is_chessboard_color | Reads 2 decimals `r c` (each `0`-`7`, own line). Prints `0\n` if the square is "white" (i.e. `(r + c)` is even with a8/`r=0,c=0` treated as white), else `1\n`. |
+| APPROVED | puzzles | eight_queens_attack_pair_count | Reads exactly 8 decimals (each `0`-`7`, own line) representing the column of a queen for each row 0..7. Prints the count of pairs `(i, j)` with `i < j` such that queens on rows i and j attack each other (same column, or `|rows[i] - rows[j]| == |i - j|`) + `\n`. |
+| APPROVED | puzzles | dragon_curve_3_iterations | No input. Prints the heighway-dragon L/R turn sequence after exactly 3 paper-fold iterations, where `L` denotes a left turn and `R` denotes a right turn. The 3rd-iteration sequence has length `2^3 - 1 = 7`. Convention: start with a single `L` (1st iteration), and each next iteration appends `L` then the reverse-and-swap of the prior sequence. This yields iteration-3 = `LLRLLRR`. Output is exactly `LLRLLRR\n`. |
+| APPROVED | puzzles | partition_count_n | Reads digit N `1`-`9` + `\n`. Prints the number of integer partitions of N (e.g. `p(4) = 5`) + `\n`. |
+
+## Batch 8 — parsing + graphics_ascii + cryptography + memory_layout (96 approved + 4 overlap)
+
+Categories: parsing (29 net), graphics_ascii (33 net), cryptography (24 net), memory_layout (10 net).
+CR-ist found 4 overlaps; 96 APPROVED.
+
+| status | category | name | description |
+|---|---|---|---|
+| APPROVED | parsing | parse_integer_echo | Reads a `\n`-terminated unsigned decimal `0`-`999999` and prints it back as decimal + `\n`. Round-trip parse → integer → print. |
+| APPROVED | parsing | parse_signed_integer_echo | Reads a `\n`-terminated signed decimal `-9999`..`9999` (may have leading `-` or `+`) and prints the canonical signed form + `\n` (no leading `+`). |
+| APPROVED | parsing | eval_simple_expr_add | Reads `<a>+<b>` + `\n` where `a` and `b` are single digits `0`-`9`. Prints `a + b` as decimal + `\n`. |
+| APPROVED | parsing | eval_simple_expr_sub | Reads `<a>-<b>` + `\n` (single digits). Prints `a - b` (signed) + `\n`. |
+| APPROVED | parsing | eval_simple_expr_mul | Reads `<a>*<b>` + `\n` (single digits). Prints `a * b` + `\n`. |
+| APPROVED | parsing | eval_two_op_expr | Reads `<a><op><b>` + `\n` where `op` is one of `+`, `-`, `*` and `a`, `b` are single digits. Prints the result + `\n`. |
+| APPROVED | parsing | eval_three_op_lr | Reads `<a><op1><b><op2><c>` + `\n` (single digits, `op` ∈ `+`/`-`/`*`). Evaluates strictly left-to-right (no precedence) and prints the result + `\n`. |
+| APPROVED | parsing | eval_three_op_precedence | Reads `<a><op1><b><op2><c>` + `\n` (single digits, `op` ∈ `+`/`-`/`*`). Applies standard precedence (`*` before `+`/`-`) and prints the result + `\n`. |
+| APPROVED | parsing | tokenize_split_on_whitespace | Reads a `\n`-terminated line ≤ 40 chars. Splits on runs of whitespace (`' '`, `'\t'`) and prints each non-empty token on its own line. |
+| APPROVED | parsing | tokenize_split_on_char | Reads exactly one separator byte + `\n`, then a `\n`-terminated line ≤ 40 chars. Splits the line on the separator byte and prints each token (including empty) on its own line. |
+| APPROVED | parsing | parse_hex_color | Reads `#RRGGBB\n` (exactly 7 bytes + `\n`, lowercase hex). Prints `R: <r>\nG: <g>\nB: <b>\n` where `r`, `g`, `b` are decimal values `0`-`255`. |
+| APPROVED | parsing | parse_date_iso | Reads `YYYY-MM-DD\n` (10 bytes + `\n`). Prints `Year: <Y>\nMonth: <M>\nDay: <D>\n` with no leading zeros. |
+| APPROVED | parsing | parse_time_hhmm | Reads `HH:MM\n` (5 bytes + `\n`). Prints `<H>:<M>\n` with no leading zeros (e.g. `09:05` → `9:5\n`). |
+| APPROVED | parsing | parse_phone_simple | Reads `XXX-XXX-XXXX\n` (12 bytes + `\n`, dashes at positions 3 and 7). Prints the 10 digits concatenated (no dashes) + `\n`. |
+| APPROVED | parsing | parse_url_protocol | Reads `<proto>://<rest>\n` (proto is `1`-`8` lowercase letters). Prints the protocol + `\n`. |
+| APPROVED | parsing | parse_email_at | Reads `<user>@<domain>\n` (≤ 30 chars total, exactly one `@`). Prints `<user>\n<domain>\n`. |
+| APPROVED | parsing | parse_yaml_kv_simple | Reads `<key>: <value>\n` (single colon-space separator; key is letters only, value any byte). Prints `<key>\n<value>\n`. |
+| APPROVED | parsing | parse_json_int | Reads `{"x":<num>}\n` where `<num>` is a decimal `0`-`9999`. Prints `<num>` + `\n`. |
+| APPROVED | parsing | parse_json_string | Reads `{"s":"<str>"}\n` where `<str>` is any ASCII bytes (no escapes, no embedded `"`). Prints `<str>` + `\n`. |
+| APPROVED | parsing | parse_json_bool | Reads `{"b":true}\n` or `{"b":false}\n`. Prints `1\n` for `true`, `0\n` for `false`. |
+| APPROVED | parsing | parse_decimal_list_sum | Reads a `\n`-terminated comma-separated list of decimals (each `0`-`99`, up to 10 entries). Prints the sum + `\n`. |
+| APPROVED | parsing | parse_decimal_list_max | Reads same format as `parse_decimal_list_sum`. Prints the maximum + `\n`. |
+| APPROVED | parsing | parse_dimensions | Reads `WxH\n` where `W` and `H` are decimals `0`-`99`. Prints `W * H` + `\n`. |
+| APPROVED | parsing | parse_version_string | Reads `v<MAJOR>.<MINOR>.<PATCH>\n` where each segment is `0`-`99`. Prints `<MAJOR> <MINOR> <PATCH>\n` space-separated. |
+| APPROVED | parsing | parse_rgb_to_grayscale | Reads `R,G,B\n` (each `0`-`255`, decimals separated by commas). Prints `floor((R*30 + G*59 + B*11) / 100)` as decimal + `\n`. |
+| APPROVED | parsing | parse_simple_assignment | Reads `<var>=<value>\n` where `var` is a single lowercase letter and `value` is a decimal `0`-`999`. Prints `<var> is <value>\n`. |
+| APPROVED | parsing | parse_currency_dollars_cents | Reads `$<D>.<CC>\n` where `D` is decimal `0`-`99` (no zero pad) and `CC` is exactly 2 decimal digits. Prints `D * 100 + CC` (total cents) + `\n`. |
+| OVERLAP | parsing | parse_path_dir_file | OVERLAP with parse_email_at: same single-delimiter-split-and-print-two-parts algorithm; only the delimiter differs. Dropped. |
+| APPROVED | parsing | parse_signed_hex | Reads `[+-]?0x<HH>\n` (optional sign byte then `0x` then exactly 2 lowercase hex chars). Prints the signed decimal value `-255`..`255` + `\n`. |
+| APPROVED | parsing | parse_unit_value | Reads `<num><unit>\n` where `num` is decimal `0`-`99` and `unit` is exactly one byte `s` (seconds), `m` (minutes), or `h` (hours). Prints `num` converted to seconds as decimal + `\n`. |
+| APPROVED | graphics_ascii | print_house_3 | No input. Prints a fixed 3-line ASCII house: line 1 ` /\ `, line 2 `/__\`, line 3 `|  |`, each + `\n`. |
+| APPROVED | graphics_ascii | print_house_5 | No input. Prints a fixed 5-line ASCII house (taller and wider than `print_house_3`): line 1 `  /\  `, line 2 ` /  \ `, line 3 `/____\`, line 4 `|    |`, line 5 `|____|`, each + `\n`. |
+| APPROVED | graphics_ascii | print_christmas_tree_5 | No input. Prints a fixed 5-row centered Christmas tree of `*` (rows of width 1,3,5,7,9 centered in a 9-col field with leading spaces). |
+| APPROVED | graphics_ascii | print_christmas_tree_7 | No input. Same shape as `print_christmas_tree_5` but with 7 rows (widths 1,3,5,7,9,11,13 in a 13-col field). |
+| APPROVED | graphics_ascii | print_star_5_point | No input. Prints a fixed 5-row 5-pointed star ASCII art (centered on 9-col field, using `*` and spaces). |
+| APPROVED | graphics_ascii | print_arrow_right_short | No input. Prints `--->\n`. |
+| APPROVED | graphics_ascii | print_arrow_left_short | No input. Prints `<---\n`. |
+| APPROVED | graphics_ascii | print_arrow_up_3 | No input. Prints a fixed 3-line upward arrow (`/\`, `||`, `||`), each + `\n`. |
+| APPROVED | graphics_ascii | print_arrow_down_3 | No input. Prints a fixed 3-line downward arrow (`||`, `||`, `\/`), each + `\n`. |
+| APPROVED | graphics_ascii | print_smiley_face_static | No input. Prints `:)\n`. (Distinct from `emoji_smiley_or_frown` which reads input first.) |
+| OVERLAP | graphics_ascii | print_frown_face_static | OVERLAP with print_smiley_face_static: 2-char content variant below threshold. Dropped. |
+| OVERLAP | graphics_ascii | print_wink_face_static | OVERLAP with print_smiley_face_static: 2-char content variant below threshold. Dropped. |
+| APPROVED | graphics_ascii | print_heart_3 | No input. Prints a 3-row ASCII heart shape using `*`, e.g. line 1 ` * *`, line 2 `*****`, line 3 ` *** `, each + `\n`. |
+| APPROVED | graphics_ascii | print_filled_diamond_5 | No input. Prints a 5-row filled diamond of `*` centered in a 5-col field: rows ` * `, `***`, `*****` (truncated to 5-col), `***`, ` * ` — actually use rows widths 1,3,5,3,1 centered on width-5 grid with leading spaces. |
+| APPROVED | graphics_ascii | print_filled_diamond_7 | No input. Same shape as `print_filled_diamond_5` but 7-row (widths 1,3,5,7,5,3,1 on 7-col grid). |
+| APPROVED | graphics_ascii | print_diamond_outline_5 | No input. Prints a 5-row outline-only diamond: rows ` * `, `* *`, ` * ` for top half mirrored... wait the precise pattern: row 1 `  *  `, row 2 ` * * `, row 3 `*   *`, row 4 ` * * `, row 5 `  *  ` (5×5 grid, only outline cells are `*`, others are space). |
+| APPROVED | graphics_ascii | print_triangle_right_aligned_5 | No input. Prints 5 rows of a right-aligned triangle: row i has `5-i` leading spaces, then `i` `*`s, then `\n`. (Distinct from `right_triangle_stars` which is left-aligned and parameterized.) |
+| APPROVED | graphics_ascii | print_box_with_text | Reads a `\n`-terminated line ≤ 10 chars. Prints a 3-row box around the text: top row `+<dashes>+\n`, middle row `| <text padded to 10 chars> |\n`, bottom row `+<dashes>+\n`. Box width is fixed (text padded with trailing spaces to 10 chars, total width 14). |
+| APPROVED | graphics_ascii | print_table_2x3 | No input. Prints a fixed 2-row × 3-column ASCII table with `+`, `-`, `|` separators and fixed contents (`Name` / `Age` / `City` headers + one data row `Alice` / `30` / `Paris`). |
+| APPROVED | graphics_ascii | print_chess_pawn | No input. Prints a multi-line ASCII chess pawn (3 lines, e.g. ` ○ \n /_\\\n |_|`). |
+| APPROVED | graphics_ascii | print_chess_king | No input. Prints a multi-line ASCII chess king (4 lines, with `+`, `|`, `_`). |
+| APPROVED | graphics_ascii | print_chess_queen | No input. Prints a multi-line ASCII chess queen (4 lines, distinct shape from king). |
+| APPROVED | graphics_ascii | print_chess_bishop | No input. Prints a multi-line ASCII chess bishop (4 lines). |
+| APPROVED | graphics_ascii | print_chess_knight | No input. Prints a multi-line ASCII chess knight (4 lines, e.g. with `/\\`). |
+| APPROVED | graphics_ascii | print_chess_rook | No input. Prints a multi-line ASCII chess rook (4 lines, like a tower). |
+| APPROVED | graphics_ascii | print_dollar_sign_5x5 | No input. Prints a fixed 5×5 ASCII `$` sign using `*` and spaces. |
+| APPROVED | graphics_ascii | print_circle_radius_3 | No input. Prints a rasterized circle of radius 3 centered on a 7×7 grid: each cell is `*` if `i² + j² <= 9` (with `i, j` from `-3` to `3`), else `.`. |
+| APPROVED | graphics_ascii | print_circle_radius_4 | No input. Same construction as `print_circle_radius_3` but radius 4 on a 9×9 grid. |
+| APPROVED | graphics_ascii | print_sin_wave_one_period | No input. Prints a 5-row × 20-column ASCII approximation of one full sine wave period using `*` for plot points and `.` for empty. Use the formula `y = round(2 * sin(2π * x / 20)) + 2` for `x = 0..19` and plot `*` at `(y, x)`. |
+| APPROVED | graphics_ascii | print_bar_chart_v_3 | Reads 3 decimals each `0`-`5` (own line). Prints a 5-row × 3-col vertical bar chart: for each column `i`, `*` for rows ≥ `5 - input_i`, `.` otherwise. |
+| APPROVED | graphics_ascii | print_bar_chart_v_5 | Reads 5 decimals each `0`-`5` (own line). Same construction as `print_bar_chart_v_3` but 5 columns. |
+| APPROVED | graphics_ascii | print_bar_chart_h_3 | Reads 3 decimals each `0`-`9` (own line). Prints 3 rows: row `i` is `input_i` consecutive `*`s + `\n`. |
+| APPROVED | graphics_ascii | print_bar_chart_h_5 | Reads 5 decimals each `0`-`9` (own line). Same as `print_bar_chart_h_3` with 5 rows. |
+| APPROVED | graphics_ascii | print_arrow_with_label | Reads a `\n`-terminated line ≤ 20 chars. Prints `--> <line>\n`. |
+| APPROVED | graphics_ascii | print_thermometer_5 | Reads decimal `0`-`5` + `\n`. Prints a 5-row vertical thermometer: row `i` (counted from top) is `|` if `i >= 5 - input`, else ` `; then `\n` after each row. |
+| APPROVED | cryptography | caesar_shift_n | Reads a signed decimal shift `-25`..`25` + `\n`, then a `\n`-terminated line ≤ 80 chars. Shifts each letter by `n` positions within its case (wrapping at `a`/`z`/`A`/`Z`); non-letters unchanged. Prints result + `\n`. |
+| APPROVED | cryptography | caesar_brute_force | Reads a `\n`-terminated ciphertext ≤ 20 chars (letters and spaces only). Prints all 26 possible Caesar-decrypts (shifts `0`-`25`), one per line. |
+| APPROVED | cryptography | vigenere_encode_short | Reads a `\n`-terminated lowercase key `1`-`8` chars, then a `\n`-terminated plaintext ≤ 40 chars. Applies Vigenère: each plaintext letter is shifted by `key[i mod key_length] - 'a'` positions (within its case, non-letters unchanged). Prints ciphertext + `\n`. |
+| APPROVED | cryptography | vigenere_decode_short | Reads the same input format as `vigenere_encode_short` (key, then ciphertext). Applies the inverse shift (negative direction). Prints plaintext + `\n`. |
+| APPROVED | cryptography | simple_substitution_encode | Reads a 26-char `\n`-terminated lowercase substitution mapping (the letter at position 0 is the substitution for `a`, position 1 for `b`, etc.). Then reads a `\n`-terminated plaintext ≤ 40 chars; substitutes each lowercase letter using the mapping (non-letters unchanged). Prints + `\n`. |
+| APPROVED | cryptography | simple_substitution_decode | Reads the same 26-char mapping then ciphertext. Inverts the mapping (build inverse table) and applies to decode. Prints plaintext + `\n`. |
+| APPROVED | cryptography | rail_fence_2_rails | Reads a `\n`-terminated plaintext ≤ 30 chars (no `\n`s inside). Encodes using 2-rail rail-fence cipher (write zigzag on 2 rails, read row-by-row). Prints ciphertext + `\n`. |
+| APPROVED | cryptography | rail_fence_3_rails | Same I/O as `rail_fence_2_rails` but with 3 rails. |
+| APPROVED | cryptography | columnar_transposition_3x3 | Reads a `\n`-terminated plaintext of exactly 9 chars. Writes them into a 3×3 grid row-major, then reads out column-by-column. Prints the result + `\n`. |
+| APPROVED | cryptography | binary_complement_cipher | Reads a `\n`-terminated line ≤ 30 chars. For each byte (excluding `\n`), outputs the bitwise complement `~byte` as a raw byte. Final `\n`. |
+| APPROVED | cryptography | ascii_offset_encode_n | Reads a signed decimal shift `-128`..`127` + `\n`, then a `\n`-terminated line ≤ 30 chars. For each input byte, outputs `(byte + n) mod 256` as a raw byte. Final `\n`. |
+| OVERLAP | cryptography | ascii_offset_decode_n | OVERLAP with ascii_offset_encode_n: same add-mod-256 kernel; decode is just encode with negated shift. Dropped. |
+| APPROVED | cryptography | fermat_test_witness | Reads three decimals `a`, `n` (each `2`-`30`, own line). Prints `1\n` if `a^(n-1) ≡ 1 (mod n)`, else `0\n`. (Fermat's little theorem witness; passing doesn't guarantee primality.) |
+| APPROVED | cryptography | simple_hash_sum_4bit | Reads a `\n`-terminated line ≤ 30 chars. Computes the sum of all byte values (excluding `\n`) modulo 16. Prints the result as a single lowercase hex char + `\n`. |
+| APPROVED | cryptography | one_time_pad_xor | Reads a `\n`-terminated pad of `1`-`30` bytes, then a `\n`-terminated message of EXACTLY the same length. XORs corresponding bytes; outputs the result as raw bytes + `\n`. (Self-inverse — applying twice with the same pad returns the original.) |
+| APPROVED | cryptography | polybius_square_encode | Reads exactly one uppercase letter `A`-`Z` (excluding `J`; `I` and `J` are merged) + `\n`. Prints two decimal digits `<row><col>` (each `1`-`5`) + `\n` based on the standard 5×5 Polybius square (row-major fill of `A B C D E F G H I/J K L M N O P Q R S T U V W X Y Z`). |
+| APPROVED | cryptography | polybius_square_decode | Reads two decimal digits + `\n` (e.g. `42`). Prints the corresponding uppercase letter from the standard 5×5 Polybius square + `\n`. |
+| APPROVED | cryptography | caesar_validate | Reads a signed decimal shift `-25`..`25` + `\n`, then plaintext + `\n`, then candidate ciphertext + `\n` (each ≤ 20 chars). Prints `1\n` if applying Caesar shift to plaintext yields the candidate ciphertext exactly, else `0\n`. |
+| APPROVED | cryptography | encrypt_then_reverse | Reads a `\n`-terminated plaintext ≤ 20 chars. Applies Caesar shift of `+3` (ROT3) then reverses the result. Prints the final string + `\n`. |
+| APPROVED | cryptography | xor_with_position | Reads a `\n`-terminated line ≤ 30 chars. For each byte at 0-based position `i`, outputs `byte XOR i` as a raw byte. Final `\n`. |
+| APPROVED | cryptography | shift_letter_by_position | Reads a `\n`-terminated line ≤ 20 chars. For each letter at 0-based position `i`, shifts it by `i` positions within its case (non-letters unchanged). Prints result + `\n`. |
+| APPROVED | cryptography | encrypt_then_uppercase | Reads a `\n`-terminated plaintext ≤ 20 chars. Applies Caesar shift of `+5`, then uppercases all letters. Prints + `\n`. |
+| APPROVED | cryptography | count_distinct_letters_ciphertext | Reads a `\n`-terminated line ≤ 80 chars. Prints the count of distinct LETTER bytes (case-insensitive; `A` and `a` count as one) as decimal + `\n`. |
+| APPROVED | cryptography | modular_arith_demo | Reads three decimals `a`, `b`, `m` (each `0`-`50`, own line; `m >= 1`). Prints `(a+b) mod m\n(a*b) mod m\n` on two lines. |
+| APPROVED | cryptography | caesar_double_application | Reads a shift `0`-`25` + `\n` then plaintext + `\n` (≤ 20 chars). Applies Caesar shift twice (= shift `2*n` mod 26). Prints the final ciphertext + `\n`. |
+| APPROVED | memory_layout | stack_overflow_demo | Reads digit N `0`-`9` + `\n`. Allocates a fixed-size stack of capacity 5. Pushes N items (values 1..N); if N > 5, prints `Stack overflow at item <N>!\n` and exits when the 6th push would happen. If N ≤ 5, pushes all N then prints `Pushed <N> items.\n`. |
+| APPROVED | memory_layout | queue_overflow_demo | Same shape as `stack_overflow_demo` but with a queue of capacity 5. Prints `Queue overflow at item <N>!\n` or `Enqueued <N> items.\n`. |
+| APPROVED | memory_layout | pointer_basic | Reads decimal address `0`-`15` + `\n`, then decimal value `0`-`255` + `\n`. Writes the value at the address (in a 16-byte array initially zeroed), then reads it back and prints the value + `\n`. |
+| APPROVED | memory_layout | memory_dump_zero_to_15 | No input. Initializes a 16-byte array to `addr * 17 mod 256` for `addr = 0..15`. Prints the 16 byte values as 2-char lowercase hex space-separated + `\n` (e.g. `00 11 22 ... ff`). |
+| APPROVED | memory_layout | variable_swap_no_temp | Reads two decimals `a` `b` (each `0`-`99`, own line). Swaps using XOR trick (no temporary variable): `a ^= b; b ^= a; a ^= b;`. Prints `<new_a>\n<new_b>\n`. |
+| APPROVED | memory_layout | variable_swap_with_temp | Reads two decimals `a` `b` (each `0`-`99`, own line). Swaps using a temporary variable `t = a; a = b; b = t;`. Prints `<new_a>\n<new_b>\n`. |
+| APPROVED | memory_layout | array_indexed_access_5 | Reads 5 decimals (each `0`-`99`, own line), then a decimal index `0`-`4` (own line). Prints the array element at that index + `\n`. |
+| APPROVED | memory_layout | linked_list_print_3 | No input. Builds a 3-node linked list with values `10`, `20`, `30` (head→tail). Traverses head-to-tail and prints each value on its own line. |
+| APPROVED | memory_layout | stack_clear_demo | No input. Pushes 3 values onto a stack, then clears the stack (pops all without using results), then attempts to pop and prints `Stack empty\n` because pop on empty stack must report empty. |
+| APPROVED | memory_layout | show_local_vs_global | No input. Declares a global variable `g = 100` and a local variable inside `main` `l = 200`. Prints `Local: 200\nGlobal: 100\n`. |
+
 ## Retired rows (Phase 3)
 
 When a row cannot be implemented within budget and gets replaced, mark it
