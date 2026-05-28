@@ -124,6 +124,19 @@ Each later program is the simplest one that uses one new technique.
 
 ## Surprises / gotchas
 
+- **NEVER name a global label `n` or `i` (or `w`, `dw`, `dbit`).** This cost
+  me ~30 min in batch 2. A top-level `n: bit.vec 8, 0` silently corrupts
+  *every* `bit.*`/`hex.*` macro call in the program, because `n` is the width
+  parameter in every STL macro signature (`def cmp n, a, b, ...`) and `i` is
+  the conventional `rep(n, i)` loop variable. The symptom is bizarre: the
+  program crashes with `ip<2w` or a `runtime-memory-error` at a giant address
+  (bit 63 set), often inside an *unrelated* macro like `bit.zero`, after only
+  a handful of ops — and the *identical* code with the variable renamed works
+  perfectly. Diagnosis is by elimination (rename the vars and the crash
+  vanishes). Use descriptive names: `limit`, `idx`, `count`, `val_a`, `bound`,
+  `counter`. `hello_iterations` was the first program to hit this (used `n`,
+  `i` for limit/index); renamed to `limit`/`idx` and it compiled+ran cleanly.
+
 - **The `<` clause is mandatory for global data referenced in a macro body.**
   Without it, the compiler reports "Declared a not extern/parameter label:
   nl, ch". The macro signature `def main @ inner-labels < global-data { ... }`

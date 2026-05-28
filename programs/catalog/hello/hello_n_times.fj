@@ -1,0 +1,31 @@
+// Hello N Times (#0004)
+
+// Reads a single ASCII digit `0`-`9` from stdin and prints `Hello, World!\n` that many times.
+
+main
+
+def main < count {
+    stl.startup
+    read_digit_value count
+    print_hello_times count
+    stl.loop
+}
+
+// Read one ASCII digit from stdin into count[:8] as its numeric value 0-9.
+def read_digit_value count {
+    bit.input count
+    bit.zero count + 4*dw
+    bit.zero count + 5*dw
+}
+
+// Print `Hello, World!\n` count times, where count[:8] is a small integer.
+def print_hello_times count @ loop, end {
+  loop:
+    bit.if0 8, count, end
+    stl.output "Hello, World!\n"
+    bit.dec 8, count
+    ;loop
+  end:
+}
+
+count: bit.vec 8, 0

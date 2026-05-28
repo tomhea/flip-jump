@@ -1,0 +1,39 @@
+// Only Letters (#0039)
+
+// Reads stdin and outputs only `A`-`Z` and `a`-`z` bytes.
+
+main
+
+def main @ loop, keep, skip, end < ch {
+    stl.startup
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    is_letter ch, keep, skip
+  keep:
+    bit.print ch
+  skip:
+    ;loop
+  end:
+    stl.loop
+}
+
+// Jump to `yes` if ch is a letter (`A`-`Z` or `a`-`z`), else jump to `no`.
+def is_letter ch, yes, no @ try_lower < upper_a, upper_z, lower_a, lower_z {
+    in_range ch, upper_a, upper_z, yes, try_lower
+  try_lower:
+    in_range ch, lower_a, lower_z, yes, no
+}
+
+// Jump to `yes` if lo <= ch <= hi (lo, hi are bit[:8] bounds), else to `no`.
+def in_range ch, lo, hi, yes, no @ check_hi {
+    bit.cmp 8, ch, lo, no, yes, check_hi
+  check_hi:
+    bit.cmp 8, ch, hi, yes, yes, no
+}
+
+ch: bit.vec 8, 0
+upper_a: bit.vec 8, 'A'
+upper_z: bit.vec 8, 'Z'
+lower_a: bit.vec 8, 'a'
+lower_z: bit.vec 8, 'z'

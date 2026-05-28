@@ -1,0 +1,25 @@
+// Tab To Space (#0042)
+
+// Reads stdin and replaces each `\t` with a single space; other bytes unchanged.
+
+main
+
+def main @ loop, is_tab, not_tab, end < ch, tab, space {
+    stl.startup
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, tab, not_tab, is_tab, not_tab
+  is_tab:
+    bit.print space
+    ;loop
+  not_tab:
+    bit.print ch
+    ;loop
+  end:
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+tab: bit.vec 8, '\t'
+space: bit.vec 8, ' '

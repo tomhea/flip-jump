@@ -1,0 +1,20 @@
+// Echo With Suffix (#0049)
+
+// Reads stdin and prints each input byte followed by `!`.
+
+main
+
+def main @ loop, end < ch, suffix {
+    stl.startup
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.print ch
+    bit.print suffix
+    ;loop
+  end:
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+suffix: bit.vec 8, '!'

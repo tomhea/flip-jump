@@ -147,6 +147,40 @@ adjacent programs.
 - **For long repeats, use a runtime loop** (counter + cmp + branch).
   `rep` is the same as manual unroll; if compile time grows past ~5s, switch
   to a runtime loop.
+- **NEVER name a label `n`, `i`, `w`, `dw`, or `dbit`.** These collide with STL
+  macro internals: `n` is the width parameter in every `bit.*`/`hex.*` macro,
+  `i` is the conventional `rep(n, i)` loop variable, and `w`/`dw`/`dbit` are
+  reserved machine constants. A global `n:` or `i:` silently corrupts macro
+  expansion and crashes the program in a confusing, unrelated-looking way (see
+  `../../flipjump_claude_conclusions.md`). Use `limit`, `idx`, `count`,
+  `bound`, `counter`, `val`, etc.
+
+## Predicate and filter idioms (batch 2)
+
+Two reusable helper shapes proved out across the `io` category:
+
+- **Predicate helper** — `def is_X ch, yes, no { ... }` does comparisons and
+  jumps to the caller's `yes`/`no` label. Compose them: `is_letter` calls
+  `in_range` twice; `is_whitespace` chains three `bit.cmp`s. Bounds are
+  pre-declared data vectors (e.g. `upper_a: bit.vec 8, 'A'`) because `bit.cmp`
+  compares two in-memory vectors — there is no compare-against-constant form.
+- **Filter loop** — `main` reads a byte, calls a predicate, prints on `keep`:
+  ```
+  loop:
+      bit.input ch
+      bit.if0 8, ch, end
+      is_digit ch, keep, skip
+    keep:
+      bit.print ch
+    skip:
+      ;loop
+  end:
+      stl.loop
+  ```
+- **Single-digit parse** — ASCII `'0'`-`'9'` → value: read the byte, then
+  `bit.zero ch+4*dw` and `bit.zero ch+5*dw` (clears the `0x30` bits). Reverse
+  (value → ASCII) with `bit.one`. Loop a `bit[:8]` counter with `bit.dec` /
+  `bit.inc` + `bit.if0` / `bit.cmp`.
 
 ## CSV rows (the two test-spec files)
 

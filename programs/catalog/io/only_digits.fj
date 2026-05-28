@@ -1,0 +1,30 @@
+// Only Digits (#0038)
+
+// Reads stdin and outputs only `0`-`9` bytes, dropping all others.
+
+main
+
+def main @ loop, keep, skip, end < ch {
+    stl.startup
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    is_digit ch, keep, skip
+  keep:
+    bit.print ch
+  skip:
+    ;loop
+  end:
+    stl.loop
+}
+
+// Jump to `yes` if ch is an ASCII digit `0`-`9`, else jump to `no`.
+def is_digit ch, yes, no @ check_hi < digit_0, digit_9 {
+    bit.cmp 8, ch, digit_0, no, yes, check_hi
+  check_hi:
+    bit.cmp 8, ch, digit_9, yes, yes, no
+}
+
+ch: bit.vec 8, 0
+digit_0: bit.vec 8, '0'
+digit_9: bit.vec 8, '9'
