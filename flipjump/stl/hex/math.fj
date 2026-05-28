@@ -71,6 +71,7 @@ ns hex {
         //  Time Complexity: 2@
         // Space Complexity: 2@+12
         //   carry = 0
+        // @requires hex.add.init (or hex.init)
         def clear_carry @ ret < ..tables.ret, .dst, ..tables.res {
             wflip ..tables.ret+w, ret, .dst
           ret:
@@ -81,6 +82,7 @@ ns hex {
         //  Time Complexity: 2@+1
         // Space Complexity: 2@+16
         //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
+        // @requires hex.add.init (or hex.init)
         def clear_carry c0, c1 @ ret < ..tables.ret, .dst, ..tables.res {
             wflip ..tables.ret+w, ret, .dst
           ret:
@@ -92,6 +94,7 @@ ns hex {
 
         // Complexity: 1
         //   carry = !carry
+        // @requires hex.add.init (or hex.init)
         def not_carry < .dst {
             .dst+dbit+8;
         }
@@ -99,6 +102,7 @@ ns hex {
         //  Time Complexity: 2@+1
         // Space Complexity: 2@+13
         //   carry = 1
+        // @requires hex.add.init (or hex.init)
         def set_carry {
             .clear_carry
             .not_carry
@@ -210,6 +214,7 @@ ns hex {
         //  Time Complexity: 2@+5
         // Space Complexity: 2@+20
         //   carry = 0
+        // @requires hex.sub.init (or hex.init)
         def clear_carry @ end {
             .clear_carry end, end
           end:
@@ -218,6 +223,7 @@ ns hex {
         //  Time Complexity: 2@+5
         // Space Complexity: 2@+20
         //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
+        // @requires hex.sub.init (or hex.init)
         def clear_carry c0, c1 @ ret < ..tables.ret, .dst, ..tables.res {
             wflip ..tables.ret+w, ret, .dst
           ret:
@@ -230,6 +236,7 @@ ns hex {
 
         // Complexity: 1
         //   carry = !carry
+        // @requires hex.sub.init (or hex.init)
         def not_carry < .dst {
             .dst+dbit+8;
         }
@@ -237,6 +244,7 @@ ns hex {
         //  Time Complexity: 2@+6
         // Space Complexity: 2@+21
         //   carry = 1
+        // @requires hex.sub.init (or hex.init)
         def set_carry {
             .clear_carry
             .not_carry

@@ -31,6 +31,7 @@ ns stl {
     //
     // note: the pop_ret_address is for the future return (counts as space, but not time, complexity).
     // @requires the stack_init.
+    // @Assumes: stack has room (caller-side responsibility).
     def call address @ return_label {
         hex.push_ret_address return_label
         ;address
@@ -47,6 +48,7 @@ ns stl {
     //
     // note: the pop_ret_address is for the future return (counts as space, but not time, complexity).
     // @requires the stack_init.
+    // @Assumes: stack has room (caller-side responsibility).
     def call address, params_stack_length @ return_label {
         hex.push_ret_address return_label
         ;address
@@ -64,6 +66,7 @@ ns stl {
     //
     // note: jumps to the last-call's pop_ret_address (which this macro counts as time, but not space, complexity).
     // @requires the stack_init.
+    // @Assumes: matched by a prior stl.call (stack non-empty).
     def return < hex.pointers.sp {
         hex.ptr_jump hex.pointers.sp
     }
@@ -96,6 +99,7 @@ ns stl {
 
     // Complexity: 1
     //   Return into the address written in the "ret_reg" variable.
+    // @Assumes: ret_reg contains a valid return address from a prior stl.fcall.
     def fret ret_reg {
         ;ret_reg
     }

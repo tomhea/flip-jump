@@ -30,7 +30,7 @@ ns hex {
     //  Time Complexity: 13@+35
     // Space Complexity: w(0.375@ + 3.25)  + 7.5@+106
     //   ptr[:w/4] -= value * 2w    (retreat ptr by value)
-    // @requires hex.add.init (or hex.init)
+    // @requires hex.sub.init (or hex.init)
     // @note: The complexity is calculated with n_const=2, and for log(w) in 16,32,64,128.
     def ptr_sub ptr, value {
         hex.sub_constant w/4, ptr, value * dw

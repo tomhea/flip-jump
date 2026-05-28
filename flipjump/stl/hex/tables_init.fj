@@ -14,6 +14,10 @@ ns hex {
     }
 
     ns tables {
+        // Allocates the shared `ret` and `res` symbols used by every
+        // table-driven hex operation. Called once by hex.init.
+        // @output-param ret:  Shared return address for table-driven hex ops.
+        // @output-param res:  Shared result hex written by table dispatch.
         def init_shared > ret, res {
           ret: ;0
           res: ..hex
@@ -52,6 +56,7 @@ ns hex {
         // Space Complexity: 256
         //
         // dst is a hex.
+        // @requires hex.tables.init_shared (or hex.init)
         def clean_table_entry__table dst < .ret {
             .clean_table_entry__table 256, dst, .ret
         }
@@ -66,6 +71,7 @@ ns hex {
         // At last, it xors the value of hex.tables.res into dst.
         //
         // both dst,src are hexes, and jumper_to_table is an address.
+        // @requires hex.tables.init_shared (or hex.init)
         def jump_to_table_entry dst, src, jumper_to_table @ return < .ret, .res {
             ..xor jumper_to_table  , dst
             ..xor jumper_to_table+4, src

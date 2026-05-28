@@ -1,0 +1,58 @@
+// Regression test: bit.print_hex_int and bit.print_dec_int must NOT mutate
+// their `x` parameter when it's negative. Each line below prints the same
+// variable twice (with a '\n' between); if the macro silently negated x,
+// the second print would output the positive value (e.g. "0xABCDEF" or
+// "123456") instead of the original negative value.
+
+    stl.startup
+
+    // Negative hex: should print "-0xABCDEF\n-0xABCDEF\n" twice.
+    bit.print_hex_int w, hex_val, 1
+    stl.output '\n'
+    bit.print_hex_int w, hex_val, 1
+    stl.output '\n'
+
+    // Negative decimal: should print "-123456\n-123456\n".
+    bit.print_dec_int w, dec_val
+    stl.output '\n'
+    bit.print_dec_int w, dec_val
+    stl.output '\n'
+
+    // Positive values (control): the macro doesn't negate, so trivially
+    // preserved; included for completeness.
+    bit.print_hex_int w, pos_hex, 1
+    stl.output '\n'
+    bit.print_hex_int w, pos_hex, 1
+    stl.output '\n'
+
+    bit.print_dec_int w, pos_dec
+    stl.output '\n'
+    bit.print_dec_int w, pos_dec
+    stl.output '\n'
+
+    // Edge case: most-negative w-bit value (1 << (w-1)). Two's complement
+    // negation of this value is itself, so the restore step still has
+    // to leave x in its original (most-negative) state. The macro must
+    // still output the minus sign on the second call.
+    bit.print_hex_int w, most_neg, 1
+    stl.output '\n'
+    bit.print_hex_int w, most_neg, 1
+    stl.output '\n'
+
+    bit.print_dec_int w, most_neg
+    stl.output '\n'
+    bit.print_dec_int w, most_neg
+    stl.output '\n'
+
+    stl.loop
+
+  hex_val:
+    bit.vec w, 0-0xabcdef
+  dec_val:
+    bit.vec w, 0-123456
+  pos_hex:
+    bit.vec w, 0x1234
+  pos_dec:
+    bit.vec w, 42
+  most_neg:
+    bit.vec w, 1 << (w-1)

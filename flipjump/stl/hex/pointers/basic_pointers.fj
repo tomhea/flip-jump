@@ -8,7 +8,7 @@ ns hex {
         //
         // @output-param read_byte:  hex[:2] variable. You want to zero it before jumping into ptr_jump.
         //                           After jumping into ptr_jump, it's xored with the read byte.
-        // @output_param ret_after_read_byte:  The return address. Jumps to it after finishing reading a byte.
+        // @output-param ret_after_read_byte:  The return address. Jumps to it after finishing reading a byte.
         //
         // @output-param to_flip:  address of opcode that holds a flipping address in its first word. jumping into it will flip wanted bit.
         // @output-param to_flip_var:  the hex-vector (pointer) that also holds the flipping address.

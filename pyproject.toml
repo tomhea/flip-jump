@@ -43,17 +43,17 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
-sly = "^0.4"
+sly = "^0.5"
 easygui = "^0.98.3"
 
 # statistics
-plotly = { version = "^5.16.1", optional = true }
+plotly = { version = "^6.0", optional = true }
 # developement
-pytest = { version = "^7.4.0", optional = true }
+pytest = { version = "^8.0", optional = true }
 pytest-ordering = { version = "^0.6", optional = true }
 pytest-xdist = { version = "^3.3.1", optional = true }
-mypy = { version = "^1.7.1", optional = true }
-flake8 = { version = "^6.1.0", optional = true }
+mypy = { version = "^2.0", optional = true, python = ">=3.10" }
+flake8 = { version = "^7.0", optional = true, python = ">=3.9" }
 tox = { version = "^4.11.4", optional = true }
 bandit = { version = "^1.7.6", optional = true }
 black = { version = "^24.8.0", optional = true }
@@ -73,11 +73,17 @@ fj = 'flipjump.flipjump_cli:main'
 [tool.mypy]
 files = ["flipjump", "tests"]
 strict = true
-disable_error_code = ["import-untyped"]
+# `import-not-found` covers sly/easygui — both are pure-Python deps
+# without `py.typed` markers, so mypy 2.x flags them. (mypy 1.x used
+# `import-untyped` for the same case; kept too so configs from earlier
+# checkouts still parse.)
+disable_error_code = ["import-untyped", "import-not-found"]
 
 [[tool.mypy.overrides]]
 module = "flipjump.assembler.fj_parser"
-disable_error_code = ["name-defined", "no-redef", "index", "no-any-return", "misc"]
+# `untyped-decorator` covers the SLY `@_(...)` rule decorators —
+# adding stubs to SLY itself is out of scope.
+disable_error_code = ["name-defined", "no-redef", "index", "no-any-return", "misc", "untyped-decorator"]
 
 
 [tool.black]
