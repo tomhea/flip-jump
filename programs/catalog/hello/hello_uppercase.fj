@@ -1,0 +1,11 @@
+// Hello Uppercase (#0006)
+
+// Prints "HELLO, WORLD!\n" (all-uppercase variant).
+
+main
+
+def main {
+    stl.startup
+    stl.output "HELLO, WORLD!\n"
+    stl.loop
+}

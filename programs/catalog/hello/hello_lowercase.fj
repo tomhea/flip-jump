@@ -1,0 +1,11 @@
+// Hello Lowercase (#0005)
+
+// Prints "hello, world!\n" (all-lowercase variant).
+
+main
+
+def main {
+    stl.startup
+    stl.output "hello, world!\n"
+    stl.loop
+}

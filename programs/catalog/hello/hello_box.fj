@@ -1,0 +1,11 @@
+// Hello Box (#0010)
+
+// Three lines of 17 chars: top/bottom = 17 stars; middle = "* Hello, World! *".
+
+main
+
+def main {
+    stl.startup
+    stl.output "*****************\n* Hello, World! *\n*****************\n"
+    stl.loop
+}

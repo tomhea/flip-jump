@@ -1,0 +1,11 @@
+// Hello Two Lines (#0009)
+
+// Prints "Hello,\nWorld!\n" with the greeting split into two lines.
+
+main
+
+def main {
+    stl.startup
+    stl.output "Hello,\nWorld!\n"
+    stl.loop
+}

@@ -1,0 +1,11 @@
+// Hello Hex Codes (#0016)
+
+// Prints the hex code-points of 'Hello, World!' separated by spaces.
+
+main
+
+def main {
+    stl.startup
+    stl.output "48 65 6c 6c 6f 2c 20 57 6f 72 6c 64 21\n"
+    stl.loop
+}

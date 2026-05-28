@@ -1,0 +1,11 @@
+// Hello Anonymous (#0020)
+
+// Prints "Hello, anonymous user!\n" (no input).
+
+main
+
+def main {
+    stl.startup
+    stl.output "Hello, anonymous user!\n"
+    stl.loop
+}

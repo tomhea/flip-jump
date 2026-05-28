@@ -1,0 +1,11 @@
+// Hello Underline (#0018)
+
+// Prints "Hello, World!\n" followed by 13 dashes + \n.
+
+main
+
+def main {
+    stl.startup
+    stl.output "Hello, World!\n-------------\n"
+    stl.loop
+}

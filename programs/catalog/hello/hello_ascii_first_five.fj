@@ -1,0 +1,11 @@
+// Hello ASCII First Five (#0017)
+
+// Prints the ASCII decimal codes of the first five characters of 'Hello' space-separated.
+
+main
+
+def main {
+    stl.startup
+    stl.output "72 101 108 108 111\n"
+    stl.loop
+}

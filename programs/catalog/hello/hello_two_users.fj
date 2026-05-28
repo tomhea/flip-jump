@@ -1,0 +1,32 @@
+// Hello Two Users (#0019)
+
+// Reads two names and prints "Hello, <name1> and <name2>!\n".
+
+main
+
+def main @ read1, print1, after1, read2, print2, end < ch, nl {
+    stl.startup
+    stl.output "Hello, "
+  read1:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, print1, after1, print1
+  print1:
+    bit.print ch
+    ;read1
+  after1:
+    stl.output " and "
+  read2:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, print2, end, print2
+  print2:
+    bit.print ch
+    ;read2
+  end:
+    stl.output "!\n"
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'

@@ -1,0 +1,18 @@
+// Cat (#0026)
+
+// Reads stdin and echoes each byte to stdout until EOF.
+
+main
+
+def main @ loop, end < ch {
+    stl.startup
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.print ch
+    ;loop
+  end:
+    stl.loop
+}
+
+ch: bit.vec 8, 0

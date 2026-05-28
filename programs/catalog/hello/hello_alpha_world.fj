@@ -1,0 +1,11 @@
+// Hello Alpha World (#0021)
+
+// Prints the lowercase alphabet followed by space and the greeting.
+
+main
+
+def main {
+    stl.startup
+    stl.output "abcdefghijklmnopqrstuvwxyz Hello, World!\n"
+    stl.loop
+}

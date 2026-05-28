@@ -1,0 +1,11 @@
+// Hello Question (#0013)
+
+// Prints "Hello, World?\n" (question-mark variant).
+
+main
+
+def main {
+    stl.startup
+    stl.output "Hello, World?\n"
+    stl.loop
+}

@@ -1,0 +1,11 @@
+// Hello Reversed (#0007)
+
+// Prints "!dlroW ,olleH\n" (reversed greeting).
+
+main
+
+def main {
+    stl.startup
+    stl.output "!dlroW ,olleH\n"
+    stl.loop
+}

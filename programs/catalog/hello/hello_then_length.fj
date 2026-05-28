@@ -1,0 +1,11 @@
+// Hello Then Length (#0022)
+
+// Prints "Hello, World!\nLength: 13\n".
+
+main
+
+def main {
+    stl.startup
+    stl.output "Hello, World!\nLength: 13\n"
+    stl.loop
+}
