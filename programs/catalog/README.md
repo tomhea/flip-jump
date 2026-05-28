@@ -124,6 +124,24 @@ testing protocol.
 
 | # | name | description |
 |---|---|---|
+| 0056 | add_two_decimals | Reads two decimal integers (each on its own line) and prints their sum as decimal + `\n`. |
+| 0057 | sub_two_decimals | Reads two decimal integers (each on its own line) and prints `a - b` as a signed decimal + `\n`. |
+| 0058 | mul_single_digits | Reads two single-digit decimals `0`-`9` (each followed by `\n`) and prints `a * b` as decimal + `\n`. |
+| 0059 | div_two_decimals | Reads two decimal integers (each on its own line; second is non-zero) and prints `a / b` as integer-division decimal + `\n`. |
+| 0060 | mod_two_decimals | Reads two decimal integers and prints `a % b` as decimal + `\n`. |
+| 0061 | add_three_decimals | Reads three decimal integers (each own line) and prints their sum + `\n`. |
+| 0062 | abs_decimal | Reads one signed decimal integer and prints its absolute value as decimal + `\n`. |
+| 0063 | negate_decimal | Reads one signed decimal integer and prints its negation as decimal + `\n`. |
+| 0064 | inc_decimal | Reads one decimal integer and prints `a + 1` as decimal + `\n`. |
+| 0065 | dec_decimal | Reads one decimal integer and prints `a - 1` as decimal + `\n`. |
+| 0066 | double_decimal | Reads one decimal integer and prints `a * 2` as decimal + `\n`. |
+| 0067 | halve_decimal | Reads one decimal integer and prints `a / 2` (integer division) as decimal + `\n`. |
+| 0068 | square_small | Reads one decimal integer in `0`-`15` and prints `a * a` as decimal + `\n`. |
+| 0069 | cube_small | Reads one decimal integer in `0`-`5` and prints `a * a * a` as decimal + `\n`. |
+| 0070 | min_two | Reads two decimal integers and prints the smaller as decimal + `\n`. |
+| 0071 | max_two | Reads two decimal integers and prints the larger as decimal + `\n`. |
+| 0074 | mod_by_4 | Reads one decimal integer and prints `a % 4` as a single digit + `\n`. |
+| 0075 | mod_by_10 | Reads one decimal integer and prints `a % 10` as a single digit + `\n`. |
 
 ## number_theory
 
