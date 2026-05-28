@@ -93,7 +93,10 @@ def register(*, category: str, slug: str, in_bytes: bytes, out_bytes: bytes, wor
     # Compile.
     fjm_path = ROOT / "tests" / "compiled" / "catalog" / category / f"{slug}.fjm"
     fjm_path.parent.mkdir(parents=True, exist_ok=True)
-    asm_cmd = ["fj", "--asm", str(fj_path), "-o", str(fjm_path), "-s", "-w", str(word_size)]
+    # --werror matches the catalog CSV's warning_as_errors=True, so register
+    # rejects e.g. an inner label used but missing from the `@` clause — which
+    # pytest's compile test would otherwise be the first to catch.
+    asm_cmd = ["fj", "--asm", str(fj_path), "-o", str(fjm_path), "-s", "-w", str(word_size), "--werror"]
     result = subprocess.run(asm_cmd, capture_output=True)
     if result.returncode != 0:
         raise RuntimeError(

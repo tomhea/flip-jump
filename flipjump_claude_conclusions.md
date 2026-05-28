@@ -27,6 +27,18 @@ the codebase changes underneath them.
 
 ## STL gaps observed
 
+- **`bit.mul` is unusable in this STL version (pip flipjump + repo both).**
+  Calling `bit.mul n, dst, src` fails at macro-resolve with
+  "macro mul.mul_add_if(4) is used but isn't defined" (raised from
+  `flipjump/stl/bit/mul.fj` line 58). Even a minimal 2-line program triggers
+  it; it's not something in my code. The working multiply paths are:
+  (a) `hex.mul n, res, a, b` — used by `programs/simple_math_checks/series_sum.fj`
+      and `func_tests/func7.fj`, requires `hex.init` and hex-layout operands; or
+  (b) **repeated addition** for small multipliers, which keeps everything in
+      bit-land. Batch 3 uses (b) via a `mul_into n, dst, addend, times` helper
+      (`dst = addend added `times` times`) for mul_single_digits / square_small
+      / cube_small. `bit.div` / `bit.idiv`, by contrast, work fine.
+
 - **No `hex.print_dec_uint` exists.** I initially tried it for counter
   printing; the macro that prints a hex value in decimal is `bit.print_dec_uint
   n, x` (operates on `bit.vec n`, not `hex.vec`). The hex namespace has
@@ -136,6 +148,15 @@ Each later program is the simplest one that uses one new technique.
   vanishes). Use descriptive names: `limit`, `idx`, `count`, `val_a`, `bound`,
   `counter`. `hello_iterations` was the first program to hit this (used `n`,
   `i` for limit/index); renamed to `limit`/`idx` and it compiled+ran cleanly.
+
+- **Every inner label must be listed in the `@` clause, or the catalog test
+  FAILS even though `fj --asm` "succeeds".** The catalog CSVs set
+  `warning_as_errors=True` (column 8), so a label that's defined `label:` and
+  used `;label` inside a macro body but omitted from `@ ...` is a *warning*
+  under a plain `fj --asm` (compiles fine) but a hard *error* under pytest.
+  min_two/max_two hit this in batch 3 (a `done` label missing from `@`). Fix:
+  `scripts/catalog_register.py` now compiles with `--werror`, so register
+  rejects it at authoring time instead of letting pytest be the first to fail.
 
 - **The `<` clause is mandatory for global data referenced in a macro body.**
   Without it, the compiler reports "Declared a not extern/parameter label:
