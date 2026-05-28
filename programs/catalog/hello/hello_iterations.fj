@@ -1,0 +1,46 @@
+// Hello Iterations (#0024)
+
+// Reads a single ASCII digit `1`-`9` and prints lines `Iteration <i>: Hello, World!\n` for each `i` from 1 to N.
+
+main
+
+def main < limit, idx {
+    stl.startup
+    read_digit_value limit
+    bit.zero 8, idx
+    bit.inc 8, idx
+    print_iterations limit, idx
+    stl.loop
+}
+
+// Read one ASCII digit from stdin into limit[:8] as its numeric value.
+def read_digit_value limit {
+    bit.input limit
+    bit.zero limit + 4*dw
+    bit.zero limit + 5*dw
+}
+
+// For idx = 1..limit, print `Iteration <idx>: Hello, World!\n`. idx, limit are bit[:8].
+def print_iterations limit, idx @ loop, body, end {
+  loop:
+    bit.cmp 8, idx, limit, body, body, end
+  body:
+    stl.output "Iteration "
+    print_small_digit idx
+    stl.output ": Hello, World!\n"
+    bit.inc 8, idx
+    ;loop
+  end:
+}
+
+// Print the single-digit value val[:8] (0-9) as its ASCII character.
+def print_small_digit val < ascii {
+    bit.mov 8, ascii, val
+    bit.one ascii + 4*dw
+    bit.one ascii + 5*dw
+    bit.print ascii
+}
+
+limit: bit.vec 8, 0
+idx: bit.vec 8, 0
+ascii: bit.vec 8, 0

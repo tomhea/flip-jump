@@ -1,0 +1,17 @@
+// Read One Print Three (#0054)
+
+// Reads one byte from stdin and prints the literal sequence `<byte><byte><byte>\n`.
+
+main
+
+def main < ch {
+    stl.startup
+    bit.input ch
+    bit.print ch
+    bit.print ch
+    bit.print ch
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0

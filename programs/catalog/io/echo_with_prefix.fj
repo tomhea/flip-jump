@@ -1,0 +1,20 @@
+// Echo With Prefix (#0048)
+
+// Reads stdin and prints each input byte preceded by `>`.
+
+main
+
+def main @ loop, end < ch, prefix {
+    stl.startup
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.print prefix
+    bit.print ch
+    ;loop
+  end:
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+prefix: bit.vec 8, '>'

@@ -1,0 +1,15 @@
+// Char To Dec (#0044)
+
+// Reads exactly one byte from stdin and prints its ASCII decimal value as decimal + `\n`.
+
+main
+
+def main < ch {
+    stl.startup
+    bit.input ch
+    bit.print_dec_uint 8, ch
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0

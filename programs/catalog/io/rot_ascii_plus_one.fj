@@ -1,0 +1,19 @@
+// Rot ASCII Plus One (#0055)
+
+// Reads stdin and outputs each byte plus 1, modulo 256 (so `0xFF` wraps to `0x00`). All bytes are transformed uniformly; no special-casing of letters or non-letters.
+
+main
+
+def main @ loop, end < ch {
+    stl.startup
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.inc 8, ch
+    bit.print ch
+    ;loop
+  end:
+    stl.loop
+}
+
+ch: bit.vec 8, 0
