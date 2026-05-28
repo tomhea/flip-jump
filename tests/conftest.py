@@ -41,6 +41,8 @@ TEST_TYPES = TESTS_OPTIONS['all_speed_ordered']
 assert TEST_TYPES
 REGULAR_TYPES = TESTS_OPTIONS['regular_speed_ordered']
 assert REGULAR_TYPES
+CATALOG_TYPES = TESTS_OPTIONS['catalog_speed_ordered']
+assert CATALOG_TYPES
 DEFAULT_TYPE = TESTS_OPTIONS['default_type']
 assert DEFAULT_TYPE in TEST_TYPES
 
@@ -52,6 +54,7 @@ RUN_ORDER_INDEX = 2
 DEBUG_INFO_FLAG = 'debuginfo'
 ALL_FLAG = 'all'
 REGULAR_FLAG = 'regular'
+CATALOG_FLAG = 'catalog'
 COMPILE_FLAG = 'compile'
 RUN_FLAG = 'run'
 NAME_EXACT_FLAG = 'name'
@@ -60,6 +63,7 @@ NAME_STARTSWITH_FLAG = 'startswith'
 NAME_ENDSWITH_FLAG = 'endswith'
 SAVED_KEYWORDS = {
     ALL_FLAG,
+    CATALOG_FLAG,
     COMPILE_FLAG,
     RUN_FLAG,
     NAME_EXACT_FLAG,
@@ -172,6 +176,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
     for test_type in TEST_TYPES:
         parser.addoption(f"--{test_type}", action="store_true", help=f"run {test_type} tests")
+    for catalog_type in CATALOG_TYPES:
+        parser.addoption(
+            f"--{catalog_type}",
+            action="store_true",
+            help=f"run {catalog_type} tests (the demo-catalog; disjoint from --all/--regular/individual type flags)",
+        )
     parser.addoption(
         f"--{REGULAR_FLAG}", action="store_true", help=f"run all regular tests ({', '.join(REGULAR_TYPES)})"
     )
@@ -219,6 +229,12 @@ def get_test_types_to_run__heavy_first(get_option: Callable[[str], bool]) -> Lis
     """
     all_test_types_heavy_first = TEST_TYPES[::-1]
     regular_test_types_heavy_first = REGULAR_TYPES[::-1]
+    catalog_test_types_heavy_first = CATALOG_TYPES[::-1]
+
+    # --catalog is intended to be used alone (disjoint from --all/--regular/individual type flags).
+    # That's a convention, not a runtime guard -- combining flags will simply use the catalog branch.
+    if get_option(CATALOG_FLAG):
+        return list(catalog_test_types_heavy_first)
 
     if get_option(ALL_FLAG):
         types_to_run = list(all_test_types_heavy_first)

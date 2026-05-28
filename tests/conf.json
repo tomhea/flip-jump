@@ -9,5 +9,8 @@
     "medium",
     "hexlib",
     "slow"
+  ],
+  "catalog_speed_ordered": [
+    "catalog"
   ]
 }
