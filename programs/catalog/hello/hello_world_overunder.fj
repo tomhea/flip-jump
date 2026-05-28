@@ -1,0 +1,11 @@
+// Hello World OverUnder (#0025)
+
+// Prints `=============\nHello, World!\n=============\n` (greeting sandwiched between two rows of 13 `=`).
+
+main
+
+def main {
+    stl.startup
+    stl.output "=============\nHello, World!\n=============\n"
+    stl.loop
+}

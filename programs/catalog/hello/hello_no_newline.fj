@@ -1,0 +1,11 @@
+// Hello No Newline (#0011)
+
+// Prints exactly `Hello, World!` with no trailing newline.
+
+main
+
+def main {
+    stl.startup
+    stl.output "Hello, World!"
+    stl.loop
+}
