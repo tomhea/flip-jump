@@ -1,6 +1,6 @@
 // Hello Then Length (#0022)
 
-// Prints "Hello, World!\nLength: 13\n".
+// Prints `Hello, World!\nLength: 13\n`.
 
 main
 

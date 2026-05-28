@@ -1,6 +1,6 @@
 // Hello Underline (#0018)
 
-// Prints "Hello, World!\n" followed by 13 dashes + \n.
+// Prints `Hello, World!\n-------------\n` (13 dashes underlining the greeting).
 
 main
 

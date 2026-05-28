@@ -1,6 +1,6 @@
 // Hello Uppercase (#0006)
 
-// Prints "HELLO, WORLD!\n" (all-uppercase variant).
+// Prints `HELLO, WORLD!\n` (all-uppercase variant).
 
 main
 

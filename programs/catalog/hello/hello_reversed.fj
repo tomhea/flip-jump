@@ -1,6 +1,6 @@
 // Hello Reversed (#0007)
 
-// Prints "!dlroW ,olleH\n" (reversed greeting).
+// Prints `!dlroW ,olleH\n` (the bytes of `Hello, World!\n` minus the newline, reversed, followed by `\n`).
 
 main
 

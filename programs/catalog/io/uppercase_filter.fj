@@ -1,6 +1,6 @@
 // Uppercase Filter (#0027)
 
-// Reads stdin and prints each byte uppercased (a-z -> A-Z; others unchanged).
+// Reads stdin and prints each byte uppercased (`a`-`z` → `A`-`Z`; other bytes unchanged).
 
 main
 

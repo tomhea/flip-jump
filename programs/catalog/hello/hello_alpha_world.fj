@@ -1,6 +1,6 @@
 // Hello Alpha World (#0021)
 
-// Prints the lowercase alphabet followed by space and the greeting.
+// Prints the lowercase English alphabet followed by space and the greeting: `abcdefghijklmnopqrstuvwxyz Hello, World!\n`.
 
 main
 

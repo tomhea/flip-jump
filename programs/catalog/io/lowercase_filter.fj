@@ -1,6 +1,6 @@
 // Lowercase Filter (#0028)
 
-// Reads stdin and prints each byte lowercased (A-Z -> a-z; others unchanged).
+// Reads stdin and prints each byte lowercased (`A`-`Z` → `a`-`z`; other bytes unchanged).
 
 main
 

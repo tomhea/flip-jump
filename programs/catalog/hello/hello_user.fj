@@ -1,6 +1,6 @@
 // Hello User (#0002)
 
-// Reads a name and prints "Hello, <name>!\n".
+// Reads a single-line name from stdin (terminated by `\n`) and prints `Hello, <name>!\n`.
 
 main
 

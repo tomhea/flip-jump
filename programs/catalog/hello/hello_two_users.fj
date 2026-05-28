@@ -1,6 +1,6 @@
 // Hello Two Users (#0019)
 
-// Reads two names and prints "Hello, <name1> and <name2>!\n".
+// Reads two `\n`-terminated names as two consecutive lines on stdin (same convention as `hello_user`) and prints `Hello, <name1> and <name2>!\n`.
 
 main
 

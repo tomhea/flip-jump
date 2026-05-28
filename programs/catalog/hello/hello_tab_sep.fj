@@ -1,6 +1,6 @@
 // Hello Tab Sep (#0012)
 
-// Prints "Hello,\tWorld!\n" with a literal tab between Hello, and World!.
+// Prints `Hello,\tWorld!\n` with a literal tab between `Hello,` and `World!`.
 
 main
 

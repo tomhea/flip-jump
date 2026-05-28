@@ -1,6 +1,6 @@
 // Hello No Newline (#0011)
 
-// Prints "Hello, World!" with no trailing newline.
+// Prints exactly `Hello, World!` with no trailing newline.
 
 main
 

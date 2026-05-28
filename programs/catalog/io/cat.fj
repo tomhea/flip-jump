@@ -1,6 +1,6 @@
 // Cat (#0026)
 
-// Reads stdin and echoes each byte to stdout until EOF.
+// Reads stdin and echoes each byte to stdout, byte-for-byte, until EOF.
 
 main
 

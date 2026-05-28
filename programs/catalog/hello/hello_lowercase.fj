@@ -1,6 +1,6 @@
 // Hello Lowercase (#0005)
 
-// Prints "hello, world!\n" (all-lowercase variant).
+// Prints `hello, world!\n` (all-lowercase variant).
 
 main
 

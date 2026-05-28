@@ -1,6 +1,6 @@
 // Hello One Char Per Line (#0008)
 
-// Prints each character of "Hello, World!" on its own line (13 lines).
+// Prints each character of `Hello, World!` on its own line (13 lines, each one char + `\n`).
 
 main
 

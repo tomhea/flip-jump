@@ -1,6 +1,6 @@
 // Count Bytes (#0030)
 
-// Reads all of stdin and prints the byte count as decimal + newline.
+// Reads all of stdin, prints the total byte count as a decimal integer followed by `\n`.
 
 main
 

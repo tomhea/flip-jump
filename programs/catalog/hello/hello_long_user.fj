@@ -1,6 +1,6 @@
 // Hello Long User (#0015)
 
-// Reads a name and prints "Welcome to FlipJump, <name>! Have a great day!\n".
+// Reads a single-line name and prints `Welcome to FlipJump, <name>! Have a great day!\n`.
 
 main
 

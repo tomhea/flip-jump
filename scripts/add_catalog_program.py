@@ -18,11 +18,17 @@ The helper writes files using LF line endings throughout (matching the
 FlipJump interpreter's raw byte output), then runs the fj assembler+interpreter
 once to verify that the program compiles, halts cleanly, and produces the
 exact expected output bytes.
+
+The description embedded in each .fj header is looked up from CATALOG.md so
+the header text is byte-for-byte the single source of truth (per
+CONVENTIONS.md). Callers no longer pass a `description` argument.
 """
 
 from __future__ import annotations
 
+import re
 import subprocess
+from functools import lru_cache
 from pathlib import Path
 
 from flipjump import run_test_output
@@ -31,6 +37,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 CATALOG_PROG = ROOT / "programs" / "catalog"
 CATALOG_IO = ROOT / "tests" / "inout" / "catalog"
+CATALOG_MD = CATALOG_PROG / "CATALOG.md"
 COMPILE_CSV = ROOT / "tests" / "tests_tables" / "test_compile_catalog.csv"
 RUN_CSV = ROOT / "tests" / "tests_tables" / "test_run_catalog.csv"
 
@@ -41,25 +48,49 @@ def _write_lf(path: Path, content: bytes) -> None:
         f.write(content)
 
 
+@lru_cache(maxsize=1)
+def _catalog_descriptions() -> dict[str, str]:
+    """Parse CATALOG.md once, return {slug: description} for APPROVED rows."""
+    txt = CATALOG_MD.read_text(encoding="utf-8")
+    out: dict[str, str] = {}
+    for m in re.finditer(r"\| APPROVED \| \S+ \| (\S+) \| (.+?) \|", txt):
+        slug, desc = m.group(1), m.group(2).strip()
+        out[slug] = desc
+    return out
+
+
+def get_catalog_description(slug: str) -> str:
+    """Return the locked CATALOG.md description text for a slug."""
+    desc = _catalog_descriptions().get(slug)
+    if desc is None:
+        raise RuntimeError(f"slug {slug!r} not found in CATALOG.md APPROVED rows")
+    return desc
+
+
 def add_program(
     *,
     category: str,
     slug: str,
     nnnn: str,
     name_display: str,
-    description: str,
     fj_body: str,
     in_bytes: bytes,
     out_bytes: bytes,
     word_size: int = 64,
     use_stl: bool = True,
 ) -> None:
-    """Write .fj/.in/.out files, verify, and append CSV rows."""
+    """Write .fj/.in/.out files, verify, and append CSV rows.
+
+    The header description is looked up from CATALOG.md by slug — no caller
+    should pass a description, which keeps the spec the single source of truth.
+    """
+
+    description = get_catalog_description(slug)
 
     # Build the .fj source with the conventional header.
     fj_header = f"// {name_display} (#{nnnn})\n\n"
-    for line in description.strip().split("\n"):
-        fj_header += f"// {line.strip()}\n"
+    for line in description.split("\n"):
+        fj_header += f"// {line}\n"
     fj_header += "\n"
     fj_src = fj_header + fj_body if fj_body.endswith("\n") else fj_header + fj_body + "\n"
 

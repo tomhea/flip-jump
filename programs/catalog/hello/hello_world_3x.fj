@@ -1,6 +1,6 @@
 // Hello World 3x (#0003)
 
-// Prints "Hello, World!\n" three times consecutively.
+// Prints `Hello, World!\n` three times consecutively.
 
 main
 

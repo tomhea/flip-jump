@@ -1,6 +1,6 @@
 // Count Lines (#0031)
 
-// Reads stdin and prints the number of newline bytes as decimal + newline.
+// Reads all of stdin, prints the number of `\n` bytes seen as decimal + `\n`.
 
 main
 

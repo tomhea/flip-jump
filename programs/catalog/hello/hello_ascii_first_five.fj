@@ -1,6 +1,6 @@
 // Hello ASCII First Five (#0017)
 
-// Prints the ASCII decimal codes of the first five characters of 'Hello' space-separated.
+// Prints the ASCII decimal codes of the first five characters of `Hello` separated by spaces: `72 101 108 108 111\n`.
 
 main
 

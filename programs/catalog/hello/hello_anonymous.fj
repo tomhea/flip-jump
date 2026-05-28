@@ -1,6 +1,6 @@
 // Hello Anonymous (#0020)
 
-// Prints "Hello, anonymous user!\n" (no input).
+// Prints `Hello, anonymous user!\n` (no input).
 
 main
 

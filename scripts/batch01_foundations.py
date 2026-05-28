@@ -5,7 +5,8 @@ Run from the repo root:
     python scripts/batch01_foundations.py
 
 Each call writes .fj/.in/.out, verifies via the FlipJump interpreter, and appends
-CSV rows. Idempotent — safe to re-run.
+CSV rows. Idempotent — safe to re-run. Header descriptions are looked up from
+CATALOG.md by slug, so they're always byte-for-byte the locked spec.
 """
 
 from __future__ import annotations
@@ -21,8 +22,8 @@ from add_catalog_program import add_program  # noqa: E402
 # ============== Simple "print fixed string, no input" pattern ==============
 
 
-def simple(slug, nnnn, name, desc, output_str):
-    """Convenience for no-input fixed-output programs."""
+def simple(slug, nnnn, name, output_str):
+    """Convenience for no-input fixed-output hello programs."""
     fj = "main\n\n" "def main {\n" "    stl.startup\n" f'    stl.output "{output_str}"\n' "    stl.loop\n" "}\n"
     # Decode the source-level escapes (\n, \t, etc.) to raw bytes for the .out file.
     out_bytes = output_str.encode("utf-8").decode("unicode_escape").encode("utf-8")
@@ -31,7 +32,6 @@ def simple(slug, nnnn, name, desc, output_str):
         slug=slug,
         nnnn=nnnn,
         name_display=name,
-        description=desc,
         fj_body=fj,
         in_bytes=b"",
         out_bytes=out_bytes,
@@ -40,143 +40,34 @@ def simple(slug, nnnn, name, desc, output_str):
 
 # ---------------------------- hello (20 simple) ----------------------------
 
-simple("hello_world", "0001", "Hello World", 'Prints "Hello, World!\\n" and exits.', "Hello, World!\\n")
-
-simple(
-    "hello_world_3x",
-    "0003",
-    "Hello World 3x",
-    'Prints "Hello, World!\\n" three times consecutively.',
-    "Hello, World!\\nHello, World!\\nHello, World!\\n",
-)
-
-simple(
-    "hello_lowercase",
-    "0005",
-    "Hello Lowercase",
-    'Prints "hello, world!\\n" (all-lowercase variant).',
-    "hello, world!\\n",
-)
-
-simple(
-    "hello_uppercase",
-    "0006",
-    "Hello Uppercase",
-    'Prints "HELLO, WORLD!\\n" (all-uppercase variant).',
-    "HELLO, WORLD!\\n",
-)
-
-simple("hello_reversed", "0007", "Hello Reversed", 'Prints "!dlroW ,olleH\\n" (reversed greeting).', "!dlroW ,olleH\\n")
-
+simple("hello_world", "0001", "Hello World", "Hello, World!\\n")
+simple("hello_world_3x", "0003", "Hello World 3x", "Hello, World!\\nHello, World!\\nHello, World!\\n")
+simple("hello_lowercase", "0005", "Hello Lowercase", "hello, world!\\n")
+simple("hello_uppercase", "0006", "Hello Uppercase", "HELLO, WORLD!\\n")
+simple("hello_reversed", "0007", "Hello Reversed", "!dlroW ,olleH\\n")
 simple(
     "hello_one_char_per_line",
     "0008",
     "Hello One Char Per Line",
-    'Prints each character of "Hello, World!" on its own line (13 lines).',
     "H\\ne\\nl\\nl\\no\\n,\\n \\nW\\no\\nr\\nl\\nd\\n!\\n",
 )
-
-simple(
-    "hello_two_lines",
-    "0009",
-    "Hello Two Lines",
-    'Prints "Hello,\\nWorld!\\n" with the greeting split into two lines.',
-    "Hello,\\nWorld!\\n",
-)
-
-simple(
-    "hello_box",
-    "0010",
-    "Hello Box",
-    'Three lines of 17 chars: top/bottom = 17 stars; middle = "* Hello, World! *".',
-    "*****************\\n* Hello, World! *\\n*****************\\n",
-)
-
-simple(
-    "hello_no_newline", "0011", "Hello No Newline", 'Prints "Hello, World!" with no trailing newline.', "Hello, World!"
-)
-
-simple(
-    "hello_tab_sep",
-    "0012",
-    "Hello Tab Sep",
-    'Prints "Hello,\\tWorld!\\n" with a literal tab between Hello, and World!.',
-    "Hello,\\tWorld!\\n",
-)
-
-simple(
-    "hello_question", "0013", "Hello Question", 'Prints "Hello, World?\\n" (question-mark variant).', "Hello, World?\\n"
-)
-
-simple(
-    "hello_exclaim_3x",
-    "0014",
-    "Hello Exclaim 3x",
-    'Prints "Hello, World!!!\\n" (three trailing exclamation marks).',
-    "Hello, World!!!\\n",
-)
-
-simple(
-    "hello_hex_codes",
-    "0016",
-    "Hello Hex Codes",
-    "Prints the hex code-points of 'Hello, World!' separated by spaces.",
-    "48 65 6c 6c 6f 2c 20 57 6f 72 6c 64 21\\n",
-)
-
-simple(
-    "hello_ascii_first_five",
-    "0017",
-    "Hello ASCII First Five",
-    "Prints the ASCII decimal codes of the first five characters of 'Hello' space-separated.",
-    "72 101 108 108 111\\n",
-)
-
-simple(
-    "hello_underline",
-    "0018",
-    "Hello Underline",
-    'Prints "Hello, World!\\n" followed by 13 dashes + \\n.',
-    "Hello, World!\\n-------------\\n",
-)
-
-simple(
-    "hello_anonymous",
-    "0020",
-    "Hello Anonymous",
-    'Prints "Hello, anonymous user!\\n" (no input).',
-    "Hello, anonymous user!\\n",
-)
-
-simple(
-    "hello_alpha_world",
-    "0021",
-    "Hello Alpha World",
-    'Prints the lowercase alphabet followed by space and the greeting.',
-    "abcdefghijklmnopqrstuvwxyz Hello, World!\\n",
-)
-
-simple(
-    "hello_then_length",
-    "0022",
-    "Hello Then Length",
-    'Prints "Hello, World!\\nLength: 13\\n".',
-    "Hello, World!\\nLength: 13\\n",
-)
-
-simple(
-    "hello_then_question",
-    "0023",
-    "Hello Then Question",
-    'Prints greeting followed by "What\\u0027s your name?" on next line.',
-    "Hello, World!\\nWhat's your name?\\n",
-)
-
+simple("hello_two_lines", "0009", "Hello Two Lines", "Hello,\\nWorld!\\n")
+simple("hello_box", "0010", "Hello Box", "*****************\\n* Hello, World! *\\n*****************\\n")
+simple("hello_no_newline", "0011", "Hello No Newline", "Hello, World!")
+simple("hello_tab_sep", "0012", "Hello Tab Sep", "Hello,\\tWorld!\\n")
+simple("hello_question", "0013", "Hello Question", "Hello, World?\\n")
+simple("hello_exclaim_3x", "0014", "Hello Exclaim 3x", "Hello, World!!!\\n")
+simple("hello_hex_codes", "0016", "Hello Hex Codes", "48 65 6c 6c 6f 2c 20 57 6f 72 6c 64 21\\n")
+simple("hello_ascii_first_five", "0017", "Hello ASCII First Five", "72 101 108 108 111\\n")
+simple("hello_underline", "0018", "Hello Underline", "Hello, World!\\n-------------\\n")
+simple("hello_anonymous", "0020", "Hello Anonymous", "Hello, anonymous user!\\n")
+simple("hello_alpha_world", "0021", "Hello Alpha World", "abcdefghijklmnopqrstuvwxyz Hello, World!\\n")
+simple("hello_then_length", "0022", "Hello Then Length", "Hello, World!\\nLength: 13\\n")
+simple("hello_then_question", "0023", "Hello Then Question", "Hello, World!\\nWhat's your name?\\n")
 simple(
     "hello_world_overunder",
     "0025",
     "Hello World OverUnder",
-    'Prints greeting sandwiched between two rows of 13 = signs.',
     "=============\\nHello, World!\\n=============\\n",
 )
 
@@ -184,8 +75,13 @@ simple(
 # ---------------------------- hello (3 read-line) ----------------------------
 
 
-def read_line_program(slug, nnnn, name, desc, prefix_str, suffix_str, sample_name=b"Alice"):
-    """Read one \\n-terminated line, echo as prefix + line + suffix."""
+def read_line_program(slug, nnnn, name, prefix_str, suffix_str, sample_name=b"Alice"):
+    """Read one \\n-terminated line, echo as prefix + line + suffix.
+
+    The .in file ends with \\0 (EOF sentinel convention) even though the
+    program loop terminates on \\n first — keeps inputs uniformly safe to
+    re-read past their logical end.
+    """
     fj = (
         "main\n\n"
         f"def main @ read_loop, print_ch, end < ch, nl {{\n"
@@ -215,27 +111,17 @@ def read_line_program(slug, nnnn, name, desc, prefix_str, suffix_str, sample_nam
         slug=slug,
         nnnn=nnnn,
         name_display=name,
-        description=desc,
         fj_body=fj,
-        in_bytes=sample_name + b"\n",
+        in_bytes=sample_name + b"\n\0",
         out_bytes=out_bytes,
     )
 
 
-read_line_program(
-    "hello_user",
-    "0002",
-    "Hello User",
-    'Reads a name and prints "Hello, <name>!\\n".',
-    "Hello, ",
-    "!\\n",
-)
-
+read_line_program("hello_user", "0002", "Hello User", "Hello, ", "!\\n")
 read_line_program(
     "hello_long_user",
     "0015",
     "Hello Long User",
-    'Reads a name and prints "Welcome to FlipJump, <name>! Have a great day!\\n".',
     "Welcome to FlipJump, ",
     "! Have a great day!\\n",
 )
@@ -276,9 +162,8 @@ def hello_two_users():
         slug="hello_two_users",
         nnnn="0019",
         name_display="Hello Two Users",
-        description='Reads two names and prints "Hello, <name1> and <name2>!\\n".',
         fj_body=fj,
-        in_bytes=b"Alice\nBob\n",
+        in_bytes=b"Alice\nBob\n\0",
         out_bytes=b"Hello, Alice and Bob!\n",
     )
 
@@ -289,13 +174,12 @@ hello_two_users()
 # ============================== io (8 simple) ==============================
 
 
-def io_simple(slug, nnnn, name, desc, fj_body, in_bytes, out_bytes):
+def io_simple(slug, nnnn, name, fj_body, in_bytes, out_bytes):
     add_program(
         category="io",
         slug=slug,
         nnnn=nnnn,
         name_display=name,
-        description=desc,
         fj_body=fj_body,
         in_bytes=in_bytes,
         out_bytes=out_bytes,
@@ -307,7 +191,6 @@ io_simple(
     "cat",
     "0026",
     "Cat",
-    "Reads stdin and echoes each byte to stdout until EOF.",
     (
         "main\n\n"
         "def main @ loop, end < ch {\n"
@@ -326,14 +209,12 @@ io_simple(
     b"hello",
 )
 
-# 30. count_bytes — read all stdin, print byte count.
-# Strategy: a 16-bit bit-vector counter (supports up to 65535 bytes);
-# bit.inc per byte; bit.print_dec_uint at the end.
+# 30. count_bytes — read all stdin, print byte count as decimal.
+# 16-bit bit-vector counter (up to 65535 bytes); bit.inc per byte; bit.print_dec_uint at end.
 io_simple(
     "count_bytes",
     "0030",
     "Count Bytes",
-    "Reads all of stdin and prints the byte count as decimal + newline.",
     (
         "main\n\n"
         "def main @ loop, end < ch, counter {\n"
@@ -360,7 +241,6 @@ io_simple(
     "count_lines",
     "0031",
     "Count Lines",
-    "Reads stdin and prints the number of newline bytes as decimal + newline.",
     (
         "main\n\n"
         "def main @ loop, inc_count, not_nl, end < ch, nl, counter {\n"
@@ -391,7 +271,6 @@ io_simple(
     "echo_twice",
     "0033",
     "Echo Twice",
-    "Reads each byte of stdin and outputs it twice.",
     (
         "main\n\n"
         "def main @ loop, end < ch {\n"
@@ -416,7 +295,6 @@ io_simple(
     "echo_thrice",
     "0034",
     "Echo Thrice",
-    "Reads each byte of stdin and outputs it three times.",
     (
         "main\n\n"
         "def main @ loop, end < ch {\n"
@@ -442,7 +320,6 @@ io_simple(
     "skip_first_byte",
     "0035",
     "Skip First Byte",
-    "Reads stdin and outputs every byte except the very first one.",
     (
         "main\n\n"
         "def main @ read_first, loop, end < ch {\n"
@@ -469,7 +346,6 @@ io_simple(
     "uppercase_filter",
     "0027",
     "Uppercase Filter",
-    "Reads stdin and prints each byte uppercased (a-z -> A-Z; others unchanged).",
     (
         "main\n\n"
         "def main @ loop, check_low, lower, print_unchanged, end < ch, a_lower, z_lower {\n"
@@ -507,7 +383,6 @@ io_simple(
     "lowercase_filter",
     "0028",
     "Lowercase Filter",
-    "Reads stdin and prints each byte lowercased (A-Z -> a-z; others unchanged).",
     (
         "main\n\n"
         "def main @ loop, check_low, upper, print_unchanged, end < ch, a_upper, z_upper {\n"

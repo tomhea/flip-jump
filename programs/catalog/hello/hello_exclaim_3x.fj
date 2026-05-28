@@ -1,6 +1,6 @@
 // Hello Exclaim 3x (#0014)
 
-// Prints "Hello, World!!!\n" (three trailing exclamation marks).
+// Prints `Hello, World!!!\n` (three trailing exclamation marks).
 
 main
 
