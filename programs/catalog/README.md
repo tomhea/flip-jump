@@ -124,24 +124,100 @@ testing protocol.
 
 | # | name | description |
 |---|---|---|
-| 0056 | add_two_decimals | Reads two decimal integers (each on its own line) and prints their sum as decimal + `\n`. |
-| 0057 | sub_two_decimals | Reads two decimal integers (each on its own line) and prints `a - b` as a signed decimal + `\n`. |
-| 0058 | mul_single_digits | Reads two single-digit decimals `0`-`9` (each followed by `\n`) and prints `a * b` as decimal + `\n`. |
-| 0059 | div_two_decimals | Reads two decimal integers (each on its own line; second is non-zero) and prints `a / b` as integer-division decimal + `\n`. |
-| 0060 | mod_two_decimals | Reads two decimal integers and prints `a % b` as decimal + `\n`. |
-| 0061 | add_three_decimals | Reads three decimal integers (each own line) and prints their sum + `\n`. |
-| 0062 | abs_decimal | Reads one signed decimal integer and prints its absolute value as decimal + `\n`. |
-| 0063 | negate_decimal | Reads one signed decimal integer and prints its negation as decimal + `\n`. |
-| 0064 | inc_decimal | Reads one decimal integer and prints `a + 1` as decimal + `\n`. |
-| 0065 | dec_decimal | Reads one decimal integer and prints `a - 1` as decimal + `\n`. |
-| 0066 | double_decimal | Reads one decimal integer and prints `a * 2` as decimal + `\n`. |
-| 0067 | halve_decimal | Reads one decimal integer and prints `a / 2` (integer division) as decimal + `\n`. |
-| 0068 | square_small | Reads one decimal integer in `0`-`15` and prints `a * a` as decimal + `\n`. |
-| 0069 | cube_small | Reads one decimal integer in `0`-`5` and prints `a * a * a` as decimal + `\n`. |
-| 0070 | min_two | Reads two decimal integers and prints the smaller as decimal + `\n`. |
-| 0071 | max_two | Reads two decimal integers and prints the larger as decimal + `\n`. |
-| 0074 | mod_by_4 | Reads one decimal integer and prints `a % 4` as a single digit + `\n`. |
-| 0075 | mod_by_10 | Reads one decimal integer and prints `a % 10` as a single digit + `\n`. |
+| 0056 | add_two_decimals | Reads two decimal integers (each on its own line) and prints their sum as decimal + `
+`. |
+| 0057 | sub_two_decimals | Reads two decimal integers (each on its own line) and prints `a - b` as a signed decimal + `
+`. |
+| 0058 | mul_single_digits | Reads two single-digit decimals `0`-`9` (each followed by `
+`) and prints `a * b` as decimal + `
+`. |
+| 0059 | div_two_decimals | Reads two decimal integers (each on its own line; second is non-zero) and prints `a / b` as integer-division decimal + `
+`. |
+| 0060 | mod_two_decimals | Reads two decimal integers and prints `a % b` as decimal + `
+`. |
+| 0061 | add_three_decimals | Reads three decimal integers (each own line) and prints their sum + `
+`. |
+| 0062 | abs_decimal | Reads one signed decimal integer and prints its absolute value as decimal + `
+`. |
+| 0063 | negate_decimal | Reads one signed decimal integer and prints its negation as decimal + `
+`. |
+| 0064 | inc_decimal | Reads one decimal integer and prints `a + 1` as decimal + `
+`. |
+| 0065 | dec_decimal | Reads one decimal integer and prints `a - 1` as decimal + `
+`. |
+| 0066 | double_decimal | Reads one decimal integer and prints `a * 2` as decimal + `
+`. |
+| 0067 | halve_decimal | Reads one decimal integer and prints `a / 2` (integer division) as decimal + `
+`. |
+| 0068 | square_small | Reads one decimal integer in `0`-`15` and prints `a * a` as decimal + `
+`. |
+| 0069 | cube_small | Reads one decimal integer in `0`-`5` and prints `a * a * a` as decimal + `
+`. |
+| 0070 | min_two | Reads two decimal integers and prints the smaller as decimal + `
+`. |
+| 0071 | max_two | Reads two decimal integers and prints the larger as decimal + `
+`. |
+| 0074 | mod_by_4 | Reads one decimal integer and prints `a % 4` as a single digit + `
+`. |
+| 0075 | mod_by_10 | Reads one decimal integer and prints `a % 10` as a single digit + `
+`. |
+| 0101 | avg_two | Reads two decimal integers and prints their integer average `(a + b) / 2` (floor division) as decimal + `
+`. |
+| 0102 | avg_three | Reads three decimal integers and prints their integer average `(a + b + c) / 3` (floor division) as decimal + `
+`. |
+| 0103 | compare_two | Reads two decimal integers and prints `<` if `a < b`, `=` if `a == b`, `>` if `a > b`, followed by `
+`. |
+| 0104 | sign_of | Reads one signed decimal integer and prints `-` if negative, `0` if zero, `+` if positive, followed by `
+`. |
+| 0105 | is_zero | Reads one decimal integer and prints `1
+` if it equals zero, else `0
+`. |
+| 0106 | is_positive | Reads one signed decimal integer and prints `1
+` if `> 0`, else `0
+`. |
+| 0107 | is_negative | Reads one signed decimal integer and prints `1
+` if `< 0`, else `0
+`. |
+| 0108 | add_with_expression | Reads two decimal integers and prints the human-readable expression `<a> + <b> = <sum>
+`. |
+| 0109 | mul_by_3 | Reads one decimal in `0`-`30` and prints `a * 3` as decimal + `
+`. |
+| 0110 | mul_by_5 | Reads one decimal in `0`-`20` and prints `a * 5` as decimal + `
+`. |
+| 0111 | mul_by_7 | Reads one decimal in `0`-`14` and prints `a * 7` as decimal + `
+`. |
+| 0112 | mul_by_10 | Reads one decimal in `0`-`100` and prints `a * 10` as decimal + `
+`. |
+| 0113 | div_by_3_quot_rem | Reads one decimal and prints `<quotient> <remainder>
+` for division by 3 (single line, space-separated). |
+| 0114 | complement_to_100 | Reads one decimal in `0`-`100` and prints `100 - a` as decimal + `
+`. |
+| 0115 | is_even | Reads one decimal integer and prints `1
+` if even, else `0
+`. |
+| 0116 | is_odd | Reads one decimal integer and prints `1
+` if odd, else `0
+`. |
+| 0123 | swap_pair | Reads two decimals (each on own line) and prints them in reverse order: `<b>
+<a>
+`. |
+| 0124 | median_of_three | Reads three decimal integers and prints the median (middle value when sorted) as decimal + `
+`. |
+| 0125 | max_three | Reads three decimals and prints the maximum + `
+`. |
+| 0126 | min_three | Reads three decimals and prints the minimum + `
+`. |
+| 0127 | range_of_three | Reads three decimals and prints `max - min` + `
+`. |
+| 0132 | is_in_range | Reads three decimals `a`, `lo`, `hi` (in that order, each own line) and prints `1
+` if `lo <= a <= hi`, else `0
+`. |
+| 0135 | clamp_to_max_9 | Reads one decimal in `0`-`99` and prints `min(a, 9)` + `
+` (caps the value at 9). |
+| 0136 | add_then_mod_10 | Reads two decimals and prints `(a + b) % 10` as a single digit + `
+`. |
+| 0137 | abs_diff | Reads two decimals and prints `|a - b|` as decimal + `
+`. |
 
 ## number_theory
 
