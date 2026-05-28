@@ -1,0 +1,21 @@
+// Skip First Byte (#0035)
+
+// Reads stdin and outputs every byte except the very first one.
+
+main
+
+def main @ read_first, loop, end < ch {
+    stl.startup
+  read_first:
+    bit.input ch
+    bit.if0 8, ch, end
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.print ch
+    ;loop
+  end:
+    stl.loop
+}
+
+ch: bit.vec 8, 0

@@ -1,0 +1,20 @@
+// Echo Thrice (#0034)
+
+// Reads each byte of stdin and outputs it three times.
+
+main
+
+def main @ loop, end < ch {
+    stl.startup
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.print ch
+    bit.print ch
+    bit.print ch
+    ;loop
+  end:
+    stl.loop
+}
+
+ch: bit.vec 8, 0

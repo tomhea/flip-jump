@@ -1,0 +1,11 @@
+// Hello World (#0001)
+
+// Prints `Hello, World!\n` and exits.
+
+main
+
+def main {
+    stl.startup
+    stl.output "Hello, World!\n"
+    stl.loop
+}

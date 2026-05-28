@@ -1,0 +1,11 @@
+// Hello World 3x (#0003)
+
+// Prints `Hello, World!\n` three times consecutively.
+
+main
+
+def main {
+    stl.startup
+    stl.output "Hello, World!\nHello, World!\nHello, World!\n"
+    stl.loop
+}

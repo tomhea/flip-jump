@@ -66,6 +66,76 @@ the `.fj` header propagate that text. Subsequent header lines may add context.
   other things allowed at top level are `segment` / `reserve` directives for
   programs that need explicit memory layout (per `programs/prime_sieve.fj`).
 - Helper macros and variable declarations live below `def main { ... }`.
+- **`stl.startup` and `stl.loop` appear ONLY inside `main`, never inside a
+  helper macro.** They are the program-lifecycle bookends — the startup brings
+  up the runtime, the loop halts it. A helper macro that contains either of
+  them is misshapen: it's trying to be a program, not a function. (Look at
+  the STL itself for the same rule — no `stl.macro` definition uses
+  `stl.startup` or `stl.loop` in its body.)
+
+## Sub-macros — "functionalize" the body
+
+Programs more complex than a one-line `stl.output` should be decomposed into
+helper `def`s, not crammed into `main`. `main` then reads as a sequence of
+high-level calls. This isn't aesthetic — it's how the language is meant to be
+used (every STL feature you call is itself a macro), and it pays back fast on
+the medium-complexity programs (parsing, sorting, n-queens, etc.).
+
+Practical rules of thumb:
+
+- If `main`'s body is more than ~15 lines or has more than one `@`-label loop,
+  pull each loop out into its own helper.
+- A helper has a single clear job. Its name describes that job. Its `def` is
+  preceded by a 1-line `// what it does` comment.
+- Helpers receive their inputs via macro parameters and reference their
+  external data via the `< ...` clause. They do NOT define their own
+  `stl.startup` / `stl.loop` (see above).
+- Loops over input bytes, decimal-digit parsing, case toggling, counter
+  printing, etc. are all natural helper candidates and recur enough across
+  the catalog that defining them once per program (and letting future programs
+  copy the pattern) is the right call.
+
+### Worked example
+
+Don't:
+```
+def main @ loop, end < ch, counter {
+    stl.startup
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.inc 16, counter
+    ;loop
+  end:
+    bit.print_dec_uint 16, counter
+    stl.output '\n'
+    stl.loop
+}
+```
+
+Do:
+```
+def main < ch, counter {
+    stl.startup
+    count_input_bytes ch, counter
+    bit.print_dec_uint 16, counter
+    stl.output '\n'
+    stl.loop
+}
+
+// Read bytes from stdin until \0, incrementing counter for each.
+def count_input_bytes ch, counter @ loop, end {
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.inc 16, counter
+    ;loop
+  end:
+}
+```
+
+The "Do" version reads top-down as a recipe and the helper is reusable in
+adjacent programs.
 
 ## Code style (CR-ist-enforced)
 

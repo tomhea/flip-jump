@@ -63,11 +63,42 @@ testing protocol.
 
 | # | name | description |
 |---|---|---|
+| 0001 | hello_world | Prints `Hello, World!\n` and exits. |
+| 0002 | hello_user | Reads a single-line name from stdin (terminated by `\n`) and prints `Hello, <name>!\n`. |
+| 0003 | hello_world_3x | Prints `Hello, World!\n` three times consecutively. |
+| 0005 | hello_lowercase | Prints `hello, world!\n` (all-lowercase variant). |
+| 0006 | hello_uppercase | Prints `HELLO, WORLD!\n` (all-uppercase variant). |
+| 0007 | hello_reversed | Prints `!dlroW ,olleH\n` (reversed greeting). |
+| 0008 | hello_one_char_per_line | Prints each character of `Hello, World!` on its own line (13 lines). |
+| 0009 | hello_two_lines | Prints `Hello,\nWorld!\n` — the greeting split into two lines. |
+| 0010 | hello_box | Three lines of 17 chars: 17 stars / `* Hello, World! *` / 17 stars. |
+| 0011 | hello_no_newline | Prints `Hello, World!` with no trailing newline. |
+| 0012 | hello_tab_sep | Prints `Hello,\tWorld!\n` with a literal tab between the two halves. |
+| 0013 | hello_question | Prints `Hello, World?\n` (question-mark variant). |
+| 0014 | hello_exclaim_3x | Prints `Hello, World!!!\n` (three trailing exclamation marks). |
+| 0015 | hello_long_user | Reads a name and prints `Welcome to FlipJump, <name>! Have a great day!\n`. |
+| 0016 | hello_hex_codes | Prints the hex code-points of `Hello, World!` separated by spaces. |
+| 0017 | hello_ascii_first_five | Prints the ASCII decimal codes of the first five characters of `Hello`. |
+| 0018 | hello_underline | Prints `Hello, World!\n` followed by 13 dashes + `\n`. |
+| 0019 | hello_two_users | Reads two names and prints `Hello, <name1> and <name2>!\n`. |
+| 0020 | hello_anonymous | Prints `Hello, anonymous user!\n` (no input). |
+| 0021 | hello_alpha_world | Prints the lowercase alphabet followed by space + the greeting. |
+| 0022 | hello_then_length | Prints `Hello, World!\nLength: 13\n`. |
+| 0023 | hello_then_question | Prints the greeting followed by `What's your name?` on next line. |
+| 0025 | hello_world_overunder | Prints the greeting sandwiched between two rows of 13 `=` signs. |
 
 ## io
 
 | # | name | description |
 |---|---|---|
+| 0026 | cat | Reads stdin and echoes each byte to stdout, byte-for-byte, until EOF. |
+| 0027 | uppercase_filter | Reads stdin and prints each byte uppercased (`a`-`z` → `A`-`Z`). |
+| 0028 | lowercase_filter | Reads stdin and prints each byte lowercased (`A`-`Z` → `a`-`z`). |
+| 0030 | count_bytes | Reads all of stdin and prints the byte count as decimal + `\n`. |
+| 0031 | count_lines | Reads stdin and prints the number of newline bytes as decimal + `\n`. |
+| 0033 | echo_twice | Reads each byte of stdin and outputs it twice. |
+| 0034 | echo_thrice | Reads each byte of stdin and outputs it three times. |
+| 0035 | skip_first_byte | Reads stdin and outputs every byte except the very first one. |
 
 ## arithmetic
 

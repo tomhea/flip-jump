@@ -133,3 +133,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Catalog session artifacts (not committed)
+ruvector.db
+docs/m0-*.log
+docs/m0-*.txt
+
+# Pytest cache and compiled catalog artifacts
+tests/compiled/catalog/
+

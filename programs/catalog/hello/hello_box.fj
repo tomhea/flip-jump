@@ -1,0 +1,11 @@
+// Hello Box (#0010)
+
+// Prints exactly three lines of 17 chars each + `\n`: line 1 and 3 are 17 `*` characters; line 2 is `* Hello, World! *` (1 star, space, the 13-byte greeting, space, 1 star).
+
+main
+
+def main {
+    stl.startup
+    stl.output "*****************\n* Hello, World! *\n*****************\n"
+    stl.loop
+}

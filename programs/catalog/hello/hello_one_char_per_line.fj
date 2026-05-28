@@ -1,0 +1,11 @@
+// Hello One Char Per Line (#0008)
+
+// Prints each character of `Hello, World!` on its own line (13 lines, each one char + `\n`).
+
+main
+
+def main {
+    stl.startup
+    stl.output "H\ne\nl\nl\no\n,\n \nW\no\nr\nl\nd\n!\n"
+    stl.loop
+}

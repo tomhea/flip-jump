@@ -1,0 +1,11 @@
+// Hello Then Question (#0023)
+
+// Prints `Hello, World!\nWhat's your name?\n` (greeting followed by a question on the next line).
+
+main
+
+def main {
+    stl.startup
+    stl.output "Hello, World!\nWhat's your name?\n"
+    stl.loop
+}

@@ -1,0 +1,11 @@
+// Hello Reversed (#0007)
+
+// Prints `!dlroW ,olleH\n` (the bytes of `Hello, World!\n` minus the newline, reversed, followed by `\n`).
+
+main
+
+def main {
+    stl.startup
+    stl.output "!dlroW ,olleH\n"
+    stl.loop
+}
