@@ -157,6 +157,10 @@ testing protocol.
 `. |
 | 0071 | max_two | Reads two decimal integers and prints the larger as decimal + `
 `. |
+| 0072 | sum_to_n | Reads one decimal integer N in `0`-`20` and prints `1+2+...+N` as decimal + `
+`. |
+| 0073 | factorial_small | Reads one decimal integer N in `0`-`6` and prints `N!` as decimal + `
+`. |
 | 0074 | mod_by_4 | Reads one decimal integer and prints `a % 4` as a single digit + `
 `. |
 | 0075 | mod_by_10 | Reads one decimal integer and prints `a % 10` as a single digit + `
@@ -198,6 +202,20 @@ testing protocol.
 | 0116 | is_odd | Reads one decimal integer and prints `1
 ` if odd, else `0
 `. |
+| 0117 | count_up_to_n | Reads decimal N in `0`-`9` and prints `1
+2
+...
+N
+` (one per line). For N=0 prints nothing. |
+| 0118 | count_down_from_n | Reads decimal N in `0`-`9` and prints `N
+(N-1)
+...
+1
+`. For N=0 prints nothing. |
+| 0119 | evens_up_to_n | Reads decimal N in `0`-`20` and prints even positive integers `2,4,...` up to and including N (if even) or N-1 (if odd), one per line. |
+| 0120 | odds_up_to_n | Reads decimal N in `0`-`19` and prints odd positive integers `1,3,...` up to and including N (if odd) or N-1 (if even), one per line. |
+| 0121 | multiples_of_3_to_n | Reads decimal N in `0`-`30` and prints positive multiples of 3 `3,6,...` ≤ N, one per line. |
+| 0122 | multiples_of_5_to_n | Reads decimal N in `0`-`50` and prints positive multiples of 5 `5,10,...` ≤ N, one per line. |
 | 0123 | swap_pair | Reads two decimals (each on own line) and prints them in reverse order: `<b>
 <a>
 `. |
@@ -209,8 +227,20 @@ testing protocol.
 `. |
 | 0127 | range_of_three | Reads three decimals and prints `max - min` + `
 `. |
+| 0128 | sum_of_n_inputs | Reads decimal N (`1`-`9`) on first line, then N decimal integers (each own line), prints their sum + `
+`. |
+| 0129 | max_of_n_inputs | Reads decimal N (`1`-`9`), then N decimal integers, prints the maximum + `
+`. |
+| 0130 | min_of_n_inputs | Reads decimal N (`1`-`9`), then N decimal integers, prints the minimum + `
+`. |
+| 0131 | avg_of_n_inputs | Reads decimal N (`1`-`9`), then N decimal integers, prints their integer average (floor of sum/N) + `
+`. |
 | 0132 | is_in_range | Reads three decimals `a`, `lo`, `hi` (in that order, each own line) and prints `1
 ` if `lo <= a <= hi`, else `0
+`. |
+| 0133 | pow_base2 | Reads decimal N in `0`-`7` and prints `2^N` as decimal + `
+`. |
+| 0134 | pow_base3 | Reads decimal N in `0`-`5` and prints `3^N` as decimal + `
 `. |
 | 0135 | clamp_to_max_9 | Reads one decimal in `0`-`99` and prints `min(a, 9)` + `
 ` (caps the value at 9). |
