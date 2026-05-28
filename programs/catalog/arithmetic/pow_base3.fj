@@ -1,0 +1,57 @@
+// Pow Base 3 (#0134)
+
+// Reads decimal N in `0`-`5` and prints `3^N` as decimal + `\n`.
+
+main
+
+def main @ loop, end < ctr, result, tmp, three {
+    stl.startup
+    read_decimal 16, ctr
+  loop:
+    bit.if0 16, ctr, end
+    mul_into 16, tmp, result, three
+    bit.mov 16, result, tmp
+    bit.dec 16, ctr
+    ;loop
+  end:
+    bit.print_dec_uint 16, result
+    stl.output '\n'
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+// dst[:n] = addend[:n] * times[:n], via repeated addition (times is small).
+def mul_into n, dst, addend, times @ loop, end < mul_counter {
+    bit.zero n, dst
+    bit.mov n, mul_counter, times
+  loop:
+    bit.if0 n, mul_counter, end
+    bit.add n, dst, addend
+    bit.dec n, mul_counter
+    ;loop
+  end:
+}
+
+ctr: bit.vec 16, 0
+result: bit.vec 16, 1
+tmp: bit.vec 16, 0
+three: bit.vec 16, 3
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
+mul_counter: bit.vec 16, 0
