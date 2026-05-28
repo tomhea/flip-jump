@@ -37,6 +37,22 @@ the codebase changes underneath them.
 
 ## Pattern library (idioms that recur)
 
+- **`stl.startup` and `stl.loop` live ONLY in `main`.** They are program
+  bookends, not function bodies. A helper macro that contains either is
+  misshapen — the STL itself follows this rule (search `flipjump/stl/`:
+  no `def` body contains `stl.startup` or `stl.loop`). Batch 1's programs
+  obey this trivially because everything is in `main`; batch 2 and beyond
+  must keep enforcing it when helpers appear.
+
+- **Functionalize the body.** Even for medium-complexity programs, pull
+  per-loop and per-parse work into named `def`s rather than stacking them all
+  in `main`. This matches how the STL is structured (each STL macro is a small
+  focused job; the top-level startup/loop wraps the whole program) and pays
+  off on recursion / parsing / sorts where helpers compose. Helper macros
+  receive inputs as parameters and reference external data via the `< ...`
+  clause; they do NOT define their own `stl.startup` / `stl.loop`.
+  See CONVENTIONS.md "Sub-macros" for a worked example.
+
 - **EOF sentinel `\0` in catalog `.in` files.** FixedIO raises
   `IOReadOnEOF` if the program reads past end of input, which surfaces as a
   test assertion failure. Convention: every catalog `.in` file ends with `\0`,
