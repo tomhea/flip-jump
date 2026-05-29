@@ -620,6 +620,70 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0847 | day_of_week_from_date | Reads year `1900`-`2099`, month `1`-`12`, day `1`-`31` (each on own line). Computes day-of-week via Zeller's congruence. Prints `0`-`6` + `
+` (Sunday=0). |
+| 0848 | days_in_month | Reads year `1900`-`2099` then month `1`-`12` (each own line). Prints number of days `28`-`31` + `
+` (accounts for leap year). |
+| 0849 | days_in_year | Reads year `1900`-`2099` + `
+`. Prints `366
+` if leap year, else `365
+`. |
+| 0850 | is_valid_date | Reads year `1900`-`2099`, month, day (each own line). Prints `1
+` if all three form a valid Gregorian date (month `1`-`12`, day within month accounting for leap), else `0
+`. |
+| 0852 | format_date_iso | Reads year `1900`-`2099`, month `1`-`12`, day `1`-`31` (each own line). Prints `YYYY-MM-DD
+` with zero padding for MM and DD. |
+| 0853 | parse_date_iso_validate | Reads `YYYY-MM-DD
+` (10 chars + `
+`). Prints `1
+` if it parses as a valid date in `1900`-`2099`, else `0
+`. |
+| 0854 | format_time_12_hour | Reads 24-hour time as `HH:MM
+` (HH `00`-`23`, MM `00`-`59`). Prints `<H>:<MM> AM
+` or `<H>:<MM> PM
+` (12-hour format; midnight is `12:00 AM`, noon is `12:00 PM`; H is 1-12, no zero padding; MM stays zero-padded). |
+| 0855 | format_time_24_hour | Reads 12-hour time as `<H>:<MM> AM
+` or `<H>:<MM> PM
+` (H `1`-`12`, MM `00`-`59`). Prints 24-hour format `HH:MM
+` with both fields zero-padded. |
+| 0856 | seconds_to_clock_hms | Reads decimal total seconds `0`-`86399` + `
+`. Prints `HH:MM:SS
+` (all three fields zero-padded to 2 digits). |
+| 0857 | clock_hms_to_seconds | Reads `HH:MM:SS
+` (8 chars + `
+`, each field zero-padded to 2 digits). Prints total seconds as decimal `0`-`86399` + `
+`. |
+| 0858 | short_name_to_month | Reads a 3-char month abbreviation (`Jan`-`Dec`) + `
+`. Prints decimal `1`-`12` + `
+`. |
+| 0859 | day_of_year | Reads year `1900`-`2099`, month, day (each own line). Prints day-of-year `1`-`366` + `
+` (accounts for leap). |
+| 0860 | date_from_day_of_year | Reads year `1900`-`2099` + `
+`, then day-of-year `1`-`366` + `
+`. Prints `<month> <day>
+` (no zero padding) for the date. |
+| 0862 | weekend_check | Reads year, month, day (each own line). Prints `1
+` if the date falls on Saturday or Sunday (computed via Zeller's), else `0
+`. |
+| 0863 | business_days_in_month | Reads year `1900`-`2099`, month `1`-`12` (each own line). Prints count of Mon-Fri days in that month as decimal + `
+`. |
+| 0864 | quarter_of_year | Reads month `1`-`12` + `
+`. Prints quarter `1`-`4` + `
+` (Jan-Mar=1, Apr-Jun=2, Jul-Sep=3, Oct-Dec=4). |
+| 0865 | days_since_epoch_2000 | Reads year `2000`-`2099`, month, day (each own line). Prints days since `2000-01-01` (which is day 0) as decimal + `
+`. |
+| 0866 | epoch_to_date_2000 | Reads decimal days since `2000-01-01` (`0`-`36524`, own line). Prints `<year> <month> <day>
+` for the corresponding Gregorian date. |
+| 0867 | time_of_day_period | Reads decimal hour `0`-`23` + `
+`. Prints `morning
+` (5-11), `afternoon
+` (12-16), `evening
+` (17-20), or `night
+` (21-4). |
+| 0868 | days_to_next_weekday | Reads day-of-week `0`-`6` (Sun=0) + `
+`, then target day-of-week `0`-`6` + `
+`. Prints `(target - today + 7) mod 7` as decimal `0`-`6` + `
+` (the number of days from today to the next occurrence of target; `0` if target equals today). |
 
 ## misc
 

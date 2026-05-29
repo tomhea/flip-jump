@@ -1,0 +1,113 @@
+// Is Valid Date (#0850)
+
+// Reads year `1900`-`2099`, month, day (each own line). Prints `1\n` if all three form a valid Gregorian date (month `1`-`12`, day within month accounting for leap), else `0\n`.
+
+main
+
+def main @ chk_month_hi, chk_day, yes, no, done < vd_year, vd_month, vd_day, vd_len, vd_one, vd_12 {
+    stl.startup
+    read_decimal 16, vd_year
+    read_decimal 16, vd_month
+    read_decimal 16, vd_day
+    bit.cmp 16, vd_month, vd_one, no, chk_month_hi, chk_month_hi
+  chk_month_hi:
+    bit.cmp 16, vd_month, vd_12, chk_day, chk_day, no
+  chk_day:
+    bit.if0 16, vd_day, no
+    days_in_month_into vd_len, vd_year, vd_month
+    bit.cmp 16, vd_day, vd_len, yes, yes, no
+  yes:
+    stl.output "1\n"
+    ;done
+  no:
+    stl.output "0\n"
+  done:
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+// flag[:1] = 1 if year[:16] is a Gregorian leap year, else 0.
+def is_leap_into flag, year @ chk100, chk400, yes, no, done < ly_four, ly_hundred, ly_400, ly_q, ly_r {
+    bit.div 16, year, ly_four, ly_q, ly_r
+    bit.if1 16, ly_r, no
+  chk100:
+    bit.div 16, year, ly_hundred, ly_q, ly_r
+    bit.if1 16, ly_r, yes
+  chk400:
+    bit.div 16, year, ly_400, ly_q, ly_r
+    bit.if0 16, ly_r, yes
+    ;no
+  yes:
+    bit.one flag
+    ;done
+  no:
+    bit.zero flag
+  done:
+}
+
+// dst[:16] = number of days in (year[:16], month[:16]); month assumed 1-12.
+def days_in_month_into dst, year, month @ feb, short, leap_feb, done, t2, t4, t6, t9, t11 < dim_m2, dim_m4, dim_m6, dim_m9, dim_m11, dim_28, dim_29, dim_30, dim_31, dim_leap {
+    bit.cmp 16, month, dim_m2, t2, feb, t2
+  t2:
+    bit.cmp 16, month, dim_m4, t4, short, t4
+  t4:
+    bit.cmp 16, month, dim_m6, t6, short, t6
+  t6:
+    bit.cmp 16, month, dim_m9, t9, short, t9
+  t9:
+    bit.cmp 16, month, dim_m11, t11, short, t11
+  t11:
+    bit.mov 16, dst, dim_31
+    ;done
+  short:
+    bit.mov 16, dst, dim_30
+    ;done
+  feb:
+    is_leap_into dim_leap, year
+    bit.if1 dim_leap, leap_feb
+    bit.mov 16, dst, dim_28
+    ;done
+  leap_feb:
+    bit.mov 16, dst, dim_29
+  done:
+}
+
+vd_year: bit.vec 16, 0
+vd_month: bit.vec 16, 0
+vd_day: bit.vec 16, 0
+vd_len: bit.vec 16, 0
+vd_one: bit.vec 16, 1
+vd_12: bit.vec 16, 12
+ly_four: bit.vec 16, 4
+ly_hundred: bit.vec 16, 100
+ly_400: bit.vec 16, 400
+ly_q: bit.vec 16, 0
+ly_r: bit.vec 16, 0
+dim_m2: bit.vec 16, 2
+dim_m4: bit.vec 16, 4
+dim_m6: bit.vec 16, 6
+dim_m9: bit.vec 16, 9
+dim_m11: bit.vec 16, 11
+dim_28: bit.vec 16, 28
+dim_29: bit.vec 16, 29
+dim_30: bit.vec 16, 30
+dim_31: bit.vec 16, 31
+dim_leap: bit.bit
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
