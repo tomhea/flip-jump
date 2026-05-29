@@ -1,0 +1,50 @@
+// Count Paragraphs (#0885)
+
+// Reads multi-line input terminated by EOF (or two consecutive `\n` characters as the final paragraph terminator). A paragraph is a maximal run of non-empty lines separated from other paragraphs by one or more empty lines. Prints the count of paragraphs as decimal + `\n`.
+
+main
+
+def main @ loop, mark_filled, eol, eof < ch, nl, count, in_para, line_filled {
+    stl.startup
+    bit.zero 16, count
+    bit.zero in_para
+    bit.zero line_filled
+  loop:
+    bit.input ch
+    bit.if0 8, ch, eof
+    bit.cmp 8, ch, nl, mark_filled, eol, mark_filled
+  mark_filled:
+    bit.one line_filled
+    ;loop
+  eol:
+    end_line count, in_para, line_filled
+    ;loop
+  eof:
+    end_line count, in_para, line_filled
+    bit.print_dec_uint 16, count
+    stl.output '\n'
+    stl.loop
+}
+
+// End the current line: a non-empty line opens a paragraph (count++) if one
+// is not already open; an empty line closes any open paragraph. Resets the
+// per-line content flag either way.
+def end_line count, in_para, line_filled @ empty, opened, end {
+    bit.if0 line_filled, empty
+    bit.if1 in_para, opened
+    bit.inc 16, count
+    bit.one in_para
+  opened:
+    bit.zero line_filled
+    ;end
+  empty:
+    bit.zero in_para
+    bit.zero line_filled
+  end:
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+count: bit.vec 16, 0
+in_para: bit.bit
+line_filled: bit.bit

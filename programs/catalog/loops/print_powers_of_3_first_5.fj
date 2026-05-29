@@ -1,0 +1,51 @@
+// Print Powers Of 3 First 5 (#0257)
+
+// No input. Prints `1 3 9 27 81\n`.
+
+main
+
+def main @ loop, end < val, ctr, prod, three, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.if0 16, ctr, end
+    print_spaced 16, val, first
+    mul_into 16, prod, val, three
+    bit.mov 16, val, prod
+    bit.dec 16, ctr
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// dst[:n] = addend[:n] * times[:n], via repeated addition (times is small).
+def mul_into n, dst, addend, times @ loop, end < mul_counter {
+    bit.zero n, dst
+    bit.mov n, mul_counter, times
+  loop:
+    bit.if0 n, mul_counter, end
+    bit.add n, dst, addend
+    bit.dec n, mul_counter
+    ;loop
+  end:
+}
+
+// Print val[:n] in decimal; emit a leading space on all but the first call.
+def print_spaced n, val, first @ subsequent, emit < sp {
+    bit.if0 first, subsequent
+    bit.zero first
+    ;emit
+  subsequent:
+    bit.print sp
+  emit:
+    bit.print_dec_uint n, val
+}
+
+val: bit.vec 16, 1
+ctr: bit.vec 16, 5
+prod: bit.vec 16, 0
+three: bit.vec 16, 3
+sp: bit.vec 8, ' '
+first: bit.bit
+mul_counter: bit.vec 16, 0

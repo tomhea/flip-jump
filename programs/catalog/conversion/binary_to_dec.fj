@@ -1,0 +1,29 @@
+// Binary To Dec (#0342)
+
+// Reads an 8-char binary string of `0`/`1` + `\n` and prints the decimal `0`-`255` + `\n`.
+
+main
+
+def main < value, skip {
+    stl.startup
+    bit.zero 16, value
+    rep(8, i) shift_in_bit 16, value
+    bit.input skip
+    bit.print_dec_uint 16, value
+    stl.output '\n'
+    stl.loop
+}
+
+// value[:n] = value*2 + (next stdin byte interpreted as binary digit '0'/'1').
+def shift_in_bit n, value < bin_ch, bin_bit, bin_err {
+    bit.shl n, value
+    bit.input bin_ch
+    bit.ascii2bin bin_err, bin_bit, bin_ch
+    bit.xor value, bin_bit
+}
+
+value: bit.vec 16, 0
+skip: bit.vec 8, 0
+bin_ch: bit.vec 8, 0
+bin_bit: bit.bit
+bin_err: bit.bit

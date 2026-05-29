@@ -1,0 +1,84 @@
+// Dot Product 2D (#0573)
+
+// Reads 4 decimals `a b c d` (each own line) representing vectors `(a,b)` and `(c,d)`. Prints `a*c + b*d` as signed decimal + `\n`.
+
+main
+
+def main < a, b, c, d, term, acc {
+    stl.startup
+    read_signed_decimal 16, a
+    read_signed_decimal 16, b
+    read_signed_decimal 16, c
+    read_signed_decimal 16, d
+    signed_mul_into 16, acc, a, c
+    signed_mul_into 16, term, b, d
+    bit.add 16, acc, term
+    bit.print_dec_int 16, acc
+    stl.output '\n'
+    stl.loop
+}
+
+// Read a signed decimal (optional leading `-`, digits until `\n`/`\0`) into value[:n].
+def read_signed_decimal n, value @ neg, body, add_digit, fin, end < ch, nl, minus, digit, err, neg_flag {
+    bit.zero n, value
+    bit.zero neg_flag
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, minus, body, neg, body
+  neg:
+    bit.one neg_flag
+    bit.input ch
+  body:
+    bit.if0 8, ch, fin
+    bit.cmp 8, ch, nl, add_digit, fin, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    bit.input ch
+    ;body
+  fin:
+    bit.if0 neg_flag, end
+    bit.neg n, value
+  end:
+}
+
+// dst[:n] = a[:n] * b[:n] (signed; magnitudes added |b| times, b kept small).
+def signed_mul_into n, dst, a, b @ chk_b, do_mul, neg_done, end < smul_a, smul_cnt, smul_neg {
+    bit.zero n, dst
+    bit.zero smul_neg
+    bit.mov n, smul_a, a
+    bit.mov n, smul_cnt, b
+    bit.if0 a + (n-1)*dw, chk_b
+    bit.not smul_neg
+    bit.neg n, smul_a
+  chk_b:
+    bit.if0 b + (n-1)*dw, do_mul
+    bit.not smul_neg
+    bit.neg n, smul_cnt
+  do_mul:
+    bit.if0 n, smul_cnt, neg_done
+    bit.add n, dst, smul_a
+    bit.dec n, smul_cnt
+    ;do_mul
+  neg_done:
+    bit.if0 smul_neg, end
+    bit.neg n, dst
+  end:
+}
+
+a: bit.vec 16, 0
+b: bit.vec 16, 0
+c: bit.vec 16, 0
+d: bit.vec 16, 0
+term: bit.vec 16, 0
+acc: bit.vec 16, 0
+smul_a: bit.vec 16, 0
+smul_cnt: bit.vec 16, 0
+smul_neg: bit.bit
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
+minus: bit.vec 8, '-'
+neg_flag: bit.bit

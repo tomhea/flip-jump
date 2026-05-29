@@ -1,0 +1,47 @@
+// Fizzbuzz To 20 (#0264)
+
+// No input. Same rules as `fizzbuzz_to_15` but lines 1 through 20.
+
+main
+
+def main @ loop, body, end < idx, limit {
+    stl.startup
+  loop:
+    bit.cmp 16, idx, limit, body, body, end
+  body:
+    print_fizzbuzz idx
+    bit.inc 16, idx
+    ;loop
+  end:
+    stl.loop
+}
+
+// Print FizzBuzz/Fizz/Buzz/idx for idx[:16] + \n (idx % 3 and % 5 tests).
+def print_fizzbuzz idx @ not3, fizz, buzz, num, done < q, r3, r5, three, five {
+    bit.div 16, idx, three, q, r3
+    bit.div 16, idx, five, q, r5
+    bit.if1 16, r3, not3
+    bit.if1 16, r5, fizz
+    stl.output "FizzBuzz\n"
+    ;done
+  not3:
+    bit.if1 16, r5, num
+  buzz:
+    stl.output "Buzz\n"
+    ;done
+  fizz:
+    stl.output "Fizz\n"
+    ;done
+  num:
+    bit.print_dec_uint 16, idx
+    stl.output '\n'
+  done:
+}
+
+idx: bit.vec 16, 1
+limit: bit.vec 16, 20
+q: bit.vec 16, 0
+r3: bit.vec 16, 0
+r5: bit.vec 16, 0
+three: bit.vec 16, 3
+five: bit.vec 16, 5

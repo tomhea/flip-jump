@@ -1,0 +1,21 @@
+// Print Digits 0 9 (#0246)
+
+// No input. Prints `0123456789\n`.
+
+main
+
+def main @ loop, body, end < ch, past {
+    stl.startup
+  loop:
+    bit.cmp 8, ch, past, body, end, end
+  body:
+    bit.print ch
+    bit.inc 8, ch
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, '0'
+past: bit.vec 8, ':'

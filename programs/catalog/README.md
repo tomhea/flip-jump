@@ -510,16 +510,327 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0091 | and_gate | Reads two ASCII bits (each is `0` or `1`, separated by `
+`) and prints their AND as `0` or `1` + `
+`. |
+| 0092 | or_gate | Reads two ASCII bits and prints their OR + `
+`. |
+| 0093 | xor_gate | Reads two ASCII bits and prints their XOR + `
+`. |
+| 0094 | nand_gate | Reads two ASCII bits and prints their NAND + `
+`. |
+| 0095 | nor_gate | Reads two ASCII bits and prints their NOR + `
+`. |
+| 0096 | xnor_gate | Reads two ASCII bits and prints their XNOR + `
+`. |
+| 0097 | not_gate | Reads one ASCII bit and prints its negation + `
+`. |
+| 0098 | and_3 | Reads three ASCII bits (each followed by `
+`) and prints their three-way AND + `
+`. |
+| 0099 | or_3 | Reads three ASCII bits and prints their three-way OR + `
+`. |
+| 0100 | half_adder | Reads two ASCII bits and prints the sum bit then the carry bit, both separated by `
+` (two lines). |
+| 0905 | logic_implies | Reads two `0`/`1` ASCII bits (each on own line). Prints `(NOT A) OR B` as `0` or `1` + `
+` (A → B). |
+| 0906 | boolean_xor_three | Reads three ASCII bits. Prints their XOR (= 1 iff odd number of 1s) + `
+`. |
+| 0907 | boolean_majority_three | Reads three ASCII bits. Prints `1
+` if at least 2 of them are `1`, else `0
+`. |
+| 0908 | boolean_exactly_one | Reads three ASCII bits. Prints `1
+` if exactly one of them is `1`, else `0
+`. |
+| 0909 | boolean_exactly_two | Reads three ASCII bits. Prints `1
+` if exactly two are `1`, else `0
+`. |
+| 0910 | multiplexer_2to1 | Reads a selector bit + 2 data bits (each on own line). Outputs `data0` if selector is `0`, else `data1`, as one ASCII bit + `
+`. |
+| 0911 | demultiplexer_1to2 | Reads a data bit + selector bit. Outputs two bits separated by space + `
+`: if selector is `0`, prints `<data> 0
+`; if `1`, prints `0 <data>
+`. |
+| 0912 | mux_4to1 | Reads two selector bits + 4 data bits (each on own line). Outputs the selected data bit (selector encodes 0-3 as `s1*2+s0`) + `
+`. |
+| 0913 | encoder_4to2 | Reads 4 bits (assumed one-hot input, exactly one is `1`). Prints 2 bits as `<s1><s0>
+` (e.g. position 0 → `00`, position 3 → `11`). |
+| 0914 | decoder_2to4 | Reads 2 bits `s1 s0`. Prints 4 bits: position `s1*2+s0` is `1`, others are `0`. Output is 4 chars + `
+`. |
+| 0915 | full_adder | Reads three ASCII bits `a b c_in` (each own line). Prints `<sum> <c_out>
+` where `sum = a XOR b XOR c_in` and `c_out = (a AND b) OR (c_in AND (a XOR b))`. |
+| 0916 | nand_universality_or | Reads two ASCII bits `a b` (each own line). Computes `OR(a, b)` using ONLY `NAND` gates (no native AND/OR/NOT). Prints result + `
+`. |
 
 ## loops
 
 | # | name | description |
 |---|---|---|
+| 0230 | print_byte_n_times | Reads one byte then `
+` then a digit `0`-`9` + `
+`. Outputs the byte N times in a row. |
+| 0231 | print_n_byte_lines | Reads one byte then `
+` then a digit `0`-`9` + `
+`. Prints N lines, each containing just that byte then `
+`. |
+| 0232 | print_byte_grid | Reads one byte then `
+` then a digit `1`-`9` + `
+`. Prints an N-by-N grid filled with that byte (N lines, each N bytes then `
+`). |
+| 0233 | right_triangle_stars | Reads digit N `1`-`9` + `
+`. Prints a right triangle of `*`: row i (1..N) has i stars followed by `
+`. |
+| 0234 | inverted_right_triangle | Reads digit N `1`-`9` + `
+`. Prints rows of `*`: row i has (N+1-i) stars + `
+`. |
+| 0235 | centered_pyramid | Reads digit N `1`-`9` + `
+`. Prints N rows of width `2N-1`: row i has `N-i` leading spaces, then `2i-1` `*`, then `
+`. |
+| 0236 | hollow_box | Reads digit N `2`-`9` + `
+`. Prints an N-by-N hollow box: top and bottom rows are N `*`; middle rows are `*` + (N-2) spaces + `*`, each + `
+`. |
+| 0237 | solid_square | Reads digit N `1`-`9` + `
+`. Prints an N-by-N solid square of `*`. |
+| 0238 | checkerboard | Reads digit N `1`-`8` + `
+`. Prints an N-by-N checkerboard: top-left cell `*`, alternating `*` and `.` along each row and column. |
+| 0239 | diagonal_stars | Reads digit N `1`-`9` + `
+`. Prints an N-by-N grid where cell (i,j) is `*` if `i == j` else `.`, rows separated by `
+`. |
+| 0240 | x_pattern | Reads digit N `1`-`9` + `
+` (N odd preferred). Prints an N-by-N grid where cell (i,j) is `*` if `i == j` or `i + j == N - 1` else `.`. |
+| 0241 | plus_pattern | Reads odd digit N `1`/`3`/`5`/`7`/`9` + `
+`. Prints an N-by-N grid with `*` along the middle row and the middle column, `.` elsewhere. |
+| 0242 | v_pattern | Reads digit N `1`-`9` + `
+`. Prints N rows on a `(2N-1)`-wide grid. For row `i` (1-indexed, 1..N), the cell at column `j` (1-indexed) is `*` if `j == i` or `j == 2N - i`, else `.`. Each row ends with `
+`. Example for N=3: row 1 = `*...*
+`, row 2 = `.*.*.
+`, row 3 = `..*..
+`. |
+| 0243 | print_alphabet_lower | No input. Prints `abcdefghijklmnopqrstuvwxyz
+`. |
+| 0244 | print_alphabet_upper | No input. Prints `ABCDEFGHIJKLMNOPQRSTUVWXYZ
+`. |
+| 0245 | print_alphabet_reversed | No input. Prints `zyxwvutsrqponmlkjihgfedcba
+`. |
+| 0246 | print_digits_0_9 | No input. Prints `0123456789
+`. |
+| 0247 | print_evens_2_to_20 | No input. Prints `2 4 6 8 10 12 14 16 18 20
+` (space-separated). |
+| 0248 | print_odds_1_to_19 | No input. Prints `1 3 5 7 9 11 13 15 17 19
+` (space-separated). |
+| 0249 | print_multiples_5_to_50 | No input. Prints `5 10 15 20 25 30 35 40 45 50
+`. |
+| 0250 | print_fibs_first_10 | No input. Prints `0 1 1 2 3 5 8 13 21 34
+` (the first 10 Fibonacci numbers, space-separated). |
+| 0251 | print_first_10_primes | No input. Prints `2 3 5 7 11 13 17 19 23 29
+`. |
+| 0252 | print_first_10_squares | No input. Prints `1 4 9 16 25 36 49 64 81 100
+`. |
+| 0253 | count_to_10 | No input. Prints `1
+2
+...
+10
+` (one per line, ten lines total). |
+| 0254 | count_down_from_10 | No input. Prints `10
+9
+...
+1
+`. |
+| 0255 | print_ascii_a_to_k | No input. Prints `65 66 67 68 69 70 71 72 73 74 75
+` (the ASCII codes of `A`-`K`, space-separated). |
+| 0256 | print_powers_of_2_first_8 | No input. Prints `1 2 4 8 16 32 64 128
+`. |
+| 0257 | print_powers_of_3_first_5 | No input. Prints `1 3 9 27 81
+`. |
+| 0258 | print_factorial_first_6 | No input. Prints `1 2 6 24 120 720
+` (factorials 1..6). |
+| 0260 | line_then_n_blanks | Reads a digit N `0`-`9` + `
+` then a `
+`-terminated line ≤ 60 chars. Prints the line, then N additional `
+` characters. |
+| 0261 | accumulate_sum | Reads up to 9 decimal integers, each followed by `
+`, terminated by an empty line (just `
+`). After each input, prints the running sum on its own line. |
+| 0262 | print_pair_grid | No input. Prints all pairs `(i, j)` for `i, j` in `0`-`2` in row-major order, each formatted as `i j
+`. Output is 9 lines total. |
+| 0263 | fizzbuzz_to_15 | No input. Prints lines 1 through 15 as standard FizzBuzz: multiples of 15 → `FizzBuzz`, of 3 → `Fizz`, of 5 → `Buzz`, else the number. One per line. |
+| 0264 | fizzbuzz_to_20 | No input. Same rules as `fizzbuzz_to_15` but lines 1 through 20. |
+| 0265 | count_input_bytes_running | Reads bytes until `
+`. After each byte, prints the byte's 1-based position as decimal + `
+`. Stops at `
+` (does not print the position of the `
+`). |
+| 0266 | countdown_blastoff | No input. Prints `5
+4
+3
+2
+1
+Blastoff!
+`. |
+| 0268 | print_l_shape | Reads digit N `2`-`9` + `
+`. Prints an L-shape: N-1 rows of `*
+` (left bar), then one row of N `*`s + `
+` (bottom bar). |
+| 0269 | print_t_shape | Reads digit N `3`/`5`/`7`/`9` + `
+`. Prints a T-shape: row 0 is N `*`s; rows 1..N-1 each have (N-1)/2 leading spaces then `*` then `
+`. |
+| 0270 | print_vertical_bar | Reads digit N `1`-`9` + `
+`. Prints N lines, each just `*
+`. |
+| 0271 | print_horizontal_bar | Reads digit N `1`-`9` + `
+`. Prints a single line of N `*`s followed by `
+`. |
+| 0272 | sum_running_first_n | Reads digit N `1`-`9` + `
+`. Prints running sums on separate lines: `1
+3
+6
+10
+...
+` for the first N partial sums of `1+2+3+...`. |
+| 0273 | range_step_two | Reads two decimals `lo` and `hi` (each own line, both 0-50, lo<=hi). Prints `lo, lo+2, lo+4, ...` up to ≤hi, one per line. |
+| 0274 | range_step_three | Same as `range_step_two` but step 3. |
+| 0275 | print_pair_diff_grid | No input. For all `i` in `0`-`3` and `j` in `0`-`3`, prints `i-j
+` (signed) on its own line, in row-major (i,j) order. 16 lines total. |
+| 0276 | spaces_then_stars | Reads digit N `1`-`9` + `
+`. Prints N lines: row i has (N-i) spaces, then i `*`, then `
+` (right-aligned triangle). |
+| 0277 | echo_first_n_bytes | Reads digit N `0`-`9` + `
+`, then reads N more bytes from stdin and outputs them verbatim. |
+| 0278 | print_first_then_repeat | Reads one byte, then a digit N `1`-`9` + `
+`. Outputs the byte once, then repeats it N times on a new line. |
 
 ## branching
 
 | # | name | description |
 |---|---|---|
+| 0194 | sort_two_asc | Reads two decimal integers and prints them sorted ascending: `<smaller>
+<larger>
+`. |
+| 0195 | sort_two_desc | Reads two decimal integers and prints them sorted descending: `<larger>
+<smaller>
+`. |
+| 0196 | sort_three_asc | Reads three decimal integers and prints them sorted ascending, one per line. |
+| 0197 | sort_three_desc | Reads three decimal integers and prints them sorted descending, one per line. |
+| 0198 | classify_age | Reads decimal age `0`-`120` and prints `infant
+` if `<2`, `child
+` if `2-12`, `teen
+` if `13-19`, `adult
+` if `20-64`, `senior
+` if `>=65`. |
+| 0199 | classify_grade | Reads decimal score `0`-`100` and prints `A
+` if `>=90`, `B
+` if `80-89`, `C
+` if `70-79`, `D
+` if `60-69`, else `F
+`. |
+| 0200 | classify_temp_c | Reads signed decimal Celsius temperature and prints one of `freezing
+` (≤0), `cold
+` (1-10), `mild
+` (11-20), `warm
+` (21-30), `hot
+` (≥31). |
+| 0201 | day_of_week_name | Reads decimal `0`-`6` and prints `Sunday`/`Monday`/`Tuesday`/`Wednesday`/`Thursday`/`Friday`/`Saturday` followed by `
+` (Sunday=0). |
+| 0202 | month_name | Reads decimal `1`-`12` and prints the English month name (`January`...`December`) + `
+`. |
+| 0203 | season_from_month | Reads decimal month `1`-`12` and prints `winter
+` (12,1,2), `spring
+` (3,4,5), `summer
+` (6,7,8), `fall
+` (9,10,11). |
+| 0204 | even_or_odd_word | Reads one decimal integer and prints `even
+` or `odd
+` (not `0`/`1`). |
+| 0205 | compare_to_10 | Reads one decimal and prints `less
+` if `<10`, `equal
+` if `=10`, `more
+` if `>10`. |
+| 0206 | compare_to_100 | Reads one decimal and prints `less
+` if `<100`, `equal
+` if `=100`, `more
+` if `>100`. |
+| 0207 | is_alphanumeric_byte | Reads exactly one byte and prints `1
+` if it's `0`-`9`/`A`-`Z`/`a`-`z`, else `0
+`. |
+| 0208 | is_punctuation_byte | Reads exactly one byte and prints `1
+` if it's one of `,.?!;:'-` (the eight common punctuation marks), else `0
+`. |
+| 0209 | is_whitespace_byte | Reads exactly one byte and prints `1
+` if it's space/tab/newline (`0x20`, `0x09`, `0x0A`), else `0
+`. |
+| 0210 | char_class | Reads exactly one byte and prints one of `digit
+`, `upper
+`, `lower
+`, `other
+` based on the byte's ASCII range. |
+| 0211 | weekday_or_weekend | Reads decimal day-of-week `0`-`6` (Sunday=0) and prints `weekend
+` (Sat/Sun) or `weekday
+` (Mon-Fri). |
+| 0212 | is_business_hour | Reads decimal hour `0`-`23` (24-hour clock) and prints `1
+` if `9 <= h <= 17`, else `0
+`. |
+| 0213 | fizzbuzz_classify_one | Reads decimal N in `1`-`100` and prints just one of: `fizz
+` if `N % 3 == 0` and not `% 5`; `buzz
+` if `N % 5 == 0` and not `% 3`; `fizzbuzz
+` if both; else `<N>
+`. |
+| 0214 | min_or_max_select | Reads one ASCII bit (`0` or `1`) followed by `
+`, then two decimals each followed by `
+`. If bit is `0` prints the min, if `1` prints the max + `
+`. |
+| 0215 | abs_or_negate_select | Reads one ASCII bit, then a signed decimal. If bit is `0` prints `abs(a)`, if `1` prints `-a`, each + `
+`. |
+| 0216 | upper_or_lower_select | Reads one ASCII bit, then exactly one byte. If bit is `0` outputs the byte uppercased, if `1` outputs it lowercased. |
+| 0217 | switch_on_digit | Reads one ASCII digit `0`-`9` and prints `a
+` for 0, `b
+` for 1, …, `j
+` for 9. |
+| 0218 | triangle_classify | Reads three positive decimals `a`,`b`,`c` (each ≤ 99, on own line) as triangle side lengths. Prints `equilateral
+`, `isosceles
+`, `scalene
+`, or `not
+` (if no valid triangle). |
+| 0219 | quadrant_2d | Reads two signed decimals `x` then `y` and prints `1
+`/`2
+`/`3
+`/`4
+` based on Cartesian quadrant; prints `axis
+` if either coordinate is 0. |
+| 0220 | compare_three_order | Reads three decimals `a`,`b`,`c` (each own line) and prints one of `abc`/`acb`/`bac`/`bca`/`cab`/`cba` + `
+` indicating their ascending sorted order by original label. (Ties broken alphabetically by label.) |
+| 0221 | parity_three | Reads three decimals and prints `all even
+` if all are even, `all odd
+` if all odd, else `mixed
+`. |
+| 0222 | all_positive_three | Reads three signed decimals and prints `1
+` if all are `> 0`, else `0
+`. |
+| 0223 | any_zero_three | Reads three decimals and prints `1
+` if at least one equals 0, else `0
+`. |
+| 0224 | compare_with_window | Reads three decimals `a`, `lo`, `hi` (each own line) and prints `below
+` if `a < lo`, `in
+` if `lo <= a <= hi`, `above
+` if `a > hi`. |
+| 0225 | sorted_check_three | Reads three decimals and prints `1
+` if they are in non-decreasing order, else `0
+`. |
+| 0226 | sorted_check_four | Reads four decimals and prints `1
+` if they are in non-decreasing order, else `0
+`. |
+| 0227 | rps_winner | Reads two bytes (each on own line, terminated by `
+`): `r`/`p`/`s` (rock/paper/scissors) for player 1 and player 2. Prints `1
+` if P1 wins, `2
+` if P2 wins, `tie
+` if tie. |
+| 0228 | leap_year_check | Reads decimal year `1`-`9999` and prints `1
+` if it's a leap year (Gregorian rule: `(y%4==0 && y%100!=0) || y%400==0`), else `0
+`. |
+| 0229 | bmi_category | Reads two decimals: weight-kg `1`-`200` then height-cm `100`-`250` (each own line). Computes BMI = weight*10000/(height*height) and prints `under
+` (BMI<18), `normal
+` (18-24), `over
+` (25-29), `obese
+` (≥30). |
 
 ## data_structures
 
@@ -540,6 +851,97 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0339 | dec_to_hex | Reads decimal `0`-`255` + `
+` and prints exactly two lowercase hex digits (no `0x` prefix), followed by `
+`. |
+| 0340 | hex_to_dec | Reads exactly two lowercase hex digits + `
+` and prints the decimal `0`-`255` + `
+`. |
+| 0341 | dec_to_binary | Reads decimal `0`-`255` + `
+` and prints an 8-char binary string of `0` and `1` (MSB first), followed by `
+`. |
+| 0342 | binary_to_dec | Reads an 8-char binary string of `0`/`1` + `
+` and prints the decimal `0`-`255` + `
+`. |
+| 0343 | dec_to_octal | Reads decimal `0`-`63` + `
+` and prints exactly two octal digits + `
+`. |
+| 0344 | octal_to_dec | Reads exactly two octal digits + `
+` and prints the decimal `0`-`63` + `
+`. |
+| 0345 | binary_to_hex | Reads an 8-char binary string + `
+` and prints exactly two lowercase hex digits + `
+`. |
+| 0346 | hex_to_binary | Reads exactly two lowercase hex digits + `
+` and prints an 8-char binary string + `
+`. |
+| 0347 | celsius_to_fahrenheit | Reads a signed decimal Celsius temperature (range `-100`..`100`) + `
+` and prints `floor(C * 9 / 5 + 32)` as a signed decimal + `
+`. |
+| 0348 | fahrenheit_to_celsius | Reads a signed decimal Fahrenheit temperature (range `-148`..`212`) + `
+` and prints `floor((F - 32) * 5 / 9)` as a signed decimal + `
+`. |
+| 0349 | km_to_miles | Reads decimal kilometers `0`-`100` + `
+` and prints `floor(km * 5 / 8)` as decimal miles + `
+`. |
+| 0350 | miles_to_km | Reads decimal miles `0`-`60` + `
+` and prints `floor(miles * 8 / 5)` as decimal km + `
+`. |
+| 0351 | minutes_to_hours_minutes | Reads decimal total minutes `0`-`999` + `
+` and prints `<H>:<MM>
+`, where `H` is `total / 60` (no leading zero) and `MM` is `total % 60` zero-padded to 2 digits. |
+| 0352 | seconds_to_minutes_seconds | Reads decimal total seconds `0`-`3599` + `
+` and prints `<M>:<SS>
+`, with `MM` zero-padded to 2 digits. |
+| 0353 | hours_to_minutes | Reads decimal hours `0`-`24` + `
+` and prints `hours * 60` as decimal + `
+`. |
+| 0354 | days_to_hours | Reads decimal days `0`-`30` + `
+` and prints `days * 24` as decimal + `
+`. |
+| 0355 | dec_to_thousands_grouped | Reads decimal `0`-`999999` + `
+` and prints the value with thousands separators (commas), then `
+`. Examples: `7` → `7
+`, `1000` → `1,000
+`, `12345` → `12,345
+`, `999999` → `999,999
+`. |
+| 0356 | word_zero_to_nine | Reads a single ASCII digit `0`-`9` + `
+` and prints its English word (`zero`, `one`, `two`, ..., `nine`) + `
+`. |
+| 0358 | zero_pad_to_4 | Reads decimal `0`-`9999` + `
+` and prints a 4-character zero-padded representation + `
+`. Examples: `7` → `0007
+`, `1234` → `1234
+`. |
+| 0359 | roman_numeral_1_to_10 | Reads decimal `1`-`10` + `
+` and prints the corresponding Roman numeral (`I`, `II`, ..., `X`) + `
+`. |
+| 0361 | lowercase_letter_to_index | Reads exactly one byte `a`-`z` and prints its 0-based alphabet index (`a`→`0`, ..., `z`→`25`) as decimal + `
+`. |
+| 0362 | index_to_lowercase_letter | Reads decimal `0`-`25` + `
+` and outputs exactly one byte: the corresponding lowercase letter (`0`→`a`, `25`→`z`). No trailing `
+` after the byte. |
+| 0363 | uppercase_letter_to_index | Reads exactly one byte `A`-`Z` and prints its 0-based alphabet index (`A`→`0`, ..., `Z`→`25`) as decimal + `
+`. |
+| 0364 | dollars_to_cents | Reads decimal dollars `0`-`99` + `
+` and prints `dollars * 100` as decimal + `
+`. |
+| 0365 | cents_to_dollars_cents | Reads decimal cents `0`-`9999` + `
+` and prints `<dollars>.<cc>
+`, where `cc` is `cents % 100` zero-padded to 2 digits. |
+| 0366 | nibble_to_hex_char | Reads decimal `0`-`15` + `
+` and outputs exactly one byte: the corresponding lowercase hex char (`0`-`9` or `a`-`f`), followed by `
+`. |
+| 0367 | hex_char_to_nibble | Reads exactly one byte that's a lowercase hex char (`0`-`9` or `a`-`f`) + `
+` and prints the decimal `0`-`15` + `
+`. |
+| 0368 | dec_with_explicit_sign | Reads a signed decimal `-9999`..`9999` + `
+` and prints it with an always-explicit sign byte (`+` or `-`) prefix, followed by `
+`. Examples: `5` → `+5
+`, `0` → `+0
+`, `-3` → `-3
+`. |
 
 ## encoding
 
@@ -555,6 +957,61 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0573 | dot_product_2d | Reads 4 decimals `a b c d` (each own line) representing vectors `(a,b)` and `(c,d)`. Prints `a*c + b*d` as signed decimal + `
+`. |
+| 0574 | cross_product_2d_scalar | Reads 4 decimals (each own line) representing two 2D vectors. Prints the scalar cross product `a*d - b*c` as signed decimal + `
+`. |
+| 0575 | midpoint_2d | Reads 4 decimals `x1 y1 x2 y2` (each own line). Prints `<mx> <my>
+` where `mx = (x1+x2)/2` and `my = (y1+y2)/2` (floor division). |
+| 0576 | is_origin | Reads 2 decimals `x y` (each own line). Prints `1
+` if both are `0`, else `0
+`. |
+| 0577 | is_on_x_axis | Reads 2 decimals (each own line). Prints `1
+` if `y == 0`, else `0
+`. |
+| 0578 | is_on_y_axis | Reads 2 decimals (each own line). Prints `1
+` if `x == 0`, else `0
+`. |
+| 0579 | is_collinear_3 | Reads 6 decimals representing 3 points `(x1,y1) (x2,y2) (x3,y3)` (each coordinate on its own line). Prints `1
+` if collinear (i.e. `(x2-x1)*(y3-y1) - (y2-y1)*(x3-x1) == 0`), else `0
+`. |
+| 0581 | rectangle_area | Reads two decimals `width` `height` (each own line, `0`-`100`). Prints `width * height` + `
+`. |
+| 0582 | rectangle_perimeter | Reads `width` `height` (each own line, `0`-`100`). Prints `2 * (width + height)` + `
+`. |
+| 0585 | square_perimeter | Reads decimal side `0`-`100` + `
+`. Prints `4 * side` + `
+`. |
+| 0586 | cube_surface_area | Reads decimal side `0`-`20` + `
+`. Prints `6 * side * side` + `
+`. |
+| 0587 | is_point_inside_rect | Reads 6 decimals (each own line): point `x y` then rect `xmin ymin xmax ymax`. Prints `1
+` if `xmin <= x <= xmax` and `ymin <= y <= ymax`, else `0
+`. |
+| 0588 | is_point_inside_circle | Reads 5 decimals (each own line): point `x y`, center `cx cy`, radius `r` (all `0`-`50`). Prints `1
+` if `(x-cx)^2 + (y-cy)^2 <= r^2`, else `0
+`. |
+| 0589 | is_right_triangle_from_sides | Reads 3 decimals `a b c` (each own line, each `1`-`50`) representing triangle side lengths in any order. Prints `1
+` if some permutation satisfies `a^2 + b^2 == c^2`, else `0
+`. |
+| 0590 | is_isosceles | Reads 3 decimals (each on own line) representing triangle side lengths. Prints `1
+` if at least two of the three sides are equal (i.e. equilateral triangles also qualify), else `0
+`. |
+| 0591 | is_equilateral | Reads 3 decimals. Prints `1
+` if all three sides equal, else `0
+`. |
+| 0592 | is_scalene | Reads 3 decimals. Prints `1
+` if all three sides are distinct, else `0
+`. |
+| 0593 | perpendicular_vectors_check | Reads 4 decimals (two 2D vectors). Prints `1
+` if their dot product is `0` (perpendicular), else `0
+`. |
+| 0594 | parallel_vectors_check | Reads 4 decimals (two 2D vectors). Prints `1
+` if their scalar cross product is `0` (parallel or anti-parallel), else `0
+`. |
+| 0595 | slope_int_or_undefined | Reads 4 decimals `x1 y1 x2 y2` (each own line, signed). If `x1 == x2`, prints `undefined
+`. Otherwise prints `(y2 - y1) / (x2 - x1)` as signed integer division + `
+`. |
 
 ## simulation
 
@@ -570,11 +1027,119 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0431 | triangular_first_n | Reads digit N `1`-`9` + `
+`. Prints the first N triangular numbers `T(k) = k(k+1)/2` for `k = 1..N`, space-separated, ending with `
+`. |
+| 0432 | square_first_n | Reads digit N `1`-`9` + `
+`. Prints the first N positive squares `1, 4, 9, ..., N²`, space-separated, + `
+`. |
+| 0433 | pentagonal_first_n | Reads digit N `1`-`9` + `
+`. Prints the first N pentagonal numbers `P(k) = k(3k - 1)/2`, space-separated, + `
+`. |
+| 0434 | hexagonal_first_n | Reads digit N `1`-`9` + `
+`. Prints the first N hexagonal numbers `H(k) = k(2k - 1)`, space-separated, + `
+`. |
+| 0435 | cube_first_n | Reads digit N `1`-`9` + `
+`. Prints the first N positive cubes `1, 8, 27, ..., N³`, space-separated, + `
+`. |
+| 0436 | tetrahedral_first_n | Reads digit N `1`-`9` + `
+`. Prints the first N tetrahedral numbers `Te(k) = k(k+1)(k+2)/6`, space-separated, + `
+`. |
+| 0437 | catalan_first_5 | No input. Prints the first 5 Catalan numbers `1 1 2 5 14
+`. |
+| 0439 | derangement_first_5 | No input. Prints the first 5 derangement numbers `D(n)` for `n = 1..5`: `0 1 2 9 44
+`. |
+| 0440 | lucas_first_n | Reads digit N `1`-`9` + `
+`. Prints `L(0), L(1), ..., L(N-1)` (where `L(0)=2, L(1)=1`), space-separated, + `
+`. |
+| 0441 | perrin_first_10 | No input. Prints the first 10 Perrin sequence values starting `P(0)=3, P(1)=0, P(2)=2`: `3 0 2 3 2 5 5 7 10 12
+`. |
+| 0442 | padovan_first_10 | No input. Prints the first 10 Padovan sequence values starting `1 1 1 2 2 3 4 5 7 9
+`. |
+| 0443 | jacobsthal_first_8 | No input. Prints the first 8 Jacobsthal numbers `J(n)` starting `0 1 1 3 5 11 21 43
+`. |
+| 0444 | pell_first_8 | No input. Prints the first 8 Pell numbers `P(n)` starting `0 1 2 5 12 29 70 169
+`. |
+| 0445 | tribonacci_first_10 | No input. Prints the first 10 Tribonacci values starting `T(0)=T(1)=0, T(2)=1`: `0 0 1 1 2 4 7 13 24 44
+`. |
+| 0446 | tetranacci_first_8 | No input. Prints the first 8 Tetranacci values starting `0 0 0 1 1 2 4 8
+`. |
+| 0447 | fibonacci_even_first_5 | No input. Prints the first 5 even Fibonacci numbers: `0 2 8 34 144
+`. |
+| 0448 | fibonacci_odd_first_5 | No input. Prints the first 5 odd Fibonacci numbers: `1 1 3 5 13
+`. |
+| 0449 | fibonacci_sum_first_n | Reads digit N `1`-`12` + `
+`. Prints `F(1) + F(2) + ... + F(N)` (with `F(1)=1, F(2)=1, ...`) as decimal + `
+`. |
+| 0450 | fibonacci_squares_first_5 | No input. Prints `F(1)² F(2)² ... F(5)²` = `1 1 4 9 25` space-separated + `
+`. |
+| 0451 | fibonacci_modulo_10 | Reads decimal N in `1`-`20` (one or two ASCII digits, terminated by `
+`). Prints `F(N) mod 10` as a single decimal digit + `
+`. |
+| 0453 | mersenne_first_5 | No input. Prints the first 5 Mersenne numbers `M(n) = 2^n - 1` for `n = 1..5`: `1 3 7 15 31` space-separated + `
+`. |
+| 0454 | mersenne_prime_first_3 | No input. Prints the first 3 Mersenne primes: `3 7 31` space-separated + `
+`. |
+| 0455 | fermat_first_4 | No input. Prints the first 4 Fermat numbers `F(n) = 2^(2^n) + 1` for `n = 0..3`: `3 5 17 257` space-separated + `
+`. |
+| 0457 | lazy_caterers_first_8 | No input. Prints the first 8 lazy caterer's numbers (max regions with N cuts of a disc): `1 2 4 7 11 16 22 29` space-separated + `
+`. |
+| 0458 | centered_triangular_first_5 | No input. Prints the first 5 centered triangular numbers: `1 4 10 19 31` space-separated + `
+`. |
+| 0459 | centered_square_first_5 | No input. Prints the first 5 centered square numbers: `1 5 13 25 41` space-separated + `
+`. |
+| 0460 | centered_hexagonal_first_5 | No input. Prints the first 5 centered hexagonal numbers: `1 7 19 37 61` space-separated + `
+`. |
+| 0917 | evens_first_n | Reads digit N `1`-`9` + `
+`. Prints first N positive even numbers `2, 4, ..., 2N` space-separated + `
+`. |
+| 0918 | odds_first_n | Reads digit N `1`-`9` + `
+`. Prints first N positive odd numbers `1, 3, ..., 2N-1` space-separated + `
+`. |
+| 0919 | powers_of_2_first_n | Reads digit N `1`-`7` + `
+`. Prints `2^0, 2^1, ..., 2^(N-1)` space-separated + `
+`. |
+| 0920 | powers_of_3_first_n | Reads digit N `1`-`5` + `
+`. Prints `3^0, 3^1, ..., 3^(N-1)` space-separated + `
+`. |
+| 0921 | fibonacci_pairs_first_n | Reads digit N `1`-`8` + `
+`. Prints `<F(i)> <F(i+1)>
+` for `i = 0..N-1` (N lines of consecutive Fibonacci pairs). |
+| 0922 | mersenne_first_n | Reads digit N `1`-`7` + `
+`. Prints first N Mersenne numbers `M(k) = 2^k - 1` for `k = 1..N`, space-separated + `
+`. |
+| 0923 | triangular_inverse_n | Reads decimal triangular number `1`-`55` + `
+` (i.e. one of `1, 3, 6, 10, 15, 21, 28, 36, 45, 55`). Prints the index `k` such that `T(k) == input`, else `-1` if input isn't triangular. |
 
 ## text_processing
 
 | # | name | description |
 |---|---|---|
+| 0461 | word_count_multiline | Reads stdin until an empty line (`
+` alone). Prints the total count of whitespace-separated tokens across all non-empty lines as decimal + `
+`. Whitespace = `' '`, `'\t'`, `'\n'`; runs collapse; leading/trailing whitespace introduce no empty tokens. |
+| 0463 | word_length_avg | Reads a `
+`-terminated line ≤ 80 chars. Computes lengths of whitespace-separated tokens (space/tab/newline whitespace, runs collapse). Prints the floor of (sum of word lengths) / (word count) as decimal + `
+`. If no words, prints `0\n`. |
+| 0464 | word_length_max | Reads a `
+`-terminated line ≤ 80 chars. Prints the length of the longest whitespace-separated token as decimal + `
+`. Empty input → `0\n`. |
+| 0465 | word_length_min | Reads a `
+`-terminated line ≤ 80 chars. Prints the length of the shortest whitespace-separated token as decimal + `
+`. Empty input → `0\n`. |
+| 0470 | period_sentence_count | Reads a `
+`-terminated line ≤ 80 chars. Prints the count of `.` bytes in the line (excluding `
+`) as decimal + `
+`. (Approximates sentence count by period count.) |
+| 0471 | capitalize_first_letter | Reads a `
+`-terminated line ≤ 80 chars. If the first byte is `a`-`z`, outputs it uppercased; the rest of the line is unchanged. Includes final `
+`. |
+| 0472 | capitalize_words | Reads a `
+`-terminated line ≤ 80 chars. Outputs the line with the first letter of each whitespace-separated word uppercased; all other letters lowercased. Whitespace and non-letters unchanged. Includes final `
+`. |
+| 0473 | uncapitalize_first | Reads a `
+`-terminated line ≤ 80 chars. If the first byte is `A`-`Z`, outputs it lowercased; the rest of the line is unchanged. Includes final `
+`. |
 
 ## state_machines
 
@@ -620,11 +1185,96 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0847 | day_of_week_from_date | Reads year `1900`-`2099`, month `1`-`12`, day `1`-`31` (each on own line). Computes day-of-week via Zeller's congruence. Prints `0`-`6` + `
+` (Sunday=0). |
+| 0848 | days_in_month | Reads year `1900`-`2099` then month `1`-`12` (each own line). Prints number of days `28`-`31` + `
+` (accounts for leap year). |
+| 0849 | days_in_year | Reads year `1900`-`2099` + `
+`. Prints `366
+` if leap year, else `365
+`. |
+| 0850 | is_valid_date | Reads year `1900`-`2099`, month, day (each own line). Prints `1
+` if all three form a valid Gregorian date (month `1`-`12`, day within month accounting for leap), else `0
+`. |
+| 0852 | format_date_iso | Reads year `1900`-`2099`, month `1`-`12`, day `1`-`31` (each own line). Prints `YYYY-MM-DD
+` with zero padding for MM and DD. |
+| 0853 | parse_date_iso_validate | Reads `YYYY-MM-DD
+` (10 chars + `
+`). Prints `1
+` if it parses as a valid date in `1900`-`2099`, else `0
+`. |
+| 0854 | format_time_12_hour | Reads 24-hour time as `HH:MM
+` (HH `00`-`23`, MM `00`-`59`). Prints `<H>:<MM> AM
+` or `<H>:<MM> PM
+` (12-hour format; midnight is `12:00 AM`, noon is `12:00 PM`; H is 1-12, no zero padding; MM stays zero-padded). |
+| 0855 | format_time_24_hour | Reads 12-hour time as `<H>:<MM> AM
+` or `<H>:<MM> PM
+` (H `1`-`12`, MM `00`-`59`). Prints 24-hour format `HH:MM
+` with both fields zero-padded. |
+| 0856 | seconds_to_clock_hms | Reads decimal total seconds `0`-`86399` + `
+`. Prints `HH:MM:SS
+` (all three fields zero-padded to 2 digits). |
+| 0857 | clock_hms_to_seconds | Reads `HH:MM:SS
+` (8 chars + `
+`, each field zero-padded to 2 digits). Prints total seconds as decimal `0`-`86399` + `
+`. |
+| 0858 | short_name_to_month | Reads a 3-char month abbreviation (`Jan`-`Dec`) + `
+`. Prints decimal `1`-`12` + `
+`. |
+| 0859 | day_of_year | Reads year `1900`-`2099`, month, day (each own line). Prints day-of-year `1`-`366` + `
+` (accounts for leap). |
+| 0860 | date_from_day_of_year | Reads year `1900`-`2099` + `
+`, then day-of-year `1`-`366` + `
+`. Prints `<month> <day>
+` (no zero padding) for the date. |
+| 0862 | weekend_check | Reads year, month, day (each own line). Prints `1
+` if the date falls on Saturday or Sunday (computed via Zeller's), else `0
+`. |
+| 0863 | business_days_in_month | Reads year `1900`-`2099`, month `1`-`12` (each own line). Prints count of Mon-Fri days in that month as decimal + `
+`. |
+| 0864 | quarter_of_year | Reads month `1`-`12` + `
+`. Prints quarter `1`-`4` + `
+` (Jan-Mar=1, Apr-Jun=2, Jul-Sep=3, Oct-Dec=4). |
+| 0865 | days_since_epoch_2000 | Reads year `2000`-`2099`, month, day (each own line). Prints days since `2000-01-01` (which is day 0) as decimal + `
+`. |
+| 0866 | epoch_to_date_2000 | Reads decimal days since `2000-01-01` (`0`-`36524`, own line). Prints `<year> <month> <day>
+` for the corresponding Gregorian date. |
+| 0867 | time_of_day_period | Reads decimal hour `0`-`23` + `
+`. Prints `morning
+` (5-11), `afternoon
+` (12-16), `evening
+` (17-20), or `night
+` (21-4). |
+| 0868 | days_to_next_weekday | Reads day-of-week `0`-`6` (Sun=0) + `
+`, then target day-of-week `0`-`6` + `
+`. Prints `(target - today + 7) mod 7` as decimal `0`-`6` + `
+` (the number of days from today to the next occurrence of target; `0` if target equals today). |
 
 ## misc
 
 | # | name | description |
 |---|---|---|
+| 0869 | bottles_of_beer_5 | No input. Prints 5 verses of the "X bottles of beer on the wall" song counting down from 5 to 1. Each verse follows the canonical 2-line refrain. |
+| 0870 | bottles_of_beer_n | Reads digit N `1`-`9` + `\n`. Prints N verses counting down from N to 1 (same per-verse format as `bottles_of_beer_5`). |
+| 0871 | zodiac_western | Reads month `1`-`12` then day `1`-`31` (each own line). Prints the corresponding western zodiac sign (`Aries`, `Taurus`, ..., `Pisces`) + `\n`. |
+| 0872 | zodiac_chinese | Reads year `1900`-`2099` + `\n`. Prints the corresponding Chinese zodiac animal (`Rat`, `Ox`, ..., `Pig`) + `\n`. |
+| 0873 | roman_to_arabic_30 | Reads Roman numeral string (one of `I`-`XXX`, valid up to 30) + `\n`. Prints decimal `1`-`30` + `\n`. |
+| 0874 | arabic_to_roman_30 | Reads decimal `1`-`30` + `\n`. Prints corresponding Roman numeral + `\n`. |
+| 0875 | country_flag_short | Reads a 3-letter country code `USA`/`FRA`/`JPN` + `\n`. Prints a 2-line ASCII flag for that country (each row a string of pattern blocks). Hardcoded for 3 countries. |
+| 0876 | join_words_with_space | Reads digit N `1`-`9` + `\n`, then N `\n`-terminated words. Prints them joined by single space + `\n`. |
+| 0878 | lucky_sum_check | Reads 3 decimals `1`-`9` (each own line). Prints `1\n` if their sum is divisible by 7, else `0\n`. |
+| 0879 | lucky_year_has_7 | Reads year `1900`-`2099` + `\n`. Prints `1\n` if its decimal representation contains the digit `7` anywhere, else `0\n`. |
+| 0880 | magic_number_8 | Reads decimal N `0`-`999` + `\n`. Prints `magic!\n` if N mod 8 == 0, else `not magic\n`. |
+| 0885 | count_paragraphs | Reads multi-line input terminated by EOF (or two consecutive `\n` characters as the final paragraph terminator). A paragraph is a maximal run of non-empty lines separated from other paragraphs by one or more empty lines. Prints the count of paragraphs as decimal + `\n`. |
+| 0889 | print_zigzag_3_lines | No input. Prints a fixed 3-line zigzag of `*` characters: `*       *\n  *   *  \n    *    \n`. |
+| 0892 | day_progress_percent | Reads decimal hour `0`-`23` + `\n`, minute `0`-`59` + `\n`. Prints `(hour * 60 + minute) * 100 / 1440` (floor) as decimal + `\n` (= percent of day elapsed). |
+| 0894 | is_prime_or_one | Reads decimal `1`-`50` + `\n`. Prints `prime\n` if N is prime OR equals 1, else `composite\n`. (Variant: treats 1 as "kind of prime" for fun.) |
+| 1023 | note_name_to_pitch_class | Reads a `\n`-terminated note name (one of `C`, `C#`, `D`, `D#`, `E`, `F`, `F#`, `G`, `G#`, `A`, `A#`, `B`). Prints the pitch class `0`-`11` as decimal + `\n` (`C` = 0). |
+| 1025 | midi_to_pitch_class | Reads decimal MIDI `0`-`127` + `\n`. Prints `midi mod 12` as decimal `0`-`11` + `\n`. |
+| 1026 | transpose_by_semitones | Reads decimal MIDI `0`-`127` + `\n`, then signed decimal shift `-24` to `24` + `\n`. Prints the new MIDI value `(input + shift)`, clamped to `[0, 127]`, as decimal + `\n`. |
+| 1027 | major_scale_from_root_pcs | Reads decimal root pitch class `0`-`11` + `\n`. Prints the 7 pitch classes of the major scale starting at root (intervals 0, 2, 4, 5, 7, 9, 11), all mod 12, space-separated + `\n`. |
+| 1028 | minor_scale_from_root_pcs | Reads decimal root pitch class `0`-`11` + `\n`. Prints the 7 pitch classes of the natural minor scale (intervals 0, 2, 3, 5, 7, 8, 10), all mod 12, space-separated + `\n`. |
+| 1029 | is_major_triad | Reads 3 decimal MIDI numbers `m1 m2 m3` (each `0`-`127`, on own lines). Sorts them. Prints `1\n` if the intervals between consecutive sorted notes are `4, 3` semitones (i.e. major triad in root position), else `0\n`. |
 
 ---
 

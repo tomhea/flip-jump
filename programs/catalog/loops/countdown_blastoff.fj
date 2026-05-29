@@ -1,0 +1,20 @@
+// Countdown Blastoff (#0266)
+
+// No input. Prints `5\n4\n3\n2\n1\nBlastoff!\n`.
+
+main
+
+def main @ loop, end < idx {
+    stl.startup
+  loop:
+    bit.if0 16, idx, end
+    bit.print_dec_uint 16, idx
+    stl.output '\n'
+    bit.dec 16, idx
+    ;loop
+  end:
+    stl.output "Blastoff!\n"
+    stl.loop
+}
+
+idx: bit.vec 16, 5

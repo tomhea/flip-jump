@@ -1,0 +1,54 @@
+// Km To Miles (#0349)
+
+// Reads decimal kilometers `0`-`100` + `\n` and prints `floor(km * 5 / 8)` as decimal miles + `\n`.
+
+main
+
+def main < value, prod, q, r, five, eight {
+    stl.startup
+    read_decimal 16, value
+    mul_into 16, prod, value, five
+    bit.div 16, prod, eight, q, r
+    bit.print_dec_uint 16, q
+    stl.output '\n'
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+// dst[:n] = addend[:n] * times[:n], via repeated addition (times is small).
+def mul_into n, dst, addend, times @ loop, end < mul_counter {
+    bit.zero n, dst
+    bit.mov n, mul_counter, times
+  loop:
+    bit.if0 n, mul_counter, end
+    bit.add n, dst, addend
+    bit.dec n, mul_counter
+    ;loop
+  end:
+}
+
+value: bit.vec 16, 0
+prod: bit.vec 16, 0
+q: bit.vec 16, 0
+r: bit.vec 16, 0
+five: bit.vec 16, 5
+eight: bit.vec 16, 8
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
+mul_counter: bit.vec 16, 0

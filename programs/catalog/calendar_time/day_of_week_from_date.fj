@@ -1,0 +1,112 @@
+// Day Of Week From Date (#0847)
+
+// Reads year `1900`-`2099`, month `1`-`12`, day `1`-`31` (each on own line). Computes day-of-week via Zeller's congruence. Prints `0`-`6` + `\n` (Sunday=0).
+
+main
+
+def main < dw_year, dw_month, dw_day, dw_dow {
+    stl.startup
+    read_decimal 16, dw_year
+    read_decimal 16, dw_month
+    read_decimal 16, dw_day
+    zeller_into dw_dow, dw_year, dw_month, dw_day
+    bit.print_dec_uint 16, dw_dow
+    stl.output '\n'
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+// acc[:16] += floor((a[:16] * b[:16]) / c[:16]); a*b via repeated addition.
+def add_mul acc, a, b, c @ loop, end < am_prod, am_ctr, am_q, am_r {
+    bit.zero 16, am_prod
+    bit.mov 16, am_ctr, b
+  loop:
+    bit.if0 16, am_ctr, end
+    bit.add 16, am_prod, a
+    bit.dec 16, am_ctr
+    ;loop
+  end:
+    bit.div 16, am_prod, c, am_q, am_r
+    bit.add 16, acc, am_q
+}
+
+// acc[:16] += floor(a[:16] / c[:16]).
+def div_add acc, a, c < da_q, da_r {
+    bit.div 16, a, c, da_q, da_r
+    bit.add 16, acc, da_q
+}
+
+// dow[:16] = day-of-week of (year[:16], month[:16], day[:16]); Sunday=0 (Zeller).
+def zeller_into dow, year, month, day @ shift, no_shift < z_y, z_m, z_d, z_one, z_three, z_four, z_five, z_seven, z_12, z_13, z_100, z_K, z_J, z_term, z_q, z_r, z_acc {
+    bit.mov 16, z_y, year
+    bit.mov 16, z_m, month
+    bit.mov 16, z_d, day
+    bit.cmp 16, z_m, z_three, shift, no_shift, no_shift
+  shift:
+    bit.add 16, z_m, z_12
+    bit.dec 16, z_y
+  no_shift:
+    bit.div 16, z_y, z_100, z_J, z_K
+    bit.mov 16, z_acc, z_d
+    bit.mov 16, z_term, z_m
+    bit.add 16, z_term, z_one
+    bit.mov 16, z_q, z_13
+    add_mul z_acc, z_q, z_term, z_five
+    bit.add 16, z_acc, z_K
+    bit.mov 16, z_q, z_K
+    div_add z_acc, z_q, z_four
+    bit.mov 16, z_q, z_J
+    div_add z_acc, z_q, z_four
+    bit.mov 16, z_q, z_J
+    add_mul z_acc, z_q, z_five, z_one
+    bit.div 16, z_acc, z_seven, z_q, z_r
+    bit.add 16, z_r, z_seven
+    bit.dec 16, z_r
+    bit.div 16, z_r, z_seven, z_q, dow
+}
+
+dw_year: bit.vec 16, 0
+dw_month: bit.vec 16, 0
+dw_day: bit.vec 16, 0
+dw_dow: bit.vec 16, 0
+am_prod: bit.vec 16, 0
+am_ctr: bit.vec 16, 0
+am_q: bit.vec 16, 0
+am_r: bit.vec 16, 0
+da_q: bit.vec 16, 0
+da_r: bit.vec 16, 0
+z_y: bit.vec 16, 0
+z_m: bit.vec 16, 0
+z_d: bit.vec 16, 0
+z_one: bit.vec 16, 1
+z_three: bit.vec 16, 3
+z_four: bit.vec 16, 4
+z_five: bit.vec 16, 5
+z_seven: bit.vec 16, 7
+z_12: bit.vec 16, 12
+z_13: bit.vec 16, 13
+z_100: bit.vec 16, 100
+z_K: bit.vec 16, 0
+z_J: bit.vec 16, 0
+z_term: bit.vec 16, 0
+z_q: bit.vec 16, 0
+z_r: bit.vec 16, 0
+z_acc: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit

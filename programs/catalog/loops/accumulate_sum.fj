@@ -1,0 +1,46 @@
+// Accumulate Sum (#0261)
+
+// Reads up to 9 decimal integers, each followed by `\n`, terminated by an empty line (just `\n`). After each input, prints the running sum on its own line.
+
+main
+
+def main @ loop, end < x, sum, empty_flag {
+    stl.startup
+    bit.zero 16, sum
+  loop:
+    read_line_decimal x, empty_flag
+    bit.if1 empty_flag, end
+    bit.add 16, sum, x
+    bit.print_dec_uint 16, sum
+    stl.output '\n'
+    ;loop
+  end:
+    stl.loop
+}
+
+// Read one decimal line into val[:16]. Set empty_flag if the line is just \n/\0.
+def read_line_decimal val, empty_flag @ loop, mark_empty, done < ch, nl, digit, err {
+    bit.zero 16, val
+    bit.zero empty_flag
+    bit.input ch
+    bit.if0 8, ch, mark_empty
+    bit.cmp 8, ch, nl, loop, mark_empty, loop
+  loop:
+    bit.mul10 16, val
+    bit.ascii2dec err, digit, ch
+    bit.add 16, val, digit
+    bit.input ch
+    bit.if0 8, ch, done
+    bit.cmp 8, ch, nl, loop, done, loop
+  mark_empty:
+    bit.one empty_flag
+  done:
+}
+
+x: bit.vec 16, 0
+sum: bit.vec 16, 0
+empty_flag: bit.bit
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit

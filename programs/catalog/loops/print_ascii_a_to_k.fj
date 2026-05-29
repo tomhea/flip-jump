@@ -1,0 +1,36 @@
+// Print Ascii A To K (#0255)
+
+// No input. Prints `65 66 67 68 69 70 71 72 73 74 75\n` (the ASCII codes of `A`-`K`, space-separated).
+
+main
+
+def main @ loop, body, end < val, limit, step, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.cmp 16, val, limit, body, body, end
+  body:
+    print_spaced 16, val, first
+    bit.add 16, val, step
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Print val[:n] in decimal; emit a leading space on all but the first call.
+def print_spaced n, val, first @ subsequent, emit < sp {
+    bit.if0 first, subsequent
+    bit.zero first
+    ;emit
+  subsequent:
+    bit.print sp
+  emit:
+    bit.print_dec_uint n, val
+}
+
+val: bit.vec 16, 65
+limit: bit.vec 16, 75
+step: bit.vec 16, 1
+sp: bit.vec 8, ' '
+first: bit.bit

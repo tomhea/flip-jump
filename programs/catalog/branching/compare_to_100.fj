@@ -1,0 +1,43 @@
+// Compare To 100 (#0206)
+
+// Reads one decimal and prints `less\n` if `<100`, `equal\n` if `=100`, `more\n` if `>100`.
+
+main
+
+def main @ less, equal, more, done < a, hundred {
+    stl.startup
+    read_decimal 16, a
+    bit.cmp 16, a, hundred, less, equal, more
+  less:
+    stl.output "less\n"
+    ;done
+  equal:
+    stl.output "equal\n"
+    ;done
+  more:
+    stl.output "more\n"
+  done:
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+a: bit.vec 16, 0
+hundred: bit.vec 16, 100
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit

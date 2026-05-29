@@ -1,0 +1,37 @@
+// Print Powers Of 2 First 8 (#0256)
+
+// No input. Prints `1 2 4 8 16 32 64 128\n`.
+
+main
+
+def main @ loop, end < val, ctr, dbl, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.if0 16, ctr, end
+    print_spaced 16, val, first
+    bit.mov 16, dbl, val
+    bit.add 16, val, dbl
+    bit.dec 16, ctr
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Print val[:n] in decimal; emit a leading space on all but the first call.
+def print_spaced n, val, first @ subsequent, emit < sp {
+    bit.if0 first, subsequent
+    bit.zero first
+    ;emit
+  subsequent:
+    bit.print sp
+  emit:
+    bit.print_dec_uint n, val
+}
+
+val: bit.vec 16, 1
+ctr: bit.vec 16, 8
+dbl: bit.vec 16, 0
+sp: bit.vec 8, ' '
+first: bit.bit

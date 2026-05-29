@@ -1,0 +1,49 @@
+// Triangular Inverse N (#0923)
+
+// Reads decimal triangular number `1`-`55` + `\n` (i.e. one of `1, 3, 6, 10, 15, 21, 28, 36, 45, 55`). Prints the index `k` such that `T(k) == input`, else `-1` if input isn't triangular.
+
+main
+
+def main @ loop, grow, found, none, done_print < target, idx, tri {
+    stl.startup
+    read_decimal 16, target
+    bit.zero 16, idx
+    bit.zero 16, tri
+  loop:
+    bit.inc 16, idx
+    bit.add 16, tri, idx
+    bit.cmp 16, tri, target, grow, found, none
+  grow:
+    ;loop
+  found:
+    bit.print_dec_uint 16, idx
+    stl.output '\n'
+    ;done_print
+  none:
+    stl.output "-1\n"
+  done_print:
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+target: bit.vec 16, 0
+idx: bit.vec 16, 0
+tri: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit

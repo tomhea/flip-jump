@@ -1,0 +1,70 @@
+// Classify Temp C (#0200)
+
+// Reads signed decimal Celsius temperature and prints one of `freezing\n` (≤0), `cold\n` (1-10), `mild\n` (11-20), `warm\n` (21-30), `hot\n` (≥31).
+
+main
+
+def main @ freezing, cold, mild, warm, hot, done, pos, t20, t30 < t, ten, twenty, thirty {
+    stl.startup
+    read_signed_decimal 16, t
+    bit.if0 16, t, freezing
+    bit.if1 t + 15*dw, freezing
+  pos:
+    bit.cmp 16, t, ten, cold, cold, t20
+  t20:
+    bit.cmp 16, t, twenty, mild, mild, t30
+  t30:
+    bit.cmp 16, t, thirty, warm, warm, hot
+  freezing:
+    stl.output "freezing\n"
+    ;done
+  cold:
+    stl.output "cold\n"
+    ;done
+  mild:
+    stl.output "mild\n"
+    ;done
+  warm:
+    stl.output "warm\n"
+    ;done
+  hot:
+    stl.output "hot\n"
+  done:
+    stl.loop
+}
+
+// Read a signed decimal (optional leading `-`, digits until `\n`/`\0`) into value[:n].
+def read_signed_decimal n, value @ neg, body, add_digit, fin, end < ch, nl, minus, digit, err, neg_flag {
+    bit.zero n, value
+    bit.zero neg_flag
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, minus, body, neg, body
+  neg:
+    bit.one neg_flag
+    bit.input ch
+  body:
+    bit.if0 8, ch, fin
+    bit.cmp 8, ch, nl, add_digit, fin, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    bit.input ch
+    ;body
+  fin:
+    bit.if0 neg_flag, end
+    bit.neg n, value
+  end:
+}
+
+t: bit.vec 16, 0
+ten: bit.vec 16, 10
+twenty: bit.vec 16, 20
+thirty: bit.vec 16, 30
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
+minus: bit.vec 8, '-'
+neg_flag: bit.bit

@@ -1,0 +1,36 @@
+// Print Odds 1 To 19 (#0248)
+
+// No input. Prints `1 3 5 7 9 11 13 15 17 19\n` (space-separated).
+
+main
+
+def main @ loop, body, end < val, limit, step, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.cmp 16, val, limit, body, body, end
+  body:
+    print_spaced 16, val, first
+    bit.add 16, val, step
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Print val[:n] in decimal; emit a leading space on all but the first call.
+def print_spaced n, val, first @ subsequent, emit < sp {
+    bit.if0 first, subsequent
+    bit.zero first
+    ;emit
+  subsequent:
+    bit.print sp
+  emit:
+    bit.print_dec_uint n, val
+}
+
+val: bit.vec 16, 1
+limit: bit.vec 16, 19
+step: bit.vec 16, 2
+sp: bit.vec 8, ' '
+first: bit.bit

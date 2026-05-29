@@ -1,0 +1,65 @@
+// Print First 10 Primes (#0251)
+
+// No input. Prints `2 3 5 7 11 13 17 19 23 29\n`.
+
+main
+
+def main @ loop, body, next, end < cand, found, ten, flag, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.cmp 16, found, ten, body, end, end
+  body:
+    is_prime_into 16, flag, cand
+    bit.if0 flag, next
+    print_spaced 16, cand, first
+    bit.inc 16, found
+  next:
+    bit.inc 16, cand
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Print val[:n] in decimal; emit a leading space on all but the first call.
+def print_spaced n, val, first @ subsequent, emit < sp {
+    bit.if0 first, subsequent
+    bit.zero first
+    ;emit
+  subsequent:
+    bit.print sp
+  emit:
+    bit.print_dec_uint n, val
+}
+
+// flag = 1 if x[:n] is prime (x >= 2), else 0. Trial division by 2..x-1.
+def is_prime_into n, flag, x @ check, loop, test, composite, prime, end < d, q, r, two {
+    bit.cmp n, x, two, composite, check, check
+  check:
+    bit.mov n, d, two
+  loop:
+    bit.cmp n, d, x, test, prime, prime
+  test:
+    bit.div n, x, d, q, r
+    bit.if0 n, r, composite
+    bit.inc n, d
+    ;loop
+  composite:
+    bit.zero flag
+    ;end
+  prime:
+    bit.one flag
+  end:
+}
+
+cand: bit.vec 16, 2
+found: bit.vec 16, 0
+ten: bit.vec 16, 10
+flag: bit.bit
+sp: bit.vec 8, ' '
+first: bit.bit
+d: bit.vec 16, 0
+q: bit.vec 16, 0
+r: bit.vec 16, 0
+two: bit.vec 16, 2

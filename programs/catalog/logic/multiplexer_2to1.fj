@@ -1,0 +1,45 @@
+// Multiplexer 2to1 (#0910)
+
+// Reads a selector bit + 2 data bits (each on own line). Outputs `data0` if selector is `0`, else `data1`, as one ASCII bit + `\n`.
+
+main
+
+def main @ pick0, pick1, done < ch, sel, d0, d1, res {
+    stl.startup
+    read_ascii_bit sel, ch
+    read_ascii_bit d0, ch
+    read_ascii_bit d1, ch
+    bit.if sel, pick0, pick1
+  pick0:
+    bit.mov res, d0
+    ;done
+  pick1:
+    bit.mov res, d1
+  done:
+    print_bit_nl res
+    stl.loop
+}
+
+// Read one ASCII bit line ('0'/'1' then '\n') into the single bit dst, then eat the '\n'.
+def read_ascii_bit dst, ch {
+    bit.input ch
+    bit.mov dst, ch
+    bit.input ch
+}
+
+// Print the single bit b as ASCII '0'/'1' followed by '\n'.
+def print_bit_nl b @ zero, one, done {
+    bit.if b, zero, one
+  zero:
+    stl.output "0\n"
+    ;done
+  one:
+    stl.output "1\n"
+  done:
+}
+
+ch: bit.vec 8, 0
+sel: bit.bit
+d0: bit.bit
+d1: bit.bit
+res: bit.bit

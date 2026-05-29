@@ -46,7 +46,9 @@ def _catalog_rows() -> dict[str, tuple[str, str]]:
     """
     txt = CATALOG_MD.read_text(encoding="utf-8")
     out: dict[str, tuple[str, str]] = {}
-    for status, _cat, slug, desc in re.findall(r"\| (\w+) \| (\S+) \| (\S+) \| (.+?) \|", txt):
+    # Greedy description capture anchored to the row's closing ` |`, so a cell
+    # that contains ` | ` itself (e.g. `||`, `|x|`) is not cut at the first pipe.
+    for status, _cat, slug, desc in re.findall(r"\| (\w+) \| (\S+) \| (\S+) \| (.+) \|$", txt, re.MULTILINE):
         if status == "APPROVED":
             out[slug] = ("", desc.strip())
     return out

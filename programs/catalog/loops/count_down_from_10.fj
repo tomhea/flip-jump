@@ -1,0 +1,19 @@
+// Count Down From 10 (#0254)
+
+// No input. Prints `10\n9\n...\n1\n`.
+
+main
+
+def main @ loop, end < idx {
+    stl.startup
+  loop:
+    bit.if0 16, idx, end
+    bit.print_dec_uint 16, idx
+    stl.output '\n'
+    bit.dec 16, idx
+    ;loop
+  end:
+    stl.loop
+}
+
+idx: bit.vec 16, 10

@@ -1,0 +1,19 @@
+// Uppercase Letter To Index (#0363)
+
+// Reads exactly one byte `A`-`Z` and prints its 0-based alphabet index (`A`→`0`, ..., `Z`→`25`) as decimal + `\n`.
+
+main
+
+def main < ch, value, upper_a {
+    stl.startup
+    bit.input ch
+    bit.mov 8, value, ch
+    bit.sub 8, value, upper_a
+    bit.print_dec_uint 8, value
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+value: bit.vec 8, 0
+upper_a: bit.vec 8, 'A'

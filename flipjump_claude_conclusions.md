@@ -111,6 +111,27 @@ the codebase changes underneath them.
   `bit.ascii2hex` does the reverse. A byte's two nibbles live at `ch` (low) and
   `ch + 4*dw` (high) — same `*dw`-per-bit stride as the case-flip idiom.
 
+- **Sequence-generation kit (sequences category).** Two reusable shapes carried
+  the whole category. (1) `print_sep_dec n, value, first` prints a leading space
+  before every term *except* the first (a `first: bit.bit` set once, zeroed by
+  the helper), then `bit.print_dec_uint` — this is the clean way to emit a
+  space-separated list with no trailing space. (2) "Rotate a fixed window of
+  registers": keep `a,b[,c,d]` for the last few terms, print the front, compute
+  `nxt` from the window into a temp, then `mov` each register down. Lucas/Pell/
+  Jacobsthal use a 2-window; Perrin/Padovan/Tribonacci a 3-window; Tetranacci a
+  4-window — same skeleton, only seeds and the `nxt` combination differ. Figurate
+  numbers (triangular/square/pentagonal/hexagonal, centered_*) avoid `mul`
+  entirely by maintaining an arithmetic `delta` that grows by a constant step.
+  `mul_into` (repeated addition) is only needed where a term is a genuine product
+  (cube, fibonacci squares, powers_of_3, fermat, catalan, derangement).
+
+- **Incremental square for sqrt-bounded primality.** Trial division up to √x must
+  stop at the right bound or it runs O(x) instead of O(√x). Rather than a `mul`
+  per iteration to recompute `d*d`, maintain `dsq` incrementally:
+  `(d+1)^2 = d^2 + 2d + 1`, so each step does `dsq += d; dsq += d; dsq += 1; d++`.
+  O(√x) additions total, no multiply, and it sidesteps the `mul_into`/`mul_counter`
+  width-coupling problem below. Used by `is_prime_sqrt_into` for mersenne_prime.
+
 ## Speed observations
 
 Batch 1 timings on Windows / `pytest -n auto` (12-core machine):
@@ -196,3 +217,18 @@ Each later program is the simplest one that uses one new technique.
   with explicit LF newlines and verifies via the Python flipjump module
   directly (no subprocess) — bypasses both git's autocrlf and Windows fj's
   stdout translation.
+
+- **`fj` reads `.fj` source with the *locale* codec, not UTF-8 (Windows).**
+  `fj_parser.lex_parse_curr_file` does `curr_file.open('r').read()`, which on a
+  non-UTF-8 Windows locale (this machine is cp1255 / Hebrew) decodes the source
+  with cp1255. Most non-ASCII chars the catalog uses in headers (`≤ → ↔ ² ³`)
+  happen to map in cp1255, but `√` (U+221A) and `≈` (U+2248) do **not**, so a
+  header that byte-matches a CATALOG description containing them throws
+  `UnicodeDecodeError: 'charmap' codec can't decode byte 0x9a` and `emit()` /
+  pytest both fail. `PYTHONUTF8=1` in the env fixes it (forces `open` to UTF-8),
+  but that's a per-invocation hack, not something committed. Consequence for the
+  `sequences` batch: `mersenne_check` (its CATALOG desc literally contains
+  `√(2^17 - 1) ≈ 362`) was **deferred** rather than ship a program that only
+  compiles under a special env var. `mersenne_prime_first_3` exercises the same
+  sqrt-primality helper with an all-ASCII header, so the technique is still in
+  the catalog. A future fix would be to make the STL parser open files as UTF-8.
