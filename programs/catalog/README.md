@@ -566,6 +566,138 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0230 | print_byte_n_times | Reads one byte then `
+` then a digit `0`-`9` + `
+`. Outputs the byte N times in a row. |
+| 0231 | print_n_byte_lines | Reads one byte then `
+` then a digit `0`-`9` + `
+`. Prints N lines, each containing just that byte then `
+`. |
+| 0232 | print_byte_grid | Reads one byte then `
+` then a digit `1`-`9` + `
+`. Prints an N-by-N grid filled with that byte (N lines, each N bytes then `
+`). |
+| 0233 | right_triangle_stars | Reads digit N `1`-`9` + `
+`. Prints a right triangle of `*`: row i (1..N) has i stars followed by `
+`. |
+| 0234 | inverted_right_triangle | Reads digit N `1`-`9` + `
+`. Prints rows of `*`: row i has (N+1-i) stars + `
+`. |
+| 0235 | centered_pyramid | Reads digit N `1`-`9` + `
+`. Prints N rows of width `2N-1`: row i has `N-i` leading spaces, then `2i-1` `*`, then `
+`. |
+| 0236 | hollow_box | Reads digit N `2`-`9` + `
+`. Prints an N-by-N hollow box: top and bottom rows are N `*`; middle rows are `*` + (N-2) spaces + `*`, each + `
+`. |
+| 0237 | solid_square | Reads digit N `1`-`9` + `
+`. Prints an N-by-N solid square of `*`. |
+| 0238 | checkerboard | Reads digit N `1`-`8` + `
+`. Prints an N-by-N checkerboard: top-left cell `*`, alternating `*` and `.` along each row and column. |
+| 0239 | diagonal_stars | Reads digit N `1`-`9` + `
+`. Prints an N-by-N grid where cell (i,j) is `*` if `i == j` else `.`, rows separated by `
+`. |
+| 0240 | x_pattern | Reads digit N `1`-`9` + `
+` (N odd preferred). Prints an N-by-N grid where cell (i,j) is `*` if `i == j` or `i + j == N - 1` else `.`. |
+| 0241 | plus_pattern | Reads odd digit N `1`/`3`/`5`/`7`/`9` + `
+`. Prints an N-by-N grid with `*` along the middle row and the middle column, `.` elsewhere. |
+| 0242 | v_pattern | Reads digit N `1`-`9` + `
+`. Prints N rows on a `(2N-1)`-wide grid. For row `i` (1-indexed, 1..N), the cell at column `j` (1-indexed) is `*` if `j == i` or `j == 2N - i`, else `.`. Each row ends with `
+`. Example for N=3: row 1 = `*...*
+`, row 2 = `.*.*.
+`, row 3 = `..*..
+`. |
+| 0243 | print_alphabet_lower | No input. Prints `abcdefghijklmnopqrstuvwxyz
+`. |
+| 0244 | print_alphabet_upper | No input. Prints `ABCDEFGHIJKLMNOPQRSTUVWXYZ
+`. |
+| 0245 | print_alphabet_reversed | No input. Prints `zyxwvutsrqponmlkjihgfedcba
+`. |
+| 0246 | print_digits_0_9 | No input. Prints `0123456789
+`. |
+| 0247 | print_evens_2_to_20 | No input. Prints `2 4 6 8 10 12 14 16 18 20
+` (space-separated). |
+| 0248 | print_odds_1_to_19 | No input. Prints `1 3 5 7 9 11 13 15 17 19
+` (space-separated). |
+| 0249 | print_multiples_5_to_50 | No input. Prints `5 10 15 20 25 30 35 40 45 50
+`. |
+| 0250 | print_fibs_first_10 | No input. Prints `0 1 1 2 3 5 8 13 21 34
+` (the first 10 Fibonacci numbers, space-separated). |
+| 0251 | print_first_10_primes | No input. Prints `2 3 5 7 11 13 17 19 23 29
+`. |
+| 0252 | print_first_10_squares | No input. Prints `1 4 9 16 25 36 49 64 81 100
+`. |
+| 0253 | count_to_10 | No input. Prints `1
+2
+...
+10
+` (one per line, ten lines total). |
+| 0254 | count_down_from_10 | No input. Prints `10
+9
+...
+1
+`. |
+| 0255 | print_ascii_a_to_k | No input. Prints `65 66 67 68 69 70 71 72 73 74 75
+` (the ASCII codes of `A`-`K`, space-separated). |
+| 0256 | print_powers_of_2_first_8 | No input. Prints `1 2 4 8 16 32 64 128
+`. |
+| 0257 | print_powers_of_3_first_5 | No input. Prints `1 3 9 27 81
+`. |
+| 0258 | print_factorial_first_6 | No input. Prints `1 2 6 24 120 720
+` (factorials 1..6). |
+| 0260 | line_then_n_blanks | Reads a digit N `0`-`9` + `
+` then a `
+`-terminated line ≤ 60 chars. Prints the line, then N additional `
+` characters. |
+| 0261 | accumulate_sum | Reads up to 9 decimal integers, each followed by `
+`, terminated by an empty line (just `
+`). After each input, prints the running sum on its own line. |
+| 0262 | print_pair_grid | No input. Prints all pairs `(i, j)` for `i, j` in `0`-`2` in row-major order, each formatted as `i j
+`. Output is 9 lines total. |
+| 0263 | fizzbuzz_to_15 | No input. Prints lines 1 through 15 as standard FizzBuzz: multiples of 15 → `FizzBuzz`, of 3 → `Fizz`, of 5 → `Buzz`, else the number. One per line. |
+| 0264 | fizzbuzz_to_20 | No input. Same rules as `fizzbuzz_to_15` but lines 1 through 20. |
+| 0265 | count_input_bytes_running | Reads bytes until `
+`. After each byte, prints the byte's 1-based position as decimal + `
+`. Stops at `
+` (does not print the position of the `
+`). |
+| 0266 | countdown_blastoff | No input. Prints `5
+4
+3
+2
+1
+Blastoff!
+`. |
+| 0268 | print_l_shape | Reads digit N `2`-`9` + `
+`. Prints an L-shape: N-1 rows of `*
+` (left bar), then one row of N `*`s + `
+` (bottom bar). |
+| 0269 | print_t_shape | Reads digit N `3`/`5`/`7`/`9` + `
+`. Prints a T-shape: row 0 is N `*`s; rows 1..N-1 each have (N-1)/2 leading spaces then `*` then `
+`. |
+| 0270 | print_vertical_bar | Reads digit N `1`-`9` + `
+`. Prints N lines, each just `*
+`. |
+| 0271 | print_horizontal_bar | Reads digit N `1`-`9` + `
+`. Prints a single line of N `*`s followed by `
+`. |
+| 0272 | sum_running_first_n | Reads digit N `1`-`9` + `
+`. Prints running sums on separate lines: `1
+3
+6
+10
+...
+` for the first N partial sums of `1+2+3+...`. |
+| 0273 | range_step_two | Reads two decimals `lo` and `hi` (each own line, both 0-50, lo<=hi). Prints `lo, lo+2, lo+4, ...` up to ≤hi, one per line. |
+| 0274 | range_step_three | Same as `range_step_two` but step 3. |
+| 0275 | print_pair_diff_grid | No input. For all `i` in `0`-`3` and `j` in `0`-`3`, prints `i-j
+` (signed) on its own line, in row-major (i,j) order. 16 lines total. |
+| 0276 | spaces_then_stars | Reads digit N `1`-`9` + `
+`. Prints N lines: row i has (N-i) spaces, then i `*`, then `
+` (right-aligned triangle). |
+| 0277 | echo_first_n_bytes | Reads digit N `0`-`9` + `
+`, then reads N more bytes from stdin and outputs them verbatim. |
+| 0278 | print_first_then_repeat | Reads one byte, then a digit N `1`-`9` + `
+`. Outputs the byte once, then repeats it N times on a new line. |
 
 ## branching
 

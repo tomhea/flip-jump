@@ -1,0 +1,66 @@
+// Print T Shape (#0269)
+
+// Reads digit N `3`/`5`/`7`/`9` + `\n`. Prints a T-shape: row 0 is N `*`s; rows 1..N-1 each have (N-1)/2 leading spaces then `*` then `\n`.
+
+main
+
+def main @ loop, end < count, row, gap, two, qtmp, rtmp, star, space {
+    stl.startup
+    read_decimal 16, count
+    print_glyph_times count, star
+    stl.output '\n'
+    bit.mov 16, gap, count
+    bit.dec 16, gap
+    bit.div 16, gap, two, qtmp, rtmp
+    bit.mov 16, gap, qtmp
+    bit.mov 16, row, count
+    bit.dec 16, row
+  loop:
+    bit.if0 16, row, end
+    print_glyph_times gap, space
+    stl.output "*\n"
+    bit.dec 16, row
+    ;loop
+  end:
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+// Print the byte at glyph exactly count[:16] times.
+def print_glyph_times count, glyph @ loop, end < rep_ctr {
+    bit.mov 16, rep_ctr, count
+  loop:
+    bit.if0 16, rep_ctr, end
+    bit.print glyph
+    bit.dec 16, rep_ctr
+    ;loop
+  end:
+}
+
+count: bit.vec 16, 0
+row: bit.vec 16, 0
+gap: bit.vec 16, 0
+two: bit.vec 16, 2
+qtmp: bit.vec 16, 0
+rtmp: bit.vec 16, 0
+star: bit.vec 8, '*'
+space: bit.vec 8, ' '
+rep_ctr: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit

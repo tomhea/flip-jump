@@ -1,0 +1,40 @@
+// Print Fibs First 10 (#0250)
+
+// No input. Prints `0 1 1 2 3 5 8 13 21 34\n` (the first 10 Fibonacci numbers, space-separated).
+
+main
+
+def main @ loop, end < a, b, nxt, ctr, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.if0 16, ctr, end
+    print_spaced 16, a, first
+    bit.mov 16, nxt, a
+    bit.add 16, nxt, b
+    bit.mov 16, a, b
+    bit.mov 16, b, nxt
+    bit.dec 16, ctr
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Print val[:n] in decimal; emit a leading space on all but the first call.
+def print_spaced n, val, first @ subsequent, emit < sp {
+    bit.if0 first, subsequent
+    bit.zero first
+    ;emit
+  subsequent:
+    bit.print sp
+  emit:
+    bit.print_dec_uint n, val
+}
+
+a: bit.vec 16, 0
+b: bit.vec 16, 1
+nxt: bit.vec 16, 0
+ctr: bit.vec 16, 10
+sp: bit.vec 8, ' '
+first: bit.bit

@@ -1,0 +1,52 @@
+// Print Factorial First 6 (#0258)
+
+// No input. Prints `1 2 6 24 120 720\n` (factorials 1..6).
+
+main
+
+def main @ loop, body, end < fact, idx, limit, prod, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.cmp 16, idx, limit, body, body, end
+  body:
+    mul_into 16, prod, fact, idx
+    bit.mov 16, fact, prod
+    print_spaced 16, fact, first
+    bit.inc 16, idx
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// dst[:n] = addend[:n] * times[:n], via repeated addition (times is small).
+def mul_into n, dst, addend, times @ loop, end < mul_counter {
+    bit.zero n, dst
+    bit.mov n, mul_counter, times
+  loop:
+    bit.if0 n, mul_counter, end
+    bit.add n, dst, addend
+    bit.dec n, mul_counter
+    ;loop
+  end:
+}
+
+// Print val[:n] in decimal; emit a leading space on all but the first call.
+def print_spaced n, val, first @ subsequent, emit < sp {
+    bit.if0 first, subsequent
+    bit.zero first
+    ;emit
+  subsequent:
+    bit.print sp
+  emit:
+    bit.print_dec_uint n, val
+}
+
+fact: bit.vec 16, 1
+idx: bit.vec 16, 1
+limit: bit.vec 16, 6
+prod: bit.vec 16, 0
+sp: bit.vec 8, ' '
+first: bit.bit
+mul_counter: bit.vec 16, 0

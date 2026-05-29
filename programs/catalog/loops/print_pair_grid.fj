@@ -1,0 +1,37 @@
+// Print Pair Grid (#0262)
+
+// No input. Prints all pairs `(i, j)` for `i, j` in `0`-`2` in row-major order, each formatted as `i j\n`. Output is 9 lines total.
+
+main
+
+def main @ loop, body, end < i_idx, three {
+    stl.startup
+    bit.zero 16, i_idx
+  loop:
+    bit.cmp 16, i_idx, three, body, end, end
+  body:
+    print_pair_row i_idx, three
+    bit.inc 16, i_idx
+    ;loop
+  end:
+    stl.loop
+}
+
+// Print "ri j\n" for j in 0..count-1 (one grid row of (i,j) pairs).
+def print_pair_row ri, count @ loop, body, end < jcol {
+    bit.zero 16, jcol
+  loop:
+    bit.cmp 16, jcol, count, body, end, end
+  body:
+    bit.print_dec_uint 16, ri
+    stl.output ' '
+    bit.print_dec_uint 16, jcol
+    stl.output '\n'
+    bit.inc 16, jcol
+    ;loop
+  end:
+}
+
+i_idx: bit.vec 16, 0
+three: bit.vec 16, 3
+jcol: bit.vec 16, 0

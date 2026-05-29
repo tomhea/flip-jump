@@ -1,0 +1,79 @@
+// Hollow Box (#0236)
+
+// Reads digit N `2`-`9` + `\n`. Prints an N-by-N hollow box: top and bottom rows are N `*`; middle rows are `*` + (N-2) spaces + `*`, each + `\n`.
+
+main
+
+def main @ loop, end < count, inner, star, space {
+    stl.startup
+    read_decimal 16, count
+    print_glyph_times count, star
+    stl.output '\n'
+    bit.mov 16, inner, count
+    bit.dec 16, inner
+    bit.dec 16, inner
+  loop:
+    bit.if0 16, inner, end
+    print_box_middle count, star, space
+    bit.dec 16, inner
+    ;loop
+  end:
+    print_glyph_times count, star
+    stl.output '\n'
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+// Print the byte at glyph exactly count[:16] times.
+def print_glyph_times count, glyph @ loop, end < rep_ctr {
+    bit.mov 16, rep_ctr, count
+  loop:
+    bit.if0 16, rep_ctr, end
+    bit.print glyph
+    bit.dec 16, rep_ctr
+    ;loop
+  end:
+}
+
+// Print one hollow-box middle row: '*', (count-2) spaces, '*', newline.
+def print_box_middle count, star, space @ loop, end < gap, mid_ctr {
+    bit.print star
+    bit.mov 16, gap, count
+    bit.dec 16, gap
+    bit.dec 16, gap
+    bit.mov 16, mid_ctr, gap
+  loop:
+    bit.if0 16, mid_ctr, end
+    bit.print space
+    bit.dec 16, mid_ctr
+    ;loop
+  end:
+    bit.print star
+    stl.output '\n'
+}
+
+count: bit.vec 16, 0
+inner: bit.vec 16, 0
+star: bit.vec 8, '*'
+space: bit.vec 8, ' '
+gap: bit.vec 16, 0
+rep_ctr: bit.vec 16, 0
+mid_ctr: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit

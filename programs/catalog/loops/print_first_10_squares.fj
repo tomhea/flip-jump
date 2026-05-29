@@ -1,0 +1,38 @@
+// Print First 10 Squares (#0252)
+
+// No input. Prints `1 4 9 16 25 36 49 64 81 100\n`.
+
+main
+
+def main @ loop, end < sq, odd, two, ctr, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.if0 16, ctr, end
+    bit.add 16, sq, odd
+    print_spaced 16, sq, first
+    bit.add 16, odd, two
+    bit.dec 16, ctr
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Print val[:n] in decimal; emit a leading space on all but the first call.
+def print_spaced n, val, first @ subsequent, emit < sp {
+    bit.if0 first, subsequent
+    bit.zero first
+    ;emit
+  subsequent:
+    bit.print sp
+  emit:
+    bit.print_dec_uint n, val
+}
+
+sq: bit.vec 16, 0
+odd: bit.vec 16, 1
+two: bit.vec 16, 2
+ctr: bit.vec 16, 10
+sp: bit.vec 8, ' '
+first: bit.bit
