@@ -1,0 +1,37 @@
+// Lazy Caterers First 8 (#0457)
+
+// No input. Prints the first 8 lazy caterer's numbers (max regions with N cuts of a disc): `1 2 4 7 11 16 22 29` space-separated + `\n`.
+
+main
+
+def main @ loop, body, end < limit, idx, tri, term, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.cmp 16, idx, limit, body, end, end
+  body:
+    bit.add 16, tri, idx
+    bit.mov 16, term, tri
+    bit.inc 16, term
+    print_sep_dec 16, term, first
+    bit.inc 16, idx
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Print ` ` before all but the first term (tracked by `first`), then value[:n] as decimal.
+def print_sep_dec n, value, first @ skip_space {
+    bit.if1 first, skip_space
+    stl.output ' '
+  skip_space:
+    bit.print_dec_uint n, value
+    bit.zero first
+}
+
+limit: bit.vec 16, 8
+idx: bit.vec 16, 0
+tri: bit.vec 16, 0
+term: bit.vec 16, 0
+first: bit.bit

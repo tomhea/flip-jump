@@ -1,0 +1,54 @@
+// Derangement First 5 (#0439)
+
+// No input. Prints the first 5 derangement numbers `D(n)` for `n = 1..5`: `0 1 2 9 44\n`.
+
+main
+
+def main @ loop, body, end < limit, idx, a, b, sum, nxt, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.cmp 16, idx, limit, body, body, end
+  body:
+    print_sep_dec 16, b, first
+    bit.mov 16, sum, a
+    bit.add 16, sum, b
+    mul_into 16, nxt, sum, idx
+    bit.mov 16, a, b
+    bit.mov 16, b, nxt
+    bit.inc 16, idx
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// dst[:n] = addend[:n] * times[:n], via repeated addition (times is small).
+def mul_into n, dst, addend, times @ loop, end < mul_counter {
+    bit.zero n, dst
+    bit.mov n, mul_counter, times
+  loop:
+    bit.if0 n, mul_counter, end
+    bit.add n, dst, addend
+    bit.dec n, mul_counter
+    ;loop
+  end:
+}
+
+// Print ` ` before all but the first term (tracked by `first`), then value[:n] as decimal.
+def print_sep_dec n, value, first @ skip_space {
+    bit.if1 first, skip_space
+    stl.output ' '
+  skip_space:
+    bit.print_dec_uint n, value
+    bit.zero first
+}
+
+limit: bit.vec 16, 5
+idx: bit.vec 16, 1
+a: bit.vec 16, 1
+b: bit.vec 16, 0
+sum: bit.vec 16, 0
+nxt: bit.vec 16, 0
+first: bit.bit
+mul_counter: bit.vec 16, 0

@@ -1,0 +1,72 @@
+// Mersenne Prime First 3 (#0454)
+
+// No input. Prints the first 3 Mersenne primes: `3 7 31` space-separated + `\n`.
+
+main
+
+def main @ loop, advance, keep, double, end < limit, count, powr, tmp, mers, prime, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.cmp 24, count, limit, advance, end, end
+  advance:
+    bit.mov 24, mers, powr
+    bit.dec 24, mers
+    is_prime_sqrt_into 24, prime, mers
+    bit.if0 prime, double
+  keep:
+    print_sep_dec 24, mers, first
+    bit.inc 24, count
+  double:
+    bit.mov 24, tmp, powr
+    bit.add 24, powr, tmp
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// flag = 1 if x[:n] is prime, else 0. Trial division d = 2,3,... while d*d <= x. Assumes x >= 2.
+def is_prime_sqrt_into n, flag, x @ loop, test, composite, done < ip_d, ip_dsq, ip_four, ip_q, ip_r {
+    bit.one flag
+    bit.zero n, ip_d
+    bit.inc n, ip_d
+    bit.inc n, ip_d
+    bit.zero n, ip_dsq
+    bit.add n, ip_dsq, ip_four
+  loop:
+    bit.cmp n, ip_dsq, x, test, test, done
+  test:
+    bit.div n, x, ip_d, ip_q, ip_r
+    bit.if0 n, ip_r, composite
+    bit.add n, ip_dsq, ip_d
+    bit.add n, ip_dsq, ip_d
+    bit.inc n, ip_dsq
+    bit.inc n, ip_d
+    ;loop
+  composite:
+    bit.zero flag
+  done:
+}
+
+// Print ` ` before all but the first term (tracked by `first`), then value[:n] as decimal.
+def print_sep_dec n, value, first @ skip_space {
+    bit.if1 first, skip_space
+    stl.output ' '
+  skip_space:
+    bit.print_dec_uint n, value
+    bit.zero first
+}
+
+limit: bit.vec 24, 3
+count: bit.vec 24, 0
+powr: bit.vec 24, 4
+tmp: bit.vec 24, 0
+mers: bit.vec 24, 0
+prime: bit.bit
+first: bit.bit
+ip_d: bit.vec 24, 0
+ip_dsq: bit.vec 24, 0
+ip_four: bit.vec 24, 4
+ip_q: bit.vec 24, 0
+ip_r: bit.vec 24, 0

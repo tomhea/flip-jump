@@ -1,0 +1,40 @@
+// Pell First 8 (#0444)
+
+// No input. Prints the first 8 Pell numbers `P(n)` starting `0 1 2 5 12 29 70 169\n`.
+
+main
+
+def main @ loop, body, end < limit, idx, a, b, nxt, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.cmp 16, idx, limit, body, end, end
+  body:
+    print_sep_dec 16, a, first
+    bit.mov 16, nxt, b
+    bit.add 16, nxt, b
+    bit.add 16, nxt, a
+    bit.mov 16, a, b
+    bit.mov 16, b, nxt
+    bit.inc 16, idx
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Print ` ` before all but the first term (tracked by `first`), then value[:n] as decimal.
+def print_sep_dec n, value, first @ skip_space {
+    bit.if1 first, skip_space
+    stl.output ' '
+  skip_space:
+    bit.print_dec_uint n, value
+    bit.zero first
+}
+
+limit: bit.vec 16, 8
+idx: bit.vec 16, 0
+a: bit.vec 16, 0
+b: bit.vec 16, 1
+nxt: bit.vec 16, 0
+first: bit.bit

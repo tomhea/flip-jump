@@ -1,0 +1,37 @@
+// Centered Triangular First 5 (#0458)
+
+// No input. Prints the first 5 centered triangular numbers: `1 4 10 19 31` space-separated + `\n`.
+
+main
+
+def main @ loop, body, end < limit, idx, term, delta, step, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.cmp 16, idx, limit, body, end, end
+  body:
+    print_sep_dec 16, term, first
+    bit.add 16, delta, step
+    bit.add 16, term, delta
+    bit.inc 16, idx
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Print ` ` before all but the first term (tracked by `first`), then value[:n] as decimal.
+def print_sep_dec n, value, first @ skip_space {
+    bit.if1 first, skip_space
+    stl.output ' '
+  skip_space:
+    bit.print_dec_uint n, value
+    bit.zero first
+}
+
+limit: bit.vec 16, 5
+idx: bit.vec 16, 0
+term: bit.vec 16, 1
+delta: bit.vec 16, 0
+step: bit.vec 16, 3
+first: bit.bit

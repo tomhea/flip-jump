@@ -1,0 +1,58 @@
+// Odds First N (#0918)
+
+// Reads digit N `1`-`9` + `\n`. Prints first N positive odd numbers `1, 3, ..., 2N-1` space-separated + `\n`.
+
+main
+
+def main @ loop, body, end < limit, idx, term, two, first {
+    stl.startup
+    read_decimal 16, limit
+    bit.zero 16, idx
+    bit.zero 16, term
+    bit.inc 16, term
+    bit.one first
+  loop:
+    bit.cmp 16, idx, limit, body, end, end
+  body:
+    print_sep_dec 16, term, first
+    bit.add 16, term, two
+    bit.inc 16, idx
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+// Print ` ` before all but the first term (tracked by `first`), then value[:n] as decimal.
+def print_sep_dec n, value, first @ skip_space {
+    bit.if1 first, skip_space
+    stl.output ' '
+  skip_space:
+    bit.print_dec_uint n, value
+    bit.zero first
+}
+
+limit: bit.vec 16, 0
+idx: bit.vec 16, 0
+term: bit.vec 16, 1
+two: bit.vec 16, 2
+first: bit.bit
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
