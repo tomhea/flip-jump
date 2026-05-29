@@ -1,0 +1,16 @@
+// Xor With Constant 55 (#0376)
+
+// Reads one byte and outputs `byte XOR 0x55`, as one raw byte.
+
+main
+
+def main < ch, c55 {
+    stl.startup
+    bit.input ch
+    bit.xor 8, ch, c55
+    bit.print ch
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+c55: bit.vec 8, 0x55

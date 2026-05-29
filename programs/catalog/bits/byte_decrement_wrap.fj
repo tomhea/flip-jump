@@ -1,0 +1,15 @@
+// Byte Decrement Wrap (#0379)
+
+// Reads one byte and outputs `(byte - 1) mod 256` as one raw byte (e.g. `0x00` → `0xFF`).
+
+main
+
+def main < ch {
+    stl.startup
+    bit.input ch
+    bit.dec 8, ch
+    bit.print ch
+    stl.loop
+}
+
+ch: bit.vec 8, 0

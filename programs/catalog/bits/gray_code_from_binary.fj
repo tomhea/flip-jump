@@ -1,0 +1,18 @@
+// Gray Code From Binary (#0924)
+
+// Reads one byte and outputs the corresponding Gray code byte (`byte XOR (byte >> 1)`) as one raw byte.
+
+main
+
+def main < ch, tmp {
+    stl.startup
+    bit.input ch
+    bit.mov 8, tmp, ch
+    bit.shr 8, tmp
+    bit.xor 8, ch, tmp
+    bit.print ch
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+tmp: bit.vec 8, 0

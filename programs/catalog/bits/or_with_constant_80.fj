@@ -1,0 +1,16 @@
+// Or With Constant 80 (#0378)
+
+// Reads one byte and outputs `byte OR 0x80` (MSB set, other bits preserved), as one raw byte.
+
+main
+
+def main < ch, c80 {
+    stl.startup
+    bit.input ch
+    bit.or 8, ch, c80
+    bit.print ch
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+c80: bit.vec 8, 0x80

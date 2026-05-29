@@ -1,0 +1,19 @@
+// Is Byte Zero (#0374)
+
+// Reads one byte and prints `1\n` if it equals `0x00`, else `0\n`.
+
+main
+
+def main @ yes, done < ch {
+    stl.startup
+    bit.input ch
+    bit.if0 8, ch, yes
+    stl.output "0\n"
+    ;done
+  yes:
+    stl.output "1\n"
+  done:
+    stl.loop
+}
+
+ch: bit.vec 8, 0

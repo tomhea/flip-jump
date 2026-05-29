@@ -1,0 +1,17 @@
+// Rotate Right Byte (#0381)
+
+// Reads one byte and outputs the byte rotated right by 1 bit (LSB wraps around to MSB), as one raw byte.
+
+main
+
+def main < ch, out {
+    stl.startup
+    bit.input ch
+    bit.mov out + 7*dw, ch
+    rep(7, i) bit.mov out + i*dw, ch + (i+1)*dw
+    bit.print out
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+out: bit.vec 8, 0

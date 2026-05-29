@@ -1,0 +1,31 @@
+// Count Trailing Zeros (#0371)
+
+// Reads one byte and prints the count of zero bits before the first `1` (counting from the LSB upward), `0`-`8`, + `\n`. The zero byte yields `8`.
+
+main
+
+def main < ch, count, still {
+    stl.startup
+    bit.input ch
+    bit.zero 16, count
+    bit.one still
+    rep(8, i) scan_zero_step still, count, ch + i*dw
+    bit.print_dec_uint 16, count
+    stl.output '\n'
+    stl.loop
+}
+
+// One leading/trailing-zero step: while `still` scanning, count a 0 bit; a 1 bit stops the scan.
+def scan_zero_step still, count, b @ is_one, end {
+    bit.if0 still, end
+    bit.if1 b, is_one
+    bit.inc 16, count
+    ;end
+  is_one:
+    bit.zero still
+  end:
+}
+
+ch: bit.vec 8, 0
+count: bit.vec 16, 0
+still: bit.bit

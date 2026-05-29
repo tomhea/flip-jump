@@ -1,0 +1,20 @@
+// Or Three Bytes (#0901)
+
+// Reads exactly 3 bytes. Outputs `b1 OR b2 OR b3` as one raw byte.
+
+main
+
+def main < a, b, c {
+    stl.startup
+    bit.input a
+    bit.input b
+    bit.input c
+    bit.or 8, a, b
+    bit.or 8, a, c
+    bit.print a
+    stl.loop
+}
+
+a: bit.vec 8, 0
+b: bit.vec 8, 0
+c: bit.vec 8, 0
