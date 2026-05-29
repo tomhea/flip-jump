@@ -257,6 +257,7 @@ def main < ch, hi, lo, value, err {
     bit.ascii2hex err, hi, ch
     bit.input ch
     bit.ascii2hex err, lo, ch
+    bit.input ch
     bit.zero 16, value
     bit.mov 4, value, lo
     bit.mov 4, value + 4*dw, hi
@@ -759,7 +760,7 @@ def main @ d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, done < ch, digit, err, \\
     stl.loop
 }
 """,
-    in_bytes=b"3\n\0",
+    in_bytes=b"3\n",
     out_bytes=b"three\n",
 )
 

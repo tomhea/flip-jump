@@ -10,6 +10,7 @@ def main < ch, hi, lo, value, err {
     bit.ascii2hex err, hi, ch
     bit.input ch
     bit.ascii2hex err, lo, ch
+    bit.input ch
     bit.zero 16, value
     bit.mov 4, value, lo
     bit.mov 4, value + 4*dw, hi
