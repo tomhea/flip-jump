@@ -1,0 +1,33 @@
+// Print Pair Diff Grid (#0275)
+
+// No input. For all `i` in `0`-`3` and `j` in `0`-`3`, prints `i-j\n` (signed) on its own line, in row-major (i,j) order. 16 lines total.
+
+main
+
+def main @ outer, orow, inner, irow, next_i, idone < i_idx, j_idx, diff, four {
+    stl.startup
+    bit.zero 16, i_idx
+  outer:
+    bit.cmp 16, i_idx, four, orow, idone, idone
+  orow:
+    bit.zero 16, j_idx
+  inner:
+    bit.cmp 16, j_idx, four, irow, next_i, next_i
+  irow:
+    bit.mov 16, diff, i_idx
+    bit.sub 16, diff, j_idx
+    bit.print_dec_int 16, diff
+    stl.output '\n'
+    bit.inc 16, j_idx
+    ;inner
+  next_i:
+    bit.inc 16, i_idx
+    ;outer
+  idone:
+    stl.loop
+}
+
+i_idx: bit.vec 16, 0
+j_idx: bit.vec 16, 0
+diff: bit.vec 16, 0
+four: bit.vec 16, 4

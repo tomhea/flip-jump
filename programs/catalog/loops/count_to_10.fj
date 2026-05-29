@@ -1,0 +1,21 @@
+// Count To 10 (#0253)
+
+// No input. Prints `1\n2\n...\n10\n` (one per line, ten lines total).
+
+main
+
+def main @ loop, body, end < idx, limit {
+    stl.startup
+  loop:
+    bit.cmp 16, idx, limit, body, body, end
+  body:
+    bit.print_dec_uint 16, idx
+    stl.output '\n'
+    bit.inc 16, idx
+    ;loop
+  end:
+    stl.loop
+}
+
+idx: bit.vec 16, 1
+limit: bit.vec 16, 10
