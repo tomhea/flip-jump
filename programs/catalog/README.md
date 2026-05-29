@@ -571,6 +571,134 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0194 | sort_two_asc | Reads two decimal integers and prints them sorted ascending: `<smaller>
+<larger>
+`. |
+| 0195 | sort_two_desc | Reads two decimal integers and prints them sorted descending: `<larger>
+<smaller>
+`. |
+| 0196 | sort_three_asc | Reads three decimal integers and prints them sorted ascending, one per line. |
+| 0197 | sort_three_desc | Reads three decimal integers and prints them sorted descending, one per line. |
+| 0198 | classify_age | Reads decimal age `0`-`120` and prints `infant
+` if `<2`, `child
+` if `2-12`, `teen
+` if `13-19`, `adult
+` if `20-64`, `senior
+` if `>=65`. |
+| 0199 | classify_grade | Reads decimal score `0`-`100` and prints `A
+` if `>=90`, `B
+` if `80-89`, `C
+` if `70-79`, `D
+` if `60-69`, else `F
+`. |
+| 0200 | classify_temp_c | Reads signed decimal Celsius temperature and prints one of `freezing
+` (≤0), `cold
+` (1-10), `mild
+` (11-20), `warm
+` (21-30), `hot
+` (≥31). |
+| 0201 | day_of_week_name | Reads decimal `0`-`6` and prints `Sunday`/`Monday`/`Tuesday`/`Wednesday`/`Thursday`/`Friday`/`Saturday` followed by `
+` (Sunday=0). |
+| 0202 | month_name | Reads decimal `1`-`12` and prints the English month name (`January`...`December`) + `
+`. |
+| 0203 | season_from_month | Reads decimal month `1`-`12` and prints `winter
+` (12,1,2), `spring
+` (3,4,5), `summer
+` (6,7,8), `fall
+` (9,10,11). |
+| 0204 | even_or_odd_word | Reads one decimal integer and prints `even
+` or `odd
+` (not `0`/`1`). |
+| 0205 | compare_to_10 | Reads one decimal and prints `less
+` if `<10`, `equal
+` if `=10`, `more
+` if `>10`. |
+| 0206 | compare_to_100 | Reads one decimal and prints `less
+` if `<100`, `equal
+` if `=100`, `more
+` if `>100`. |
+| 0207 | is_alphanumeric_byte | Reads exactly one byte and prints `1
+` if it's `0`-`9`/`A`-`Z`/`a`-`z`, else `0
+`. |
+| 0208 | is_punctuation_byte | Reads exactly one byte and prints `1
+` if it's one of `,.?!;:'-` (the eight common punctuation marks), else `0
+`. |
+| 0209 | is_whitespace_byte | Reads exactly one byte and prints `1
+` if it's space/tab/newline (`0x20`, `0x09`, `0x0A`), else `0
+`. |
+| 0210 | char_class | Reads exactly one byte and prints one of `digit
+`, `upper
+`, `lower
+`, `other
+` based on the byte's ASCII range. |
+| 0211 | weekday_or_weekend | Reads decimal day-of-week `0`-`6` (Sunday=0) and prints `weekend
+` (Sat/Sun) or `weekday
+` (Mon-Fri). |
+| 0212 | is_business_hour | Reads decimal hour `0`-`23` (24-hour clock) and prints `1
+` if `9 <= h <= 17`, else `0
+`. |
+| 0213 | fizzbuzz_classify_one | Reads decimal N in `1`-`100` and prints just one of: `fizz
+` if `N % 3 == 0` and not `% 5`; `buzz
+` if `N % 5 == 0` and not `% 3`; `fizzbuzz
+` if both; else `<N>
+`. |
+| 0214 | min_or_max_select | Reads one ASCII bit (`0` or `1`) followed by `
+`, then two decimals each followed by `
+`. If bit is `0` prints the min, if `1` prints the max + `
+`. |
+| 0215 | abs_or_negate_select | Reads one ASCII bit, then a signed decimal. If bit is `0` prints `abs(a)`, if `1` prints `-a`, each + `
+`. |
+| 0216 | upper_or_lower_select | Reads one ASCII bit, then exactly one byte. If bit is `0` outputs the byte uppercased, if `1` outputs it lowercased. |
+| 0217 | switch_on_digit | Reads one ASCII digit `0`-`9` and prints `a
+` for 0, `b
+` for 1, …, `j
+` for 9. |
+| 0218 | triangle_classify | Reads three positive decimals `a`,`b`,`c` (each ≤ 99, on own line) as triangle side lengths. Prints `equilateral
+`, `isosceles
+`, `scalene
+`, or `not
+` (if no valid triangle). |
+| 0219 | quadrant_2d | Reads two signed decimals `x` then `y` and prints `1
+`/`2
+`/`3
+`/`4
+` based on Cartesian quadrant; prints `axis
+` if either coordinate is 0. |
+| 0220 | compare_three_order | Reads three decimals `a`,`b`,`c` (each own line) and prints one of `abc`/`acb`/`bac`/`bca`/`cab`/`cba` + `
+` indicating their ascending sorted order by original label. (Ties broken alphabetically by label.) |
+| 0221 | parity_three | Reads three decimals and prints `all even
+` if all are even, `all odd
+` if all odd, else `mixed
+`. |
+| 0222 | all_positive_three | Reads three signed decimals and prints `1
+` if all are `> 0`, else `0
+`. |
+| 0223 | any_zero_three | Reads three decimals and prints `1
+` if at least one equals 0, else `0
+`. |
+| 0224 | compare_with_window | Reads three decimals `a`, `lo`, `hi` (each own line) and prints `below
+` if `a < lo`, `in
+` if `lo <= a <= hi`, `above
+` if `a > hi`. |
+| 0225 | sorted_check_three | Reads three decimals and prints `1
+` if they are in non-decreasing order, else `0
+`. |
+| 0226 | sorted_check_four | Reads four decimals and prints `1
+` if they are in non-decreasing order, else `0
+`. |
+| 0227 | rps_winner | Reads two bytes (each on own line, terminated by `
+`): `r`/`p`/`s` (rock/paper/scissors) for player 1 and player 2. Prints `1
+` if P1 wins, `2
+` if P2 wins, `tie
+` if tie. |
+| 0228 | leap_year_check | Reads decimal year `1`-`9999` and prints `1
+` if it's a leap year (Gregorian rule: `(y%4==0 && y%100!=0) || y%400==0`), else `0
+`. |
+| 0229 | bmi_category | Reads two decimals: weight-kg `1`-`200` then height-cm `100`-`250` (each own line). Computes BMI = weight*10000/(height*height) and prints `under
+` (BMI<18), `normal
+` (18-24), `over
+` (25-29), `obese
+` (≥30). |
 
 ## data_structures
 

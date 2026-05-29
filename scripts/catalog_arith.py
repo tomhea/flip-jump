@@ -108,7 +108,10 @@ SCRATCH_MUL = ["mul_counter: bit.vec 16, 0"]
 
 
 def catalog_desc(slug: str) -> str:
-    m = re.search(rf"\| APPROVED \| \S+ \| {re.escape(slug)} \| (.+?) \|", CATALOG_MD)
+    # Greedy capture to the row's closing ` |` so descriptions that themselves
+    # contain ` | ` (e.g. the `|x|` / `||` notation in leap_year_check) aren't
+    # truncated at the first interior pipe.
+    m = re.search(rf"\| APPROVED \| \S+ \| {re.escape(slug)} \| (.+) \|$", CATALOG_MD, re.MULTILINE)
     if not m:
         raise SystemExit(f"no APPROVED row for {slug}")
     return m.group(1).strip()
