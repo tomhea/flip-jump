@@ -1,0 +1,73 @@
+// Powers Of 3 First N (#0920)
+
+// Reads digit N `1`-`5` + `\n`. Prints `3^0, 3^1, ..., 3^(N-1)` space-separated + `\n`.
+
+main
+
+def main @ loop, body, end < limit, idx, term, tmp, three, first {
+    stl.startup
+    read_decimal 16, limit
+    bit.zero 16, idx
+    bit.zero 16, term
+    bit.inc 16, term
+    bit.one first
+  loop:
+    bit.cmp 16, idx, limit, body, end, end
+  body:
+    print_sep_dec 16, term, first
+    mul_into 16, tmp, term, three
+    bit.mov 16, term, tmp
+    bit.inc 16, idx
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+// dst[:n] = addend[:n] * times[:n], via repeated addition (times is small).
+def mul_into n, dst, addend, times @ loop, end < mul_counter {
+    bit.zero n, dst
+    bit.mov n, mul_counter, times
+  loop:
+    bit.if0 n, mul_counter, end
+    bit.add n, dst, addend
+    bit.dec n, mul_counter
+    ;loop
+  end:
+}
+
+// Print ` ` before all but the first term (tracked by `first`), then value[:n] as decimal.
+def print_sep_dec n, value, first @ skip_space {
+    bit.if1 first, skip_space
+    stl.output ' '
+  skip_space:
+    bit.print_dec_uint n, value
+    bit.zero first
+}
+
+limit: bit.vec 16, 0
+idx: bit.vec 16, 0
+term: bit.vec 16, 1
+tmp: bit.vec 16, 0
+three: bit.vec 16, 3
+first: bit.bit
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
+mul_counter: bit.vec 16, 0

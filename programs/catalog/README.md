@@ -972,6 +972,89 @@ Blastoff!
 
 | # | name | description |
 |---|---|---|
+| 0431 | triangular_first_n | Reads digit N `1`-`9` + `
+`. Prints the first N triangular numbers `T(k) = k(k+1)/2` for `k = 1..N`, space-separated, ending with `
+`. |
+| 0432 | square_first_n | Reads digit N `1`-`9` + `
+`. Prints the first N positive squares `1, 4, 9, ..., N²`, space-separated, + `
+`. |
+| 0433 | pentagonal_first_n | Reads digit N `1`-`9` + `
+`. Prints the first N pentagonal numbers `P(k) = k(3k - 1)/2`, space-separated, + `
+`. |
+| 0434 | hexagonal_first_n | Reads digit N `1`-`9` + `
+`. Prints the first N hexagonal numbers `H(k) = k(2k - 1)`, space-separated, + `
+`. |
+| 0435 | cube_first_n | Reads digit N `1`-`9` + `
+`. Prints the first N positive cubes `1, 8, 27, ..., N³`, space-separated, + `
+`. |
+| 0436 | tetrahedral_first_n | Reads digit N `1`-`9` + `
+`. Prints the first N tetrahedral numbers `Te(k) = k(k+1)(k+2)/6`, space-separated, + `
+`. |
+| 0437 | catalan_first_5 | No input. Prints the first 5 Catalan numbers `1 1 2 5 14
+`. |
+| 0439 | derangement_first_5 | No input. Prints the first 5 derangement numbers `D(n)` for `n = 1..5`: `0 1 2 9 44
+`. |
+| 0440 | lucas_first_n | Reads digit N `1`-`9` + `
+`. Prints `L(0), L(1), ..., L(N-1)` (where `L(0)=2, L(1)=1`), space-separated, + `
+`. |
+| 0441 | perrin_first_10 | No input. Prints the first 10 Perrin sequence values starting `P(0)=3, P(1)=0, P(2)=2`: `3 0 2 3 2 5 5 7 10 12
+`. |
+| 0442 | padovan_first_10 | No input. Prints the first 10 Padovan sequence values starting `1 1 1 2 2 3 4 5 7 9
+`. |
+| 0443 | jacobsthal_first_8 | No input. Prints the first 8 Jacobsthal numbers `J(n)` starting `0 1 1 3 5 11 21 43
+`. |
+| 0444 | pell_first_8 | No input. Prints the first 8 Pell numbers `P(n)` starting `0 1 2 5 12 29 70 169
+`. |
+| 0445 | tribonacci_first_10 | No input. Prints the first 10 Tribonacci values starting `T(0)=T(1)=0, T(2)=1`: `0 0 1 1 2 4 7 13 24 44
+`. |
+| 0446 | tetranacci_first_8 | No input. Prints the first 8 Tetranacci values starting `0 0 0 1 1 2 4 8
+`. |
+| 0447 | fibonacci_even_first_5 | No input. Prints the first 5 even Fibonacci numbers: `0 2 8 34 144
+`. |
+| 0448 | fibonacci_odd_first_5 | No input. Prints the first 5 odd Fibonacci numbers: `1 1 3 5 13
+`. |
+| 0449 | fibonacci_sum_first_n | Reads digit N `1`-`12` + `
+`. Prints `F(1) + F(2) + ... + F(N)` (with `F(1)=1, F(2)=1, ...`) as decimal + `
+`. |
+| 0450 | fibonacci_squares_first_5 | No input. Prints `F(1)² F(2)² ... F(5)²` = `1 1 4 9 25` space-separated + `
+`. |
+| 0451 | fibonacci_modulo_10 | Reads decimal N in `1`-`20` (one or two ASCII digits, terminated by `
+`). Prints `F(N) mod 10` as a single decimal digit + `
+`. |
+| 0453 | mersenne_first_5 | No input. Prints the first 5 Mersenne numbers `M(n) = 2^n - 1` for `n = 1..5`: `1 3 7 15 31` space-separated + `
+`. |
+| 0454 | mersenne_prime_first_3 | No input. Prints the first 3 Mersenne primes: `3 7 31` space-separated + `
+`. |
+| 0455 | fermat_first_4 | No input. Prints the first 4 Fermat numbers `F(n) = 2^(2^n) + 1` for `n = 0..3`: `3 5 17 257` space-separated + `
+`. |
+| 0457 | lazy_caterers_first_8 | No input. Prints the first 8 lazy caterer's numbers (max regions with N cuts of a disc): `1 2 4 7 11 16 22 29` space-separated + `
+`. |
+| 0458 | centered_triangular_first_5 | No input. Prints the first 5 centered triangular numbers: `1 4 10 19 31` space-separated + `
+`. |
+| 0459 | centered_square_first_5 | No input. Prints the first 5 centered square numbers: `1 5 13 25 41` space-separated + `
+`. |
+| 0460 | centered_hexagonal_first_5 | No input. Prints the first 5 centered hexagonal numbers: `1 7 19 37 61` space-separated + `
+`. |
+| 0917 | evens_first_n | Reads digit N `1`-`9` + `
+`. Prints first N positive even numbers `2, 4, ..., 2N` space-separated + `
+`. |
+| 0918 | odds_first_n | Reads digit N `1`-`9` + `
+`. Prints first N positive odd numbers `1, 3, ..., 2N-1` space-separated + `
+`. |
+| 0919 | powers_of_2_first_n | Reads digit N `1`-`7` + `
+`. Prints `2^0, 2^1, ..., 2^(N-1)` space-separated + `
+`. |
+| 0920 | powers_of_3_first_n | Reads digit N `1`-`5` + `
+`. Prints `3^0, 3^1, ..., 3^(N-1)` space-separated + `
+`. |
+| 0921 | fibonacci_pairs_first_n | Reads digit N `1`-`8` + `
+`. Prints `<F(i)> <F(i+1)>
+` for `i = 0..N-1` (N lines of consecutive Fibonacci pairs). |
+| 0922 | mersenne_first_n | Reads digit N `1`-`7` + `
+`. Prints first N Mersenne numbers `M(k) = 2^k - 1` for `k = 1..N`, space-separated + `
+`. |
+| 0923 | triangular_inverse_n | Reads decimal triangular number `1`-`55` + `
+` (i.e. one of `1, 3, 6, 10, 15, 21, 28, 36, 45, 55`). Prints the index `k` such that `T(k) == input`, else `-1` if input isn't triangular. |
 
 ## text_processing
 

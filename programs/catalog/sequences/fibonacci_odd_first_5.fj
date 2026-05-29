@@ -1,0 +1,42 @@
+// Fibonacci Odd First 5 (#0448)
+
+// No input. Prints the first 5 odd Fibonacci numbers: `1 1 3 5 13\n`.
+
+main
+
+def main @ loop, advance, keep, next_fib, end < limit, count, a, b, tmp, first {
+    stl.startup
+    bit.one first
+  loop:
+    bit.cmp 16, count, limit, advance, end, end
+  advance:
+    bit.if1 a, keep
+    ;next_fib
+  keep:
+    print_sep_dec 16, a, first
+    bit.inc 16, count
+  next_fib:
+    bit.mov 16, tmp, a
+    bit.mov 16, a, b
+    bit.add 16, b, tmp
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Print ` ` before all but the first term (tracked by `first`), then value[:n] as decimal.
+def print_sep_dec n, value, first @ skip_space {
+    bit.if1 first, skip_space
+    stl.output ' '
+  skip_space:
+    bit.print_dec_uint n, value
+    bit.zero first
+}
+
+limit: bit.vec 16, 5
+count: bit.vec 16, 0
+a: bit.vec 16, 0
+b: bit.vec 16, 1
+tmp: bit.vec 16, 0
+first: bit.bit
