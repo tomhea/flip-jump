@@ -1,0 +1,25 @@
+// String Length (#0166)
+
+// Reads a single `\n`-terminated line of length ≤ 80 and prints the length of the line (excluding the `\n`) as decimal + `\n`.
+
+main
+
+def main @ loop, body, end < ch, nl, count {
+    stl.startup
+    bit.zero 16, count
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, body, end, body
+  body:
+    bit.inc 16, count
+    ;loop
+  end:
+    bit.print_dec_uint 16, count
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+count: bit.vec 16, 0

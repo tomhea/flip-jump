@@ -1,0 +1,62 @@
+// Count Vowels (#0168)
+
+// Reads a `\n`-terminated line ≤ 80 chars and prints the count of vowel letters (`aeiouAEIOU`) as decimal + `\n`.
+
+main
+
+def main @ loop, body, hit, skip, end < ch, nl, count {
+    stl.startup
+    bit.zero 16, count
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, body, end, body
+  body:
+    is_vowel ch, hit, skip
+  hit:
+    bit.inc 16, count
+  skip:
+    ;loop
+  end:
+    bit.print_dec_uint 16, count
+    stl.output '\n'
+    stl.loop
+}
+
+// Jump to `yes` if ch is a/e/i/o/u in either case, else to `no`.
+def is_vowel ch, yes, no @ t1, t2, t3, t4, t5, t6, t7, t8, t9 \
+        < va, ve, vi, vo, vu, vA, vE, vI, vO, vU {
+    bit.cmp 8, ch, va, t1, yes, t1
+  t1:
+    bit.cmp 8, ch, ve, t2, yes, t2
+  t2:
+    bit.cmp 8, ch, vi, t3, yes, t3
+  t3:
+    bit.cmp 8, ch, vo, t4, yes, t4
+  t4:
+    bit.cmp 8, ch, vu, t5, yes, t5
+  t5:
+    bit.cmp 8, ch, vA, t6, yes, t6
+  t6:
+    bit.cmp 8, ch, vE, t7, yes, t7
+  t7:
+    bit.cmp 8, ch, vI, t8, yes, t8
+  t8:
+    bit.cmp 8, ch, vO, t9, yes, t9
+  t9:
+    bit.cmp 8, ch, vU, no, yes, no
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+count: bit.vec 16, 0
+va: bit.vec 8, 'a'
+ve: bit.vec 8, 'e'
+vi: bit.vec 8, 'i'
+vo: bit.vec 8, 'o'
+vu: bit.vec 8, 'u'
+vA: bit.vec 8, 'A'
+vE: bit.vec 8, 'E'
+vI: bit.vec 8, 'I'
+vO: bit.vec 8, 'O'
+vU: bit.vec 8, 'U'
