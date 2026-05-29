@@ -1,0 +1,73 @@
+// Is Right Triangle From Sides (#0589)
+
+// Reads 3 decimals `a b c` (each own line, each `1`-`50`) representing triangle side lengths in any order. Prints `1\n` if some permutation satisfies `a^2 + b^2 == c^2`, else `0\n`.
+
+main
+
+def main @ yes, no, done < a, b, c {
+    stl.startup
+    read_decimal 16, a
+    read_decimal 16, b
+    read_decimal 16, c
+    hyp_check 16, a, b, c, yes
+    hyp_check 16, a, c, b, yes
+    hyp_check 16, b, c, a, yes
+  no:
+    stl.output "0\n"
+    ;done
+  yes:
+    stl.output "1\n"
+  done:
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+// dst[:n] = addend[:n] * times[:n], via repeated addition (times is small).
+def mul_into n, dst, addend, times @ loop, end < mul_counter {
+    bit.zero n, dst
+    bit.mov n, mul_counter, times
+  loop:
+    bit.if0 n, mul_counter, end
+    bit.add n, dst, addend
+    bit.dec n, mul_counter
+    ;loop
+  end:
+}
+
+// Jump to `yes` if leg1*leg1 + leg2*leg2 == hyp*hyp (a right triangle).
+def hyp_check n, leg1, leg2, hyp, yes @ no < hc_a2, hc_b2, hc_c2, hc_sum {
+    mul_into n, hc_a2, leg1, leg1
+    mul_into n, hc_b2, leg2, leg2
+    mul_into n, hc_c2, hyp, hyp
+    bit.mov n, hc_sum, hc_a2
+    bit.add n, hc_sum, hc_b2
+    bit.cmp n, hc_sum, hc_c2, no, yes, no
+  no:
+}
+
+a: bit.vec 16, 0
+b: bit.vec 16, 0
+c: bit.vec 16, 0
+hc_a2: bit.vec 16, 0
+hc_b2: bit.vec 16, 0
+hc_c2: bit.vec 16, 0
+hc_sum: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
+mul_counter: bit.vec 16, 0

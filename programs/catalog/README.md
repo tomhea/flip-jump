@@ -555,6 +555,61 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0573 | dot_product_2d | Reads 4 decimals `a b c d` (each own line) representing vectors `(a,b)` and `(c,d)`. Prints `a*c + b*d` as signed decimal + `
+`. |
+| 0574 | cross_product_2d_scalar | Reads 4 decimals (each own line) representing two 2D vectors. Prints the scalar cross product `a*d - b*c` as signed decimal + `
+`. |
+| 0575 | midpoint_2d | Reads 4 decimals `x1 y1 x2 y2` (each own line). Prints `<mx> <my>
+` where `mx = (x1+x2)/2` and `my = (y1+y2)/2` (floor division). |
+| 0576 | is_origin | Reads 2 decimals `x y` (each own line). Prints `1
+` if both are `0`, else `0
+`. |
+| 0577 | is_on_x_axis | Reads 2 decimals (each own line). Prints `1
+` if `y == 0`, else `0
+`. |
+| 0578 | is_on_y_axis | Reads 2 decimals (each own line). Prints `1
+` if `x == 0`, else `0
+`. |
+| 0579 | is_collinear_3 | Reads 6 decimals representing 3 points `(x1,y1) (x2,y2) (x3,y3)` (each coordinate on its own line). Prints `1
+` if collinear (i.e. `(x2-x1)*(y3-y1) - (y2-y1)*(x3-x1) == 0`), else `0
+`. |
+| 0581 | rectangle_area | Reads two decimals `width` `height` (each own line, `0`-`100`). Prints `width * height` + `
+`. |
+| 0582 | rectangle_perimeter | Reads `width` `height` (each own line, `0`-`100`). Prints `2 * (width + height)` + `
+`. |
+| 0585 | square_perimeter | Reads decimal side `0`-`100` + `
+`. Prints `4 * side` + `
+`. |
+| 0586 | cube_surface_area | Reads decimal side `0`-`20` + `
+`. Prints `6 * side * side` + `
+`. |
+| 0587 | is_point_inside_rect | Reads 6 decimals (each own line): point `x y` then rect `xmin ymin xmax ymax`. Prints `1
+` if `xmin <= x <= xmax` and `ymin <= y <= ymax`, else `0
+`. |
+| 0588 | is_point_inside_circle | Reads 5 decimals (each own line): point `x y`, center `cx cy`, radius `r` (all `0`-`50`). Prints `1
+` if `(x-cx)^2 + (y-cy)^2 <= r^2`, else `0
+`. |
+| 0589 | is_right_triangle_from_sides | Reads 3 decimals `a b c` (each own line, each `1`-`50`) representing triangle side lengths in any order. Prints `1
+` if some permutation satisfies `a^2 + b^2 == c^2`, else `0
+`. |
+| 0590 | is_isosceles | Reads 3 decimals (each on own line) representing triangle side lengths. Prints `1
+` if at least two of the three sides are equal (i.e. equilateral triangles also qualify), else `0
+`. |
+| 0591 | is_equilateral | Reads 3 decimals. Prints `1
+` if all three sides equal, else `0
+`. |
+| 0592 | is_scalene | Reads 3 decimals. Prints `1
+` if all three sides are distinct, else `0
+`. |
+| 0593 | perpendicular_vectors_check | Reads 4 decimals (two 2D vectors). Prints `1
+` if their dot product is `0` (perpendicular), else `0
+`. |
+| 0594 | parallel_vectors_check | Reads 4 decimals (two 2D vectors). Prints `1
+` if their scalar cross product is `0` (parallel or anti-parallel), else `0
+`. |
+| 0595 | slope_int_or_undefined | Reads 4 decimals `x1 y1 x2 y2` (each own line, signed). If `x1 == x2`, prints `undefined
+`. Otherwise prints `(y2 - y1) / (x2 - x1)` as signed integer division + `
+`. |
 
 ## simulation
 
