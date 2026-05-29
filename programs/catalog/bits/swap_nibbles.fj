@@ -1,0 +1,18 @@
+// Swap Nibbles (#0080)
+
+// Reads one byte and outputs the byte with low and high nibbles swapped.
+
+main
+
+def main < ch, out {
+    stl.startup
+    bit.input ch
+    bit.zero 8, out
+    bit.mov 4, out, ch + 4*dw
+    bit.mov 4, out + 4*dw, ch
+    bit.print out
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+out: bit.vec 8, 0

@@ -1,0 +1,25 @@
+// Popcount Byte (#0076)
+
+// Reads one byte from stdin and prints its 1-bit count as a single decimal digit `0`-`8` + `\n`.
+
+main
+
+def main < ch, count {
+    stl.startup
+    bit.input ch
+    bit.zero 16, count
+    rep(8, i) add_bit_into count, ch + i*dw
+    bit.print_dec_uint 16, count
+    stl.output '\n'
+    stl.loop
+}
+
+// Add 1 to count[:16] if the bit at b is set.
+def add_bit_into count, b @ end {
+    bit.if0 b, end
+    bit.inc 16, count
+  end:
+}
+
+ch: bit.vec 8, 0
+count: bit.vec 16, 0

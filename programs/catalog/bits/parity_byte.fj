@@ -1,0 +1,30 @@
+// Parity Byte (#0077)
+
+// Reads one byte and prints `0` if it has an even number of 1-bits, `1` if odd, then `\n`.
+
+main
+
+def main @ odd, even, done < ch, parity {
+    stl.startup
+    bit.input ch
+    bit.zero parity
+    rep(8, i) toggle_if_set parity, ch + i*dw
+    bit.if0 parity, even
+  odd:
+    stl.output "1\n"
+    ;done
+  even:
+    stl.output "0\n"
+  done:
+    stl.loop
+}
+
+// Toggle the bit p if the bit at b is set (used to accumulate parity).
+def toggle_if_set p, b @ end {
+    bit.if0 b, end
+    bit.not p
+  end:
+}
+
+ch: bit.vec 8, 0
+parity: bit.bit
