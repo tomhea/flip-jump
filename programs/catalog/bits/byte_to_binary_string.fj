@@ -1,0 +1,25 @@
+// Byte To Binary String (#0372)
+
+// Reads one byte (raw) and prints an 8-char binary string of `0`/`1` (MSB first), followed by `\n`. Differs from `conversion/dec_to_binary` (which reads a decimal text representation).
+
+main
+
+def main < ch {
+    stl.startup
+    bit.input ch
+    rep(8, i) print_bit ch + (7-i)*dw
+    stl.output '\n'
+    stl.loop
+}
+
+// Print '1' if the bit at b is set, else '0'.
+def print_bit b @ one, done {
+    bit.if1 b, one
+    stl.output '0'
+    ;done
+  one:
+    stl.output '1'
+  done:
+}
+
+ch: bit.vec 8, 0

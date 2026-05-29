@@ -1,0 +1,16 @@
+// And With Constant 0f (#0377)
+
+// Reads one byte and outputs `byte AND 0x0F` (low nibble preserved, high nibble zeroed), as one raw byte.
+
+main
+
+def main < ch, c0f {
+    stl.startup
+    bit.input ch
+    bit.and 8, ch, c0f
+    bit.print ch
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+c0f: bit.vec 8, 0x0f

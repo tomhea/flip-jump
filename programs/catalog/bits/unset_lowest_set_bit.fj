@@ -1,0 +1,18 @@
+// Unset Lowest Set Bit (#0933)
+
+// Reads one byte and outputs `byte AND (byte - 1)` (clears the lowest set bit) as one raw byte. For `byte = 0` outputs `0`.
+
+main
+
+def main < ch, tmp {
+    stl.startup
+    bit.input ch
+    bit.mov 8, tmp, ch
+    bit.dec 8, tmp
+    bit.and 8, ch, tmp
+    bit.print ch
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+tmp: bit.vec 8, 0

@@ -1,0 +1,31 @@
+// Count Bits In Three Bytes (#0384)
+
+// Reads exactly 3 bytes and prints the total 1-bit count across all 24 bits as decimal `0`-`24` + `\n`.
+
+main
+
+def main < a, b, c, count {
+    stl.startup
+    bit.input a
+    bit.input b
+    bit.input c
+    bit.zero 16, count
+    rep(8, i) add_bit_into count, a + i*dw
+    rep(8, i) add_bit_into count, b + i*dw
+    rep(8, i) add_bit_into count, c + i*dw
+    bit.print_dec_uint 16, count
+    stl.output '\n'
+    stl.loop
+}
+
+// Add 1 to count[:16] if the bit at b is set.
+def add_bit_into count, b @ end {
+    bit.if0 b, end
+    bit.inc 16, count
+  end:
+}
+
+a: bit.vec 8, 0
+b: bit.vec 8, 0
+c: bit.vec 8, 0
+count: bit.vec 16, 0
