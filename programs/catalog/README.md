@@ -303,6 +303,23 @@ N
 | 0150 | is_deficient_small | Reads decimal N in `1`-`30` and prints `1
 ` if N is deficient (sum of proper divisors < N), else `0
 `. |
+| 0151 | fib_n | Reads decimal N in `0`-`12` and prints the N-th Fibonacci number `F(N)` (with `F(0)=0`, `F(1)=1`) + `
+`. |
+| 0152 | fib_seq_n | Reads decimal N in `0`-`12` and prints `F(0), F(1), ..., F(N)` one per line. |
+| 0153 | is_fib_small | Reads decimal N in `0`-`200` and prints `1
+` if N is a Fibonacci number, else `0
+`. |
+| 0154 | lucas_n | Reads decimal N in `0`-`10` and prints the N-th Lucas number (with `L(0)=2`, `L(1)=1`) + `
+`. |
+| 0155 | collatz_steps | Reads decimal N in `1`-`50` and prints the number of Collatz steps (3n+1 / n/2) to reach 1 + `
+`. |
+| 0156 | collatz_sequence | Reads decimal N in `1`-`15` and prints the Collatz sequence starting at N, terminating with 1, one number per line. |
+| 0164 | is_square_small | Reads decimal N in `0`-`100` and prints `1
+` if N is a perfect square, else `0
+`. |
+| 0165 | is_cube_small | Reads decimal N in `0`-`64` and prints `1
+` if N is a perfect cube, else `0
+`. |
 
 ## strings
 

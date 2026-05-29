@@ -1,0 +1,51 @@
+// Fib Seq N (#0152)
+
+// Reads decimal N in `0`-`12` and prints `F(0), F(1), ..., F(N)` one per line.
+
+main
+
+def main @ loop, body, end < limit, idx, fa, fb, tmp {
+    stl.startup
+    read_decimal 16, limit
+    bit.zero 16, fa
+    bit.zero 16, fb
+    bit.inc 16, fb
+    bit.zero 16, idx
+  loop:
+    bit.cmp 16, idx, limit, body, body, end
+  body:
+    bit.print_dec_uint 16, fa
+    stl.output '\n'
+    bit.mov 16, tmp, fa
+    bit.mov 16, fa, fb
+    bit.add 16, fb, tmp
+    bit.inc 16, idx
+    ;loop
+  end:
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+limit: bit.vec 16, 0
+idx: bit.vec 16, 0
+fa: bit.vec 16, 0
+fb: bit.vec 16, 0
+tmp: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
