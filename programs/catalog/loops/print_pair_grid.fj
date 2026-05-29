@@ -4,29 +4,34 @@
 
 main
 
-def main @ outer, orow, inner, irow, next_i, idone < i_idx, j_idx, three {
+def main @ loop, body, end < i_idx, three {
     stl.startup
     bit.zero 16, i_idx
-  outer:
-    bit.cmp 16, i_idx, three, orow, idone, idone
-  orow:
-    bit.zero 16, j_idx
-  inner:
-    bit.cmp 16, j_idx, three, irow, next_i, next_i
-  irow:
-    bit.print_dec_uint 16, i_idx
-    stl.output ' '
-    bit.print_dec_uint 16, j_idx
-    stl.output '\n'
-    bit.inc 16, j_idx
-    ;inner
-  next_i:
+  loop:
+    bit.cmp 16, i_idx, three, body, end, end
+  body:
+    print_pair_row i_idx, three
     bit.inc 16, i_idx
-    ;outer
-  idone:
+    ;loop
+  end:
     stl.loop
 }
 
+// Print "ri j\n" for j in 0..count-1 (one grid row of (i,j) pairs).
+def print_pair_row ri, count @ loop, body, end < jcol {
+    bit.zero 16, jcol
+  loop:
+    bit.cmp 16, jcol, count, body, end, end
+  body:
+    bit.print_dec_uint 16, ri
+    stl.output ' '
+    bit.print_dec_uint 16, jcol
+    stl.output '\n'
+    bit.inc 16, jcol
+    ;loop
+  end:
+}
+
 i_idx: bit.vec 16, 0
-j_idx: bit.vec 16, 0
 three: bit.vec 16, 3
+jcol: bit.vec 16, 0

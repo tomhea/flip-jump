@@ -1095,32 +1095,40 @@ def main < glyph, count {
 )
 
 # 0262 print_pair_grid — all (i,j) for i,j in 0-2, "i j\n", row-major.
+PAIR_ROW = """
+// Print "ri j\\n" for j in 0..count-1 (one grid row of (i,j) pairs).
+def print_pair_row ri, count @ loop, body, end < jcol {
+    bit.zero 16, jcol
+  loop:
+    bit.cmp 16, jcol, count, body, end, end
+  body:
+    bit.print_dec_uint 16, ri
+    stl.output ' '
+    bit.print_dec_uint 16, jcol
+    stl.output '\\n'
+    bit.inc 16, jcol
+    ;loop
+  end:
+}
+""".strip()
+
 L(
     "0262",
     "print_pair_grid",
     "Print Pair Grid",
-    value_data=["i_idx: bit.vec 16, 0", "j_idx: bit.vec 16, 0", "three: bit.vec 16, 3"],
+    extra_helpers=[PAIR_ROW],
+    value_data=["i_idx: bit.vec 16, 0", "three: bit.vec 16, 3", "jcol: bit.vec 16, 0"],
     main_body="""
-def main @ outer, orow, inner, irow, next_i, idone < i_idx, j_idx, three {
+def main @ loop, body, end < i_idx, three {
     stl.startup
     bit.zero 16, i_idx
-  outer:
-    bit.cmp 16, i_idx, three, orow, idone, idone
-  orow:
-    bit.zero 16, j_idx
-  inner:
-    bit.cmp 16, j_idx, three, irow, next_i, next_i
-  irow:
-    bit.print_dec_uint 16, i_idx
-    stl.output ' '
-    bit.print_dec_uint 16, j_idx
-    stl.output '\\n'
-    bit.inc 16, j_idx
-    ;inner
-  next_i:
+  loop:
+    bit.cmp 16, i_idx, three, body, end, end
+  body:
+    print_pair_row i_idx, three
     bit.inc 16, i_idx
-    ;outer
-  idone:
+    ;loop
+  end:
     stl.loop
 }
 """,
@@ -1129,37 +1137,45 @@ def main @ outer, orow, inner, irow, next_i, idone < i_idx, j_idx, three {
 )
 
 # 0275 print_pair_diff_grid — signed i-j for i,j in 0-3, "i-j\n", row-major.
+DIFF_ROW = """
+// Print "(ri-j)\\n" (signed) for j in 0..count-1 (one grid row of differences).
+def print_diff_row ri, count @ loop, body, end < jcol, diff {
+    bit.zero 16, jcol
+  loop:
+    bit.cmp 16, jcol, count, body, end, end
+  body:
+    bit.mov 16, diff, ri
+    bit.sub 16, diff, jcol
+    bit.print_dec_int 16, diff
+    stl.output '\\n'
+    bit.inc 16, jcol
+    ;loop
+  end:
+}
+""".strip()
+
 L(
     "0275",
     "print_pair_diff_grid",
     "Print Pair Diff Grid",
+    extra_helpers=[DIFF_ROW],
     value_data=[
         "i_idx: bit.vec 16, 0",
-        "j_idx: bit.vec 16, 0",
-        "diff: bit.vec 16, 0",
         "four: bit.vec 16, 4",
+        "jcol: bit.vec 16, 0",
+        "diff: bit.vec 16, 0",
     ],
     main_body="""
-def main @ outer, orow, inner, irow, next_i, idone < i_idx, j_idx, diff, four {
+def main @ loop, body, end < i_idx, four {
     stl.startup
     bit.zero 16, i_idx
-  outer:
-    bit.cmp 16, i_idx, four, orow, idone, idone
-  orow:
-    bit.zero 16, j_idx
-  inner:
-    bit.cmp 16, j_idx, four, irow, next_i, next_i
-  irow:
-    bit.mov 16, diff, i_idx
-    bit.sub 16, diff, j_idx
-    bit.print_dec_int 16, diff
-    stl.output '\\n'
-    bit.inc 16, j_idx
-    ;inner
-  next_i:
+  loop:
+    bit.cmp 16, i_idx, four, body, end, end
+  body:
+    print_diff_row i_idx, four
     bit.inc 16, i_idx
-    ;outer
-  idone:
+    ;loop
+  end:
     stl.loop
 }
 """,

@@ -4,30 +4,35 @@
 
 main
 
-def main @ outer, orow, inner, irow, next_i, idone < i_idx, j_idx, diff, four {
+def main @ loop, body, end < i_idx, four {
     stl.startup
     bit.zero 16, i_idx
-  outer:
-    bit.cmp 16, i_idx, four, orow, idone, idone
-  orow:
-    bit.zero 16, j_idx
-  inner:
-    bit.cmp 16, j_idx, four, irow, next_i, next_i
-  irow:
-    bit.mov 16, diff, i_idx
-    bit.sub 16, diff, j_idx
-    bit.print_dec_int 16, diff
-    stl.output '\n'
-    bit.inc 16, j_idx
-    ;inner
-  next_i:
+  loop:
+    bit.cmp 16, i_idx, four, body, end, end
+  body:
+    print_diff_row i_idx, four
     bit.inc 16, i_idx
-    ;outer
-  idone:
+    ;loop
+  end:
     stl.loop
 }
 
+// Print "(ri-j)\n" (signed) for j in 0..count-1 (one grid row of differences).
+def print_diff_row ri, count @ loop, body, end < jcol, diff {
+    bit.zero 16, jcol
+  loop:
+    bit.cmp 16, jcol, count, body, end, end
+  body:
+    bit.mov 16, diff, ri
+    bit.sub 16, diff, jcol
+    bit.print_dec_int 16, diff
+    stl.output '\n'
+    bit.inc 16, jcol
+    ;loop
+  end:
+}
+
 i_idx: bit.vec 16, 0
-j_idx: bit.vec 16, 0
-diff: bit.vec 16, 0
 four: bit.vec 16, 4
+jcol: bit.vec 16, 0
+diff: bit.vec 16, 0
