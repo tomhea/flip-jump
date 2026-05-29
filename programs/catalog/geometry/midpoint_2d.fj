@@ -1,0 +1,49 @@
+// Midpoint 2D (#0575)
+
+// Reads 4 decimals `x1 y1 x2 y2` (each own line). Prints `<mx> <my>\n` where `mx = (x1+x2)/2` and `my = (y1+y2)/2` (floor division).
+
+main
+
+def main < x1, y1, x2, y2, two, q, r {
+    stl.startup
+    read_decimal 16, x1
+    read_decimal 16, y1
+    read_decimal 16, x2
+    read_decimal 16, y2
+    bit.add 16, x1, x2
+    bit.div 16, x1, two, q, r
+    bit.print_dec_uint 16, q
+    stl.output ' '
+    bit.add 16, y1, y2
+    bit.div 16, y1, two, q, r
+    bit.print_dec_uint 16, q
+    stl.output '\n'
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+x1: bit.vec 16, 0
+y1: bit.vec 16, 0
+x2: bit.vec 16, 0
+y2: bit.vec 16, 0
+two: bit.vec 16, 2
+q: bit.vec 16, 0
+r: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit

@@ -4,6 +4,7 @@ cat_bmi_category, tests/compiled/catalog/branching/bmi_category.fjm, tests/inout
 cat_happy_check_small, tests/compiled/catalog/number_theory/happy_check_small.fjm, tests/inout/catalog/number_theory/happy_check_small.in,tests/inout/catalog/number_theory/happy_check_small.out, True,True
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 cat_factor_count_small, tests/compiled/catalog/number_theory/factor_count_small.fjm, tests/inout/catalog/number_theory/factor_count_small.in,tests/inout/catalog/number_theory/factor_count_small.out, True,True
 cat_is_abundant_small, tests/compiled/catalog/number_theory/is_abundant_small.fjm, tests/inout/catalog/number_theory/is_abundant_small.in,tests/inout/catalog/number_theory/is_abundant_small.out, True,True
 cat_prime_after, tests/compiled/catalog/number_theory/prime_after.fjm, tests/inout/catalog/number_theory/prime_after.in,tests/inout/catalog/number_theory/prime_after.out, True,True
@@ -24,12 +25,17 @@ cat_is_armstrong_3, tests/compiled/catalog/number_theory/is_armstrong_3.fjm, tes
 cat_avg_of_n_inputs, tests/compiled/catalog/arithmetic/avg_of_n_inputs.fjm, tests/inout/catalog/arithmetic/avg_of_n_inputs.in,tests/inout/catalog/arithmetic/avg_of_n_inputs.out, True,True
 cat_avg_three, tests/compiled/catalog/arithmetic/avg_three.fjm, tests/inout/catalog/arithmetic/avg_three.in,tests/inout/catalog/arithmetic/avg_three.out, True,True
 =======
+=======
+>>>>>>> origin/catalog/cat-geometry
 cat_divisors_of_n, tests/compiled/catalog/number_theory/divisors_of_n.fjm, tests/inout/catalog/number_theory/divisors_of_n.in,tests/inout/catalog/number_theory/divisors_of_n.out, True,True
 cat_count_primes_to_n, tests/compiled/catalog/number_theory/count_primes_to_n.fjm, tests/inout/catalog/number_theory/count_primes_to_n.in,tests/inout/catalog/number_theory/count_primes_to_n.out, True,True
 cat_collatz_sequence, tests/compiled/catalog/number_theory/collatz_sequence.fjm, tests/inout/catalog/number_theory/collatz_sequence.in,tests/inout/catalog/number_theory/collatz_sequence.out, True,True
 cat_collatz_steps, tests/compiled/catalog/number_theory/collatz_steps.fjm, tests/inout/catalog/number_theory/collatz_steps.in,tests/inout/catalog/number_theory/collatz_steps.out, True,True
+<<<<<<< HEAD
 cat_lcm_two, tests/compiled/catalog/number_theory/lcm_two.fjm, tests/inout/catalog/number_theory/lcm_two.in,tests/inout/catalog/number_theory/lcm_two.out, True,True
 cat_factor_count_small, tests/compiled/catalog/number_theory/factor_count_small.fjm, tests/inout/catalog/number_theory/factor_count_small.in,tests/inout/catalog/number_theory/factor_count_small.out, True,True
+=======
+>>>>>>> origin/catalog/cat-geometry
 cat_is_deficient_small, tests/compiled/catalog/number_theory/is_deficient_small.fjm, tests/inout/catalog/number_theory/is_deficient_small.in,tests/inout/catalog/number_theory/is_deficient_small.out, True,True
 cat_first_n_primes, tests/compiled/catalog/number_theory/first_n_primes.fjm, tests/inout/catalog/number_theory/first_n_primes.in,tests/inout/catalog/number_theory/first_n_primes.out, True,True
 cat_is_abundant_small, tests/compiled/catalog/number_theory/is_abundant_small.fjm, tests/inout/catalog/number_theory/is_abundant_small.in,tests/inout/catalog/number_theory/is_abundant_small.out, True,True
@@ -187,6 +193,7 @@ cat_complement_to_100, tests/compiled/catalog/arithmetic/complement_to_100.fjm, 
 cat_abs_decimal, tests/compiled/catalog/arithmetic/abs_decimal.fjm, tests/inout/catalog/arithmetic/abs_decimal.in,tests/inout/catalog/arithmetic/abs_decimal.out, True,True
 =======
 cat_factor_count_small, tests/compiled/catalog/number_theory/factor_count_small.fjm, tests/inout/catalog/number_theory/factor_count_small.in,tests/inout/catalog/number_theory/factor_count_small.out, True,True
+<<<<<<< HEAD
 cat_divisors_of_n, tests/compiled/catalog/number_theory/divisors_of_n.fjm, tests/inout/catalog/number_theory/divisors_of_n.in,tests/inout/catalog/number_theory/divisors_of_n.out, True,True
 cat_is_abundant_small, tests/compiled/catalog/number_theory/is_abundant_small.fjm, tests/inout/catalog/number_theory/is_abundant_small.in,tests/inout/catalog/number_theory/is_abundant_small.out, True,True
 cat_prime_after, tests/compiled/catalog/number_theory/prime_after.fjm, tests/inout/catalog/number_theory/prime_after.in,tests/inout/catalog/number_theory/prime_after.out, True,True
@@ -466,8 +473,96 @@ cat_caesar_plus_1, tests/compiled/catalog/strings/caesar_plus_1.fjm, tests/inout
 cat_multiples_of_3_to_n, tests/compiled/catalog/arithmetic/multiples_of_3_to_n.fjm, tests/inout/catalog/arithmetic/multiples_of_3_to_n.in,tests/inout/catalog/arithmetic/multiples_of_3_to_n.out, True,True
 cat_double_decimal, tests/compiled/catalog/arithmetic/double_decimal.fjm, tests/inout/catalog/arithmetic/double_decimal.in,tests/inout/catalog/arithmetic/double_decimal.out, True,True
 cat_multiples_of_5_to_n, tests/compiled/catalog/arithmetic/multiples_of_5_to_n.fjm, tests/inout/catalog/arithmetic/multiples_of_5_to_n.in,tests/inout/catalog/arithmetic/multiples_of_5_to_n.out, True,True
+=======
+cat_lcm_two, tests/compiled/catalog/number_theory/lcm_two.fjm, tests/inout/catalog/number_theory/lcm_two.in,tests/inout/catalog/number_theory/lcm_two.out, True,True
+cat_first_n_primes, tests/compiled/catalog/number_theory/first_n_primes.fjm, tests/inout/catalog/number_theory/first_n_primes.in,tests/inout/catalog/number_theory/first_n_primes.out, True,True
+cat_digit_product, tests/compiled/catalog/number_theory/digit_product.fjm, tests/inout/catalog/number_theory/digit_product.in,tests/inout/catalog/number_theory/digit_product.out, True,True
+cat_is_armstrong_3, tests/compiled/catalog/number_theory/is_armstrong_3.fjm, tests/inout/catalog/number_theory/is_armstrong_3.in,tests/inout/catalog/number_theory/is_armstrong_3.out, True,True
+cat_sum_of_divisors_small, tests/compiled/catalog/number_theory/sum_of_divisors_small.fjm, tests/inout/catalog/number_theory/sum_of_divisors_small.in,tests/inout/catalog/number_theory/sum_of_divisors_small.out, True,True
+cat_is_prime_small, tests/compiled/catalog/number_theory/is_prime_small.fjm, tests/inout/catalog/number_theory/is_prime_small.in,tests/inout/catalog/number_theory/is_prime_small.out, True,True
+cat_is_abundant_small, tests/compiled/catalog/number_theory/is_abundant_small.fjm, tests/inout/catalog/number_theory/is_abundant_small.in,tests/inout/catalog/number_theory/is_abundant_small.out, True,True
+cat_reverse_digits, tests/compiled/catalog/number_theory/reverse_digits.fjm, tests/inout/catalog/number_theory/reverse_digits.in,tests/inout/catalog/number_theory/reverse_digits.out, True,True
+cat_is_palindrome_num, tests/compiled/catalog/number_theory/is_palindrome_num.fjm, tests/inout/catalog/number_theory/is_palindrome_num.in,tests/inout/catalog/number_theory/is_palindrome_num.out, True,True
+cat_midpoint_2d, tests/compiled/catalog/geometry/midpoint_2d.fjm, tests/inout/catalog/geometry/midpoint_2d.in,tests/inout/catalog/geometry/midpoint_2d.out, True,True
+cat_is_point_inside_circle, tests/compiled/catalog/geometry/is_point_inside_circle.fjm, tests/inout/catalog/geometry/is_point_inside_circle.in,tests/inout/catalog/geometry/is_point_inside_circle.out, True,True
+cat_avg_of_n_inputs, tests/compiled/catalog/arithmetic/avg_of_n_inputs.fjm, tests/inout/catalog/arithmetic/avg_of_n_inputs.in,tests/inout/catalog/arithmetic/avg_of_n_inputs.out, True,True
+cat_is_right_triangle_from_sides, tests/compiled/catalog/geometry/is_right_triangle_from_sides.fjm, tests/inout/catalog/geometry/is_right_triangle_from_sides.in,tests/inout/catalog/geometry/is_right_triangle_from_sides.out, True,True
+cat_is_collinear_3, tests/compiled/catalog/geometry/is_collinear_3.fjm, tests/inout/catalog/geometry/is_collinear_3.in,tests/inout/catalog/geometry/is_collinear_3.out, True,True
+cat_gcd_two, tests/compiled/catalog/number_theory/gcd_two.fjm, tests/inout/catalog/number_theory/gcd_two.in,tests/inout/catalog/number_theory/gcd_two.out, True,True
+cat_prime_after, tests/compiled/catalog/number_theory/prime_after.fjm, tests/inout/catalog/number_theory/prime_after.in,tests/inout/catalog/number_theory/prime_after.out, True,True
+cat_digit_sum, tests/compiled/catalog/number_theory/digit_sum.fjm, tests/inout/catalog/number_theory/digit_sum.in,tests/inout/catalog/number_theory/digit_sum.out, True,True
+cat_slope_int_or_undefined, tests/compiled/catalog/geometry/slope_int_or_undefined.fjm, tests/inout/catalog/geometry/slope_int_or_undefined.in,tests/inout/catalog/geometry/slope_int_or_undefined.out, True,True
+cat_coprime_check, tests/compiled/catalog/number_theory/coprime_check.fjm, tests/inout/catalog/number_theory/coprime_check.in,tests/inout/catalog/number_theory/coprime_check.out, True,True
+cat_cross_product_2d_scalar, tests/compiled/catalog/geometry/cross_product_2d_scalar.fjm, tests/inout/catalog/geometry/cross_product_2d_scalar.in,tests/inout/catalog/geometry/cross_product_2d_scalar.out, True,True
+cat_dot_product_2d, tests/compiled/catalog/geometry/dot_product_2d.fjm, tests/inout/catalog/geometry/dot_product_2d.in,tests/inout/catalog/geometry/dot_product_2d.out, True,True
+cat_is_perfect_small, tests/compiled/catalog/number_theory/is_perfect_small.fjm, tests/inout/catalog/number_theory/is_perfect_small.in,tests/inout/catalog/number_theory/is_perfect_small.out, True,True
+cat_avg_three, tests/compiled/catalog/arithmetic/avg_three.fjm, tests/inout/catalog/arithmetic/avg_three.in,tests/inout/catalog/arithmetic/avg_three.out, True,True
+cat_parallel_vectors_check, tests/compiled/catalog/geometry/parallel_vectors_check.fjm, tests/inout/catalog/geometry/parallel_vectors_check.in,tests/inout/catalog/geometry/parallel_vectors_check.out, True,True
+cat_max_of_n_inputs, tests/compiled/catalog/arithmetic/max_of_n_inputs.fjm, tests/inout/catalog/arithmetic/max_of_n_inputs.in,tests/inout/catalog/arithmetic/max_of_n_inputs.out, True,True
+cat_sum_of_n_inputs, tests/compiled/catalog/arithmetic/sum_of_n_inputs.fjm, tests/inout/catalog/arithmetic/sum_of_n_inputs.in,tests/inout/catalog/arithmetic/sum_of_n_inputs.out, True,True
+cat_mod_two_decimals, tests/compiled/catalog/arithmetic/mod_two_decimals.fjm, tests/inout/catalog/arithmetic/mod_two_decimals.in,tests/inout/catalog/arithmetic/mod_two_decimals.out, True,True
+cat_mod_by_10, tests/compiled/catalog/arithmetic/mod_by_10.fjm, tests/inout/catalog/arithmetic/mod_by_10.in,tests/inout/catalog/arithmetic/mod_by_10.out, True,True
+cat_fib_seq_n, tests/compiled/catalog/number_theory/fib_seq_n.fjm, tests/inout/catalog/number_theory/fib_seq_n.in,tests/inout/catalog/number_theory/fib_seq_n.out, True,True
+cat_is_point_inside_rect, tests/compiled/catalog/geometry/is_point_inside_rect.fjm, tests/inout/catalog/geometry/is_point_inside_rect.in,tests/inout/catalog/geometry/is_point_inside_rect.out, True,True
+cat_factorial_small, tests/compiled/catalog/arithmetic/factorial_small.fjm, tests/inout/catalog/arithmetic/factorial_small.in,tests/inout/catalog/arithmetic/factorial_small.out, True,True
+cat_halve_decimal, tests/compiled/catalog/arithmetic/halve_decimal.fjm, tests/inout/catalog/arithmetic/halve_decimal.in,tests/inout/catalog/arithmetic/halve_decimal.out, True,True
+cat_min_of_n_inputs, tests/compiled/catalog/arithmetic/min_of_n_inputs.fjm, tests/inout/catalog/arithmetic/min_of_n_inputs.in,tests/inout/catalog/arithmetic/min_of_n_inputs.out, True,True
+cat_div_two_decimals, tests/compiled/catalog/arithmetic/div_two_decimals.fjm, tests/inout/catalog/arithmetic/div_two_decimals.in,tests/inout/catalog/arithmetic/div_two_decimals.out, True,True
+cat_digit_count_small, tests/compiled/catalog/number_theory/digit_count_small.fjm, tests/inout/catalog/number_theory/digit_count_small.in,tests/inout/catalog/number_theory/digit_count_small.out, True,True
+cat_div_by_3_quot_rem, tests/compiled/catalog/arithmetic/div_by_3_quot_rem.fjm, tests/inout/catalog/arithmetic/div_by_3_quot_rem.in,tests/inout/catalog/arithmetic/div_by_3_quot_rem.out, True,True
+cat_fib_n, tests/compiled/catalog/number_theory/fib_n.fjm, tests/inout/catalog/number_theory/fib_n.in,tests/inout/catalog/number_theory/fib_n.out, True,True
+cat_perpendicular_vectors_check, tests/compiled/catalog/geometry/perpendicular_vectors_check.fjm, tests/inout/catalog/geometry/perpendicular_vectors_check.in,tests/inout/catalog/geometry/perpendicular_vectors_check.out, True,True
+cat_avg_two, tests/compiled/catalog/arithmetic/avg_two.fjm, tests/inout/catalog/arithmetic/avg_two.in,tests/inout/catalog/arithmetic/avg_two.out, True,True
+cat_add_with_expression, tests/compiled/catalog/arithmetic/add_with_expression.fjm, tests/inout/catalog/arithmetic/add_with_expression.in,tests/inout/catalog/arithmetic/add_with_expression.out, True,True
+cat_add_then_mod_10, tests/compiled/catalog/arithmetic/add_then_mod_10.fjm, tests/inout/catalog/arithmetic/add_then_mod_10.in,tests/inout/catalog/arithmetic/add_then_mod_10.out, True,True
+cat_is_cube_small, tests/compiled/catalog/number_theory/is_cube_small.fjm, tests/inout/catalog/number_theory/is_cube_small.in,tests/inout/catalog/number_theory/is_cube_small.out, True,True
+cat_median_of_three, tests/compiled/catalog/arithmetic/median_of_three.fjm, tests/inout/catalog/arithmetic/median_of_three.in,tests/inout/catalog/arithmetic/median_of_three.out, True,True
+cat_mod_by_4, tests/compiled/catalog/arithmetic/mod_by_4.fjm, tests/inout/catalog/arithmetic/mod_by_4.in,tests/inout/catalog/arithmetic/mod_by_4.out, True,True
+cat_rectangle_area, tests/compiled/catalog/geometry/rectangle_area.fjm, tests/inout/catalog/geometry/rectangle_area.in,tests/inout/catalog/geometry/rectangle_area.out, True,True
+cat_square_small, tests/compiled/catalog/arithmetic/square_small.fjm, tests/inout/catalog/arithmetic/square_small.in,tests/inout/catalog/arithmetic/square_small.out, True,True
+cat_cube_small, tests/compiled/catalog/arithmetic/cube_small.fjm, tests/inout/catalog/arithmetic/cube_small.in,tests/inout/catalog/arithmetic/cube_small.out, True,True
+cat_is_fib_small, tests/compiled/catalog/number_theory/is_fib_small.fjm, tests/inout/catalog/number_theory/is_fib_small.in,tests/inout/catalog/number_theory/is_fib_small.out, True,True
+cat_caesar_plus_1, tests/compiled/catalog/strings/caesar_plus_1.fjm, tests/inout/catalog/strings/caesar_plus_1.in,tests/inout/catalog/strings/caesar_plus_1.out, True,True
+cat_odds_up_to_n, tests/compiled/catalog/arithmetic/odds_up_to_n.fjm, tests/inout/catalog/arithmetic/odds_up_to_n.in,tests/inout/catalog/arithmetic/odds_up_to_n.out, True,True
+cat_is_square_small, tests/compiled/catalog/number_theory/is_square_small.fjm, tests/inout/catalog/number_theory/is_square_small.in,tests/inout/catalog/number_theory/is_square_small.out, True,True
+cat_range_of_three, tests/compiled/catalog/arithmetic/range_of_three.fjm, tests/inout/catalog/arithmetic/range_of_three.in,tests/inout/catalog/arithmetic/range_of_three.out, True,True
+cat_mul_single_digits, tests/compiled/catalog/arithmetic/mul_single_digits.fjm, tests/inout/catalog/arithmetic/mul_single_digits.in,tests/inout/catalog/arithmetic/mul_single_digits.out, True,True
+cat_pow_base3, tests/compiled/catalog/arithmetic/pow_base3.fjm, tests/inout/catalog/arithmetic/pow_base3.in,tests/inout/catalog/arithmetic/pow_base3.out, True,True
+cat_max_three, tests/compiled/catalog/arithmetic/max_three.fjm, tests/inout/catalog/arithmetic/max_three.in,tests/inout/catalog/arithmetic/max_three.out, True,True
+cat_mul_by_10, tests/compiled/catalog/arithmetic/mul_by_10.fjm, tests/inout/catalog/arithmetic/mul_by_10.in,tests/inout/catalog/arithmetic/mul_by_10.out, True,True
+cat_cube_surface_area, tests/compiled/catalog/geometry/cube_surface_area.fjm, tests/inout/catalog/geometry/cube_surface_area.in,tests/inout/catalog/geometry/cube_surface_area.out, True,True
+cat_only_vowels, tests/compiled/catalog/io/only_vowels.fjm, tests/inout/catalog/io/only_vowels.in,tests/inout/catalog/io/only_vowels.out, True,True
+cat_min_three, tests/compiled/catalog/arithmetic/min_three.fjm, tests/inout/catalog/arithmetic/min_three.in,tests/inout/catalog/arithmetic/min_three.out, True,True
+cat_caesar_plus_3, tests/compiled/catalog/strings/caesar_plus_3.fjm, tests/inout/catalog/strings/caesar_plus_3.in,tests/inout/catalog/strings/caesar_plus_3.out, True,True
+cat_add_two_decimals, tests/compiled/catalog/arithmetic/add_two_decimals.fjm, tests/inout/catalog/arithmetic/add_two_decimals.in,tests/inout/catalog/arithmetic/add_two_decimals.out, True,True
+cat_count_consonants, tests/compiled/catalog/strings/count_consonants.fjm, tests/inout/catalog/strings/count_consonants.in,tests/inout/catalog/strings/count_consonants.out, True,True
+cat_add_three_decimals, tests/compiled/catalog/arithmetic/add_three_decimals.fjm, tests/inout/catalog/arithmetic/add_three_decimals.in,tests/inout/catalog/arithmetic/add_three_decimals.out, True,True
+cat_mul_by_7, tests/compiled/catalog/arithmetic/mul_by_7.fjm, tests/inout/catalog/arithmetic/mul_by_7.in,tests/inout/catalog/arithmetic/mul_by_7.out, True,True
+cat_multiples_of_5_to_n, tests/compiled/catalog/arithmetic/multiples_of_5_to_n.fjm, tests/inout/catalog/arithmetic/multiples_of_5_to_n.in,tests/inout/catalog/arithmetic/multiples_of_5_to_n.out, True,True
+cat_rectangle_perimeter, tests/compiled/catalog/geometry/rectangle_perimeter.fjm, tests/inout/catalog/geometry/rectangle_perimeter.in,tests/inout/catalog/geometry/rectangle_perimeter.out, True,True
+cat_is_scalene, tests/compiled/catalog/geometry/is_scalene.fjm, tests/inout/catalog/geometry/is_scalene.in,tests/inout/catalog/geometry/is_scalene.out, True,True
+cat_lucas_n, tests/compiled/catalog/number_theory/lucas_n.fjm, tests/inout/catalog/number_theory/lucas_n.in,tests/inout/catalog/number_theory/lucas_n.out, True,True
+>>>>>>> origin/catalog/cat-geometry
 cat_abs_diff, tests/compiled/catalog/arithmetic/abs_diff.fjm, tests/inout/catalog/arithmetic/abs_diff.in,tests/inout/catalog/arithmetic/abs_diff.out, True,True
+cat_evens_up_to_n, tests/compiled/catalog/arithmetic/evens_up_to_n.fjm, tests/inout/catalog/arithmetic/evens_up_to_n.in,tests/inout/catalog/arithmetic/evens_up_to_n.out, True,True
+cat_mul_by_3, tests/compiled/catalog/arithmetic/mul_by_3.fjm, tests/inout/catalog/arithmetic/mul_by_3.in,tests/inout/catalog/arithmetic/mul_by_3.out, True,True
+cat_is_isosceles, tests/compiled/catalog/geometry/is_isosceles.fjm, tests/inout/catalog/geometry/is_isosceles.in,tests/inout/catalog/geometry/is_isosceles.out, True,True
+cat_is_equilateral, tests/compiled/catalog/geometry/is_equilateral.fjm, tests/inout/catalog/geometry/is_equilateral.in,tests/inout/catalog/geometry/is_equilateral.out, True,True
+cat_sum_to_n, tests/compiled/catalog/arithmetic/sum_to_n.fjm, tests/inout/catalog/arithmetic/sum_to_n.in,tests/inout/catalog/arithmetic/sum_to_n.out, True,True
+cat_is_in_range, tests/compiled/catalog/arithmetic/is_in_range.fjm, tests/inout/catalog/arithmetic/is_in_range.in,tests/inout/catalog/arithmetic/is_in_range.out, True,True
+cat_caesar_plus_13, tests/compiled/catalog/strings/caesar_plus_13.fjm, tests/inout/catalog/strings/caesar_plus_13.in,tests/inout/catalog/strings/caesar_plus_13.out, True,True
+cat_pow_base2, tests/compiled/catalog/arithmetic/pow_base2.fjm, tests/inout/catalog/arithmetic/pow_base2.in,tests/inout/catalog/arithmetic/pow_base2.out, True,True
+cat_multiples_of_3_to_n, tests/compiled/catalog/arithmetic/multiples_of_3_to_n.fjm, tests/inout/catalog/arithmetic/multiples_of_3_to_n.in,tests/inout/catalog/arithmetic/multiples_of_3_to_n.out, True,True
+cat_double_decimal, tests/compiled/catalog/arithmetic/double_decimal.fjm, tests/inout/catalog/arithmetic/double_decimal.in,tests/inout/catalog/arithmetic/double_decimal.out, True,True
+cat_sub_two_decimals, tests/compiled/catalog/arithmetic/sub_two_decimals.fjm, tests/inout/catalog/arithmetic/sub_two_decimals.in,tests/inout/catalog/arithmetic/sub_two_decimals.out, True,True
+cat_swap_pair, tests/compiled/catalog/arithmetic/swap_pair.fjm, tests/inout/catalog/arithmetic/swap_pair.in,tests/inout/catalog/arithmetic/swap_pair.out, True,True
+cat_count_vowels, tests/compiled/catalog/strings/count_vowels.fjm, tests/inout/catalog/strings/count_vowels.in,tests/inout/catalog/strings/count_vowels.out, True,True
+cat_clamp_to_max_9, tests/compiled/catalog/arithmetic/clamp_to_max_9.fjm, tests/inout/catalog/arithmetic/clamp_to_max_9.in,tests/inout/catalog/arithmetic/clamp_to_max_9.out, True,True
+cat_abs_decimal, tests/compiled/catalog/arithmetic/abs_decimal.fjm, tests/inout/catalog/arithmetic/abs_decimal.in,tests/inout/catalog/arithmetic/abs_decimal.out, True,True
+cat_count_up_to_n, tests/compiled/catalog/arithmetic/count_up_to_n.fjm, tests/inout/catalog/arithmetic/count_up_to_n.in,tests/inout/catalog/arithmetic/count_up_to_n.out, True,True
+cat_complement_to_100, tests/compiled/catalog/arithmetic/complement_to_100.fjm, tests/inout/catalog/arithmetic/complement_to_100.in,tests/inout/catalog/arithmetic/complement_to_100.out, True,True
 cat_max_two, tests/compiled/catalog/arithmetic/max_two.fjm, tests/inout/catalog/arithmetic/max_two.in,tests/inout/catalog/arithmetic/max_two.out, True,True
+<<<<<<< HEAD
 cat_mul_by_5, tests/compiled/catalog/arithmetic/mul_by_5.fjm, tests/inout/catalog/arithmetic/mul_by_5.in,tests/inout/catalog/arithmetic/mul_by_5.out, True,True
 cat_count_up_to_n, tests/compiled/catalog/arithmetic/count_up_to_n.fjm, tests/inout/catalog/arithmetic/count_up_to_n.in,tests/inout/catalog/arithmetic/count_up_to_n.out, True,True
 cat_count_down_from_10, tests/compiled/catalog/loops/count_down_from_10.fjm, tests/inout/catalog/loops/count_down_from_10.in,tests/inout/catalog/loops/count_down_from_10.out, True,True
@@ -651,11 +746,48 @@ cat_uppercase_filter, tests/compiled/catalog/io/uppercase_filter.fjm, tests/inou
 cat_count_leading_zeros, tests/compiled/catalog/bits/count_leading_zeros.fjm, tests/inout/catalog/bits/count_leading_zeros.in,tests/inout/catalog/bits/count_leading_zeros.out, True,True
 >>>>>>> origin/catalog/cat-loops
 cat_count_leading_ones, tests/compiled/catalog/bits/count_leading_ones.fjm, tests/inout/catalog/bits/count_leading_ones.in,tests/inout/catalog/bits/count_leading_ones.out, True,True
+=======
+cat_min_two, tests/compiled/catalog/arithmetic/min_two.fjm, tests/inout/catalog/arithmetic/min_two.in,tests/inout/catalog/arithmetic/min_two.out, True,True
+cat_dec_decimal, tests/compiled/catalog/arithmetic/dec_decimal.fjm, tests/inout/catalog/arithmetic/dec_decimal.in,tests/inout/catalog/arithmetic/dec_decimal.out, True,True
+cat_inc_decimal, tests/compiled/catalog/arithmetic/inc_decimal.fjm, tests/inout/catalog/arithmetic/inc_decimal.in,tests/inout/catalog/arithmetic/inc_decimal.out, True,True
+cat_count_down_from_n, tests/compiled/catalog/arithmetic/count_down_from_n.fjm, tests/inout/catalog/arithmetic/count_down_from_n.in,tests/inout/catalog/arithmetic/count_down_from_n.out, True,True
+cat_is_origin, tests/compiled/catalog/geometry/is_origin.fjm, tests/inout/catalog/geometry/is_origin.in,tests/inout/catalog/geometry/is_origin.out, True,True
+cat_is_on_x_axis, tests/compiled/catalog/geometry/is_on_x_axis.fjm, tests/inout/catalog/geometry/is_on_x_axis.in,tests/inout/catalog/geometry/is_on_x_axis.out, True,True
+cat_mul_by_5, tests/compiled/catalog/arithmetic/mul_by_5.fjm, tests/inout/catalog/arithmetic/mul_by_5.in,tests/inout/catalog/arithmetic/mul_by_5.out, True,True
+cat_square_perimeter, tests/compiled/catalog/geometry/square_perimeter.fjm, tests/inout/catalog/geometry/square_perimeter.in,tests/inout/catalog/geometry/square_perimeter.out, True,True
+cat_compare_two, tests/compiled/catalog/arithmetic/compare_two.fjm, tests/inout/catalog/arithmetic/compare_two.in,tests/inout/catalog/arithmetic/compare_two.out, True,True
+cat_count_lowercase_letters, tests/compiled/catalog/strings/count_lowercase_letters.fjm, tests/inout/catalog/strings/count_lowercase_letters.in,tests/inout/catalog/strings/count_lowercase_letters.out, True,True
+cat_count_bits_in_three_bytes, tests/compiled/catalog/bits/count_bits_in_three_bytes.fjm, tests/inout/catalog/bits/count_bits_in_three_bytes.in,tests/inout/catalog/bits/count_bits_in_three_bytes.out, True,True
+cat_negate_decimal, tests/compiled/catalog/arithmetic/negate_decimal.fjm, tests/inout/catalog/arithmetic/negate_decimal.in,tests/inout/catalog/arithmetic/negate_decimal.out, True,True
+cat_count_words, tests/compiled/catalog/io/count_words.fjm, tests/inout/catalog/io/count_words.in,tests/inout/catalog/io/count_words.out, True,True
+cat_swap_case_line, tests/compiled/catalog/strings/swap_case_line.fjm, tests/inout/catalog/strings/swap_case_line.in,tests/inout/catalog/strings/swap_case_line.out, True,True
+cat_is_on_y_axis, tests/compiled/catalog/geometry/is_on_y_axis.fjm, tests/inout/catalog/geometry/is_on_y_axis.in,tests/inout/catalog/geometry/is_on_y_axis.out, True,True
+cat_swap_case, tests/compiled/catalog/io/swap_case.fjm, tests/inout/catalog/io/swap_case.in,tests/inout/catalog/io/swap_case.out, True,True
+cat_count_letters, tests/compiled/catalog/strings/count_letters.fjm, tests/inout/catalog/strings/count_letters.in,tests/inout/catalog/strings/count_letters.out, True,True
+cat_is_negative, tests/compiled/catalog/arithmetic/is_negative.fjm, tests/inout/catalog/arithmetic/is_negative.in,tests/inout/catalog/arithmetic/is_negative.out, True,True
+cat_is_zero, tests/compiled/catalog/arithmetic/is_zero.fjm, tests/inout/catalog/arithmetic/is_zero.in,tests/inout/catalog/arithmetic/is_zero.out, True,True
+cat_count_uppercase_letters, tests/compiled/catalog/strings/count_uppercase_letters.fjm, tests/inout/catalog/strings/count_uppercase_letters.in,tests/inout/catalog/strings/count_uppercase_letters.out, True,True
+cat_uppercase_line, tests/compiled/catalog/strings/uppercase_line.fjm, tests/inout/catalog/strings/uppercase_line.in,tests/inout/catalog/strings/uppercase_line.out, True,True
+cat_lowercase_line, tests/compiled/catalog/strings/lowercase_line.fjm, tests/inout/catalog/strings/lowercase_line.in,tests/inout/catalog/strings/lowercase_line.out, True,True
+cat_is_positive, tests/compiled/catalog/arithmetic/is_positive.fjm, tests/inout/catalog/arithmetic/is_positive.in,tests/inout/catalog/arithmetic/is_positive.out, True,True
+cat_is_odd, tests/compiled/catalog/arithmetic/is_odd.fjm, tests/inout/catalog/arithmetic/is_odd.in,tests/inout/catalog/arithmetic/is_odd.out, True,True
+cat_sign_of, tests/compiled/catalog/arithmetic/sign_of.fjm, tests/inout/catalog/arithmetic/sign_of.in,tests/inout/catalog/arithmetic/sign_of.out, True,True
+cat_uppercase_filter, tests/compiled/catalog/io/uppercase_filter.fjm, tests/inout/catalog/io/uppercase_filter.in,tests/inout/catalog/io/uppercase_filter.out, True,True
+cat_is_even, tests/compiled/catalog/arithmetic/is_even.fjm, tests/inout/catalog/arithmetic/is_even.in,tests/inout/catalog/arithmetic/is_even.out, True,True
+cat_count_letter_e, tests/compiled/catalog/strings/count_letter_e.fjm, tests/inout/catalog/strings/count_letter_e.in,tests/inout/catalog/strings/count_letter_e.out, True,True
+cat_dec_to_char, tests/compiled/catalog/io/dec_to_char.fjm, tests/inout/catalog/io/dec_to_char.in,tests/inout/catalog/io/dec_to_char.out, True,True
+cat_substring_last_3, tests/compiled/catalog/strings/substring_last_3.fjm, tests/inout/catalog/strings/substring_last_3.in,tests/inout/catalog/strings/substring_last_3.out, True,True
+cat_count_lines, tests/compiled/catalog/io/count_lines.fjm, tests/inout/catalog/io/count_lines.in,tests/inout/catalog/io/count_lines.out, True,True
+cat_count_trailing_zeros, tests/compiled/catalog/bits/count_trailing_zeros.fjm, tests/inout/catalog/bits/count_trailing_zeros.in,tests/inout/catalog/bits/count_trailing_zeros.out, True,True
+cat_popcount_byte, tests/compiled/catalog/bits/popcount_byte.fjm, tests/inout/catalog/bits/popcount_byte.in,tests/inout/catalog/bits/popcount_byte.out, True,True
+cat_count_leading_zeros, tests/compiled/catalog/bits/count_leading_zeros.fjm, tests/inout/catalog/bits/count_leading_zeros.in,tests/inout/catalog/bits/count_leading_zeros.out, True,True
+>>>>>>> origin/catalog/cat-geometry
 cat_count_trailing_ones, tests/compiled/catalog/bits/count_trailing_ones.fjm, tests/inout/catalog/bits/count_trailing_ones.in,tests/inout/catalog/bits/count_trailing_ones.out, True,True
 cat_only_uppercase, tests/compiled/catalog/io/only_uppercase.fjm, tests/inout/catalog/io/only_uppercase.in,tests/inout/catalog/io/only_uppercase.out, True,True
 <<<<<<< HEAD
 =======
 cat_lowercase_filter, tests/compiled/catalog/io/lowercase_filter.fjm, tests/inout/catalog/io/lowercase_filter.in,tests/inout/catalog/io/lowercase_filter.out, True,True
+<<<<<<< HEAD
 cat_is_all_letters, tests/compiled/catalog/strings/is_all_letters.fjm, tests/inout/catalog/strings/is_all_letters.in,tests/inout/catalog/strings/is_all_letters.out, True,True
 cat_is_zero, tests/compiled/catalog/arithmetic/is_zero.fjm, tests/inout/catalog/arithmetic/is_zero.in,tests/inout/catalog/arithmetic/is_zero.out, True,True
 cat_is_positive, tests/compiled/catalog/arithmetic/is_positive.fjm, tests/inout/catalog/arithmetic/is_positive.in,tests/inout/catalog/arithmetic/is_positive.out, True,True
@@ -686,6 +818,15 @@ cat_log2_ceil_byte, tests/compiled/catalog/bits/log2_ceil_byte.fjm, tests/inout/
 >>>>>>> origin/catalog/cat-loops
 cat_hello_iterations, tests/compiled/catalog/hello/hello_iterations.fjm, tests/inout/catalog/hello/hello_iterations.in,tests/inout/catalog/hello/hello_iterations.out, True,True
 cat_is_all_letters, tests/compiled/catalog/strings/is_all_letters.fjm, tests/inout/catalog/strings/is_all_letters.in,tests/inout/catalog/strings/is_all_letters.out, True,True
+=======
+cat_string_length, tests/compiled/catalog/strings/string_length.fjm, tests/inout/catalog/strings/string_length.in,tests/inout/catalog/strings/string_length.out, True,True
+cat_only_letters, tests/compiled/catalog/io/only_letters.fjm, tests/inout/catalog/io/only_letters.in,tests/inout/catalog/io/only_letters.out, True,True
+cat_count_bytes, tests/compiled/catalog/io/count_bytes.fjm, tests/inout/catalog/io/count_bytes.in,tests/inout/catalog/io/count_bytes.out, True,True
+cat_count_leading_ones, tests/compiled/catalog/bits/count_leading_ones.fjm, tests/inout/catalog/bits/count_leading_ones.in,tests/inout/catalog/bits/count_leading_ones.out, True,True
+cat_hello_two_users, tests/compiled/catalog/hello/hello_two_users.fjm, tests/inout/catalog/hello/hello_two_users.in,tests/inout/catalog/hello/hello_two_users.out, True,True
+cat_hello_iterations, tests/compiled/catalog/hello/hello_iterations.fjm, tests/inout/catalog/hello/hello_iterations.in,tests/inout/catalog/hello/hello_iterations.out, True,True
+cat_is_all_letters, tests/compiled/catalog/strings/is_all_letters.fjm, tests/inout/catalog/strings/is_all_letters.in,tests/inout/catalog/strings/is_all_letters.out, True,True
+>>>>>>> origin/catalog/cat-geometry
 cat_only_digits, tests/compiled/catalog/io/only_digits.fjm, tests/inout/catalog/io/only_digits.in,tests/inout/catalog/io/only_digits.out, True,True
 cat_is_all_digits, tests/compiled/catalog/strings/is_all_digits.fjm, tests/inout/catalog/strings/is_all_digits.in,tests/inout/catalog/strings/is_all_digits.out, True,True
 cat_substring_last_3, tests/compiled/catalog/strings/substring_last_3.fjm, tests/inout/catalog/strings/substring_last_3.in,tests/inout/catalog/strings/substring_last_3.out, True,True
@@ -719,6 +860,7 @@ cat_hello_iterations, tests/compiled/catalog/hello/hello_iterations.fjm, tests/i
 cat_hello_long_user, tests/compiled/catalog/hello/hello_long_user.fjm, tests/inout/catalog/hello/hello_long_user.in,tests/inout/catalog/hello/hello_long_user.out, True,True
 >>>>>>> origin/catalog/cat-conversion
 cat_strip_spaces, tests/compiled/catalog/io/strip_spaces.fjm, tests/inout/catalog/io/strip_spaces.in,tests/inout/catalog/io/strip_spaces.out, True,True
+<<<<<<< HEAD
 cat_even_or_odd_word, tests/compiled/catalog/branching/even_or_odd_word.fjm, tests/inout/catalog/branching/even_or_odd_word.in,tests/inout/catalog/branching/even_or_odd_word.out, True,True
 cat_popcount_byte, tests/compiled/catalog/bits/popcount_byte.fjm, tests/inout/catalog/bits/popcount_byte.in,tests/inout/catalog/bits/popcount_byte.out, True,True
 cat_hello_iterations, tests/compiled/catalog/hello/hello_iterations.fjm, tests/inout/catalog/hello/hello_iterations.in,tests/inout/catalog/hello/hello_iterations.out, True,True
@@ -730,29 +872,54 @@ cat_hex_to_char, tests/compiled/catalog/io/hex_to_char.fjm, tests/inout/catalog/
 cat_double_newlines, tests/compiled/catalog/io/double_newlines.fjm, tests/inout/catalog/io/double_newlines.in,tests/inout/catalog/io/double_newlines.out, True,True
 cat_echo_with_suffix, tests/compiled/catalog/io/echo_with_suffix.fjm, tests/inout/catalog/io/echo_with_suffix.in,tests/inout/catalog/io/echo_with_suffix.out, True,True
 cat_is_all_uppercase, tests/compiled/catalog/strings/is_all_uppercase.fjm, tests/inout/catalog/strings/is_all_uppercase.in,tests/inout/catalog/strings/is_all_uppercase.out, True,True
+=======
+cat_input_then_thanks, tests/compiled/catalog/io/input_then_thanks.fjm, tests/inout/catalog/io/input_then_thanks.in,tests/inout/catalog/io/input_then_thanks.out, True,True
+cat_char_to_hex, tests/compiled/catalog/io/char_to_hex.fjm, tests/inout/catalog/io/char_to_hex.in,tests/inout/catalog/io/char_to_hex.out, True,True
+cat_hex_to_char, tests/compiled/catalog/io/hex_to_char.fjm, tests/inout/catalog/io/hex_to_char.in,tests/inout/catalog/io/hex_to_char.out, True,True
+cat_double_newlines, tests/compiled/catalog/io/double_newlines.fjm, tests/inout/catalog/io/double_newlines.in,tests/inout/catalog/io/double_newlines.out, True,True
+cat_is_all_digits, tests/compiled/catalog/strings/is_all_digits.fjm, tests/inout/catalog/strings/is_all_digits.in,tests/inout/catalog/strings/is_all_digits.out, True,True
+>>>>>>> origin/catalog/cat-geometry
 cat_print_first_line, tests/compiled/catalog/io/print_first_line.fjm, tests/inout/catalog/io/print_first_line.in,tests/inout/catalog/io/print_first_line.out, True,True
 cat_last_char_of_line, tests/compiled/catalog/strings/last_char_of_line.fjm, tests/inout/catalog/strings/last_char_of_line.in,tests/inout/catalog/strings/last_char_of_line.out, True,True
 cat_ends_with_period, tests/compiled/catalog/strings/ends_with_period.fjm, tests/inout/catalog/strings/ends_with_period.in,tests/inout/catalog/strings/ends_with_period.out, True,True
-cat_has_char_in_line, tests/compiled/catalog/strings/has_char_in_line.fjm, tests/inout/catalog/strings/has_char_in_line.in,tests/inout/catalog/strings/has_char_in_line.out, True,True
 cat_char_at_index, tests/compiled/catalog/strings/char_at_index.fjm, tests/inout/catalog/strings/char_at_index.in,tests/inout/catalog/strings/char_at_index.out, True,True
 cat_hello_user, tests/compiled/catalog/hello/hello_user.fjm, tests/inout/catalog/hello/hello_user.in,tests/inout/catalog/hello/hello_user.out, True,True
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+cat_strip_newlines, tests/compiled/catalog/io/strip_newlines.fjm, tests/inout/catalog/io/strip_newlines.in,tests/inout/catalog/io/strip_newlines.out, True,True
+cat_is_all_lowercase, tests/compiled/catalog/strings/is_all_lowercase.fjm, tests/inout/catalog/strings/is_all_lowercase.in,tests/inout/catalog/strings/is_all_lowercase.out, True,True
+cat_dominant_bit, tests/compiled/catalog/bits/dominant_bit.fjm, tests/inout/catalog/bits/dominant_bit.in,tests/inout/catalog/bits/dominant_bit.out, True,True
+cat_prev_power_of_2_byte, tests/compiled/catalog/bits/prev_power_of_2_byte.fjm, tests/inout/catalog/bits/prev_power_of_2_byte.in,tests/inout/catalog/bits/prev_power_of_2_byte.out, True,True
+cat_space_to_tab, tests/compiled/catalog/io/space_to_tab.fjm, tests/inout/catalog/io/space_to_tab.in,tests/inout/catalog/io/space_to_tab.out, True,True
+cat_tab_to_space, tests/compiled/catalog/io/tab_to_space.fjm, tests/inout/catalog/io/tab_to_space.in,tests/inout/catalog/io/tab_to_space.out, True,True
+cat_echo_with_suffix, tests/compiled/catalog/io/echo_with_suffix.fjm, tests/inout/catalog/io/echo_with_suffix.in,tests/inout/catalog/io/echo_with_suffix.out, True,True
+cat_is_all_uppercase, tests/compiled/catalog/strings/is_all_uppercase.fjm, tests/inout/catalog/strings/is_all_uppercase.in,tests/inout/catalog/strings/is_all_uppercase.out, True,True
+cat_echo_with_prefix, tests/compiled/catalog/io/echo_with_prefix.fjm, tests/inout/catalog/io/echo_with_prefix.in,tests/inout/catalog/io/echo_with_prefix.out, True,True
+cat_has_char_in_line, tests/compiled/catalog/strings/has_char_in_line.fjm, tests/inout/catalog/strings/has_char_in_line.in,tests/inout/catalog/strings/has_char_in_line.out, True,True
+>>>>>>> origin/catalog/cat-geometry
 cat_high_nibble, tests/compiled/catalog/bits/high_nibble.fjm, tests/inout/catalog/bits/high_nibble.in,tests/inout/catalog/bits/high_nibble.out, True,True
 <<<<<<< HEAD
 =======
 =======
 >>>>>>> origin/catalog/cat-sequences
 cat_low_nibble, tests/compiled/catalog/bits/low_nibble.fjm, tests/inout/catalog/bits/low_nibble.in,tests/inout/catalog/bits/low_nibble.out, True,True
+<<<<<<< HEAD
 >>>>>>> origin/catalog/cat-conversion
 =======
 >>>>>>> origin/catalog/cat-loops
 cat_strip_newlines, tests/compiled/catalog/io/strip_newlines.fjm, tests/inout/catalog/io/strip_newlines.in,tests/inout/catalog/io/strip_newlines.out, True,True
 cat_is_all_lowercase, tests/compiled/catalog/strings/is_all_lowercase.fjm, tests/inout/catalog/strings/is_all_lowercase.in,tests/inout/catalog/strings/is_all_lowercase.out, True,True
+=======
+cat_rot_ascii_plus_one, tests/compiled/catalog/io/rot_ascii_plus_one.fjm, tests/inout/catalog/io/rot_ascii_plus_one.in,tests/inout/catalog/io/rot_ascii_plus_one.out, True,True
+cat_char_to_dec, tests/compiled/catalog/io/char_to_dec.fjm, tests/inout/catalog/io/char_to_dec.in,tests/inout/catalog/io/char_to_dec.out, True,True
+>>>>>>> origin/catalog/cat-geometry
 cat_skip_first_byte, tests/compiled/catalog/io/skip_first_byte.fjm, tests/inout/catalog/io/skip_first_byte.in,tests/inout/catalog/io/skip_first_byte.out, True,True
 <<<<<<< HEAD
 =======
 cat_echo_thrice, tests/compiled/catalog/io/echo_thrice.fjm, tests/inout/catalog/io/echo_thrice.in,tests/inout/catalog/io/echo_thrice.out, True,True
+<<<<<<< HEAD
 >>>>>>> origin/catalog/cat-branching
 cat_dominant_bit, tests/compiled/catalog/bits/dominant_bit.fjm, tests/inout/catalog/bits/dominant_bit.in,tests/inout/catalog/bits/dominant_bit.out, True,True
 <<<<<<< HEAD
@@ -765,6 +932,11 @@ cat_rot_ascii_plus_one, tests/compiled/catalog/io/rot_ascii_plus_one.fjm, tests/
 cat_char_to_dec, tests/compiled/catalog/io/char_to_dec.fjm, tests/inout/catalog/io/char_to_dec.in,tests/inout/catalog/io/char_to_dec.out, True,True
 cat_round_up_to_multiple_of_8, tests/compiled/catalog/bits/round_up_to_multiple_of_8.fjm, tests/inout/catalog/bits/round_up_to_multiple_of_8.in,tests/inout/catalog/bits/round_up_to_multiple_of_8.out, True,True
 cat_next_power_of_2_byte, tests/compiled/catalog/bits/next_power_of_2_byte.fjm, tests/inout/catalog/bits/next_power_of_2_byte.in,tests/inout/catalog/bits/next_power_of_2_byte.out, True,True
+=======
+cat_and_three_bytes, tests/compiled/catalog/bits/and_three_bytes.fjm, tests/inout/catalog/bits/and_three_bytes.in,tests/inout/catalog/bits/and_three_bytes.out, True,True
+cat_round_up_to_multiple_of_8, tests/compiled/catalog/bits/round_up_to_multiple_of_8.fjm, tests/inout/catalog/bits/round_up_to_multiple_of_8.in,tests/inout/catalog/bits/round_up_to_multiple_of_8.out, True,True
+cat_next_power_of_2_byte, tests/compiled/catalog/bits/next_power_of_2_byte.fjm, tests/inout/catalog/bits/next_power_of_2_byte.in,tests/inout/catalog/bits/next_power_of_2_byte.out, True,True
+>>>>>>> origin/catalog/cat-geometry
 cat_cat, tests/compiled/catalog/io/cat.fjm, tests/inout/catalog/io/cat.in,tests/inout/catalog/io/cat.out, True,True
 >>>>>>> origin/catalog/cat-sequences
 cat_is_power_of_two, tests/compiled/catalog/bits/is_power_of_two.fjm, tests/inout/catalog/bits/is_power_of_two.in,tests/inout/catalog/bits/is_power_of_two.out, True,True
@@ -792,6 +964,7 @@ cat_print_digits_0_9, tests/compiled/catalog/loops/print_digits_0_9.fjm, tests/i
 cat_low_nibble, tests/compiled/catalog/bits/low_nibble.fjm, tests/inout/catalog/bits/low_nibble.in,tests/inout/catalog/bits/low_nibble.out, True,True
 >>>>>>> origin/catalog/cat-loops
 cat_hello_n_times, tests/compiled/catalog/hello/hello_n_times.fjm, tests/inout/catalog/hello/hello_n_times.in,tests/inout/catalog/hello/hello_n_times.out, True,True
+<<<<<<< HEAD
 <<<<<<< HEAD
 cat_gray_code_from_binary, tests/compiled/catalog/bits/gray_code_from_binary.fjm, tests/inout/catalog/bits/gray_code_from_binary.in,tests/inout/catalog/bits/gray_code_from_binary.out, True,True
 cat_or_gate, tests/compiled/catalog/logic/or_gate.fjm, tests/inout/catalog/logic/or_gate.in,tests/inout/catalog/logic/or_gate.out, True,True
@@ -836,34 +1009,26 @@ cat_hello_world, tests/compiled/catalog/hello/hello_world.fjm, tests/inout/catal
 cat_hello_uppercase, tests/compiled/catalog/hello/hello_uppercase.fjm, tests/inout/catalog/hello/hello_uppercase.in,tests/inout/catalog/hello/hello_uppercase.out, True,True
 cat_hello_one_char_per_line, tests/compiled/catalog/hello/hello_one_char_per_line.fjm, tests/inout/catalog/hello/hello_one_char_per_line.in,tests/inout/catalog/hello/hello_one_char_per_line.out, True,True
 cat_hello_two_lines, tests/compiled/catalog/hello/hello_two_lines.fjm, tests/inout/catalog/hello/hello_two_lines.in,tests/inout/catalog/hello/hello_two_lines.out, True,True
+=======
+cat_hello_alpha_world, tests/compiled/catalog/hello/hello_alpha_world.fjm, tests/inout/catalog/hello/hello_alpha_world.in,tests/inout/catalog/hello/hello_alpha_world.out, True,True
+cat_hello_world_3x, tests/compiled/catalog/hello/hello_world_3x.fjm, tests/inout/catalog/hello/hello_world_3x.in,tests/inout/catalog/hello/hello_world_3x.out, True,True
+cat_echo_twice, tests/compiled/catalog/io/echo_twice.fjm, tests/inout/catalog/io/echo_twice.in,tests/inout/catalog/io/echo_twice.out, True,True
+>>>>>>> origin/catalog/cat-geometry
 cat_hello_box, tests/compiled/catalog/hello/hello_box.fjm, tests/inout/catalog/hello/hello_box.in,tests/inout/catalog/hello/hello_box.out, True,True
-cat_hello_no_newline, tests/compiled/catalog/hello/hello_no_newline.fjm, tests/inout/catalog/hello/hello_no_newline.in,tests/inout/catalog/hello/hello_no_newline.out, True,True
-cat_hello_question, tests/compiled/catalog/hello/hello_question.fjm, tests/inout/catalog/hello/hello_question.in,tests/inout/catalog/hello/hello_question.out, True,True
-cat_hello_hex_codes, tests/compiled/catalog/hello/hello_hex_codes.fjm, tests/inout/catalog/hello/hello_hex_codes.in,tests/inout/catalog/hello/hello_hex_codes.out, True,True
-cat_hello_ascii_first_five, tests/compiled/catalog/hello/hello_ascii_first_five.fjm, tests/inout/catalog/hello/hello_ascii_first_five.in,tests/inout/catalog/hello/hello_ascii_first_five.out, True,True
-cat_hello_underline, tests/compiled/catalog/hello/hello_underline.fjm, tests/inout/catalog/hello/hello_underline.in,tests/inout/catalog/hello/hello_underline.out, True,True
-cat_hello_anonymous, tests/compiled/catalog/hello/hello_anonymous.fjm, tests/inout/catalog/hello/hello_anonymous.in,tests/inout/catalog/hello/hello_anonymous.out, True,True
-cat_hello_then_length, tests/compiled/catalog/hello/hello_then_length.fjm, tests/inout/catalog/hello/hello_then_length.in,tests/inout/catalog/hello/hello_then_length.out, True,True
-cat_hello_world_overunder, tests/compiled/catalog/hello/hello_world_overunder.fjm, tests/inout/catalog/hello/hello_world_overunder.in,tests/inout/catalog/hello/hello_world_overunder.out, True,True
 cat_read_one_print_three, tests/compiled/catalog/io/read_one_print_three.fjm, tests/inout/catalog/io/read_one_print_three.in,tests/inout/catalog/io/read_one_print_three.out, True,True
+<<<<<<< HEAD
 cat_first_char_of_line, tests/compiled/catalog/strings/first_char_of_line.fjm, tests/inout/catalog/strings/first_char_of_line.in,tests/inout/catalog/strings/first_char_of_line.out, True,True
+=======
+cat_substring_first_3, tests/compiled/catalog/strings/substring_first_3.fjm, tests/inout/catalog/strings/substring_first_3.in,tests/inout/catalog/strings/substring_first_3.out, True,True
+>>>>>>> origin/catalog/cat-geometry
 cat_starts_with_uppercase, tests/compiled/catalog/strings/starts_with_uppercase.fjm, tests/inout/catalog/strings/starts_with_uppercase.in,tests/inout/catalog/strings/starts_with_uppercase.out, True,True
-cat_parity_byte, tests/compiled/catalog/bits/parity_byte.fjm, tests/inout/catalog/bits/parity_byte.in,tests/inout/catalog/bits/parity_byte.out, True,True
 cat_swap_nibbles, tests/compiled/catalog/bits/swap_nibbles.fjm, tests/inout/catalog/bits/swap_nibbles.in,tests/inout/catalog/bits/swap_nibbles.out, True,True
 cat_reverse_bits_byte, tests/compiled/catalog/bits/reverse_bits_byte.fjm, tests/inout/catalog/bits/reverse_bits_byte.in,tests/inout/catalog/bits/reverse_bits_byte.out, True,True
 cat_xor_two_bytes, tests/compiled/catalog/bits/xor_two_bytes.fjm, tests/inout/catalog/bits/xor_two_bytes.in,tests/inout/catalog/bits/xor_two_bytes.out, True,True
 cat_and_two_bytes, tests/compiled/catalog/bits/and_two_bytes.fjm, tests/inout/catalog/bits/and_two_bytes.in,tests/inout/catalog/bits/and_two_bytes.out, True,True
 cat_or_two_bytes, tests/compiled/catalog/bits/or_two_bytes.fjm, tests/inout/catalog/bits/or_two_bytes.in,tests/inout/catalog/bits/or_two_bytes.out, True,True
-cat_shift_left_one, tests/compiled/catalog/bits/shift_left_one.fjm, tests/inout/catalog/bits/shift_left_one.in,tests/inout/catalog/bits/shift_left_one.out, True,True
-cat_shift_right_one, tests/compiled/catalog/bits/shift_right_one.fjm, tests/inout/catalog/bits/shift_right_one.in,tests/inout/catalog/bits/shift_right_one.out, True,True
-cat_is_byte_zero, tests/compiled/catalog/bits/is_byte_zero.fjm, tests/inout/catalog/bits/is_byte_zero.in,tests/inout/catalog/bits/is_byte_zero.out, True,True
-cat_is_byte_full, tests/compiled/catalog/bits/is_byte_full.fjm, tests/inout/catalog/bits/is_byte_full.in,tests/inout/catalog/bits/is_byte_full.out, True,True
-cat_xor_with_constant_55, tests/compiled/catalog/bits/xor_with_constant_55.fjm, tests/inout/catalog/bits/xor_with_constant_55.in,tests/inout/catalog/bits/xor_with_constant_55.out, True,True
-cat_and_with_constant_0f, tests/compiled/catalog/bits/and_with_constant_0f.fjm, tests/inout/catalog/bits/and_with_constant_0f.in,tests/inout/catalog/bits/and_with_constant_0f.out, True,True
-cat_or_with_constant_80, tests/compiled/catalog/bits/or_with_constant_80.fjm, tests/inout/catalog/bits/or_with_constant_80.in,tests/inout/catalog/bits/or_with_constant_80.out, True,True
 cat_byte_decrement_wrap, tests/compiled/catalog/bits/byte_decrement_wrap.fjm, tests/inout/catalog/bits/byte_decrement_wrap.in,tests/inout/catalog/bits/byte_decrement_wrap.out, True,True
 cat_rotate_left_byte, tests/compiled/catalog/bits/rotate_left_byte.fjm, tests/inout/catalog/bits/rotate_left_byte.in,tests/inout/catalog/bits/rotate_left_byte.out, True,True
-cat_rotate_right_byte, tests/compiled/catalog/bits/rotate_right_byte.fjm, tests/inout/catalog/bits/rotate_right_byte.in,tests/inout/catalog/bits/rotate_right_byte.out, True,True
 cat_byte_to_binary_string, tests/compiled/catalog/bits/byte_to_binary_string.fjm, tests/inout/catalog/bits/byte_to_binary_string.in,tests/inout/catalog/bits/byte_to_binary_string.out, True,True
 cat_swap_two_bytes, tests/compiled/catalog/bits/swap_two_bytes.fjm, tests/inout/catalog/bits/swap_two_bytes.in,tests/inout/catalog/bits/swap_two_bytes.out, True,True
 <<<<<<< HEAD
@@ -875,10 +1040,42 @@ cat_gray_code_from_binary, tests/compiled/catalog/bits/gray_code_from_binary.fjm
 >>>>>>> origin/catalog/cat-branching
 cat_min_two_bytes, tests/compiled/catalog/bits/min_two_bytes.fjm, tests/inout/catalog/bits/min_two_bytes.in,tests/inout/catalog/bits/min_two_bytes.out, True,True
 cat_max_two_bytes, tests/compiled/catalog/bits/max_two_bytes.fjm, tests/inout/catalog/bits/max_two_bytes.in,tests/inout/catalog/bits/max_two_bytes.out, True,True
+cat_binary_from_gray_code, tests/compiled/catalog/bits/binary_from_gray_code.fjm, tests/inout/catalog/bits/binary_from_gray_code.in,tests/inout/catalog/bits/binary_from_gray_code.out, True,True
+cat_isolate_lowest_set_bit, tests/compiled/catalog/bits/isolate_lowest_set_bit.fjm, tests/inout/catalog/bits/isolate_lowest_set_bit.in,tests/inout/catalog/bits/isolate_lowest_set_bit.out, True,True
+cat_hello_lowercase, tests/compiled/catalog/hello/hello_lowercase.fjm, tests/inout/catalog/hello/hello_lowercase.in,tests/inout/catalog/hello/hello_lowercase.out, True,True
+cat_hello_tab_sep, tests/compiled/catalog/hello/hello_tab_sep.fjm, tests/inout/catalog/hello/hello_tab_sep.in,tests/inout/catalog/hello/hello_tab_sep.out, True,True
+cat_hello_exclaim_3x, tests/compiled/catalog/hello/hello_exclaim_3x.fjm, tests/inout/catalog/hello/hello_exclaim_3x.in,tests/inout/catalog/hello/hello_exclaim_3x.out, True,True
+cat_hello_reversed, tests/compiled/catalog/hello/hello_reversed.fjm, tests/inout/catalog/hello/hello_reversed.in,tests/inout/catalog/hello/hello_reversed.out, True,True
+cat_hello_then_question, tests/compiled/catalog/hello/hello_then_question.fjm, tests/inout/catalog/hello/hello_then_question.in,tests/inout/catalog/hello/hello_then_question.out, True,True
+cat_hello_world, tests/compiled/catalog/hello/hello_world.fjm, tests/inout/catalog/hello/hello_world.in,tests/inout/catalog/hello/hello_world.out, True,True
+cat_hello_uppercase, tests/compiled/catalog/hello/hello_uppercase.fjm, tests/inout/catalog/hello/hello_uppercase.in,tests/inout/catalog/hello/hello_uppercase.out, True,True
+cat_hello_one_char_per_line, tests/compiled/catalog/hello/hello_one_char_per_line.fjm, tests/inout/catalog/hello/hello_one_char_per_line.in,tests/inout/catalog/hello/hello_one_char_per_line.out, True,True
+cat_hello_two_lines, tests/compiled/catalog/hello/hello_two_lines.fjm, tests/inout/catalog/hello/hello_two_lines.in,tests/inout/catalog/hello/hello_two_lines.out, True,True
+cat_hello_no_newline, tests/compiled/catalog/hello/hello_no_newline.fjm, tests/inout/catalog/hello/hello_no_newline.in,tests/inout/catalog/hello/hello_no_newline.out, True,True
+cat_hello_question, tests/compiled/catalog/hello/hello_question.fjm, tests/inout/catalog/hello/hello_question.in,tests/inout/catalog/hello/hello_question.out, True,True
+cat_hello_hex_codes, tests/compiled/catalog/hello/hello_hex_codes.fjm, tests/inout/catalog/hello/hello_hex_codes.in,tests/inout/catalog/hello/hello_hex_codes.out, True,True
+cat_hello_ascii_first_five, tests/compiled/catalog/hello/hello_ascii_first_five.fjm, tests/inout/catalog/hello/hello_ascii_first_five.in,tests/inout/catalog/hello/hello_ascii_first_five.out, True,True
+cat_hello_underline, tests/compiled/catalog/hello/hello_underline.fjm, tests/inout/catalog/hello/hello_underline.in,tests/inout/catalog/hello/hello_underline.out, True,True
+cat_hello_anonymous, tests/compiled/catalog/hello/hello_anonymous.fjm, tests/inout/catalog/hello/hello_anonymous.in,tests/inout/catalog/hello/hello_anonymous.out, True,True
+cat_hello_then_length, tests/compiled/catalog/hello/hello_then_length.fjm, tests/inout/catalog/hello/hello_then_length.in,tests/inout/catalog/hello/hello_then_length.out, True,True
+cat_hello_world_overunder, tests/compiled/catalog/hello/hello_world_overunder.fjm, tests/inout/catalog/hello/hello_world_overunder.in,tests/inout/catalog/hello/hello_world_overunder.out, True,True
+cat_first_char_of_line, tests/compiled/catalog/strings/first_char_of_line.fjm, tests/inout/catalog/strings/first_char_of_line.in,tests/inout/catalog/strings/first_char_of_line.out, True,True
+cat_parity_byte, tests/compiled/catalog/bits/parity_byte.fjm, tests/inout/catalog/bits/parity_byte.in,tests/inout/catalog/bits/parity_byte.out, True,True
+cat_shift_left_one, tests/compiled/catalog/bits/shift_left_one.fjm, tests/inout/catalog/bits/shift_left_one.in,tests/inout/catalog/bits/shift_left_one.out, True,True
+cat_shift_right_one, tests/compiled/catalog/bits/shift_right_one.fjm, tests/inout/catalog/bits/shift_right_one.in,tests/inout/catalog/bits/shift_right_one.out, True,True
+cat_is_byte_zero, tests/compiled/catalog/bits/is_byte_zero.fjm, tests/inout/catalog/bits/is_byte_zero.in,tests/inout/catalog/bits/is_byte_zero.out, True,True
+cat_is_byte_full, tests/compiled/catalog/bits/is_byte_full.fjm, tests/inout/catalog/bits/is_byte_full.in,tests/inout/catalog/bits/is_byte_full.out, True,True
+cat_xor_with_constant_55, tests/compiled/catalog/bits/xor_with_constant_55.fjm, tests/inout/catalog/bits/xor_with_constant_55.in,tests/inout/catalog/bits/xor_with_constant_55.out, True,True
+cat_and_with_constant_0f, tests/compiled/catalog/bits/and_with_constant_0f.fjm, tests/inout/catalog/bits/and_with_constant_0f.in,tests/inout/catalog/bits/and_with_constant_0f.out, True,True
+cat_or_with_constant_80, tests/compiled/catalog/bits/or_with_constant_80.fjm, tests/inout/catalog/bits/or_with_constant_80.in,tests/inout/catalog/bits/or_with_constant_80.out, True,True
+cat_rotate_right_byte, tests/compiled/catalog/bits/rotate_right_byte.fjm, tests/inout/catalog/bits/rotate_right_byte.in,tests/inout/catalog/bits/rotate_right_byte.out, True,True
 cat_byte_high_eq_low_nibble, tests/compiled/catalog/bits/byte_high_eq_low_nibble.fjm, tests/inout/catalog/bits/byte_high_eq_low_nibble.in,tests/inout/catalog/bits/byte_high_eq_low_nibble.out, True,True
 cat_byte_is_bit_palindrome, tests/compiled/catalog/bits/byte_is_bit_palindrome.fjm, tests/inout/catalog/bits/byte_is_bit_palindrome.in,tests/inout/catalog/bits/byte_is_bit_palindrome.out, True,True
 cat_byte_reverse_each_nibble, tests/compiled/catalog/bits/byte_reverse_each_nibble.fjm, tests/inout/catalog/bits/byte_reverse_each_nibble.in,tests/inout/catalog/bits/byte_reverse_each_nibble.out, True,True
+<<<<<<< HEAD
 cat_binary_from_gray_code, tests/compiled/catalog/bits/binary_from_gray_code.fjm, tests/inout/catalog/bits/binary_from_gray_code.in,tests/inout/catalog/bits/binary_from_gray_code.out, True,True
+=======
+>>>>>>> origin/catalog/cat-geometry
 cat_broadcast_lsb_to_byte, tests/compiled/catalog/bits/broadcast_lsb_to_byte.fjm, tests/inout/catalog/bits/broadcast_lsb_to_byte.in,tests/inout/catalog/bits/broadcast_lsb_to_byte.out, True,True
 cat_round_down_to_multiple_of_8, tests/compiled/catalog/bits/round_down_to_multiple_of_8.fjm, tests/inout/catalog/bits/round_down_to_multiple_of_8.in,tests/inout/catalog/bits/round_down_to_multiple_of_8.out, True,True
 <<<<<<< HEAD

@@ -1,0 +1,63 @@
+// Slope Int Or Undefined (#0595)
+
+// Reads 4 decimals `x1 y1 x2 y2` (each own line, signed). If `x1 == x2`, prints `undefined\n`. Otherwise prints `(y2 - y1) / (x2 - x1)` as signed integer division + `\n`.
+
+main
+
+def main @ divide, undefined, done < x1, y1, x2, y2, q, r {
+    stl.startup
+    read_signed_decimal 16, x1
+    read_signed_decimal 16, y1
+    read_signed_decimal 16, x2
+    read_signed_decimal 16, y2
+    bit.cmp 16, x1, x2, divide, undefined, divide
+  divide:
+    bit.sub 16, y2, y1
+    bit.sub 16, x2, x1
+    bit.idiv 16, y2, x2, q, r
+    bit.print_dec_int 16, q
+    ;done
+  undefined:
+    stl.output "undefined"
+  done:
+    stl.output '\n'
+    stl.loop
+}
+
+// Read a signed decimal (optional leading `-`, digits until `\n`/`\0`) into value[:n].
+def read_signed_decimal n, value @ neg, body, add_digit, fin, end < ch, nl, minus, digit, err, neg_flag {
+    bit.zero n, value
+    bit.zero neg_flag
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, minus, body, neg, body
+  neg:
+    bit.one neg_flag
+    bit.input ch
+  body:
+    bit.if0 8, ch, fin
+    bit.cmp 8, ch, nl, add_digit, fin, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    bit.input ch
+    ;body
+  fin:
+    bit.if0 neg_flag, end
+    bit.neg n, value
+  end:
+}
+
+x1: bit.vec 16, 0
+y1: bit.vec 16, 0
+x2: bit.vec 16, 0
+y2: bit.vec 16, 0
+q: bit.vec 16, 0
+r: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
+minus: bit.vec 8, '-'
+neg_flag: bit.bit
