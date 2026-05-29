@@ -1,0 +1,57 @@
+// Abs Or Negate Select (#0215)
+
+// Reads one ASCII bit, then a signed decimal. If bit is `0` prints `abs(a)`, if `1` prints `-a`, each + `\n`.
+
+main
+
+def main @ want_neg, emit, done, take_abs < selbit, a {
+    stl.startup
+    bit.input selbit
+    read_signed_decimal 16, a
+    bit.if1 selbit, want_neg
+  take_abs:
+    bit.if0 a + 15*dw, emit
+    bit.neg 16, a
+    ;emit
+  want_neg:
+    bit.neg 16, a
+  emit:
+    bit.print_dec_int 16, a
+    stl.output '\n'
+  done:
+    stl.loop
+}
+
+// Read a signed decimal (optional leading `-`, digits until `\n`/`\0`) into value[:n].
+def read_signed_decimal n, value @ neg, body, add_digit, fin, end < ch, nl, minus, digit, err, neg_flag {
+    bit.zero n, value
+    bit.zero neg_flag
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, minus, body, neg, body
+  neg:
+    bit.one neg_flag
+    bit.input ch
+  body:
+    bit.if0 8, ch, fin
+    bit.cmp 8, ch, nl, add_digit, fin, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    bit.input ch
+    ;body
+  fin:
+    bit.if0 neg_flag, end
+    bit.neg n, value
+  end:
+}
+
+selbit: bit.vec 8, 0
+a: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
+minus: bit.vec 8, '-'
+neg_flag: bit.bit

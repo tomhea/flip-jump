@@ -1,0 +1,68 @@
+// Triangle Classify (#0218)
+
+// Reads three positive decimals `a`,`b`,`c` (each ≤ 99, on own line) as triangle side lengths. Prints `equilateral\n`, `isosceles\n`, `scalene\n`, or `not\n` (if no valid triangle).
+
+main
+
+def main @ equilateral, isosceles, scalene, not_tri, done, ti2, ti3, shape, ab_eq, not_ab, ac_check < a, b, c, sum {
+    stl.startup
+    read_decimal 16, a
+    read_decimal 16, b
+    read_decimal 16, c
+    bit.mov 16, sum, a
+    bit.add 16, sum, b
+    bit.cmp 16, sum, c, not_tri, not_tri, ti2
+  ti2:
+    bit.mov 16, sum, a
+    bit.add 16, sum, c
+    bit.cmp 16, sum, b, not_tri, not_tri, ti3
+  ti3:
+    bit.mov 16, sum, b
+    bit.add 16, sum, c
+    bit.cmp 16, sum, a, not_tri, not_tri, shape
+  shape:
+    bit.cmp 16, a, b, not_ab, ab_eq, not_ab
+  ab_eq:
+    bit.cmp 16, b, c, isosceles, equilateral, isosceles
+  not_ab:
+    bit.cmp 16, b, c, ac_check, isosceles, ac_check
+  ac_check:
+    bit.cmp 16, a, c, scalene, isosceles, scalene
+  equilateral:
+    stl.output "equilateral\n"
+    ;done
+  isosceles:
+    stl.output "isosceles\n"
+    ;done
+  scalene:
+    stl.output "scalene\n"
+    ;done
+  not_tri:
+    stl.output "not\n"
+  done:
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+a: bit.vec 16, 0
+b: bit.vec 16, 0
+c: bit.vec 16, 0
+sum: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit

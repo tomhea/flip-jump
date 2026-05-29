@@ -1,0 +1,70 @@
+// Quadrant 2d (#0219)
+
+// Reads two signed decimals `x` then `y` and prints `1\n`/`2\n`/`3\n`/`4\n` based on Cartesian quadrant; prints `axis\n` if either coordinate is 0.
+
+main
+
+def main @ q1, q2, q3, q4, axis, done, x_neg, x_pos_y < x, y {
+    stl.startup
+    read_signed_decimal 16, x
+    read_signed_decimal 16, y
+    bit.if0 16, x, axis
+    bit.if0 16, y, axis
+    bit.if1 x + 15*dw, x_neg
+  x_pos_y:
+    bit.if1 y + 15*dw, q4
+    ;q1
+  x_neg:
+    bit.if1 y + 15*dw, q3
+    ;q2
+  q1:
+    stl.output "1\n"
+    ;done
+  q2:
+    stl.output "2\n"
+    ;done
+  q3:
+    stl.output "3\n"
+    ;done
+  q4:
+    stl.output "4\n"
+    ;done
+  axis:
+    stl.output "axis\n"
+  done:
+    stl.loop
+}
+
+// Read a signed decimal (optional leading `-`, digits until `\n`/`\0`) into value[:n].
+def read_signed_decimal n, value @ neg, body, add_digit, fin, end < ch, nl, minus, digit, err, neg_flag {
+    bit.zero n, value
+    bit.zero neg_flag
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, minus, body, neg, body
+  neg:
+    bit.one neg_flag
+    bit.input ch
+  body:
+    bit.if0 8, ch, fin
+    bit.cmp 8, ch, nl, add_digit, fin, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    bit.input ch
+    ;body
+  fin:
+    bit.if0 neg_flag, end
+    bit.neg n, value
+  end:
+}
+
+x: bit.vec 16, 0
+y: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
+minus: bit.vec 8, '-'
+neg_flag: bit.bit

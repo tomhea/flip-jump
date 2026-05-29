@@ -1,0 +1,43 @@
+// Char Class (#0210)
+
+// Reads exactly one byte and prints one of `digit\n`, `upper\n`, `lower\n`, `other\n` based on the byte's ASCII range.
+
+main
+
+def main @ digit, upper, lower, other, done, t_upper, t_lower < ch, d0, d9, ua, uz, la, lz {
+    stl.startup
+    bit.input ch
+    in_range_8 ch, d0, d9, digit, t_upper
+  t_upper:
+    in_range_8 ch, ua, uz, upper, t_lower
+  t_lower:
+    in_range_8 ch, la, lz, lower, other
+  digit:
+    stl.output "digit\n"
+    ;done
+  upper:
+    stl.output "upper\n"
+    ;done
+  lower:
+    stl.output "lower\n"
+    ;done
+  other:
+    stl.output "other\n"
+  done:
+    stl.loop
+}
+
+// Jump to `yes` if lo <= ch <= hi (lo, hi are bit[:8] bounds), else to `no`.
+def in_range_8 ch, lo, hi, yes, no @ check_hi {
+    bit.cmp 8, ch, lo, no, yes, check_hi
+  check_hi:
+    bit.cmp 8, ch, hi, yes, yes, no
+}
+
+ch: bit.vec 8, 0
+d0: bit.vec 8, '0'
+d9: bit.vec 8, '9'
+ua: bit.vec 8, 'A'
+uz: bit.vec 8, 'Z'
+la: bit.vec 8, 'a'
+lz: bit.vec 8, 'z'
