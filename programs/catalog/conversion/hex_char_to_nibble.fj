@@ -1,0 +1,22 @@
+// Hex Char To Nibble (#0367)
+
+// Reads exactly one byte that's a lowercase hex char (`0`-`9` or `a`-`f`) + `\n` and prints the decimal `0`-`15` + `\n`.
+
+main
+
+def main < ch, hex, value, err {
+    stl.startup
+    bit.input ch
+    bit.ascii2hex err, hex, ch
+    bit.input ch
+    bit.zero 16, value
+    bit.mov 4, value, hex
+    bit.print_dec_uint 16, value
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+hex: bit.vec 4, 0
+value: bit.vec 16, 0
+err: bit.bit

@@ -540,6 +540,97 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0339 | dec_to_hex | Reads decimal `0`-`255` + `
+` and prints exactly two lowercase hex digits (no `0x` prefix), followed by `
+`. |
+| 0340 | hex_to_dec | Reads exactly two lowercase hex digits + `
+` and prints the decimal `0`-`255` + `
+`. |
+| 0341 | dec_to_binary | Reads decimal `0`-`255` + `
+` and prints an 8-char binary string of `0` and `1` (MSB first), followed by `
+`. |
+| 0342 | binary_to_dec | Reads an 8-char binary string of `0`/`1` + `
+` and prints the decimal `0`-`255` + `
+`. |
+| 0343 | dec_to_octal | Reads decimal `0`-`63` + `
+` and prints exactly two octal digits + `
+`. |
+| 0344 | octal_to_dec | Reads exactly two octal digits + `
+` and prints the decimal `0`-`63` + `
+`. |
+| 0345 | binary_to_hex | Reads an 8-char binary string + `
+` and prints exactly two lowercase hex digits + `
+`. |
+| 0346 | hex_to_binary | Reads exactly two lowercase hex digits + `
+` and prints an 8-char binary string + `
+`. |
+| 0347 | celsius_to_fahrenheit | Reads a signed decimal Celsius temperature (range `-100`..`100`) + `
+` and prints `floor(C * 9 / 5 + 32)` as a signed decimal + `
+`. |
+| 0348 | fahrenheit_to_celsius | Reads a signed decimal Fahrenheit temperature (range `-148`..`212`) + `
+` and prints `floor((F - 32) * 5 / 9)` as a signed decimal + `
+`. |
+| 0349 | km_to_miles | Reads decimal kilometers `0`-`100` + `
+` and prints `floor(km * 5 / 8)` as decimal miles + `
+`. |
+| 0350 | miles_to_km | Reads decimal miles `0`-`60` + `
+` and prints `floor(miles * 8 / 5)` as decimal km + `
+`. |
+| 0351 | minutes_to_hours_minutes | Reads decimal total minutes `0`-`999` + `
+` and prints `<H>:<MM>
+`, where `H` is `total / 60` (no leading zero) and `MM` is `total % 60` zero-padded to 2 digits. |
+| 0352 | seconds_to_minutes_seconds | Reads decimal total seconds `0`-`3599` + `
+` and prints `<M>:<SS>
+`, with `MM` zero-padded to 2 digits. |
+| 0353 | hours_to_minutes | Reads decimal hours `0`-`24` + `
+` and prints `hours * 60` as decimal + `
+`. |
+| 0354 | days_to_hours | Reads decimal days `0`-`30` + `
+` and prints `days * 24` as decimal + `
+`. |
+| 0355 | dec_to_thousands_grouped | Reads decimal `0`-`999999` + `
+` and prints the value with thousands separators (commas), then `
+`. Examples: `7` → `7
+`, `1000` → `1,000
+`, `12345` → `12,345
+`, `999999` → `999,999
+`. |
+| 0356 | word_zero_to_nine | Reads a single ASCII digit `0`-`9` + `
+` and prints its English word (`zero`, `one`, `two`, ..., `nine`) + `
+`. |
+| 0358 | zero_pad_to_4 | Reads decimal `0`-`9999` + `
+` and prints a 4-character zero-padded representation + `
+`. Examples: `7` → `0007
+`, `1234` → `1234
+`. |
+| 0359 | roman_numeral_1_to_10 | Reads decimal `1`-`10` + `
+` and prints the corresponding Roman numeral (`I`, `II`, ..., `X`) + `
+`. |
+| 0361 | lowercase_letter_to_index | Reads exactly one byte `a`-`z` and prints its 0-based alphabet index (`a`→`0`, ..., `z`→`25`) as decimal + `
+`. |
+| 0362 | index_to_lowercase_letter | Reads decimal `0`-`25` + `
+` and outputs exactly one byte: the corresponding lowercase letter (`0`→`a`, `25`→`z`). No trailing `
+` after the byte. |
+| 0363 | uppercase_letter_to_index | Reads exactly one byte `A`-`Z` and prints its 0-based alphabet index (`A`→`0`, ..., `Z`→`25`) as decimal + `
+`. |
+| 0364 | dollars_to_cents | Reads decimal dollars `0`-`99` + `
+` and prints `dollars * 100` as decimal + `
+`. |
+| 0365 | cents_to_dollars_cents | Reads decimal cents `0`-`9999` + `
+` and prints `<dollars>.<cc>
+`, where `cc` is `cents % 100` zero-padded to 2 digits. |
+| 0366 | nibble_to_hex_char | Reads decimal `0`-`15` + `
+` and outputs exactly one byte: the corresponding lowercase hex char (`0`-`9` or `a`-`f`), followed by `
+`. |
+| 0367 | hex_char_to_nibble | Reads exactly one byte that's a lowercase hex char (`0`-`9` or `a`-`f`) + `
+` and prints the decimal `0`-`15` + `
+`. |
+| 0368 | dec_with_explicit_sign | Reads a signed decimal `-9999`..`9999` + `
+` and prints it with an always-explicit sign byte (`+` or `-`) prefix, followed by `
+`. Examples: `5` → `+5
+`, `0` → `+0
+`, `-3` → `-3
+`. |
 
 ## encoding
 

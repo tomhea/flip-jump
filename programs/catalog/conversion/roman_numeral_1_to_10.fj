@@ -1,0 +1,89 @@
+// Roman Numeral 1 To 10 (#0359)
+
+// Reads decimal `1`-`10` + `\n` and prints the corresponding Roman numeral (`I`, `II`, ..., `X`) + `\n`.
+
+main
+
+def main @ r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, done < value, \
+        v1, v2, v3, v4, v5, v6, v7, v8, v9 {
+    stl.startup
+    read_decimal 16, value
+    branch_eq16 value, v1, r1
+    branch_eq16 value, v2, r2
+    branch_eq16 value, v3, r3
+    branch_eq16 value, v4, r4
+    branch_eq16 value, v5, r5
+    branch_eq16 value, v6, r6
+    branch_eq16 value, v7, r7
+    branch_eq16 value, v8, r8
+    branch_eq16 value, v9, r9
+    ;r10
+  r1:
+    stl.output "I"
+    ;done
+  r2:
+    stl.output "II"
+    ;done
+  r3:
+    stl.output "III"
+    ;done
+  r4:
+    stl.output "IV"
+    ;done
+  r5:
+    stl.output "V"
+    ;done
+  r6:
+    stl.output "VI"
+    ;done
+  r7:
+    stl.output "VII"
+    ;done
+  r8:
+    stl.output "VIII"
+    ;done
+  r9:
+    stl.output "IX"
+    ;done
+  r10:
+    stl.output "X"
+  done:
+    stl.output '\n'
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+// If value[:16] == kvec[:16], jump to target.
+def branch_eq16 value, kvec, target @ no {
+    bit.cmp 16, value, kvec, no, target, no
+  no:
+}
+
+value: bit.vec 16, 0
+v1: bit.vec 16, 1
+v2: bit.vec 16, 2
+v3: bit.vec 16, 3
+v4: bit.vec 16, 4
+v5: bit.vec 16, 5
+v6: bit.vec 16, 6
+v7: bit.vec 16, 7
+v8: bit.vec 16, 8
+v9: bit.vec 16, 9
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit

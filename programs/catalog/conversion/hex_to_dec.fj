@@ -1,0 +1,25 @@
+// Hex To Dec (#0340)
+
+// Reads exactly two lowercase hex digits + `\n` and prints the decimal `0`-`255` + `\n`.
+
+main
+
+def main < ch, hi, lo, value, err {
+    stl.startup
+    bit.input ch
+    bit.ascii2hex err, hi, ch
+    bit.input ch
+    bit.ascii2hex err, lo, ch
+    bit.zero 16, value
+    bit.mov 4, value, lo
+    bit.mov 4, value + 4*dw, hi
+    bit.print_dec_uint 16, value
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+hi: bit.vec 4, 0
+lo: bit.vec 4, 0
+value: bit.vec 16, 0
+err: bit.bit
