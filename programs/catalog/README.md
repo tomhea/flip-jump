@@ -510,6 +510,57 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0091 | and_gate | Reads two ASCII bits (each is `0` or `1`, separated by `
+`) and prints their AND as `0` or `1` + `
+`. |
+| 0092 | or_gate | Reads two ASCII bits and prints their OR + `
+`. |
+| 0093 | xor_gate | Reads two ASCII bits and prints their XOR + `
+`. |
+| 0094 | nand_gate | Reads two ASCII bits and prints their NAND + `
+`. |
+| 0095 | nor_gate | Reads two ASCII bits and prints their NOR + `
+`. |
+| 0096 | xnor_gate | Reads two ASCII bits and prints their XNOR + `
+`. |
+| 0097 | not_gate | Reads one ASCII bit and prints its negation + `
+`. |
+| 0098 | and_3 | Reads three ASCII bits (each followed by `
+`) and prints their three-way AND + `
+`. |
+| 0099 | or_3 | Reads three ASCII bits and prints their three-way OR + `
+`. |
+| 0100 | half_adder | Reads two ASCII bits and prints the sum bit then the carry bit, both separated by `
+` (two lines). |
+| 0905 | logic_implies | Reads two `0`/`1` ASCII bits (each on own line). Prints `(NOT A) OR B` as `0` or `1` + `
+` (A → B). |
+| 0906 | boolean_xor_three | Reads three ASCII bits. Prints their XOR (= 1 iff odd number of 1s) + `
+`. |
+| 0907 | boolean_majority_three | Reads three ASCII bits. Prints `1
+` if at least 2 of them are `1`, else `0
+`. |
+| 0908 | boolean_exactly_one | Reads three ASCII bits. Prints `1
+` if exactly one of them is `1`, else `0
+`. |
+| 0909 | boolean_exactly_two | Reads three ASCII bits. Prints `1
+` if exactly two are `1`, else `0
+`. |
+| 0910 | multiplexer_2to1 | Reads a selector bit + 2 data bits (each on own line). Outputs `data0` if selector is `0`, else `data1`, as one ASCII bit + `
+`. |
+| 0911 | demultiplexer_1to2 | Reads a data bit + selector bit. Outputs two bits separated by space + `
+`: if selector is `0`, prints `<data> 0
+`; if `1`, prints `0 <data>
+`. |
+| 0912 | mux_4to1 | Reads two selector bits + 4 data bits (each on own line). Outputs the selected data bit (selector encodes 0-3 as `s1*2+s0`) + `
+`. |
+| 0913 | encoder_4to2 | Reads 4 bits (assumed one-hot input, exactly one is `1`). Prints 2 bits as `<s1><s0>
+` (e.g. position 0 → `00`, position 3 → `11`). |
+| 0914 | decoder_2to4 | Reads 2 bits `s1 s0`. Prints 4 bits: position `s1*2+s0` is `1`, others are `0`. Output is 4 chars + `
+`. |
+| 0915 | full_adder | Reads three ASCII bits `a b c_in` (each own line). Prints `<sum> <c_out>
+` where `sum = a XOR b XOR c_in` and `c_out = (a AND b) OR (c_in AND (a XOR b))`. |
+| 0916 | nand_universality_or | Reads two ASCII bits `a b` (each own line). Computes `OR(a, b)` using ONLY `NAND` gates (no native AND/OR/NOT). Prints result + `
+`. |
 
 ## loops
 

@@ -1,0 +1,61 @@
+// Mux 4to1 (#0912)
+
+// Reads two selector bits + 4 data bits (each on own line). Outputs the selected data bit (selector encodes 0-3 as `s1*2+s0`) + `\n`.
+
+main
+
+def main @ hi, lo, p0, p1, p2, p3, done < ch, s1, s0, d0, d1, d2, d3, res {
+    stl.startup
+    read_ascii_bit s1, ch
+    read_ascii_bit s0, ch
+    read_ascii_bit d0, ch
+    read_ascii_bit d1, ch
+    read_ascii_bit d2, ch
+    read_ascii_bit d3, ch
+    bit.if s1, lo, hi
+  lo:
+    bit.if s0, p0, p1
+  hi:
+    bit.if s0, p2, p3
+  p0:
+    bit.mov res, d0
+    ;done
+  p1:
+    bit.mov res, d1
+    ;done
+  p2:
+    bit.mov res, d2
+    ;done
+  p3:
+    bit.mov res, d3
+  done:
+    print_bit_nl res
+    stl.loop
+}
+
+// Read one ASCII bit line ('0'/'1' then '\n') into the single bit dst, then eat the '\n'.
+def read_ascii_bit dst, ch {
+    bit.input ch
+    bit.mov dst, ch
+    bit.input ch
+}
+
+// Print the single bit b as ASCII '0'/'1' followed by '\n'.
+def print_bit_nl b @ zero, one, done {
+    bit.if b, zero, one
+  zero:
+    stl.output "0\n"
+    ;done
+  one:
+    stl.output "1\n"
+  done:
+}
+
+ch: bit.vec 8, 0
+s1: bit.bit
+s0: bit.bit
+d0: bit.bit
+d1: bit.bit
+d2: bit.bit
+d3: bit.bit
+res: bit.bit

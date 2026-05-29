@@ -1,0 +1,64 @@
+// Decoder 2to4 (#0914)
+
+// Reads 2 bits `s1 s0`. Prints 4 bits: position `s1*2+s0` is `1`, others are `0`. Output is 4 chars + `\n`.
+
+main
+
+def main @ hi, lo, p0, p1, p2, p3, done < ch, s1, s0, y0, y1, y2, y3 {
+    stl.startup
+    read_ascii_bit s1, ch
+    read_ascii_bit s0, ch
+    bit.zero y0
+    bit.zero y1
+    bit.zero y2
+    bit.zero y3
+    bit.if s1, lo, hi
+  lo:
+    bit.if s0, p0, p1
+  hi:
+    bit.if s0, p2, p3
+  p0:
+    bit.one y0
+    ;done
+  p1:
+    bit.one y1
+    ;done
+  p2:
+    bit.one y2
+    ;done
+  p3:
+    bit.one y3
+  done:
+    print_bit_raw y0
+    print_bit_raw y1
+    print_bit_raw y2
+    print_bit_raw y3
+    stl.output '\n'
+    stl.loop
+}
+
+// Read one ASCII bit line ('0'/'1' then '\n') into the single bit dst, then eat the '\n'.
+def read_ascii_bit dst, ch {
+    bit.input ch
+    bit.mov dst, ch
+    bit.input ch
+}
+
+// Print the single bit b as a bare ASCII '0'/'1' (no separator).
+def print_bit_raw b @ zero, one, done {
+    bit.if b, zero, one
+  zero:
+    stl.output '0'
+    ;done
+  one:
+    stl.output '1'
+  done:
+}
+
+ch: bit.vec 8, 0
+s1: bit.bit
+s0: bit.bit
+y0: bit.bit
+y1: bit.bit
+y2: bit.bit
+y3: bit.bit
