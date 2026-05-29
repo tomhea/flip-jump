@@ -1,0 +1,15 @@
+// First Char Of Line (#0173)
+
+// Reads a non-empty `\n`-terminated line and prints just its first byte followed by `\n`.
+
+main
+
+def main < ch {
+    stl.startup
+    bit.input ch
+    bit.print ch
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0

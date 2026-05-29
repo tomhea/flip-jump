@@ -1,0 +1,29 @@
+// Starts With Uppercase (#0184)
+
+// Reads a non-empty `\n`-terminated line and prints `1\n` if its first byte is `A`-`Z`, else `0\n`.
+
+main
+
+def main @ yes, no, done < ch, upper_a, upper_z {
+    stl.startup
+    bit.input ch
+    in_range ch, upper_a, upper_z, yes, no
+  yes:
+    stl.output "1\n"
+    ;done
+  no:
+    stl.output "0\n"
+  done:
+    stl.loop
+}
+
+// Jump to `yes` if lo <= ch <= hi (lo, hi are bit[:8] bounds), else to `no`.
+def in_range ch, lo, hi, yes, no @ check_hi {
+    bit.cmp 8, ch, lo, no, yes, check_hi
+  check_hi:
+    bit.cmp 8, ch, hi, yes, yes, no
+}
+
+ch: bit.vec 8, 0
+upper_a: bit.vec 8, 'A'
+upper_z: bit.vec 8, 'Z'

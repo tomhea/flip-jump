@@ -360,6 +360,13 @@ N
 | 0172 | count_lowercase_letters | Reads a `
 `-terminated line ≤ 80 chars and prints the count of `a`-`z` bytes as decimal + `
 `. |
+| 0173 | first_char_of_line | Reads a non-empty `
+`-terminated line and prints just its first byte followed by `
+`. |
+| 0174 | last_char_of_line | Reads a non-empty `
+`-terminated line and prints just its last byte (the one before `
+`) followed by `
+`. |
 | 0177 | caesar_plus_1 | Reads a `
 `-terminated line ≤ 80 chars and prints the same line with each letter shifted forward by 1 in the alphabet (wraps `z`→`a`, `Z`→`A`); non-letter bytes pass through unchanged; ends with `
 `. |
@@ -378,6 +385,20 @@ N
 | 0182 | swap_case_line | Reads a `
 `-terminated line ≤ 80 chars and prints it with each letter's case toggled (others unchanged), ending with `
 `. |
+| 0183 | has_char_in_line | Reads exactly one byte, then a `
+`, then a `
+`-terminated line ≤ 80 chars. Prints `1
+` if the line contains the first byte, else `0
+`. |
+| 0184 | starts_with_uppercase | Reads a non-empty `
+`-terminated line and prints `1
+` if its first byte is `A`-`Z`, else `0
+`. |
+| 0185 | ends_with_period | Reads a non-empty `
+`-terminated line and prints `1
+` if the last byte before `
+` is `.`, else `0
+`. |
 | 0186 | is_all_uppercase | Reads a non-empty `
 `-terminated line ≤ 80 chars and prints `1
 ` if every byte (excluding the `
@@ -394,6 +415,17 @@ N
 | 0189 | is_all_letters | Reads a non-empty `
 `-terminated line ≤ 80 chars and prints `1
 ` if every byte is `A`-`Z` or `a`-`z`, else `0
+`. |
+| 0190 | char_at_index | Reads a single ASCII digit `0`-`9`, then `
+`, then a `
+`-terminated line of at least N+1 chars. Prints the byte at 0-based index N + `
+`. |
+| 0191 | substring_first_3 | Reads a `
+`-terminated line of at least 3 chars and prints just its first 3 bytes + `
+`. |
+| 0192 | substring_last_3 | Reads a `
+`-terminated line of at least 3 chars and prints just its last 3 bytes (the 3 chars immediately before the `
+`) + `
 `. |
 | 0193 | count_letter_e | Reads a `
 `-terminated line ≤ 80 chars and prints the count of `e` or `E` bytes as decimal + `
