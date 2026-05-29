@@ -1,0 +1,112 @@
+// Zodiac Chinese (#0872)
+
+// Reads year `1900`-`2099` + `\n`. Prints the corresponding Chinese zodiac animal (`Rat`, `Ox`, ..., `Pig`) + `\n`.
+
+main
+
+def main @ done < year, base, twelve, q, r {
+    stl.startup
+    read_decimal 16, year
+    bit.sub 16, year, base
+    bit.div 16, year, twelve, q, r
+    pick12 r, done
+  done:
+    stl.output '\n'
+    stl.loop
+}
+
+// Print the Chinese zodiac animal whose index (0-11) is in r[:16].
+def pick12 r, after         @ animal0, try1, try2, try3, try4, try5, try6, try7, try8, try9, try10,         a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11         < c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 {
+    bit.cmp 16, r, c1, animal0, try1, try1
+  animal0:
+    stl.output "Rat"
+    ;after
+  try1:
+    bit.cmp 16, r, c2, a1, try2, try2
+  a1:
+    stl.output "Ox"
+    ;after
+  try2:
+    bit.cmp 16, r, c3, a2, try3, try3
+  a2:
+    stl.output "Tiger"
+    ;after
+  try3:
+    bit.cmp 16, r, c4, a3, try4, try4
+  a3:
+    stl.output "Rabbit"
+    ;after
+  try4:
+    bit.cmp 16, r, c5, a4, try5, try5
+  a4:
+    stl.output "Dragon"
+    ;after
+  try5:
+    bit.cmp 16, r, c6, a5, try6, try6
+  a5:
+    stl.output "Snake"
+    ;after
+  try6:
+    bit.cmp 16, r, c7, a6, try7, try7
+  a6:
+    stl.output "Horse"
+    ;after
+  try7:
+    bit.cmp 16, r, c8, a7, try8, try8
+  a7:
+    stl.output "Goat"
+    ;after
+  try8:
+    bit.cmp 16, r, c9, a8, try9, try9
+  a8:
+    stl.output "Monkey"
+    ;after
+  try9:
+    bit.cmp 16, r, c10, a9, try10, try10
+  a9:
+    stl.output "Rooster"
+    ;after
+  try10:
+    bit.cmp 16, r, c11, a10, a11, a11
+  a10:
+    stl.output "Dog"
+    ;after
+  a11:
+    stl.output "Pig"
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+year: bit.vec 16, 0
+base: bit.vec 16, 1900
+twelve: bit.vec 16, 12
+q: bit.vec 16, 0
+r: bit.vec 16, 0
+c1: bit.vec 16, 1
+c2: bit.vec 16, 2
+c3: bit.vec 16, 3
+c4: bit.vec 16, 4
+c5: bit.vec 16, 5
+c6: bit.vec 16, 6
+c7: bit.vec 16, 7
+c8: bit.vec 16, 8
+c9: bit.vec 16, 9
+c10: bit.vec 16, 10
+c11: bit.vec 16, 11
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
