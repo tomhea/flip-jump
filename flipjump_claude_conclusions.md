@@ -98,6 +98,19 @@ the codebase changes underneath them.
   each bit takes `dw=2w` bits of address space, so the 6th bit is `5*dw` past
   `ch`, not `5`.
 
+- **Number-theory helper trio (batch 6).** `is_prime_into n, flag, x`
+  (trial division 2..x-1, `bit.div` remainder test), `gcd_into n, dst, a, b`
+  (Euclid: `while b: a,b = b, a%b`), `sum_proper_divisors_into n, dst, x`
+  (loop d=1..x-1, add d where x%d==0). Perfect/abundant/deficient/
+  sum_of_divisors all reduce to the proper-divisor sum; `lcm = (a/gcd)*b`
+  avoids overflow. All 16-bit. These will carry into later sequence/algorithm
+  categories.
+
+- **Byte ↔ hex nibble (batch 6).** `print_hex_nibble`: copy the 4-bit nibble
+  into an 8-bit holder, add `0x30` (digits 0-9) or `0x57` (letters a-f).
+  `bit.ascii2hex` does the reverse. A byte's two nibbles live at `ch` (low) and
+  `ch + 4*dw` (high) — same `*dw`-per-bit stride as the case-flip idiom.
+
 ## Speed observations
 
 Batch 1 timings on Windows / `pytest -n auto` (12-core machine):

@@ -96,28 +96,49 @@ testing protocol.
 | 0026 | cat | Reads stdin and echoes each byte to stdout, byte-for-byte, until EOF. |
 | 0027 | uppercase_filter | Reads stdin and prints each byte uppercased (`a`-`z` → `A`-`Z`; other bytes unchanged). |
 | 0028 | lowercase_filter | Reads stdin and prints each byte lowercased (`A`-`Z` → `a`-`z`; other bytes unchanged). |
-| 0030 | count_bytes | Reads all of stdin, prints the total byte count as a decimal integer followed by `\n`. |
-| 0031 | count_lines | Reads all of stdin, prints the number of `\n` bytes seen as decimal + `\n`. |
-| 0032 | count_words | Reads all of stdin and prints the number of whitespace-separated tokens as decimal + `\n`. Whitespace = any of `' '`, `'\t'`, `'\n'`; runs of consecutive whitespace count as one separator; leading and trailing whitespace introduce no empty tokens; empty input prints `0\n`. |
+| 0030 | count_bytes | Reads all of stdin, prints the total byte count as a decimal integer followed by `
+`. |
+| 0031 | count_lines | Reads all of stdin, prints the number of `
+` bytes seen as decimal + `
+`. |
+| 0032 | count_words | Reads all of stdin and prints the number of whitespace-separated tokens as decimal + `
+`. Whitespace = any of `' '`, `'	'`, `'
+'`; runs of consecutive whitespace count as one separator; leading and trailing whitespace introduce no empty tokens; empty input prints `0
+`. |
 | 0033 | echo_twice | Reads each byte of stdin and outputs it twice. |
 | 0034 | echo_thrice | Reads each byte of stdin and outputs it three times. |
 | 0035 | skip_first_byte | Reads stdin and outputs every byte except the very first one. |
 | 0036 | swap_case | Reads stdin and swaps upper/lower for letter bytes; other bytes unchanged. |
-| 0037 | strip_newlines | Reads stdin and outputs all bytes except `\n`. |
+| 0037 | strip_newlines | Reads stdin and outputs all bytes except `
+`. |
 | 0038 | only_digits | Reads stdin and outputs only `0`-`9` bytes, dropping all others. |
 | 0039 | only_letters | Reads stdin and outputs only `A`-`Z` and `a`-`z` bytes. |
 | 0040 | only_vowels | Reads stdin and outputs only `a/e/i/o/u/A/E/I/O/U` bytes. |
 | 0041 | only_uppercase | Reads stdin and outputs only `A`-`Z` bytes. |
-| 0042 | tab_to_space | Reads stdin and replaces each `\t` with a single space; other bytes unchanged. |
-| 0043 | space_to_tab | Reads stdin and replaces each space (` `) with `\t`; other bytes unchanged. |
-| 0044 | char_to_dec | Reads exactly one byte from stdin and prints its ASCII decimal value as decimal + `\n`. |
+| 0042 | tab_to_space | Reads stdin and replaces each `	` with a single space; other bytes unchanged. |
+| 0043 | space_to_tab | Reads stdin and replaces each space (` `) with `	`; other bytes unchanged. |
+| 0044 | char_to_dec | Reads exactly one byte from stdin and prints its ASCII decimal value as decimal + `
+`. |
+| 0045 | dec_to_char | Reads a decimal number `0`-`127` from stdin terminated by `
+` and prints the corresponding ASCII byte. |
+| 0046 | char_to_hex | Reads exactly one byte from stdin and prints `0xNN
+` where NN is its two-digit hex code (lowercase). |
+| 0047 | hex_to_char | Reads `0xNN
+` from stdin (two lowercase hex digits) and prints the corresponding ASCII byte. |
 | 0048 | echo_with_prefix | Reads stdin and prints each input byte preceded by `>`. |
 | 0049 | echo_with_suffix | Reads stdin and prints each input byte followed by `!`. |
-| 0050 | print_first_line | Reads stdin up to the first `\n` and prints only that line (including the `\n`). |
-| 0051 | double_newlines | Reads stdin and outputs each `\n` byte as two `\n`s; other bytes unchanged. |
+| 0050 | print_first_line | Reads stdin up to the first `
+` and prints only that line (including the `
+`). |
+| 0051 | double_newlines | Reads stdin and outputs each `
+` byte as two `
+`s; other bytes unchanged. |
 | 0052 | strip_spaces | Reads stdin and outputs all bytes except space (` `). |
-| 0053 | input_then_thanks | Reads a single-line input and prints `Got it: <line>\nThank you!\n`. |
-| 0054 | read_one_print_three | Reads one byte from stdin and prints the literal sequence `<byte><byte><byte>\n`. |
+| 0053 | input_then_thanks | Reads a single-line input and prints `Got it: <line>
+Thank you!
+`. |
+| 0054 | read_one_print_three | Reads one byte from stdin and prints the literal sequence `<byte><byte><byte>
+`. |
 | 0055 | rot_ascii_plus_one | Reads stdin and outputs each byte plus 1, modulo 256 (so `0xFF` wraps to `0x00`). All bytes are transformed uniformly; no special-casing of letters or non-letters. |
 
 ## arithmetic
@@ -253,6 +274,35 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0138 | is_prime_small | Reads decimal N in `0`-`50` and prints `1
+` if N is prime, else `0
+`. |
+| 0139 | first_n_primes | Reads decimal N in `1`-`10` and prints the first N prime numbers in ascending order, one per line. |
+| 0140 | prime_after | Reads decimal N in `0`-`50` and prints the smallest prime strictly greater than N (guaranteed ≤ 53) + `
+`. |
+| 0141 | count_primes_to_n | Reads decimal N in `0`-`50` and prints the count of prime numbers in `[2..N]` as decimal + `
+`. |
+| 0142 | gcd_two | Reads two decimals (each ≤ 100) and prints their GCD as decimal + `
+`. |
+| 0143 | lcm_two | Reads two decimals each in `1`-`20` and prints their LCM as decimal + `
+`. |
+| 0144 | coprime_check | Reads two decimals (each ≤ 100) and prints `1
+` if their GCD is 1, else `0
+`. |
+| 0145 | factor_count_small | Reads decimal N in `1`-`50` and prints the number of positive divisors of N as decimal + `
+`. |
+| 0146 | divisors_of_n | Reads decimal N in `1`-`30` and prints all positive divisors of N in ascending order, one per line. |
+| 0147 | is_perfect_small | Reads decimal N in `1`-`30` and prints `1
+` if N equals the sum of its proper divisors (divisors excluding N), else `0
+`. |
+| 0148 | sum_of_divisors_small | Reads decimal N in `1`-`30` and prints the sum of all positive divisors of N (including N) as decimal + `
+`. |
+| 0149 | is_abundant_small | Reads decimal N in `1`-`30` and prints `1
+` if N is abundant (sum of proper divisors > N), else `0
+`. |
+| 0150 | is_deficient_small | Reads decimal N in `1`-`30` and prints `1
+` if N is deficient (sum of proper divisors < N), else `0
+`. |
 
 ## strings
 
