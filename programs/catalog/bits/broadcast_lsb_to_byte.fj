@@ -1,0 +1,21 @@
+// Broadcast Lsb To Byte (#0935)
+
+// Reads one byte. If its LSB is `0` outputs `0x00`; if `1` outputs `0xFF`. (Demonstrates sign-extension-from-1-bit pattern.)
+
+main
+
+def main @ set, done < ch, zero_b, full_b {
+    stl.startup
+    bit.input ch
+    bit.if1 ch, set
+    bit.print zero_b
+    ;done
+  set:
+    bit.print full_b
+  done:
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+zero_b: bit.vec 8, 0x00
+full_b: bit.vec 8, 0xff

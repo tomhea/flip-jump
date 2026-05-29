@@ -1,0 +1,31 @@
+// Count Leading Ones (#0929)
+
+// Reads one byte and prints the count of consecutive `1` bits starting from the MSB (`0xE0` → `3`, `0xFF` → `8`) as decimal `0`-`8` + `\n`.
+
+main
+
+def main < ch, count, still {
+    stl.startup
+    bit.input ch
+    bit.zero 16, count
+    bit.one still
+    rep(8, i) scan_one_step still, count, ch + (7-i)*dw
+    bit.print_dec_uint 16, count
+    stl.output '\n'
+    stl.loop
+}
+
+// One leading/trailing-one step: while `still` scanning, count a 1 bit; a 0 bit stops the scan.
+def scan_one_step still, count, b @ is_zero, end {
+    bit.if0 still, end
+    bit.if0 b, is_zero
+    bit.inc 16, count
+    ;end
+  is_zero:
+    bit.zero still
+  end:
+}
+
+ch: bit.vec 8, 0
+count: bit.vec 16, 0
+still: bit.bit

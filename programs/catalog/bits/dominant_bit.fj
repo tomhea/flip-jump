@@ -1,0 +1,34 @@
+// Dominant Bit (#0385)
+
+// Reads one byte. Prints `1\n` if it has more 1-bits than 0-bits (popcount > 4), `0\n` if more 0-bits than 1-bits (popcount < 4), or `tie\n` if popcount equals 4.
+
+main
+
+def main @ less, tie, greater, done < ch, count, four {
+    stl.startup
+    bit.input ch
+    bit.zero 16, count
+    rep(8, i) add_bit_into count, ch + i*dw
+    bit.cmp 16, count, four, less, tie, greater
+  less:
+    stl.output "0\n"
+    ;done
+  tie:
+    stl.output "tie\n"
+    ;done
+  greater:
+    stl.output "1\n"
+  done:
+    stl.loop
+}
+
+// Add 1 to count[:16] if the bit at b is set.
+def add_bit_into count, b @ end {
+    bit.if0 b, end
+    bit.inc 16, count
+  end:
+}
+
+ch: bit.vec 8, 0
+count: bit.vec 16, 0
+four: bit.vec 16, 4

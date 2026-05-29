@@ -1,0 +1,23 @@
+// Next Power Of 2 Byte (#0926)
+
+// Reads one byte `0`-`128` and outputs the smallest power of 2 that is `>=` the input (`0` → `1`, `5` → `8`, `8` → `8`) as one raw byte.
+
+main
+
+def main @ loop, shift, done < ch, p {
+    stl.startup
+    bit.input ch
+    bit.zero 8, p
+    bit.inc 8, p
+  loop:
+    bit.cmp 8, p, ch, shift, done, done
+  shift:
+    bit.shl 8, p
+    ;loop
+  done:
+    bit.print p
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+p: bit.vec 8, 0

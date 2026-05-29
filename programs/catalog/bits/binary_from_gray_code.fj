@@ -1,0 +1,23 @@
+// Binary From Gray Code (#0925)
+
+// Reads one byte interpreted as a Gray code value and outputs the corresponding standard-binary byte (running XOR of all higher bits).
+
+main
+
+def main < ch, out {
+    stl.startup
+    bit.input ch
+    bit.mov out + 7*dw, ch + 7*dw
+    rep(7, i) gray2bin_step out + (6-i)*dw, ch + (6-i)*dw, out + (7-i)*dw
+    bit.print out
+    stl.loop
+}
+
+// out_k = ch_k XOR out_k1 — one running-XOR step of gray-code -> binary.
+def gray2bin_step ok, ck, ok1 {
+    bit.mov ok, ck
+    bit.xor ok, ok1
+}
+
+ch: bit.vec 8, 0
+out: bit.vec 8, 0
