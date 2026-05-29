@@ -575,6 +575,31 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0461 | word_count_multiline | Reads stdin until an empty line (`
+` alone). Prints the total count of whitespace-separated tokens across all non-empty lines as decimal + `
+`. Whitespace = `' '`, `'\t'`, `'\n'`; runs collapse; leading/trailing whitespace introduce no empty tokens. |
+| 0463 | word_length_avg | Reads a `
+`-terminated line ≤ 80 chars. Computes lengths of whitespace-separated tokens (space/tab/newline whitespace, runs collapse). Prints the floor of (sum of word lengths) / (word count) as decimal + `
+`. If no words, prints `0\n`. |
+| 0464 | word_length_max | Reads a `
+`-terminated line ≤ 80 chars. Prints the length of the longest whitespace-separated token as decimal + `
+`. Empty input → `0\n`. |
+| 0465 | word_length_min | Reads a `
+`-terminated line ≤ 80 chars. Prints the length of the shortest whitespace-separated token as decimal + `
+`. Empty input → `0\n`. |
+| 0470 | period_sentence_count | Reads a `
+`-terminated line ≤ 80 chars. Prints the count of `.` bytes in the line (excluding `
+`) as decimal + `
+`. (Approximates sentence count by period count.) |
+| 0471 | capitalize_first_letter | Reads a `
+`-terminated line ≤ 80 chars. If the first byte is `a`-`z`, outputs it uppercased; the rest of the line is unchanged. Includes final `
+`. |
+| 0472 | capitalize_words | Reads a `
+`-terminated line ≤ 80 chars. Outputs the line with the first letter of each whitespace-separated word uppercased; all other letters lowercased. Whitespace and non-letters unchanged. Includes final `
+`. |
+| 0473 | uncapitalize_first | Reads a `
+`-terminated line ≤ 80 chars. If the first byte is `A`-`Z`, outputs it lowercased; the rest of the line is unchanged. Includes final `
+`. |
 
 ## state_machines
 
