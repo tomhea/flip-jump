@@ -314,6 +314,22 @@ N
 | 0155 | collatz_steps | Reads decimal N in `1`-`50` and prints the number of Collatz steps (3n+1 / n/2) to reach 1 + `
 `. |
 | 0156 | collatz_sequence | Reads decimal N in `1`-`15` and prints the Collatz sequence starting at N, terminating with 1, one number per line. |
+| 0157 | is_palindrome_num | Reads decimal N in `0`-`999` and prints `1
+` if its base-10 representation is a palindrome, else `0
+`. |
+| 0158 | digit_sum | Reads decimal N in `0`-`999` and prints the sum of its base-10 digits as decimal + `
+`. |
+| 0159 | digit_product | Reads decimal N in `0`-`999` and prints the product of its base-10 digits as decimal + `
+`. |
+| 0160 | digit_count_small | Reads decimal N in `0`-`999` and prints the number of base-10 digits (`1`, `2`, or `3`; `0` itself counts as 1 digit) + `
+`. |
+| 0161 | reverse_digits | Reads decimal N in `0`-`999` and prints the decimal with its digits reversed (e.g. `123` → `321`, `100` → `001` becomes `1`). |
+| 0162 | is_armstrong_3 | Reads decimal N in `100`-`999` and prints `1
+` if N equals the sum of cubes of its three digits, else `0
+`. |
+| 0163 | happy_check_small | Reads decimal N in `1`-`30` and prints `1
+` if N is a happy number (iterated sum of squared digits reaches 1), else `0
+`. |
 | 0164 | is_square_small | Reads decimal N in `0`-`100` and prints `1
 ` if N is a perfect square, else `0
 `. |
