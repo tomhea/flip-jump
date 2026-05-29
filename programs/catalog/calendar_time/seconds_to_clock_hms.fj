@@ -1,0 +1,66 @@
+// Seconds To Clock Hms (#0856)
+
+// Reads decimal total seconds `0`-`86399` + `\n`. Prints `HH:MM:SS\n` (all three fields zero-padded to 2 digits).
+
+main
+
+def main < sc_total, sc_3600, sc_60, sc_h, sc_m, sc_s, sc_rem {
+    stl.startup
+    read_decimal24 sc_total
+    bit.div 24, sc_total, sc_3600, sc_h, sc_rem
+    bit.div 24, sc_rem, sc_60, sc_m, sc_s
+    print_two_digits sc_h
+    stl.output ':'
+    print_two_digits sc_m
+    stl.output ':'
+    print_two_digits sc_s
+    stl.output '\n'
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:24].
+def read_decimal24 value @ loop, add_digit, end < rd_ch, rd_nl, rd_digit, rd_err {
+    bit.zero 24, value
+  loop:
+    bit.input rd_ch
+    bit.if0 8, rd_ch, end
+    bit.cmp 8, rd_ch, rd_nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 24, value
+    bit.zero 24, rd_digit
+    bit.ascii2dec rd_err, rd_digit, rd_ch
+    bit.add 24, value, rd_digit
+    ;loop
+  end:
+}
+
+// Print value[:16] (assumed 0-99) as exactly two decimal digits (zero-padded).
+def print_two_digits value < td_q, td_r, td_ten, td_hi, td_lo, td_off0 {
+    bit.div 16, value, td_ten, td_q, td_r
+    bit.zero 8, td_hi
+    bit.mov 4, td_hi, td_q
+    bit.add 8, td_hi, td_off0
+    bit.print td_hi
+    bit.zero 8, td_lo
+    bit.mov 4, td_lo, td_r
+    bit.add 8, td_lo, td_off0
+    bit.print td_lo
+}
+
+sc_total: bit.vec 24, 0
+sc_3600: bit.vec 24, 3600
+sc_60: bit.vec 24, 60
+sc_h: bit.vec 24, 0
+sc_m: bit.vec 24, 0
+sc_s: bit.vec 24, 0
+sc_rem: bit.vec 24, 0
+rd_ch: bit.vec 8, 0
+rd_nl: bit.vec 8, '\n'
+rd_digit: bit.vec 24, 0
+rd_err: bit.bit
+td_q: bit.vec 16, 0
+td_r: bit.vec 16, 0
+td_ten: bit.vec 16, 10
+td_hi: bit.vec 8, 0
+td_lo: bit.vec 8, 0
+td_off0: bit.vec 8, 0x30
