@@ -1,0 +1,82 @@
+// Count Consonants (#0169)
+
+// Reads a `\n`-terminated line ≤ 80 chars and prints the count of letter bytes that are NOT vowels as decimal + `\n`.
+
+main
+
+def main @ loop, body, chk_vowel, hit, skip, end < ch, nl, count {
+    stl.startup
+    bit.zero 16, count
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, body, end, body
+  body:
+    is_letter ch, chk_vowel, skip
+  chk_vowel:
+    is_vowel ch, skip, hit
+  hit:
+    bit.inc 16, count
+  skip:
+    ;loop
+  end:
+    bit.print_dec_uint 16, count
+    stl.output '\n'
+    stl.loop
+}
+
+// Jump to `yes` if lo <= ch <= hi (lo, hi are bit[:8] bounds), else to `no`.
+def in_range ch, lo, hi, yes, no @ check_hi {
+    bit.cmp 8, ch, lo, no, yes, check_hi
+  check_hi:
+    bit.cmp 8, ch, hi, yes, yes, no
+}
+
+// Jump to `yes` if ch is a letter (A-Z or a-z), else to `no`.
+def is_letter ch, yes, no @ try_lower < upper_a, upper_z, lower_a, lower_z {
+    in_range ch, upper_a, upper_z, yes, try_lower
+  try_lower:
+    in_range ch, lower_a, lower_z, yes, no
+}
+
+// Jump to `yes` if ch is a/e/i/o/u in either case, else to `no`.
+def is_vowel ch, yes, no @ t1, t2, t3, t4, t5, t6, t7, t8, t9 \
+        < va, ve, vi, vo, vu, vA, vE, vI, vO, vU {
+    bit.cmp 8, ch, va, t1, yes, t1
+  t1:
+    bit.cmp 8, ch, ve, t2, yes, t2
+  t2:
+    bit.cmp 8, ch, vi, t3, yes, t3
+  t3:
+    bit.cmp 8, ch, vo, t4, yes, t4
+  t4:
+    bit.cmp 8, ch, vu, t5, yes, t5
+  t5:
+    bit.cmp 8, ch, vA, t6, yes, t6
+  t6:
+    bit.cmp 8, ch, vE, t7, yes, t7
+  t7:
+    bit.cmp 8, ch, vI, t8, yes, t8
+  t8:
+    bit.cmp 8, ch, vO, t9, yes, t9
+  t9:
+    bit.cmp 8, ch, vU, no, yes, no
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+count: bit.vec 16, 0
+upper_a: bit.vec 8, 'A'
+upper_z: bit.vec 8, 'Z'
+lower_a: bit.vec 8, 'a'
+lower_z: bit.vec 8, 'z'
+va: bit.vec 8, 'a'
+ve: bit.vec 8, 'e'
+vi: bit.vec 8, 'i'
+vo: bit.vec 8, 'o'
+vu: bit.vec 8, 'u'
+vA: bit.vec 8, 'A'
+vE: bit.vec 8, 'E'
+vI: bit.vec 8, 'I'
+vO: bit.vec 8, 'O'
+vU: bit.vec 8, 'U'

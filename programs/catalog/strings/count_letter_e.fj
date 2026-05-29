@@ -1,0 +1,32 @@
+// Count Letter E (#0193)
+
+// Reads a `\n`-terminated line ≤ 80 chars and prints the count of `e` or `E` bytes as decimal + `\n`.
+
+main
+
+def main @ loop, body, chk_up, hit, skip, end < ch, nl, count, e_lower, e_upper {
+    stl.startup
+    bit.zero 16, count
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, body, end, body
+  body:
+    bit.cmp 8, ch, e_lower, chk_up, hit, chk_up
+  chk_up:
+    bit.cmp 8, ch, e_upper, skip, hit, skip
+  hit:
+    bit.inc 16, count
+  skip:
+    ;loop
+  end:
+    bit.print_dec_uint 16, count
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+count: bit.vec 16, 0
+e_lower: bit.vec 8, 'e'
+e_upper: bit.vec 8, 'E'

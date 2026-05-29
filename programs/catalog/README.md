@@ -341,6 +341,63 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0166 | string_length | Reads a single `
+`-terminated line of length ≤ 80 and prints the length of the line (excluding the `
+`) as decimal + `
+`. |
+| 0168 | count_vowels | Reads a `
+`-terminated line ≤ 80 chars and prints the count of vowel letters (`aeiouAEIOU`) as decimal + `
+`. |
+| 0169 | count_consonants | Reads a `
+`-terminated line ≤ 80 chars and prints the count of letter bytes that are NOT vowels as decimal + `
+`. |
+| 0170 | count_letters | Reads a `
+`-terminated line ≤ 80 chars and prints the count of letter bytes (`A`-`Z` or `a`-`z`) as decimal + `
+`. |
+| 0171 | count_uppercase_letters | Reads a `
+`-terminated line ≤ 80 chars and prints the count of `A`-`Z` bytes as decimal + `
+`. |
+| 0172 | count_lowercase_letters | Reads a `
+`-terminated line ≤ 80 chars and prints the count of `a`-`z` bytes as decimal + `
+`. |
+| 0177 | caesar_plus_1 | Reads a `
+`-terminated line ≤ 80 chars and prints the same line with each letter shifted forward by 1 in the alphabet (wraps `z`→`a`, `Z`→`A`); non-letter bytes pass through unchanged; ends with `
+`. |
+| 0178 | caesar_plus_3 | Reads a `
+`-terminated line ≤ 80 chars and prints it with each letter Caesar-shifted by 3 (wraps within case); non-letters unchanged; ends with `
+`. |
+| 0179 | caesar_plus_13 | Reads a `
+`-terminated line ≤ 80 chars and prints the ROT13 transformation: letters shifted by 13 (wraps within case); non-letters unchanged; ends with `
+`. |
+| 0180 | uppercase_line | Reads a `
+`-terminated line ≤ 80 chars, uppercases its `a`-`z` bytes (others unchanged), prints result + `
+`. |
+| 0181 | lowercase_line | Reads a `
+`-terminated line ≤ 80 chars, lowercases its `A`-`Z` bytes (others unchanged), prints result + `
+`. |
+| 0182 | swap_case_line | Reads a `
+`-terminated line ≤ 80 chars and prints it with each letter's case toggled (others unchanged), ending with `
+`. |
+| 0186 | is_all_uppercase | Reads a non-empty `
+`-terminated line ≤ 80 chars and prints `1
+` if every byte (excluding the `
+`) is `A`-`Z`, else `0
+`. |
+| 0187 | is_all_lowercase | Reads a non-empty `
+`-terminated line ≤ 80 chars and prints `1
+` if every byte is `a`-`z`, else `0
+`. |
+| 0188 | is_all_digits | Reads a non-empty `
+`-terminated line ≤ 80 chars and prints `1
+` if every byte is `0`-`9`, else `0
+`. |
+| 0189 | is_all_letters | Reads a non-empty `
+`-terminated line ≤ 80 chars and prints `1
+` if every byte is `A`-`Z` or `a`-`z`, else `0
+`. |
+| 0193 | count_letter_e | Reads a `
+`-terminated line ≤ 80 chars and prints the count of `e` or `E` bytes as decimal + `
+`. |
 
 ## bits
 
