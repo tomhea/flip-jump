@@ -1,0 +1,61 @@
+// Word Length Min (#0465)
+
+// Reads a `\n`-terminated line ≤ 80 chars. Prints the length of the shortest whitespace-separated token as decimal + `\n`. Empty input → `0\n`.
+
+main
+
+def main @ loop, body, ws, letter, end < ch, nl, run, minlen, have {
+    stl.startup
+    bit.zero 16, run
+    bit.zero 16, minlen
+    bit.zero have
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, body, end, body
+  body:
+    is_space_tab ch, ws, letter
+  ws:
+    finalize_min run, minlen, have
+    bit.zero 16, run
+    ;loop
+  letter:
+    bit.inc 16, run
+    ;loop
+  end:
+    finalize_min run, minlen, have
+    bit.print_dec_uint 16, minlen
+    stl.output '\n'
+    stl.loop
+}
+
+// Jump to `yes` if ch is a space or a tab, else to `no`.
+def is_space_tab ch, yes, no @ try_tab < space, tab {
+    bit.cmp 8, ch, space, try_tab, yes, try_tab
+  try_tab:
+    bit.cmp 8, ch, tab, no, yes, no
+}
+
+// If run > 0, update minlen[:16] to min(minlen, run); `have` marks first word.
+def finalize_min run, minlen, have @ nonempty, first, smaller, end < zero16 {
+    bit.cmp 16, run, zero16, end, end, nonempty
+  nonempty:
+    bit.if0 have, first
+    bit.cmp 16, run, minlen, smaller, end, end
+  first:
+    bit.one have
+    bit.mov 16, minlen, run
+    ;end
+  smaller:
+    bit.mov 16, minlen, run
+  end:
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+run: bit.vec 16, 0
+minlen: bit.vec 16, 0
+have: bit.bit
+space: bit.vec 8, ' '
+tab: bit.vec 8, '\t'
+zero16: bit.vec 16, 0

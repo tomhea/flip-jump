@@ -1,0 +1,40 @@
+// Uncapitalize First (#0473)
+
+// Reads a `\n`-terminated line ≤ 80 chars. If the first byte is `A`-`Z`, outputs it lowercased; the rest of the line is unchanged. Includes final `\n`.
+
+main
+
+def main @ first, down, echo_first, loop, body, end < ch, nl, upper_a, upper_z {
+    stl.startup
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, first, end, first
+  first:
+    in_range ch, upper_a, upper_z, down, echo_first
+  down:
+    bit.one ch + 5*dw
+  echo_first:
+    bit.print ch
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, body, end, body
+  body:
+    bit.print ch
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Jump to `yes` if lo <= ch <= hi (lo, hi are bit[:8] bounds), else to `no`.
+def in_range ch, lo, hi, yes, no @ check_hi {
+    bit.cmp 8, ch, lo, no, yes, check_hi
+  check_hi:
+    bit.cmp 8, ch, hi, yes, yes, no
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+upper_a: bit.vec 8, 'A'
+upper_z: bit.vec 8, 'Z'

@@ -1,0 +1,65 @@
+// Capitalize Words (#0472)
+
+// Reads a `\n`-terminated line ≤ 80 chars. Outputs the line with the first letter of each whitespace-separated word uppercased; all other letters lowercased. Whitespace and non-letters unchanged. Includes final `\n`.
+
+main
+
+def main @ loop, body, is_ws, letter, do_case, make_upper, emit_ch, end < ch, nl, seen {
+    stl.startup
+    bit.zero seen
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, body, end, body
+  body:
+    is_space_tab ch, is_ws, letter
+  is_ws:
+    bit.zero seen
+    ;emit_ch
+  letter:
+    is_letter ch, do_case, emit_ch
+  do_case:
+    bit.if0 seen, make_upper
+    bit.one ch + 5*dw
+    ;emit_ch
+  make_upper:
+    bit.zero ch + 5*dw
+    bit.one seen
+  emit_ch:
+    bit.print ch
+    ;loop
+  end:
+    stl.output '\n'
+    stl.loop
+}
+
+// Jump to `yes` if lo <= ch <= hi (lo, hi are bit[:8] bounds), else to `no`.
+def in_range ch, lo, hi, yes, no @ check_hi {
+    bit.cmp 8, ch, lo, no, yes, check_hi
+  check_hi:
+    bit.cmp 8, ch, hi, yes, yes, no
+}
+
+// Jump to `yes` if ch is a letter (A-Z or a-z), else to `no`.
+def is_letter ch, yes, no @ try_lower < upper_a, upper_z, lower_a, lower_z {
+    in_range ch, upper_a, upper_z, yes, try_lower
+  try_lower:
+    in_range ch, lower_a, lower_z, yes, no
+}
+
+// Jump to `yes` if ch is a space or a tab, else to `no`.
+def is_space_tab ch, yes, no @ try_tab < space, tab {
+    bit.cmp 8, ch, space, try_tab, yes, try_tab
+  try_tab:
+    bit.cmp 8, ch, tab, no, yes, no
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+seen: bit.bit
+upper_a: bit.vec 8, 'A'
+upper_z: bit.vec 8, 'Z'
+lower_a: bit.vec 8, 'a'
+lower_z: bit.vec 8, 'z'
+space: bit.vec 8, ' '
+tab: bit.vec 8, '\t'
