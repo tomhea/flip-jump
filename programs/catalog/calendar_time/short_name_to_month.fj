@@ -4,7 +4,7 @@
 
 main
 
-def main @ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, eat, done < sn_c0, sn_c1, sn_c2, sn_in, sep, kjan, kfeb, kmar, kapr, kmay, kjun, kjul, kaug, ksep, koct, knov {
+def main @ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, eat < sn_c0, sn_c1, sn_c2, sn_in, sep, kjan, kfeb, kmar, kapr, kmay, kjun, kjul, kaug, ksep, koct, knov {
     stl.startup
     bit.input sn_c0
     bit.input sn_c1
@@ -73,7 +73,6 @@ def main @ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, m1, m2, m3, m4, m5, m6,
     stl.output "12\n"
   eat:
     bit.input sep
-  done:
     stl.loop
 }
 

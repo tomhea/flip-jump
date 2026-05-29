@@ -4,7 +4,7 @@
 
 main
 
-def main @ hloop, hdigit, hdone, is_pm, is_am, pm_adjust, am_twelve, do_print, done < fh_h, fh_m, fh_12, fh_marker, fh_P, fh_colon, fh_digit, fh_ch, fh_err, sep {
+def main @ hloop, hdigit, hdone, is_pm, is_am, pm_adjust, am_twelve, do_print < fh_h, fh_m, fh_12, fh_marker, fh_P, fh_colon, fh_digit, fh_ch, fh_err, sep {
     stl.startup
     bit.zero 16, fh_h
   hloop:
@@ -36,7 +36,6 @@ def main @ hloop, hdigit, hdone, is_pm, is_am, pm_adjust, am_twelve, do_print, d
     stl.output ':'
     print_two_digits fh_m
     stl.output '\n'
-  done:
     stl.loop
 }
 

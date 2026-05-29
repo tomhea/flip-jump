@@ -4,7 +4,7 @@
 
 main
 
-def main @ chk_year_hi, chk_month_lo, chk_month_hi, chk_day, eat, yes, no, done < pi_year, pi_month, pi_day, pi_len, pi_one, pi_12, pi_1900, pi_2099, pi_hi, pi_lo, sep {
+def main @ chk_year_hi, chk_month_lo, chk_month_hi, chk_day, eat, yes, no < pi_year, pi_month, pi_day, pi_len, pi_one, pi_12, pi_1900, pi_2099, pi_hi, pi_lo, sep {
     stl.startup
     read_two_digits pi_hi
     read_two_digits pi_lo
@@ -35,7 +35,6 @@ def main @ chk_year_hi, chk_month_lo, chk_month_hi, chk_day, eat, yes, no, done 
     stl.output "0\n"
   eat:
     bit.input sep
-  done:
     stl.loop
 }
 
@@ -55,20 +54,16 @@ def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
 }
 
 // flag[:1] = 1 if year[:16] is a Gregorian leap year, else 0.
-def is_leap_into flag, year @ chk100, chk400, yes, no, done < ly_four, ly_hundred, ly_400, ly_q, ly_r {
-    bit.div 16, year, ly_four, ly_q, ly_r
-    bit.if1 16, ly_r, no
-  chk100:
-    bit.div 16, year, ly_hundred, ly_q, ly_r
-    bit.if1 16, ly_r, yes
-  chk400:
-    bit.div 16, year, ly_400, ly_q, ly_r
-    bit.if0 16, ly_r, yes
-    ;no
-  yes:
+// Rule: leap iff divisible by 4, except centuries which must be divisible by 400.
+def is_leap_into flag, year @ not_leap, done < ly_four, ly_hundred, ly_400, ly_q, ly_r {
     bit.one flag
-    ;done
-  no:
+    bit.div 16, year, ly_four, ly_q, ly_r
+    bit.if1 16, ly_r, not_leap
+    bit.div 16, year, ly_hundred, ly_q, ly_r
+    bit.if1 16, ly_r, done
+    bit.div 16, year, ly_400, ly_q, ly_r
+    bit.if0 16, ly_r, done
+  not_leap:
     bit.zero flag
   done:
 }

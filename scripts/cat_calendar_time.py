@@ -72,20 +72,16 @@ SEP_DATA = ["sep: bit.vec 8, 0"]
 # flag[:1] = 1 if year[:16] is a Gregorian leap year, else 0.
 IS_LEAP_INTO = """
 // flag[:1] = 1 if year[:16] is a Gregorian leap year, else 0.
-def is_leap_into flag, year @ chk100, chk400, yes, no, done < ly_four, ly_hundred, ly_400, ly_q, ly_r {
-    bit.div 16, year, ly_four, ly_q, ly_r
-    bit.if1 16, ly_r, no
-  chk100:
-    bit.div 16, year, ly_hundred, ly_q, ly_r
-    bit.if1 16, ly_r, yes
-  chk400:
-    bit.div 16, year, ly_400, ly_q, ly_r
-    bit.if0 16, ly_r, yes
-    ;no
-  yes:
+// Rule: leap iff divisible by 4, except centuries which must be divisible by 400.
+def is_leap_into flag, year @ not_leap, done < ly_four, ly_hundred, ly_400, ly_q, ly_r {
     bit.one flag
-    ;done
-  no:
+    bit.div 16, year, ly_four, ly_q, ly_r
+    bit.if1 16, ly_r, not_leap
+    bit.div 16, year, ly_hundred, ly_q, ly_r
+    bit.if1 16, ly_r, done
+    bit.div 16, year, ly_400, ly_q, ly_r
+    bit.if0 16, ly_r, done
+  not_leap:
     bit.zero flag
   done:
 }
@@ -790,7 +786,7 @@ C(
     + READ_TWO_DIGITS_DATA
     + SEP_DATA,
     main_body="""
-def main @ chk_year_hi, chk_month_lo, chk_month_hi, chk_day, eat, yes, no, done
+def main @ chk_year_hi, chk_month_lo, chk_month_hi, chk_day, eat, yes, no
         < pi_year, pi_month, pi_day, pi_len, pi_one, pi_12, pi_1900, pi_2099, pi_hi, pi_lo, sep {
     stl.startup
     read_two_digits pi_hi
@@ -822,7 +818,6 @@ def main @ chk_year_hi, chk_month_lo, chk_month_hi, chk_day, eat, yes, no, done
     stl.output "0\\n"
   eat:
     bit.input sep
-  done:
     stl.loop
 }
 """,
@@ -934,7 +929,7 @@ C(
     + SEP_DATA,
     main_body="""
 def main @ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11,
-          m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, eat, done
+          m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, eat
         < sn_c0, sn_c1, sn_c2, sn_in, sep,
           kjan, kfeb, kmar, kapr, kmay, kjun, kjul, kaug, ksep, koct, knov {
     stl.startup
@@ -1005,7 +1000,6 @@ def main @ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11,
     stl.output "12\\n"
   eat:
     bit.input sep
-  done:
     stl.loop
 }
 """,
@@ -1093,7 +1087,7 @@ C(
     + READ_TWO_DIGITS_DATA
     + SEP_DATA,
     main_body="""
-def main @ hloop, hdigit, hdone, is_pm, is_am, pm_adjust, am_twelve, do_print, done
+def main @ hloop, hdigit, hdone, is_pm, is_am, pm_adjust, am_twelve, do_print
         < fh_h, fh_m, fh_12, fh_marker, fh_P, fh_colon, fh_digit, fh_ch, fh_err, sep {
     stl.startup
     bit.zero 16, fh_h
@@ -1126,7 +1120,6 @@ def main @ hloop, hdigit, hdone, is_pm, is_am, pm_adjust, am_twelve, do_print, d
     stl.output ':'
     print_two_digits fh_m
     stl.output '\\n'
-  done:
     stl.loop
 }
 """,
@@ -1214,7 +1207,7 @@ C(
     ]
     + DAYS_IN_MONTH_DATA,
     main_body="""
-def main @ yloop, yleap, yhave, yfits, yadvance, mloop, mfits, madvance, done
+def main @ yloop, yleap, yhave, yfits, yadvance, mloop, mfits, madvance
         < et_rem, et_year, et_2000, et_flag, et_ylen, et_365, et_366, et_month, et_len, et_one {
     stl.startup
     read_decimal 16, et_rem
@@ -1249,7 +1242,6 @@ def main @ yloop, yleap, yhave, yfits, yadvance, mloop, mfits, madvance, done
     stl.output ' '
     bit.print_dec_uint 16, et_rem
     stl.output '\\n'
-  done:
     stl.loop
 }
 """,

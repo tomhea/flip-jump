@@ -40,20 +40,16 @@ def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
 }
 
 // flag[:1] = 1 if year[:16] is a Gregorian leap year, else 0.
-def is_leap_into flag, year @ chk100, chk400, yes, no, done < ly_four, ly_hundred, ly_400, ly_q, ly_r {
-    bit.div 16, year, ly_four, ly_q, ly_r
-    bit.if1 16, ly_r, no
-  chk100:
-    bit.div 16, year, ly_hundred, ly_q, ly_r
-    bit.if1 16, ly_r, yes
-  chk400:
-    bit.div 16, year, ly_400, ly_q, ly_r
-    bit.if0 16, ly_r, yes
-    ;no
-  yes:
+// Rule: leap iff divisible by 4, except centuries which must be divisible by 400.
+def is_leap_into flag, year @ not_leap, done < ly_four, ly_hundred, ly_400, ly_q, ly_r {
     bit.one flag
-    ;done
-  no:
+    bit.div 16, year, ly_four, ly_q, ly_r
+    bit.if1 16, ly_r, not_leap
+    bit.div 16, year, ly_hundred, ly_q, ly_r
+    bit.if1 16, ly_r, done
+    bit.div 16, year, ly_400, ly_q, ly_r
+    bit.if0 16, ly_r, done
+  not_leap:
     bit.zero flag
   done:
 }
