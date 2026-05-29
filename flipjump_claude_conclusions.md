@@ -149,6 +149,13 @@ Each later program is the simplest one that uses one new technique.
 
 ## Surprises / gotchas
 
+- **Workflow: `git checkout -b catalog/batch-NN-... main` BEFORE writing any
+  files.** Twice (batches 8 and 9) I generated + committed a batch while still
+  on `main`, then the `git push -u origin <branch>` failed with "src refspec
+  ... does not match any". The recovery is safe but wasteful: `git branch
+  <branch>` (captures the commit), `git reset --hard origin/main` (rewinds
+  local main), `git checkout <branch>`, push. Just branch first.
+
 - **NEVER name a global label `n` or `i` (or `w`, `dw`, `dbit`).** This cost
   me ~30 min in batch 2. A top-level `n: bit.vec 8, 0` silently corrupts
   *every* `bit.*`/`hex.*` macro call in the program, because `n` is the width

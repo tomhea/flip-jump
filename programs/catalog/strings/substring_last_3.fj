@@ -1,0 +1,30 @@
+// Substring Last 3 (#0192)
+
+// Reads a `\n`-terminated line of at least 3 chars and prints just its last 3 bytes (the 3 chars immediately before the `\n`) + `\n`.
+
+main
+
+def main @ loop, shift, end < ch, c0, c1, c2, nl {
+    stl.startup
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, shift, end, shift
+  shift:
+    bit.mov 8, c0, c1
+    bit.mov 8, c1, c2
+    bit.mov 8, c2, ch
+    ;loop
+  end:
+    bit.print c0
+    bit.print c1
+    bit.print c2
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+c0: bit.vec 8, 0
+c1: bit.vec 8, 0
+c2: bit.vec 8, 0
+nl: bit.vec 8, '\n'
