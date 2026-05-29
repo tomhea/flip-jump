@@ -1,0 +1,17 @@
+// And Two Bytes (#0086)
+
+// Reads exactly two bytes and outputs their bitwise AND as one byte.
+
+main
+
+def main < a, b {
+    stl.startup
+    bit.input a
+    bit.input b
+    bit.and 8, a, b
+    bit.print a
+    stl.loop
+}
+
+a: bit.vec 8, 0
+b: bit.vec 8, 0

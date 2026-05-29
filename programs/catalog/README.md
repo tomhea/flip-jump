@@ -435,6 +435,24 @@ N
 
 | # | name | description |
 |---|---|---|
+| 0076 | popcount_byte | Reads one byte from stdin and prints its 1-bit count as a single decimal digit `0`-`8` + `
+`. |
+| 0077 | parity_byte | Reads one byte and prints `0` if it has an even number of 1-bits, `1` if odd, then `
+`. |
+| 0078 | high_nibble | Reads one byte and prints its high 4 bits as one lowercase hex char + `
+`. |
+| 0079 | low_nibble | Reads one byte and prints its low 4 bits as one lowercase hex char + `
+`. |
+| 0080 | swap_nibbles | Reads one byte and outputs the byte with low and high nibbles swapped. |
+| 0081 | reverse_bits_byte | Reads one byte and outputs the byte with its 8 bits reversed (bit 0 ↔ bit 7, etc.). |
+| 0085 | xor_two_bytes | Reads exactly two bytes and outputs their bitwise XOR as one byte. |
+| 0086 | and_two_bytes | Reads exactly two bytes and outputs their bitwise AND as one byte. |
+| 0087 | or_two_bytes | Reads exactly two bytes and outputs their bitwise OR as one byte. |
+| 0088 | shift_left_one | Reads one byte and outputs `byte << 1` (low bit becomes 0; high bit is lost). |
+| 0089 | shift_right_one | Reads one byte and outputs `byte >> 1` (high bit becomes 0; low bit is lost). |
+| 0090 | is_power_of_two | Reads one byte and prints `1
+` if it has exactly one 1-bit (and is nonzero), else `0
+`. |
 
 ## logic
 

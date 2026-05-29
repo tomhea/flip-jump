@@ -1,0 +1,16 @@
+// Reverse Bits Byte (#0081)
+
+// Reads one byte and outputs the byte with its 8 bits reversed (bit 0 ↔ bit 7, etc.).
+
+main
+
+def main < ch, out {
+    stl.startup
+    bit.input ch
+    rep(8, i) bit.mov out + i*dw, ch + (7-i)*dw
+    bit.print out
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+out: bit.vec 8, 0

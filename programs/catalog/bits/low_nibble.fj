@@ -1,0 +1,33 @@
+// Low Nibble (#0079)
+
+// Reads one byte and prints its low 4 bits as one lowercase hex char + `\n`.
+
+main
+
+def main < ch {
+    stl.startup
+    bit.input ch
+    print_hex_nibble ch
+    stl.output '\n'
+    stl.loop
+}
+
+// Print the low 4 bits at nib as a single lowercase hex digit (0-9, a-f).
+def print_hex_nibble nib @ small, big, done < hexout, ten, off_small, off_big {
+    bit.zero 8, hexout
+    bit.mov 4, hexout, nib
+    bit.cmp 4, nib, ten, small, big, big
+  small:
+    bit.add 8, hexout, off_small
+    ;done
+  big:
+    bit.add 8, hexout, off_big
+  done:
+    bit.print hexout
+}
+
+ch: bit.vec 8, 0
+hexout: bit.vec 8, 0
+ten: bit.vec 4, 10
+off_small: bit.vec 8, 0x30
+off_big: bit.vec 8, 0x57

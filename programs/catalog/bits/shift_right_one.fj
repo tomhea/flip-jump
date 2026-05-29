@@ -1,0 +1,15 @@
+// Shift Right One (#0089)
+
+// Reads one byte and outputs `byte >> 1` (high bit becomes 0; low bit is lost).
+
+main
+
+def main < ch {
+    stl.startup
+    bit.input ch
+    bit.shr 8, ch
+    bit.print ch
+    stl.loop
+}
+
+ch: bit.vec 8, 0
