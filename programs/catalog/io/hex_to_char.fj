@@ -1,0 +1,26 @@
+// Hex To Char (#0047)
+
+// Reads `0xNN\n` from stdin (two lowercase hex digits) and prints the corresponding ASCII byte.
+
+main
+
+def main < ch, hi, lo, byte, err {
+    stl.startup
+    bit.input ch
+    bit.input ch
+    bit.input ch
+    bit.ascii2hex err, hi, ch
+    bit.input ch
+    bit.ascii2hex err, lo, ch
+    bit.zero 8, byte
+    bit.mov 4, byte, lo
+    bit.mov 4, byte + 4*dw, hi
+    bit.print byte
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+hi: bit.vec 4, 0
+lo: bit.vec 4, 0
+byte: bit.vec 8, 0
+err: bit.bit
