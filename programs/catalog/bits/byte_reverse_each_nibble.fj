@@ -1,0 +1,17 @@
+// Byte Reverse Each Nibble (#0904)
+
+// Reads exactly 1 byte. Reverses the bits within each nibble independently (high nibble reversed in place, low nibble reversed in place). Outputs the resulting byte as raw.
+
+main
+
+def main < ch, out {
+    stl.startup
+    bit.input ch
+    rep(4, i) bit.mov out + i*dw, ch + (3-i)*dw
+    rep(4, i) bit.mov out + (4+i)*dw, ch + (7-i)*dw
+    bit.print out
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+out: bit.vec 8, 0

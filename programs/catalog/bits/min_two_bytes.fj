@@ -1,0 +1,22 @@
+// Min Two Bytes (#0897)
+
+// Reads exactly 2 bytes. Outputs the byte with smaller numeric value (treating as unsigned 0-255) as a raw byte.
+
+main
+
+def main @ use_a, use_b, done < a, b {
+    stl.startup
+    bit.input a
+    bit.input b
+    bit.cmp 8, a, b, use_a, use_a, use_b
+  use_a:
+    bit.print a
+    ;done
+  use_b:
+    bit.print b
+  done:
+    stl.loop
+}
+
+a: bit.vec 8, 0
+b: bit.vec 8, 0

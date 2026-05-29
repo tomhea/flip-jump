@@ -1,0 +1,19 @@
+// Round Up To Multiple Of 8 (#0931)
+
+// Reads one byte `0`-`247` and outputs the smallest multiple of 8 that is `>=` the input (`0` → `0`, `1` → `8`, `9` → `16`) as one raw byte.
+
+main
+
+def main < ch, seven {
+    stl.startup
+    bit.input ch
+    bit.add 8, ch, seven
+    bit.zero ch + 0*dw
+    bit.zero ch + 1*dw
+    bit.zero ch + 2*dw
+    bit.print ch
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+seven: bit.vec 8, 7

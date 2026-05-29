@@ -1,0 +1,30 @@
+// Byte Is Bit Palindrome (#0903)
+
+// Reads exactly 1 byte. Prints `1\n` if the byte's 8-bit binary representation reads the same forward and backward (e.g. `0x99` = `10011001`), else `0\n`.
+
+main
+
+def main @ yes, no, done < ch {
+    stl.startup
+    bit.input ch
+    rep(4, i) pair_eq_or_fail ch + i*dw, ch + (7-i)*dw, no
+  yes:
+    stl.output "1\n"
+    ;done
+  no:
+    stl.output "0\n"
+  done:
+    stl.loop
+}
+
+// If the bits at x and y differ, jump to `fail`.
+def pair_eq_or_fail x, y, fail @ x1, ok {
+    bit.if1 x, x1
+    bit.if1 y, fail
+    ;ok
+  x1:
+    bit.if0 y, fail
+  ok:
+}
+
+ch: bit.vec 8, 0

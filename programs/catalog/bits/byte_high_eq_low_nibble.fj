@@ -1,0 +1,20 @@
+// Byte High Eq Low Nibble (#0902)
+
+// Reads exactly 1 byte. Prints `1\n` if the high nibble equals the low nibble (e.g. `0xAA`, `0x33`), else `0\n`.
+
+main
+
+def main @ yes, no, done < ch {
+    stl.startup
+    bit.input ch
+    bit.cmp 4, ch, ch + 4*dw, no, yes, no
+  yes:
+    stl.output "1\n"
+    ;done
+  no:
+    stl.output "0\n"
+  done:
+    stl.loop
+}
+
+ch: bit.vec 8, 0
