@@ -1,0 +1,34 @@
+// Not Gate (#0097)
+
+// Reads one ASCII bit and prints its negation + `\n`.
+
+main
+
+def main < ch, va {
+    stl.startup
+    read_ascii_bit va, ch
+    bit.not va
+    print_bit_nl va
+    stl.loop
+}
+
+// Read one ASCII bit line ('0'/'1' then '\n') into the single bit dst, then eat the '\n'.
+def read_ascii_bit dst, ch {
+    bit.input ch
+    bit.mov dst, ch
+    bit.input ch
+}
+
+// Print the single bit b as ASCII '0'/'1' followed by '\n'.
+def print_bit_nl b @ zero, one, done {
+    bit.if b, zero, one
+  zero:
+    stl.output "0\n"
+    ;done
+  one:
+    stl.output "1\n"
+  done:
+}
+
+ch: bit.vec 8, 0
+va: bit.bit

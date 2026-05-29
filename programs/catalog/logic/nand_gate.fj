@@ -1,0 +1,44 @@
+// Nand Gate (#0094)
+
+// Reads two ASCII bits and prints their NAND + `\n`.
+
+main
+
+def main < ch, va, vb, res {
+    stl.startup
+    read_ascii_bit va, ch
+    read_ascii_bit vb, ch
+    nand_into res, va, vb
+    print_bit_nl res
+    stl.loop
+}
+
+// Read one ASCII bit line ('0'/'1' then '\n') into the single bit dst, then eat the '\n'.
+def read_ascii_bit dst, ch {
+    bit.input ch
+    bit.mov dst, ch
+    bit.input ch
+}
+
+// Print the single bit b as ASCII '0'/'1' followed by '\n'.
+def print_bit_nl b @ zero, one, done {
+    bit.if b, zero, one
+  zero:
+    stl.output "0\n"
+    ;done
+  one:
+    stl.output "1\n"
+  done:
+}
+
+// r = a NAND b = NOT (a AND b) (single bits). r must be distinct from a and b.
+def nand_into r, a, b {
+    bit.mov r, a
+    bit.and r, b
+    bit.not r
+}
+
+ch: bit.vec 8, 0
+va: bit.bit
+vb: bit.bit
+res: bit.bit

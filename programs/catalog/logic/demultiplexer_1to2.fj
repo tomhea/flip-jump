@@ -1,0 +1,58 @@
+// Demultiplexer 1to2 (#0911)
+
+// Reads a data bit + selector bit. Outputs two bits separated by space + `\n`: if selector is `0`, prints `<data> 0\n`; if `1`, prints `0 <data>\n`.
+
+main
+
+def main @ route0, route1, done < ch, data, sel, y0, y1 {
+    stl.startup
+    read_ascii_bit data, ch
+    read_ascii_bit sel, ch
+    bit.zero y0
+    bit.zero y1
+    bit.if sel, route0, route1
+  route0:
+    bit.mov y0, data
+    ;done
+  route1:
+    bit.mov y1, data
+  done:
+    print_bit_sp y0
+    print_bit_nl y1
+    stl.loop
+}
+
+// Read one ASCII bit line ('0'/'1' then '\n') into the single bit dst, then eat the '\n'.
+def read_ascii_bit dst, ch {
+    bit.input ch
+    bit.mov dst, ch
+    bit.input ch
+}
+
+// Print the single bit b as ASCII '0'/'1' followed by a space.
+def print_bit_sp b @ zero, one, done {
+    bit.if b, zero, one
+  zero:
+    stl.output "0 "
+    ;done
+  one:
+    stl.output "1 "
+  done:
+}
+
+// Print the single bit b as ASCII '0'/'1' followed by '\n'.
+def print_bit_nl b @ zero, one, done {
+    bit.if b, zero, one
+  zero:
+    stl.output "0\n"
+    ;done
+  one:
+    stl.output "1\n"
+  done:
+}
+
+ch: bit.vec 8, 0
+data: bit.bit
+sel: bit.bit
+y0: bit.bit
+y1: bit.bit

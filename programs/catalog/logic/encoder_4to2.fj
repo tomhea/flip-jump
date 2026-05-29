@@ -1,0 +1,51 @@
+// Encoder 4to2 (#0913)
+
+// Reads 4 bits (assumed one-hot input, exactly one is `1`). Prints 2 bits as `<s1><s0>\n` (e.g. position 0 → `00`, position 3 → `11`).
+
+main
+
+def main < ch, b0, b1, b2, b3, s1, s0 {
+    stl.startup
+    read_ascii_bit b0, ch
+    read_ascii_bit b1, ch
+    read_ascii_bit b2, ch
+    read_ascii_bit b3, ch
+    or_into s1, b2, b3
+    or_into s0, b1, b3
+    print_bit_raw s1
+    print_bit_raw s0
+    stl.output '\n'
+    stl.loop
+}
+
+// Read one ASCII bit line ('0'/'1' then '\n') into the single bit dst, then eat the '\n'.
+def read_ascii_bit dst, ch {
+    bit.input ch
+    bit.mov dst, ch
+    bit.input ch
+}
+
+// Print the single bit b as a bare ASCII '0'/'1' (no separator).
+def print_bit_raw b @ zero, one, done {
+    bit.if b, zero, one
+  zero:
+    stl.output '0'
+    ;done
+  one:
+    stl.output '1'
+  done:
+}
+
+// r = a OR b (single bits). r must be distinct from a and b.
+def or_into r, a, b {
+    bit.mov r, a
+    bit.or r, b
+}
+
+ch: bit.vec 8, 0
+b0: bit.bit
+b1: bit.bit
+b2: bit.bit
+b3: bit.bit
+s1: bit.bit
+s0: bit.bit
