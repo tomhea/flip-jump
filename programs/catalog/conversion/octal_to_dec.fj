@@ -1,0 +1,29 @@
+// Octal To Dec (#0344)
+
+// Reads exactly two octal digits + `\n` and prints the decimal `0`-`63` + `\n`.
+
+main
+
+def main < ch, digit, value, acc, err {
+    stl.startup
+    bit.zero 16, value
+    bit.input ch
+    bit.ascii2dec err, digit, ch
+    bit.mov 4, value, digit
+    rep(3, i) bit.shl 16, value
+    bit.input ch
+    bit.ascii2dec err, digit, ch
+    bit.zero 16, acc
+    bit.mov 4, acc, digit
+    bit.add 16, value, acc
+    bit.input ch
+    bit.print_dec_uint 16, value
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+digit: bit.vec 4, 0
+value: bit.vec 16, 0
+acc: bit.vec 16, 0
+err: bit.bit

@@ -1,0 +1,74 @@
+// Word Zero To Nine (#0356)
+
+// Reads a single ASCII digit `0`-`9` + `\n` and prints its English word (`zero`, `one`, `two`, ..., `nine`) + `\n`.
+
+main
+
+def main @ d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, done < ch, digit, err, \
+        k0, k1, k2, k3, k4, k5, k6, k7, k8 {
+    stl.startup
+    bit.input ch
+    bit.ascii2dec err, digit, ch
+    bit.input ch
+    branch_eq4 digit, k0, d0
+    branch_eq4 digit, k1, d1
+    branch_eq4 digit, k2, d2
+    branch_eq4 digit, k3, d3
+    branch_eq4 digit, k4, d4
+    branch_eq4 digit, k5, d5
+    branch_eq4 digit, k6, d6
+    branch_eq4 digit, k7, d7
+    branch_eq4 digit, k8, d8
+    ;d9
+  d0:
+    stl.output "zero"
+    ;done
+  d1:
+    stl.output "one"
+    ;done
+  d2:
+    stl.output "two"
+    ;done
+  d3:
+    stl.output "three"
+    ;done
+  d4:
+    stl.output "four"
+    ;done
+  d5:
+    stl.output "five"
+    ;done
+  d6:
+    stl.output "six"
+    ;done
+  d7:
+    stl.output "seven"
+    ;done
+  d8:
+    stl.output "eight"
+    ;done
+  d9:
+    stl.output "nine"
+  done:
+    stl.output '\n'
+    stl.loop
+}
+
+// If digit[:4] == kvec[:4], jump to target.
+def branch_eq4 digit, kvec, target @ no {
+    bit.cmp 4, digit, kvec, no, target, no
+  no:
+}
+
+ch: bit.vec 8, 0
+digit: bit.vec 4, 0
+err: bit.bit
+k0: bit.vec 4, 0
+k1: bit.vec 4, 1
+k2: bit.vec 4, 2
+k3: bit.vec 4, 3
+k4: bit.vec 4, 4
+k5: bit.vec 4, 5
+k6: bit.vec 4, 6
+k7: bit.vec 4, 7
+k8: bit.vec 4, 8

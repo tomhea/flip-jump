@@ -1,0 +1,41 @@
+// Hex To Binary (#0346)
+
+// Reads exactly two lowercase hex digits + `\n` and prints an 8-char binary string + `\n`.
+
+main
+
+def main < ch, hi, lo, byte, err {
+    stl.startup
+    bit.input ch
+    bit.ascii2hex err, hi, ch
+    bit.input ch
+    bit.ascii2hex err, lo, ch
+    bit.zero 8, byte
+    bit.mov 4, byte, lo
+    bit.mov 4, byte + 4*dw, hi
+    print_byte_binary byte
+    stl.output '\n'
+    stl.loop
+}
+
+// Output the bit at b as a single ASCII '0' or '1' byte.
+def print_bit_char b @ one, zero, done {
+    bit.if0 b, zero
+  one:
+    stl.output '1'
+    ;done
+  zero:
+    stl.output '0'
+  done:
+}
+
+// Print byte[:8] as eight ASCII '0'/'1' bytes, most-significant bit first.
+def print_byte_binary byte {
+    rep(8, i) print_bit_char byte + (7-i)*dw
+}
+
+ch: bit.vec 8, 0
+hi: bit.vec 4, 0
+lo: bit.vec 4, 0
+byte: bit.vec 8, 0
+err: bit.bit

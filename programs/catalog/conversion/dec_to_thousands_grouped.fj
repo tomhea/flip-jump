@@ -1,0 +1,78 @@
+// Dec To Thousands Grouped (#0355)
+
+// Reads decimal `0`-`999999` + `\n` and prints the value with thousands separators (commas), then `\n`. Examples: `7` → `7\n`, `1000` → `1,000\n`, `12345` → `12,345\n`, `999999` → `999,999\n`.
+
+main
+
+def main @ plain, done < value, hi, lo, hi16, lo16, thousand {
+    stl.startup
+    read_decimal_wide 24, value
+    bit.div 24, value, thousand, hi, lo
+    bit.mov 16, hi16, hi
+    bit.mov 16, lo16, lo
+    bit.if0 24, hi, plain
+    bit.print_dec_uint 16, hi16
+    stl.output ','
+    print_three_digits lo16
+    ;done
+  plain:
+    bit.print_dec_uint 16, lo16
+  done:
+    stl.output '\n'
+    stl.loop
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal_wide n, value @ loop, add_digit, end < rw_ch, rw_nl, rw_digit, rw_err {
+    bit.zero n, value
+  loop:
+    bit.input rw_ch
+    bit.if0 8, rw_ch, end
+    bit.cmp 8, rw_ch, rw_nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.zero n, rw_digit
+    bit.ascii2dec rw_err, rw_digit, rw_ch
+    bit.add n, value, rw_digit
+    ;loop
+  end:
+}
+
+// Print value[:16] (assumed 0-999) as exactly three decimal digits (zero-padded).
+def print_three_digits value < h_q, h_r, t_q, t_r, hundred16, ten16b, h_d, t_d, o_d, zero30 {
+    bit.div 16, value, hundred16, h_q, h_r
+    bit.zero 8, h_d
+    bit.mov 4, h_d, h_q
+    bit.add 8, h_d, zero30
+    bit.print h_d
+    bit.div 16, h_r, ten16b, t_q, t_r
+    bit.zero 8, t_d
+    bit.mov 4, t_d, t_q
+    bit.add 8, t_d, zero30
+    bit.print t_d
+    bit.zero 8, o_d
+    bit.mov 4, o_d, t_r
+    bit.add 8, o_d, zero30
+    bit.print o_d
+}
+
+value: bit.vec 24, 0
+hi: bit.vec 24, 0
+lo: bit.vec 24, 0
+hi16: bit.vec 16, 0
+lo16: bit.vec 16, 0
+thousand: bit.vec 24, 1000
+rw_ch: bit.vec 8, 0
+rw_nl: bit.vec 8, '\n'
+rw_digit: bit.vec 24, 0
+rw_err: bit.bit
+h_q: bit.vec 16, 0
+h_r: bit.vec 16, 0
+t_q: bit.vec 16, 0
+t_r: bit.vec 16, 0
+hundred16: bit.vec 16, 100
+ten16b: bit.vec 16, 10
+h_d: bit.vec 8, 0
+t_d: bit.vec 8, 0
+o_d: bit.vec 8, 0
+zero30: bit.vec 8, 0x30

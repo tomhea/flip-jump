@@ -1,0 +1,81 @@
+// Celsius To Fahrenheit (#0347)
+
+// Reads a signed decimal Celsius temperature (range `-100`..`100`) + `\n` and prints `floor(C * 9 / 5 + 32)` as a signed decimal + `\n`.
+
+main
+
+def main < value, prod, result, nine, five, thirtytwo {
+    stl.startup
+    read_signed_decimal 16, value
+    mul_into 16, prod, value, nine
+    floor_div_into 16, result, prod, five
+    bit.add 16, result, thirtytwo
+    bit.print_dec_int 16, result
+    stl.output '\n'
+    stl.loop
+}
+
+// Read a signed decimal (optional leading `-`, digits until `\n`/`\0`) into value[:n].
+def read_signed_decimal n, value @ neg, body, add_digit, fin, end < ch, nl, minus, digit, err, neg_flag {
+    bit.zero n, value
+    bit.zero neg_flag
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, minus, body, neg, body
+  neg:
+    bit.one neg_flag
+    bit.input ch
+  body:
+    bit.if0 8, ch, fin
+    bit.cmp 8, ch, nl, add_digit, fin, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    bit.input ch
+    ;body
+  fin:
+    bit.if0 neg_flag, end
+    bit.neg n, value
+  end:
+}
+
+// dst[:n] = addend[:n] * times[:n], via repeated addition (times is small).
+def mul_into n, dst, addend, times @ loop, end < mul_counter {
+    bit.zero n, dst
+    bit.mov n, mul_counter, times
+  loop:
+    bit.if0 n, mul_counter, end
+    bit.add n, dst, addend
+    bit.dec n, mul_counter
+    ;loop
+  end:
+}
+
+// dst[:n] = floor(num[:n] / den[:n]) for signed num and strictly-positive den.
+// idiv truncates toward zero; floor differs only when num<0 and remainder!=0.
+def floor_div_into n, dst, num, den @ dec_q, done < fd_q, fd_r {
+    bit.idiv n, num, den, fd_q, fd_r
+    bit.if0 n, fd_r, done
+    bit.if0 num + (n-1)*dw, done
+  dec_q:
+    bit.dec n, fd_q
+  done:
+    bit.mov n, dst, fd_q
+}
+
+value: bit.vec 16, 0
+prod: bit.vec 16, 0
+result: bit.vec 16, 0
+nine: bit.vec 16, 9
+five: bit.vec 16, 5
+thirtytwo: bit.vec 16, 32
+fd_q: bit.vec 16, 0
+fd_r: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
+minus: bit.vec 8, '-'
+neg_flag: bit.bit
+mul_counter: bit.vec 16, 0

@@ -1,0 +1,54 @@
+// Dec With Explicit Sign (#0368)
+
+// Reads a signed decimal `-9999`..`9999` + `\n` and prints it with an always-explicit sign byte (`+` or `-`) prefix, followed by `\n`. Examples: `5` → `+5\n`, `0` → `+0\n`, `-3` → `-3\n`.
+
+main
+
+def main @ neg, pos, print_mag < value {
+    stl.startup
+    read_signed_decimal 16, value
+    bit.if0 value + 15*dw, pos
+  neg:
+    stl.output '-'
+    bit.neg 16, value
+    ;print_mag
+  pos:
+    stl.output '+'
+  print_mag:
+    bit.print_dec_uint 16, value
+    stl.output '\n'
+    stl.loop
+}
+
+// Read a signed decimal (optional leading `-`, digits until `\n`/`\0`) into value[:n].
+def read_signed_decimal n, value @ neg, body, add_digit, fin, end < ch, nl, minus, digit, err, neg_flag {
+    bit.zero n, value
+    bit.zero neg_flag
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, minus, body, neg, body
+  neg:
+    bit.one neg_flag
+    bit.input ch
+  body:
+    bit.if0 8, ch, fin
+    bit.cmp 8, ch, nl, add_digit, fin, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    bit.input ch
+    ;body
+  fin:
+    bit.if0 neg_flag, end
+    bit.neg n, value
+  end:
+}
+
+value: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
+minus: bit.vec 8, '-'
+neg_flag: bit.bit
