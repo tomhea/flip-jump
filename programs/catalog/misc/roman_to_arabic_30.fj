@@ -1,0 +1,53 @@
+// Roman To Arabic 30 (#0873)
+
+// Reads Roman numeral string (one of `I`-`XXX`, valid up to 30) + `\n`. Prints decimal `1`-`30` + `\n`.
+
+main
+
+def main @ loop, classify, set_one, set_v, set_five, set_x, accumulate, do_sub, no_sub, done         < ch, nl, ii, vv, total, cur, prev, twice, one16, five16, ten16 {
+    stl.startup
+    bit.zero 16, total
+    bit.zero 16, prev
+  loop:
+    bit.input ch
+    bit.if0 8, ch, done
+    bit.cmp 8, ch, nl, classify, done, classify
+  classify:
+    bit.cmp 8, ch, ii, set_v, set_one, set_v
+  set_one:
+    bit.mov 16, cur, one16
+    ;accumulate
+  set_v:
+    bit.cmp 8, ch, vv, set_x, set_five, set_x
+  set_five:
+    bit.mov 16, cur, five16
+    ;accumulate
+  set_x:
+    bit.mov 16, cur, ten16
+  accumulate:
+    bit.add 16, total, cur
+    bit.cmp 16, prev, cur, do_sub, no_sub, no_sub
+  do_sub:
+    bit.mov 16, twice, prev
+    bit.add 16, twice, prev
+    bit.sub 16, total, twice
+  no_sub:
+    bit.mov 16, prev, cur
+    ;loop
+  done:
+    bit.print_dec_uint 16, total
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+ii: bit.vec 8, 'I'
+vv: bit.vec 8, 'V'
+total: bit.vec 16, 0
+cur: bit.vec 16, 0
+prev: bit.vec 16, 0
+twice: bit.vec 16, 0
+one16: bit.vec 16, 1
+five16: bit.vec 16, 5
+ten16: bit.vec 16, 10

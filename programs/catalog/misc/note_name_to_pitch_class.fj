@@ -1,0 +1,75 @@
+// Note Name To Pitch Class (#1023)
+
+// Reads a `\n`-terminated note name (one of `C`, `C#`, `D`, `D#`, `E`, `F`, `F#`, `G`, `G#`, `A`, `A#`, `B`). Prints the pitch class `0`-`11` as decimal + `\n` (`C` = 0).
+
+main
+
+def main @ try_d, try_e, try_f, try_g, try_a, set_b, apply         < ch, letter, pc, is_sharp, cc, dd, ee, ff, gg, aa,         dd_pc, ee_pc, ff_pc, gg_pc, aa_pc, bb_pc {
+    stl.startup
+    bit.input letter
+    bit.zero is_sharp
+    bit.input ch
+    detect_sharp ch, is_sharp
+    bit.cmp 8, letter, cc, try_d, apply, try_d
+  try_d:
+    bit.zero 8, pc
+    bit.add 8, pc, dd_pc
+    bit.cmp 8, letter, dd, try_e, apply, try_e
+  try_e:
+    bit.zero 8, pc
+    bit.add 8, pc, ee_pc
+    bit.cmp 8, letter, ee, try_f, apply, try_f
+  try_f:
+    bit.zero 8, pc
+    bit.add 8, pc, ff_pc
+    bit.cmp 8, letter, ff, try_g, apply, try_g
+  try_g:
+    bit.zero 8, pc
+    bit.add 8, pc, gg_pc
+    bit.cmp 8, letter, gg, try_a, apply, try_a
+  try_a:
+    bit.zero 8, pc
+    bit.add 8, pc, aa_pc
+    bit.cmp 8, letter, aa, set_b, apply, set_b
+  set_b:
+    bit.zero 8, pc
+    bit.add 8, pc, bb_pc
+  apply:
+    apply_sharp pc, is_sharp
+    bit.print_dec_uint 8, pc
+    stl.output '\n'
+    stl.loop
+}
+
+// Set is_sharp if ch is '#'.
+def detect_sharp ch, is_sharp @ hit, end < sharp {
+    bit.cmp 8, ch, sharp, end, hit, end
+  hit:
+    bit.one is_sharp
+  end:
+}
+
+// If is_sharp, pc += 1 (sharps raise the pitch class by a semitone).
+def apply_sharp pc, is_sharp @ end {
+    bit.if0 is_sharp, end
+    bit.inc 8, pc
+  end:
+}
+
+ch: bit.vec 8, 0
+letter: bit.vec 8, 0
+pc: bit.vec 8, 0
+is_sharp: bit.bit
+sharp: bit.vec 8, '#'
+cc: bit.vec 8, 'C'
+dd: bit.vec 8, 'D'
+ee: bit.vec 8, 'E'
+ff: bit.vec 8, 'F'
+gg: bit.vec 8, 'G'
+aa: bit.vec 8, 'A'
+dd_pc: bit.vec 8, 2
+ee_pc: bit.vec 8, 4
+ff_pc: bit.vec 8, 5
+gg_pc: bit.vec 8, 7
+aa_pc: bit.vec 8, 9
+bb_pc: bit.vec 8, 11

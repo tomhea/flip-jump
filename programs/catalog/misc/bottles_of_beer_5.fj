@@ -1,0 +1,53 @@
+// Bottles Of Beer 5 (#0869)
+
+// No input. Prints 5 verses of the "X bottles of beer on the wall" song counting down from 5 to 1. Each verse follows the canonical 2-line refrain.
+
+main
+
+def main @ loop, end < count, lower {
+    stl.startup
+  loop:
+    bit.if0 16, count, end
+    sing_verse count, lower
+    bit.dec 16, count
+    ;loop
+  end:
+    stl.loop
+}
+
+// Print "<n> bottle(s) of beer" for n[:16] (0 -> "no more bottles of beer").
+def say_count n @ zero, one, many, many_print, suffix < zero16, one16 {
+    bit.cmp 16, n, zero16, many, zero, many
+  zero:
+    stl.output "no more bottles"
+    ;suffix
+  one:
+    stl.output "1 bottle"
+    ;suffix
+  many:
+    bit.cmp 16, n, one16, many_print, one, many_print
+  many_print:
+    bit.print_dec_uint 16, n
+    stl.output " bottles"
+  suffix:
+    stl.output " of beer"
+}
+
+// Print the canonical 2-line verse for `count` bottles (count >= 1). `lower`
+// is scratch holding count-1 for the second line.
+def sing_verse count, lower {
+    say_count count
+    stl.output " on the wall, "
+    say_count count
+    stl.output ".\n"
+    stl.output "Take one down and pass it around, "
+    bit.mov 16, lower, count
+    bit.dec 16, lower
+    say_count lower
+    stl.output " on the wall.\n"
+}
+
+count: bit.vec 16, 5
+lower: bit.vec 16, 0
+zero16: bit.vec 16, 0
+one16: bit.vec 16, 1
