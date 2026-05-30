@@ -2,6 +2,7 @@ cat, programs/print_tests/cat.fj,tests/compiled/print_tests/cat.fjm, 64,3,0, Tru
 hello_no-stl, programs/print_tests/hello_no-stl.fj,tests/compiled/print_tests/hello_no-stl.fjm, 64,3,0, False,True
 hello_world, programs/print_tests/hello_world.fj,tests/compiled/print_tests/hello_world.fjm, 64,3,0, True,True
 hexprint, programs/print_tests/hexprint.fj,tests/compiled/print_tests/hexprint.fjm, 64,3,0, True,True
+hex_print_dec, programs/print_tests/hex_print_dec.fj,tests/compiled/print_tests/hex_print_dec.fjm, 64,3,0, True,True
 macro_ascii_bin, programs/sanity_checks/macro_ascii_bin.fj,tests/compiled/sanity_checks/macro_ascii_bin.fjm, 64,3,0, True,True
 macro_bit_pointer, programs/sanity_checks/macro_bit_pointer.fj,tests/compiled/sanity_checks/macro_bit_pointer.fjm, 64,3,0, True,True
 macro_dec, programs/sanity_checks/macro_dec.fj,tests/compiled/sanity_checks/macro_dec.fjm, 64,3,0, True,True
