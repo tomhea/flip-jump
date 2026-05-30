@@ -141,7 +141,7 @@ ns bit {
 
 
 ns bit {
-    // Time  Complexity: n^2(2@+4)
+    // Time  Complexity: n^2(2@+4)  // actually: nd(7@+12)  (for d umber of decimal digits)
     // Space Complexity: n(14@+16)
     //   prints x[:n] as an unsigned decimal number (without leading zeros).
     //
@@ -220,7 +220,7 @@ ns bit {
     }
 
 
-    // Time  Complexity: n^2(2@+4)
+    // Time  Complexity: n^2(2@+4)  // actually: nd(7@+12)  (for d umber of decimal digits)
     // Space Complexity: n(16@+23)
     //   prints x[:n] as a signed decimal number (without leading zeros).
     //
