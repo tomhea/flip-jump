@@ -2,6 +2,7 @@ cat, tests/compiled/print_tests/cat.fjm, tests/inout/print_tests/cat.in,tests/in
 hello_no-stl, tests/compiled/print_tests/hello_no-stl.fjm, ,tests/inout/print_tests/hello_no-stl.out, False,False
 hello_world, tests/compiled/print_tests/hello_world.fjm, ,tests/inout/print_tests/hello_world.out, False,False
 hexprint, tests/compiled/print_tests/hexprint.fjm, ,tests/inout/print_tests/hexprint.out, False,False
+hex_print_dec, tests/compiled/print_tests/hex_print_dec.fjm, ,tests/inout/print_tests/hex_print_dec.out, False,False
 macro_ascii_bin, tests/compiled/sanity_checks/macro_ascii_bin.fjm, ,tests/inout/sanity_checks/macro_ascii_bin.out, False,False
 macro_bit_pointer, tests/compiled/sanity_checks/macro_bit_pointer.fjm, ,tests/inout/sanity_checks/macro_bit_pointer.out, False,False
 macro_hex_comp, tests/compiled/sanity_checks/macro_hex_comp.fjm, ,tests/inout/sanity_checks/macro_hex_comp.out, False,False

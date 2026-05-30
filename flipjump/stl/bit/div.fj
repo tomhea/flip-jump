@@ -1,8 +1,11 @@
 ns bit {
     // Complexity: n(5@+11)
     //   dst[:n], src[:n] = src[:n] / 10, src[:n] % 10.
-    def div10 n, dst, src @ zero, end {
+    def div10 n, dst, src @ zero, do_div, end {
         .zero n, dst
+        stl.comp_if1 (n > 3), do_div   // n>=4: run the windowed division
+        ;end                           // n<=3: value<10, so quotient dst=0 (done) and remainder=src unchanged
+      do_div:
         .div10.cmp_sub_10 zero, src+(n-4)*dw, dst+(n-4)*dw
         rep(n-4, i) .div10.cmp_sub_10 src+(n-1-i)*dw, src+(n-5-i)*dw, dst+(n-5-i)*dw
         ;end
