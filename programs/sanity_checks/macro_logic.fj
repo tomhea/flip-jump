@@ -1,0 +1,86 @@
+// macro_logic — sanity coverage for bit.and (n & single), bit.or (n), bit.one (n).
+// Each n-ary case prints "<result> <preserved-src>"; single-bit cases print bits
+// via print_bit. (Single bits are printed with print_bit, not bit.print_dec_uint,
+// which mis-sizes its buffer at very small n.)
+
+stl.startup
+
+// bit.and n : with 0 -> 0 ; with 0xFF -> identity ; typical mask
+show_and 8, 0xCC, 0x00
+show_and 8, 0xCC, 0xFF
+show_and 8, 0xCC, 0xAA
+
+// bit.or n : with 0 -> identity ; with 0xFF -> 255 ; typical mask
+show_or 8, 0xCC, 0x00
+show_or 8, 0xCC, 0xFF
+show_or 8, 0xCC, 0xAA
+
+// bit.one n (the n-ary set-all-ones), shown at three widths, printed at width 8.
+show_one 8       // 11111111 = 255
+show_one 5       // 00011111 = 31
+show_one 3       // 00000111 = 7
+
+// bit.and single-bit : all four combos -> "<result> <preserved-src>"
+show_and1 0, 0
+show_and1 0, 1
+show_and1 1, 0
+show_and1 1, 1
+
+stl.loop
+
+def show_and n, a, b @ d, s, end {
+    bit.and n, d, s
+    bit.print_dec_uint n, d
+    stl.output ' '
+    bit.print_dec_uint n, s
+    stl.output '\n'
+    ;end
+  d: bit.vec n, a
+  s: bit.vec n, b
+  end:
+}
+
+def show_or n, a, b @ d, s, end {
+    bit.or n, d, s
+    bit.print_dec_uint n, d
+    stl.output ' '
+    bit.print_dec_uint n, s
+    stl.output '\n'
+    ;end
+  d: bit.vec n, a
+  s: bit.vec n, b
+  end:
+}
+
+// bit.one at width set_n inside an 8-bit cell, printed at width 8.
+def show_one set_n @ x, end {
+    bit.one set_n, x
+    bit.print_dec_uint 8, x
+    stl.output '\n'
+    ;end
+  x: bit.vec 8, 0
+  end:
+}
+
+// single-bit and: print result then preserved src as '0'/'1'.
+def show_and1 a, b @ d, s, end {
+    bit.and d, s
+    print_bit d
+    stl.output ' '
+    print_bit s
+    stl.output '\n'
+    ;end
+  d: bit.bit a
+  s: bit.bit b
+  end:
+}
+
+// print one bit as '0' or '1'.
+def print_bit b @ zero, end {
+    bit.if0 b, zero
+    stl.output '1'
+    ;end
+  zero:
+    stl.output '0'
+  end:
+}

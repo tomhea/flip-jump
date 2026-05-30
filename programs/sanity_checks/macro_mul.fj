@@ -1,0 +1,60 @@
+// macro_mul — sanity coverage for bit.mul, bit.mul_loop, bit.mul10.
+// Each case prints "<result> <preserved-src>" so a clobbered src fails the .out.
+// Values are 8-bit, so products are mod 256.
+
+stl.startup
+
+// bit.mul (dst != src): 0*7, 7*0, 1*7, 6*7, 20*20(=400->144 wrap), 0b10110101 * 3
+show_mul 8, 0, 7
+show_mul 8, 7, 0
+show_mul 8, 1, 7
+show_mul 8, 6, 7
+show_mul 8, 20, 20
+show_mul 8, 0b10110101, 3
+
+// bit.mul_loop (src restored): dst != src cases
+show_mul_loop 8, 6, 7
+show_mul_loop 8, 20, 20
+show_mul_loop 8, 1, 9
+show_mul_loop 8, 0, 9
+
+// bit.mul10: 0, 5, 30(->300->44 wrap)
+show_mul10 8, 0
+show_mul10 8, 5
+show_mul10 8, 30
+
+stl.loop
+
+// dst *= src ; print result and the (preserved) src.
+def show_mul n, a, b @ d, s, end {
+    bit.mul n, d, s
+    bit.print_dec_uint n, d
+    stl.output ' '
+    bit.print_dec_uint n, s
+    stl.output '\n'
+    ;end
+  d: bit.vec n, a
+  s: bit.vec n, b
+  end:
+}
+
+def show_mul_loop n, a, b @ d, s, end {
+    bit.mul_loop n, d, s
+    bit.print_dec_uint n, d
+    stl.output ' '
+    bit.print_dec_uint n, s
+    stl.output '\n'
+    ;end
+  d: bit.vec n, a
+  s: bit.vec n, b
+  end:
+}
+
+def show_mul10 n, a @ x, end {
+    bit.mul10 n, x
+    bit.print_dec_uint n, x
+    stl.output '\n'
+    ;end
+  x: bit.vec n, a
+  end:
+}
