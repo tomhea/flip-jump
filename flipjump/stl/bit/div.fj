@@ -56,7 +56,7 @@ ns bit {
     //
     // @NOTE: There is a better version: This one is slow, big, and doesn't error on b==0.
     //        Also it supports only one convention for the sign of the reminder.
-    //        For a faster & better division see hex.div, hex.idiv.
+    //        For a faster & better division see hex.div, hex.idiv (require hex.init).
     // q,a,b,r are bit[:n].
     def idiv n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
         .mov negative_a, a+dw*(n-1)
@@ -103,7 +103,7 @@ ns bit {
     // @NOTE: this division implementation is WASTEFUL in space, yet saves running time, compared to div_loop.
     //
     // @NOTE: There is a better version: This one is slow, big, and doesn't error on b==0.
-    //        For a faster & better division see hex.div, hex.idiv.
+    //        For a faster & better division see hex.div, hex.idiv (require hex.init).
     // q,a,b,r are bit[:n].
     def div n, a, b, q, r @ Q, R, end {
         .if0 n, b, end
@@ -152,7 +152,7 @@ ns bit {
     //
     // @NOTE: There is a better version: This one is slow, big, and doesn't error on b==0.
     //        Also it supports only one convention for the sign of the reminder.
-    //        For a faster & better division see hex.div, hex.idiv.
+    //        For a faster & better division see hex.div, hex.idiv (require hex.init).
     // q,a,b,r are bit[:n].
     def idiv_loop n, a, b, q, r @ negative_a, negative_b, one_negative, neg_b_1, do_div, neg_b_2, neg_ans, end {
         .mov negative_a, a+dw*(n-1)
@@ -199,7 +199,7 @@ ns bit {
     // @NOTE: this division implementation saves space, yet is slower, compared to div.
     //
     // @NOTE: There is a better version: This one is slow, big, and doesn't error on b==0.
-    //        For a faster division see hex.div, hex.idiv.
+    //        For a faster & better division see hex.div, hex.idiv (require hex.init).
     // q,a,b,r are bit[:n].
     def div_loop n, a, b, q, r @ loop, do_sub, loop_end, after_loop, A, Q, R, i, end {
         .if0 n, b, end
