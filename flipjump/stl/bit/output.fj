@@ -141,7 +141,7 @@ ns bit {
 
 
 ns bit {
-    // Time  Complexity: n^2(2@+4)
+    // Time  Complexity: n^2(2@+4)  // actually: nd(7@+12)  (for d number of decimal digits)
     // Space Complexity: n(14@+16)
     //   prints x[:n] as an unsigned decimal number (without leading zeros).
     //
@@ -177,8 +177,10 @@ ns bit {
         stl.fret ret_reg
 
         // takes n(2+28/93*5) = 3.5n space
-        dst: .vec n
-        src: .vec n
+        // dst,src are padded to >=4 bits: the digit-extraction (double_exact_xor over 4 bits)
+        // and div10 both read 4 bits of src, so for n<4 they must not spill into print_buffer.
+        dst: .vec (n < 4 ? 4 : n)
+        src: .vec (n < 4 ? 4 : n)
         print_buffer:      .vec (n*28/93+1)*4
         print_buffer_flag: .vec  n*28/93+1
         zero_flag: .bit
@@ -218,7 +220,7 @@ ns bit {
     }
 
 
-    // Time  Complexity: n^2(2@+4)
+    // Time  Complexity: n^2(2@+4)  // actually: nd(7@+12)  (for d number of decimal digits)
     // Space Complexity: n(16@+23)
     //   prints x[:n] as a signed decimal number (without leading zeros).
     //

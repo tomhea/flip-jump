@@ -55,7 +55,7 @@ ns bit {
         .zero n, res
         .zero n, shifted_src
         .mov n, shifted_src+dw*n, src
-        rep(n, i) mul.mul_add_if n, dst+i*dw, res, shifted_src+(n-i)*dw
+        rep(n, i) .mul.mul_add_if n, dst+i*dw, res, shifted_src+(n-i)*dw
         .mov n, dst, res
         ;end
 

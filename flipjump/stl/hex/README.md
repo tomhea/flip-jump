@@ -16,7 +16,7 @@ This folder is the table-driven counterpart to `bit/`. Where `bit/`-macros work 
 | `shifts.fj`             | `shl_hex`, `shr_hex`, plus the inline-table `shl_bit_once` / `shr_bit_once` helpers.              |
 | `cond_jumps.fj`         | `if`, `if0`, `if1`, `if_flags`, `sign`, `cmp` (3-way), `cmp_eq_next`, plus the `cmp.init` table.  |
 | `input.fj`              | `input_hex`, `input` (1 hex / n hexes), `input_as_hex` (with ASCII parsing).                      |
-| `output.fj`             | `output`, `print`, `print_as_digit`, `print_uint`, `print_int`, `print_digit`.                    |
+| `output.fj`             | `output`, `print`, `print_as_digit`, `print_uint`, `print_int`, `print_digit`, `print_dec_uint`, `print_dec_int`. |
 | `casting.fj` *(root)*   | `bit2hex` / `hex2bit` — bridging the two namespaces.                                              |
 | `pointers/`             | The hex pointer subsystem (see below).                                                            |
 

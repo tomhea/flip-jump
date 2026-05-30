@@ -1,0 +1,59 @@
+// hex_print_dec — decimal-printing coverage.
+//  - bit.print_dec_uint / bit.print_dec_int at small n (regression: bit.div10 used to
+//    crash at n=1 and misprint at n=3; print_dec_uint also needed >=4-bit work registers).
+//  - hex.print_dec_uint / hex.print_dec_int (new; divide-by-10 loop over hex.div).
+// The last two lines re-print earlier values to confirm the printers preserve their input.
+
+stl.startup_and_init_all
+
+// bit decimal, small widths
+bit.print_dec_uint 1, bu1
+stl.output '\n'
+bit.print_dec_uint 3, bu3
+stl.output '\n'
+bit.print_dec_uint 8, bu8
+stl.output '\n'
+bit.print_dec_int 4, bi4
+stl.output '\n'
+bit.print_dec_int 8, bi8
+stl.output '\n'
+bit.print_dec_int 8, bi8_pos
+stl.output '\n'
+stl.output '\n'
+
+// hex decimal
+hex.print_dec_uint 1, hu1
+stl.output '\n'
+hex.print_dec_uint 2, hu2
+stl.output '\n'
+hex.print_dec_uint 4, hu4
+stl.output '\n'
+hex.print_dec_int 2, hi2
+stl.output '\n'
+hex.print_dec_int 4, hi4
+stl.output '\n'
+hex.print_dec_int 4, hi4_pos
+stl.output '\n'
+stl.output '\n'
+
+// preservation: these must still hold their original values
+hex.print_dec_uint 2, hu2
+stl.output '\n'
+bit.print_dec_int 8, bi8
+stl.output '\n'
+
+stl.loop
+
+bu1: bit.vec 1, 1
+bu3: bit.vec 3, 7
+bu8: bit.vec 8, 255
+bi4: bit.vec 4, 0b1001   // signed 4-bit -> -7
+bi8: bit.vec 8, 200      // signed 8-bit -> -56
+bi8_pos: bit.vec 8, 77   // signed 8-bit -> -56
+
+hu1: hex.vec 1, 0
+hu2: hex.vec 2, 0xFF     // 255
+hu4: hex.vec 4, 0xFFFF   // 65535
+hi2: hex.vec 2, 0x80     // signed -> -128
+hi4: hex.vec 4, 0xFFFF   // signed -> -1
+hi4_pos: hex.vec 4, 7777 // signed -> -1

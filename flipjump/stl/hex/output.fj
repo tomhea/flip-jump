@@ -211,4 +211,61 @@ ns hex {
       neg: bit.bit
       end:
     }
+
+
+    //  Time Complexity: nd(28@+48) + n(5@-4)  (for d number of decimal digits)
+    // Space Complexity: n(56@+64)
+    //    prints x[:n] as an unsigned DECIMAL number (without leading zeros).
+    def print_dec_uint n, x @ bit, end {
+        stl.hex2bit n, bit, x
+        bit.print_dec_uint 4*n, bit
+        ;end
+
+      bit: bit.vec 4*n
+      end:
+    }
+    ns print_dec_uint {
+        // Time  Complexity: n^2(2@+8) + n(37@+91)
+        // Space Complexity: 5@+26
+        //     if zero_flag: skip (the number is exhausted).
+        //     else: store the next decimal digit (cur % 10) into slot, mark it,
+        //      and set cur = cur / 10 ; if that quotient is 0, raise zero_flag.
+        def div10_step div10, update_zero_flag, ret_reg, r, slot, char_flag, zero_flag, start_printing {
+            bit.if1 zero_flag, start_printing
+            stl.fcall div10, ret_reg
+            ..mov slot, r
+            bit.not char_flag
+            stl.fcall update_zero_flag, ret_reg
+        }
+
+        // Time  Complexity: 2@+6
+        // Space Complexity: 2@+38
+        //   if char_flag: print slot as a single decimal digit ('0'..'9').
+        def print_digit slot, char_flag @ end {
+            bit.if0 char_flag, end
+            ..print_as_digit slot, 0
+          end:
+        }
+    }
+
+
+    //  Time Complexity: nd(28@+48) + n(5@+4)  (for d number of decimal digits)
+    // Space Complexity: n(59@+98)
+    //    prints x[:n] as a signed DECIMAL number (without leading zeros).
+    def print_dec_int n, x @ do_neg, print, neg, end {
+        bit.zero neg
+        .sign n, x, do_neg, print
+      do_neg:
+        bit.not neg
+        .neg n, x
+        stl.output '-'
+      print:
+        .print_dec_uint n, x
+        bit.if0 neg, end
+        .neg n, x
+        ;end
+
+      neg: bit.bit
+      end:
+    }
 }
