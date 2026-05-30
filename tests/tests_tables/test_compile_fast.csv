@@ -4,6 +4,7 @@ hello_world, programs/print_tests/hello_world.fj,tests/compiled/print_tests/hell
 hexprint, programs/print_tests/hexprint.fj,tests/compiled/print_tests/hexprint.fjm, 64,3,0, True,True
 macro_ascii_bin, programs/sanity_checks/macro_ascii_bin.fj,tests/compiled/sanity_checks/macro_ascii_bin.fjm, 64,3,0, True,True
 macro_bit_pointer, programs/sanity_checks/macro_bit_pointer.fj,tests/compiled/sanity_checks/macro_bit_pointer.fjm, 64,3,0, True,True
+macro_dec, programs/sanity_checks/macro_dec.fj,tests/compiled/sanity_checks/macro_dec.fjm, 64,3,0, True,True
 macro_hex_comp, programs/sanity_checks/macro_hex_comp.fj,tests/compiled/sanity_checks/macro_hex_comp.fjm, 64,3,0, True,True
 macro_logic, programs/sanity_checks/macro_logic.fj,tests/compiled/sanity_checks/macro_logic.fjm, 64,3,0, True,True
 macro_mul, programs/sanity_checks/macro_mul.fj,tests/compiled/sanity_checks/macro_mul.fjm, 64,3,0, True,True
