@@ -49,11 +49,11 @@ bu3: bit.vec 3, 7
 bu8: bit.vec 8, 255
 bi4: bit.vec 4, 0b1001   // signed 4-bit -> -7
 bi8: bit.vec 8, 200      // signed 8-bit -> -56
-bi8_pos: bit.vec 8, 77   // signed 8-bit -> -56
+bi8_pos: bit.vec 8, 77   // signed 8-bit -> 77
 
 hu1: hex.vec 1, 0
 hu2: hex.vec 2, 0xFF     // 255
 hu4: hex.vec 4, 0xFFFF   // 65535
 hi2: hex.vec 2, 0x80     // signed -> -128
 hi4: hex.vec 4, 0xFFFF   // signed -> -1
-hi4_pos: hex.vec 4, 7777 // signed -> -1
+hi4_pos: hex.vec 4, 7777 // signed -> 7777
