@@ -1,0 +1,56 @@
+// macro_rotate — sanity coverage for bit.rol and bit.ror (8-bit, rotate-by-1, in place).
+
+stl.startup
+
+// rol: 0x01->0x02, 0x80->0x01 (MSB wraps to LSB), 0xAA->0x55
+show_rol 0x01
+show_rol 0x80
+show_rol 0xAA
+
+// ror: 0x01->0x80 (LSB wraps to MSB), 0x80->0x40, 0xAA->0x55
+show_ror 0x01
+show_ror 0x80
+show_ror 0xAA
+
+// rol then ror is identity; 8x rol is a full cycle (identity)
+show_rol_ror 0b00010011
+show_cycle 0b00010011
+
+stl.loop
+
+def show_rol a @ x, end {
+    bit.rol 8, x
+    bit.print_dec_uint 8, x
+    stl.output '\n'
+    ;end
+  x: bit.vec 8, a
+  end:
+}
+
+def show_ror a @ x, end {
+    bit.ror 8, x
+    bit.print_dec_uint 8, x
+    stl.output '\n'
+    ;end
+  x: bit.vec 8, a
+  end:
+}
+
+def show_rol_ror a @ x, end {
+    bit.rol 8, x
+    bit.ror 8, x
+    bit.print_dec_uint 8, x
+    stl.output '\n'
+    ;end
+  x: bit.vec 8, a
+  end:
+}
+
+def show_cycle a @ x, end {
+    rep(8, i) bit.rol 8, x
+    bit.print_dec_uint 8, x
+    stl.output '\n'
+    ;end
+  x: bit.vec 8, a
+  end:
+}
