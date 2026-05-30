@@ -211,4 +211,85 @@ ns hex {
       neg: bit.bit
       end:
     }
+
+
+    //    prints x[:n] as an unsigned DECIMAL number (without leading zeros).
+    //
+    // The number 28/93 ~ log10(2) bounds the count of decimal digits of the 4n-bit value x.
+    // Repeatedly divides a working copy of x by 10 (so x is preserved), collecting the
+    // remainder digits, then prints them most-significant-first with leading zeros skipped.
+    // @requires hex.init (uses hex.div)
+    def print_dec_uint n, x @ start_printing, divstep, \
+            cur, q, r, ten, buffer, buffer_flag, zero_flag, ret_reg, end {
+        .mov n, cur, x
+        bit.zero zero_flag
+        bit.zero n*4*28/93+1, buffer_flag
+
+        // fill buffer (low digit first) with the decimal digits of cur
+        rep(n*4*28/93+1, i) .print_dec_uint.div10_step divstep, ret_reg, r, cur, \
+            buffer+i*dw, buffer_flag+i*dw, zero_flag, start_printing, n
+      start_printing:
+        rep(n*4*28/93+1, i) .print_dec_uint.print_digit \
+            buffer+(n*4*28/93-i)*dw, buffer_flag+(n*4*28/93-i)*dw
+        ;end
+
+      divstep:                            // single hex.div-by-10 instance, called via stl.fcall
+        .div n, 1, q, r, cur, ten, end    // q = cur/10, r = cur%10 ; ten!=0 so the div0->end branch is dead
+        .mov n, cur, q                    // cur = quotient for the next iteration
+        stl.fret ret_reg
+
+        cur:    .vec n
+        q:      .vec n
+        r:      .vec 1
+        ten:    .vec 1, 0xA
+        buffer:      .vec n*4*28/93+1
+        buffer_flag: bit.vec n*4*28/93+1
+        zero_flag:   bit.bit
+        ret_reg: 0;0
+      end:
+    }
+    ns print_dec_uint {
+        //   if zero_flag: skip (the number is exhausted).
+        //   else: store the next decimal digit (cur % 10) into slot, mark it, and
+        //         set cur = cur / 10 ; if that quotient is 0, raise zero_flag.
+        def div10_step divstep, ret_reg, r, cur, slot, char_flag, zero_flag, start_printing, n \
+                @ set_zero, done {
+            bit.if1 zero_flag, start_printing
+            stl.fcall divstep, ret_reg
+            ..mov slot, r
+            bit.not char_flag
+            ..if0 n, cur, set_zero
+            ;done
+          set_zero:
+            bit.not zero_flag
+          done:
+        }
+
+        //   if char_flag: print slot as a single decimal digit ('0'..'9').
+        def print_digit slot, char_flag @ end {
+            bit.if0 char_flag, end
+            ..print_as_digit slot, 0
+          end:
+        }
+    }
+
+
+    //    prints x[:n] as a signed DECIMAL number (without leading zeros).
+    // @requires hex.init (uses hex.div)
+    def print_dec_int n, x @ do_neg, print, neg, end {
+        bit.zero neg
+        .sign n, x, do_neg, print
+      do_neg:
+        bit.not neg
+        .neg n, x
+        stl.output '-'
+      print:
+        .print_dec_uint n, x
+        bit.if0 neg, end
+        .neg n, x
+        ;end
+
+      neg: bit.bit
+      end:
+    }
 }
