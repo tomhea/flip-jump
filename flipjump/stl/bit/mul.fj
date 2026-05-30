@@ -21,6 +21,11 @@ ns bit {
     // b is the number of 1-bits in src.
     // @NOTE: this implementation works with both signed and unsigned numbers.
     // @NOTE: this is slower, yet it saves space, compared to the mul macro.
+    // @Assumes: dst and src are NOT the same address. This macro shifts dst left and src
+    //           right in place each iteration; when they alias, the two shifts cancel, src
+    //           never reaches 0, and the loop runs forever. For squaring (dst==src) use the
+    //           mul macro, which handles aliasing safely.
+    // @NOTE: For a faster multiplication see hex.mul (requires hex.init).
     def mul_loop n, dst, src @ start, after_add, src_copy, res, end {
         .zero n, res
         .mov n, src_copy, src
@@ -51,6 +56,8 @@ ns bit {
     // b is the number of 1-bits in src.
     // @NOTE: this implementation works with both signed and unsigned numbers.
     // @NOTE: this is faster, yet WASTEFUL in space, compared to the mul_loop macro.
+    // @NOTE: safe when dst and src are the same address (squaring: dst *= dst), unlike mul_loop.
+    // @NOTE: For a faster multiplication see hex.mul (requires hex.init).
     def mul n, dst, src @ shifted_src, res, end {
         .zero n, res
         .zero n, shifted_src
