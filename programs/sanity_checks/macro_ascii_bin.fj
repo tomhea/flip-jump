@@ -1,0 +1,70 @@
+// macro_ascii_bin — sanity coverage for bit.ascii2bin and bit.bin2ascii.
+// ascii2bin lines: "<err> <bin> <ascii-byte>"  (ascii must be preserved).
+// bin2ascii / round-trip lines: a single char.
+// (Single bits are printed with print_bit, not bit.print_dec_uint, which
+//  mis-sizes its buffer at very small n.)
+
+stl.startup
+
+// ascii2bin: '0' and '1' valid (err 0); '2' and 'x' invalid (err 1, bin 0).
+show_a2b '0'
+show_a2b '1'
+show_a2b '2'
+show_a2b 'x'
+
+// bin2ascii: 0 -> '0', 1 -> '1'
+show_b2a 0
+show_b2a 1
+
+// round trip ascii -> bin -> ascii: '0' -> '0', '1' -> '1'
+show_rt '0'
+show_rt '1'
+
+stl.loop
+
+def show_a2b ch @ err, bin, asc, end {
+    bit.ascii2bin err, bin, asc
+    print_bit err
+    stl.output ' '
+    print_bit bin
+    stl.output ' '
+    bit.print asc
+    stl.output '\n'
+    ;end
+  err: bit.bit
+  bin: bit.bit
+  asc: bit.vec 8, ch
+  end:
+}
+
+def show_b2a v @ asc, b, end {
+    bit.bin2ascii asc, b
+    bit.print asc
+    stl.output '\n'
+    ;end
+  asc: bit.vec 8, 0
+  b: bit.bit v
+  end:
+}
+
+def show_rt ch @ err, bin, asc, end {
+    bit.ascii2bin err, bin, asc
+    bit.bin2ascii asc, bin
+    bit.print asc
+    stl.output '\n'
+    ;end
+  err: bit.bit
+  bin: bit.bit
+  asc: bit.vec 8, ch
+  end:
+}
+
+// print one bit as '0' or '1'.
+def print_bit b @ zero, end {
+    bit.if0 b, zero
+    stl.output '1'
+    ;end
+  zero:
+    stl.output '0'
+  end:
+}

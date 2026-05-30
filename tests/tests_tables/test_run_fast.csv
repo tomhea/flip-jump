@@ -2,6 +2,12 @@ cat, tests/compiled/print_tests/cat.fjm, tests/inout/print_tests/cat.in,tests/in
 hello_no-stl, tests/compiled/print_tests/hello_no-stl.fjm, ,tests/inout/print_tests/hello_no-stl.out, False,False
 hello_world, tests/compiled/print_tests/hello_world.fjm, ,tests/inout/print_tests/hello_world.out, False,False
 hexprint, tests/compiled/print_tests/hexprint.fjm, ,tests/inout/print_tests/hexprint.out, False,False
+macro_ascii_bin, tests/compiled/sanity_checks/macro_ascii_bin.fjm, ,tests/inout/sanity_checks/macro_ascii_bin.out, False,False
+macro_bit_pointer, tests/compiled/sanity_checks/macro_bit_pointer.fjm, ,tests/inout/sanity_checks/macro_bit_pointer.out, False,False
+macro_hex_comp, tests/compiled/sanity_checks/macro_hex_comp.fjm, ,tests/inout/sanity_checks/macro_hex_comp.out, False,False
+macro_logic, tests/compiled/sanity_checks/macro_logic.fjm, ,tests/inout/sanity_checks/macro_logic.out, False,False
+macro_mul, tests/compiled/sanity_checks/macro_mul.fjm, ,tests/inout/sanity_checks/macro_mul.out, False,False
+macro_rotate, tests/compiled/sanity_checks/macro_rotate.fjm, ,tests/inout/sanity_checks/macro_rotate.out, False,False
 mathbit, tests/compiled/sanity_checks/mathbit.fjm, ,, False,False
 mathvec, tests/compiled/sanity_checks/mathvec.fjm, ,, False,False
 nadd, tests/compiled/simple_math_checks/nadd.fjm, ,tests/inout/simple_math_checks/nadd.out, False,False

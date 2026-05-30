@@ -1,0 +1,52 @@
+// macro_bit_pointer — sanity coverage for bit.xor_to_ptr, bit.ptr_inc,
+// bit.ptr_dec, bit.ptr_flip_dbit.
+// pointer p starts at d0; we flip/move/check across d0 and d1,
+// then guard that xor_to_ptr with a zero bit does nothing.
+
+stl.startup
+
+// flip d0 via pointer (0→1)
+bit.xor_to_ptr p, one
+print_bit d0
+stl.output '\n'
+
+// advance to d1, flip it (0→1)
+bit.ptr_inc p
+bit.xor_to_ptr p, one
+print_bit d1
+stl.output '\n'
+
+// retreat to d0; flip_dbit flips it unconditionally (1→0)
+bit.ptr_dec p
+bit.ptr_flip_dbit p
+print_bit d0
+stl.output '\n'
+
+// guard: xor_to_ptr with zero bit does NOT flip d0 (stays 0)
+bit.xor_to_ptr p, zero_bit
+print_bit d0
+stl.output '\n'
+
+// d1 should still be 1 (no other op touched it)
+print_bit d1
+stl.output '\n'
+
+stl.loop
+
+p:        bit.vec w, d0   // pointer initialised to cell address of d0
+d0:       bit.bit 0
+d1:       bit.bit 0
+one:      bit.bit 1       // constant 1, source bit for xor_to_ptr
+zero_bit: bit.bit 0       // constant 0, for the guard test
+
+bit.pointers.ptr_init
+
+// print one bit as '0' or '1'.
+def print_bit b @ zero, end {
+    bit.if0 b, zero
+    stl.output '1'
+    ;end
+  zero:
+    stl.output '0'
+  end:
+}

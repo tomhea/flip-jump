@@ -1,0 +1,87 @@
+// macro_hex_comp — sanity coverage for hex.mov/2, hex.swap/2,
+// stl.comp_flip_if/2, stl.wflip_macro/2.
+// None of the tested macros needs hex.init; stl.startup is enough.
+
+stl.startup
+
+// --- hex.mov dst, src (single hex, arity 2)
+// show dst and preserved src after each move.
+show_mov 0x0
+show_mov 0xA
+show_mov 0xF
+// aliasing case: mov h, h => compile-time skip, value unchanged (starts 0x3)
+hex.mov alias_h, alias_h
+hex.print_as_digit alias_h, 0
+stl.output '\n'
+
+// --- hex.swap hex1, hex2 (single hex, arity 2)
+show_swap 3, 5
+show_swap 0, 0xF
+// aliasing case: swap h, h => compile-time skip, value unchanged (starts 0x7)
+hex.swap alias2_h, alias2_h
+hex.print_as_digit alias2_h, 0
+stl.output '\n'
+
+// --- stl.comp_flip_if bit_addr, compile_expr
+// expr=1 (nonzero) -> flip cf_bit (0->1); expr=0 -> no flip (stays 1).
+stl.comp_flip_if cf_bit+dbit, 1
+print_bit cf_bit
+stl.output '\n'
+stl.comp_flip_if cf_bit+dbit, 0
+print_bit cf_bit
+stl.output '\n'
+
+// --- stl.wflip_macro dst, val (arity 2)
+// Patch wfop's jump-word (initially 0) with wf_hit, then jump to wfop.
+stl.wflip_macro wfop+w, wf_hit
+;wfop
+
+wf_hit:
+    stl.output 'W'
+    stl.output '\n'
+
+stl.loop
+
+// ---------- data ----------
+alias_h:  hex.hex 3
+alias2_h: hex.hex 7
+cf_bit:   bit.bit 0
+wfop:     0;0      // jump-word patched at runtime by wflip_macro to wf_hit
+
+// ---------- helper macros ----------
+
+// show hex.mov: copy s into d, print "<d> <s>\n" (d==s; s preserved).
+def show_mov val @ d, s, end {
+    hex.mov d, s
+    hex.print_as_digit d, 0
+    stl.output ' '
+    hex.print_as_digit s, 0
+    stl.output '\n'
+    ;end
+  d: hex.hex 0
+  s: hex.hex val
+  end:
+}
+
+// show hex.swap: swap h1 and h2, print "<h1> <h2>\n".
+def show_swap a, b @ h1, h2, end {
+    hex.swap h1, h2
+    hex.print_as_digit h1, 0
+    stl.output ' '
+    hex.print_as_digit h2, 0
+    stl.output '\n'
+    ;end
+  h1: hex.hex a
+  h2: hex.hex b
+  end:
+}
+
+// print one bit as '0' or '1'.
+def print_bit b @ zero, end {
+    bit.if0 b, zero
+    stl.output '1'
+    ;end
+  zero:
+    stl.output '0'
+  end:
+}
