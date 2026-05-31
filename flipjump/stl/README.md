@@ -45,7 +45,7 @@ Defines the `hex` data-structure (for hexadecimal variables).
 Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers):
 
 - [memory.fj](hex/memory.fj) - hex/vec, zero, xor_by, set, mov, swap
-- [cond_jumps.fj](hex/cond_jumps.fj) - if, cmp
+- [cond_jumps.fj](hex/cond_jumps.fj) - if, cmp, min/max
 - [logics.fj](hex/logics.fj) - xor, or, and, not
 - [input.fj](hex/input.fj) - input bits into hex, input ascii as hex, input decimal (signed & unsigned)
 - [output.fj](hex/output.fj) - output hex as bits/bytes; print as hex-number (in ascii)
