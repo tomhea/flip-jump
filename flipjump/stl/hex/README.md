@@ -14,7 +14,7 @@ This folder is the table-driven counterpart to `bit/`. Where `bit/`-macros work 
 | `mul.fj`                | `mul`, `mul10`, `add_mul`, plus the per-multiplication carry / init machinery.                    |
 | `div.fj`                | `div` (unsigned) and `idiv` (signed, with configurable remainder convention).                     |
 | `shifts.fj`             | `shl_hex`, `shr_hex`, plus the inline-table `shl_bit_once` / `shr_bit_once` helpers.              |
-| `cond_jumps.fj`         | `if`, `if0`, `if1`, `if_flags`, `sign`, `cmp` (3-way), `cmp_eq_next`, plus the `cmp.init` table.  |
+| `cond_jumps.fj`         | `if`, `if0`, `if1`, `if_flags`, `sign`, `cmp` (3-way), `cmp_eq_next`, `min`/`max`, `cmp.init`.    |
 | `input.fj`              | `input_hex`, `input` (1 hex / n hexes), `input_as_hex`, `input_dec_uint`/`input_dec_int`.         |
 | `output.fj`             | `output`, `print`, `print_as_digit`, `print_uint`, `print_int`, `print_digit`, `print_dec_uint`, `print_dec_int`. |
 | `casting.fj` *(root)*   | `bit2hex` / `hex2bit` — bridging the two namespaces.                                              |

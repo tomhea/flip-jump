@@ -159,4 +159,36 @@ ns hex {
           end:
         }
     }
+
+    //  Time Complexity: n(5@+8)     (cmp is data-dependent; worst case)
+    // Space Complexity: n(6@+66)
+    //   dst[:n] = min(a[:n], b[:n])   (unsigned)
+    // @Assumes dst is distinct from a and b
+    // @requires hex.cmp.init (or hex.init)
+    def min n, dst, a, b @ use_a, use_b, end {
+        .zero n, dst
+        .cmp n, a, b, use_a, use_a, use_b   // a <= b  ->  a
+      use_a:
+        .xor n, dst, a
+        ;end
+      use_b:
+        .xor n, dst, b
+      end:
+    }
+
+    //  Time Complexity: n(5@+8)     (cmp is data-dependent; worst case)
+    // Space Complexity: n(6@+66)
+    //   dst[:n] = max(a[:n], b[:n])   (unsigned)
+    // @Assumes dst is distinct from a and b
+    // @requires hex.cmp.init (or hex.init)
+    def max n, dst, a, b @ use_a, use_b, end {
+        .zero n, dst
+        .cmp n, a, b, use_b, use_a, use_a   // a >= b  ->  a
+      use_a:
+        .xor n, dst, a
+        ;end
+      use_b:
+        .xor n, dst, b
+      end:
+    }
 }

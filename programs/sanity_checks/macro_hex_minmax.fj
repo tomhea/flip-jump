@@ -1,0 +1,36 @@
+// macro_hex_minmax — sanity coverage for hex.min / hex.max (unsigned, n hexes).
+// hex.cmp needs hex.cmp.init -> startup_and_init_all.
+// Each case prints "<min> <max> <a> <b>" so a wrong pick or a clobbered
+// operand (a/b must be preserved) fails the .out byte-comparison.
+
+stl.startup_and_init_all
+
+show 2, 0, 0          // equal (zero)
+show 2, 7, 7          // equal
+show 2, 3, 9          // a < b
+show 2, 200, 5        // a > b
+show 2, 0, 255        // extremes
+show 4, 4242, 4243    // a < b, multi-hex, adjacent
+show 4, 65535, 256    // a > b, multi-hex
+
+stl.loop
+
+// print "min(a,b) max(a,b) a b" — last two prove a,b were not clobbered.
+def show n, va, vb @ lo, hi, a, b, end {
+    hex.min n, lo, a, b
+    hex.max n, hi, a, b
+    hex.print_dec_uint n, lo
+    stl.output ' '
+    hex.print_dec_uint n, hi
+    stl.output ' '
+    hex.print_dec_uint n, a
+    stl.output ' '
+    hex.print_dec_uint n, b
+    stl.output '\n'
+    ;end
+  lo: hex.vec n
+  hi: hex.vec n
+  a:  hex.vec n, va
+  b:  hex.vec n, vb
+  end:
+}
