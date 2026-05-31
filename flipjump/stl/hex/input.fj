@@ -102,11 +102,11 @@ ns hex {
     // A byte is read as 2 hexes (lsb first): for a digit '0'..'9' = 0x30..0x39 the
     // low nibble IS the digit value (0..9) and the high nibble is 0x3; both
     // terminators ('\n','\0') have a 0 high nibble, so a 0 high nibble ends the read.
-    // @Assumes well-formed input: only '0'..'9' before the terminator (else UB).
+    // @Assumes n > 0, and well-formed input: only '0'..'9' before the terminator (else UB).
     // @requires hex.init
     def input_dec_uint n, dst @ loop, digit, byte, end {
         .zero n, dst
-        .zero n, digit
+        .zero n, digit              // zeroes digit[1..n-1]; the loop only re-zeroes digit[0]
       loop:
         .input byte                 // byte[0]=low nibble (digit value), byte[1]=high nibble
         .if0 byte+dw, end           // high nibble == 0  ->  '\n' or '\0' (EOF) terminator
@@ -128,11 +128,11 @@ ns hex {
     // Optional leading '-' (0x2D), then ASCII digits until '\n'/'\0'. Inverse of
     // hex.print_dec_int. The '-' has high nibble 0x2, so it is detected before the
     // digit loop and negates the parsed magnitude at the end via hex.neg.
-    // @Assumes well-formed input (optional '-' then '0'..'9' before the terminator).
+    // @Assumes n > 0, and well-formed input (optional '-' then '0'..'9' before the terminator).
     // @requires hex.init
     def input_dec_int n, dst @ minus, loop, finish, digit, byte, neg, end {
         .zero n, dst
-        .zero n, digit
+        .zero n, digit              // zeroes digit[1..n-1]; the loop only re-zeroes digit[0]
         bit.zero neg
         .input byte
         .if_flags byte+dw, 1<<2, loop, minus    // high nibble == 2  ->  '-' (0x2D)
