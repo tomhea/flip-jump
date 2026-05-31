@@ -92,4 +92,77 @@ ns hex {
     def input_as_hex n, hex, error {
         rep(n, i) .input_as_hex hex + (n-1-i)*dw, error
     }
+
+    //  Time Complexity: ~ d(n(10@+39)) + (d+1)(7@+11)    (d = number of input digits; estimate)
+    // Space Complexity: ~ n(9@+132) + 8@+100             (estimate)
+    //   dst[:n] = the unsigned decimal number read from input (mod 16^n).
+    // Reads ASCII '0'..'9' until a '\n' or '\0' (EOF) terminator;
+    // jumps to error on any other byte. Inverse of hex.print_dec_uint.
+    // @requires hex.init
+    def input_dec_uint n, dst, error @ loop, valid_hi, terminator, digit_char, add_digit, digit, byte, end {
+        .zero n, dst
+        .zero n, digit
+      loop:
+        .input byte                                       // byte = [low nibble, high nibble]
+        .if_flags byte+dw, (1<<0)|(1<<3), error, valid_hi // high nibble must be 0 (terminator) or 3 (digit)
+      valid_hi:
+        .if_flags byte+dw, 1<<3, terminator, digit_char
+      terminator:
+        .if_flags byte, (1<<0x0)|(1<<0xA), error, end     // '\0' (0x00) or '\n' (0x0A)
+      digit_char:
+        .if_flags byte, (1<<10)-1, error, add_digit       // low nibble must be 0..9
+      add_digit:
+        .mul10 n, dst
+        .zero digit
+        .xor digit, byte
+        .add n, dst, digit
+        ;loop
+
+      digit: hex.vec n
+      byte:  hex.vec 2
+      end:
+    }
+
+    //  Time Complexity: ~ d(n(10@+39)) + (d+1)(7@+11) + @+4n    (d = number of digits; estimate)
+    // Space Complexity: ~ n(10.5@+149) + 10@+130                (estimate)
+    //   dst[:n] = the signed decimal number read from input (two's complement, mod 16^n).
+    // Reads an optional leading '-', then ASCII '0'..'9' until a '\n' or '\0' (EOF)
+    // terminator; jumps to error on any other byte. Inverse of hex.print_dec_int.
+    // @requires hex.init
+    def input_dec_int n, dst, error @ sign_hi, minus, loop, valid_hi, terminator, digit_char, add_digit, finish, digit, byte, neg, end {
+        .zero n, dst
+        .zero n, digit
+        bit.zero neg
+        .input byte
+        .if_flags byte+dw, 1<<2, loop, sign_hi            // high nibble 2 -> maybe '-'
+      sign_hi:
+        .if_flags byte, 1<<0xD, error, minus              // '-' is 0x2D
+      minus:
+        bit.not neg
+        .input byte
+      loop:
+        .if_flags byte+dw, (1<<0)|(1<<3), error, valid_hi
+      valid_hi:
+        .if_flags byte+dw, 1<<3, terminator, digit_char
+      terminator:
+        .if_flags byte, (1<<0x0)|(1<<0xA), error, finish
+      digit_char:
+        .if_flags byte, (1<<10)-1, error, add_digit
+      add_digit:
+        .mul10 n, dst
+        .zero digit
+        .xor digit, byte
+        .add n, dst, digit
+        .input byte
+        ;loop
+      finish:
+        bit.if0 neg, end
+        .neg n, dst
+        ;end
+
+      digit: hex.vec n
+      byte:  hex.vec 2
+      neg:   bit.bit
+      end:
+    }
 }

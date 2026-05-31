@@ -6,6 +6,8 @@ hex_print_dec, tests/compiled/print_tests/hex_print_dec.fjm, ,tests/inout/print_
 macro_ascii_bin, tests/compiled/sanity_checks/macro_ascii_bin.fjm, ,tests/inout/sanity_checks/macro_ascii_bin.out, False,False
 macro_bit_pointer, tests/compiled/sanity_checks/macro_bit_pointer.fjm, ,tests/inout/sanity_checks/macro_bit_pointer.out, False,False
 macro_hex_comp, tests/compiled/sanity_checks/macro_hex_comp.fjm, ,tests/inout/sanity_checks/macro_hex_comp.out, False,False
+macro_hex_input, tests/compiled/sanity_checks/macro_hex_input.fjm, tests/inout/sanity_checks/macro_hex_input.in,tests/inout/sanity_checks/macro_hex_input.out, False,False
+macro_hex_mul, tests/compiled/sanity_checks/macro_hex_mul.fjm, ,tests/inout/sanity_checks/macro_hex_mul.out, False,False
 macro_logic, tests/compiled/sanity_checks/macro_logic.fjm, ,tests/inout/sanity_checks/macro_logic.out, False,False
 macro_mul, tests/compiled/sanity_checks/macro_mul.fjm, ,tests/inout/sanity_checks/macro_mul.out, False,False
 macro_rotate, tests/compiled/sanity_checks/macro_rotate.fjm, ,tests/inout/sanity_checks/macro_rotate.out, False,False

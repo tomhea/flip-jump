@@ -47,12 +47,12 @@ Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers):
 - [memory.fj](hex/memory.fj) - hex/vec, zero, xor_by, set, mov, swap
 - [cond_jumps.fj](hex/cond_jumps.fj) - if, cmp
 - [logics.fj](hex/logics.fj) - xor, or, and, not
-- [input.fj](hex/input.fj) - input bits into hex, input ascii as hex
+- [input.fj](hex/input.fj) - input bits into hex, input ascii as hex, input decimal (signed & unsigned)
 - [output.fj](hex/output.fj) - output hex as bits/bytes; print as hex-number (in ascii)
 - [shifts.fj](hex/shifts.fj) - shift left/right by 1 bit/hex
 - [math_basic.fj](hex/math_basic.fj) - inc/dec, neg, count_bits, sign_extend
 - [math.fj](hex/math.fj) - add/sub, {add/sub}_shifted, {add/sub}_constant
-- [mul.fj](hex/mul.fj) - add_mul, mul (works for signed & unsigned)
+- [mul.fj](hex/mul.fj) - add_mul, mul (works for signed & unsigned), mul10
 - [div.fj](hex/div.fj) - div, idiv (signed)
 - [tables_init.fj](hex/tables_init.fj) - initializes the "results-tables" for the next hex macros: or,and, add,sub, cmp, mul
 - [pointers/](hex/pointers) - hex-vec pointers subdirectory: [flip](hex/pointers/xor_to_pointer.fj), [jump](hex/pointers/basic_pointers.fj), [xor_to](hex/pointers/xor_to_pointer.fj), [xor_from](hex/pointers/xor_from_pointer.fj); [stack](hex/pointers/stack.fj)/[pointers](hex/pointers/basic_pointers.fj) init. [pointer arithmetics](hex/pointers/pointer_arithmetics.fj), [stack arithmetics + push/pop](hex/pointers/stack.fj).
