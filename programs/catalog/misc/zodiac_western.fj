@@ -4,57 +4,42 @@
 
 main
 
-def main < month, day {
-    stl.startup
-    read_decimal 16, month
-    read_decimal 16, day
+def main < month, day, input_err {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, month, input_err
+    hex.input_dec_uint 4, day, input_err
     zodiac_decide month, day
     stl.output '\n'
     stl.loop
 }
 
-// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
-def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
-    bit.zero n, value
-  loop:
-    bit.input ch
-    bit.if0 8, ch, end
-    bit.cmp 8, ch, nl, add_digit, end, add_digit
-  add_digit:
-    bit.mul10 n, value
-    bit.ascii2dec err, digit, ch
-    bit.add n, value, digit
-    ;loop
-  end:
-}
-
 // Print the western zodiac sign for month[:16] (1-12), day[:16] (1-31).
 def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12,         e1, l1, e2, l2, e3, l3, e4, l4, e5, l5, e6, l6, e7, l7, e8, l8, e9, l9, e10, l10, e11, l11, e12, l12, end         < mo1, mo2, mo3, mo4, mo5, mo6, mo7, mo8, mo9, mo10, mo11,         d19, d20, d21, d22, d23 {
-    bit.cmp 16, month, mo1, t2, m1, t2
+    hex.cmp 4, month, mo1, t2, m1, t2
   t2:
-    bit.cmp 16, month, mo2, t3, m2, t3
+    hex.cmp 4, month, mo2, t3, m2, t3
   t3:
-    bit.cmp 16, month, mo3, t4, m3, t4
+    hex.cmp 4, month, mo3, t4, m3, t4
   t4:
-    bit.cmp 16, month, mo4, t5, m4, t5
+    hex.cmp 4, month, mo4, t5, m4, t5
   t5:
-    bit.cmp 16, month, mo5, t6, m5, t6
+    hex.cmp 4, month, mo5, t6, m5, t6
   t6:
-    bit.cmp 16, month, mo6, t7, m6, t7
+    hex.cmp 4, month, mo6, t7, m6, t7
   t7:
-    bit.cmp 16, month, mo7, t8, m7, t8
+    hex.cmp 4, month, mo7, t8, m7, t8
   t8:
-    bit.cmp 16, month, mo8, t9, m8, t9
+    hex.cmp 4, month, mo8, t9, m8, t9
   t9:
-    bit.cmp 16, month, mo9, t10, m9, t10
+    hex.cmp 4, month, mo9, t10, m9, t10
   t10:
-    bit.cmp 16, month, mo10, t11, m10, t11
+    hex.cmp 4, month, mo10, t11, m10, t11
   t11:
-    bit.cmp 16, month, mo11, t12, m11, t12
+    hex.cmp 4, month, mo11, t12, m11, t12
   t12:
     ;m12
   m1:
-    bit.cmp 16, day, d20, e1, l1, l1
+    hex.cmp 4, day, d20, e1, l1, l1
   e1:
     stl.output "Capricorn"
     ;end
@@ -62,7 +47,7 @@ def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
     stl.output "Aquarius"
     ;end
   m2:
-    bit.cmp 16, day, d19, e2, l2, l2
+    hex.cmp 4, day, d19, e2, l2, l2
   e2:
     stl.output "Aquarius"
     ;end
@@ -70,7 +55,7 @@ def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
     stl.output "Pisces"
     ;end
   m3:
-    bit.cmp 16, day, d21, e3, l3, l3
+    hex.cmp 4, day, d21, e3, l3, l3
   e3:
     stl.output "Pisces"
     ;end
@@ -78,7 +63,7 @@ def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
     stl.output "Aries"
     ;end
   m4:
-    bit.cmp 16, day, d20, e4, l4, l4
+    hex.cmp 4, day, d20, e4, l4, l4
   e4:
     stl.output "Aries"
     ;end
@@ -86,7 +71,7 @@ def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
     stl.output "Taurus"
     ;end
   m5:
-    bit.cmp 16, day, d21, e5, l5, l5
+    hex.cmp 4, day, d21, e5, l5, l5
   e5:
     stl.output "Taurus"
     ;end
@@ -94,7 +79,7 @@ def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
     stl.output "Gemini"
     ;end
   m6:
-    bit.cmp 16, day, d21, e6, l6, l6
+    hex.cmp 4, day, d21, e6, l6, l6
   e6:
     stl.output "Gemini"
     ;end
@@ -102,7 +87,7 @@ def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
     stl.output "Cancer"
     ;end
   m7:
-    bit.cmp 16, day, d23, e7, l7, l7
+    hex.cmp 4, day, d23, e7, l7, l7
   e7:
     stl.output "Cancer"
     ;end
@@ -110,7 +95,7 @@ def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
     stl.output "Leo"
     ;end
   m8:
-    bit.cmp 16, day, d23, e8, l8, l8
+    hex.cmp 4, day, d23, e8, l8, l8
   e8:
     stl.output "Leo"
     ;end
@@ -118,7 +103,7 @@ def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
     stl.output "Virgo"
     ;end
   m9:
-    bit.cmp 16, day, d23, e9, l9, l9
+    hex.cmp 4, day, d23, e9, l9, l9
   e9:
     stl.output "Virgo"
     ;end
@@ -126,7 +111,7 @@ def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
     stl.output "Libra"
     ;end
   m10:
-    bit.cmp 16, day, d23, e10, l10, l10
+    hex.cmp 4, day, d23, e10, l10, l10
   e10:
     stl.output "Libra"
     ;end
@@ -134,7 +119,7 @@ def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
     stl.output "Scorpio"
     ;end
   m11:
-    bit.cmp 16, day, d22, e11, l11, l11
+    hex.cmp 4, day, d22, e11, l11, l11
   e11:
     stl.output "Scorpio"
     ;end
@@ -142,7 +127,7 @@ def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
     stl.output "Sagittarius"
     ;end
   m12:
-    bit.cmp 16, day, d22, e12, l12, l12
+    hex.cmp 4, day, d22, e12, l12, l12
   e12:
     stl.output "Sagittarius"
     ;end
@@ -151,25 +136,24 @@ def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
   end:
 }
 
-month: bit.vec 16, 0
-day: bit.vec 16, 0
-mo1: bit.vec 16, 1
-mo2: bit.vec 16, 2
-mo3: bit.vec 16, 3
-mo4: bit.vec 16, 4
-mo5: bit.vec 16, 5
-mo6: bit.vec 16, 6
-mo7: bit.vec 16, 7
-mo8: bit.vec 16, 8
-mo9: bit.vec 16, 9
-mo10: bit.vec 16, 10
-mo11: bit.vec 16, 11
-d19: bit.vec 16, 19
-d20: bit.vec 16, 20
-d21: bit.vec 16, 21
-d22: bit.vec 16, 22
-d23: bit.vec 16, 23
-ch: bit.vec 8, 0
-nl: bit.vec 8, '\n'
-digit: bit.vec 16, 0
-err: bit.bit
+month: hex.vec 4, 0
+day: hex.vec 4, 0
+mo1: hex.vec 4, 1
+mo2: hex.vec 4, 2
+mo3: hex.vec 4, 3
+mo4: hex.vec 4, 4
+mo5: hex.vec 4, 5
+mo6: hex.vec 4, 6
+mo7: hex.vec 4, 7
+mo8: hex.vec 4, 8
+mo9: hex.vec 4, 9
+mo10: hex.vec 4, 10
+mo11: hex.vec 4, 11
+d19: hex.vec 4, 19
+d20: hex.vec 4, 20
+d21: hex.vec 4, 21
+d22: hex.vec 4, 22
+d23: hex.vec 4, 23
+
+input_err:
+    stl.loop
