@@ -142,3 +142,5 @@ docs/m0-*.txt
 # Pytest cache and compiled catalog artifacts
 tests/compiled/catalog/
 
+.claude/
+.ai/
