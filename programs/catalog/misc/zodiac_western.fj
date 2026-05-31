@@ -13,7 +13,7 @@ def main < month, day, input_err {
     stl.loop
 }
 
-// Print the western zodiac sign for month[:16] (1-12), day[:16] (1-31).
+// Print the western zodiac sign for month[:4] (1-12), day[:4] (1-31).
 def zodiac_decide month, day         @ m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12,         e1, l1, e2, l2, e3, l3, e4, l4, e5, l5, e6, l6, e7, l7, e8, l8, e9, l9, e10, l10, e11, l11, e12, l12, end         < mo1, mo2, mo3, mo4, mo5, mo6, mo7, mo8, mo9, mo10, mo11,         d19, d20, d21, d22, d23 {
     hex.cmp 4, month, mo1, t2, m1, t2
   t2:

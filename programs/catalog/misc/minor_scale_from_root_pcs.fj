@@ -24,7 +24,7 @@ def main < root, iv0, iv2, iv3, iv5, iv7, iv8, iv10, input_err {
     stl.loop
 }
 
-// Print (root[:16] + interval[:16]) mod 12 as decimal (no newline). Sum is < 24.
+// Print (root[:4] + interval[:4]) mod 12 as decimal (no newline). Sum is < 24.
 def print_degree root, interval @ small, big, end < deg, twelve {
     hex.mov 4, deg, root
     hex.add 4, deg, interval

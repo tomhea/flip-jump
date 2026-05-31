@@ -8,15 +8,15 @@ def main @ r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, done < value, \
         v1, v2, v3, v4, v5, v6, v7, v8, v9, input_err {
     stl.startup_and_init_all
     hex.input_dec_uint 4, value, input_err
-    branch_eq16 value, v1, r1
-    branch_eq16 value, v2, r2
-    branch_eq16 value, v3, r3
-    branch_eq16 value, v4, r4
-    branch_eq16 value, v5, r5
-    branch_eq16 value, v6, r6
-    branch_eq16 value, v7, r7
-    branch_eq16 value, v8, r8
-    branch_eq16 value, v9, r9
+    branch_eq4 value, v1, r1
+    branch_eq4 value, v2, r2
+    branch_eq4 value, v3, r3
+    branch_eq4 value, v4, r4
+    branch_eq4 value, v5, r5
+    branch_eq4 value, v6, r6
+    branch_eq4 value, v7, r7
+    branch_eq4 value, v8, r8
+    branch_eq4 value, v9, r9
     ;r10
   r1:
     stl.output "I"
@@ -52,8 +52,8 @@ def main @ r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, done < value, \
     stl.loop
 }
 
-// If value[:16] == kvec[:16], jump to target.
-def branch_eq16 value, kvec, target @ no {
+// If value[:4] == kvec[:4], jump to target.
+def branch_eq4 value, kvec, target @ no {
     hex.cmp 4, value, kvec, no, target, no
   no:
 }

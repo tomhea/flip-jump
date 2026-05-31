@@ -24,9 +24,6 @@ c: hex.vec 4, 0
 d: hex.vec 4, 0
 term: hex.vec 4, 0
 acc: hex.vec 4, 0
-smul_a: hex.vec 4, 0
-smul_cnt: hex.vec 4, 0
-smul_neg: bit.bit
 
 input_err:
     stl.loop
