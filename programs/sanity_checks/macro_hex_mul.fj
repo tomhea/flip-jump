@@ -1,0 +1,32 @@
+// macro_hex_mul — sanity coverage for hex.mul10 (x[:n] *= 10).
+// hex.mul10 uses hex.add_mul, which needs hex.add.init -> startup_and_init_all.
+// n hexes => 4n bits => arithmetic is mod 16^n.
+
+stl.startup_and_init_all
+
+// n=2 (mod 256): 0, 5, 25, 30 (->300 wraps to 44)
+show_mul10 2, 0
+show_mul10 2, 5
+show_mul10 2, 25
+show_mul10 2, 30
+
+// n=3 (mod 4096): 30->300, 123->1230, 500->5000 (wraps to 904)
+show_mul10 3, 30
+show_mul10 3, 123
+show_mul10 3, 500
+
+// n=4 (mod 65536): 6553->65530, 6554->65540 (wraps to 4)
+show_mul10 4, 6553
+show_mul10 4, 6554
+
+stl.loop
+
+// x *= 10 ; print result (decimal, no leading zeros).
+def show_mul10 n, a @ x, end {
+    hex.mul10 n, x
+    hex.print_dec_uint n, x
+    stl.output '\n'
+    ;end
+  x: hex.vec n, a
+  end:
+}

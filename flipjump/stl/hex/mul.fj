@@ -28,6 +28,20 @@ ns hex {
         .mul.clear_carry
     }
 
+    //  Time Complexity: n(6@+27)
+    // Space Complexity: n(5@+80)
+    //   x[n] *= 10
+    //
+    // @requires hex.add.init (or hex.init)
+    def mul10 n, x @ four, end {
+        .add_mul n, x, x, four
+        .shl_bit n, x
+        ;end
+
+      four: hex.hex 4
+      end:
+    }
+
     //  Time Complexity: n^2(3@+7) + n*b(5@+26)
     //       for n==b/2: n^2(5.5@+20)
     // Space Complexity: n(21@+479)

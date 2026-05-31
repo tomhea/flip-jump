@@ -11,7 +11,7 @@ This folder is the table-driven counterpart to `bit/`. Where `bit/`-macros work 
 | `logics.fj`             | `xor`, `or`, `and`, `not`, plus `exact_*`, `double_xor`, `quadrupled_exact_xor`.                  |
 | `math.fj`               | `add`, `sub`, `add_constant`, `add_shifted`, `add_hex_shifted_constant`, plus the `clear_carry` / `not_carry` / `set_carry` helpers for both `ns add` and `ns sub`. |
 | `math_basic.fj`         | `inc`, `dec`, `neg`, `inc1`, `dec1`, `step`, `add_count_bits`, `count_bits`, `sign_extend`.       |
-| `mul.fj`                | `mul`, `add_mul`, plus the per-multiplication carry / init machinery.                             |
+| `mul.fj`                | `mul`, `mul10`, `add_mul`, plus the per-multiplication carry / init machinery.                    |
 | `div.fj`                | `div` (unsigned) and `idiv` (signed, with configurable remainder convention).                     |
 | `shifts.fj`             | `shl_hex`, `shr_hex`, plus the inline-table `shl_bit_once` / `shr_bit_once` helpers.              |
 | `cond_jumps.fj`         | `if`, `if0`, `if1`, `if_flags`, `sign`, `cmp` (3-way), `cmp_eq_next`, plus the `cmp.init` table.  |
