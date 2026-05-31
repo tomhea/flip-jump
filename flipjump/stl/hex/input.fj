@@ -92,4 +92,69 @@ ns hex {
     def input_as_hex n, hex, error {
         rep(n, i) .input_as_hex hex + (n-1-i)*dw, error
     }
+
+    //  Time Complexity: ~ (d+1)(4@+14) + d(n(10@+39))    (d = number of input digits; estimate)
+    // Space Complexity: ~ n(9@+132) + 4@+90              (estimate)
+    //   dst[:n] = the unsigned decimal number read from input (mod 16^n).
+    //
+    // Reads ASCII digits ('0'..'9') until a '\n' (0x0A) or '\0' (EOF) terminator.
+    // Inverse of hex.print_dec_uint.
+    // A byte is read as 2 hexes (lsb first): for a digit '0'..'9' = 0x30..0x39 the
+    // low nibble IS the digit value (0..9) and the high nibble is 0x3; both
+    // terminators ('\n','\0') have a 0 high nibble, so a 0 high nibble ends the read.
+    // @Assumes well-formed input: only '0'..'9' before the terminator (else UB).
+    // @requires hex.init
+    def input_dec_uint n, dst @ loop, digit, byte, end {
+        .zero n, dst
+        .zero n, digit
+      loop:
+        .input byte                 // byte[0]=low nibble (digit value), byte[1]=high nibble
+        .if0 byte+dw, end           // high nibble == 0  ->  '\n' or '\0' (EOF) terminator
+        .mul10 n, dst
+        .zero digit
+        .xor digit, byte            // digit[0] = byte[0]  (the 0..9 digit value)
+        .add n, dst, digit
+        ;loop
+
+      digit: hex.vec n
+      byte:  hex.vec 2
+      end:
+    }
+
+    //  Time Complexity: ~ (d+1)(4@+14) + d(n(10@+39)) + @+4n    (d = number of digits; estimate)
+    // Space Complexity: ~ n(10.5@+149) + 4@+90               (estimate)
+    //   dst[:n] = the signed decimal number read from input (two's complement, mod 16^n).
+    //
+    // Optional leading '-' (0x2D), then ASCII digits until '\n'/'\0'. Inverse of
+    // hex.print_dec_int. The '-' has high nibble 0x2, so it is detected before the
+    // digit loop and negates the parsed magnitude at the end via hex.neg.
+    // @Assumes well-formed input (optional '-' then '0'..'9' before the terminator).
+    // @requires hex.init
+    def input_dec_int n, dst @ minus, loop, finish, digit, byte, neg, end {
+        .zero n, dst
+        .zero n, digit
+        bit.zero neg
+        .input byte
+        .if_flags byte+dw, 1<<2, loop, minus    // high nibble == 2  ->  '-' (0x2D)
+      minus:
+        bit.not neg
+        .input byte                 // first byte after the sign
+      loop:
+        .if0 byte+dw, finish        // high nibble == 0  ->  terminator
+        .mul10 n, dst
+        .zero digit
+        .xor digit, byte
+        .add n, dst, digit
+        .input byte
+        ;loop
+      finish:
+        bit.if0 neg, end
+        .neg n, dst
+        ;end
+
+      digit: hex.vec n
+      byte:  hex.vec 2
+      neg:   bit.bit
+      end:
+    }
 }
