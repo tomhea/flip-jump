@@ -3,12 +3,12 @@
 // printer, so a parse-vs-print mismatch fails the .out byte-comparison.
 // hex decimal input needs hex.add.init -> startup_and_init_all.
 // n hexes => 4n bits => values are mod 16^n (wrap is exercised below).
-// Every input value (including the last) is '\n'-terminated, so the run ends
-// by looping rather than on EOF.
+// Every value is '\n'-terminated, so the run ends by looping rather than on EOF.
+// The final value is invalid (':' right after '9') to exercise the error path.
 
 stl.startup_and_init_all
 
-// --- hex.input_dec_uint n, dst
+// --- hex.input_dec_uint n, dst, error
 echo_uint 4         // 0
 echo_uint 4         // 7
 echo_uint 4         // 255
@@ -16,29 +16,40 @@ echo_uint 4         // 4242
 echo_uint 4         // 65535  (max value for n=4)
 echo_uint 2         // 300 -> 44  (modular wrap, mod 256)
 
-// --- hex.input_dec_int n, dst  (optional leading '-')
+// --- hex.input_dec_int n, dst, error  (optional leading '-')
 echo_int 4          // 0
 echo_int 4          // -7
 echo_int 4          // 42
 echo_int 4          // -128
 echo_int 4          // 127
 
+// --- error path: ':' (0x3A) is not a digit -> jumps to the error label
+echo_uint 4         // "9:" -> 'E'
+
 stl.loop
 
-// read one unsigned decimal, echo it back as decimal.
-def echo_uint n @ v, end {
-    hex.input_dec_uint n, v
+// read one unsigned decimal, echo it back as decimal; print 'E' on bad input.
+def echo_uint n @ v, err, end {
+    hex.input_dec_uint n, v, err
     hex.print_dec_uint n, v
+    stl.output '\n'
+    ;end
+  err:
+    stl.output 'E'
     stl.output '\n'
     ;end
   v: hex.vec n
   end:
 }
 
-// read one signed decimal, echo it back as decimal.
-def echo_int n @ v, end {
-    hex.input_dec_int n, v
+// read one signed decimal, echo it back as decimal; print 'E' on bad input.
+def echo_int n @ v, err, end {
+    hex.input_dec_int n, v, err
     hex.print_dec_int n, v
+    stl.output '\n'
+    ;end
+  err:
+    stl.output 'E'
     stl.output '\n'
     ;end
   v: hex.vec n
