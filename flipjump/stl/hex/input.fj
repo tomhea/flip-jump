@@ -93,8 +93,8 @@ ns hex {
         rep(n, i) .input_as_hex hex + (n-1-i)*dw, error
     }
 
-    //  Time Complexity: ~ d(n(10@+39)) + (d+1)(7@+11)    (d = number of input digits; estimate)
-    // Space Complexity: ~ n(9@+132) + 8@+100             (estimate)
+    //  Time Complexity: ~ nd(10@+39)    (d = number of digits)
+    // Space Complexity: ~ n(9@+132)
     //   dst[:n] = the unsigned decimal number read from input (mod 16^n).
     // Reads ASCII '0'..'9' until a '\n' or '\0' (EOF) terminator;
     // jumps to error on any other byte. Inverse of hex.print_dec_uint.
@@ -123,8 +123,8 @@ ns hex {
       end:
     }
 
-    //  Time Complexity: ~ d(n(10@+39)) + (d+1)(7@+11) + @+4n    (d = number of digits; estimate)
-    // Space Complexity: ~ n(10.5@+149) + 10@+130                (estimate)
+    //  Time Complexity: ~ nd(10@+39)    (d = number of digits)
+    // Space Complexity: ~ n(10.5@+149)
     //   dst[:n] = the signed decimal number read from input (two's complement, mod 16^n).
     // Reads an optional leading '-', then ASCII '0'..'9' until a '\n' or '\0' (EOF)
     // terminator; jumps to error on any other byte. Inverse of hex.print_dec_int.

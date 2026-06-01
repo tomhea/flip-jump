@@ -213,7 +213,7 @@ ns hex {
     }
 
 
-    //  Time Complexity: nd(28@+48) + n(5@-4)  (for d number of decimal digits)
+    //  Time Complexity: nd(28@+48) + n(5@-4)    (for d number of decimal digits)
     // Space Complexity: n(56@+64)
     //    prints x[:n] as an unsigned DECIMAL number (without leading zeros).
     def print_dec_uint n, x @ bit, end {
@@ -224,7 +224,7 @@ ns hex {
       bit: bit.vec 4*n
       end:
     }
-    //  Time Complexity: nd(28@+48) + n(5@+4)  (for d number of decimal digits)
+    //  Time Complexity: nd(28@+48) + n(5@+4)    (for d number of decimal digits)
     // Space Complexity: n(59@+98)
     //    prints x[:n] as a signed DECIMAL number (without leading zeros).
     def print_dec_int n, x @ do_neg, print, neg, end {
