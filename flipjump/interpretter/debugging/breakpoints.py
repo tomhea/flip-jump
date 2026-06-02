@@ -1,3 +1,9 @@
+"""
+breakpoint handling for the interpreter's debugger.
+resolves breakpoints (by address, exact label, or label-substring), maps addresses
+back to labels, and pauses the run to let the user inspect memory and program state.
+"""
+
 import re
 from pathlib import Path
 from typing import Optional, Dict, Set, Tuple

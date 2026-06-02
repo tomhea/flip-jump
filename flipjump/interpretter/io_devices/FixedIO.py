@@ -1,3 +1,9 @@
+"""
+a fixed-input io-device (mainly for tests).
+reads input from a pre-supplied bytes buffer and collects the program's output in
+memory (retrievable via get_output) instead of printing it.
+"""
+
 from flipjump.interpretter.io_devices.IODevice import IODevice
 from flipjump.utils.exceptions import IOReadOnEOF, IncompleteOutput
 
