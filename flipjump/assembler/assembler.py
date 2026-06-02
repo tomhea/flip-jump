@@ -243,7 +243,7 @@ def assemble(
     :param show_statistics: if true shows macro-usage statistics
     :param print_time: if true prints the times of each assemble-stage
     :param max_recursion_depth: The compiler supports macros that recursively uses other macros,
-    up to the specified recursion depth. If None: no recursion depth restrictions are applied.
+    up to the specified recursion depth.
     """
     try:
         with PrintTimer('  parsing:         ', print_time=print_time):
