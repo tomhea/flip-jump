@@ -265,6 +265,23 @@ class RepCall:
             self.code_position,
         )
 
+    def rename_iterator(self, new_iterator_name: str) -> RepCall:
+        """
+        Hygienic rename: return a new RepCall whose iterator is `new_iterator_name`, with every
+        reference to the old iterator inside the rep's arguments rewritten to the new name.
+        Must run BEFORE eval_new(params_dict) so the iterator name is unique per macro-expansion and
+        can never be captured by - or capture - a macro parameter / @-label of the same source name.
+        repeat_times is left untouched: the repeat count cannot reference the iterator.
+        """
+        rename_dict = {self.iterator_name: Expr(new_iterator_name)}
+        return RepCall(
+            self.repeat_times,
+            new_iterator_name,
+            self.macro_name.name,
+            [expr.eval_new(rename_dict) for expr in self.arguments],
+            self.code_position,
+        )
+
     def all_unknown_labels(self) -> Set[str]:
         times = self.repeat_times
         arguments = self.arguments
