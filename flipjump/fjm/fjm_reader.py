@@ -88,7 +88,7 @@ class Reader:
         except ValueError:
             raise FlipJumpReadFjmException(
                 f'Error: unsupported version ({version}, this program supports {str(SUPPORTED_VERSIONS_NAMES)}).'
-            )
+            ) from None
         if FJMVersion.BaseVersion == self.version:
             self.flags, self.reserved = 0, 0
         else:

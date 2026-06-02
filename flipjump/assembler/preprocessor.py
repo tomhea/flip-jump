@@ -205,7 +205,7 @@ class PreprocessorData:
                 self.curr_tree,
                 f"'pad' requires the current address to be op-aligned (a multiple of 2*w={op_size} bits), "
                 f"but it's currently {self.curr_address} bits "
-                f"(this usually happens after a 'reserve' that isn't 2*w-aligned).",
+                f"(this usually happens after a 'reserve' or 'segment' that isn't 2*w-aligned).",
             )
         ops_to_pad = (-self.curr_address // op_size) % ops_alignment
         self.curr_address += ops_to_pad * op_size
