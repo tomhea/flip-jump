@@ -1,3 +1,9 @@
+"""
+gui message-boxes for interactive debugging (thin wrappers over the optional easygui
+library). used at breakpoints to show messages and to prompt the user for input/choices,
+with a helpful error if easygui isn't installed.
+"""
+
 from typing import List, Optional
 
 from flipjump.utils.exceptions import FlipJumpMissingImportException

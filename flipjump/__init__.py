@@ -1,3 +1,9 @@
+"""
+the flipjump package - a toolchain for the FlipJump esoteric language.
+this top-level module exposes the public API: the assemble/run/debug entry points,
+the high-level convenience functions, and the commonly-used classes and constants.
+"""
+
 from flipjump.flipjump_cli import assemble_run_according_to_cmd_line_args
 from flipjump.flipjump_quickstart import (
     assemble,
