@@ -1,7 +1,8 @@
 """
-constants and definitions for the .fjm (FlipJump Memory) binary file format:
-the magic number, the supported FJMVersion enum, the binary header/segment struct
-layouts, and the LZMA compression settings used by the compressed version.
+the .fjm format constants.
+the constants and definitions for the .fjm (FlipJump Memory) binary file format: the magic
+number, the supported FJMVersion enum, the binary header/segment struct layouts, and the
+LZMA compression settings used by the compressed version.
 """
 
 import lzma

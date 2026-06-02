@@ -1,7 +1,7 @@
 """
-the flipjump lexer and parser (built on the sly library).
-tokenizes and parses .fj source files into the macro-tree: macro definitions and
-the operations (flips, jumps, labels, etc.) that make up each macro.
+the flipjump lexer and parser.
+built on the sly library, it tokenizes and parses .fj source files into the macro-tree:
+macro definitions and the operations (flips, jumps, labels, etc.) that make up each macro.
 """
 
 from os import path

@@ -1,7 +1,7 @@
 """
 the standard io-device.
 reads the program's input from stdin and writes its output to stdout (output can be
-silenced via the verbose flag).
+silenced by turning off the output_verbose flag).
 """
 
 from sys import stdin, stdout

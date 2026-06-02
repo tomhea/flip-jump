@@ -1,7 +1,8 @@
 """
-the op (operation) classes produced by the parser and consumed by the assembler -
-FlipJump, WordFlip, Label, Macro, MacroCall, rep, segment/reserve directives, and the
-final-phase ops - together with their flipjump source-code positions.
+the op (operation) classes.
+the operations produced by the parser and consumed by the assembler - FlipJump, WordFlip,
+Label, Macro, MacroCall, rep, segment/reserve directives, and the final-phase ops -
+together with their flipjump source-code positions.
 """
 
 from __future__ import annotations

@@ -1,7 +1,8 @@
 """
-shared utility functions: locating the standard-library files, building the (name, path)
-file-tuples the assembler consumes, and saving/loading the compressed debugging-info
-(label dictionaries) used by the debugger.
+shared utility functions.
+locating the standard-library files, building the (name, path) file-tuples the assembler
+consumes, and saving/loading the compressed debugging-info (label dictionaries) used by
+the debugger.
 """
 
 from __future__ import annotations

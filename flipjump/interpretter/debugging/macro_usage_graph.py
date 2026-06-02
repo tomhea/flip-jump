@@ -1,7 +1,7 @@
 """
 macro code-usage statistics.
-aggregates how much compiled code each macro is responsible for, and renders it as a
-two-level pie chart (using plotly) to highlight where the program's size goes.
+aggregates how much compiled code each macro is responsible for, and renders it as a pie
+chart (using plotly) to highlight where the program's size goes.
 """
 
 import collections

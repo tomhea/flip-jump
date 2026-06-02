@@ -1,7 +1,7 @@
 """
-project-wide constants: the macro/label separator strings and prefixes, debugging
-defaults, the io bytes-encoding, compression settings, and the paths to the bundled
-standard library (stl).
+project-wide constants.
+the macro/label separator strings and prefixes, debugging defaults, the io bytes-encoding,
+compression settings, and the paths to the bundled standard library (stl).
 """
 
 from __future__ import annotations

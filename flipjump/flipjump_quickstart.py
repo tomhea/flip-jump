@@ -1,7 +1,8 @@
 """
-the high-level programmatic API for using flipjump from python.
-provides convenience wrappers - assemble, run, debug, run_test_output, and the
-combined assemble_and_run / assemble_and_debug / assemble_and_run_test_output helpers.
+the high-level programmatic API.
+the convenience wrappers for using flipjump from python - assemble, run, debug,
+run_test_output, and the combined assemble_and_run / assemble_and_debug /
+assemble_and_run_test_output helpers.
 """
 
 from pathlib import Path

@@ -1,7 +1,7 @@
 """
-the io_devices subpackage - the input/output backends the interpreter uses.
-exposes the IODevice abstract base class and its implementations:
-BrokenIO, FixedIO, and StandardIO.
+the io_devices subpackage.
+the input/output backends the interpreter uses. exposes the IODevice abstract base class
+and its implementations: BrokenIO, FixedIO, and StandardIO.
 """
 
 from flipjump.interpretter.io_devices.BrokenIO import BrokenIO
