@@ -119,7 +119,30 @@ def get_char_value_and_length(s: str) -> Tuple[int, int]:
 # noinspection PyUnboundLocalVariable,PyRedeclaration,PyPep8Naming,PyMethodMayBeStatic
 class FJLexer(sly.Lexer):
     # noinspection PyUnresolvedReferences
-    tokens = {NS, DEF, REP, WFLIP, PAD, SEGMENT, RESERVE, ID, DOT_ID, NUMBER, STRING, LE, GE, EQ, NEQ, SHL, SHR, NL, SC}
+    tokens = {
+        NS,
+        DEF,
+        REP,
+        WFLIP,
+        PAD,
+        SEGMENT,
+        RESERVE,
+        ID,
+        DOT_ID,
+        NUMBER,
+        STRING,
+        LE,
+        GE,
+        EQ,
+        NEQ,
+        SHL,
+        SHR,
+        POW,
+        LAND,
+        LOR,
+        NL,
+        SC,
+    }
 
     literals = {
         '=',
@@ -134,6 +157,7 @@ class FJLexer(sly.Lexer):
         '^',
         '|',
         '&',
+        '~',
         '?',
         ':',
         '<',
@@ -180,6 +204,10 @@ class FJLexer(sly.Lexer):
 
     SHL = r'<<'
     SHR = r'>>'
+
+    POW = r'\*\*'
+    LAND = r'&&'
+    LOR = r'\|\|'
 
     # Punctuations
     NL = r'[\r\n]'
@@ -246,10 +274,17 @@ def _get_main_macro_code_position(first_file: Tuple[str, Path]) -> CodePosition:
 # noinspection PyUnusedLocal,PyUnresolvedReferences,PyPep8Naming
 class FJParser(sly.Parser):
     tokens = FJLexer.tokens
-    # TODO #249 - add Unary Minus (-), Unary Not (~).
-    #  Maybe add logical or (||) and logical and (&&). Maybe handle power (**).
+    # 'UMINUS', 'UNOT' and 'LEADING_ID' are fictitious precedence tokens (not real
+    #  terminals). 'UMINUS'/'UNOT' give the unary "-"/"~" rules a higher precedence
+    #  than the binary ones via "%prec" (this is what lets unary minus coexist with
+    #  binary minus). 'LEADING_ID' is put on the (expr_ -> id) rule so that a statement
+    #  starting with "id -" reduces (binary minus, e.g. a flip-jump "x-1 ; y") instead
+    #  of shifting into a unary-minus macro-argument - this keeps the pre-existing
+    #  flip-jump behavior and matches how a leading "id +" already behaves.
     precedence = (
         ('right', '?', ':'),
+        ('left', LOR),
+        ('left', LAND),
         ('left', '|'),
         ('left', '^'),
         ('nonassoc', '<', '>', LE, GE),
@@ -258,7 +293,9 @@ class FJParser(sly.Parser):
         ('left', SHL, SHR),
         ('left', '+', '-'),
         ('left', '*', '/', '%'),
-        ('right', '#'),
+        ('right', '#', 'UMINUS', 'UNOT'),
+        ('right', POW),
+        ('nonassoc', 'LEADING_ID'),
     )
     # debugfile = 'src/parser.out'
 
@@ -713,9 +750,22 @@ class FJParser(sly.Parser):
     def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
         return get_minimized_expr('-', (p.expr_0[0], p.expr_1[0])), p.lineno
 
+    @_('"-" expr_ %prec UMINUS')
+    def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
+        # unary minus: reuse subtraction as (0 - expr).
+        return get_minimized_expr('-', (Expr(0), p.expr_[0])), p.lineno
+
+    @_('"~" expr_ %prec UNOT')
+    def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
+        return get_minimized_expr('~', (p.expr_[0],)), p.lineno
+
     @_('expr_ "*" expr_')
     def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
         return get_minimized_expr('*', (p.expr_0[0], p.expr_1[0])), p.lineno
+
+    @_('expr_ POW expr_')
+    def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
+        return get_minimized_expr('**', (p.expr_0[0], p.expr_1[0])), p.lineno
 
     @_('"#" expr_')
     def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
@@ -748,6 +798,14 @@ class FJParser(sly.Parser):
     @_('expr_ "&" expr_')
     def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
         return get_minimized_expr('&', (p.expr_0[0], p.expr_1[0])), p.lineno
+
+    @_('expr_ LAND expr_')
+    def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
+        return get_minimized_expr('&&', (p.expr_0[0], p.expr_1[0])), p.lineno
+
+    @_('expr_ LOR expr_')
+    def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
+        return get_minimized_expr('||', (p.expr_0[0], p.expr_1[0])), p.lineno
 
     @_('expr_ "?" expr_ ":" expr_')
     def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
@@ -793,7 +851,7 @@ class FJParser(sly.Parser):
     def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
         return next_address(), p.lineno
 
-    @_('id')
+    @_('id %prec LEADING_ID')
     def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
         id_str, lineno = p.id
         if id_str in self.consts:

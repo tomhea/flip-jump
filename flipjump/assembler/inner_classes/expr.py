@@ -18,18 +18,31 @@ from flipjump.utils.exceptions import FlipJumpExprException
 UNARY_TYPE = Callable[[int], int]
 BINARY_TYPE = Callable[[int, int], int]
 TRINARY_TYPE = Callable[[int, int, int], int]
+
+
+def _pow(base: int, exp: int) -> int:
+    """integer power. rejects negative exponents (they'd yield a non-integer)."""
+    if exp < 0:
+        raise FlipJumpExprException(f'** got a negative exponent: {base} ** {exp}')
+    return int(base**exp)  # int() since (int ** non-negative-int) is always an int
+
+
 op_string_to_function: Dict[str, Union[UNARY_TYPE, BINARY_TYPE, TRINARY_TYPE]] = {
     '+': add,
     '-': sub,
     '*': mul,
     '/': floordiv,
     '%': mod,
+    '**': _pow,
     '<<': lshift,
     '>>': rshift,
     '^': xor,
     '|': or_,
     '&': and_,
+    '&&': lambda a, b: 1 if (a and b) else 0,
+    '||': lambda a, b: 1 if (a or b) else 0,
     '#': lambda x: x.bit_length(),
+    '~': lambda a: ~a,
     '?:': lambda a, b, c: b if a else c,
     '<': lambda a, b: 1 if a < b else 0,
     '>': lambda a, b: 1 if a > b else 0,
@@ -118,7 +131,7 @@ class Expr:
             op, expressions = self.value
             if len(expressions) == 1:
                 e1 = expressions[0]
-                return f'(#{str(e1)})'
+                return f'({op}{str(e1)})'
             elif len(expressions) == 2:
                 e1, e2 = expressions
                 return f'({str(e1)} {op} {str(e2)})'
