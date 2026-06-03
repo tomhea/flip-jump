@@ -5,6 +5,8 @@ name: Python package
 on:
   release:
     types: [published]
+permissions:
+  contents: read
 jobs:
   build:
     runs-on: ubuntu-latest
