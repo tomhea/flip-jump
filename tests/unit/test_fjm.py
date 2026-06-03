@@ -68,6 +68,17 @@ def test_read_write_bit_and_get_word(tmp_path: Path) -> None:
     reader.write_bit(0, True)
     assert reader.get_word(0) == 0b10110011
 
+    reader.write_bit(1, False)  # the bit-clearing path
+    assert reader.get_word(0) == 0b10110001
+
+
+def test_get_word_past_last_bit_raises(tmp_path: Path) -> None:
+    reader = Reader(_write(tmp_path, 8, FJMVersion.NormalVersion, 0, [0xAB, 0xCD]))
+    last_word_address = (1 << 8) - 1
+    unaligned_bit_address = (last_word_address << ((8).bit_length() - 1)) + 4
+    with pytest.raises(FlipJumpRuntimeMemoryException):
+        reader.get_word(unaligned_bit_address)
+
 
 def test_get_word_unaligned(tmp_path: Path) -> None:
     data = [0xAB, 0xCD]
@@ -99,6 +110,7 @@ def test_garbage_handling_continue_returns_zero(tmp_path: Path) -> None:
     reader = Reader(
         _write(tmp_path, 16, FJMVersion.NormalVersion, 0, [0, 0]), garbage_handling=GarbageHandling.Continue
     )
+    # the expected value is whatever _new_garbage_val() returns (currently 0).
     assert reader.get_word(0x4000) == 0
 
 
