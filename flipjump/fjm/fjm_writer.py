@@ -1,3 +1,10 @@
+"""
+the .fjm file writer.
+writes a compiled flipjump program to an .fjm binary - emitting the header, the data
+and segments, and the metadata (flags) - with support for the different fjm versions
+and optional LZMA compression.
+"""
+
 import lzma
 from pathlib import Path
 from struct import pack

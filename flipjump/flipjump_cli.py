@@ -1,3 +1,9 @@
+"""
+the command-line interface (the `fj` command).
+parses the command-line arguments, prepares temporary files, and drives the
+assemble and/or run flows according to the chosen --asm / --run options.
+"""
+
 import argparse
 import lzma
 import os

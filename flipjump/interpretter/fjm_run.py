@@ -1,3 +1,10 @@
+"""
+the flipjump interpreter.
+executes a compiled .fjm program one flip-jump op at a time - managing the memory,
+routing input/output through an IODevice, handling breakpoints, detecting termination,
+and collecting run statistics (returned as TerminationStatistics).
+"""
+
 from pathlib import Path
 from typing import Optional, Deque
 
