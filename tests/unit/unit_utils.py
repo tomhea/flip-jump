@@ -1,0 +1,111 @@
+"""
+shared helpers for the assembler/interpreter unit-tests.
+
+these are thin wrappers over the public flipjump API for assembling small inline .fj
+sources (no stl) to a .fjm path, getting a Reader for the result, or running it with a
+FixedIO - so the individual test files stay short and focused.
+"""
+
+from pathlib import Path
+from typing import List, Tuple, Union
+
+from flipjump import assemble
+from flipjump.fjm.fjm_consts import FJMVersion
+from flipjump.fjm.fjm_reader import GarbageHandling, Reader
+from flipjump.interpretter import fjm_run
+from flipjump.interpretter.fjm_run import TerminationStatistics
+from flipjump.interpretter.io_devices.FixedIO import FixedIO
+from flipjump.utils.constants import DEFAULT_MAX_MACRO_RECURSION_DEPTH
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+PROGRAMS_DIR = REPO_ROOT / 'programs'
+HELLO_NO_STL = PROGRAMS_DIR / 'print_tests' / 'hello_no-stl.fj'
+CAT_PROGRAM = PROGRAMS_DIR / 'print_tests' / 'cat.fj'
+
+HELLO_WORLD_OUTPUT = b'Hello, World!'
+
+# a minimal no-stl preamble (taken from hello_no-stl.fj) that places the IO output-cell at
+# address 2w and jumps over it to code_start. it's required before any real op in a no-stl
+# program, and exposes the global label IO (for output via "IO + bit;").
+MINIMAL_STARTUP = """
+def startup @ code_start > IO {
+    ;code_start
+  IO:
+    ;0
+  code_start:
+}
+"""
+
+# a no-stl program that loops forever (a clean Looping termination).
+INFINITE_LOOP_PROGRAM = MINIMAL_STARTUP + '\nstartup\nloop:\n;loop\n'
+
+
+def _sources_list(source: Union[str, List[str]]) -> List[str]:
+    return [source] if isinstance(source, str) else source
+
+
+def assemble_to_path(
+    source: Union[str, List[str]],
+    tmp_path: Path,
+    *,
+    memory_width: int = 64,
+    use_stl: bool = False,
+    fjm_version: FJMVersion = FJMVersion.NormalVersion,
+    warning_as_errors: bool = True,
+    max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
+    with_debug: bool = False,
+) -> Path:
+    """
+    write the inline .fj source(s) under tmp_path and assemble them into an out.fjm.
+    @param source: a single .fj source string, or a list of them (assembled in order).
+    @return: the path of the produced .fjm file.
+    """
+    fj_paths: List[Path] = []
+    for index, single_source in enumerate(_sources_list(source)):
+        fj_path = tmp_path / f'prog{index}.fj'
+        fj_path.write_text(single_source)
+        fj_paths.append(fj_path)
+
+    fjm_path = tmp_path / 'out.fjm'
+    debug_path = tmp_path / 'debug.fjd' if with_debug else None
+    assemble(
+        fj_paths,
+        fjm_path,
+        memory_width=memory_width,
+        use_stl=use_stl,
+        fjm_version=fjm_version,
+        warning_as_errors=warning_as_errors,
+        max_recursion_depth=max_recursion_depth,
+        debugging_file_path=debug_path,
+        print_time=False,
+    )
+    return fjm_path
+
+
+def compile_and_get_reader(
+    source: Union[str, List[str]],
+    tmp_path: Path,
+    *,
+    memory_width: int = 64,
+    use_stl: bool = False,
+    fjm_version: FJMVersion = FJMVersion.NormalVersion,
+    garbage_handling: GarbageHandling = GarbageHandling.Stop,
+) -> Reader:
+    """assemble the inline source and return a Reader of the produced .fjm."""
+    fjm_path = assemble_to_path(source, tmp_path, memory_width=memory_width, use_stl=use_stl, fjm_version=fjm_version)
+    return Reader(fjm_path, garbage_handling=garbage_handling)
+
+
+def run_source(
+    source: Union[str, List[str]],
+    tmp_path: Path,
+    fixed_input: bytes = b'',
+    *,
+    memory_width: int = 64,
+    use_stl: bool = False,
+) -> Tuple[TerminationStatistics, FixedIO]:
+    """assemble the inline source, run it with a FixedIO, and return (statistics, io_device)."""
+    fjm_path = assemble_to_path(source, tmp_path, memory_width=memory_width, use_stl=use_stl)
+    io_device = FixedIO(fixed_input)
+    statistics = fjm_run.run(fjm_path, io_device=io_device, print_time=False)
+    return statistics, io_device
