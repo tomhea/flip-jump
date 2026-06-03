@@ -4,16 +4,16 @@
 
 main
 
-def main @ infant, child, teen, adult, senior, done, t13, t20, t65 < age, two, thirteen, twenty, sixtyfive {
-    stl.startup
-    read_decimal 16, age
-    bit.cmp 16, age, two, infant, t13, t13
+def main @ infant, child, teen, adult, senior, done, t13, t20, t65 < age, two, thirteen, twenty, sixtyfive, input_err {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, age, input_err
+    hex.cmp 4, age, two, infant, t13, t13
   t13:
-    bit.cmp 16, age, thirteen, child, t20, t20
+    hex.cmp 4, age, thirteen, child, t20, t20
   t20:
-    bit.cmp 16, age, twenty, teen, t65, t65
+    hex.cmp 4, age, twenty, teen, t65, t65
   t65:
-    bit.cmp 16, age, sixtyfive, adult, senior, senior
+    hex.cmp 4, age, sixtyfive, adult, senior, senior
   infant:
     stl.output "infant\n"
     ;done
@@ -32,27 +32,11 @@ def main @ infant, child, teen, adult, senior, done, t13, t20, t65 < age, two, t
     stl.loop
 }
 
-// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
-def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
-    bit.zero n, value
-  loop:
-    bit.input ch
-    bit.if0 8, ch, end
-    bit.cmp 8, ch, nl, add_digit, end, add_digit
-  add_digit:
-    bit.mul10 n, value
-    bit.ascii2dec err, digit, ch
-    bit.add n, value, digit
-    ;loop
-  end:
-}
+age: hex.vec 4, 0
+two: hex.vec 4, 2
+thirteen: hex.vec 4, 13
+twenty: hex.vec 4, 20
+sixtyfive: hex.vec 4, 65
 
-age: bit.vec 16, 0
-two: bit.vec 16, 2
-thirteen: bit.vec 16, 13
-twenty: bit.vec 16, 20
-sixtyfive: bit.vec 16, 65
-ch: bit.vec 8, 0
-nl: bit.vec 8, '\n'
-digit: bit.vec 16, 0
-err: bit.bit
+input_err:
+    stl.loop
