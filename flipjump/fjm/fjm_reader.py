@@ -1,3 +1,9 @@
+"""
+the .fjm file reader.
+parses an .fjm binary's header and segments, decompresses the data when needed, and
+exposes the program as a word-addressable memory dictionary for the interpreter.
+"""
+
 import dataclasses
 import lzma
 import struct
@@ -83,7 +89,12 @@ class Reader:
         self.magic, self.memory_width, version, self.segment_num = unpack(
             _header_base_format, fjm_file.read(_header_base_size)
         )
-        self.version = FJMVersion(version)
+        try:
+            self.version = FJMVersion(version)
+        except ValueError:
+            raise FlipJumpReadFjmException(
+                f'Error: unsupported version ({version}, this program supports {str(SUPPORTED_VERSIONS_NAMES)}).'
+            ) from None
         if FJMVersion.BaseVersion == self.version:
             self.flags, self.reserved = 0, 0
         else:
@@ -133,6 +144,12 @@ class Reader:
 
         self.memory_segments = []
         for segment_start, segment_length, data_start, data_length in segments:
+            # data is laid out as (flip-word, jump-word) op-pairs, so its length must be even
+            #  (the relative-jump reconstruction below relies on this).
+            if data_length % 2 != 0:
+                raise FlipJumpReadFjmException(
+                    f"Bad .fjm file: segment data-length must be even (an integer number of ops), got {data_length}."
+                )
             self.memory_segments.append(
                 MemorySegment(
                     segment_start << (self.memory_width.bit_length() - 1),

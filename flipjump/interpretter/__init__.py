@@ -1,3 +1,9 @@
+"""
+the interpreter subpackage.
+runs (and debugs) compiled .fjm programs, and exposes the run() entry point and the
+TerminationStatistics result class.
+"""
+
 from flipjump.interpretter.fjm_run import TerminationStatistics, run
 
 

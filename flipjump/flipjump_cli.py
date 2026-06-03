@@ -1,3 +1,9 @@
+"""
+the command-line interface (the `fj` command).
+parses the command-line arguments, prepares temporary files, and drives the
+assemble and/or run flows according to the chosen --asm / --run options.
+"""
+
 import argparse
 import lzma
 import os
@@ -92,14 +98,18 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
     )
 
 
-def get_version(version: Optional[int], is_outfile_specified: bool) -> FJMVersion:
+def get_version(version: Optional[int], is_outfile_specified: bool, error_func: ErrorFunc) -> FJMVersion:
     """
     @param version: the fjm version. if None the default version will be taken.
     @param is_outfile_specified: if True, the default is the compressed-version.
      else, the default is the normal version.
+    @param error_func: the parser's error function (used to report an invalid version).
     @return: the chosen version, or default if not specified.
     """
     if version is not None:
+        if version not in {v.value for v in SUPPORTED_VERSIONS_NAMES}:
+            supported = ', '.join(f"{v.value}: {name}" for v, name in SUPPORTED_VERSIONS_NAMES.items())
+            error_func(f'invalid fjm version {version}. supported versions are: {supported}.')
         return FJMVersion(version)
 
     if is_outfile_specified:
@@ -121,7 +131,7 @@ def assemble(out_fjm_file: Path, debug_file: Optional[Path], args: argparse.Name
     fjm_writer = Writer(
         out_fjm_file,
         args.width,
-        get_version(args.version, args.outfile is not None),
+        get_version(args.version, args.outfile is not None, error_func),
         flags=args.flags,
         lzma_preset=args.lzma_preset,
     )

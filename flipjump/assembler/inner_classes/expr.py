@@ -1,3 +1,10 @@
+"""
+the Expr class.
+an arithmetic expression-tree over numbers and label names. it supports the flipjump math
+operators, and evaluates (minimizes) to a number once all the labels it references are
+known/resolved.
+"""
+
 from __future__ import annotations
 
 from operator import mul, add, sub, floordiv, lshift, rshift, mod, xor, or_, and_

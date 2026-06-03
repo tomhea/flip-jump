@@ -1,3 +1,10 @@
+"""
+the high-level programmatic API.
+the convenience wrappers for using flipjump from python - assemble, run, debug,
+run_test_output, and the combined assemble_and_run / assemble_and_debug /
+assemble_and_run_test_output helpers.
+"""
+
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import List, Optional, Set
@@ -45,7 +52,7 @@ def assemble(
     :param show_statistics: if true shows macro-usage statistics
     :param print_time: if true prints the times of each assemble-stage
     :param max_recursion_depth: The compiler supports macros that recursively uses other macros,
-    up to the specified recursion depth. If None: no recursion depth restrictions are applied.
+    up to the specified recursion depth.
 
     :note: This is a wrapper function to the assembler.assemble() function.
     """

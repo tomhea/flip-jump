@@ -1,3 +1,9 @@
+"""
+a broken io-device that raises on any io action.
+used to run programs that are expected to perform no input/output - any read or write
+turns into an error.
+"""
+
 from flipjump.interpretter.io_devices.IODevice import IODevice
 from flipjump.utils.exceptions import BrokenIOUsed
 

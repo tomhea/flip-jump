@@ -1,3 +1,9 @@
+"""
+pytest configuration for the flipjump test-suite.
+defines the custom command-line options, fixtures, and test-collection logic that build
+the compile-and-run test cases from the CSV test catalogs.
+"""
+
 import argparse
 import csv
 import json

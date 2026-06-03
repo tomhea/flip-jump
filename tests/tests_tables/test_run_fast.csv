@@ -11,6 +11,7 @@ macro_hex_minmax, tests/compiled/sanity_checks/macro_hex_minmax.fjm, ,tests/inou
 macro_hex_mul, tests/compiled/sanity_checks/macro_hex_mul.fjm, ,tests/inout/sanity_checks/macro_hex_mul.out, False,False
 macro_logic, tests/compiled/sanity_checks/macro_logic.fjm, ,tests/inout/sanity_checks/macro_logic.out, False,False
 macro_mul, tests/compiled/sanity_checks/macro_mul.fjm, ,tests/inout/sanity_checks/macro_mul.out, False,False
+macro_rep_hygiene, tests/compiled/sanity_checks/macro_rep_hygiene.fjm, ,tests/inout/sanity_checks/macro_rep_hygiene.out, False,False
 macro_rotate, tests/compiled/sanity_checks/macro_rotate.fjm, ,tests/inout/sanity_checks/macro_rotate.out, False,False
 mathbit, tests/compiled/sanity_checks/mathbit.fjm, ,, False,False
 mathvec, tests/compiled/sanity_checks/mathvec.fjm, ,, False,False
