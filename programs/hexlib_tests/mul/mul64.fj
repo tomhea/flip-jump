@@ -1,3 +1,4 @@
+// Data for the hex.mul test (64-bit operands): operand size, repetitions, sign flag and random vectors; compiled with mul_test.fj.
 NumSize = 64
 Repetitions = 25
 IsNegative = 0

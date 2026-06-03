@@ -1,3 +1,4 @@
+// Tests the signed hex.idiv macro on all four operand-sign combinations across its optimization variants (compiled with hexlib_div.fj).
 test_idiv_opt 20, 12, 1, 8, idiv_opt0
 test_idiv_opt 20, (0-12), (0-2), (0-4), idiv_opt0
 test_idiv_opt (0-20), 12, (0-2), 4, idiv_opt0

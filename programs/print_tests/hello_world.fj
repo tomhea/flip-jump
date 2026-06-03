@@ -1,3 +1,4 @@
+// Prints 'Hello, World!' using the standard library.
 stl.startup
 stl.output "Hello, World!\n(:"
 stl.loop

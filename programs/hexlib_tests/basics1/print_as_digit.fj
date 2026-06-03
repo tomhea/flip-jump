@@ -1,3 +1,4 @@
+// Tests the hex.print_as_digit macro (printing hex vectors as digits, lowercase and uppercase).
 stl.startup
 
 hex.print_as_digit 16, vars, 0

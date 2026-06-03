@@ -1,3 +1,4 @@
+// Sanity check for stl.startup_and_init_all followed by a basic hex.sub and print.
 stl.startup_and_init_all
 N = 4
 

@@ -1,3 +1,4 @@
+// Tests the multi-hex hex.or macro (hex.or n) on assorted operands.
 stl.startup
 
 OR_N = 0x0000ffff8000c47b5d8bbebfbe0bf47bc2600b85

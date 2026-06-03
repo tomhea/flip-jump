@@ -1,3 +1,4 @@
+// Prints a signed number in hexadecimal form (bit.print_hex_int).
     stl.startup
 
     bit.print_hex_int w, a, 1

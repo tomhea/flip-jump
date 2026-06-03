@@ -1,3 +1,4 @@
+// Tests hex.div with an 8-hex dividend and a 1-hex divisor (compiled with hexlib_div.fj).
 rep(40, i) test_div 8, 1, div8_1, (DIV_NUM>>(64*i+3))&((1<<32)-1), (DIV_B1_NUM>>( 4*i + 50* 4))&((1<< 4)-1)
 
 stl.loop

@@ -1,3 +1,4 @@
+// Demonstrates using a namespace as a class: defines the Pair object (two numbers) with init/add/print/swap methods.
 ns Pair {
     first = 0
     len = w

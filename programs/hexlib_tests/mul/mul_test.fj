@@ -1,3 +1,4 @@
+// Test harness for the hex.mul macro; compiled together with one of the mul<N>.fj data files.
 stl.startup
 
 HexSize = NumSize / 4

@@ -1,3 +1,4 @@
+// Tests printing bit and hex values as digits (bit.print_as_digit / hex.print_as_digit).
 stl.startup
 
 bit.print_as_digit b0

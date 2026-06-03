@@ -1,3 +1,4 @@
+// Multi-file compilation test (helper): defines shared constants and macros (N and get_aaaaN).
 N = 3
 
 

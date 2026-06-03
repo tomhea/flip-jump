@@ -1,3 +1,4 @@
+// Sanity check for the rep(...) repetition directive (with bit.exact_not).
     stl.startup
     rep(7, i) bit.exact_not x+i+i
     stl.loop
