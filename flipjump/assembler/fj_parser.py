@@ -323,13 +323,13 @@ class FJParser(sly.Parser):
             syntax_error(
                 lineno,
                 f"In macro {macro_name}:  "
-                f"extern labels can't be regular labels: " + ', '.join(global_labels & regular_labels),
+                f"global labels can't be regular labels: " + ', '.join(global_labels & regular_labels),
             )
         if extern_labels & regular_labels:
             syntax_error(
                 lineno,
                 f"In macro {macro_name}:  "
-                f"global labels can't be regular labels: " + ', '.join(extern_labels & regular_labels),
+                f"extern labels can't be regular labels: " + ', '.join(extern_labels & regular_labels),
             )
 
     def validate_no_unused_labels(

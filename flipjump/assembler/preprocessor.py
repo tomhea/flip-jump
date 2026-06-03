@@ -78,7 +78,7 @@ class PreprocessorData:
             curr_tree: CurrTree,
             calling_op: Union[MacroCall, RepCall],
             macros: Dict[MacroName, Macro],
-            max_recursion_depth: Optional[int],
+            max_recursion_depth: int,
         ):
             """
             Validates that the called macro exists, and that the macro depth is ok. Updates the curr_tree variable.
@@ -86,7 +86,7 @@ class PreprocessorData:
             @param calling_op: the current macro call (either of type Macro or RepCall).
             @param macros: parser's result; the dictionary from the macro names to the macro declaration
             @param max_recursion_depth: The compiler supports macros that recursively uses other macros,
-            up to the specified recursion depth. If None: no recursion depth restrictions are applied.
+            up to the specified recursion depth.
             """
             self.curr_tree = curr_tree
             self.calling_op = calling_op
@@ -101,7 +101,7 @@ class PreprocessorData:
                     f"macro {macro_name} is used but isn't defined. " f"In {self.calling_op.code_position}.",
                 )
             self.curr_tree.append(self.calling_op)
-            if self.max_recursion_depth is not None and len(self.curr_tree) > self.max_recursion_depth:
+            if len(self.curr_tree) > self.max_recursion_depth:
                 macro_resolve_error(
                     self.curr_tree,
                     "The maximal macro-expansion recursive depth was reached. "
@@ -116,7 +116,7 @@ class PreprocessorData:
         @param memory_width: the memory-width
         @param macros: parser's result; the dictionary from the macro names to the macro declaration
         @param max_recursion_depth: The compiler supports macros that recursively uses other macros,
-        up to the specified recursion depth. If None: no recursion depth restrictions are applied.
+        up to the specified recursion depth.
         """
         self.memory_width = memory_width
         self.macros = macros
@@ -140,8 +140,10 @@ class PreprocessorData:
         self.result_ops.append(first_segment)
 
         self.max_recursion_depth = max_recursion_depth
-        if max_recursion_depth + GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH < sys.getrecursionlimit():
-            sys.setrecursionlimit(max_recursion_depth + GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH)
+        # set python's recursion-limit so the preprocessor's own depth-check (at max_recursion_depth)
+        #  triggers before python's RecursionError. Set it unconditionally - whether it's higher or lower than the
+        #  current limit - so that raising max_recursion_depth actually allows deeper macro-recursion.
+        sys.setrecursionlimit(max_recursion_depth + GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH)
 
     def patch_last_wflip_address(self) -> None:
         self.last_new_segment.wflip_start_address = self.curr_address
@@ -204,6 +206,13 @@ class PreprocessorData:
 
     def align_current_address(self, ops_alignment: int) -> None:
         op_size = 2 * self.memory_width
+        if self.curr_address % op_size != 0:
+            macro_resolve_error(
+                self.curr_tree,
+                f"'pad' requires the current address to be op-aligned (a multiple of 2*w={op_size} bits), "
+                f"but it's currently {self.curr_address} bits "
+                f"(this usually happens after a 'reserve' or 'segment' that isn't 2*w-aligned).",
+            )
         ops_to_pad = (-self.curr_address // op_size) % ops_alignment
         self.curr_address += ops_to_pad * op_size
         self.result_ops.append(Padding(ops_to_pad))
@@ -222,13 +231,19 @@ def get_rep_times(op: RepCall, preprocessor_data: PreprocessorData) -> int:
 
 def get_pad_ops_alignment(op: Pad, preprocessor_data: PreprocessorData) -> int:
     try:
-        return op.calculate_ops_alignment(preprocessor_data.labels)
+        ops_alignment = op.calculate_ops_alignment(preprocessor_data.labels)
     except FlipJumpExprException as e:
         macro_resolve_error(
             preprocessor_data.curr_tree,
             f"Can't evaluate how much to pad in " f"'pad {op.ops_alignment}'. In {op.code_position}.",
             orig_exception=e,
         )
+    if ops_alignment <= 0:
+        macro_resolve_error(
+            preprocessor_data.curr_tree,
+            f"'pad' must get a positive ops-alignment, but got {ops_alignment}. In {op.code_position}.",
+        )
+    return ops_alignment
 
 
 def get_next_segment_start(op: Segment, preprocessor_data: PreprocessorData) -> int:
@@ -382,7 +397,7 @@ def resolve_macros(
     @param macros: parser's result; the dictionary from the macro names to the macro declaration
     @param show_statistics: if True then prints the macro-usage statistics
     @param max_recursion_depth: The compiler supports macros that recursively uses other macros,
-    up to the specified recursion depth. If None: no recursion depth restrictions are applied.
+    up to the specified recursion depth.
     @return: tuple of the queue of ops, and the labels' dictionary
     """
     preprocessor_data = PreprocessorData(memory_width, macros, max_recursion_depth)
