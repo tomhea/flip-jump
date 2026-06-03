@@ -1,3 +1,4 @@
+// Sanity check for bit.inc (increment a bit-vector).
     stl.startup
     bit.inc 2, x
     stl.loop

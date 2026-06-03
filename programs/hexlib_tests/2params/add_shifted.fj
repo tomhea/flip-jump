@@ -1,3 +1,4 @@
+// Tests the shifted hex.add (adding a shorter src vector into a longer dst at every offset).
 stl.startup
 
 EACH_INDEX_REPEATS = 3

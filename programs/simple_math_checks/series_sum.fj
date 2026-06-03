@@ -1,3 +1,4 @@
+// Computes and prints an arithmetic-series sum (first term a1, difference d, n terms) using hex math macros.
 N = 8   // 32bits
 
 stl.startup

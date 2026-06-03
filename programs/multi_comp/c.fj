@@ -1,3 +1,4 @@
+// Multi-file compilation test (helper): defines the print_chars and println macros.
 NL = '\n'
 
 

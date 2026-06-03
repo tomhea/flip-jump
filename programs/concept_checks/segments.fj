@@ -1,3 +1,4 @@
+// Demonstrates the segment/reserve directives: reads input digits into reserved memory regions at fixed addresses and prints the result.
 stl.startup
 
 X1 = 0x10000000

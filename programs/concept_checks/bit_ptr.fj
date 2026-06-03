@@ -1,3 +1,4 @@
+// Demonstrates the bit-pointer macros: bit.ptr_flip, bit.ptr_jump and bit.ptr_wflip.
 stl.startup
 
 test0:

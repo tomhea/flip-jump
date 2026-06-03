@@ -1,3 +1,4 @@
+// Test harness for the hex.div / hex.idiv macros: defines stl.startup, the random DIV_* test data, and the shared test macros (compiled together with the test*.fj files).
 stl.startup
 ;end_of_div
 

@@ -1,3 +1,4 @@
+// Tests the multi-hex hex.sub macro (hex.sub n) on assorted operands.
 stl.startup
 
 SUB_N = 0x0000ffff8000ada41d9d587f40027d6d07f2c898

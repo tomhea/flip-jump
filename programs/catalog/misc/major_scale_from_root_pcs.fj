@@ -4,9 +4,9 @@
 
 main
 
-def main < root, iv0, iv2, iv4, iv5, iv7, iv9, iv11 {
-    stl.startup
-    read_decimal 16, root
+def main < root, iv0, iv2, iv4, iv5, iv7, iv9, iv11, input_err {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, root, input_err
     print_degree root, iv0
     stl.output ' '
     print_degree root, iv2
@@ -24,49 +24,33 @@ def main < root, iv0, iv2, iv4, iv5, iv7, iv9, iv11 {
     stl.loop
 }
 
-// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
-def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
-    bit.zero n, value
-  loop:
-    bit.input ch
-    bit.if0 8, ch, end
-    bit.cmp 8, ch, nl, add_digit, end, add_digit
-  add_digit:
-    bit.mul10 n, value
-    bit.ascii2dec err, digit, ch
-    bit.add n, value, digit
-    ;loop
-  end:
-}
-
-// Print (root[:16] + interval[:16]) mod 12 as decimal (no newline). Sum is < 24.
+// Print (root[:4] + interval[:4]) mod 12 as decimal (no newline). Sum is < 24.
 def print_degree root, interval @ small, big, end < deg, twelve {
-    bit.mov 16, deg, root
-    bit.add 16, deg, interval
-    bit.cmp 16, deg, twelve, small, big, big
+    hex.mov 4, deg, root
+    hex.add 4, deg, interval
+    hex.cmp 4, deg, twelve, small, big, big
   small:
-    bit.print_dec_uint 16, deg
+    hex.print_dec_uint 4, deg
     ;end
   big:
-    bit.sub 16, deg, twelve
-    bit.print_dec_uint 16, deg
+    hex.sub 4, deg, twelve
+    hex.print_dec_uint 4, deg
   end:
 }
 
-root: bit.vec 16, 0
-iv0: bit.vec 16, 0
-iv2: bit.vec 16, 2
-iv3: bit.vec 16, 3
-iv4: bit.vec 16, 4
-iv5: bit.vec 16, 5
-iv7: bit.vec 16, 7
-iv8: bit.vec 16, 8
-iv9: bit.vec 16, 9
-iv10: bit.vec 16, 10
-iv11: bit.vec 16, 11
-deg: bit.vec 16, 0
-twelve: bit.vec 16, 12
-ch: bit.vec 8, 0
-nl: bit.vec 8, '\n'
-digit: bit.vec 16, 0
-err: bit.bit
+root: hex.vec 4, 0
+iv0: hex.vec 4, 0
+iv2: hex.vec 4, 2
+iv3: hex.vec 4, 3
+iv4: hex.vec 4, 4
+iv5: hex.vec 4, 5
+iv7: hex.vec 4, 7
+iv8: hex.vec 4, 8
+iv9: hex.vec 4, 9
+iv10: hex.vec 4, 10
+iv11: hex.vec 4, 11
+deg: hex.vec 4, 0
+twelve: hex.vec 4, 12
+
+input_err:
+    stl.loop

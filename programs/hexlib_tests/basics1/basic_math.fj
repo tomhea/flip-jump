@@ -1,3 +1,4 @@
+// Tests the basic hex arithmetic macros (inc1, inc, not) over 16-hex vectors.
 stl.startup
 
 

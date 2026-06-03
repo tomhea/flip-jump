@@ -1,3 +1,4 @@
+// Sanity check for bit.if preceded by no-op bit.mov instructions.
 stl.startup
 
 rep(10, i) bit.mov y, z

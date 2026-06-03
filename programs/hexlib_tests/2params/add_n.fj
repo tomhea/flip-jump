@@ -1,3 +1,4 @@
+// Tests the multi-hex hex.add macro (hex.add n) on assorted operands.
 stl.startup
 
 ADD_N = 0x0000ffff800040a73dd06622dc0594c9e1b9b001

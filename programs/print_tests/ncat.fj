@@ -1,3 +1,4 @@
+// A 'cat' variant that prints the bitwise-NOT of each input byte until EOF.
 stl.startup
 start:
     bit.input ascii

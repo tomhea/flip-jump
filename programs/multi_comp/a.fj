@@ -1,3 +1,4 @@
+// Multi-file compilation test (main file): prints rows of characters using macros defined in the other multi_comp files.
 stl.startup
 
 

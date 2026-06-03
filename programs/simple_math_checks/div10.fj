@@ -1,3 +1,4 @@
+// Repeatedly divides a number by 10 (bit.div10), printing each quotient as a decimal digit.
 stl.startup
 
 loop:

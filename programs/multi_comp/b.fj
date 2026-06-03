@@ -1,3 +1,4 @@
+// Multi-file compilation test (helper): defines the print_aaaa macro.
 def print_aaaa n {
     print_chars n, 'a'
 }

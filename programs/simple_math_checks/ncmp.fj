@@ -1,3 +1,4 @@
+// Tests the bit.cmp macro by comparing two numbers and printing <, = or >.
 stl.startup
 
 
