@@ -1,3 +1,4 @@
+// A 'cat' program: echoes input bytes to output until EOF.
     stl.startup
 start:
     bit.input ascii

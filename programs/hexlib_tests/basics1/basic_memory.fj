@@ -1,3 +1,4 @@
+// Tests the basic hex memory macros (xor, zero, mov, set, swap) over 16-hex vectors.
 stl.startup
 
 // xor

@@ -1,3 +1,4 @@
+// Tests the hex.sub macro on every single-hex digit pair.
 stl.startup
 
 rep(256, i) test_sub i&0xf, i>>4

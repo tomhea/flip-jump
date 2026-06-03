@@ -1,3 +1,4 @@
+// Minimal sanity check exercising stl.skip, a bare flip, and #-expression evaluation.
     stl.skip
   ns stl {
     IO:

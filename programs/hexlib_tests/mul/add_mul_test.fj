@@ -1,3 +1,4 @@
+// Test harness for the hex.add_mul macro (multiply-accumulate); compiled together with one of the add_mul<N>.fj data files.
 stl.startup
 
 HexSize = NumSize / 4

@@ -1,3 +1,4 @@
+// Multi-file compilation test (main file, no-STL variant): like a.fj but defines its own minimal IO instead of using the standard library.
 ;start
 IO: ;
 start:

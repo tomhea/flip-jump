@@ -1,3 +1,4 @@
+// Sanity check for bit.if (branch on a bit's value) and the ?: operator.
 stl.startup
 bit.if x, l0, l1
 

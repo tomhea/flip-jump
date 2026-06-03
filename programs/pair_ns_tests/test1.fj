@@ -1,3 +1,4 @@
+// Tests the Pair namespace: initializes two Pairs and prints them (expects two zeroed pairs).
 stl.startup
 
 Pair.init

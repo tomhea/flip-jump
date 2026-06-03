@@ -1,3 +1,4 @@
+// Sanity check for bit.not (flip a single bit).
     stl.startup
     bit.not x
     stl.loop

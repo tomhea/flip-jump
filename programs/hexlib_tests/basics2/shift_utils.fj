@@ -1,3 +1,4 @@
+// Shared test helpers for the basics2 shift tests (compares a shift result against the expected value).
 def test_shl_bit n, x @ lt, eq, gt, xh, ch, end {
     hex.shl_bit n, xh
     hex.cmp n, xh, ch, lt, eq, gt

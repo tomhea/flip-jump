@@ -1,3 +1,4 @@
+// Tests the hex.add_count_bits macro (add while counting the set bits).
 stl.startup
 
 rep(256, i) test_add_count_bits i&0xf, i>>4

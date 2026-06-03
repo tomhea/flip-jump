@@ -1,3 +1,4 @@
+// Demonstrates casting between bit-vectors and hex-vectors (stl.bit2hex / stl.hex2bit).
 stl.startup
 
 stl.bit2hex h, b0

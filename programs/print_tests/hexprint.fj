@@ -1,3 +1,4 @@
+// Adds two 4-bit numbers and prints the result as a hex digit (bit.hex2ascii).
     stl.startup
     bit.add 4, a, b
     bit.hex2ascii c, a

@@ -1,3 +1,4 @@
+// Data for the signed hex.mul test (32-bit negative operands): operand size, repetitions, sign flag and random vectors; compiled with mul_test.fj.
 NumSize = 32
 Repetitions = 40
 IsNegative = 1

@@ -1,3 +1,4 @@
+// Tests the Pair namespace add / add_first / add_second methods across two Pairs.
 stl.startup
 
 Pair.init

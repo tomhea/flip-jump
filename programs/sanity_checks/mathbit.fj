@@ -1,3 +1,4 @@
+// Sanity check for bit.inc1 (increment a single bit with carry).
     stl.startup
     bit.inc1 x, carry
     stl.loop

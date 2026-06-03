@@ -1,3 +1,4 @@
+// Tests the hex.shr_hex macro (shift-right by whole hexes) over 2-hex values.
 stl.startup
 
 rep(256, i) test_shr_hex 2, 1, i
