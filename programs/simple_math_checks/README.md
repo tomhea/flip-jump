@@ -1,8 +1,9 @@
 # `simple_math_checks/` — Small binary-math checks
 
 Medium-sized checks for the binary (`bit.*`) math macros — addition,
-comparison, division, shifts and a small algorithm. Each program runs its macro
-and prints a result compared against the recorded `.out`.
+comparison, division and shifts — plus a small arithmetic-series algorithm that
+uses the hex math macros. Each program runs its macro and prints a result
+compared against the recorded `.out`.
 
 | File | Purpose |
 |---|---|

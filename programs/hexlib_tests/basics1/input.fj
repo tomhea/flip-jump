@@ -1,4 +1,4 @@
-// Tests the hex input macros (input_hex and its error-checking variant).
+// Tests the hex input macros (hex.input_hex and the error-checking hex.input_as_hex).
 stl.startup
 
 

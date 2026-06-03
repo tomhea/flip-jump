@@ -2,7 +2,8 @@
 
 Small programs that exercise the input and printing macros: echoing input,
 printing strings, and printing numbers in hexadecimal/decimal form. They are run
-by the fast/medium test categories (`tests/tests_tables/test_*_fast.csv`),
+by the fast/medium test categories (`tests/tests_tables/test_*_fast.csv` and
+`test_*_medium.csv`),
 with inputs/outputs under `tests/inout/print_tests/`.
 
 | File | Purpose |
