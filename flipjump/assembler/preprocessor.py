@@ -350,8 +350,8 @@ def resolve_macro_aux(
             # named like the iterator (e.g. `d`, `i`) can't be captured by it. The `:rep:` marker
             # keeps it distinct from any @-label global name (`labels_prefix---<name>`, no `:`).
             hygienic_iterator = (
-                f"{labels_prefix}{MACRO_SEPARATOR_STRING}{op.code_position.short_str()}:rep:{op.iterator_name}"
-            )
+                f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else ""
+            ) + f"{op.code_position.short_str()}:rep:{op.iterator_name}"
             op = op.rename_iterator(hygienic_iterator)
             op = op.eval_new(params_dict)
             rep_times = get_rep_times(op, preprocessor_data)
