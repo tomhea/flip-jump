@@ -1,4 +1,3 @@
-// A 16-bit quine: this program prints its own compiled program (output equals the compiled .fjm).
 // $ fj --asm -w 16 -v 0 quine16.fj -o quine16.fjm && fj --run -s quine16.fjm >/tmp/output && diff quine16.fjm /tmp/output && echo "quine!"
 //
 // Author: Luis Fernando Estrozi ( https://github.com/lestrozi )
