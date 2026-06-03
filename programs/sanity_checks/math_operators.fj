@@ -1,7 +1,7 @@
 // Tests the math operators added in issue #249:
 //   unary minus (-x), unary not (~x), power (**), logical-and (&&), logical-or (||).
 // Each check prints its success letter when the compile-time expression evaluates
-// correctly, or '!' otherwise. A correct toolchain prints "abcdefghijkl\n".
+// correctly, or '!' otherwise. A correct toolchain prints "abcdefghijklmnop\n".
 
 stl.startup
 
