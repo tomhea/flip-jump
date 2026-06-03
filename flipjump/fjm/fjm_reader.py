@@ -1,3 +1,9 @@
+"""
+the .fjm file reader.
+parses an .fjm binary's header and segments, decompresses the data when needed, and
+exposes the program as a word-addressable memory dictionary for the interpreter.
+"""
+
 import dataclasses
 import lzma
 import struct

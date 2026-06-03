@@ -1,3 +1,10 @@
+"""
+shared helper classes.
+the TerminationCause enum (why a run ended), the PrintTimer context-manager for timing and
+printing code-stage durations, and RunStatistics for collecting execution metrics during a
+run.
+"""
+
 from __future__ import annotations
 
 from collections import deque

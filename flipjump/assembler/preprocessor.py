@@ -1,3 +1,9 @@
+"""
+the preprocessor (macro-resolution stage).
+expands macro calls and rep (repetition) blocks recursively, starting from the main
+macro, and produces the flat op-list that the assembler then resolves into addresses.
+"""
+
 from __future__ import annotations
 
 import collections

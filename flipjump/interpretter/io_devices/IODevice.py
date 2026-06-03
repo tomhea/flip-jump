@@ -1,3 +1,9 @@
+"""
+the abstract IO device interface.
+defines the bit-level read/write contract every io-device implements, so the
+interpreter can stay agnostic of where its input/output actually goes.
+"""
+
 from abc import ABC, abstractmethod
 
 

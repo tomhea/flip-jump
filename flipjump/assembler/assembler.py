@@ -1,3 +1,10 @@
+"""
+the core assembly pipeline.
+orchestrates the three stages that turn .fj source into a .fjm binary:
+parsing the macro-tree, resolving macros into a flat op-list (the preprocessor),
+and resolving labels into addresses while writing the result with the fjm Writer.
+"""
+
 import dataclasses
 from collections import defaultdict
 from pathlib import Path

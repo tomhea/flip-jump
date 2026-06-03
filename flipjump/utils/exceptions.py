@@ -1,3 +1,10 @@
+"""
+the flipjump exception hierarchy.
+defines FlipJumpException and its specific subtypes for the different failure points -
+parsing, preprocessing, assembling, writing the fjm, runtime, and io errors.
+"""
+
+
 class FlipJumpException(Exception):
     pass
 

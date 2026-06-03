@@ -1,3 +1,9 @@
+"""
+the end-to-end flipjump tests.
+assembles and runs the .fj programs listed in the CSV test catalogs, feeding each its
+fixed input and asserting it terminates as expected and produces the expected output.
+"""
+
 from pathlib import Path
 from typing import Optional
 
