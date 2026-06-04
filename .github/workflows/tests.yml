@@ -8,6 +8,11 @@ on:
     branches:
       - main
 
+# least-privilege GITHUB_TOKEN: these jobs only check out and run tests/linters,
+# so read-only access to the repo contents is all they need.
+permissions:
+  contents: read
+
 env:
   COLUMNS: 120
 
