@@ -13,6 +13,7 @@ macro_logic, programs/sanity_checks/macro_logic.fj,tests/compiled/sanity_checks/
 macro_mul, programs/sanity_checks/macro_mul.fj,tests/compiled/sanity_checks/macro_mul.fjm, 64,3,0, True,True
 macro_rep_hygiene, programs/sanity_checks/macro_rep_hygiene.fj,tests/compiled/sanity_checks/macro_rep_hygiene.fjm, 64,3,0, True,True
 macro_rotate, programs/sanity_checks/macro_rotate.fj,tests/compiled/sanity_checks/macro_rotate.fjm, 64,3,0, True,True
+math_operators, programs/sanity_checks/math_operators.fj,tests/compiled/sanity_checks/math_operators.fjm, 64,3,0, True,True
 mathbit, programs/sanity_checks/mathbit.fj,tests/compiled/sanity_checks/mathbit.fjm, 64,3,0, True,True
 mathvec, programs/sanity_checks/mathvec.fj,tests/compiled/sanity_checks/mathvec.fjm, 64,3,0, True,True
 nadd, programs/simple_math_checks/nadd.fj,tests/compiled/simple_math_checks/nadd.fjm, 64,3,0, True,True

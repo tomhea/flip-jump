@@ -13,6 +13,7 @@ macro_logic, tests/compiled/sanity_checks/macro_logic.fjm, ,tests/inout/sanity_c
 macro_mul, tests/compiled/sanity_checks/macro_mul.fjm, ,tests/inout/sanity_checks/macro_mul.out, False,False
 macro_rep_hygiene, tests/compiled/sanity_checks/macro_rep_hygiene.fjm, ,tests/inout/sanity_checks/macro_rep_hygiene.out, False,False
 macro_rotate, tests/compiled/sanity_checks/macro_rotate.fjm, ,tests/inout/sanity_checks/macro_rotate.out, False,False
+math_operators, tests/compiled/sanity_checks/math_operators.fjm, ,tests/inout/sanity_checks/math_operators.out, False,False
 mathbit, tests/compiled/sanity_checks/mathbit.fjm, ,, False,False
 mathvec, tests/compiled/sanity_checks/mathvec.fjm, ,, False,False
 nadd, tests/compiled/simple_math_checks/nadd.fjm, ,tests/inout/simple_math_checks/nadd.out, False,False
