@@ -103,12 +103,6 @@ char_escape_dict = {
     '?': 0x3F,
 }
 escape_chars = ''.join(k for k in char_escape_dict)
-# the printable alternative EXCLUDES backslash (0x5C: \x5B is '[', \x5D is ']'), so the only way to
-# match a backslash is via a real escape below. otherwise a backslash matches both [ -~] and the escape
-# alternatives, which (a) lets an invalid escape like "\q" through to get_char_value_and_length (crash /
-# silent mis-decode, since the regex and the decoder then segment the bytes differently) and (b) makes
-# "({char})*" ambiguous on backslash (polynomial backtracking). re.escape makes the literal backslash a
-# real member of the escape class (a bare "[...\...]" would let the \ escape the next char instead).
 char = fr'[\x20-\x5B\x5D-\x7E]|\\[{re.escape(escape_chars)}]|\\[xX][0-9a-fA-F]{{2}}'
 
 number_re = fr"({bin_num})|({hex_num})|('({char})')|({dec_num})"
