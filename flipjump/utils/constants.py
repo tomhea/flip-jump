@@ -10,7 +10,6 @@ import lzma
 from pathlib import Path
 from typing import List, Dict
 
-
 MACRO_SEPARATOR_STRING = "---"
 STARTING_LABEL_IN_MACROS_STRING = ':start:'
 WFLIP_LABEL_PREFIX = ':wflips:'

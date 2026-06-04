@@ -9,7 +9,6 @@ import lzma
 from enum import Enum
 from typing import List, Dict
 
-
 """
 struct {
     u16 fj_magic;   // 'F' + 'J'<<8  (0x4a46)

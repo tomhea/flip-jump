@@ -448,8 +448,7 @@ G(
     "Is Point Inside Circle",
     unsigned=True,
     mul=True,
-    extra_helpers=[
-        """
+    extra_helpers=["""
 // dst[:n] = (a-b)^2 for unsigned a,b (squares the absolute difference).
 def abs_diff_sq_into n, dst, a, b @ a_ge_b, b_gt_a, have_diff < absq_d {
     bit.cmp n, a, b, b_gt_a, a_ge_b, a_ge_b
@@ -463,8 +462,7 @@ def abs_diff_sq_into n, dst, a, b @ a_ge_b, b_gt_a, have_diff < absq_d {
   have_diff:
     mul_into n, dst, absq_d, absq_d
 }
-""".strip()
-    ],
+""".strip()],
     value_data=[
         "px: bit.vec 16, 0",
         "py: bit.vec 16, 0",
@@ -513,8 +511,7 @@ G(
     "Is Right Triangle From Sides",
     unsigned=True,
     mul=True,
-    extra_helpers=[
-        """
+    extra_helpers=["""
 // Jump to `yes` if leg1*leg1 + leg2*leg2 == hyp*hyp (a right triangle).
 def hyp_check n, leg1, leg2, hyp, yes @ no < hc_a2, hc_b2, hc_c2, hc_sum {
     mul_into n, hc_a2, leg1, leg1
@@ -525,8 +522,7 @@ def hyp_check n, leg1, leg2, hyp, yes @ no < hc_a2, hc_b2, hc_c2, hc_sum {
     bit.cmp n, hc_sum, hc_c2, no, yes, no
   no:
 }
-""".strip()
-    ],
+""".strip()],
     value_data=["a: bit.vec 16, 0", "b: bit.vec 16, 0", "c: bit.vec 16, 0"],
     extra_data=["hc_a2: bit.vec 16, 0", "hc_b2: bit.vec 16, 0", "hc_c2: bit.vec 16, 0", "hc_sum: bit.vec 16, 0"],
     main_body="""

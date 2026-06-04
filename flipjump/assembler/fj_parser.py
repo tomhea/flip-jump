@@ -267,7 +267,7 @@ def next_address() -> Expr:
 
 
 def _get_main_macro_code_position(first_file: Tuple[str, Path]) -> CodePosition:
-    (short_file_name, fj_file_path) = first_file
+    short_file_name, fj_file_path = first_file
     return CodePosition(str(fj_file_path.absolute()), short_file_name, 1)
 
 

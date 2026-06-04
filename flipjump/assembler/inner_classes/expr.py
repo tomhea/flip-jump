@@ -12,7 +12,6 @@ from typing import Union, Tuple, Set, Dict, Callable
 
 from flipjump.utils.exceptions import FlipJumpExprException
 
-
 # dictionary from a math-op string, to its pythonic function.
 # @note: if changed, update Expr.__str__().
 UNARY_TYPE = Callable[[int], int]

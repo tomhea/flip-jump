@@ -8,7 +8,6 @@ from typing import List, Optional
 
 from flipjump.utils.exceptions import FlipJumpMissingImportException
 
-
 EASYGUI_NOT_INSTALLED_MESSAGE = (
     "This debug feature requires the easygui python library.\n"
     "Try `pip install easygui`, and also install tkinter on your system."

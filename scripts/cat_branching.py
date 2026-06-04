@@ -528,8 +528,7 @@ B(
         "m10: bit.vec 16, 10",
         "m11: bit.vec 16, 11",
     ],
-    main_body=_MONTH_HEAD
-    + """
+    main_body=_MONTH_HEAD + """
     stl.startup
     read_decimal 16, mo
     bit.cmp 16, mo, m1, t2, jan, t2
@@ -703,8 +702,7 @@ B(
         "p_apos: bit.vec 8, 39",
         "p_dash: bit.vec 8, 45",
     ],
-    main_body=_PUNCT_HEAD
-    + """
+    main_body=_PUNCT_HEAD + """
     stl.startup
     bit.input ch
     bit.cmp 8, ch, p_comma, c2, yes, c2
@@ -1299,8 +1297,7 @@ B(
         "paper: bit.vec 8, 'p'",
         "scissors: bit.vec 8, 's'",
     ],
-    main_body=_RPS_HEAD
-    + """
+    main_body=_RPS_HEAD + """
     stl.startup
     bit.input p1
     bit.input nlch
@@ -1510,8 +1507,7 @@ B(
         "c30: bit.vec 32, 30",
     ],
     extra_data=["mul32_counter: bit.vec 32, 0"],
-    main_body=_BMI_HEAD
-    + """
+    main_body=_BMI_HEAD + """
     stl.startup
     read_decimal 16, w16
     read_decimal 16, h16

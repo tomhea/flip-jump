@@ -18,7 +18,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from add_catalog_program import add_program  # noqa: E402
 
-
 # ============== Simple "print fixed string, no input" pattern ==============
 
 
