@@ -5,6 +5,7 @@ these check the pure tokenization rules: number formats (dec/hex/bin, no octal),
 literals and their escapes, little-endian string packing, and comment handling.
 """
 
+from pathlib import Path
 from typing import List, Tuple
 
 import pytest
@@ -36,7 +37,7 @@ def _tokenize_collecting_errors(text: str) -> Tuple[List[object], bool]:
     # used to format the error message. returns (string token values, errored?).
     fj_parser.error_occurred = False
     fj_parser.all_errors = ''
-    fj_parser.curr_file = '<test>'
+    fj_parser.curr_file = Path('<test>')
     fj_parser.curr_file_short_name = '<test>'
     strings = _strings(text)
     return strings, fj_parser.error_occurred
