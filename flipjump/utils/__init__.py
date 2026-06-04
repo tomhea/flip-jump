@@ -7,7 +7,6 @@ hierarchy, and utility functions. exposes TerminationCause, PrintTimer, and get_
 from flipjump.utils.classes import TerminationCause, PrintTimer
 from flipjump.utils.functions import get_stl_paths
 
-
 __all__ = [
     'TerminationCause',
     'PrintTimer',

@@ -5,6 +5,12 @@ name: Python package
 on:
   release:
     types: [published]
+
+# the publish uses the PYPI_API_TOKEN secret (not GITHUB_TOKEN), so the job only
+# needs read access to check out the repo.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest

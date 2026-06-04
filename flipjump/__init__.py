@@ -25,7 +25,6 @@ from flipjump.interpretter.io_devices.FixedIO import FixedIO
 from flipjump.interpretter.io_devices.StandardIO import StandardIO
 from flipjump.interpretter.io_devices.BrokenIO import BrokenIO
 
-
 __all__ = [
     'assemble_run_according_to_cmd_line_args',
     'assemble',

@@ -14,7 +14,6 @@ from flipjump.utils.constants import IO_BYTES_ENCODING
 from flipjump.utils.functions import get_stl_paths
 from flipjump.fjm.fjm_writer import Writer
 
-
 CSV_TRUE = 'True'
 CSV_FALSE = 'False'
 CSV_BOOLEAN = (CSV_TRUE, CSV_FALSE)
