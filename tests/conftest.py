@@ -64,8 +64,8 @@ CATALOG_FLAG = 'catalog'
 COMPILE_FLAG = 'compile'
 RUN_FLAG = 'run'
 # the --unit-tests flag marks the run as the assembler/interpreter unit-tests (tests/unit),
-# which are unrelated to the .fj compile/run tests. UNIT_TESTS_DEST is its argparse dest
-# (argparse turns the '-' in '--unit-tests' into a '_'), used to read the flag's value.
+# which are unrelated to the .fj compile/run tests. config.getoption can't resolve the
+# dashed name, so the flag is registered with the explicit UNIT_TESTS_DEST and read by it.
 UNIT_TESTS_FLAG = 'unit-tests'
 UNIT_TESTS_DEST = 'unit_tests'
 NAME_EXACT_FLAG = 'name'
@@ -205,6 +205,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         f"--{UNIT_TESTS_FLAG}",
         action='store_true',
+        dest=UNIT_TESTS_DEST,
         help="run the assembler/interpreter unit-tests (tests/unit). marks this run as unrelated "
         "to the --compile/--run .fj tests, so none of them are collected - which also frees it "
         "to be parallelized with -n auto.",
