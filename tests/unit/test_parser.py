@@ -5,11 +5,13 @@ these check the pure tokenization rules: number formats (dec/hex/bin, no octal),
 literals and their escapes, little-endian string packing, and comment handling.
 """
 
-from typing import List
+from pathlib import Path
+from typing import List, Tuple
 
 import pytest
 
-from flipjump.assembler.fj_parser import FJLexer, get_char_value_and_length
+import flipjump.assembler.fj_parser as fj_parser
+from flipjump.assembler.fj_parser import FJLexer, char_escape_dict, get_char_value_and_length
 
 
 def _token_values(text: str, wanted_type: str) -> List[object]:
@@ -18,6 +20,27 @@ def _token_values(text: str, wanted_type: str) -> List[object]:
 
 def _numbers(text: str) -> List[object]:
     return _token_values(text, 'NUMBER')
+
+
+def _strings(text: str) -> List[object]:
+    return _token_values(text, 'STRING')
+
+
+def _pack(byte_values: List[int]) -> int:
+    # the lexer packs a string little-endian: first char in the low byte.
+    return sum(value << (8 * i) for i, value in enumerate(byte_values))
+
+
+def _tokenize_collecting_errors(text: str) -> Tuple[List[object], bool]:
+    # error()/all_errors/curr_file are module globals only initialized inside parse_macro_tree; seed them
+    # so a lexer error in a pure-lexer test can't NameError or leak into another. the file name is only
+    # used to format the error message. returns (string token values, errored?).
+    fj_parser.error_occurred = False
+    fj_parser.all_errors = ''
+    fj_parser.curr_file = Path('<test>')
+    fj_parser.curr_file_short_name = '<test>'
+    strings = _strings(text)
+    return strings, fj_parser.error_occurred
 
 
 @pytest.mark.parametrize(
@@ -68,6 +91,46 @@ def test_string_is_little_endian_packed() -> None:
     # "AB" -> 'A' at bits 0..7, 'B' at bits 8..15 == 0x4241
     string_tokens = _token_values('"AB"', 'STRING')
     assert string_tokens == [0x4241]
+
+
+@pytest.mark.parametrize('escape_char, expected_value', list(char_escape_dict.items()))
+def test_every_escape_key_decodes_in_a_char_literal(escape_char: str, expected_value: int) -> None:
+    # \0 \a \b \e \f \n \r \t \v \\ \' \" \?  -- each must lex and decode to its byte.
+    assert _numbers(f"'\\{escape_char}'") == [expected_value]
+
+
+@pytest.mark.parametrize(
+    'string_literal, expected_bytes',
+    [
+        (r'"\\"', [0x5C]),  # escaped backslash: regressed by the naive fix, must still parse
+        (r'"\""', [0x22]),  # escaped quote
+        (r'"\?"', [0x3F]),  # escaped question-mark
+        (r'"a\tb"', [ord('a'), 0x09, ord('b')]),  # escape between printables
+        (r'"\x41Z"', [0x41, ord('Z')]),  # \xHH followed by a printable, not swallowed
+        (r'"\\x41"', [0x5C, ord('x'), ord('4'), ord('1')]),  # escaped backslash then literal x41
+    ],
+)
+def test_valid_strings_pack_correctly(string_literal: str, expected_bytes: List[int]) -> None:
+    assert _strings(string_literal) == [_pack(expected_bytes)]
+
+
+@pytest.mark.parametrize(
+    'bad_string',
+    [
+        r'"\q"',  # unknown escape, non-hex tail  -- used to crash: int('', 16) ValueError
+        r'"\xZZ"',  # bad hex                      -- used to crash: int('ZZ', 16) ValueError
+        r'"\x4"',  # truncated hex                 -- used to silently decode to 0x04
+        r'"\d41"',  # unknown escape, hex tail     -- used to SILENTLY decode to 0x41 == "A"
+        r'"\g30"',  # unknown escape, hex tail     -- used to SILENTLY decode to 0x30 == "0"
+        '"\\"',  # lone backslash                  -- incomplete escape
+    ],
+)
+def test_invalid_escape_is_rejected_not_miscompiled(bad_string: str) -> None:
+    # the whole point: an invalid escape must NOT crash, and must NOT silently become a wrong byte.
+    # it produces no STRING token and flags a lexer error (-> a clean parse error downstream).
+    strings, errored = _tokenize_collecting_errors(bad_string)
+    assert strings == []
+    assert errored
 
 
 def test_line_comment_is_ignored() -> None:

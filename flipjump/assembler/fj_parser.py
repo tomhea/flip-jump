@@ -4,6 +4,7 @@ built on the sly library, it tokenizes and parses .fj source files into the macr
 macro definitions and the operations (flips, jumps, labels, etc.) that make up each macro.
 """
 
+import re
 from os import path
 from pathlib import Path
 from typing import Set, List, Tuple, Dict, Union
@@ -102,7 +103,7 @@ char_escape_dict = {
     '?': 0x3F,
 }
 escape_chars = ''.join(k for k in char_escape_dict)
-char = fr'[ -~]|\\[{escape_chars}]|\\[xX][0-9a-fA-F]{{2}}'
+char = fr'[\x20-\x5B\x5D-\x7E]|\\[{re.escape(escape_chars)}]|\\[xX][0-9a-fA-F]{{2}}'
 
 number_re = fr"({bin_num})|({hex_num})|('({char})')|({dec_num})"
 string_re = fr'"({char})*"'
