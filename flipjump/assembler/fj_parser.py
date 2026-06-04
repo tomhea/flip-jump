@@ -62,6 +62,19 @@ def syntax_error(lineno: int, msg: str = '') -> None:
     print(error_string)
 
 
+def syntax_error_at(code_position: CodePosition, msg: str) -> None:
+    """
+    like syntax_error, but reports an explicit CodePosition (the offending op's own file+line)
+    instead of the current-file globals. used for post-parse checks that run after all files
+    were parsed (when the current-file globals point at the last file, not the offending one).
+    """
+    global error_occurred, all_errors
+    error_occurred = True
+    error_string = f"Syntax Error in {code_position}:\n  {msg}"
+    all_errors += f"{error_string}\n"
+    print(error_string)
+
+
 def syntax_warning(line: int, is_error: bool, msg: str = '') -> None:
     error_string = f"Syntax Warning in file {curr_file}"
     if line is not None:
@@ -442,6 +455,25 @@ class FJParser(sly.Parser):
                 syntax_error(op.code_position.line, f"segment can't be declared inside a macro ({macro_name}).")
             if isinstance(op, Reserve):
                 syntax_error(op.code_position.line, f"reserve can't be declared inside a macro ({macro_name}).")
+
+    def validate_no_label_const_collisions(self) -> None:
+        """
+        A top-level label whose (base) name is also a constant is silently unusable: every reference
+        to that name resolves to the constant (constants win in expressions), never the label - which
+        miscompiles silently. Macro-level labels are already checked (validate_params covers @/</>
+        labels, and a regular in-macro label must be declared there); only top-level labels are not.
+        Run this AFTER all files are parsed, so it doesn't matter whether the constant or the label
+        appears first in the code.
+        """
+        for op in self.macros[INITIAL_MACRO_NAME].ops:
+            if isinstance(op, Label):
+                base_name = self.to_base_name(op.name)
+                if base_name in self.consts:
+                    syntax_error_at(
+                        op.code_position,
+                        f'label "{op.name}" can\'t be used: "{base_name}" is also defined as a '
+                        f'constant (with value {self.consts[base_name]}).',
+                    )
 
     def validate_macro_declaration(
         self,
@@ -919,5 +951,9 @@ def parse_macro_tree(
     for curr_file_short_name, curr_file in input_files:
         validate_current_file(files_seen)
         lex_parse_curr_file(lexer, parser)
+
+    # cross-file / order-independent checks, run once after every file is parsed:
+    parser.validate_no_label_const_collisions()
+    exit_if_errors()
 
     return parser.macros
