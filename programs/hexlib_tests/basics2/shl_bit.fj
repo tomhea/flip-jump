@@ -1,3 +1,4 @@
+// Tests the hex.shl_bit macro (shift-left by one bit) over all 2-hex values.
 stl.startup
 
 rep(256, i) test_shl_bit 2, i

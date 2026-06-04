@@ -1,3 +1,4 @@
+// Demonstrates the hex-pointer macros: hex.ptr_flip, hex.ptr_jump and hex.ptr_wflip.
 stl.startup_and_init_pointers
 
 

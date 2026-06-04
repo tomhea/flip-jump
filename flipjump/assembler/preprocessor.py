@@ -345,6 +345,14 @@ def resolve_macro_aux(
                 resolve_macro_aux(preprocessor_data, op.macro_name, op.arguments, next_macro_path)
 
         elif isinstance(op, RepCall):
+            # Make the rep iterator hygienic: rename it (and its references in the rep's arguments)
+            # to a per-expansion-unique name BEFORE substituting params/@-labels, so a caller label
+            # named like the iterator (e.g. `d`, `i`) can't be captured by it. The `:rep:` marker
+            # keeps it distinct from any @-label global name (`labels_prefix---<name>`, no `:`).
+            hygienic_iterator = (
+                f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else ""
+            ) + f"{op.code_position.short_str()}:rep:{op.iterator_name}"
+            op = op.rename_iterator(hygienic_iterator)
             op = op.eval_new(params_dict)
             rep_times = get_rep_times(op, preprocessor_data)
             if rep_times == 0:

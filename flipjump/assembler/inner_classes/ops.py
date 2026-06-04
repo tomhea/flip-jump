@@ -253,6 +253,8 @@ class RepCall:
         self.current_index = 0
         self.repeat_times = repeat_times
         self.iterator_name = iterator_name
+        # the user-visible iterator name, kept for error traces even after a hygienic rename
+        self.source_iterator_name = iterator_name
         self.macro_name = MacroName(macro_name, len(arguments))
         self.arguments = arguments
         self.code_position = code_position
@@ -264,13 +266,34 @@ class RepCall:
         )
 
     def eval_new(self, labels_dict: Dict[str, Expr]) -> RepCall:
-        return RepCall(
+        evaluated = RepCall(
             self.repeat_times.eval_new(labels_dict),
             self.iterator_name,
             self.macro_name.name,
             [expr.eval_new(labels_dict) for expr in self.arguments],
             self.code_position,
         )
+        evaluated.source_iterator_name = self.source_iterator_name  # keep the source name for traces
+        return evaluated
+
+    def rename_iterator(self, new_iterator_name: str) -> RepCall:
+        """
+        Hygienic rename: return a new RepCall whose iterator is `new_iterator_name`, with every
+        reference to the old iterator inside the rep's arguments rewritten to the new name.
+        Must run BEFORE eval_new(params_dict) so the iterator name is unique per macro-expansion and
+        can never be captured by - or capture - a macro parameter / @-label of the same source name.
+        repeat_times is left untouched: the repeat count cannot reference the iterator.
+        """
+        rename_dict = {self.iterator_name: Expr(new_iterator_name)}
+        renamed = RepCall(
+            self.repeat_times,
+            new_iterator_name,
+            self.macro_name.name,
+            [expr.eval_new(rename_dict) for expr in self.arguments],
+            self.code_position,
+        )
+        renamed.source_iterator_name = self.source_iterator_name  # keep the source name for traces
+        return renamed
 
     def all_unknown_labels(self) -> Set[str]:
         times = self.repeat_times
@@ -304,7 +327,7 @@ class RepCall:
         @note assumes calculate_times successfully called before
         """
         return (
-            f'rep({self.iterator_name}={self.current_index}, out of 0..{int(self.repeat_times)-1}) '
+            f'rep({self.source_iterator_name}={self.current_index}, out of 0..{int(self.repeat_times)-1}) '
             f'macro {self.macro_name}  ({self.code_position})'
         )
 

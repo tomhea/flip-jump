@@ -1,3 +1,4 @@
+// Tests the shifted hex.sub (subtracting a shorter src vector from a longer dst at every offset).
 stl.startup
 
 EACH_INDEX_REPEATS = 3

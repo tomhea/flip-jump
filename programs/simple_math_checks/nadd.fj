@@ -1,3 +1,4 @@
+// Tests the bit.add macro by adding two 8-bit numbers and printing the result.
     stl.startup
     bit.add 8, a, b
     bit.print a

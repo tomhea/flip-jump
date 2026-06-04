@@ -1,0 +1,22 @@
+// macro_rep_hygiene — regression for the hygienic rep-iterator fix.
+// Caller variables literally named `i` and `d` are passed to hex macros whose
+// bodies use rep(_, i) / rep(_, d) internally. Before the fix the rep iterator
+// captured the substituted parameter and corrupted the address (a var named
+// `i` crashed, a var named `d` gave a wrong value); after the fix the iterator
+// is renamed per-expansion, so any caller name is safe.
+// hex.mul10/add_mul need hex.add.init -> startup_and_init_all.
+
+stl.startup_and_init_all
+
+    hex.shl_bit 4, i            // 5 << 1 == 10   (shl_bit uses rep(n-1, i) over dst)
+    hex.print_dec_uint 4, i
+    stl.output '\n'
+
+    hex.mul10 4, d              // 7 * 10 == 70   (reaches add_mul rep(n,i) + mul.init rep(_,d))
+    hex.print_dec_uint 4, d
+    stl.output '\n'
+
+stl.loop
+
+i: hex.vec 4, 5
+d: hex.vec 4, 7

@@ -1,3 +1,4 @@
+// Tests the bit division macros (bit.div, bit.div_loop, bit.idiv, bit.idiv_loop) including signed cases.
 stl.startup
 
 test_generic_div 20, 12, 1, 8, div

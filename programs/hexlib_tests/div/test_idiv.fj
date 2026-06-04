@@ -1,3 +1,4 @@
+// Tests the signed hex.idiv macro (compiled with hexlib_div.fj).
 rep(30, i) test_idiv 4, 2, idiv4_2, (DIV_NUM>>(16*i+1))&((1<<16)-1), (DIV_B2_NUM>>( 8*i))&((1<< 8)-1)
 
 rep(20, i) test_idiv 4, 4, idiv4_4, (DIV_NUM>>(16*i+2))&((1<<16)-1), (DIV_B4_NUM>>(16*i))&((1<<16)-1)

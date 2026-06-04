@@ -1,3 +1,4 @@
+// Prints 'Hello, World!' using bit.print_str over a bit.str string.
     stl.startup
 
     bit.print_str 20, str
