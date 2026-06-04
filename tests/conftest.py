@@ -63,6 +63,11 @@ REGULAR_FLAG = 'regular'
 CATALOG_FLAG = 'catalog'
 COMPILE_FLAG = 'compile'
 RUN_FLAG = 'run'
+# the --unit-tests flag marks the run as the assembler/interpreter unit-tests (tests/unit),
+# which are unrelated to the .fj compile/run tests. UNIT_TESTS_DEST is its argparse dest
+# (argparse turns the '-' in '--unit-tests' into a '_'), used to read the flag's value.
+UNIT_TESTS_FLAG = 'unit-tests'
+UNIT_TESTS_DEST = 'unit_tests'
 NAME_EXACT_FLAG = 'name'
 NAME_CONTAINS_FLAG = 'contains'
 NAME_STARTSWITH_FLAG = 'startswith'
@@ -72,6 +77,7 @@ SAVED_KEYWORDS = {
     CATALOG_FLAG,
     COMPILE_FLAG,
     RUN_FLAG,
+    UNIT_TESTS_FLAG,
     NAME_EXACT_FLAG,
     NAME_CONTAINS_FLAG,
     NAME_STARTSWITH_FLAG,
@@ -196,6 +202,14 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(f"--{COMPILE_FLAG}", action='store_true', help='only test compiling .fj files')
     parser.addoption(f"--{RUN_FLAG}", action='store_true', help='only test running .fjm files')
 
+    parser.addoption(
+        f"--{UNIT_TESTS_FLAG}",
+        action='store_true',
+        help="run the assembler/interpreter unit-tests (tests/unit). marks this run as unrelated "
+        "to the --compile/--run .fj tests, so none of them are collected - which also frees it "
+        "to be parallelized with -n auto.",
+    )
+
     parser.addoption(f'--{NAME_EXACT_FLAG}', nargs='+', help='only run tests with one of these names')
     parser.addoption(f'--{NAME_CONTAINS_FLAG}', nargs='+', help='only run tests that contains one of these strings')
     parser.addoption(
@@ -211,6 +225,12 @@ def get_test_compile_run(get_option: Callable[[str], bool]) -> Tuple[bool, bool]
     @param get_option: function that returns the flags values
     @return: (test_compile, test_run) booleans
     """
+    if get_option(UNIT_TESTS_DEST):
+        # a --unit-tests run targets tests/unit, which is unrelated to the .fj compile/run
+        # tests - so generate none of them. with neither selected, the parallel-guard below
+        # can't fire, so a --unit-tests run is free to use -n auto.
+        return False, False
+
     check_compile_tests = get_option(COMPILE_FLAG)
     check_run_tests = get_option(RUN_FLAG)
 

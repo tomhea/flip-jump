@@ -214,6 +214,7 @@ _You can also use the `flipjump.assemble_run_according_to_cmd_line_args(cmd_line
   - inout/ - Contains the .in and .out files for each test.
   - conftest.py - The pytest configuration file. The tests are being generated here.
   - test_fj.py - The base test functions for compilation and running ([how to run](tests/README.md#run-the-tests)).
+  - [unit/](tests/unit) - Focused unit-tests for the assembler & interpreter internals ([what they check](tests/README.md#the-unit-tests), run with `pytest --unit-tests`).
   - conf.json - The tests groups+order lists.
   - [tests_tables/](tests/tests_tables)
     - test_compile_*.csv - Arguments for the compile tests ([compile test arguments format](tests/README.md#compile-csvs-format)).

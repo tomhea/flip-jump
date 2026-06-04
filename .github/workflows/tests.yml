@@ -69,10 +69,10 @@ jobs:
         with:
           path: ./*-test-results.xml
 
-  # The assembler/interpreter unit-tests (tests/unit). They are pure-python and fast
-  # (~1.5s), so they run as their own job in parallel with the .fj compile/run tests.
-  # Note: run serially (no -n) - the conftest forbids --compile+--run in parallel, and
-  # the unit tests pass neither flag.
+  # The assembler/interpreter unit-tests (tests/unit). They are pure-python and fast,
+  # so they run as their own job in parallel with the .fj compile/run tests. The
+  # --unit-tests flag marks the run as unrelated to the .fj compile/run tests, which
+  # lets it be parallelized with -n auto.
   unit_tests:
     runs-on: ubuntu-latest
     steps:
@@ -86,7 +86,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install .[tests]
       - name: Test pytest
-        run: pytest tests/unit  --junitxml=./unit-test-results.xml
+        run: pytest tests/unit --unit-tests -n auto  --junitxml=./unit-test-results.xml
       - name: Show tests results
         if: always()
         uses: pmeier/pytest-results-action@main

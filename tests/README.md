@@ -5,14 +5,16 @@ The project has a CI tests suit, that runs on each pull-request:
 1. `--regular` tests for all supported python versions, for each os of windows, ubuntu, macos (using [tox](https://tox.wiki/)).
 2. Linters: [mypy](https://mypy-lang.org/), [flake8](https://flake8.pycqa.org/en/latest/), [bandit](https://bandit.readthedocs.io/en/latest/), [black](https://github.com/psf/black).
    - They run on the latest supported python, on ubuntu.
-3. `pytest --all` in parallel.
+3. `pytest --all` (the compile+run program tests) in parallel.
    - Runs on the latest supported python, on ubuntu.
    - The results are printed as a table in the workflow summery ([for example](https://github.com/tomhea/flip-jump/actions/runs/7170673166/attempts/1#summary-19523946921)).
+4. `pytest --unit-tests` (the [assembler/interpreter unit-tests](#the-unit-tests)) in parallel.
+   - Runs on the latest supported python, on ubuntu, as its own job - in parallel with the program tests.
 
 Any PR to the main branch must succeed in all of these tests, in order to be merged.
 
 ## Run the Linters
-- `tox` - will run anything: all the linters + `pytest --regular` for all python versions + `pytest-all`.
+- `tox` - will run anything: all the linters + `pytest --regular` for all python versions + the full `pytest --all` + the [unit-tests](#the-unit-tests).
 - `mypy` - search for types related errors.
 - `flake8` - search for style and syntax errors.
 - `bandit --ini tox.ini` - search for common security issues.
@@ -22,10 +24,12 @@ Any PR to the main branch must succeed in all of these tests, in order to be mer
 
 **Run `test_parallel --all` to run all the tests, in parallel.**
 
-Run `pytest --all` to run all the tests.  
-Run `pytest` to run the fast tests.
+Run `pytest --all` to run all the program tests.  
+Run `pytest` to run the fast program tests.
 
 Run with `--compile` / `--run` for testing only the compilation / the run.
+
+Run `pytest --unit-tests` to run the [assembler/interpreter unit-tests](#the-unit-tests) (a separate, fast suite).
 
 Add a combination of `--fast`, `--medium`, `--slow`, `--hexlib` to run tests of different types.  
 Use `--regular` to run all the fast&medium tests.  
@@ -35,8 +39,8 @@ The default (no type flags) means `--fast`.
 ![Running Pytest with --regular](../resources/pytest.gif)
 
 You can run the tests parallel with `-n auto` (using [xdist](https://github.com/pytest-dev/pytest-xdist)).  
-note that this option is only allowed while using exactly one of `--compile` / `--run`.  
-You can execute the `test_parallel` / `test_parallel.bat` to run parallel compile, and afterwords parallel run, with the given flags.
+note that this option is only allowed while using exactly one of `--compile` / `--run`, or while using `--unit-tests`.  
+You can execute the `test_parallel` / `test_parallel.bat` to run parallel compile, then parallel run, then the parallel unit-tests, with the given flags.
 
 `test_parallel --all` example:
 ![Running the test_parallel script with --all, x4 speed](../resources/test_parallel.gif)
@@ -83,6 +87,32 @@ Using the next filters together will take the union of the relevant tests.
  * `--contains n1 n2` only run tests containing one of these names.
  * `--startswith n1 n2` only run tests starting with one of these names.
  * `--endswith n1 n2` only run tests ending with one of these names.
+
+## The Unit Tests
+
+Alongside the program tests above (which compile and run whole .fj programs end-to-end), the
+[unit/](unit) directory holds focused unit-tests for the assembler and interpreter internals.
+They are plain, pure-python pytest functions (no .csv catalog), and the whole suite runs in ~1s.
+
+Run them with `pytest --unit-tests` (add `-n auto` to parallelize, as the `test_parallel` script does).
+
+In summary, they check:
+
+| file                                            | what it checks                                                                                                  |
+|-------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| [test_expr.py](unit/test_expr.py)               | the `Expr` arithmetic-tree: every math operator, resolution, and the failures (division-by-zero, unknown label) |
+| [test_parser.py](unit/test_parser.py)           | the lexer: number formats (dec/hex/bin), char/string literals & escapes, and comment handling                   |
+| [test_preprocessor.py](unit/test_preprocessor.py) | macro parameter-binding, rep-count evaluation, and the used/declared-label collectors                         |
+| [test_assembler.py](unit/test_assembler.py)     | each language rule compiles into a valid .fjm, and the error/edge cases raise the right exception               |
+| [test_fjm.py](unit/test_fjm.py)                 | the .fjm Writer/Reader: round-trips (all versions × widths), relative-jumps, garbage-handling, and corrupt files |
+| [test_io_devices.py](unit/test_io_devices.py)   | the IO devices: `FixedIO` bit-ordering/EOF/incomplete-output, and `BrokenIO`                                     |
+| [test_interpreter.py](unit/test_interpreter.py) | the run-loop: each termination cause, the input/EOF path, and the last-ops debugging deque                       |
+| [test_utils.py](unit/test_utils.py)             | the shared utilities: debug-label round-trip, file helpers, and the run-statistics counters                     |
+| [test_cli.py](unit/test_cli.py)                 | the command-line entry-point, and the .fjm-version defaulting/validation                                         |
+| [test_quickstart.py](unit/test_quickstart.py)   | the high-level API end-to-end: `assemble_and_run` across the versions and memory-widths                         |
+
+To add a unit-test, just add a `test_*` function to the relevant file (or a new `test_*.py` module)
+under [unit/](unit) - the shared helpers live in [unit_utils.py](unit/unit_utils.py).
 
 ## Add your tests:
 
