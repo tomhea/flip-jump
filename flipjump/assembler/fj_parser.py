@@ -460,13 +460,15 @@ class FJParser(sly.Parser):
         """
         A top-level label whose name is also a constant is silently unusable: every reference to that
         name resolves to the constant (constants win in expressions, see the `expr_ -> id` rule),
-        never the label - which miscompiles silently. Macro-level labels are already checked
-        (validate_params covers @/</> labels, and a regular in-macro label must be declared there);
-        only top-level labels are not. Compare the full (namespace-qualified) label name against the
-        constants - exactly the key the resolver looks up - so e.g. a top-level constant doesn't flag
-        an unrelated same-base-name label in another namespace, and a same-namespace collision is
-        still caught. Run this AFTER all files are parsed, so it doesn't matter whether the constant
-        or the label appears first in the code.
+        never the label - which miscompiles silently. In-macro `@`/local labels are already checked
+        (validate_params flags them against the constants); this covers only top-level labels.
+        NOTE: macro-exported `<`/`>` labels are NOT checked here (their final resolved name is only
+        known at expansion time), so an exported label that collides with a same-namespace constant
+        is still silently shadowed - a known residual gap, not covered by this pass. Compare the full
+        (namespace-qualified) label name against the constants - exactly the key the resolver looks
+        up - so e.g. a top-level constant doesn't flag an unrelated same-base-name label in another
+        namespace, and a same-namespace collision is still caught. Run this AFTER all files are
+        parsed, so it doesn't matter whether the constant or the label appears first in the code.
         """
         for op in self.macros[INITIAL_MACRO_NAME].ops:
             if isinstance(op, Label) and op.name in self.consts:

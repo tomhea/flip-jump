@@ -6,7 +6,7 @@ literals and their escapes, little-endian string packing, and comment handling.
 """
 
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import pytest
 
@@ -94,7 +94,7 @@ def test_line_continuation_is_ignored() -> None:
         ['myc:\n', 'myc = 5\n'],  # label in the first file, constant in a later file
     ],
 )
-def test_label_shadowing_a_constant_is_rejected(source, tmp_path: Path) -> None:
+def test_label_shadowing_a_constant_is_rejected(source: Union[str, List[str]], tmp_path: Path) -> None:
     with pytest.raises(FlipJumpParsingException, match='also defined as a constant'):
         assemble_to_path(source, tmp_path, use_stl=False)
 
