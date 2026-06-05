@@ -1,0 +1,52 @@
+// Count Emoji Pairs (#1080)
+
+// Reads `\n`-terminated line ≤ 40 chars. Prints `<smileys> <frowns>\n` where smileys is the count of `:)` and frowns is the count of `:(` substrings (non-overlapping, scanning left-to-right).
+
+main
+
+def main @ loop, body, is_co, not_co, smiley, chk_frown, frowny, nomatch, done < ch, nl, colon, smile_c, frown_c, prevcolon, scount, fcount {
+    stl.startup
+    bit.zero prevcolon
+    bit.zero 16, scount
+    bit.zero 16, fcount
+  loop:
+    bit.input ch
+    bit.if0 8, ch, done
+    bit.cmp 8, ch, nl, body, done, body
+  body:
+    bit.cmp 8, ch, colon, not_co, is_co, not_co     // ch == ':' ?
+  is_co:
+    bit.one prevcolon
+    ;loop
+  not_co:
+    bit.if0 prevcolon, loop                         // previous wasn't ':'
+    bit.cmp 8, ch, smile_c, chk_frown, smiley, chk_frown   // ':' + ')'
+  smiley:
+    bit.inc 16, scount
+    bit.zero prevcolon
+    ;loop
+  chk_frown:
+    bit.cmp 8, ch, frown_c, nomatch, frowny, nomatch       // ':' + '('
+  frowny:
+    bit.inc 16, fcount
+    bit.zero prevcolon
+    ;loop
+  nomatch:
+    bit.zero prevcolon
+    ;loop
+  done:
+    bit.print_dec_uint 16, scount
+    stl.output ' '
+    bit.print_dec_uint 16, fcount
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+colon: bit.vec 8, ':'
+smile_c: bit.vec 8, ')'
+frown_c: bit.vec 8, '('
+prevcolon: bit.bit
+scount: bit.vec 16, 0
+fcount: bit.vec 16, 0

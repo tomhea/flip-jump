@@ -140,6 +140,9 @@ Thank you!
 | 0054 | read_one_print_three | Reads one byte from stdin and prints the literal sequence `<byte><byte><byte>
 `. |
 | 0055 | rot_ascii_plus_one | Reads stdin and outputs each byte plus 1, modulo 256 (so `0xFF` wraps to `0x00`). All bytes are transformed uniformly; no special-casing of letters or non-letters. |
+| 1090 | reverse_line | Reads a single line from stdin (up to `
+`) and prints it reversed followed by `
+`. |
 
 ## arithmetic
 
@@ -489,6 +492,17 @@ N
 | 0193 | count_letter_e | Reads a `
 `-terminated line ≤ 80 chars and prints the count of `e` or `E` bytes as decimal + `
 `. |
+| 1091 | is_palindrome_string | Reads a `
+`-terminated line ≤ 30 chars and prints `1
+` if the line (excluding `
+`) is a palindrome, else `0
+`. |
+| 1092 | repeat_line_2x | Reads a `
+`-terminated line ≤ 40 chars and prints its content twice (concatenated, no internal separator), followed by `
+`. |
+| 1093 | repeat_line_3x | Reads a `
+`-terminated line ≤ 30 chars and prints its content three times concatenated, followed by `
+`. |
 
 ## bits
 
@@ -777,6 +791,24 @@ Blastoff!
 `, then reads N more bytes from stdin and outputs them verbatim. |
 | 0278 | print_first_then_repeat | Reads one byte, then a digit N `1`-`9` + `
 `. Outputs the byte once, then repeats it N times on a new line. |
+| 1094 | repeat_line_n | Reads a digit N `1`-`9` + `
+` then a `
+`-terminated line ≤ 30 chars. Prints the line N times (each ending with the same `
+`). |
+| 1095 | hollow_diamond | Reads odd digit N `1`/`3`/`5`/`7`/`9` + `
+`. Prints an N-by-N hollow diamond. Let `k = (N+1)/2` (the middle row index, 1-indexed). For row `i` (1..N), let `d = abs(i - k)` (distance from middle row). The row has 1-indexed columns 1..N: column `j` is `*` if `j == k - d` or `j == k + d`, else ` ` (space). Each row ends with `
+`. Example for N=5: `  *  
+ * * 
+*   *
+ * * 
+  *  
+`. |
+| 1096 | print_box_with_label | Reads digit N `3`-`9` + `
+` then a `
+`-terminated line of exactly N-2 chars. Prints an N-wide hollow box of `*` with the input line centered as the middle row (`* <line> *`). |
+| 1097 | numbered_lines | Reads digit N `1`-`9` + `
+` then a `
+`-terminated line ≤ 20 chars. Prints N lines, each prefixed with `<i>: ` (1-based) and then the line. |
 
 ## branching
 
@@ -1391,6 +1423,59 @@ Blastoff!
 | 1029 | is_major_triad | Reads 3 decimal MIDI numbers `m1 m2 m3` (each `0`-`127`, on own lines). Sorts them. Prints `1\n` if the intervals between consecutive sorted notes are `4, 3` semitones (i.e. major triad in root position), else `0\n`. |
 
 ---
+| 1077 | random_choice_pick_3 | Reads 3 `
+`-terminated lines (each ≤ 20 chars) then one byte. Prints one of the 3 lines based on `byte mod 3`, followed by `
+`. |
+| 1078 | word_acronym_check | Reads two `
+`-terminated lines: first an acronym (uppercase, ≤ 6 chars), second a sentence (≤ 40 chars). Prints `1
+` if the acronym matches the uppercased first letter of each whitespace-separated word in the sentence (in order), else `0
+`. |
+| 1079 | is_valid_username | Reads `
+`-terminated string ≤ 20 chars. Prints `1
+` if its length is `3`-`12` and every byte is alphanumeric (`A`-`Z`/`a`-`z`/`0`-`9`), else `0
+`. |
+| 1080 | count_emoji_pairs | Reads `
+`-terminated line ≤ 40 chars. Prints `<smileys> <frowns>
+` where smileys is the count of `:)` and frowns is the count of `:(` substrings (non-overlapping, scanning left-to-right). |
+| 1081 | is_pangram | Reads `
+`-terminated line ≤ 80 chars. Prints `1
+` if the line contains every letter `a`-`z` at least once (case-insensitive), else `0
+`. |
+| 1082 | is_cli_flag | Reads `
+`-terminated string ≤ 20 chars. Prints `1
+` if it starts with `-` (single-dash flag) OR `--` (long flag), else `0
+`. |
+| 1083 | count_non_alphanumeric | Reads `
+`-terminated line ≤ 80 chars. Prints the count of bytes that are NEITHER letters NOR digits (excluding terminating `
+`) as decimal + `
+`. |
+| 1084 | dollar_amount_to_words | Reads decimal `0`-`99` + `
+`. Prints the English-words form `<tens_word> <ones_word>
+` (e.g. `42` → `forty two
+`; `7` → `seven
+`; `10` → `ten
+`; `20` → `twenty
+`). |
+| 1085 | letter_position_word | Reads `
+`-terminated string ≤ 10 chars (letters only). Prints the 0-based alphabetic position of each letter (as decimal), space-separated, followed by `
+`. Example: `abc
+` → `0 1 2
+`. |
+| 1086 | greet_three_times | Reads `
+`-terminated name (≤ 15 chars). Prints `Hello, <name>!
+` three times (3 lines of output). |
+| 1087 | print_progress_bar_10 | Reads digit `0`-`10` + `
+`. Prints a 10-char progress bar: `<percent>` `#` characters followed by `(10 - percent)` `.` characters, then `
+`. (e.g. `3` → `###.......
+`.) |
+| 1088 | bits_to_emoji_face | Reads two bits `e1 e2` (eye states, each `0` closed or `1` open, own line), then one bit `m` (mouth state, `0` frown / `1` smile, own line). Prints a 3-char emoji face combining these: e.g. `1 1 1` → `:)
+`; `0 0 1` → `XD
+`; `1 1 0` → `:(
+`; `0 0 0` → `XO
+`. |
+| 1089 | midi_to_octave | Reads decimal `0`-`127` + `
+`. Prints the octave number (signed: MIDI 0 → `-1`, MIDI 12 → `0`, MIDI 60 → `4`, MIDI 127 → `9`) + `
+`. |
 
 ## Exceptional / fj.tomhe.app Examples candidates
 

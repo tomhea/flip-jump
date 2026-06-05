@@ -500,3 +500,15 @@ cat_letter_position_word, programs/catalog/misc/letter_position_word.fj,tests/co
 cat_bits_to_emoji_face, programs/catalog/misc/bits_to_emoji_face.fj,tests/compiled/catalog/misc/bits_to_emoji_face.fjm, 64,3,0, True,True
 cat_is_pangram, programs/catalog/misc/is_pangram.fj,tests/compiled/catalog/misc/is_pangram.fjm, 64,3,0, True,True
 cat_dollar_amount_to_words, programs/catalog/misc/dollar_amount_to_words.fj,tests/compiled/catalog/misc/dollar_amount_to_words.fjm, 64,3,0, True,True
+cat_count_emoji_pairs, programs/catalog/misc/count_emoji_pairs.fj,tests/compiled/catalog/misc/count_emoji_pairs.fjm, 64,3,0, True,True
+cat_hollow_diamond, programs/catalog/loops/hollow_diamond.fj,tests/compiled/catalog/loops/hollow_diamond.fjm, 64,3,0, True,True
+cat_reverse_line, programs/catalog/io/reverse_line.fj,tests/compiled/catalog/io/reverse_line.fjm, 64,3,0, True,True
+cat_repeat_line_2x, programs/catalog/strings/repeat_line_2x.fj,tests/compiled/catalog/strings/repeat_line_2x.fjm, 64,3,0, True,True
+cat_repeat_line_3x, programs/catalog/strings/repeat_line_3x.fj,tests/compiled/catalog/strings/repeat_line_3x.fjm, 64,3,0, True,True
+cat_greet_three_times, programs/catalog/misc/greet_three_times.fj,tests/compiled/catalog/misc/greet_three_times.fjm, 64,3,0, True,True
+cat_repeat_line_n, programs/catalog/loops/repeat_line_n.fj,tests/compiled/catalog/loops/repeat_line_n.fjm, 64,3,0, True,True
+cat_numbered_lines, programs/catalog/loops/numbered_lines.fj,tests/compiled/catalog/loops/numbered_lines.fjm, 64,3,0, True,True
+cat_is_palindrome_string, programs/catalog/strings/is_palindrome_string.fj,tests/compiled/catalog/strings/is_palindrome_string.fjm, 64,3,0, True,True
+cat_random_choice_pick_3, programs/catalog/misc/random_choice_pick_3.fj,tests/compiled/catalog/misc/random_choice_pick_3.fjm, 64,3,0, True,True
+cat_print_box_with_label, programs/catalog/loops/print_box_with_label.fj,tests/compiled/catalog/loops/print_box_with_label.fjm, 64,3,0, True,True
+cat_word_acronym_check, programs/catalog/misc/word_acronym_check.fj,tests/compiled/catalog/misc/word_acronym_check.fjm, 64,3,0, True,True

@@ -1,0 +1,76 @@
+// Is Palindrome String (#1091)
+
+// Reads a `\n`-terminated line ≤ 30 chars and prints `1\n` if the line (excluding `\n`) is a palindrome, else `0\n`.
+
+hw = w / 4
+CAP = 34
+
+main
+
+def main @ setloop, setdone, guard, body, eq, neq, pal, notpal, halt < buf, slen, lptr, rptr, li, ri, lb, rb, cnt {
+    stl.startup_and_init_all
+    read_line_into buf, slen
+    hex.if0 hw, slen, pal                   // empty line is a palindrome
+    hex.set hw, lptr, buf
+    hex.set hw, rptr, buf
+    hex.mov hw, cnt, slen
+    hex.dec hw, cnt
+  setloop:
+    hex.if0 hw, cnt, setdone                // walk rptr to the last byte
+    hex.ptr_inc rptr
+    hex.dec hw, cnt
+    ;setloop
+  setdone:
+    hex.zero hw, li
+    hex.mov hw, ri, slen
+    hex.dec hw, ri
+  guard:
+    hex.cmp hw, li, ri, body, pal, pal      // li < ri ?
+  body:
+    hex.read_byte lb, lptr
+    hex.read_byte rb, rptr
+    hex.cmp 2, lb, rb, neq, eq, neq
+  eq:
+    hex.ptr_inc lptr
+    hex.ptr_dec rptr
+    hex.inc hw, li
+    hex.dec hw, ri
+    ;guard
+  neq:
+    ;notpal
+  pal:
+    stl.output "1\n"
+    ;halt
+  notpal:
+    stl.output "0\n"
+  halt:
+    stl.loop
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+buf: hex.vec CAP
+slen: hex.vec hw
+lptr: hex.vec hw
+rptr: hex.vec hw
+li: hex.vec hw
+ri: hex.vec hw
+cnt: hex.vec hw
+wptr: hex.vec hw
+lb: hex.vec 2
+rb: hex.vec 2
+bytebuf: hex.vec 2
+nlbyte: hex.vec 2, '\n'

@@ -1,0 +1,106 @@
+// Word Acronym Check (#1078)
+
+// Reads two `\n`-terminated lines: first an acronym (uppercase, ≤ 6 chars), second a sentence (≤ 40 chars). Prints `1\n` if the acronym matches the uppercased first letter of each whitespace-separated word in the sentence (in order), else `0\n`.
+
+hw = w / 4
+CAP_A = 8
+CAP_S = 44
+
+main
+
+def main @ loop, isspace, notspace, contword, haveroom, match, next, endscan, pass, fail, halt < abuf, alen, sbuf, slen, aptr, sptr, k, cnt, curbyte, ac, prevspace, spacebyte, tabbyte {
+    stl.startup_and_init_all
+    read_line_into abuf, alen
+    read_line_into sbuf, slen
+    hex.set hw, aptr, abuf
+    hex.set hw, sptr, sbuf
+    hex.zero hw, k
+    bit.one prevspace
+    hex.mov hw, cnt, slen
+  loop:
+    hex.if0 hw, cnt, endscan
+    hex.read_byte_and_inc curbyte, sptr
+    is_ws curbyte, isspace, notspace, spacebyte, tabbyte
+  isspace:
+    bit.one prevspace
+    ;next
+  notspace:
+    bit.if0 prevspace, contword
+    hex.cmp hw, k, alen, haveroom, fail, fail        // k < alen ?
+  haveroom:
+    upper_byte curbyte
+    hex.read_byte ac, aptr
+    hex.cmp 2, curbyte, ac, fail, match, fail        // first letter == acronym[k] ?
+  match:
+    hex.ptr_inc aptr
+    hex.inc hw, k
+    bit.zero prevspace
+    ;next
+  contword:
+    bit.zero prevspace
+    ;next
+  next:
+    hex.dec hw, cnt
+    ;loop
+  endscan:
+    hex.cmp hw, k, alen, fail, pass, fail            // consumed exactly alen words ?
+  pass:
+    stl.output "1\n"
+    ;halt
+  fail:
+    stl.output "0\n"
+  halt:
+    stl.loop
+}
+
+// Jump to `ws` if b is a space or tab, else to `notws`.
+def is_ws b, ws, notws, spacebyte, tabbyte @ try_tab {
+    hex.cmp 2, b, spacebyte, try_tab, ws, try_tab
+  try_tab:
+    hex.cmp 2, b, tabbyte, notws, ws, notws
+}
+
+// If b is a lowercase letter, convert it to uppercase (subtract 0x20).
+def upper_byte b @ ge_a, do, skip < la_b, lz_b, off {
+    hex.cmp 2, b, la_b, skip, ge_a, ge_a
+  ge_a:
+    hex.cmp 2, b, lz_b, do, do, skip
+  do:
+    hex.sub 2, b, off
+  skip:
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+abuf: hex.vec CAP_A
+alen: hex.vec hw
+sbuf: hex.vec CAP_S
+slen: hex.vec hw
+aptr: hex.vec hw
+sptr: hex.vec hw
+wptr: hex.vec hw
+k: hex.vec hw
+cnt: hex.vec hw
+curbyte: hex.vec 2
+ac: hex.vec 2
+bytebuf: hex.vec 2
+nlbyte: hex.vec 2, '\n'
+spacebyte: hex.vec 2, ' '
+tabbyte: hex.vec 2, '\t'
+la_b: hex.vec 2, 'a'
+lz_b: hex.vec 2, 'z'
+off: hex.vec 2, 0x20
+prevspace: bit.bit

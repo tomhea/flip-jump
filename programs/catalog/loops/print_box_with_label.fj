@@ -1,0 +1,118 @@
+// Print Box With Label (#1096)
+
+// Reads digit N `3`-`9` + `\n` then a `\n`-terminated line of exactly N-2 chars. Prints an N-wide hollow box of `*` with the input line centered as the middle row (`* <line> *`).
+
+hw = w / 4
+CAP = 12
+
+main
+
+def main @ rowloop, rbody, ismid, notmid, closerow, rdone < buf, slen, N, nm2, nch, junk, err, mid, row, q, r, two {
+    stl.startup_and_init_all
+    bit.input nch
+    bit.ascii2dec err, N, nch                // N
+    bit.input junk                            // newline after digit
+    read_line_into buf, slen
+    bit.mov 16, nm2, N
+    bit.dec 16, nm2
+    bit.dec 16, nm2                          // N - 2 (interior width)
+    bit.mov 16, mid, N
+    bit.inc 16, mid
+    bit.div 16, mid, two, q, r
+    bit.mov 16, mid, q                       // mid = (N+1)/2
+    print_run_stars N                        // top border
+    stl.output '\n'
+    bit.zero 16, row
+    bit.inc 16, row
+    bit.inc 16, row                          // row = 2
+  rowloop:
+    bit.cmp 16, row, N, rbody, rdone, rdone  // rows 2 .. N-1
+  rbody:
+    stl.output '*'
+    bit.cmp 16, row, mid, notmid, ismid, notmid
+  ismid:
+    print_buffer buf, slen
+    ;closerow
+  notmid:
+    print_run_spaces nm2
+  closerow:
+    stl.output '*'
+    stl.output '\n'
+    bit.inc 16, row
+    ;rowloop
+  rdone:
+    print_run_stars N                        // bottom border
+    stl.output '\n'
+    stl.loop
+}
+
+// Output `count` '*' characters.
+def print_run_stars count @ loop, done < scnt {
+    bit.mov 16, scnt, count
+  loop:
+    bit.if0 16, scnt, done
+    stl.output '*'
+    bit.dec 16, scnt
+    ;loop
+  done:
+}
+
+// Output `count` ' ' characters.
+def print_run_spaces count @ loop, done < ucnt {
+    bit.mov 16, ucnt, count
+  loop:
+    bit.if0 16, ucnt, done
+    stl.output ' '
+    bit.dec 16, ucnt
+    ;loop
+  done:
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+// Print buf's slen bytes in order.
+def print_buffer buf, slen @ loop, done < pptr, cnt, bytebuf {
+    hex.if0 hw, slen, done
+    hex.set hw, pptr, buf
+    hex.mov hw, cnt, slen
+  loop:
+    hex.if0 hw, cnt, done
+    hex.read_byte_and_inc bytebuf, pptr
+    hex.print bytebuf
+    hex.dec hw, cnt
+    ;loop
+  done:
+}
+
+buf: hex.vec CAP
+slen: hex.vec hw
+wptr: hex.vec hw
+pptr: hex.vec hw
+cnt: hex.vec hw
+bytebuf: hex.vec 2
+nlbyte: hex.vec 2, '\n'
+N: bit.vec 16, 0
+nm2: bit.vec 16, 0
+nch: bit.vec 8, 0
+junk: bit.vec 8, 0
+err: bit.bit
+mid: bit.vec 16, 0
+row: bit.vec 16, 0
+q: bit.vec 16, 0
+r: bit.vec 16, 0
+two: bit.vec 16, 2
+scnt: bit.vec 16, 0
+ucnt: bit.vec 16, 0

@@ -500,3 +500,15 @@ cat_letter_position_word, tests/compiled/catalog/misc/letter_position_word.fjm, 
 cat_bits_to_emoji_face, tests/compiled/catalog/misc/bits_to_emoji_face.fjm, tests/inout/catalog/misc/bits_to_emoji_face.in,tests/inout/catalog/misc/bits_to_emoji_face.out, True,True
 cat_is_pangram, tests/compiled/catalog/misc/is_pangram.fjm, tests/inout/catalog/misc/is_pangram.in,tests/inout/catalog/misc/is_pangram.out, True,True
 cat_dollar_amount_to_words, tests/compiled/catalog/misc/dollar_amount_to_words.fjm, tests/inout/catalog/misc/dollar_amount_to_words.in,tests/inout/catalog/misc/dollar_amount_to_words.out, True,True
+cat_count_emoji_pairs, tests/compiled/catalog/misc/count_emoji_pairs.fjm, tests/inout/catalog/misc/count_emoji_pairs.in,tests/inout/catalog/misc/count_emoji_pairs.out, True,True
+cat_hollow_diamond, tests/compiled/catalog/loops/hollow_diamond.fjm, tests/inout/catalog/loops/hollow_diamond.in,tests/inout/catalog/loops/hollow_diamond.out, True,True
+cat_reverse_line, tests/compiled/catalog/io/reverse_line.fjm, tests/inout/catalog/io/reverse_line.in,tests/inout/catalog/io/reverse_line.out, True,True
+cat_repeat_line_2x, tests/compiled/catalog/strings/repeat_line_2x.fjm, tests/inout/catalog/strings/repeat_line_2x.in,tests/inout/catalog/strings/repeat_line_2x.out, True,True
+cat_repeat_line_3x, tests/compiled/catalog/strings/repeat_line_3x.fjm, tests/inout/catalog/strings/repeat_line_3x.in,tests/inout/catalog/strings/repeat_line_3x.out, True,True
+cat_greet_three_times, tests/compiled/catalog/misc/greet_three_times.fjm, tests/inout/catalog/misc/greet_three_times.in,tests/inout/catalog/misc/greet_three_times.out, True,True
+cat_repeat_line_n, tests/compiled/catalog/loops/repeat_line_n.fjm, tests/inout/catalog/loops/repeat_line_n.in,tests/inout/catalog/loops/repeat_line_n.out, True,True
+cat_numbered_lines, tests/compiled/catalog/loops/numbered_lines.fjm, tests/inout/catalog/loops/numbered_lines.in,tests/inout/catalog/loops/numbered_lines.out, True,True
+cat_is_palindrome_string, tests/compiled/catalog/strings/is_palindrome_string.fjm, tests/inout/catalog/strings/is_palindrome_string.in,tests/inout/catalog/strings/is_palindrome_string.out, True,True
+cat_random_choice_pick_3, tests/compiled/catalog/misc/random_choice_pick_3.fjm, tests/inout/catalog/misc/random_choice_pick_3.in,tests/inout/catalog/misc/random_choice_pick_3.out, True,True
+cat_print_box_with_label, tests/compiled/catalog/loops/print_box_with_label.fjm, tests/inout/catalog/loops/print_box_with_label.in,tests/inout/catalog/loops/print_box_with_label.out, True,True
+cat_word_acronym_check, tests/compiled/catalog/misc/word_acronym_check.fjm, tests/inout/catalog/misc/word_acronym_check.in,tests/inout/catalog/misc/word_acronym_check.out, True,True
