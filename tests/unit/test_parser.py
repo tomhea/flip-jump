@@ -6,12 +6,14 @@ literals and their escapes, little-endian string packing, and comment handling.
 """
 
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import pytest
 
 import flipjump.assembler.fj_parser as fj_parser
 from flipjump.assembler.fj_parser import FJLexer, char_escape_dict, get_char_value_and_length
+from flipjump.utils.exceptions import FlipJumpParsingException
+from tests.unit.unit_utils import assemble_to_path
 
 
 def _token_values(text: str, wanted_type: str) -> List[object]:
@@ -139,3 +141,32 @@ def test_line_comment_is_ignored() -> None:
 
 def test_line_continuation_is_ignored() -> None:
     assert _numbers('10 \\\n 20') == [10, 20]
+
+
+# A label whose (namespace-qualified) name is also a constant is silently unusable (references
+# resolve to the constant, never the label), so the parser must reject it - in either declaration
+# order, across files, and within the same namespace.
+@pytest.mark.parametrize(
+    'source',
+    [
+        'myc = 5\nmyc:\n',  # constant declared before the label
+        'myc:\nmyc = 5\n',  # label declared before the constant
+        'w:\n',  # the built-in width constant `w`
+        'ns foo {\n bar = 5\n bar:\n ;0\n}\n',  # same-namespace collision (foo.bar)
+        ['myc:\n', 'myc = 5\n'],  # label in the first file, constant in a later file
+    ],
+)
+def test_label_shadowing_a_constant_is_rejected(source: Union[str, List[str]], tmp_path: Path) -> None:
+    with pytest.raises(FlipJumpParsingException, match='also defined as a constant'):
+        assemble_to_path(source, tmp_path, use_stl=False)
+
+
+@pytest.mark.parametrize(
+    'source',
+    [
+        'myz = 5\nmyc:\n',  # a label whose name differs from every constant
+        'myc = 5\nns foo {\n myc:\n ;0\n}\n',  # foo.myc label is NOT shadowed by top-level const myc
+    ],
+)
+def test_label_not_shadowing_a_constant_is_accepted(source: str, tmp_path: Path) -> None:
+    assemble_to_path(source, tmp_path, use_stl=False)

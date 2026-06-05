@@ -50,14 +50,17 @@ def get_position(lineno: int) -> CodePosition:
 
 
 def syntax_error(lineno: int, msg: str = '') -> None:
+    syntax_error_at(get_position(lineno), msg)
+
+
+def syntax_error_at(code_position: CodePosition, msg: str = '') -> None:
     global error_occurred, all_errors
     error_occurred = True
-    curr_position = get_position(lineno)
 
     if msg:
-        error_string = f"Syntax Error in {curr_position}:\n  {msg}"
+        error_string = f"Syntax Error in {code_position}:\n  {msg}"
     else:
-        error_string = f"Syntax Error in {curr_position}"
+        error_string = f"Syntax Error in {code_position}"
     all_errors += f"{error_string}\n"
 
     print(error_string)
@@ -443,6 +446,15 @@ class FJParser(sly.Parser):
                 syntax_error(op.code_position.line, f"segment can't be declared inside a macro ({macro_name}).")
             if isinstance(op, Reserve):
                 syntax_error(op.code_position.line, f"reserve can't be declared inside a macro ({macro_name}).")
+
+    def validate_no_label_const_collisions(self) -> None:
+        for op in self.macros[INITIAL_MACRO_NAME].ops:
+            if isinstance(op, Label) and op.name in self.consts:
+                syntax_error_at(
+                    op.code_position,
+                    f'label "{op.name}" can\'t be used: it is also defined as a constant '
+                    f'(with value {self.consts[op.name]}).',
+                )
 
     def validate_macro_declaration(
         self,
@@ -920,5 +932,8 @@ def parse_macro_tree(
     for curr_file_short_name, curr_file in input_files:
         validate_current_file(files_seen)
         lex_parse_curr_file(lexer, parser)
+
+    parser.validate_no_label_const_collisions()
+    exit_if_errors()
 
     return parser.macros
