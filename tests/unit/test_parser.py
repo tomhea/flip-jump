@@ -6,7 +6,7 @@ literals and their escapes, little-endian string packing, and comment handling.
 """
 
 from pathlib import Path
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import pytest
 

@@ -50,29 +50,19 @@ def get_position(lineno: int) -> CodePosition:
 
 
 def syntax_error(lineno: int, msg: str = '') -> None:
+    syntax_error_at(get_position(lineno), msg)
+
+
+def syntax_error_at(code_position: CodePosition, msg: str = '') -> None:
     global error_occurred, all_errors
     error_occurred = True
-    curr_position = get_position(lineno)
 
     if msg:
-        error_string = f"Syntax Error in {curr_position}:\n  {msg}"
+        error_string = f"Syntax Error in {code_position}:\n  {msg}"
     else:
-        error_string = f"Syntax Error in {curr_position}"
+        error_string = f"Syntax Error in {code_position}"
     all_errors += f"{error_string}\n"
 
-    print(error_string)
-
-
-def syntax_error_at(code_position: CodePosition, msg: str) -> None:
-    """
-    like syntax_error, but reports an explicit CodePosition (the offending op's own file+line)
-    instead of the current-file globals. used for post-parse checks that run after all files
-    were parsed (when the current-file globals point at the last file, not the offending one).
-    """
-    global error_occurred, all_errors
-    error_occurred = True
-    error_string = f"Syntax Error in {code_position}:\n  {msg}"
-    all_errors += f"{error_string}\n"
     print(error_string)
 
 
@@ -458,19 +448,6 @@ class FJParser(sly.Parser):
                 syntax_error(op.code_position.line, f"reserve can't be declared inside a macro ({macro_name}).")
 
     def validate_no_label_const_collisions(self) -> None:
-        """
-        A top-level label whose name is also a constant is silently unusable: every reference to that
-        name resolves to the constant (constants win in expressions, see the `expr_ -> id` rule),
-        never the label - which miscompiles silently. In-macro `@`/local labels are already checked
-        (validate_params flags them against the constants); this covers only top-level labels.
-        NOTE: macro-exported `<`/`>` labels are NOT checked here (their final resolved name is only
-        known at expansion time), so an exported label that collides with a same-namespace constant
-        is still silently shadowed - a known residual gap, not covered by this pass. Compare the full
-        (namespace-qualified) label name against the constants - exactly the key the resolver looks
-        up - so e.g. a top-level constant doesn't flag an unrelated same-base-name label in another
-        namespace, and a same-namespace collision is still caught. Run this AFTER all files are
-        parsed, so it doesn't matter whether the constant or the label appears first in the code.
-        """
         for op in self.macros[INITIAL_MACRO_NAME].ops:
             if isinstance(op, Label) and op.name in self.consts:
                 syntax_error_at(
@@ -956,9 +933,6 @@ def parse_macro_tree(
         validate_current_file(files_seen)
         lex_parse_curr_file(lexer, parser)
 
-    # cross-file / order-independent checks, run once after every file is parsed.
-    # note: each error carries its own file+line (via syntax_error_at); only exit_if_errors's
-    # summary header names the last-parsed file, which may differ from the offending one.
     parser.validate_no_label_const_collisions()
     exit_if_errors()
 
