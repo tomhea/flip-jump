@@ -1,0 +1,154 @@
+// Reverse Words In Line (#1103)
+
+// Reads a `\n`-terminated line ≤ 80 chars. Splits on whitespace (single-space separator), prints the words in reverse order separated by single spaces, then `\n`. Example: `hello world foo` → `foo world hello\n`.
+
+hw = w / 4
+CAP = 84
+MAXW = 42
+
+main
+
+def main @ loop, sep, sepcont, wordchar, inword, next, afterloop, finalize, startprint, justnl, walklast, walkdone, prloop, prnospace, prdone < buf, slen, scanptr, posptr, cnt, ch, instate, curlen, curstart, nword, wsw, wlw, rsptr, rlptr, sp, ln, k, firstout, spacebyte, tabbyte, wstarts, wlens {
+    stl.startup_and_init_all
+    read_line_into buf, slen
+    hex.set hw, scanptr, buf
+    hex.zero hw, nword
+    hex.set hw, wsw, wstarts
+    hex.set hw, wlw, wlens
+    bit.zero instate
+    hex.mov hw, cnt, slen
+  loop:
+    hex.if0 hw, cnt, afterloop
+    hex.mov hw, posptr, scanptr
+    hex.read_byte_and_inc ch, scanptr
+    is_ws ch, sep, wordchar, spacebyte, tabbyte
+  sep:
+    bit.if0 instate, sepcont
+    ;finalize
+  sepcont:
+    ;next
+  wordchar:
+    bit.if1 instate, inword
+    bit.one instate
+    hex.mov hw, curstart, posptr
+    hex.zero hw, curlen
+  inword:
+    hex.inc hw, curlen
+    ;next
+  next:
+    hex.dec hw, cnt
+    ;loop
+  finalize:
+    append_word wsw, wlw, curstart, curlen, nword
+    bit.zero instate
+    ;next
+  afterloop:
+    bit.if0 instate, startprint
+    append_word wsw, wlw, curstart, curlen, nword
+  startprint:
+    hex.if0 hw, nword, justnl
+    hex.set hw, rsptr, wstarts
+    hex.set hw, rlptr, wlens
+    hex.mov hw, k, nword
+    hex.dec hw, k
+  walklast:
+    hex.if0 hw, k, walkdone
+    hex.ptr_add rsptr, hw
+    hex.ptr_add rlptr, hw
+    hex.dec hw, k
+    ;walklast
+  walkdone:
+    hex.mov hw, k, nword
+    bit.one firstout
+  prloop:
+    hex.if0 hw, k, prdone
+    bit.if1 firstout, prnospace
+    stl.output ' '
+  prnospace:
+    bit.zero firstout
+    hex.read_hex hw, sp, rsptr
+    hex.read_hex hw, ln, rlptr
+    print_from_ptr sp, ln
+    hex.ptr_sub rsptr, hw
+    hex.ptr_sub rlptr, hw
+    hex.dec hw, k
+    ;prloop
+  justnl:
+  prdone:
+    stl.output '\n'
+    stl.loop
+}
+
+// Append (curstart, curlen) to the word arrays via the write pointers; bump nword.
+def append_word wsw, wlw, curstart, curlen, nword {
+    hex.write_hex hw, wsw, curstart
+    hex.ptr_add wsw, hw
+    hex.write_hex hw, wlw, curlen
+    hex.ptr_add wlw, hw
+    hex.inc hw, nword
+}
+
+// Print `count` bytes starting at the address held in startptr.
+def print_from_ptr startptr, count @ loop, done < fpptr, fcnt, fbyte {
+    hex.if0 hw, count, done
+    hex.mov hw, fpptr, startptr
+    hex.mov hw, fcnt, count
+  loop:
+    hex.if0 hw, fcnt, done
+    hex.read_byte_and_inc fbyte, fpptr
+    hex.print fbyte
+    hex.dec hw, fcnt
+    ;loop
+  done:
+}
+
+// Jump to `ws` if b is a space or tab, else to `notws`.
+def is_ws b, ws, notws, spacebyte, tabbyte @ try_tab {
+    hex.cmp 2, b, spacebyte, try_tab, ws, try_tab
+  try_tab:
+    hex.cmp 2, b, tabbyte, notws, ws, notws
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+buf: hex.vec CAP
+slen: hex.vec hw
+scanptr: hex.vec hw
+posptr: hex.vec hw
+wptr: hex.vec hw
+cnt: hex.vec hw
+curlen: hex.vec hw
+curstart: hex.vec hw
+nword: hex.vec hw
+wsw: hex.vec hw
+wlw: hex.vec hw
+rsptr: hex.vec hw
+rlptr: hex.vec hw
+sp: hex.vec hw
+ln: hex.vec hw
+k: hex.vec hw
+fpptr: hex.vec hw
+fcnt: hex.vec hw
+fbyte: hex.vec 2
+ch: hex.vec 2
+bytebuf: hex.vec 2
+spacebyte: hex.vec 2, ' '
+tabbyte: hex.vec 2, '\t'
+nlbyte: hex.vec 2, '\n'
+instate: bit.bit
+firstout: bit.bit
+wstarts: hex.vec hw * MAXW
+wlens: hex.vec hw * MAXW

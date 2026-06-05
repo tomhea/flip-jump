@@ -1,0 +1,113 @@
+// Longest Word (#1099)
+
+// Reads a `\n`-terminated line ≤ 80 chars. Prints the longest whitespace-separated token + `\n`. Ties: prints the first such word. Empty input → empty line `\n`.
+
+hw = w / 4
+CAP = 84
+
+main
+
+def main @ loop, sep, sepcont, wordchar, inword, next, afterloop, printbest < buf, slen, scanptr, posptr, cnt, ch, instate, curlen, curstart, bestlen, bestptr, spacebyte, tabbyte {
+    stl.startup_and_init_all
+    read_line_into buf, slen
+    hex.set hw, scanptr, buf
+    hex.zero hw, bestlen
+    bit.zero instate
+    hex.mov hw, cnt, slen
+  loop:
+    hex.if0 hw, cnt, afterloop
+    hex.mov hw, posptr, scanptr
+    hex.read_byte_and_inc ch, scanptr
+    is_ws ch, sep, wordchar, spacebyte, tabbyte
+  sep:
+    bit.if0 instate, sepcont
+    update_best_max curlen, bestlen, curstart, bestptr
+    bit.zero instate
+  sepcont:
+    ;next
+  wordchar:
+    bit.if1 instate, inword
+    bit.one instate
+    hex.mov hw, curstart, posptr
+    hex.zero hw, curlen
+    hex.inc hw, curlen
+    ;next
+  inword:
+    hex.inc hw, curlen
+    ;next
+  next:
+    hex.dec hw, cnt
+    ;loop
+  afterloop:
+    bit.if0 instate, printbest
+    update_best_max curlen, bestlen, curstart, bestptr
+  printbest:
+    print_from_ptr bestptr, bestlen
+    stl.output '\n'
+    stl.loop
+}
+
+// If curlen > bestlen, record this token as the new best (keeps first on ties).
+def update_best_max curlen, bestlen, curstart, bestptr @ save, skip {
+    hex.cmp hw, curlen, bestlen, skip, skip, save
+  save:
+    hex.mov hw, bestlen, curlen
+    hex.mov hw, bestptr, curstart
+  skip:
+}
+
+// Print `count` bytes starting at the address held in startptr.
+def print_from_ptr startptr, count @ loop, done < fpptr, fcnt, fbyte {
+    hex.if0 hw, count, done
+    hex.mov hw, fpptr, startptr
+    hex.mov hw, fcnt, count
+  loop:
+    hex.if0 hw, fcnt, done
+    hex.read_byte_and_inc fbyte, fpptr
+    hex.print fbyte
+    hex.dec hw, fcnt
+    ;loop
+  done:
+}
+
+// Jump to `ws` if b is a space or tab, else to `notws`.
+def is_ws b, ws, notws, spacebyte, tabbyte @ try_tab {
+    hex.cmp 2, b, spacebyte, try_tab, ws, try_tab
+  try_tab:
+    hex.cmp 2, b, tabbyte, notws, ws, notws
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+buf: hex.vec CAP
+slen: hex.vec hw
+scanptr: hex.vec hw
+posptr: hex.vec hw
+wptr: hex.vec hw
+cnt: hex.vec hw
+curlen: hex.vec hw
+curstart: hex.vec hw
+bestlen: hex.vec hw
+bestptr: hex.vec hw
+fpptr: hex.vec hw
+fcnt: hex.vec hw
+fbyte: hex.vec 2
+ch: hex.vec 2
+bytebuf: hex.vec 2
+spacebyte: hex.vec 2, ' '
+tabbyte: hex.vec 2, '\t'
+nlbyte: hex.vec 2, '\n'
+instate: bit.bit

@@ -1281,6 +1281,58 @@ Blastoff!
 | 0473 | uncapitalize_first | Reads a `
 `-terminated line ≤ 80 chars. If the first byte is `A`-`Z`, outputs it lowercased; the rest of the line is unchanged. Includes final `
 `. |
+| 1098 | char_freq_table | Reads a `
+`-terminated line ≤ 80 chars. Prints each distinct byte value (excluding `
+`) and its count, one `<byte> <count>
+` per line, in ascending byte-value order. |
+| 1099 | longest_word | Reads a `
+`-terminated line ≤ 80 chars. Prints the longest whitespace-separated token + `
+`. Ties: prints the first such word. Empty input → empty line `
+`. |
+| 1100 | shortest_word | Reads a `
+`-terminated line ≤ 80 chars. Prints the shortest whitespace-separated token + `
+`. Ties: prints the first such word. Empty input → empty line `
+`. |
+| 1101 | word_with_most_vowels | Reads a `
+`-terminated line ≤ 80 chars. Prints the word with the most vowels (`aeiouAEIOU`) + `
+`. Ties: first such word. Empty input → empty line `
+`. |
+| 1102 | count_word_occurrences | Reads a `
+`-terminated target word (no whitespace), then a `
+`-terminated line ≤ 80 chars. Prints the count of whitespace-separated tokens in the line that exactly equal the target (case-sensitive) + `
+`. |
+| 1103 | reverse_words_in_line | Reads a `
+`-terminated line ≤ 80 chars. Splits on whitespace (single-space separator), prints the words in reverse order separated by single spaces, then `
+`. Example: `hello world foo` → `foo world hello
+`. |
+| 1104 | count_unique_words | Reads a `
+`-terminated line ≤ 80 chars. Splits on whitespace (case-sensitive, runs collapse). Prints the count of distinct words as decimal + `
+`. |
+| 1105 | longest_common_prefix_two | Reads two `
+`-terminated lines (each ≤ 40 chars). Prints the longest common prefix + `
+`. If no common prefix, prints just `
+`. |
+| 1106 | longest_common_suffix_two | Reads two `
+`-terminated lines (each ≤ 40 chars). Prints the longest common suffix (compared between the lines' contents, excluding their `
+`s) + `
+`. If none, prints just `
+`. |
+| 1107 | line_starts_with_substring | Reads a `
+`-terminated prefix (≤ 20 chars), then a `
+`-terminated line (≤ 60 chars). Prints `1
+` if the line starts with the prefix exactly, else `0
+`. |
+| 1108 | line_ends_with_substring | Reads a `
+`-terminated suffix (≤ 20 chars), then a `
+`-terminated line (≤ 60 chars). Prints `1
+` if the line's content (excluding `
+`) ends with the suffix exactly, else `0
+`. |
+| 1109 | count_substring_occurrences | Reads a `
+`-terminated pattern (≤ 20 chars), then a `
+`-terminated text (≤ 60 chars). Prints the count of non-overlapping left-to-right occurrences of pattern in text as decimal + `
+`. Empty pattern → `0
+`. |
 
 ## state_machines
 

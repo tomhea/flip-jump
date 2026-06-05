@@ -1,0 +1,76 @@
+// Longest Common Prefix Two (#1105)
+
+// Reads two `\n`-terminated lines (each ≤ 40 chars). Prints the longest common prefix + `\n`. If no common prefix, prints just `\n`.
+
+hw = w / 4
+CAP = 44
+
+main
+
+def main @ cmploop, a_ok, b_ok, eqc, done < abuf, alen, bbuf, blen, aptr, bptr, ai, ab, bb {
+    stl.startup_and_init_all
+    read_line_into abuf, alen
+    read_line_into bbuf, blen
+    hex.set hw, aptr, abuf
+    hex.set hw, bptr, bbuf
+    hex.zero hw, ai
+  cmploop:
+    hex.cmp hw, ai, alen, a_ok, done, done       // ai < alen ?
+  a_ok:
+    hex.cmp hw, ai, blen, b_ok, done, done       // ai < blen ?
+  b_ok:
+    hex.read_byte_and_inc ab, aptr
+    hex.read_byte_and_inc bb, bptr
+    hex.cmp 2, ab, bb, done, eqc, done
+  eqc:
+    hex.inc hw, ai
+    ;cmploop
+  done:
+    print_buffer abuf, ai
+    stl.output '\n'
+    stl.loop
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+// Print buf's slen bytes in order.
+def print_buffer buf, slen @ loop, done < pptr, cnt, bytebuf {
+    hex.if0 hw, slen, done
+    hex.set hw, pptr, buf
+    hex.mov hw, cnt, slen
+  loop:
+    hex.if0 hw, cnt, done
+    hex.read_byte_and_inc bytebuf, pptr
+    hex.print bytebuf
+    hex.dec hw, cnt
+    ;loop
+  done:
+}
+
+abuf: hex.vec CAP
+alen: hex.vec hw
+bbuf: hex.vec CAP
+blen: hex.vec hw
+aptr: hex.vec hw
+bptr: hex.vec hw
+wptr: hex.vec hw
+pptr: hex.vec hw
+cnt: hex.vec hw
+ai: hex.vec hw
+ab: hex.vec 2
+bb: hex.vec 2
+bytebuf: hex.vec 2
+nlbyte: hex.vec 2, '\n'

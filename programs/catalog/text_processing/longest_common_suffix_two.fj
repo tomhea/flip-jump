@@ -1,0 +1,104 @@
+// Longest Common Suffix Two (#1106)
+
+// Reads two `\n`-terminated lines (each ≤ 40 chars). Prints the longest common suffix (compared between the lines' contents, excluding their `\n`s) + `\n`. If none, prints just `\n`.
+
+hw = w / 4
+CAP = 44
+
+main
+
+def main @ walkA, walkAdone, walkB, walkBdone, cmploop, eqc, done, pwalk, pwalkdone, ploop, finish < abuf, alen, bbuf, blen, aptr, bptr, ai, bi, lcs, ab, bb, pptr, pcnt, pwalkc, pb {
+    stl.startup_and_init_all
+    read_line_into abuf, alen
+    read_line_into bbuf, blen
+    hex.if0 hw, alen, finish
+    hex.if0 hw, blen, finish
+    hex.set hw, aptr, abuf
+    hex.mov hw, ai, alen
+    hex.dec hw, ai
+  walkA:
+    hex.if0 hw, ai, walkAdone                    // aptr -> last byte of a
+    hex.ptr_inc aptr
+    hex.dec hw, ai
+    ;walkA
+  walkAdone:
+    hex.set hw, bptr, bbuf
+    hex.mov hw, bi, blen
+    hex.dec hw, bi
+  walkB:
+    hex.if0 hw, bi, walkBdone                    // bptr -> last byte of b
+    hex.ptr_inc bptr
+    hex.dec hw, bi
+    ;walkB
+  walkBdone:
+    hex.zero hw, lcs
+    hex.mov hw, ai, alen
+    hex.mov hw, bi, blen
+  cmploop:
+    hex.if0 hw, ai, done
+    hex.if0 hw, bi, done
+    hex.read_byte ab, aptr
+    hex.read_byte bb, bptr
+    hex.cmp 2, ab, bb, done, eqc, done
+  eqc:
+    hex.inc hw, lcs
+    hex.ptr_dec aptr
+    hex.ptr_dec bptr
+    hex.dec hw, ai
+    hex.dec hw, bi
+    ;cmploop
+  done:
+    hex.set hw, pptr, abuf                        // print last `lcs` bytes of a
+    hex.mov hw, pwalkc, alen
+    hex.sub hw, pwalkc, lcs
+  pwalk:
+    hex.if0 hw, pwalkc, pwalkdone
+    hex.ptr_inc pptr
+    hex.dec hw, pwalkc
+    ;pwalk
+  pwalkdone:
+    hex.mov hw, pcnt, lcs
+  ploop:
+    hex.if0 hw, pcnt, finish
+    hex.read_byte_and_inc pb, pptr
+    hex.print pb
+    hex.dec hw, pcnt
+    ;ploop
+  finish:
+    stl.output '\n'
+    stl.loop
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+abuf: hex.vec CAP
+alen: hex.vec hw
+bbuf: hex.vec CAP
+blen: hex.vec hw
+aptr: hex.vec hw
+bptr: hex.vec hw
+wptr: hex.vec hw
+ai: hex.vec hw
+bi: hex.vec hw
+lcs: hex.vec hw
+pptr: hex.vec hw
+pcnt: hex.vec hw
+pwalkc: hex.vec hw
+ab: hex.vec 2
+bb: hex.vec 2
+pb: hex.vec 2
+bytebuf: hex.vec 2
+nlbyte: hex.vec 2, '\n'

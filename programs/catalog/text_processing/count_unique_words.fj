@@ -1,0 +1,150 @@
+// Count Unique Words (#1104)
+
+// Reads a `\n`-terminated line ≤ 80 chars. Splits on whitespace (case-sensitive, runs collapse). Prints the count of distinct words as decimal + `\n`.
+
+hw = w / 4
+CAP = 84
+MAXW = 42
+
+main
+
+def main @ loop, sep, sepcont, wordchar, inword, next, afterloop, finalize, done < buf, slen, scanptr, posptr, cnt, ch, instate, curlen, curstart, nstored, count, wsw, wlw, spacebyte, tabbyte, wstarts, wlens {
+    stl.startup_and_init_all
+    read_line_into buf, slen
+    hex.set hw, scanptr, buf
+    hex.zero hw, nstored
+    hex.zero hw, count
+    hex.set hw, wsw, wstarts
+    hex.set hw, wlw, wlens
+    bit.zero instate
+    hex.mov hw, cnt, slen
+  loop:
+    hex.if0 hw, cnt, afterloop
+    hex.mov hw, posptr, scanptr
+    hex.read_byte_and_inc ch, scanptr
+    is_ws ch, sep, wordchar, spacebyte, tabbyte
+  sep:
+    bit.if0 instate, sepcont
+    ;finalize
+  sepcont:
+    ;next
+  wordchar:
+    bit.if1 instate, inword
+    bit.one instate
+    hex.mov hw, curstart, posptr
+    hex.zero hw, curlen
+  inword:
+    hex.inc hw, curlen
+    ;next
+  next:
+    hex.dec hw, cnt
+    ;loop
+  finalize:
+    check_and_add curstart, curlen, nstored, count, wsw, wlw
+    bit.zero instate
+    ;next
+  afterloop:
+    bit.if0 instate, done
+    check_and_add curstart, curlen, nstored, count, wsw, wlw
+  done:
+    hex.print_dec_uint hw, count
+    stl.output '\n'
+    stl.loop
+}
+
+// If (curstart, curlen) is not already among the stored words, append it and bump count.
+def check_and_add curstart, curlen, nstored, count, wsw, wlw @ checkloop, cont, is_dup, do_add, skip_add < wstarts, wlens, rsptr, rlptr, j, sp, ln {
+    hex.set hw, rsptr, wstarts
+    hex.set hw, rlptr, wlens
+    hex.mov hw, j, nstored
+  checkloop:
+    hex.if0 hw, j, do_add
+    hex.read_hex hw, sp, rsptr
+    hex.read_hex hw, ln, rlptr
+    token_eq2 curstart, curlen, sp, ln, is_dup, cont
+  cont:
+    hex.ptr_add rsptr, hw
+    hex.ptr_add rlptr, hw
+    hex.dec hw, j
+    ;checkloop
+  is_dup:
+    ;skip_add
+  do_add:
+    hex.write_hex hw, wsw, curstart
+    hex.ptr_add wsw, hw
+    hex.write_hex hw, wlw, curlen
+    hex.ptr_add wlw, hw
+    hex.inc hw, nstored
+    hex.inc hw, count
+  skip_add:
+}
+
+// Jump to `yes` if astart[:alen] equals bptr[:blen] (both addresses into buf), else `no`.
+def token_eq2 astart, alen, bptr, blen, yes, no @ lenok, cmploop, eqc < e_aptr, e_bptr, e_cnt, e_ab, e_bb {
+    hex.cmp hw, alen, blen, no, lenok, no
+  lenok:
+    hex.mov hw, e_aptr, astart
+    hex.mov hw, e_bptr, bptr
+    hex.mov hw, e_cnt, alen
+  cmploop:
+    hex.if0 hw, e_cnt, yes
+    hex.read_byte_and_inc e_ab, e_aptr
+    hex.read_byte_and_inc e_bb, e_bptr
+    hex.cmp 2, e_ab, e_bb, no, eqc, no
+  eqc:
+    hex.dec hw, e_cnt
+    ;cmploop
+}
+
+// Jump to `ws` if b is a space or tab, else to `notws`.
+def is_ws b, ws, notws, spacebyte, tabbyte @ try_tab {
+    hex.cmp 2, b, spacebyte, try_tab, ws, try_tab
+  try_tab:
+    hex.cmp 2, b, tabbyte, notws, ws, notws
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+buf: hex.vec CAP
+slen: hex.vec hw
+scanptr: hex.vec hw
+posptr: hex.vec hw
+wptr: hex.vec hw
+cnt: hex.vec hw
+curlen: hex.vec hw
+curstart: hex.vec hw
+nstored: hex.vec hw
+count: hex.vec hw
+wsw: hex.vec hw
+wlw: hex.vec hw
+rsptr: hex.vec hw
+rlptr: hex.vec hw
+j: hex.vec hw
+sp: hex.vec hw
+ln: hex.vec hw
+e_aptr: hex.vec hw
+e_bptr: hex.vec hw
+e_cnt: hex.vec hw
+ch: hex.vec 2
+bytebuf: hex.vec 2
+e_ab: hex.vec 2
+e_bb: hex.vec 2
+spacebyte: hex.vec 2, ' '
+tabbyte: hex.vec 2, '\t'
+nlbyte: hex.vec 2, '\n'
+instate: bit.bit
+wstarts: hex.vec hw * MAXW
+wlens: hex.vec hw * MAXW

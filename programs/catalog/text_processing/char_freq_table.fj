@@ -1,0 +1,56 @@
+// Char Freq Table (#1098)
+
+// Reads a `\n`-terminated line ≤ 80 chars. Prints each distinct byte value (excluding `\n`) and its count, one `<byte> <count>\n` per line, in ascending byte-value order.
+
+hw = w / 4
+
+main
+
+def main @ rloop, rstore, walkloop, walkdone, rdone, ploop, pbody, pskip, pdone < counts, idxptr, pptr, ch, cv, cb, bv, c256, nlbyte {
+    stl.startup_and_init_all
+  rloop:
+    hex.input ch
+    hex.if0 2, ch, rdone
+    hex.cmp 2, ch, nlbyte, rstore, rdone, rstore
+  rstore:
+    hex.set hw, idxptr, counts                   // walk to counts[ch]
+    hex.mov 2, cv, ch
+  walkloop:
+    hex.if0 2, cv, walkdone
+    hex.ptr_inc idxptr
+    hex.dec 2, cv
+    ;walkloop
+  walkdone:
+    hex.read_byte cb, idxptr                      // counts[ch]++
+    hex.inc 2, cb
+    hex.write_byte idxptr, cb
+    ;rloop
+  rdone:
+    hex.set hw, pptr, counts
+    hex.zero hw, bv
+  ploop:
+    hex.cmp hw, bv, c256, pbody, pdone, pdone     // bv < 256 ?
+  pbody:
+    hex.read_byte cb, pptr
+    hex.if0 2, cb, pskip
+    hex.print_dec_uint hw, bv
+    stl.output ' '
+    hex.print_dec_uint 2, cb
+    stl.output '\n'
+  pskip:
+    hex.ptr_inc pptr
+    hex.inc hw, bv
+    ;ploop
+  pdone:
+    stl.loop
+}
+
+counts: hex.vec 256
+idxptr: hex.vec hw
+pptr: hex.vec hw
+ch: hex.vec 2
+cv: hex.vec 2
+cb: hex.vec 2
+bv: hex.vec hw
+c256: hex.vec hw, 256
+nlbyte: hex.vec 2, '\n'
