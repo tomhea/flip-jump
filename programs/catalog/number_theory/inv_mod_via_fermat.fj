@@ -1,0 +1,69 @@
+// Inv Mod Via Fermat (#1040)
+
+// Reads decimals `a` `p` (`p` prime `2`-`19`, `a` `1`-`p-1`). Computes `a^(p-2) mod p` (modular inverse via Fermat's little theorem). Prints inverse as decimal + `\n`.
+
+main
+
+def main < a, p, exp, inv, two {
+    stl.startup
+    read_decimal 16, a
+    read_decimal 16, p
+    bit.mov 16, exp, p
+    bit.sub 16, exp, two            // exp = p - 2
+    modpow_into 16, inv, a, exp, p  // inv = a^(p-2) mod p
+    bit.print_dec_uint 16, inv
+    stl.output '\n'
+    stl.loop
+}
+
+// dst[:n] = (base ^ exp) mod m  (binary exponentiation). base, exp, m preserved.
+def modpow_into n, dst, base, exp, m @ loop, even, end < mp_b, mp_e, mp_q, mp_r {
+    bit.zero n, dst
+    bit.inc n, dst                  // dst = 1
+    bit.mov n, mp_b, base
+    bit.div n, mp_b, m, mp_q, mp_r
+    bit.mov n, mp_b, mp_r           // mp_b = base mod m
+    bit.mov n, mp_e, exp
+  loop:
+    bit.if0 n, mp_e, end
+    bit.if0 mp_e, even              // exponent bit 0 == 0 -> skip multiply
+    bit.mul n, dst, mp_b
+    bit.div n, dst, m, mp_q, mp_r
+    bit.mov n, dst, mp_r            // dst = dst * mp_b mod m
+  even:
+    bit.mul n, mp_b, mp_b
+    bit.div n, mp_b, m, mp_q, mp_r
+    bit.mov n, mp_b, mp_r           // mp_b = mp_b^2 mod m
+    bit.shr n, mp_e                 // exp >>= 1
+    ;loop
+  end:
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+a: bit.vec 16, 0
+p: bit.vec 16, 0
+exp: bit.vec 16, 0
+inv: bit.vec 16, 0
+two: bit.vec 16, 2
+mp_b: bit.vec 16, 0
+mp_e: bit.vec 16, 0
+mp_q: bit.vec 16, 0
+mp_r: bit.vec 16, 0
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit

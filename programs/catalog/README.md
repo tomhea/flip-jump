@@ -336,6 +336,65 @@ N
 | 0165 | is_cube_small | Reads decimal N in `0`-`64` and prints `1
 ` if N is a perfect cube, else `0
 `. |
+| 1030 | modular_inverse_brute | Reads decimals `a` `m` (each `1`-`30`, own line, with `gcd(a, m) = 1` guaranteed). Brute-forces `x` in `1..m-1` such that `(a * x) mod m == 1`. Prints `x` as decimal + `
+`. |
+| 1031 | crt_two_pairs | Reads 4 decimals `r1 m1 r2 m2` (each on own line, `m1`,`m2` coprime, each ≤ `10`). Finds `r` such that `r ≡ r1 mod m1` and `r ≡ r2 mod m2`, with `0 <= r < m1*m2`. Prints `r` as decimal + `
+`. |
+| 1032 | mod_factorial | Reads decimals `N` `m` (each `1`-`9` for N, `1`-`30` for m, on own lines). Prints `(N! mod m)` as decimal + `
+`. |
+| 1033 | mod_binomial_small | Reads decimals `N` `K` `m` (`N` `1`-`9`, `K` `0..N`, `m` `1`-`30`, on own lines). Prints `(C(N, K) mod m)` as decimal + `
+`. |
+| 1034 | mod_power_table | Reads decimals `base` `mod` (`base` `1`-`9`, `mod` `2`-`9`, on own lines). Prints `base^0 mod mod`, `base^1 mod mod`, ..., `base^(mod-1) mod mod` space-separated on one line + `
+`. |
+| 1035 | multiplicative_order_small | Reads decimals `a` `m` (each `2`-`20`, `gcd(a,m)=1`). Finds the smallest `k >= 1` such that `(a^k) mod m == 1`. Prints `k` as decimal + `
+`. |
+| 1036 | legendre_symbol_small | Reads decimals `a` `p` (`p` is an odd prime `3`-`19`, `a` `0`-`p-1`). Prints the Legendre symbol `(a/p)`: `1
+` if `a` is a non-zero quadratic residue mod p, `-1
+` if non-residue, `0
+` if `a == 0`. |
+| 1037 | jacobi_symbol_small | Reads decimals `a` `n` (`n` odd `1`-`19`, `a` `0`-`n-1`). Prints the Jacobi symbol as `1
+`, `-1
+`, or `0
+`. |
+| 1038 | mod_double_factorial | Reads decimals `N` `m` (`N` `0`-`9`, `m` `1`-`30`). Prints `(N!! mod m)` as decimal + `
+` (where `N!! = N*(N-2)*(N-4)*...` down to 1 or 2). |
+| 1039 | wilson_prime_check | Reads decimal `p` `2`-`30` + `
+`. Computes `((p-1)! + 1) mod p`. Prints `1
+` if this is `0` (i.e. `p` is prime by Wilson's theorem), else `0
+`. |
+| 1040 | inv_mod_via_fermat | Reads decimals `a` `p` (`p` prime `2`-`19`, `a` `1`-`p-1`). Computes `a^(p-2) mod p` (modular inverse via Fermat's little theorem). Prints inverse as decimal + `
+`. |
+| 1041 | primitive_root_check | Reads decimals `g` `p` (`p` prime `3`-`19`, `g` `1`-`p-1`). Prints `1
+` if `g` is a primitive root mod p (i.e. its multiplicative order is `p-1`), else `0
+`. |
+| 1042 | discrete_log_brute_small | Reads decimals `g` `h` `p` (`p` prime `3`-`19`, `g` `1`-`p-1` primitive root, `h` `1`-`p-1`). Brute-forces `x` in `0..p-2` such that `g^x mod p == h`. Prints `x` as decimal + `
+`. |
+| 1043 | mod_sum_arithmetic | Reads decimals `N` `m` (`N` `1`-`30`, `m` `1`-`30`). Prints `((1 + 2 + ... + N) mod m)` as decimal + `
+`. |
+| 1044 | binomial_coefficient_small | Reads decimals `N` `K` (`N` `0`-`10`, `K` `0`-`N`, on own lines). Prints `C(N, K)` as decimal + `
+`. |
+| 1045 | multinomial_3_small | Reads 3 decimals `a` `b` `c` (each `0`-`5`, on own lines). Prints `(a + b + c)! / (a! * b! * c!)` as decimal + `
+`. |
+| 1046 | permutation_count_pn_k | Reads decimals `N` `K` (`N` `1`-`10`, `K` `0`-`N`). Prints `P(N, K) = N! / (N-K)!` as decimal + `
+`. |
+| 1047 | catalan_n_param | Reads decimal `N` `0`-`7` + `
+`. Prints the `N`-th Catalan number `C(2N, N) / (N + 1)` as decimal + `
+`. |
+| 1048 | bell_n_param | Reads decimal `N` `0`-`6` + `
+`. Prints the `N`-th Bell number `B(N)` as decimal + `
+`. |
+| 1049 | stirling_2nd_small | Reads decimals `N` `K` (`N` `0`-`6`, `K` `0`-`N`). Prints the Stirling number of the second kind `S(N, K)` as decimal + `
+`. |
+| 1050 | derangement_n_param | Reads decimal `N` `0`-`8` + `
+`. Prints the `N`-th derangement number `D(N)` as decimal + `
+`. |
+| 1051 | eulerian_n_k_small | Reads decimals `N` `K` (`N` `1`-`6`, `K` `0`-`N-1`). Prints the Eulerian number `<N, K>` as decimal + `
+`. |
+| 1052 | lah_n_k_small | Reads decimals `N` `K` (`N` `1`-`6`, `K` `1`-`N`). Prints the (signed) Lah number `L(N, K)` as decimal + `
+`. |
+| 1053 | pascal_row_n | Reads decimal `N` `0`-`8` + `
+`. Prints the `N`-th row of Pascal's triangle as `N+1` decimals space-separated + `
+`. |
 
 ## strings
 
