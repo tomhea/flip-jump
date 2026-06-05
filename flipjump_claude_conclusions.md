@@ -21,9 +21,9 @@ off-limits names are the `w`/`dw`/`dbit` constants, which the compiler now rejec
 
 ## Residual — not captured anywhere else
 
-- **Toolchain TODO: the parser opens `.fj` source with the OS locale codec, not
-  UTF-8.** `fj_parser.lex_parse_curr_file` does `curr_file.open('r').read()` with no
-  `encoding=`, so on a non-UTF-8 Windows locale a source file containing `√`, `≈`,
-  etc. raises `UnicodeDecodeError`. The skill/handoff document the *workaround*
-  (`PYTHONUTF8=1`, or keep source ASCII); the actual one-line *fix* —
-  `open('r', encoding='utf-8')` — has not been made. Worth a small PR.
+- **FIXED: the parser now opens `.fj` source as UTF-8.**
+  `fj_parser.lex_parse_curr_file` was doing `curr_file.open('r').read()` with no
+  `encoding=`, so on a non-UTF-8 Windows locale (e.g. cp1255) a source file
+  containing `√`, `≈`, etc. raised `UnicodeDecodeError`. Now reads with
+  `open('r', encoding='utf-8')`, so `PYTHONUTF8=1` / ASCII-only-source workarounds
+  are no longer required.
