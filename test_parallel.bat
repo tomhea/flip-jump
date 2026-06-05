@@ -5,4 +5,4 @@
 
 pytest --compile -n auto --ignore=tests/unit %*
 pytest --run -n auto --ignore=tests/unit %*
-pytest tests/unit --unit-tests -n auto %*
+pytest tests/unit --unit-tests %*
