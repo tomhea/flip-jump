@@ -91,7 +91,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install .[tests]
       - name: Test pytest
-        run: pytest tests/unit --unit-tests -n auto  --junitxml=./unit-test-results.xml
+        run: pytest tests/unit --unit-tests --junitxml=./unit-test-results.xml
       - name: Show tests results
         if: always()
         uses: pmeier/pytest-results-action@main

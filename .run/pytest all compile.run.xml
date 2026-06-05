@@ -1,17 +1,21 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="pytest all compile" type="tests" factoryName="py.test">
-    <module name="flip-jump" />
+    <module name="flipjump" />
+    <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <option name="SDK_HOME" value="" />
+    <option name="SDK_NAME" value="" />
     <option name="WORKING_DIRECTORY" value="" />
-    <option name="IS_MODULE_SDK" value="true" />
+    <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <option name="DEBUG_JUST_MY_CODE" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+    <option name="RUN_TOOL" value="" />
     <option name="_new_keywords" value="&quot;&quot;" />
     <option name="_new_parameters" value="&quot;&quot;" />
-    <option name="_new_additionalArguments" value="&quot;--compile --all --tb\u003dno -n auto&quot;" />
+    <option name="_new_additionalArguments" value="&quot;--compile --all --tb\u003dno -n auto --ignore\u003dtests/unit&quot;" />
     <option name="_new_target" value="&quot;&quot;" />
     <option name="_new_targetType" value="&quot;PATH&quot;" />
     <method v="2" />
