@@ -896,7 +896,7 @@ def validate_current_file(files_seen: Set[Union[str, Path]]) -> None:
 
 def lex_parse_curr_file(lexer: FJLexer, parser: FJParser) -> None:
     global curr_text, curr_namespace
-    curr_text = curr_file.open('r').read()
+    curr_text = curr_file.open('r', encoding='utf-8').read()
     curr_namespace = []
 
     lex_res = lexer.tokenize(curr_text)

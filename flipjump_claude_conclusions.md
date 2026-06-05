@@ -18,12 +18,3 @@ described limitations that have since been fixed: `bit.mul` (works now),
 "no hex decimal printer" (now `hex.print_dec_uint/int` + `hex.input_dec_uint/int`),
 and the `n`/`i`/`d` naming trap (`rep` iterators are now hygienic; the only
 off-limits names are the `w`/`dw`/`dbit` constants, which the compiler now rejects).
-
-## Residual — not captured anywhere else
-
-- **Toolchain TODO: the parser opens `.fj` source with the OS locale codec, not
-  UTF-8.** `fj_parser.lex_parse_curr_file` does `curr_file.open('r').read()` with no
-  `encoding=`, so on a non-UTF-8 Windows locale a source file containing `√`, `≈`,
-  etc. raises `UnicodeDecodeError`. The skill/handoff document the *workaround*
-  (`PYTHONUTF8=1`, or keep source ASCII); the actual one-line *fix* —
-  `open('r', encoding='utf-8')` — has not been made. Worth a small PR.
