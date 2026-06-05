@@ -61,10 +61,9 @@ Lowest-risk, highest-leverage: the idioms already exist (see Lessons).
 | calendar_time | 2 | dec_year_2digit_to_4digit, days_between_dates_same_year |
 | io | 1 | reverse_line |
 
-> ⚠️ `mersenne_check` was deferred only because its `CATALOG.md` description literally
-> contains `√` and `≈`, which crash the parser under a non-UTF-8 Windows locale (see
-> Lessons → UTF-8). Either run with `PYTHONUTF8=1`, or rephrase the program header to
-> all-ASCII (the spec text in CATALOG.md is the contract, not the header comment).
+> ℹ️ `mersenne_check` was originally deferred because its `CATALOG.md` description
+> contains `√` and `≈`, which crashed the parser under a non-UTF-8 Windows locale. That
+> parser bug is now fixed (source is read as UTF-8), so the constraint no longer applies.
 
 ### Pass 2 — algorithms, data_structures, language_demos (167)
 
@@ -136,7 +135,6 @@ what the skill documents):
   a batch was committed on `main` and the push failed.
 - **Compile cost is flat ~0.18s/program at w=64** (STL macro resolution, not your
   body). ~1200 programs ≈ a few minutes parallel. Keep CSVs sorted slowest-first.
-- **UTF-8 source bug (UNFIXED)**: `fj` opens `.fj` files with the OS locale codec
-  (`fj_parser.lex_parse_curr_file`: `curr_file.open('r').read()`, no `encoding=`). On a
-  non-UTF-8 Windows locale, non-ASCII source chars (`√ ≈ …`) raise `UnicodeDecodeError`.
-  Keep headers ASCII-only, or set `PYTHONUTF8=1`. (A proper fix = open as UTF-8.)
+- **UTF-8 source (FIXED)**: `fj_parser.lex_parse_curr_file` now reads source with
+  `open('r', encoding='utf-8')`, so non-ASCII source chars no longer depend on the OS
+  locale. No `PYTHONUTF8=1` / ASCII-only-header workaround needed anymore.
