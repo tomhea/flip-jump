@@ -1,0 +1,42 @@
+// Bits To Emoji Face (#1088)
+
+// Reads two bits `e1 e2` (eye states, each `0` closed or `1` open, own line), then one bit `m` (mouth state, `0` frown / `1` smile, own line). Prints a 3-char emoji face combining these: e.g. `1 1 1` → `:)\n`; `0 0 1` → `XD\n`; `1 1 0` → `:(\n`; `0 0 0` → `XO\n`.
+
+main
+
+def main @ e1open, e1closed, smile1, frown1, smile0, frown0, done < e1c, e2c, mc, junk, one_char {
+    stl.startup
+    bit.input e1c
+    bit.input junk                          // newline
+    bit.input e2c
+    bit.input junk                          // newline
+    bit.input mc
+    bit.input junk                          // newline
+    bit.cmp 8, e1c, one_char, e1closed, e1open, e1open  // eye open if '1'
+  e1open:
+    stl.output ':'
+    bit.cmp 8, mc, one_char, frown1, smile1, smile1
+  smile1:
+    stl.output ')'
+    ;done
+  frown1:
+    stl.output '('
+    ;done
+  e1closed:
+    stl.output 'X'
+    bit.cmp 8, mc, one_char, frown0, smile0, smile0
+  smile0:
+    stl.output 'D'
+    ;done
+  frown0:
+    stl.output 'O'
+  done:
+    stl.output '\n'
+    stl.loop
+}
+
+e1c: bit.vec 8, 0
+e2c: bit.vec 8, 0
+mc: bit.vec 8, 0
+junk: bit.vec 8, 0
+one_char: bit.vec 8, '1'

@@ -1,0 +1,38 @@
+// Bit At Position (#1061)
+
+// Reads one byte, then one ASCII digit `0`-`7` (terminated by `\n`), and prints the bit at that position as `0` or `1` + `\n`. Convention: position `0` is the least-significant bit (LSB); position `7` is the most-significant bit (MSB).
+
+main
+
+def main @ shloop, shdone < ch, pch, p, work, err {
+    stl.startup
+    bit.input ch                        // the byte
+    bit.input pch                       // the position digit
+    bit.ascii2dec err, p, pch           // p = 0..7
+    bit.mov 8, work, ch
+  shloop:
+    bit.if0 8, p, shdone                // bit 0 of work is now the target bit
+    bit.shr 8, work
+    bit.dec 8, p
+    ;shloop
+  shdone:
+    print_bit work
+    stl.output '\n'
+    stl.loop
+}
+
+// Print '1' if the bit at b is set, else '0'.
+def print_bit b @ one, done {
+    bit.if1 b, one
+    stl.output '0'
+    ;done
+  one:
+    stl.output '1'
+  done:
+}
+
+ch: bit.vec 8, 0
+pch: bit.vec 8, 0
+p: bit.vec 8, 0
+work: bit.vec 8, 0
+err: bit.bit

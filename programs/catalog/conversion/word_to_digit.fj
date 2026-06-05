@@ -1,0 +1,73 @@
+// Word To Digit (#1073)
+
+// Reads one of the English number words `zero`, `one`, `two`, ..., `nine` (terminated by `\n`) and prints the corresponding ASCII digit `0`-`9` + `\n`.
+
+main
+
+// Each word is identified by its first letter, disambiguating t/f/s by the 2nd letter.
+def main @ c_o, c_e, c_n, c_t, t_br, c_f, f_br, c_s, z, one, eight, nine, two, three, four, five, six, seven, halt < c1, c2, cz, co, ce, cn, ct, cf, cw, ci {
+    stl.startup
+    bit.input c1
+    bit.cmp 8, c1, cz, c_o, z, c_o          // 'z' -> 0
+  z:
+    stl.output "0\n"
+    ;halt
+  c_o:
+    bit.cmp 8, c1, co, c_e, one, c_e        // 'o' -> 1
+  one:
+    stl.output "1\n"
+    ;halt
+  c_e:
+    bit.cmp 8, c1, ce, c_n, eight, c_n      // 'e' -> 8
+  eight:
+    stl.output "8\n"
+    ;halt
+  c_n:
+    bit.cmp 8, c1, cn, c_t, nine, c_t       // 'n' -> 9
+  nine:
+    stl.output "9\n"
+    ;halt
+  c_t:
+    bit.cmp 8, c1, ct, c_f, t_br, c_f       // 't' -> two/three
+  t_br:
+    bit.input c2
+    bit.cmp 8, c2, cw, three, two, three    // 'w' -> 2 else 3
+  two:
+    stl.output "2\n"
+    ;halt
+  three:
+    stl.output "3\n"
+    ;halt
+  c_f:
+    bit.cmp 8, c1, cf, c_s, f_br, c_s       // 'f' -> four/five
+  f_br:
+    bit.input c2
+    bit.cmp 8, c2, co, five, four, five     // 'o' -> 4 else 5
+  four:
+    stl.output "4\n"
+    ;halt
+  five:
+    stl.output "5\n"
+    ;halt
+  c_s:
+    bit.input c2                            // must be 's' -> six/seven
+    bit.cmp 8, c2, ci, seven, six, seven    // 'i' -> 6 else 7
+  six:
+    stl.output "6\n"
+    ;halt
+  seven:
+    stl.output "7\n"
+  halt:
+    stl.loop
+}
+
+c1: bit.vec 8, 0
+c2: bit.vec 8, 0
+cz: bit.vec 8, 'z'
+co: bit.vec 8, 'o'
+ce: bit.vec 8, 'e'
+cn: bit.vec 8, 'n'
+ct: bit.vec 8, 't'
+cf: bit.vec 8, 'f'
+cw: bit.vec 8, 'w'
+ci: bit.vec 8, 'i'

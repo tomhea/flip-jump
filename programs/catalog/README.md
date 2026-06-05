@@ -564,6 +564,26 @@ N
 | 0933 | unset_lowest_set_bit | Reads one byte and outputs `byte AND (byte - 1)` (clears the lowest set bit) as one raw byte. For `byte = 0` outputs `0`. |
 | 0934 | isolate_lowest_set_bit | Reads one byte and outputs `byte AND (-byte mod 256)` (keeps only the lowest set bit) as one raw byte. For `byte = 0` outputs `0`. |
 | 0935 | broadcast_lsb_to_byte | Reads one byte. If its LSB is `0` outputs `0x00`; if `1` outputs `0xFF`. (Demonstrates sign-extension-from-1-bit pattern.) |
+| 1061 | bit_at_position | Reads one byte, then one ASCII digit `0`-`7` (terminated by `
+`), and prints the bit at that position as `0` or `1` + `
+`. Convention: position `0` is the least-significant bit (LSB); position `7` is the most-significant bit (MSB). |
+| 1062 | set_bit_at_position | Reads one byte then one digit `0`-`7` + `
+` and outputs the byte with that bit set to 1. Convention: position `0` is the LSB; matches `bit_at_position`. |
+| 1063 | clear_bit_at_position | Reads one byte then one digit `0`-`7` + `
+` and outputs the byte with that bit cleared to 0. Convention: position `0` is the LSB; matches `bit_at_position`. |
+| 1064 | toggle_bit_at_position | Reads one byte, then one ASCII digit `0`-`7` + `
+`. Outputs the byte with the bit at that position XOR'd (toggled). Convention: position `0` is the LSB (matches `bit_at_position`). |
+| 1065 | binary_string_to_byte | Reads an 8-char binary string of `0`/`1` + `
+` and outputs the corresponding raw byte (no trailing `
+`). Inverse of `byte_to_binary_string`. |
+| 1066 | byte_concat_to_hex_word | Reads exactly two bytes (high then low) and prints 4 lowercase hex chars (no `0x` prefix) + `
+`. The first byte's hex appears first. |
+| 1067 | byte_split_from_hex_word | Reads exactly 4 lowercase hex chars + `
+` and outputs two raw bytes: the high byte first, then the low byte. |
+| 1068 | clear_low_k_bits | Reads one byte then one decimal digit `0`-`7` + `
+`. Outputs the byte with the lowest `k` bits cleared (`byte AND (~((1<<k)-1))`) as one raw byte. |
+| 1069 | set_low_k_bits | Reads one byte then one decimal digit `0`-`7` + `
+`. Outputs the byte with the lowest `k` bits set to `1` (`byte OR ((1<<k)-1)`) as one raw byte. |
 
 ## logic
 
@@ -1001,6 +1021,12 @@ Blastoff!
 `, `0` → `+0
 `, `-3` → `-3
 `. |
+| 1073 | word_to_digit | Reads one of the English number words `zero`, `one`, `two`, ..., `nine` (terminated by `
+`) and prints the corresponding ASCII digit `0`-`9` + `
+`. |
+| 1074 | roman_to_dec_1_to_10 | Reads a Roman numeral string (one of `I`, `II`, ..., `X`) + `
+` and prints the decimal `1`-`10` + `
+`. |
 
 ## encoding
 
@@ -1071,6 +1097,22 @@ Blastoff!
 | 0595 | slope_int_or_undefined | Reads 4 decimals `x1 y1 x2 y2` (each own line, signed). If `x1 == x2`, prints `undefined
 `. Otherwise prints `(y2 - y1) / (x2 - x1)` as signed integer division + `
 `. |
+| 1054 | manhattan_distance | Reads 4 decimals `x1 y1 x2 y2` (each own line). Prints `|x2-x1| + |y2-y1|` as decimal + `
+`. |
+| 1055 | chebyshev_distance | Reads 4 decimals (each own line). Prints `max(|x2-x1|, |y2-y1|)` + `
+`. |
+| 1056 | euclidean_distance_floor | Reads 4 decimals `x1 y1 x2 y2` (each `0`-`9`, own line). Prints `floor(sqrt((x2-x1)^2 + (y2-y1)^2))` as decimal + `
+`. Squared distance ≤ 162, so integer sqrt via linear scan (`k` while `k² <= d`) stays trivially within compile budget. |
+| 1057 | signed_triangle_area_2x | Reads 6 decimals (3 vertices, each coord own line). Prints `x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2)` as signed decimal + `
+` (this is exactly 2× the signed area). |
+| 1058 | circle_area_approx | Reads decimal radius `0`-`9` + `
+`. Prints `(r * r * 314) / 100` (integer approximation of π·r²) + `
+`. |
+| 1059 | circle_circumference_approx | Reads decimal radius `0`-`9` + `
+`. Prints `(2 * r * 314) / 100` (integer approximation of 2πr) + `
+`. |
+| 1060 | counts_inside_unit_circle_grid_3x3 | No input. Counts how many of the 9 lattice points `(i,j)` for `i,j ∈ {-1,0,1}` satisfy `i^2 + j^2 <= 1`. Prints the count as decimal + `
+` (answer: 5). |
 
 ## simulation
 
@@ -1169,6 +1211,14 @@ Blastoff!
 `. |
 | 0923 | triangular_inverse_n | Reads decimal triangular number `1`-`55` + `
 ` (i.e. one of `1, 3, 6, 10, 15, 21, 28, 36, 45, 55`). Prints the index `k` such that `T(k) == input`, else `-1` if input isn't triangular. |
+| 1070 | bell_first_5 | No input. Prints the first 5 Bell numbers `1 1 2 5 15
+`. |
+| 1071 | partition_first_5 | No input. Prints the first 5 integer-partition counts `p(1), ..., p(5)` = `1 2 3 5 7` space-separated + `
+`. |
+| 1072 | mersenne_check | Reads decimal N in `2`-`17` (one or two ASCII digits, terminated by `
+`). Prints `1
+` if `2^N - 1` is prime, else `0
+`. (Upper bound `17` keeps trial division ≤ √(2^17 - 1) ≈ 362, well within runtime budget.) |
 
 ## text_processing
 
@@ -1308,6 +1358,11 @@ Blastoff!
 `, then target day-of-week `0`-`6` + `
 `. Prints `(target - today + 7) mod 7` as decimal `0`-`6` + `
 ` (the number of days from today to the next occurrence of target; `0` if target equals today). |
+| 1075 | dec_year_2digit_to_4digit | Reads 2-digit decimal `00`-`99` + `
+`. Interprets via "pivot 50" rule: `50`-`99` → `1950`-`1999`, `00`-`49` → `2000`-`2049`. Prints 4-digit year + `
+`. |
+| 1076 | days_between_dates_same_year | Reads year, month1, day1, month2, day2 (each own line). Both dates in the same year; date2 ≥ date1. Prints absolute day difference as decimal + `
+`. |
 
 ## misc
 

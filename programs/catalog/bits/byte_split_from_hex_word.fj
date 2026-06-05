@@ -1,0 +1,37 @@
+// Byte Split From Hex Word (#1067)
+
+// Reads exactly 4 lowercase hex chars + `\n` and outputs two raw bytes: the high byte first, then the low byte.
+
+main
+
+def main < c, hb, lb, n0, n1, n2, n3, err {
+    stl.startup
+    read_nibble n0, c, err
+    read_nibble n1, c, err
+    read_nibble n2, c, err
+    read_nibble n3, c, err
+    bit.zero 8, hb
+    bit.mov 4, hb + 4*dw, n0            // high byte = n0 n1
+    bit.mov 4, hb, n1
+    bit.zero 8, lb
+    bit.mov 4, lb + 4*dw, n2            // low byte = n2 n3
+    bit.mov 4, lb, n3
+    bit.print hb
+    bit.print lb
+    stl.loop
+}
+
+// Read one hex char and decode it into the 4-bit dst.
+def read_nibble dst, c, err {
+    bit.input c
+    bit.ascii2hex err, dst, c
+}
+
+c: bit.vec 8, 0
+hb: bit.vec 8, 0
+lb: bit.vec 8, 0
+n0: bit.vec 4, 0
+n1: bit.vec 4, 0
+n2: bit.vec 4, 0
+n3: bit.vec 4, 0
+err: bit.bit

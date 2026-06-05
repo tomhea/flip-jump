@@ -1,0 +1,215 @@
+// Dollar Amount To Words (#1084)
+
+// Reads decimal `0`-`99` + `\n`. Prints the English-words form `<tens_word> <ones_word>\n` (e.g. `42` → `forty two\n`; `7` → `seven\n`; `10` → `ten\n`; `20` → `twenty\n`).
+
+main
+
+def main @ low, chk_teen, teen_lbl, tens_part, zero_case, finish < n, q, ones, ten_const, twenty {
+    stl.startup
+    read_decimal 16, n
+    bit.if0 16, n, zero_case
+    bit.cmp 16, n, ten_const, low, chk_teen, chk_teen    // n < 10
+  low:
+    print_ones n
+    ;finish
+  chk_teen:
+    bit.cmp 16, n, twenty, teen_lbl, tens_part, tens_part   // n < 20
+  teen_lbl:
+    print_teen n
+    ;finish
+  tens_part:
+    bit.div 16, n, ten_const, q, ones                    // q = tens digit, ones = units
+    print_tens q
+    bit.if0 16, ones, finish
+    stl.output ' '
+    print_ones ones
+    ;finish
+  zero_case:
+    stl.output "zero"
+  finish:
+    stl.output '\n'
+    stl.loop
+}
+
+// Print the ones word for v in 1..9 (no newline).
+def print_ones v @ a2, a3, a4, a5, a6, a7, a8, a9, w1, w2, w3, w4, w5, w6, w7, w8, pdone < c {
+    bit.cmp 16, v, c + 1*16*dw, a2, w1, a2
+  w1:
+    stl.output "one"
+    ;pdone
+  a2:
+    bit.cmp 16, v, c + 2*16*dw, a3, w2, a3
+  w2:
+    stl.output "two"
+    ;pdone
+  a3:
+    bit.cmp 16, v, c + 3*16*dw, a4, w3, a4
+  w3:
+    stl.output "three"
+    ;pdone
+  a4:
+    bit.cmp 16, v, c + 4*16*dw, a5, w4, a5
+  w4:
+    stl.output "four"
+    ;pdone
+  a5:
+    bit.cmp 16, v, c + 5*16*dw, a6, w5, a6
+  w5:
+    stl.output "five"
+    ;pdone
+  a6:
+    bit.cmp 16, v, c + 6*16*dw, a7, w6, a7
+  w6:
+    stl.output "six"
+    ;pdone
+  a7:
+    bit.cmp 16, v, c + 7*16*dw, a8, w7, a8
+  w7:
+    stl.output "seven"
+    ;pdone
+  a8:
+    bit.cmp 16, v, c + 8*16*dw, a9, w8, a9
+  w8:
+    stl.output "eight"
+    ;pdone
+  a9:
+    stl.output "nine"
+  pdone:
+}
+
+// Print the teen word for v in 10..19 (no newline).
+def print_teen v @ b11, b12, b13, b14, b15, b16, b17, b18, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, tdone < c {
+    bit.cmp 16, v, c + 10*16*dw, b11, t10, b11
+  t10:
+    stl.output "ten"
+    ;tdone
+  b11:
+    bit.cmp 16, v, c + 11*16*dw, b12, t11, b12
+  t11:
+    stl.output "eleven"
+    ;tdone
+  b12:
+    bit.cmp 16, v, c + 12*16*dw, b13, t12, b13
+  t12:
+    stl.output "twelve"
+    ;tdone
+  b13:
+    bit.cmp 16, v, c + 13*16*dw, b14, t13, b14
+  t13:
+    stl.output "thirteen"
+    ;tdone
+  b14:
+    bit.cmp 16, v, c + 14*16*dw, b15, t14, b15
+  t14:
+    stl.output "fourteen"
+    ;tdone
+  b15:
+    bit.cmp 16, v, c + 15*16*dw, b16, t15, b16
+  t15:
+    stl.output "fifteen"
+    ;tdone
+  b16:
+    bit.cmp 16, v, c + 16*16*dw, b17, t16, b17
+  t16:
+    stl.output "sixteen"
+    ;tdone
+  b17:
+    bit.cmp 16, v, c + 17*16*dw, b18, t17, b18
+  t17:
+    stl.output "seventeen"
+    ;tdone
+  b18:
+    bit.cmp 16, v, c + 18*16*dw, t19, t18, t19
+  t18:
+    stl.output "eighteen"
+    ;tdone
+  t19:
+    stl.output "nineteen"
+  tdone:
+}
+
+// Print the tens word for t in 2..9 (no newline).
+def print_tens t @ s3, s4, s5, s6, s7, s8, s9, u2, u3, u4, u5, u6, u7, u8, sdone < c {
+    bit.cmp 16, t, c + 2*16*dw, s3, u2, s3
+  u2:
+    stl.output "twenty"
+    ;sdone
+  s3:
+    bit.cmp 16, t, c + 3*16*dw, s4, u3, s4
+  u3:
+    stl.output "thirty"
+    ;sdone
+  s4:
+    bit.cmp 16, t, c + 4*16*dw, s5, u4, s5
+  u4:
+    stl.output "forty"
+    ;sdone
+  s5:
+    bit.cmp 16, t, c + 5*16*dw, s6, u5, s6
+  u5:
+    stl.output "fifty"
+    ;sdone
+  s6:
+    bit.cmp 16, t, c + 6*16*dw, s7, u6, s7
+  u6:
+    stl.output "sixty"
+    ;sdone
+  s7:
+    bit.cmp 16, t, c + 7*16*dw, s8, u7, s8
+  u7:
+    stl.output "seventy"
+    ;sdone
+  s8:
+    bit.cmp 16, t, c + 8*16*dw, s9, u8, s9
+  u8:
+    stl.output "eighty"
+    ;sdone
+  s9:
+    stl.output "ninety"
+  sdone:
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+n: bit.vec 16, 0
+q: bit.vec 16, 0
+ones: bit.vec 16, 0
+ten_const: bit.vec 16, 10
+twenty: bit.vec 16, 20
+c: bit.vec 16, 0
+   bit.vec 16, 1
+   bit.vec 16, 2
+   bit.vec 16, 3
+   bit.vec 16, 4
+   bit.vec 16, 5
+   bit.vec 16, 6
+   bit.vec 16, 7
+   bit.vec 16, 8
+   bit.vec 16, 9
+   bit.vec 16, 10
+   bit.vec 16, 11
+   bit.vec 16, 12
+   bit.vec 16, 13
+   bit.vec 16, 14
+   bit.vec 16, 15
+   bit.vec 16, 16
+   bit.vec 16, 17
+   bit.vec 16, 18
+   bit.vec 16, 19
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit

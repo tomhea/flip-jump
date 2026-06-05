@@ -1,0 +1,120 @@
+// Days Between Dates Same Year (#1076)
+
+// Reads year, month1, day1, month2, day2 (each own line). Both dates in the same year; date2 ≥ date1. Prints absolute day difference as decimal + `\n`.
+
+main
+
+def main < year, m1, d1, m2, d2, leap, doy1, doy2 {
+    stl.startup
+    read_decimal 16, year
+    read_decimal 16, m1
+    read_decimal 16, d1
+    read_decimal 16, m2
+    read_decimal 16, d2
+    leap_of year, leap
+    doy_into 16, doy1, m1, d1, leap
+    doy_into 16, doy2, m2, d2, leap
+    bit.sub 16, doy2, doy1                   // date2 >= date1
+    bit.print_dec_uint 16, doy2
+    stl.output '\n'
+    stl.loop
+}
+
+// leap = 1 if `year` is a leap year (div by 4 and (not div by 100 or div by 400)).
+def leap_of year, leap @ yes, no, end < q, r, four, hundred, fourhundred {
+    bit.zero leap
+    bit.div 16, year, four, q, r
+    bit.if1 16, r, no                        // year % 4 != 0 -> not leap
+    bit.div 16, year, hundred, q, r
+    bit.if1 16, r, yes                        // % 100 != 0 -> leap
+    bit.div 16, year, fourhundred, q, r
+    bit.if0 16, r, yes                        // % 400 == 0 -> leap
+    ;no
+  yes:
+    bit.one leap
+    ;end
+  no:
+    bit.zero leap
+  end:
+}
+
+// doy = day-of-year for (m, d): cumulative days before month m, plus d, plus 1 if
+// leap and m > 2. Selects the cumulative count from cumdays[m] by runtime m.
+def doy_into n, doy, m, d, leap @ adj, noadj < monthconsts, cumdays, two {
+    bit.zero n, doy
+    rep(12, jj) copy_if_eq n, m, monthconsts + (jj+1)*n*dw, doy, cumdays + (jj+1)*n*dw
+    bit.add n, doy, d
+    bit.if0 leap, noadj
+    bit.cmp n, m, two, noadj, noadj, adj     // leap and m > 2 -> +1
+  adj:
+    bit.inc n, doy
+  noadj:
+}
+
+// if a[:n] == b[:n] then dst[:n] = src[:n].
+def copy_if_eq n, a, b, dst, src @ no, yes {
+    bit.cmp n, a, b, no, yes, no
+  yes:
+    bit.mov n, dst, src
+  no:
+}
+
+// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
+def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
+    bit.zero n, value
+  loop:
+    bit.input ch
+    bit.if0 8, ch, end
+    bit.cmp 8, ch, nl, add_digit, end, add_digit
+  add_digit:
+    bit.mul10 n, value
+    bit.ascii2dec err, digit, ch
+    bit.add n, value, digit
+    ;loop
+  end:
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+digit: bit.vec 16, 0
+err: bit.bit
+year: bit.vec 16, 0
+m1: bit.vec 16, 0
+d1: bit.vec 16, 0
+m2: bit.vec 16, 0
+d2: bit.vec 16, 0
+leap: bit.bit
+doy1: bit.vec 16, 0
+doy2: bit.vec 16, 0
+q: bit.vec 16, 0
+r: bit.vec 16, 0
+four: bit.vec 16, 4
+hundred: bit.vec 16, 100
+fourhundred: bit.vec 16, 400
+two: bit.vec 16, 2
+monthconsts: bit.vec 16, 0
+             bit.vec 16, 1
+             bit.vec 16, 2
+             bit.vec 16, 3
+             bit.vec 16, 4
+             bit.vec 16, 5
+             bit.vec 16, 6
+             bit.vec 16, 7
+             bit.vec 16, 8
+             bit.vec 16, 9
+             bit.vec 16, 10
+             bit.vec 16, 11
+             bit.vec 16, 12
+cumdays: bit.vec 16, 0
+         bit.vec 16, 0
+         bit.vec 16, 31
+         bit.vec 16, 59
+         bit.vec 16, 90
+         bit.vec 16, 120
+         bit.vec 16, 151
+         bit.vec 16, 181
+         bit.vec 16, 212
+         bit.vec 16, 243
+         bit.vec 16, 273
+         bit.vec 16, 304
+         bit.vec 16, 334
