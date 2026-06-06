@@ -3,7 +3,6 @@
 // Reads a single line from stdin (up to `\n`) and prints it reversed followed by `\n`.
 
 hw = w / 4
-CAP = 84
 
 main
 
@@ -53,10 +52,14 @@ def print_reversed @ setloop, setdone, ploop, pdone < buf, slen, rptr, cnt, byte
   pdone:
 }
 
-buf: hex.vec CAP
 slen: hex.vec hw
 wptr: hex.vec hw
 rptr: hex.vec hw
 cnt: hex.vec hw
 bytebuf: hex.vec 2
 nlbyte: hex.vec 2, '\n'
+
+// Input line buffer: a reserved (zeroed, not stored in the .fjm) region, so the
+// line length is bounded only by available memory rather than a fixed CAP.
+buf:
+    reserve dw * 1000000

@@ -3,8 +3,6 @@
 // Reads a `\n`-terminated target word (no whitespace), then a `\n`-terminated line ≤ 80 chars. Prints the count of whitespace-separated tokens in the line that exactly equal the target (case-sensitive) + `\n`.
 
 hw = w / 4
-CAP_T = 84
-CAP_L = 84
 
 main
 
@@ -93,9 +91,7 @@ def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
   done:
 }
 
-tbuf: hex.vec CAP_T
 tlen: hex.vec hw
-lbuf: hex.vec CAP_L
 llen: hex.vec hw
 scanptr: hex.vec hw
 posptr: hex.vec hw
@@ -114,4 +110,10 @@ bytebuf: hex.vec 2
 spacebyte: hex.vec 2, ' '
 tabbyte: hex.vec 2, '\t'
 nlbyte: hex.vec 2, '\n'
+
+// Input buffers: reserved (zeroed, not stored in the .fjm) regions — no fixed CAP.
+tbuf:
+    reserve dw * 1000000
+lbuf:
+    reserve dw * 1000000
 instate: bit.bit
