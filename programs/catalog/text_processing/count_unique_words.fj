@@ -35,7 +35,6 @@ def main @ loop, sep, sepcont, wordchar, inword, next, afterloop, finalize, done
     hex.zero hw, curlen
   inword:
     hex.inc hw, curlen
-    ;next
   next:
     hex.dec hw, cnt
     ;loop

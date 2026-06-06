@@ -4,18 +4,16 @@
 
 main
 
-def main @ hloop, hbody, hdone, dloop, dbody, ddone < p, i, ten {
+def main @ hloop, hbody, dloop, dbody, ddone < p, i, ten {
     stl.startup
     read_decimal 16, p
     bit.zero 16, i
   hloop:
-    bit.cmp 16, i, p, hbody, hdone, hdone   // i < p
+    bit.cmp 16, i, p, hbody, dloop, dloop   // i < p, else start the dots
   hbody:
     stl.output '#'
     bit.inc 16, i
     ;hloop
-  hdone:
-    ;dloop
   dloop:
     bit.cmp 16, i, ten, dbody, ddone, ddone // i < 10
   dbody:

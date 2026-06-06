@@ -10,6 +10,9 @@
 // @requires hex.init and stl.ptr_init (use stl.startup_and_init_all).
 
 ns hex {
+    //  Complexity: (len+1) iterations, each a hex.input + hex.cmp(2) (+ hex.write_byte_and_inc
+    //    + hex.inc on a stored byte) — i.e. O(len) in the input length; see those macros for the
+    //    per-iteration @-cost.
     //  Reads bytes from input into buf until a '\n' or a 0-byte (EOF) is seen; the terminator
     //  is consumed but NOT stored. Writes the number of bytes stored into len (a hex[:w/4]).
     //  buf must hold at least that many bytes (one hex-slot per byte). A 0-byte inside the
@@ -34,6 +37,8 @@ ns hex {
       end:
     }
 
+    //  Complexity: len iterations, each a hex.read_byte_and_inc + hex.print — O(len); see those
+    //    macros for the per-iteration @-cost.
     //  Prints len bytes from the buffer at the constant address buf, in order.
     def print_line buf, len @ loop, finish, pptr, cnt, bytebuf, end {
         .if0 w/4, len, end
@@ -54,6 +59,7 @@ ns hex {
       end:
     }
 
+    //  Complexity: len iterations, each a hex.read_byte_and_inc + hex.print — O(len).
     //  Prints len bytes starting at the RUNTIME address held in ptr (a hex[:w/4]) — e.g. a
     //  substring or token whose start was captured as a pointer into a buffer. ptr is unchanged.
     def print_from_ptr ptr, len @ loop, finish, pptr, cnt, bytebuf, end {

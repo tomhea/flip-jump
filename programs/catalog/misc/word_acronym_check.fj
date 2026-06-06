@@ -38,7 +38,6 @@ def main @ loop, isspace, notspace, contword, haveroom, match, next, endscan, pa
     ;next
   contword:
     bit.zero prevspace
-    ;next
   next:
     hex.dec hw, cnt
     ;loop

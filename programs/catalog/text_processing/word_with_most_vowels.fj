@@ -36,7 +36,6 @@ def main @ loop, sep, sepcont, wordchar, inword, addv, next, afterloop, printbes
     is_vowel ch, addv, next
   addv:
     hex.inc hw, curvow
-    ;next
   next:
     hex.dec hw, cnt
     ;loop
