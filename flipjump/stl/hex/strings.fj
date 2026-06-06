@@ -1,22 +1,11 @@
 // Line / byte-buffer helpers: read a whole line into a buffer and print buffers back.
-//
-// A byte buffer is a hex.vec where each BYTE occupies one hex-slot (one FJ op) — write/read
-// it with the hex.pointers byte macros, and advance one byte with a single ptr-step. (This is
-// distinct from the hex[:2] *register* form that hex.input / hex.print use for a single byte.)
-//
-// All three macros keep their own scratch (pointer, byte register, counter) inline, so the
-// caller only supplies the buffer and the length variable.
-//
-// @requires hex.init and stl.ptr_init (use stl.startup_and_init_all).
+// (By "buffers" we mean hex.pointers to those buffers.)
 
 ns hex {
-    //  Complexity: (len+1) iterations, each a hex.input + hex.cmp(2) (+ hex.write_byte_and_inc
-    //    + hex.inc on a stored byte) — i.e. O(len) in the input length; see those macros for the
-    //    per-iteration @-cost.
-    //  Reads bytes from input into buf until a '\n' or a 0-byte (EOF) is seen; the terminator
-    //  is consumed but NOT stored. Writes the number of bytes stored into len (a hex[:w/4]).
-    //  buf must hold at least that many bytes (one hex-slot per byte). A 0-byte inside the
-    //  line ends it early (treated as EOF), matching the usual '\0' sentinel convention.
+    //  Time Complexity:  len(w(0.75@+5) + 38@+80)   // per byte; hex.write_byte_and_inc dominates
+    // Space Complexity:  w(2@+42) + 33@+366
+    //   Reads bytes from input into buf until a '\n' or a 0-byte (EOF); writes the byte count into len.
+    // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
     def input_line buf, len @ loop, store, finish, wptr, bytebuf, nl, end {
         .set w/4, wptr, buf
         .zero w/4, len
@@ -37,9 +26,10 @@ ns hex {
       end:
     }
 
-    //  Complexity: len iterations, each a hex.read_byte_and_inc + hex.print — O(len); see those
-    //    macros for the per-iteration @-cost.
-    //  Prints len bytes from the buffer at the constant address buf, in order.
+    //  Time Complexity:  len(w(@+5) + 21@+27)        // per byte; hex.read_byte_and_inc dominates
+    // Space Complexity:  w(2.25@+45) + 16@+179
+    //   Prints len bytes from the buffer at the constant address buf, in order.
+    // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
     def print_line buf, len @ loop, finish, pptr, cnt, bytebuf, end {
         .if0 w/4, len, end
         .set w/4, pptr, buf
@@ -59,9 +49,10 @@ ns hex {
       end:
     }
 
-    //  Complexity: len iterations, each a hex.read_byte_and_inc + hex.print — O(len).
-    //  Prints len bytes starting at the RUNTIME address held in ptr (a hex[:w/4]) — e.g. a
-    //  substring or token whose start was captured as a pointer into a buffer. ptr is unchanged.
+    //  Time Complexity:  len(w(@+5) + 21@+27)        // per byte; hex.read_byte_and_inc dominates
+    // Space Complexity:  w(2.25@+45) + 16@+179
+    //   Prints len bytes starting at the runtime address held in ptr (ptr is unchanged).
+    // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
     def print_from_ptr ptr, len @ loop, finish, pptr, cnt, bytebuf, end {
         .if0 w/4, len, end
         .mov w/4, pptr, ptr
