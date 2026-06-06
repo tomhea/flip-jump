@@ -1,4 +1,5 @@
 echo: hello world
-sub: llo
-str: hello world 11
-echo2: second
+sub: world
+z: hello world 11
+n: AB
+2
