@@ -1,0 +1,38 @@
+// Tests the hex line/byte-buffer helpers: hex.input_line, hex.print_line, hex.print_from_ptr.
+//   Reads a line, echoes it; prints a 3-byte substring of it through a pointer; then reads and
+//   echoes a SECOND line (proving each call keeps its own scratch and is reusable).
+
+hw = w / 4
+
+stl.startup_and_init_all
+
+hex.input_line buf, len
+stl.output "echo: "
+hex.print_line buf, len
+stl.output '\n'
+
+stl.output "sub: "
+hex.set hw, sub, buf
+hex.ptr_inc sub
+hex.ptr_inc sub
+hex.print_from_ptr sub, three
+stl.output '\n'
+
+hex.input_line buf2, len2
+stl.output "echo2: "
+hex.print_line buf2, len2
+stl.output '\n'
+
+stl.output "empty: ["
+hex.input_line buf2, len2
+hex.print_line buf2, len2
+stl.output "]\n"
+
+stl.loop
+
+buf:   hex.vec 84
+len:   hex.vec hw
+buf2:  hex.vec 84
+len2:  hex.vec hw
+sub:   hex.vec hw
+three: hex.vec hw, 3
