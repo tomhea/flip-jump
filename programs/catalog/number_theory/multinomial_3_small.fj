@@ -1,0 +1,67 @@
+// Multinomial 3 Small (#1045)
+
+// Reads 3 decimals `a` `b` `c` (each `0`-`5`, on own lines). Prints `(a + b + c)! / (a! * b! * c!)` as decimal + `\n`.
+
+main
+
+def main @ done < a, b, c, sumabc, sumbc, c1, c2, res {
+    stl.startup_and_init_all
+    hex.input_dec_uint 8, a, done
+    hex.input_dec_uint 8, b, done
+    hex.input_dec_uint 8, c, done
+    hex.mov 8, sumabc, a
+    hex.add 8, sumabc, b
+    hex.add 8, sumabc, c                     // a + b + c
+    hex.mov 8, sumbc, b
+    hex.add 8, sumbc, c                      // b + c
+    binom_into 8, c1, sumabc, a              // C(a+b+c, a)
+    binom_into 8, c2, sumbc, b               // C(b+c, b)
+    hex.mul 8, res, c1, c2                    // multinomial = C(a+b+c, a) * C(b+c, b)
+    hex.print_dec_uint 8, res
+    stl.output '\n'
+  done:
+    stl.loop
+}
+
+// dst[:n] = C(N, K) via the multiplicative formula (assumes K <= N).
+def binom_into n, dst, N, K @ useK, useNK, kset, loop, cont, end, divz < bk, bnk, bterm, bi, bprod, br {
+    hex.mov n, bnk, N
+    hex.sub n, bnk, K
+    hex.cmp n, K, bnk, useK, useK, useNK
+  useNK:
+    hex.mov n, bk, bnk
+    ;kset
+  useK:
+    hex.mov n, bk, K
+  kset:
+    hex.zero n, dst
+    hex.inc n, dst
+    hex.zero n, bi
+    hex.mov n, bterm, N
+    hex.sub n, bterm, bk
+  loop:
+    hex.cmp n, bi, bk, cont, end, end
+  cont:
+    hex.inc n, bi
+    hex.inc n, bterm
+    hex.mul n, bprod, dst, bterm
+    hex.div n, n, dst, br, bprod, bi, divz
+    ;loop
+  divz:
+  end:
+}
+
+a: hex.vec 8, 0
+b: hex.vec 8, 0
+c: hex.vec 8, 0
+sumabc: hex.vec 8, 0
+sumbc: hex.vec 8, 0
+c1: hex.vec 8, 0
+c2: hex.vec 8, 0
+res: hex.vec 8, 0
+bk: hex.vec 8, 0
+bnk: hex.vec 8, 0
+bterm: hex.vec 8, 0
+bi: hex.vec 8, 0
+bprod: hex.vec 8, 0
+br: hex.vec 8, 0

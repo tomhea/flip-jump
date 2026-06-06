@@ -1,0 +1,44 @@
+// Signed Triangle Area 2X (#1057)
+
+// Reads 6 decimals (3 vertices, each coord own line). Prints `x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2)` as signed decimal + `\n` (this is exactly 2× the signed area).
+
+main
+
+// Two's-complement low-n-hex products are sign-agnostic, so plain hex.mul gives the
+// correct signed result here (no overflow at these coordinate sizes).
+def main @ done < x1, y1, x2, y2, x3, y3, t, m, acc {
+    stl.startup_and_init_all
+    hex.input_dec_int 8, x1, done
+    hex.input_dec_int 8, y1, done
+    hex.input_dec_int 8, x2, done
+    hex.input_dec_int 8, y2, done
+    hex.input_dec_int 8, x3, done
+    hex.input_dec_int 8, y3, done
+    hex.zero 8, acc
+    hex.mov 8, t, y2
+    hex.sub 8, t, y3                         // y2 - y3
+    hex.mul 8, m, x1, t
+    hex.add 8, acc, m
+    hex.mov 8, t, y3
+    hex.sub 8, t, y1                         // y3 - y1
+    hex.mul 8, m, x2, t
+    hex.add 8, acc, m
+    hex.mov 8, t, y1
+    hex.sub 8, t, y2                         // y1 - y2
+    hex.mul 8, m, x3, t
+    hex.add 8, acc, m
+    hex.print_dec_int 8, acc
+    stl.output '\n'
+  done:
+    stl.loop
+}
+
+x1: hex.vec 8, 0
+y1: hex.vec 8, 0
+x2: hex.vec 8, 0
+y2: hex.vec 8, 0
+x3: hex.vec 8, 0
+y3: hex.vec 8, 0
+t: hex.vec 8, 0
+m: hex.vec 8, 0
+acc: hex.vec 8, 0

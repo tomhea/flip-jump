@@ -18,3 +18,16 @@ described limitations that have since been fixed: `bit.mul` (works now),
 "no hex decimal printer" (now `hex.print_dec_uint/int` + `hex.input_dec_uint/int`),
 and the `n`/`i`/`d` naming trap (`rep` iterators are now hygienic; the only
 off-limits names are the `w`/`dw`/`dbit` constants, which the compiler now rejects).
+
+## STL additions
+
+- **`hex/strings.fj`** (`hex.input_ptr_line`, `hex.print_ptr_text`, `hex.print_ptr_line`) — line /
+  byte-buffer helpers, all operating on a hex.pointer to the buffer. Promoted from the
+  per-program `read_line_into` / `print_buffer` helpers that the Pass-1 storage programs
+  (io / strings / loops / misc / text_processing) each re-defined. They keep their pointer /
+  byte-register / counter scratch *inline* (jumped over, like `mul.fj`), so a caller supplies only
+  the buffer pointer and a length var. `input_ptr_line` reads until '\n'/0-byte; `print_ptr_text`
+  prints len bytes; `print_ptr_line` prints until '\n'/0-byte (echoing a terminating '\n'),
+  reporting the count. A byte buffer is `hex.vec CAP` (one byte per FJ op) or a `reserve`d region;
+  requires `stl.startup_and_init_all`. Listed last in `stl/conf.json` (depends on hex pointers + I/O).
+  Tested by `programs/hexlib_tests/basics1/strings.fj` (`hexlib-strings`).

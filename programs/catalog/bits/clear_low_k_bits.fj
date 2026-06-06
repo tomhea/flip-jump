@@ -1,0 +1,31 @@
+// Clear Low K Bits (#1068)
+
+// Reads one byte then one decimal digit `0`-`7` + `\n`. Outputs the byte with the lowest `k` bits cleared (`byte AND (~((1<<k)-1))`) as one raw byte.
+
+main
+
+def main @ shloop, shdone < ch, kch, k, mask, err {
+    stl.startup
+    bit.input ch
+    bit.input kch
+    bit.ascii2dec err, k, kch
+    bit.zero 8, mask
+    bit.inc 8, mask                     // mask = 1
+  shloop:
+    bit.if0 8, k, shdone                // mask = 1 << k
+    bit.shl 8, mask
+    bit.dec 8, k
+    ;shloop
+  shdone:
+    bit.dec 8, mask                     // mask = (1 << k) - 1  (low k bits set)
+    bit.not 8, mask                     // mask = ~((1 << k) - 1)
+    bit.and 8, ch, mask
+    bit.print ch
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+kch: bit.vec 8, 0
+k: bit.vec 8, 0
+mask: bit.vec 8, 0
+err: bit.bit

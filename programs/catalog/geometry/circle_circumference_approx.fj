@@ -1,0 +1,26 @@
+// Circle Circumference Approx (#1059)
+
+// Reads decimal radius `0`-`9` + `\n`. Prints `(2 * r * 314) / 100` (integer approximation of 2πr) + `\n`.
+
+main
+
+def main @ done < r, v, v2, q, rem, c2, c314, c100 {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, r, done
+    hex.mul 4, v, r, c314                    // r * 314
+    hex.mul 4, v2, v, c2                     // * 2
+    hex.div 4, 4, q, rem, v2, c100, done     // / 100
+    hex.print_dec_uint 4, q
+    stl.output '\n'
+  done:
+    stl.loop
+}
+
+r: hex.vec 4, 0
+v: hex.vec 4, 0
+v2: hex.vec 4, 0
+q: hex.vec 4, 0
+rem: hex.vec 4, 0
+c2: hex.vec 4, 2
+c314: hex.vec 4, 314
+c100: hex.vec 4, 100

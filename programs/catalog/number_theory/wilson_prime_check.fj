@@ -1,0 +1,39 @@
+// Wilson Prime Check (#1039)
+
+// Reads decimal `p` `2`-`30` + `\n`. Computes `((p-1)! + 1) mod p`. Prints `1\n` if this is `0` (i.e. `p` is prime by Wilson's theorem), else `0\n`.
+
+main
+
+def main @ loop, body, done, isprime, err < p, fact, i, prod, q, r {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, p, err
+    hex.zero 4, fact
+    hex.inc 4, fact                         // fact = 1
+    hex.zero 4, i
+    hex.inc 4, i
+    hex.inc 4, i                            // i = 2
+  loop:
+    hex.cmp 4, i, p, body, done, done       // i < p
+  body:
+    hex.mul 4, prod, fact, i
+    hex.div 4, 4, q, fact, prod, p, err     // fact = fact * i mod p
+    hex.inc 4, i
+    ;loop
+  done:
+    hex.inc 4, fact                         // (p-1)! + 1
+    hex.div 4, 4, q, r, fact, p, err        // r = ((p-1)! + 1) mod p
+    hex.if0 4, r, isprime
+    stl.output "0\n"
+    ;err
+  isprime:
+    stl.output "1\n"
+  err:
+    stl.loop
+}
+
+p: hex.vec 4, 0
+fact: hex.vec 4, 0
+i: hex.vec 4, 0
+prod: hex.vec 4, 0
+q: hex.vec 4, 0
+r: hex.vec 4, 0

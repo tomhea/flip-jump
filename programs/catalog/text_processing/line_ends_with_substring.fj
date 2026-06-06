@@ -1,0 +1,72 @@
+// Line Ends With Substring (#1108)
+
+// Reads a `\n`-terminated suffix (≤ 20 chars), then a `\n`-terminated line (≤ 60 chars). Prints `1\n` if the line's content (excluding `\n`) ends with the suffix exactly, else `0\n`.
+
+hw = w / 4
+CAP_S = 24
+CAP_L = 64
+
+main
+
+def main @ ok, walkloop, walkdone, cmploop, eqc, yes, no, halt < sbuf, slen, lbuf, llen, sptr, lptr, off, cnt, sb, lb {
+    stl.startup_and_init_all
+    read_line_into sbuf, slen
+    read_line_into lbuf, llen
+    hex.cmp hw, slen, llen, ok, ok, no      // suffix no longer than line ?
+  ok:
+    hex.set hw, lptr, lbuf
+    hex.mov hw, off, llen
+    hex.sub hw, off, slen                    // off = llen - slen
+  walkloop:
+    hex.if0 hw, off, walkdone                // advance lptr to the suffix start
+    hex.ptr_inc lptr
+    hex.dec hw, off
+    ;walkloop
+  walkdone:
+    hex.set hw, sptr, sbuf
+    hex.mov hw, cnt, slen
+  cmploop:
+    hex.if0 hw, cnt, yes
+    hex.read_byte_and_inc sb, sptr
+    hex.read_byte_and_inc lb, lptr
+    hex.cmp 2, sb, lb, no, eqc, no
+  eqc:
+    hex.dec hw, cnt
+    ;cmploop
+  yes:
+    stl.output "1\n"
+    ;halt
+  no:
+    stl.output "0\n"
+  halt:
+    stl.loop
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+sbuf: hex.vec CAP_S
+slen: hex.vec hw
+lbuf: hex.vec CAP_L
+llen: hex.vec hw
+sptr: hex.vec hw
+lptr: hex.vec hw
+wptr: hex.vec hw
+off: hex.vec hw
+cnt: hex.vec hw
+sb: hex.vec 2
+lb: hex.vec 2
+bytebuf: hex.vec 2
+nlbyte: hex.vec 2, '\n'

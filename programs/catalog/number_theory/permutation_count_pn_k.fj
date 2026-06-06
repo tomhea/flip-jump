@@ -1,0 +1,34 @@
+// Permutation Count Pn K (#1046)
+
+// Reads decimals `N` `K` (`N` `1`-`10`, `K` `0`-`N`). Prints `P(N, K) = N! / (N-K)!` as decimal + `\n`.
+
+main
+
+def main @ loop, body, done < N, K, res, i, cur, prod {
+    stl.startup_and_init_all
+    hex.input_dec_uint 8, N, done
+    hex.input_dec_uint 8, K, done
+    hex.zero 8, res
+    hex.inc 8, res                          // res = 1
+    hex.zero 8, i                           // i = 0 (terms multiplied)
+    hex.mov 8, cur, N                       // cur = N
+  loop:
+    hex.cmp 8, i, K, body, done, done       // i < K
+  body:
+    hex.mul 8, prod, res, cur               // res *= cur
+    hex.mov 8, res, prod
+    hex.dec 8, cur
+    hex.inc 8, i
+    ;loop
+  done:
+    hex.print_dec_uint 8, res
+    stl.output '\n'
+    stl.loop
+}
+
+N: hex.vec 8, 0
+K: hex.vec 8, 0
+res: hex.vec 8, 0
+i: hex.vec 8, 0
+cur: hex.vec 8, 0
+prod: hex.vec 8, 0

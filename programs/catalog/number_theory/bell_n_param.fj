@@ -1,0 +1,68 @@
+// Bell N Param (#1048)
+
+// Reads decimal `N` `0`-`6` + `\n`. Prints the `N`-th Bell number `B(N)` as decimal + `\n`.
+
+main
+
+def main @ halt < N, ans, dp, nrow, consts {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, N, halt
+    hex.inc 4, dp                           // dp[0] = 1  (Bell triangle row 0)
+    copy_if_eq 4, N, consts, ans, dp        // capture B(0) if N == 0
+    rep(6, t) bell_round 4, dp, nrow, t, N, consts, ans
+    hex.print_dec_uint 4, ans
+    stl.output '\n'
+  halt:
+    stl.loop
+}
+
+// Build Bell triangle row (t+1) into dp, then capture B(t+1) into ans if N matches.
+def bell_round unit, dp, nrow, t, N, consts, ans {
+    bell_row unit, dp, nrow, t
+    copy_if_eq unit, N, consts+(t+1)*unit*dw, ans, dp
+}
+
+// Build Bell row t+1 (length t+2) from the old row held in dp (length t+1).
+def bell_row unit, dp, nrow, t {
+    hex.mov unit, nrow, dp+t*unit*dw                 // nrow[0] = last of old row
+    rep(t+1, j) bell_step unit, nrow, dp, j          // nrow[1..t+1]
+    rep(t+2, j) hex.mov unit, dp+j*unit*dw, nrow+j*unit*dw
+}
+
+// nrow[j+1] = nrow[j] + dp[j].
+def bell_step unit, nrow, dp, j {
+    hex.mov unit, nrow+(j+1)*unit*dw, nrow+j*unit*dw
+    hex.add unit, nrow+(j+1)*unit*dw, dp+j*unit*dw
+}
+
+// if a[:n] == b[:n] then dst[:n] = src[:n].
+def copy_if_eq n, a, b, dst, src @ no, yes {
+    hex.cmp n, a, b, no, yes, no
+  yes:
+    hex.mov n, dst, src
+  no:
+}
+
+N: hex.vec 4, 0
+ans: hex.vec 4, 0
+dp: hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+nrow: hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+consts: hex.vec 4, 0
+        hex.vec 4, 1
+        hex.vec 4, 2
+        hex.vec 4, 3
+        hex.vec 4, 4
+        hex.vec 4, 5
+        hex.vec 4, 6

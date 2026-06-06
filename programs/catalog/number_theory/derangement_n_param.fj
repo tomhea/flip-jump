@@ -1,0 +1,55 @@
+// Derangement N Param (#1050)
+
+// Reads decimal `N` `0`-`8` + `\n`. Prints the `N`-th derangement number `D(N)` as decimal + `\n`.
+
+main
+
+def main @ loop, body, done, print0, print1, halt < N, d0, d1, dn, i, im1, sum, prod {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, N, print0
+    hex.zero 4, d0
+    hex.inc 4, d0                           // d0 = D(0) = 1
+    hex.zero 4, d1                          // d1 = D(1) = 0
+    hex.if0 4, N, print0                    // N == 0 -> D(0)
+    hex.mov 4, dn, N
+    hex.dec 4, dn
+    hex.if0 4, dn, print1                   // N == 1 -> D(1)
+    hex.zero 4, i
+    hex.inc 4, i
+    hex.inc 4, i                            // i = 2
+  loop:
+    hex.cmp 4, i, N, body, body, done       // i <= N
+  body:
+    hex.mov 4, sum, d0
+    hex.add 4, sum, d1                      // sum = D(i-1) + D(i-2)
+    hex.mov 4, im1, i
+    hex.dec 4, im1                          // i - 1
+    hex.mul 4, prod, sum, im1               // dn = (i-1) * (D(i-1) + D(i-2))
+    hex.mov 4, dn, prod
+    hex.mov 4, d0, d1
+    hex.mov 4, d1, dn
+    hex.inc 4, i
+    ;loop
+  done:
+    hex.print_dec_uint 4, d1
+    stl.output '\n'
+    ;halt
+  print0:
+    hex.print_dec_uint 4, d0
+    stl.output '\n'
+    ;halt
+  print1:
+    hex.print_dec_uint 4, d1
+    stl.output '\n'
+  halt:
+    stl.loop
+}
+
+N: hex.vec 4, 0
+d0: hex.vec 4, 0
+d1: hex.vec 4, 0
+dn: hex.vec 4, 0
+i: hex.vec 4, 0
+im1: hex.vec 4, 0
+sum: hex.vec 4, 0
+prod: hex.vec 4, 0

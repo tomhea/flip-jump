@@ -1,0 +1,154 @@
+// Word With Most Vowels (#1101)
+
+// Reads a `\n`-terminated line ≤ 80 chars. Prints the word with the most vowels (`aeiouAEIOU`) + `\n`. Ties: first such word. Empty input → empty line `\n`.
+
+hw = w / 4
+CAP = 84
+
+main
+
+def main @ loop, sep, sepcont, wordchar, inword, addv, next, afterloop, printbest < buf, slen, scanptr, posptr, cnt, ch, instate, curlen, curvow, curstart, bestlen, bestvow, bestptr, found, spacebyte, tabbyte {
+    stl.startup_and_init_all
+    read_line_into buf, slen
+    hex.set hw, scanptr, buf
+    bit.zero found
+    bit.zero instate
+    hex.mov hw, cnt, slen
+  loop:
+    hex.if0 hw, cnt, afterloop
+    hex.mov hw, posptr, scanptr
+    hex.read_byte_and_inc ch, scanptr
+    is_ws ch, sep, wordchar, spacebyte, tabbyte
+  sep:
+    bit.if0 instate, sepcont
+    update_best_vowel curvow, curlen, bestvow, bestlen, curstart, bestptr, found
+    bit.zero instate
+  sepcont:
+    ;next
+  wordchar:
+    bit.if1 instate, inword
+    bit.one instate
+    hex.mov hw, curstart, posptr
+    hex.zero hw, curlen
+    hex.zero hw, curvow
+  inword:
+    hex.inc hw, curlen
+    is_vowel ch, addv, next
+  addv:
+    hex.inc hw, curvow
+  next:
+    hex.dec hw, cnt
+    ;loop
+  afterloop:
+    bit.if0 instate, printbest
+    update_best_vowel curvow, curlen, bestvow, bestlen, curstart, bestptr, found
+  printbest:
+    print_from_ptr bestptr, bestlen
+    stl.output '\n'
+    stl.loop
+}
+
+// Record this token as best if it's the first seen or has strictly more vowels (keeps first on ties).
+def update_best_vowel curvow, curlen, bestvow, bestlen, curstart, bestptr, found @ first, save, skip {
+    bit.if0 found, first
+    hex.cmp hw, curvow, bestvow, skip, skip, save
+  first:
+    bit.one found
+  save:
+    hex.mov hw, bestvow, curvow
+    hex.mov hw, bestlen, curlen
+    hex.mov hw, bestptr, curstart
+  skip:
+}
+
+// Jump to `yes` if ch is a vowel (aeiouAEIOU), else `no`.
+def is_vowel ch, yes, no @ c1, c2, c3, c4, c5, c6, c7, c8, c9 < va, ve, vi, vo, vu, vaa, vee, vii, voo, vuu {
+    hex.cmp 2, ch, va, c1, yes, c1
+  c1:
+    hex.cmp 2, ch, ve, c2, yes, c2
+  c2:
+    hex.cmp 2, ch, vi, c3, yes, c3
+  c3:
+    hex.cmp 2, ch, vo, c4, yes, c4
+  c4:
+    hex.cmp 2, ch, vu, c5, yes, c5
+  c5:
+    hex.cmp 2, ch, vaa, c6, yes, c6
+  c6:
+    hex.cmp 2, ch, vee, c7, yes, c7
+  c7:
+    hex.cmp 2, ch, vii, c8, yes, c8
+  c8:
+    hex.cmp 2, ch, voo, c9, yes, c9
+  c9:
+    hex.cmp 2, ch, vuu, no, yes, no
+}
+
+// Print `count` bytes starting at the address held in startptr.
+def print_from_ptr startptr, count @ loop, done < fpptr, fcnt, fbyte {
+    hex.if0 hw, count, done
+    hex.mov hw, fpptr, startptr
+    hex.mov hw, fcnt, count
+  loop:
+    hex.if0 hw, fcnt, done
+    hex.read_byte_and_inc fbyte, fpptr
+    hex.print fbyte
+    hex.dec hw, fcnt
+    ;loop
+  done:
+}
+
+// Jump to `ws` if b is a space or tab, else to `notws`.
+def is_ws b, ws, notws, spacebyte, tabbyte @ try_tab {
+    hex.cmp 2, b, spacebyte, try_tab, ws, try_tab
+  try_tab:
+    hex.cmp 2, b, tabbyte, notws, ws, notws
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+buf: hex.vec CAP
+slen: hex.vec hw
+scanptr: hex.vec hw
+posptr: hex.vec hw
+wptr: hex.vec hw
+cnt: hex.vec hw
+curlen: hex.vec hw
+curvow: hex.vec hw
+curstart: hex.vec hw
+bestlen: hex.vec hw
+bestvow: hex.vec hw
+bestptr: hex.vec hw
+fpptr: hex.vec hw
+fcnt: hex.vec hw
+fbyte: hex.vec 2
+ch: hex.vec 2
+bytebuf: hex.vec 2
+spacebyte: hex.vec 2, ' '
+tabbyte: hex.vec 2, '\t'
+nlbyte: hex.vec 2, '\n'
+va: hex.vec 2, 'a'
+ve: hex.vec 2, 'e'
+vi: hex.vec 2, 'i'
+vo: hex.vec 2, 'o'
+vu: hex.vec 2, 'u'
+vaa: hex.vec 2, 'A'
+vee: hex.vec 2, 'E'
+vii: hex.vec 2, 'I'
+voo: hex.vec 2, 'O'
+vuu: hex.vec 2, 'U'
+instate: bit.bit
+found: bit.bit

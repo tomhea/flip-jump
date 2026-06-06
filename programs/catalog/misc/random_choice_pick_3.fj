@@ -1,0 +1,77 @@
+// Random Choice Pick 3 (#1077)
+
+// Reads 3 `\n`-terminated lines (each ≤ 20 chars) then one byte. Prints one of the 3 lines based on `byte mod 3`, followed by `\n`.
+
+hw = w / 4
+CAP = 24
+
+main
+
+def main @ b0, b1, done < buf0, len0, buf1, len1, buf2, len2, selch, sel, q, rem, three {
+    stl.startup_and_init_all
+    read_line_into buf0, len0
+    read_line_into buf1, len1
+    read_line_into buf2, len2
+    bit.input selch
+    bit.mov 8, sel, selch
+    bit.div 8, sel, three, q, rem           // rem = byte mod 3
+    bit.if0 8, rem, b0
+    bit.dec 8, rem
+    bit.if0 8, rem, b1
+    print_buffer buf2, len2                 // rem == 2
+    ;done
+  b0:
+    print_buffer buf0, len0
+    ;done
+  b1:
+    print_buffer buf1, len1
+  done:
+    stl.output '\n'
+    stl.loop
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+// Print buf's slen bytes in order.
+def print_buffer buf, slen @ loop, done < pptr, cnt, bytebuf {
+    hex.if0 hw, slen, done
+    hex.set hw, pptr, buf
+    hex.mov hw, cnt, slen
+  loop:
+    hex.if0 hw, cnt, done
+    hex.read_byte_and_inc bytebuf, pptr
+    hex.print bytebuf
+    hex.dec hw, cnt
+    ;loop
+  done:
+}
+
+buf0: hex.vec CAP
+len0: hex.vec hw
+buf1: hex.vec CAP
+len1: hex.vec hw
+buf2: hex.vec CAP
+len2: hex.vec hw
+wptr: hex.vec hw
+pptr: hex.vec hw
+cnt: hex.vec hw
+bytebuf: hex.vec 2
+nlbyte: hex.vec 2, '\n'
+selch: bit.vec 8, 0
+sel: bit.vec 8, 0
+q: bit.vec 8, 0
+rem: bit.vec 8, 0
+three: bit.vec 8, 3

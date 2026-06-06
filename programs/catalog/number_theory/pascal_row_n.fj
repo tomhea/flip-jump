@@ -1,0 +1,37 @@
+// Pascal Row N (#1053)
+
+// Reads decimal `N` `0`-`8` + `\n`. Prints the `N`-th row of Pascal's triangle as `N+1` decimals space-separated + `\n`.
+
+main
+
+def main @ loop, body, done < N, c, k, term, prod, r {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, N, done
+    hex.zero 4, c
+    hex.inc 4, c                            // c = C(N, 0) = 1
+    hex.print_dec_uint 4, c
+    hex.zero 4, k
+    hex.inc 4, k                            // k = 1
+  loop:
+    hex.cmp 4, k, N, body, body, done       // k <= N
+  body:
+    hex.mov 4, term, N
+    hex.sub 4, term, k
+    hex.inc 4, term                         // term = N - k + 1
+    hex.mul 4, prod, c, term
+    hex.div 4, 4, c, r, prod, k, done       // c = c * (N-k+1) / k = C(N, k)
+    stl.output ' '
+    hex.print_dec_uint 4, c
+    hex.inc 4, k
+    ;loop
+  done:
+    stl.output '\n'
+    stl.loop
+}
+
+N: hex.vec 4, 0
+c: hex.vec 4, 0
+k: hex.vec 4, 0
+term: hex.vec 4, 0
+prod: hex.vec 4, 0
+r: hex.vec 4, 0

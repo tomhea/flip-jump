@@ -140,6 +140,9 @@ Thank you!
 | 0054 | read_one_print_three | Reads one byte from stdin and prints the literal sequence `<byte><byte><byte>
 `. |
 | 0055 | rot_ascii_plus_one | Reads stdin and outputs each byte plus 1, modulo 256 (so `0xFF` wraps to `0x00`). All bytes are transformed uniformly; no special-casing of letters or non-letters. |
+| 1090 | reverse_line | Reads a single line from stdin (up to `
+`) and prints it reversed followed by `
+`. |
 
 ## arithmetic
 
@@ -336,6 +339,65 @@ N
 | 0165 | is_cube_small | Reads decimal N in `0`-`64` and prints `1
 ` if N is a perfect cube, else `0
 `. |
+| 1030 | modular_inverse_brute | Reads decimals `a` `m` (each `1`-`30`, own line, with `gcd(a, m) = 1` guaranteed). Brute-forces `x` in `1..m-1` such that `(a * x) mod m == 1`. Prints `x` as decimal + `
+`. |
+| 1031 | crt_two_pairs | Reads 4 decimals `r1 m1 r2 m2` (each on own line, `m1`,`m2` coprime, each ≤ `10`). Finds `r` such that `r ≡ r1 mod m1` and `r ≡ r2 mod m2`, with `0 <= r < m1*m2`. Prints `r` as decimal + `
+`. |
+| 1032 | mod_factorial | Reads decimals `N` `m` (each `1`-`9` for N, `1`-`30` for m, on own lines). Prints `(N! mod m)` as decimal + `
+`. |
+| 1033 | mod_binomial_small | Reads decimals `N` `K` `m` (`N` `1`-`9`, `K` `0..N`, `m` `1`-`30`, on own lines). Prints `(C(N, K) mod m)` as decimal + `
+`. |
+| 1034 | mod_power_table | Reads decimals `base` `mod` (`base` `1`-`9`, `mod` `2`-`9`, on own lines). Prints `base^0 mod mod`, `base^1 mod mod`, ..., `base^(mod-1) mod mod` space-separated on one line + `
+`. |
+| 1035 | multiplicative_order_small | Reads decimals `a` `m` (each `2`-`20`, `gcd(a,m)=1`). Finds the smallest `k >= 1` such that `(a^k) mod m == 1`. Prints `k` as decimal + `
+`. |
+| 1036 | legendre_symbol_small | Reads decimals `a` `p` (`p` is an odd prime `3`-`19`, `a` `0`-`p-1`). Prints the Legendre symbol `(a/p)`: `1
+` if `a` is a non-zero quadratic residue mod p, `-1
+` if non-residue, `0
+` if `a == 0`. |
+| 1037 | jacobi_symbol_small | Reads decimals `a` `n` (`n` odd `1`-`19`, `a` `0`-`n-1`). Prints the Jacobi symbol as `1
+`, `-1
+`, or `0
+`. |
+| 1038 | mod_double_factorial | Reads decimals `N` `m` (`N` `0`-`9`, `m` `1`-`30`). Prints `(N!! mod m)` as decimal + `
+` (where `N!! = N*(N-2)*(N-4)*...` down to 1 or 2). |
+| 1039 | wilson_prime_check | Reads decimal `p` `2`-`30` + `
+`. Computes `((p-1)! + 1) mod p`. Prints `1
+` if this is `0` (i.e. `p` is prime by Wilson's theorem), else `0
+`. |
+| 1040 | inv_mod_via_fermat | Reads decimals `a` `p` (`p` prime `2`-`19`, `a` `1`-`p-1`). Computes `a^(p-2) mod p` (modular inverse via Fermat's little theorem). Prints inverse as decimal + `
+`. |
+| 1041 | primitive_root_check | Reads decimals `g` `p` (`p` prime `3`-`19`, `g` `1`-`p-1`). Prints `1
+` if `g` is a primitive root mod p (i.e. its multiplicative order is `p-1`), else `0
+`. |
+| 1042 | discrete_log_brute_small | Reads decimals `g` `h` `p` (`p` prime `3`-`19`, `g` `1`-`p-1` primitive root, `h` `1`-`p-1`). Brute-forces `x` in `0..p-2` such that `g^x mod p == h`. Prints `x` as decimal + `
+`. |
+| 1043 | mod_sum_arithmetic | Reads decimals `N` `m` (`N` `1`-`30`, `m` `1`-`30`). Prints `((1 + 2 + ... + N) mod m)` as decimal + `
+`. |
+| 1044 | binomial_coefficient_small | Reads decimals `N` `K` (`N` `0`-`10`, `K` `0`-`N`, on own lines). Prints `C(N, K)` as decimal + `
+`. |
+| 1045 | multinomial_3_small | Reads 3 decimals `a` `b` `c` (each `0`-`5`, on own lines). Prints `(a + b + c)! / (a! * b! * c!)` as decimal + `
+`. |
+| 1046 | permutation_count_pn_k | Reads decimals `N` `K` (`N` `1`-`10`, `K` `0`-`N`). Prints `P(N, K) = N! / (N-K)!` as decimal + `
+`. |
+| 1047 | catalan_n_param | Reads decimal `N` `0`-`7` + `
+`. Prints the `N`-th Catalan number `C(2N, N) / (N + 1)` as decimal + `
+`. |
+| 1048 | bell_n_param | Reads decimal `N` `0`-`6` + `
+`. Prints the `N`-th Bell number `B(N)` as decimal + `
+`. |
+| 1049 | stirling_2nd_small | Reads decimals `N` `K` (`N` `0`-`6`, `K` `0`-`N`). Prints the Stirling number of the second kind `S(N, K)` as decimal + `
+`. |
+| 1050 | derangement_n_param | Reads decimal `N` `0`-`8` + `
+`. Prints the `N`-th derangement number `D(N)` as decimal + `
+`. |
+| 1051 | eulerian_n_k_small | Reads decimals `N` `K` (`N` `1`-`6`, `K` `0`-`N-1`). Prints the Eulerian number `<N, K>` as decimal + `
+`. |
+| 1052 | lah_n_k_small | Reads decimals `N` `K` (`N` `1`-`6`, `K` `1`-`N`). Prints the (signed) Lah number `L(N, K)` as decimal + `
+`. |
+| 1053 | pascal_row_n | Reads decimal `N` `0`-`8` + `
+`. Prints the `N`-th row of Pascal's triangle as `N+1` decimals space-separated + `
+`. |
 
 ## strings
 
@@ -430,6 +492,17 @@ N
 | 0193 | count_letter_e | Reads a `
 `-terminated line ≤ 80 chars and prints the count of `e` or `E` bytes as decimal + `
 `. |
+| 1091 | is_palindrome_string | Reads a `
+`-terminated line ≤ 30 chars and prints `1
+` if the line (excluding `
+`) is a palindrome, else `0
+`. |
+| 1092 | repeat_line_2x | Reads a `
+`-terminated line ≤ 40 chars and prints its content twice (concatenated, no internal separator), followed by `
+`. |
+| 1093 | repeat_line_3x | Reads a `
+`-terminated line ≤ 30 chars and prints its content three times concatenated, followed by `
+`. |
 
 ## bits
 
@@ -505,6 +578,26 @@ N
 | 0933 | unset_lowest_set_bit | Reads one byte and outputs `byte AND (byte - 1)` (clears the lowest set bit) as one raw byte. For `byte = 0` outputs `0`. |
 | 0934 | isolate_lowest_set_bit | Reads one byte and outputs `byte AND (-byte mod 256)` (keeps only the lowest set bit) as one raw byte. For `byte = 0` outputs `0`. |
 | 0935 | broadcast_lsb_to_byte | Reads one byte. If its LSB is `0` outputs `0x00`; if `1` outputs `0xFF`. (Demonstrates sign-extension-from-1-bit pattern.) |
+| 1061 | bit_at_position | Reads one byte, then one ASCII digit `0`-`7` (terminated by `
+`), and prints the bit at that position as `0` or `1` + `
+`. Convention: position `0` is the least-significant bit (LSB); position `7` is the most-significant bit (MSB). |
+| 1062 | set_bit_at_position | Reads one byte then one digit `0`-`7` + `
+` and outputs the byte with that bit set to 1. Convention: position `0` is the LSB; matches `bit_at_position`. |
+| 1063 | clear_bit_at_position | Reads one byte then one digit `0`-`7` + `
+` and outputs the byte with that bit cleared to 0. Convention: position `0` is the LSB; matches `bit_at_position`. |
+| 1064 | toggle_bit_at_position | Reads one byte, then one ASCII digit `0`-`7` + `
+`. Outputs the byte with the bit at that position XOR'd (toggled). Convention: position `0` is the LSB (matches `bit_at_position`). |
+| 1065 | binary_string_to_byte | Reads an 8-char binary string of `0`/`1` + `
+` and outputs the corresponding raw byte (no trailing `
+`). Inverse of `byte_to_binary_string`. |
+| 1066 | byte_concat_to_hex_word | Reads exactly two bytes (high then low) and prints 4 lowercase hex chars (no `0x` prefix) + `
+`. The first byte's hex appears first. |
+| 1067 | byte_split_from_hex_word | Reads exactly 4 lowercase hex chars + `
+` and outputs two raw bytes: the high byte first, then the low byte. |
+| 1068 | clear_low_k_bits | Reads one byte then one decimal digit `0`-`7` + `
+`. Outputs the byte with the lowest `k` bits cleared (`byte AND (~((1<<k)-1))`) as one raw byte. |
+| 1069 | set_low_k_bits | Reads one byte then one decimal digit `0`-`7` + `
+`. Outputs the byte with the lowest `k` bits set to `1` (`byte OR ((1<<k)-1)`) as one raw byte. |
 
 ## logic
 
@@ -698,6 +791,24 @@ Blastoff!
 `, then reads N more bytes from stdin and outputs them verbatim. |
 | 0278 | print_first_then_repeat | Reads one byte, then a digit N `1`-`9` + `
 `. Outputs the byte once, then repeats it N times on a new line. |
+| 1094 | repeat_line_n | Reads a digit N `1`-`9` + `
+` then a `
+`-terminated line ≤ 30 chars. Prints the line N times (each ending with the same `
+`). |
+| 1095 | hollow_diamond | Reads odd digit N `1`/`3`/`5`/`7`/`9` + `
+`. Prints an N-by-N hollow diamond. Let `k = (N+1)/2` (the middle row index, 1-indexed). For row `i` (1..N), let `d = abs(i - k)` (distance from middle row). The row has 1-indexed columns 1..N: column `j` is `*` if `j == k - d` or `j == k + d`, else ` ` (space). Each row ends with `
+`. Example for N=5: `  *  
+ * * 
+*   *
+ * * 
+  *  
+`. |
+| 1096 | print_box_with_label | Reads digit N `3`-`9` + `
+` then a `
+`-terminated line of exactly N-2 chars. Prints an N-wide hollow box of `*` with the input line centered as the middle row (`* <line> *`). |
+| 1097 | numbered_lines | Reads digit N `1`-`9` + `
+` then a `
+`-terminated line ≤ 20 chars. Prints N lines, each prefixed with `<i>: ` (1-based) and then the line. |
 
 ## branching
 
@@ -942,6 +1053,12 @@ Blastoff!
 `, `0` → `+0
 `, `-3` → `-3
 `. |
+| 1073 | word_to_digit | Reads one of the English number words `zero`, `one`, `two`, ..., `nine` (terminated by `
+`) and prints the corresponding ASCII digit `0`-`9` + `
+`. |
+| 1074 | roman_to_dec_1_to_10 | Reads a Roman numeral string (one of `I`, `II`, ..., `X`) + `
+` and prints the decimal `1`-`10` + `
+`. |
 
 ## encoding
 
@@ -1012,6 +1129,22 @@ Blastoff!
 | 0595 | slope_int_or_undefined | Reads 4 decimals `x1 y1 x2 y2` (each own line, signed). If `x1 == x2`, prints `undefined
 `. Otherwise prints `(y2 - y1) / (x2 - x1)` as signed integer division + `
 `. |
+| 1054 | manhattan_distance | Reads 4 decimals `x1 y1 x2 y2` (each own line). Prints `|x2-x1| + |y2-y1|` as decimal + `
+`. |
+| 1055 | chebyshev_distance | Reads 4 decimals (each own line). Prints `max(|x2-x1|, |y2-y1|)` + `
+`. |
+| 1056 | euclidean_distance_floor | Reads 4 decimals `x1 y1 x2 y2` (each `0`-`9`, own line). Prints `floor(sqrt((x2-x1)^2 + (y2-y1)^2))` as decimal + `
+`. Squared distance ≤ 162, so integer sqrt via linear scan (`k` while `k² <= d`) stays trivially within compile budget. |
+| 1057 | signed_triangle_area_2x | Reads 6 decimals (3 vertices, each coord own line). Prints `x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2)` as signed decimal + `
+` (this is exactly 2× the signed area). |
+| 1058 | circle_area_approx | Reads decimal radius `0`-`9` + `
+`. Prints `(r * r * 314) / 100` (integer approximation of π·r²) + `
+`. |
+| 1059 | circle_circumference_approx | Reads decimal radius `0`-`9` + `
+`. Prints `(2 * r * 314) / 100` (integer approximation of 2πr) + `
+`. |
+| 1060 | counts_inside_unit_circle_grid_3x3 | No input. Counts how many of the 9 lattice points `(i,j)` for `i,j ∈ {-1,0,1}` satisfy `i^2 + j^2 <= 1`. Prints the count as decimal + `
+` (answer: 5). |
 
 ## simulation
 
@@ -1110,6 +1243,14 @@ Blastoff!
 `. |
 | 0923 | triangular_inverse_n | Reads decimal triangular number `1`-`55` + `
 ` (i.e. one of `1, 3, 6, 10, 15, 21, 28, 36, 45, 55`). Prints the index `k` such that `T(k) == input`, else `-1` if input isn't triangular. |
+| 1070 | bell_first_5 | No input. Prints the first 5 Bell numbers `1 1 2 5 15
+`. |
+| 1071 | partition_first_5 | No input. Prints the first 5 integer-partition counts `p(1), ..., p(5)` = `1 2 3 5 7` space-separated + `
+`. |
+| 1072 | mersenne_check | Reads decimal N in `2`-`17` (one or two ASCII digits, terminated by `
+`). Prints `1
+` if `2^N - 1` is prime, else `0
+`. (Upper bound `17` keeps trial division ≤ √(2^17 - 1) ≈ 362, well within runtime budget.) |
 
 ## text_processing
 
@@ -1139,6 +1280,58 @@ Blastoff!
 `. |
 | 0473 | uncapitalize_first | Reads a `
 `-terminated line ≤ 80 chars. If the first byte is `A`-`Z`, outputs it lowercased; the rest of the line is unchanged. Includes final `
+`. |
+| 1098 | char_freq_table | Reads a `
+`-terminated line ≤ 80 chars. Prints each distinct byte value (excluding `
+`) and its count, one `<byte> <count>
+` per line, in ascending byte-value order. |
+| 1099 | longest_word | Reads a `
+`-terminated line ≤ 80 chars. Prints the longest whitespace-separated token + `
+`. Ties: prints the first such word. Empty input → empty line `
+`. |
+| 1100 | shortest_word | Reads a `
+`-terminated line ≤ 80 chars. Prints the shortest whitespace-separated token + `
+`. Ties: prints the first such word. Empty input → empty line `
+`. |
+| 1101 | word_with_most_vowels | Reads a `
+`-terminated line ≤ 80 chars. Prints the word with the most vowels (`aeiouAEIOU`) + `
+`. Ties: first such word. Empty input → empty line `
+`. |
+| 1102 | count_word_occurrences | Reads a `
+`-terminated target word (no whitespace), then a `
+`-terminated line ≤ 80 chars. Prints the count of whitespace-separated tokens in the line that exactly equal the target (case-sensitive) + `
+`. |
+| 1103 | reverse_words_in_line | Reads a `
+`-terminated line ≤ 80 chars. Splits on whitespace (single-space separator), prints the words in reverse order separated by single spaces, then `
+`. Example: `hello world foo` → `foo world hello
+`. |
+| 1104 | count_unique_words | Reads a `
+`-terminated line ≤ 80 chars. Splits on whitespace (case-sensitive, runs collapse). Prints the count of distinct words as decimal + `
+`. |
+| 1105 | longest_common_prefix_two | Reads two `
+`-terminated lines (each ≤ 40 chars). Prints the longest common prefix + `
+`. If no common prefix, prints just `
+`. |
+| 1106 | longest_common_suffix_two | Reads two `
+`-terminated lines (each ≤ 40 chars). Prints the longest common suffix (compared between the lines' contents, excluding their `
+`s) + `
+`. If none, prints just `
+`. |
+| 1107 | line_starts_with_substring | Reads a `
+`-terminated prefix (≤ 20 chars), then a `
+`-terminated line (≤ 60 chars). Prints `1
+` if the line starts with the prefix exactly, else `0
+`. |
+| 1108 | line_ends_with_substring | Reads a `
+`-terminated suffix (≤ 20 chars), then a `
+`-terminated line (≤ 60 chars). Prints `1
+` if the line's content (excluding `
+`) ends with the suffix exactly, else `0
+`. |
+| 1109 | count_substring_occurrences | Reads a `
+`-terminated pattern (≤ 20 chars), then a `
+`-terminated text (≤ 60 chars). Prints the count of non-overlapping left-to-right occurrences of pattern in text as decimal + `
+`. Empty pattern → `0
 `. |
 
 ## state_machines
@@ -1249,6 +1442,11 @@ Blastoff!
 `, then target day-of-week `0`-`6` + `
 `. Prints `(target - today + 7) mod 7` as decimal `0`-`6` + `
 ` (the number of days from today to the next occurrence of target; `0` if target equals today). |
+| 1075 | dec_year_2digit_to_4digit | Reads 2-digit decimal `00`-`99` + `
+`. Interprets via "pivot 50" rule: `50`-`99` → `1950`-`1999`, `00`-`49` → `2000`-`2049`. Prints 4-digit year + `
+`. |
+| 1076 | days_between_dates_same_year | Reads year, month1, day1, month2, day2 (each own line). Both dates in the same year; date2 ≥ date1. Prints absolute day difference as decimal + `
+`. |
 
 ## misc
 
@@ -1277,6 +1475,59 @@ Blastoff!
 | 1029 | is_major_triad | Reads 3 decimal MIDI numbers `m1 m2 m3` (each `0`-`127`, on own lines). Sorts them. Prints `1\n` if the intervals between consecutive sorted notes are `4, 3` semitones (i.e. major triad in root position), else `0\n`. |
 
 ---
+| 1077 | random_choice_pick_3 | Reads 3 `
+`-terminated lines (each ≤ 20 chars) then one byte. Prints one of the 3 lines based on `byte mod 3`, followed by `
+`. |
+| 1078 | word_acronym_check | Reads two `
+`-terminated lines: first an acronym (uppercase, ≤ 6 chars), second a sentence (≤ 40 chars). Prints `1
+` if the acronym matches the uppercased first letter of each whitespace-separated word in the sentence (in order), else `0
+`. |
+| 1079 | is_valid_username | Reads `
+`-terminated string ≤ 20 chars. Prints `1
+` if its length is `3`-`12` and every byte is alphanumeric (`A`-`Z`/`a`-`z`/`0`-`9`), else `0
+`. |
+| 1080 | count_emoji_pairs | Reads `
+`-terminated line ≤ 40 chars. Prints `<smileys> <frowns>
+` where smileys is the count of `:)` and frowns is the count of `:(` substrings (non-overlapping, scanning left-to-right). |
+| 1081 | is_pangram | Reads `
+`-terminated line ≤ 80 chars. Prints `1
+` if the line contains every letter `a`-`z` at least once (case-insensitive), else `0
+`. |
+| 1082 | is_cli_flag | Reads `
+`-terminated string ≤ 20 chars. Prints `1
+` if it starts with `-` (single-dash flag) OR `--` (long flag), else `0
+`. |
+| 1083 | count_non_alphanumeric | Reads `
+`-terminated line ≤ 80 chars. Prints the count of bytes that are NEITHER letters NOR digits (excluding terminating `
+`) as decimal + `
+`. |
+| 1084 | dollar_amount_to_words | Reads decimal `0`-`99` + `
+`. Prints the English-words form `<tens_word> <ones_word>
+` (e.g. `42` → `forty two
+`; `7` → `seven
+`; `10` → `ten
+`; `20` → `twenty
+`). |
+| 1085 | letter_position_word | Reads `
+`-terminated string ≤ 10 chars (letters only). Prints the 0-based alphabetic position of each letter (as decimal), space-separated, followed by `
+`. Example: `abc
+` → `0 1 2
+`. |
+| 1086 | greet_three_times | Reads `
+`-terminated name (≤ 15 chars). Prints `Hello, <name>!
+` three times (3 lines of output). |
+| 1087 | print_progress_bar_10 | Reads digit `0`-`10` + `
+`. Prints a 10-char progress bar: `<percent>` `#` characters followed by `(10 - percent)` `.` characters, then `
+`. (e.g. `3` → `###.......
+`.) |
+| 1088 | bits_to_emoji_face | Reads two bits `e1 e2` (eye states, each `0` closed or `1` open, own line), then one bit `m` (mouth state, `0` frown / `1` smile, own line). Prints a 3-char emoji face combining these: e.g. `1 1 1` → `:)
+`; `0 0 1` → `XD
+`; `1 1 0` → `:(
+`; `0 0 0` → `XO
+`. |
+| 1089 | midi_to_octave | Reads decimal `0`-`127` + `
+`. Prints the octave number (signed: MIDI 0 → `-1`, MIDI 12 → `0`, MIDI 60 → `4`, MIDI 127 → `9`) + `
+`. |
 
 ## Exceptional / fj.tomhe.app Examples candidates
 

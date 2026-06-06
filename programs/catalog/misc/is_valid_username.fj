@@ -1,0 +1,63 @@
+// Is Valid Username (#1079)
+
+// Reads `\n`-terminated string ≤ 20 chars. Prints `1\n` if its length is `3`-`12` and every byte is alphanumeric (`A`-`Z`/`a`-`z`/`0`-`9`), else `0\n`.
+
+main
+
+def main @ loop, body, bad_ch, ok_ch, done, geq3, leq12, invalid, end < ch, nl, len, bad, three, twelve {
+    stl.startup
+    bit.zero 16, len
+    bit.zero bad
+  loop:
+    bit.input ch
+    bit.if0 8, ch, done
+    bit.cmp 8, ch, nl, body, done, body
+  body:
+    is_alnum ch, ok_ch, bad_ch
+  bad_ch:
+    bit.one bad
+  ok_ch:
+    bit.inc 16, len
+    ;loop
+  done:
+    bit.if1 bad, invalid
+    bit.cmp 16, len, three, invalid, geq3, geq3     // len < 3 -> invalid
+  geq3:
+    bit.cmp 16, len, twelve, leq12, leq12, invalid  // len > 12 -> invalid
+  leq12:
+    stl.output "1\n"
+    ;end
+  invalid:
+    stl.output "0\n"
+  end:
+    stl.loop
+}
+
+// Jump to `yes` if ch is A-Z, a-z, or 0-9, else to `no`.
+def is_alnum ch, yes, no @ try_lower, try_digit < ua, uz, la, lz, d0, d9 {
+    in_range ch, ua, uz, yes, try_lower
+  try_lower:
+    in_range ch, la, lz, yes, try_digit
+  try_digit:
+    in_range ch, d0, d9, yes, no
+}
+
+// Jump to `yes` if lo <= ch <= hi (lo, hi are bit[:8] bounds), else to `no`.
+def in_range ch, lo, hi, yes, no @ check_hi {
+    bit.cmp 8, ch, lo, no, yes, check_hi
+  check_hi:
+    bit.cmp 8, ch, hi, yes, yes, no
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+len: bit.vec 16, 0
+bad: bit.bit
+three: bit.vec 16, 3
+twelve: bit.vec 16, 12
+ua: bit.vec 8, 'A'
+uz: bit.vec 8, 'Z'
+la: bit.vec 8, 'a'
+lz: bit.vec 8, 'z'
+d0: bit.vec 8, '0'
+d9: bit.vec 8, '9'

@@ -1,0 +1,25 @@
+// Circle Area Approx (#1058)
+
+// Reads decimal radius `0`-`9` + `\n`. Prints `(r * r * 314) / 100` (integer approximation of π·r²) + `\n`.
+
+main
+
+def main @ done < r, rsq, v, q, rem, c314, c100 {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, r, done
+    hex.mul 4, rsq, r, r                     // r^2
+    hex.mul 4, v, rsq, c314                  // r^2 * 314
+    hex.div 4, 4, q, rem, v, c100, done      // / 100
+    hex.print_dec_uint 4, q
+    stl.output '\n'
+  done:
+    stl.loop
+}
+
+r: hex.vec 4, 0
+rsq: hex.vec 4, 0
+v: hex.vec 4, 0
+q: hex.vec 4, 0
+rem: hex.vec 4, 0
+c314: hex.vec 4, 314
+c100: hex.vec 4, 100

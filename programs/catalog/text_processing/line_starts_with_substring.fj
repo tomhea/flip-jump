@@ -1,0 +1,63 @@
+// Line Starts With Substring (#1107)
+
+// Reads a `\n`-terminated prefix (≤ 20 chars), then a `\n`-terminated line (≤ 60 chars). Prints `1\n` if the line starts with the prefix exactly, else `0\n`.
+
+hw = w / 4
+CAP_P = 24
+CAP_L = 64
+
+main
+
+def main @ ok, cmploop, eqc, yes, no, halt < pbuf, plen, lbuf, llen, pptr, lptr, cnt, pb, lb {
+    stl.startup_and_init_all
+    read_line_into pbuf, plen
+    read_line_into lbuf, llen
+    hex.cmp hw, plen, llen, ok, ok, no      // prefix no longer than line ?
+  ok:
+    hex.set hw, pptr, pbuf
+    hex.set hw, lptr, lbuf
+    hex.mov hw, cnt, plen
+  cmploop:
+    hex.if0 hw, cnt, yes
+    hex.read_byte_and_inc pb, pptr
+    hex.read_byte_and_inc lb, lptr
+    hex.cmp 2, pb, lb, no, eqc, no
+  eqc:
+    hex.dec hw, cnt
+    ;cmploop
+  yes:
+    stl.output "1\n"
+    ;halt
+  no:
+    stl.output "0\n"
+  halt:
+    stl.loop
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+pbuf: hex.vec CAP_P
+plen: hex.vec hw
+lbuf: hex.vec CAP_L
+llen: hex.vec hw
+pptr: hex.vec hw
+lptr: hex.vec hw
+wptr: hex.vec hw
+cnt: hex.vec hw
+pb: hex.vec 2
+lb: hex.vec 2
+bytebuf: hex.vec 2
+nlbyte: hex.vec 2, '\n'

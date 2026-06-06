@@ -1,0 +1,50 @@
+// Count Non Alphanumeric (#1083)
+
+// Reads `\n`-terminated line ≤ 80 chars. Prints the count of bytes that are NEITHER letters NOR digits (excluding terminating `\n`) as decimal + `\n`.
+
+main
+
+def main @ loop, body, other, alnum, done < ch, nl, count {
+    stl.startup
+    bit.zero 16, count
+  loop:
+    bit.input ch
+    bit.if0 8, ch, done
+    bit.cmp 8, ch, nl, body, done, body
+  body:
+    is_alnum ch, alnum, other
+  other:
+    bit.inc 16, count
+  alnum:
+    ;loop
+  done:
+    bit.print_dec_uint 16, count
+    stl.output '\n'
+    stl.loop
+}
+
+// Jump to `yes` if ch is A-Z, a-z, or 0-9, else to `no`.
+def is_alnum ch, yes, no @ try_lower, try_digit < ua, uz, la, lz, d0, d9 {
+    in_range ch, ua, uz, yes, try_lower
+  try_lower:
+    in_range ch, la, lz, yes, try_digit
+  try_digit:
+    in_range ch, d0, d9, yes, no
+}
+
+// Jump to `yes` if lo <= ch <= hi (lo, hi are bit[:8] bounds), else to `no`.
+def in_range ch, lo, hi, yes, no @ check_hi {
+    bit.cmp 8, ch, lo, no, yes, check_hi
+  check_hi:
+    bit.cmp 8, ch, hi, yes, yes, no
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+count: bit.vec 16, 0
+ua: bit.vec 8, 'A'
+uz: bit.vec 8, 'Z'
+la: bit.vec 8, 'a'
+lz: bit.vec 8, 'z'
+d0: bit.vec 8, '0'
+d9: bit.vec 8, '9'

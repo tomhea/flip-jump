@@ -1,0 +1,52 @@
+// Letter Position Word (#1085)
+
+// Reads `\n`-terminated string ≤ 10 chars (letters only). Prints the 0-based alphabetic position of each letter (as decimal), space-separated, followed by `\n`. Example: `abc\n` → `0 1 2\n`.
+
+main
+
+def main @ loop, body, upper, lower, emit, done < ch, nl, first, tmp, ua, uz, la {
+    stl.startup
+    bit.one first
+  loop:
+    bit.input ch
+    bit.if0 8, ch, done
+    bit.cmp 8, ch, nl, body, done, body
+  body:
+    bit.mov 8, tmp, ch
+    in_range ch, ua, uz, upper, lower       // A-Z vs a-z
+  upper:
+    bit.sub 8, tmp, ua                       // ch - 'A'
+    ;emit
+  lower:
+    bit.sub 8, tmp, la                       // ch - 'a'
+  emit:
+    print_sep_dec 8, tmp, first
+    ;loop
+  done:
+    stl.output '\n'
+    stl.loop
+}
+
+// Jump to `yes` if lo <= ch <= hi, else to `no`.
+def in_range ch, lo, hi, yes, no @ check_hi {
+    bit.cmp 8, ch, lo, no, yes, check_hi
+  check_hi:
+    bit.cmp 8, ch, hi, yes, yes, no
+}
+
+// Print ` ` before all but the first term (tracked by `first`), then value[:n] as decimal.
+def print_sep_dec n, value, first @ skip_space {
+    bit.if1 first, skip_space
+    stl.output ' '
+  skip_space:
+    bit.print_dec_uint n, value
+    bit.zero first
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+first: bit.bit
+tmp: bit.vec 8, 0
+ua: bit.vec 8, 'A'
+uz: bit.vec 8, 'Z'
+la: bit.vec 8, 'a'

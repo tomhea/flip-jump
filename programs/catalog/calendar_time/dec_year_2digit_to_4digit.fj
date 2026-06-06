@@ -1,0 +1,28 @@
+// Dec Year 2Digit To 4Digit (#1075)
+
+// Reads 2-digit decimal `00`-`99` + `\n`. Interprets via "pivot 50" rule: `50`-`99` → `1950`-`1999`, `00`-`49` → `2000`-`2049`. Prints 4-digit year + `\n`.
+
+main
+
+def main @ ge, lt, done < yy, year, fifty, c1900, c2000 {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, yy, done
+    hex.cmp 4, yy, fifty, lt, ge, ge        // yy >= 50 ?
+  ge:
+    hex.mov 4, year, c1900
+    hex.add 4, year, yy                     // 1900 + yy
+    ;done
+  lt:
+    hex.mov 4, year, c2000
+    hex.add 4, year, yy                     // 2000 + yy
+  done:
+    hex.print_dec_uint 4, year
+    stl.output '\n'
+    stl.loop
+}
+
+yy: hex.vec 4, 0
+year: hex.vec 4, 0
+fifty: hex.vec 4, 50
+c1900: hex.vec 4, 1900
+c2000: hex.vec 4, 2000

@@ -1,0 +1,35 @@
+// Modular Inverse Brute (#1030)
+
+// Reads decimals `a` `m` (each `1`-`30`, own line, with `gcd(a, m) = 1` guaranteed). Brute-forces `x` in `1..m-1` such that `(a * x) mod m == 1`. Prints `x` as decimal + `\n`.
+
+main
+
+def main @ loop, body, next, found, err < a, m, x, prod, q, r, one {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, a, err
+    hex.input_dec_uint 4, m, err
+    hex.zero 4, x
+    hex.inc 4, x                            // x = 1
+  loop:
+    hex.cmp 4, x, m, body, found, found
+  body:
+    hex.mul 4, prod, a, x                   // prod = a * x
+    hex.div 4, 4, q, r, prod, m, err        // r = prod mod m
+    hex.cmp 4, r, one, next, found, next
+  next:
+    hex.inc 4, x
+    ;loop
+  found:
+    hex.print_dec_uint 4, x
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+a: hex.vec 4, 0
+m: hex.vec 4, 0
+x: hex.vec 4, 0
+prod: hex.vec 4, 0
+q: hex.vec 4, 0
+r: hex.vec 4, 0
+one: hex.vec 4, 1

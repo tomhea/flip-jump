@@ -1,0 +1,103 @@
+// Days Between Dates Same Year (#1076)
+
+// Reads year, month1, day1, month2, day2 (each own line). Both dates in the same year; date2 ≥ date1. Prints absolute day difference as decimal + `\n`.
+
+main
+
+def main @ halt < year, m1, d1, m2, d2, leap, doy1, doy2 {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, year, halt
+    hex.input_dec_uint 4, m1, halt
+    hex.input_dec_uint 4, d1, halt
+    hex.input_dec_uint 4, m2, halt
+    hex.input_dec_uint 4, d2, halt
+    leap_of year, leap
+    doy_into 4, doy1, m1, d1, leap
+    doy_into 4, doy2, m2, d2, leap
+    hex.sub 4, doy2, doy1                    // date2 >= date1
+    hex.print_dec_uint 4, doy2
+    stl.output '\n'
+  halt:
+    stl.loop
+}
+
+// leap = 1 if `year` is a leap year (div by 4 and (not div by 100 or div by 400)).
+def leap_of year, leap @ yes, no, divz, end < q, r, four, hundred, fourhundred {
+    bit.zero leap
+    hex.div 4, 4, q, r, year, four, divz
+    hex.if1 4, r, no                         // year % 4 != 0 -> not leap
+    hex.div 4, 4, q, r, year, hundred, divz
+    hex.if1 4, r, yes                        // % 100 != 0 -> leap
+    hex.div 4, 4, q, r, year, fourhundred, divz
+    hex.if0 4, r, yes                        // % 400 == 0 -> leap
+    ;no
+  yes:
+    bit.one leap
+    ;end
+  no:
+    bit.zero leap
+  divz:
+  end:
+}
+
+// doy = day-of-year for (m, d): cumulative days before month m, plus d, plus 1 if
+// leap and m > 2. Selects the cumulative count from cumdays[m] by runtime m.
+def doy_into n, doy, m, d, leap @ adj, noadj < monthconsts, cumdays, two {
+    hex.zero n, doy
+    rep(12, jj) copy_if_eq n, m, monthconsts + (jj+1)*n*dw, doy, cumdays + (jj+1)*n*dw
+    hex.add n, doy, d
+    bit.if0 leap, noadj
+    hex.cmp n, m, two, noadj, noadj, adj     // leap and m > 2 -> +1
+  adj:
+    hex.inc n, doy
+  noadj:
+}
+
+// if a[:n] == b[:n] then dst[:n] = src[:n].
+def copy_if_eq n, a, b, dst, src @ no, yes {
+    hex.cmp n, a, b, no, yes, no
+  yes:
+    hex.mov n, dst, src
+  no:
+}
+
+year: hex.vec 4, 0
+m1: hex.vec 4, 0
+d1: hex.vec 4, 0
+m2: hex.vec 4, 0
+d2: hex.vec 4, 0
+leap: bit.bit
+doy1: hex.vec 4, 0
+doy2: hex.vec 4, 0
+q: hex.vec 4, 0
+r: hex.vec 4, 0
+four: hex.vec 4, 4
+hundred: hex.vec 4, 100
+fourhundred: hex.vec 4, 400
+two: hex.vec 4, 2
+monthconsts: hex.vec 4, 0
+             hex.vec 4, 1
+             hex.vec 4, 2
+             hex.vec 4, 3
+             hex.vec 4, 4
+             hex.vec 4, 5
+             hex.vec 4, 6
+             hex.vec 4, 7
+             hex.vec 4, 8
+             hex.vec 4, 9
+             hex.vec 4, 10
+             hex.vec 4, 11
+             hex.vec 4, 12
+cumdays: hex.vec 4, 0
+         hex.vec 4, 0
+         hex.vec 4, 31
+         hex.vec 4, 59
+         hex.vec 4, 90
+         hex.vec 4, 120
+         hex.vec 4, 151
+         hex.vec 4, 181
+         hex.vec 4, 212
+         hex.vec 4, 243
+         hex.vec 4, 273
+         hex.vec 4, 304
+         hex.vec 4, 334

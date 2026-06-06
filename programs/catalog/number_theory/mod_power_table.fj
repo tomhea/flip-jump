@@ -1,0 +1,36 @@
+// Mod Power Table (#1034)
+
+// Reads decimals `base` `mod` (`base` `1`-`9`, `mod` `2`-`9`, on own lines). Prints `base^0 mod mod`, `base^1 mod mod`, ..., `base^(mod-1) mod mod` space-separated on one line + `\n`.
+
+main
+
+def main @ loop, body, done, err < base, modv, acc, e, prod, q {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, base, err
+    hex.input_dec_uint 4, modv, err
+    hex.zero 4, acc
+    hex.inc 4, acc                          // acc = base^0 = 1
+    hex.print_dec_uint 4, acc
+    hex.zero 4, e
+    hex.inc 4, e                            // e = 1
+  loop:
+    hex.cmp 4, e, modv, body, done, done    // e < mod
+  body:
+    hex.mul 4, prod, acc, base
+    hex.div 4, 4, q, acc, prod, modv, err   // acc = base^e mod mod
+    stl.output ' '
+    hex.print_dec_uint 4, acc
+    hex.inc 4, e
+    ;loop
+  done:
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+base: hex.vec 4, 0
+modv: hex.vec 4, 0
+acc: hex.vec 4, 0
+e: hex.vec 4, 0
+prod: hex.vec 4, 0
+q: hex.vec 4, 0

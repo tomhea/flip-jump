@@ -1,0 +1,33 @@
+// Mod Sum Arithmetic (#1043)
+
+// Reads decimals `N` `m` (`N` `1`-`30`, `m` `1`-`30`). Prints `((1 + 2 + ... + N) mod m)` as decimal + `\n`.
+
+main
+
+def main @ loop, body, done, err < N, m, sum, i, q, r {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, N, err
+    hex.input_dec_uint 4, m, err
+    hex.zero 4, sum
+    hex.zero 4, i
+    hex.inc 4, i                            // i = 1
+  loop:
+    hex.cmp 4, i, N, body, body, done       // i <= N
+  body:
+    hex.add 4, sum, i
+    hex.inc 4, i
+    ;loop
+  done:
+    hex.div 4, 4, q, r, sum, m, err         // r = sum mod m
+    hex.print_dec_uint 4, r
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+N: hex.vec 4, 0
+m: hex.vec 4, 0
+sum: hex.vec 4, 0
+i: hex.vec 4, 0
+q: hex.vec 4, 0
+r: hex.vec 4, 0

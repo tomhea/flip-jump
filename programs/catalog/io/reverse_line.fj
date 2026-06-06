@@ -1,0 +1,65 @@
+// Reverse Line (#1090)
+
+// Reads a single line from stdin (up to `\n`) and prints it reversed followed by `\n`.
+
+hw = w / 4
+
+main
+
+def main {
+    stl.startup_and_init_all
+    read_line
+    print_reversed
+    stl.output '\n'
+    stl.loop
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line @ loop, store, done < buf, slen, wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+// Print buf's slen bytes in reverse order.
+def print_reversed @ setloop, setdone, ploop, pdone < buf, slen, rptr, cnt, bytebuf {
+    hex.if0 hw, slen, pdone
+    hex.set hw, rptr, buf
+    hex.mov hw, cnt, slen
+    hex.dec hw, cnt
+  setloop:
+    hex.if0 hw, cnt, setdone                 // walk rptr to the last byte
+    hex.ptr_inc rptr
+    hex.dec hw, cnt
+    ;setloop
+  setdone:
+    hex.mov hw, cnt, slen
+  ploop:
+    hex.if0 hw, cnt, pdone
+    hex.read_byte bytebuf, rptr
+    hex.print bytebuf
+    hex.ptr_dec rptr
+    hex.dec hw, cnt
+    ;ploop
+  pdone:
+}
+
+slen: hex.vec hw
+wptr: hex.vec hw
+rptr: hex.vec hw
+cnt: hex.vec hw
+bytebuf: hex.vec 2
+nlbyte: hex.vec 2, '\n'
+
+// Input line buffer: a reserved (zeroed, not stored in the .fjm) region, so the
+// line length is bounded only by available memory rather than a fixed CAP.
+buf:
+    reserve dw * 1000000

@@ -1,0 +1,54 @@
+// Binomial Coefficient Small (#1044)
+
+// Reads decimals `N` `K` (`N` `0`-`10`, `K` `0`-`N`, on own lines). Prints `C(N, K)` as decimal + `\n`.
+
+main
+
+def main @ done < N, K, c {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, N, done
+    hex.input_dec_uint 4, K, done
+    binom_into 4, c, N, K
+    hex.print_dec_uint 4, c
+    stl.output '\n'
+  done:
+    stl.loop
+}
+
+// dst[:n] = C(N, K) via the multiplicative formula (assumes K <= N).
+def binom_into n, dst, N, K @ useK, useNK, kset, loop, cont, end, divz < bk, bnk, bterm, bi, bprod, br {
+    hex.mov n, bnk, N
+    hex.sub n, bnk, K                       // bnk = N - K
+    hex.cmp n, K, bnk, useK, useK, useNK
+  useNK:
+    hex.mov n, bk, bnk
+    ;kset
+  useK:
+    hex.mov n, bk, K
+  kset:
+    hex.zero n, dst
+    hex.inc n, dst                          // dst = 1
+    hex.zero n, bi
+    hex.mov n, bterm, N
+    hex.sub n, bterm, bk                    // bterm = N - bk
+  loop:
+    hex.cmp n, bi, bk, cont, end, end       // i < bk
+  cont:
+    hex.inc n, bi
+    hex.inc n, bterm                        // bterm = N - bk + i
+    hex.mul n, bprod, dst, bterm
+    hex.div n, n, dst, br, bprod, bi, divz  // dst = dst * (N-bk+i) / i  (exact)
+    ;loop
+  divz:
+  end:
+}
+
+N: hex.vec 4, 0
+K: hex.vec 4, 0
+c: hex.vec 4, 0
+bk: hex.vec 4, 0
+bnk: hex.vec 4, 0
+bterm: hex.vec 4, 0
+bi: hex.vec 4, 0
+bprod: hex.vec 4, 0
+br: hex.vec 4, 0

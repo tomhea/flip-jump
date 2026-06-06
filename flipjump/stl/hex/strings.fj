@@ -1,0 +1,80 @@
+// Line / byte-buffer helpers: read a whole line into a buffer and print buffers back.
+// (By "buffers" we mean hex.pointers to those buffers.)
+
+ns hex {
+    //  Time Complexity:  len(w(0.75@+5) + 39@+79)
+    // Space Complexity:  w(2.25@+44) + 34@+381
+    //   Reads bytes from input into a pointed buffer, until a '\n' or a 0-byte (EOF); writes the byte count into len[:w/4].
+    // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
+    def input_ptr_line ptr, len @ loop, store, finish, wptr, bytebuf, nl, end {
+        .mov w/4, wptr, ptr
+        .zero w/4, len
+      loop:
+        .input bytebuf
+        .if0 2, bytebuf, finish                 // 0-byte = EOF
+        .cmp 2, bytebuf, nl, store, finish, store   // == '\n' -> stop
+      store:
+        .write_byte_and_inc wptr, bytebuf
+        .inc w/4, len
+        ;loop
+      finish:
+        ;end
+
+      wptr:    .vec w/4
+      bytebuf: .vec 2
+      nl:      .vec 2, '\n'
+      end:
+    }
+
+    //  Time Complexity:  len(w(@+5) + 21@+27)
+    // Space Complexity:  w(3@+55) + 16@+179
+    //   Prints "len[:w/4]" bytes from the pointed buffer.
+    // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
+    def print_ptr_text ptr, len @ loop, finish, pptr, cnt, bytebuf, end {
+        .if0 w/4, len, end
+        .mov w/4, pptr, ptr
+        .mov w/4, cnt, len
+      loop:
+        .if0 w/4, cnt, finish
+        .read_byte_and_inc bytebuf, pptr
+        .print bytebuf
+        .dec w/4, cnt
+        ;loop
+      finish:
+        ;end
+
+      pptr:    .vec w/4
+      cnt:     .vec w/4
+      bytebuf: .vec 2
+      end:
+    }
+
+    //  Time Complexity:  len(w(0.75@+5) + 29@+41)
+    // Space Complexity:  w(2.25@+45) + 28@+220
+    //   Prints bytes from the pointed buffer, until a '\n' or a 0-byte (EOF); writes the byte count into len[:w/4].
+    //   A terminating '\n' is printed too (a terminating 0-byte is not); either way len excludes it.
+    // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
+    def print_ptr_line ptr, len @ loop, doprint, donl, stop, pptr, bytebuf, nl, end {
+        .mov w/4, pptr, ptr
+        .zero w/4, len
+      loop:
+        .read_byte bytebuf, pptr
+        .if0 2, bytebuf, stop                   // 0-byte terminator: stop (no newline)
+        .cmp 2, bytebuf, nl, doprint, donl, doprint   // '\n' terminator: print it, then stop
+      doprint:
+        .print bytebuf
+        .ptr_inc pptr
+        .inc w/4, len
+        ;loop
+      donl:
+        stl.output '\n'
+        ;stop
+      stop:
+        ;end
+
+      pptr:    .vec w/4
+      bytebuf: .vec 2
+      nl:      .vec 2, '\n'
+      end:
+    }
+}

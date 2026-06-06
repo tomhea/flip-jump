@@ -1,0 +1,69 @@
+// Mersenne Check (#1072)
+
+// Reads decimal N in `2`-`17` (one or two ASCII digits, terminated by `\n`). Prints `1\n` if `2^N - 1` is prime, else `0\n`. (Upper bound `17` keeps trial division ≤ √(2^17 - 1) ≈ 362, well within runtime budget.)
+
+main
+
+def main @ shloop, shdone, no, yes < N, M, cnt, mtmp, flag {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, N, no
+    hex.zero 8, M
+    hex.inc 8, M                            // M = 1
+    hex.mov 4, cnt, N
+  shloop:
+    hex.if0 4, cnt, shdone                  // M = 2^N (double N times)
+    hex.mov 8, mtmp, M
+    hex.add 8, M, mtmp
+    hex.dec 4, cnt
+    ;shloop
+  shdone:
+    hex.dec 8, M                            // M = 2^N - 1
+    is_prime_trial 8, flag, M
+    bit.if0 flag, no
+    stl.output "1\n"
+    ;yes
+  no:
+    stl.output "0\n"
+  yes:
+    stl.loop
+}
+
+// flag = 1 if x (>= 2) is prime, else 0. Trial division d=2.. with d^2 maintained
+// incrementally as (d+1)^2 = d^2 + 2d + 1 (no multiply per step).
+def is_prime_trial n, flag, x @ loop, test, composite, prime, divz, end < d, dsq, q, r {
+    hex.zero n, d
+    hex.inc n, d
+    hex.inc n, d                            // d = 2
+    hex.zero n, dsq
+    hex.inc n, dsq
+    hex.inc n, dsq
+    hex.inc n, dsq
+    hex.inc n, dsq                          // dsq = 4 = d^2
+  loop:
+    hex.cmp n, dsq, x, test, test, prime    // dsq <= x ?
+  test:
+    hex.div n, n, q, r, x, d, divz          // r = x mod d
+    hex.if0 n, r, composite                 // x % d == 0
+    hex.add n, dsq, d
+    hex.add n, dsq, d
+    hex.inc n, dsq                          // dsq = (d+1)^2
+    hex.inc n, d
+    ;loop
+  composite:
+    bit.zero flag
+    ;end
+  prime:
+    bit.one flag
+  divz:
+  end:
+}
+
+N: hex.vec 4, 0
+M: hex.vec 8, 0
+cnt: hex.vec 4, 0
+mtmp: hex.vec 8, 0
+flag: bit.bit
+d: hex.vec 8, 0
+dsq: hex.vec 8, 0
+q: hex.vec 8, 0
+r: hex.vec 8, 0

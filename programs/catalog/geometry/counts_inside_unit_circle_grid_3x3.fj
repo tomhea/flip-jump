@@ -1,0 +1,56 @@
+// Counts Inside Unit Circle Grid 3X3 (#1060)
+
+// No input. Counts how many of the 9 lattice points `(i,j)` for `i,j ∈ {-1,0,1}` satisfy `i^2 + j^2 <= 1`. Prints the count as decimal + `\n` (answer: 5).
+
+main
+
+def main @ iloop, ibody, jloop, jbody, hit, jnext, next, idone < count, i, j, sq, si, sj, one, three {
+    stl.startup_and_init_all
+    hex.zero 4, count
+    hex.zero 4, i                           // i in {0,1,2} maps to offset {-1,0,1}
+  iloop:
+    hex.cmp 4, i, three, ibody, idone, idone
+  ibody:
+    hex.zero 4, j
+  jloop:
+    hex.cmp 4, j, three, jbody, next, next
+  jbody:
+    sq_offset_into 4, si, i, one            // si = (i-1)^2  (0 if i==1 else 1)
+    sq_offset_into 4, sj, j, one            // sj = (j-1)^2
+    hex.mov 4, sq, si
+    hex.add 4, sq, sj                       // sq = i^2 + j^2
+    hex.cmp 4, sq, one, hit, hit, jnext     // sq <= 1 ?
+  hit:
+    hex.inc 4, count
+  jnext:
+    hex.inc 4, j
+    ;jloop
+  next:
+    hex.inc 4, i
+    ;iloop
+  idone:
+    hex.print_dec_uint 4, count
+    stl.output '\n'
+    stl.loop
+}
+
+// dst = (x-1)^2 for x in {0,1,2}: 0 when x == 1, else 1.
+def sq_offset_into n, dst, x, one @ isone, notone, end {
+    hex.cmp n, x, one, notone, isone, notone
+  isone:
+    hex.zero n, dst
+    ;end
+  notone:
+    hex.zero n, dst
+    hex.inc n, dst
+  end:
+}
+
+count: hex.vec 4, 0
+i: hex.vec 4, 0
+j: hex.vec 4, 0
+sq: hex.vec 4, 0
+si: hex.vec 4, 0
+sj: hex.vec 4, 0
+one: hex.vec 4, 1
+three: hex.vec 4, 3

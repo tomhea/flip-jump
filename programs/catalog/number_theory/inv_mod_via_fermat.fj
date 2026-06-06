@@ -1,0 +1,52 @@
+// Inv Mod Via Fermat (#1040)
+
+// Reads decimals `a` `p` (`p` prime `2`-`19`, `a` `1`-`p-1`). Computes `a^(p-2) mod p` (modular inverse via Fermat's little theorem). Prints inverse as decimal + `\n`.
+
+main
+
+def main @ done < a, p, exp, inv, two {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, a, done
+    hex.input_dec_uint 4, p, done
+    hex.mov 4, exp, p
+    hex.sub 4, exp, two                     // exp = p - 2
+    modpow_into 4, inv, a, exp, p           // inv = a^(p-2) mod p
+    hex.print_dec_uint 4, inv
+    stl.output '\n'
+  done:
+    stl.loop
+}
+
+// dst[:n] = (base ^ exp) mod m  (binary exponentiation). base, exp, m preserved.
+def modpow_into n, dst, base, exp, m @ loop, even, end, divz < mp_b, mp_e, mp_q, mp_prod, eh, eodd, mp_two {
+    hex.zero n, dst
+    hex.inc n, dst                          // dst = 1
+    hex.div n, n, mp_q, mp_b, base, m, divz // mp_b = base mod m
+    hex.mov n, mp_e, exp
+  loop:
+    hex.if0 n, mp_e, end
+    hex.div n, n, eh, eodd, mp_e, mp_two, divz   // eh = e/2, eodd = e mod 2
+    hex.if0 n, eodd, even                   // exponent bit 0 == 0 -> skip multiply
+    hex.mul n, mp_prod, dst, mp_b
+    hex.div n, n, mp_q, dst, mp_prod, m, divz   // dst = dst * mp_b mod m
+  even:
+    hex.mul n, mp_prod, mp_b, mp_b
+    hex.div n, n, mp_q, mp_b, mp_prod, m, divz  // mp_b = mp_b^2 mod m
+    hex.mov n, mp_e, eh                     // e >>= 1
+    ;loop
+  divz:
+  end:
+}
+
+a: hex.vec 4, 0
+p: hex.vec 4, 0
+exp: hex.vec 4, 0
+inv: hex.vec 4, 0
+two: hex.vec 4, 2
+mp_b: hex.vec 4, 0
+mp_e: hex.vec 4, 0
+mp_q: hex.vec 4, 0
+mp_prod: hex.vec 4, 0
+eh: hex.vec 4, 0
+eodd: hex.vec 4, 0
+mp_two: hex.vec 4, 2

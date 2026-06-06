@@ -1,0 +1,51 @@
+// Tests the hex line/byte-buffer helpers: hex.input_ptr_line, hex.print_ptr_text, hex.print_ptr_line.
+//   Reads a line into a pointed buffer; echoes it; prints a substring; prints the (0-terminated)
+//   buffer as a line with its length; then builds an explicit '\n'-terminated buffer and prints it
+//   as a line (the terminating '\n' is echoed, the length excludes it).
+
+hw = w / 4
+
+stl.startup_and_init_all
+
+hex.set hw, p, buf
+hex.input_ptr_line p, len
+stl.output "echo: "
+hex.set hw, p, buf
+hex.print_ptr_text p, len
+stl.output '\n'
+
+stl.output "sub: "
+hex.set hw, p, buf
+rep(6, i) hex.ptr_inc p
+hex.print_ptr_text p, five
+stl.output '\n'
+
+stl.output "z: "
+hex.set hw, p, buf
+hex.print_ptr_line p, zlen
+stl.output ' '
+hex.print_dec_uint hw, zlen
+stl.output '\n'
+
+hex.set hw, p, nbuf                         // build "AB\n" then print it as a line
+hex.write_byte_and_inc p, cA
+hex.write_byte_and_inc p, cB
+hex.write_byte_and_inc p, cnl
+stl.output "n: "
+hex.set hw, p, nbuf
+hex.print_ptr_line p, nlen
+hex.print_dec_uint hw, nlen
+stl.output '\n'
+
+stl.loop
+
+buf:   hex.vec 84
+nbuf:  hex.vec 8
+len:   hex.vec hw
+zlen:  hex.vec hw
+nlen:  hex.vec hw
+p:     hex.vec hw
+five:  hex.vec hw, 5
+cA:    hex.vec 2, 'A'
+cB:    hex.vec 2, 'B'
+cnl:   hex.vec 2, '\n'

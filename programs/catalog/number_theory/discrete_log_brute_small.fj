@@ -1,0 +1,35 @@
+// Discrete Log Brute Small (#1042)
+
+// Reads decimals `g` `h` `p` (`p` prime `3`-`19`, `g` `1`-`p-1` primitive root, `h` `1`-`p-1`). Brute-forces `x` in `0..p-2` such that `g^x mod p == h`. Prints `x` as decimal + `\n`.
+
+main
+
+def main @ loop, cont, found, err < g, h, p, acc, x, prod, q {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, g, err
+    hex.input_dec_uint 4, h, err
+    hex.input_dec_uint 4, p, err
+    hex.zero 4, acc
+    hex.inc 4, acc                          // acc = g^0 = 1
+    hex.zero 4, x                           // x = 0
+  loop:
+    hex.cmp 4, acc, h, cont, found, cont    // acc == h -> found
+  cont:
+    hex.mul 4, prod, acc, g
+    hex.div 4, 4, q, acc, prod, p, err      // acc = acc * g mod p
+    hex.inc 4, x
+    ;loop
+  found:
+    hex.print_dec_uint 4, x
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+g: hex.vec 4, 0
+h: hex.vec 4, 0
+p: hex.vec 4, 0
+acc: hex.vec 4, 0
+x: hex.vec 4, 0
+prod: hex.vec 4, 0
+q: hex.vec 4, 0

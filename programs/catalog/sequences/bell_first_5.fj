@@ -1,0 +1,55 @@
+// Bell First 5 (#1070)
+
+// No input. Prints the first 5 Bell numbers `1 1 2 5 15\n`.
+
+main
+
+def main < dp, nrow, first {
+    stl.startup_and_init_all
+    bit.one first
+    hex.inc 4, dp                           // dp[0] = 1  (Bell triangle row 0)
+    print_sep_dec 4, dp, first              // B(0)
+    rep(4, t) bell_print_round 4, dp, nrow, t, first
+    stl.output '\n'
+    stl.loop
+}
+
+// Build Bell row t+1 into dp, then print its first element B(t+1).
+def bell_print_round unit, dp, nrow, t, first {
+    bell_row unit, dp, nrow, t
+    print_sep_dec unit, dp, first
+}
+
+// Build Bell row t+1 (length t+2) from the old row held in dp (length t+1).
+def bell_row unit, dp, nrow, t {
+    hex.mov unit, nrow, dp+t*unit*dw                 // nrow[0] = last of old row
+    rep(t+1, j) bell_step unit, nrow, dp, j
+    rep(t+2, j) hex.mov unit, dp+j*unit*dw, nrow+j*unit*dw
+}
+
+// nrow[j+1] = nrow[j] + dp[j].
+def bell_step unit, nrow, dp, j {
+    hex.mov unit, nrow+(j+1)*unit*dw, nrow+j*unit*dw
+    hex.add unit, nrow+(j+1)*unit*dw, dp+j*unit*dw
+}
+
+// Print ` ` before all but the first term (tracked by `first`), then value[:n] as decimal.
+def print_sep_dec n, value, first @ skip_space {
+    bit.if1 first, skip_space
+    stl.output ' '
+  skip_space:
+    hex.print_dec_uint n, value
+    bit.zero first
+}
+
+dp: hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+nrow: hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+first: bit.bit

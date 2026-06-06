@@ -1,0 +1,38 @@
+// Mod Factorial (#1032)
+
+// Reads decimals `N` `m` (each `1`-`9` for N, `1`-`30` for m, on own lines). Prints `(N! mod m)` as decimal + `\n`.
+
+main
+
+def main @ loop, body, done, err < N, m, res, i, prod, q, r {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, N, err
+    hex.input_dec_uint 4, m, err
+    hex.zero 4, res
+    hex.inc 4, res                          // res = 1
+    hex.zero 4, i
+    hex.inc 4, i
+    hex.inc 4, i                            // i = 2
+  loop:
+    hex.cmp 4, i, N, body, body, done       // i <= N
+  body:
+    hex.mul 4, prod, res, i                 // prod = res * i
+    hex.div 4, 4, q, res, prod, m, err      // res = prod mod m
+    hex.inc 4, i
+    ;loop
+  done:
+    hex.div 4, 4, q, r, res, m, err         // final reduce (covers N<=1 and m==1)
+    hex.mov 4, res, r
+    hex.print_dec_uint 4, res
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+N: hex.vec 4, 0
+m: hex.vec 4, 0
+res: hex.vec 4, 0
+i: hex.vec 4, 0
+prod: hex.vec 4, 0
+q: hex.vec 4, 0
+r: hex.vec 4, 0

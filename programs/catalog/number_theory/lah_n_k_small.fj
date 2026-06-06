@@ -1,0 +1,84 @@
+// Lah N K Small (#1052)
+
+// Reads decimals `N` `K` (`N` `1`-`6`, `K` `1`-`N`). Prints the (signed) Lah number `L(N, K)` as decimal + `\n`.
+
+main
+
+def main @ frloop, frbody, frdone, even_sign, done < N, K, mag, fr, binc, j, nm1, km1, prodtmp, q, parity, two {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, N, done
+    hex.input_dec_uint 4, K, done
+    hex.mov 4, nm1, N
+    hex.dec 4, nm1                          // N - 1
+    hex.mov 4, km1, K
+    hex.dec 4, km1                          // K - 1
+    binom_into 4, binc, nm1, km1            // C(N-1, K-1)
+    hex.zero 4, fr
+    hex.inc 4, fr                           // fr = 1
+    hex.mov 4, j, K
+    hex.inc 4, j                            // j = K + 1
+  frloop:
+    hex.cmp 4, j, N, frbody, frbody, frdone // j <= N
+  frbody:
+    hex.mul 4, prodtmp, fr, j               // fr = product_{j=K+1..N} j  =  N! / K!
+    hex.mov 4, fr, prodtmp
+    hex.inc 4, j
+    ;frloop
+  frdone:
+    hex.mul 4, mag, binc, fr                // |L(N, K)| = C(N-1, K-1) * N! / K!
+    hex.div 4, 4, q, parity, N, two, done   // parity = N mod 2
+    hex.if0 4, parity, even_sign            // sign = (-1)^N : negate when N is odd
+    hex.neg 4, mag
+  even_sign:
+    hex.print_dec_int 4, mag
+    stl.output '\n'
+  done:
+    stl.loop
+}
+
+// dst[:n] = C(N, K) via the multiplicative formula (assumes K <= N).
+def binom_into n, dst, N, K @ useK, useNK, kset, loop, cont, end, divz < bk, bnk, bterm, bi, bprod, br {
+    hex.mov n, bnk, N
+    hex.sub n, bnk, K
+    hex.cmp n, K, bnk, useK, useK, useNK
+  useNK:
+    hex.mov n, bk, bnk
+    ;kset
+  useK:
+    hex.mov n, bk, K
+  kset:
+    hex.zero n, dst
+    hex.inc n, dst
+    hex.zero n, bi
+    hex.mov n, bterm, N
+    hex.sub n, bterm, bk
+  loop:
+    hex.cmp n, bi, bk, cont, end, end
+  cont:
+    hex.inc n, bi
+    hex.inc n, bterm
+    hex.mul n, bprod, dst, bterm
+    hex.div n, n, dst, br, bprod, bi, divz
+    ;loop
+  divz:
+  end:
+}
+
+N: hex.vec 4, 0
+K: hex.vec 4, 0
+mag: hex.vec 4, 0
+fr: hex.vec 4, 0
+binc: hex.vec 4, 0
+j: hex.vec 4, 0
+nm1: hex.vec 4, 0
+km1: hex.vec 4, 0
+prodtmp: hex.vec 4, 0
+q: hex.vec 4, 0
+parity: hex.vec 4, 0
+two: hex.vec 4, 2
+bk: hex.vec 4, 0
+bnk: hex.vec 4, 0
+bterm: hex.vec 4, 0
+bi: hex.vec 4, 0
+bprod: hex.vec 4, 0
+br: hex.vec 4, 0

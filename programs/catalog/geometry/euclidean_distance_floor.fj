@@ -1,0 +1,56 @@
+// Euclidean Distance Floor (#1056)
+
+// Reads 4 decimals `x1 y1 x2 y2` (each `0`-`9`, own line). Prints `floor(sqrt((x2-x1)^2 + (y2-y1)^2))` as decimal + `\n`. Squared distance ≤ 162, so integer sqrt via linear scan (`k` while `k² <= d`) stays trivially within compile budget.
+
+main
+
+def main @ loop, body, done < x1, y1, x2, y2, dx, dy, sq, dsq, k, kp1, ksq {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, x1, done
+    hex.input_dec_uint 4, y1, done
+    hex.input_dec_uint 4, x2, done
+    hex.input_dec_uint 4, y2, done
+    abs_diff_into 4, dx, x1, x2
+    abs_diff_into 4, dy, y1, y2
+    hex.mul 4, sq, dx, dx                    // dx^2
+    hex.mul 4, dsq, dy, dy                   // dy^2
+    hex.add 4, sq, dsq                       // sq = dx^2 + dy^2
+    hex.zero 4, k                            // floor sqrt: largest k with k^2 <= sq
+  loop:
+    hex.mov 4, kp1, k
+    hex.inc 4, kp1                           // k+1
+    hex.mul 4, ksq, kp1, kp1                 // (k+1)^2
+    hex.cmp 4, ksq, sq, body, body, done     // (k+1)^2 <= sq ?
+  body:
+    hex.inc 4, k
+    ;loop
+  done:
+    hex.print_dec_uint 4, k
+    stl.output '\n'
+    stl.loop
+}
+
+// dst[:n] = |a - b|  (a, b unsigned).
+def abs_diff_into n, dst, a, b @ ge, lt, end {
+    hex.cmp n, a, b, lt, ge, ge
+  ge:
+    hex.mov n, dst, a
+    hex.sub n, dst, b
+    ;end
+  lt:
+    hex.mov n, dst, b
+    hex.sub n, dst, a
+  end:
+}
+
+x1: hex.vec 4, 0
+y1: hex.vec 4, 0
+x2: hex.vec 4, 0
+y2: hex.vec 4, 0
+dx: hex.vec 4, 0
+dy: hex.vec 4, 0
+sq: hex.vec 4, 0
+dsq: hex.vec 4, 0
+k: hex.vec 4, 0
+kp1: hex.vec 4, 0
+ksq: hex.vec 4, 0

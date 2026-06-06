@@ -1,0 +1,41 @@
+// Primitive Root Check (#1041)
+
+// Reads decimals `g` `p` (`p` prime `3`-`19`, `g` `1`-`p-1`). Prints `1\n` if `g` is a primitive root mod p (i.e. its multiplicative order is `p-1`), else `0\n`.
+
+main
+
+def main @ loop, cont, decide, yes, no, err < g, p, acc, k, pm1, prod, q, one {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, g, err
+    hex.input_dec_uint 4, p, err
+    hex.mov 4, pm1, p
+    hex.dec 4, pm1                          // pm1 = p - 1
+    hex.div 4, 4, q, acc, g, p, err         // acc = g mod p  (g^1)
+    hex.zero 4, k
+    hex.inc 4, k                            // k = 1
+  loop:
+    hex.cmp 4, acc, one, cont, decide, cont // acc == 1 -> order is k
+  cont:
+    hex.mul 4, prod, acc, g
+    hex.div 4, 4, q, acc, prod, p, err      // acc = acc * g mod p
+    hex.inc 4, k
+    ;loop
+  decide:
+    hex.cmp 4, k, pm1, no, yes, no          // order == p-1 ?
+  yes:
+    stl.output "1\n"
+    ;err
+  no:
+    stl.output "0\n"
+  err:
+    stl.loop
+}
+
+g: hex.vec 4, 0
+p: hex.vec 4, 0
+acc: hex.vec 4, 0
+k: hex.vec 4, 0
+pm1: hex.vec 4, 0
+prod: hex.vec 4, 0
+q: hex.vec 4, 0
+one: hex.vec 4, 1

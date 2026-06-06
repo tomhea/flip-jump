@@ -1,0 +1,119 @@
+// Count Word Occurrences (#1102)
+
+// Reads a `\n`-terminated target word (no whitespace), then a `\n`-terminated line ≤ 80 chars. Prints the count of whitespace-separated tokens in the line that exactly equal the target (case-sensitive) + `\n`.
+
+hw = w / 4
+
+main
+
+def main @ loop, sep, sepcont, wordchar, inword, next, afterloop, finalize, ismatch, nomatch, hit, done < tbuf, tlen, lbuf, llen, scanptr, posptr, cnt, ch, instate, curlen, curstart, count, spacebyte, tabbyte {
+    stl.startup_and_init_all
+    read_line_into tbuf, tlen
+    read_line_into lbuf, llen
+    hex.set hw, scanptr, lbuf
+    hex.zero hw, count
+    bit.zero instate
+    hex.mov hw, cnt, llen
+  loop:
+    hex.if0 hw, cnt, afterloop
+    hex.mov hw, posptr, scanptr
+    hex.read_byte_and_inc ch, scanptr
+    is_ws ch, sep, wordchar, spacebyte, tabbyte
+  sep:
+    bit.if0 instate, sepcont
+    ;finalize
+  sepcont:
+    ;next
+  wordchar:
+    bit.if1 instate, inword
+    bit.one instate
+    hex.mov hw, curstart, posptr
+    hex.zero hw, curlen
+  inword:
+    hex.inc hw, curlen
+  next:
+    hex.dec hw, cnt
+    ;loop
+  finalize:
+    token_eq curstart, curlen, tbuf, tlen, ismatch, nomatch
+  ismatch:
+    hex.inc hw, count
+  nomatch:
+    bit.zero instate
+    ;next
+  afterloop:
+    bit.if0 instate, done
+    token_eq curstart, curlen, tbuf, tlen, hit, done
+  hit:
+    hex.inc hw, count
+  done:
+    hex.print_dec_uint hw, count
+    stl.output '\n'
+    stl.loop
+}
+
+// Jump to `yes` if the token at curstart[:curlen] equals tbuf[:tlen], else `no`.
+def token_eq curstart, curlen, tbuf, tlen, yes, no @ lenok, cmploop, eqc < cptr, tptr2, ccnt, cb, tb {
+    hex.cmp hw, curlen, tlen, no, lenok, no
+  lenok:
+    hex.mov hw, cptr, curstart
+    hex.set hw, tptr2, tbuf
+    hex.mov hw, ccnt, curlen
+  cmploop:
+    hex.if0 hw, ccnt, yes
+    hex.read_byte_and_inc cb, cptr
+    hex.read_byte_and_inc tb, tptr2
+    hex.cmp 2, cb, tb, no, eqc, no
+  eqc:
+    hex.dec hw, ccnt
+    ;cmploop
+}
+
+// Jump to `ws` if b is a space or tab, else to `notws`.
+def is_ws b, ws, notws, spacebyte, tabbyte @ try_tab {
+    hex.cmp 2, b, spacebyte, try_tab, ws, try_tab
+  try_tab:
+    hex.cmp 2, b, tabbyte, notws, ws, notws
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+tlen: hex.vec hw
+llen: hex.vec hw
+scanptr: hex.vec hw
+posptr: hex.vec hw
+wptr: hex.vec hw
+cnt: hex.vec hw
+curlen: hex.vec hw
+curstart: hex.vec hw
+count: hex.vec hw
+cptr: hex.vec hw
+tptr2: hex.vec hw
+ccnt: hex.vec hw
+ch: hex.vec 2
+cb: hex.vec 2
+tb: hex.vec 2
+bytebuf: hex.vec 2
+spacebyte: hex.vec 2, ' '
+tabbyte: hex.vec 2, '\t'
+nlbyte: hex.vec 2, '\n'
+
+// Input buffers: reserved (zeroed, not stored in the .fjm) regions — no fixed CAP.
+tbuf:
+    reserve dw * 1000000
+lbuf:
+    reserve dw * 1000000
+instate: bit.bit

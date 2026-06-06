@@ -1,0 +1,97 @@
+// Count Substring Occurrences (#1109)
+
+// Reads a `\n`-terminated pattern (≤ 20 chars), then a `\n`-terminated text (≤ 60 chars). Prints the count of non-overlapping left-to-right occurrences of pattern in text as decimal + `\n`. Empty pattern → `0\n`.
+
+hw = w / 4
+CAP_P = 24
+CAP_T = 64
+
+main
+
+def main @ guard, matchcheck, matched, nomatch, advloop, advdone, done, zerocase, halt < pbuf, plen, tbuf, tlen, tptr, i, count, rem, acnt {
+    stl.startup_and_init_all
+    read_line_into pbuf, plen
+    read_line_into tbuf, tlen
+    hex.if0 hw, plen, zerocase                   // empty pattern -> 0
+    hex.zero hw, count
+    hex.zero hw, i
+    hex.set hw, tptr, tbuf
+  guard:
+    hex.mov hw, rem, tlen
+    hex.sub hw, rem, i                            // rem = tlen - i
+    hex.cmp hw, rem, plen, done, matchcheck, matchcheck   // rem < plen -> done
+  matchcheck:
+    match_at tptr, pbuf, plen, matched, nomatch
+  matched:
+    hex.inc hw, count
+    hex.add hw, i, plen                           // non-overlapping: skip the match
+    hex.mov hw, acnt, plen
+  advloop:
+    hex.if0 hw, acnt, advdone
+    hex.ptr_inc tptr
+    hex.dec hw, acnt
+    ;advloop
+  advdone:
+    ;guard
+  nomatch:
+    hex.inc hw, i
+    hex.ptr_inc tptr
+    ;guard
+  done:
+    hex.print_dec_uint hw, count
+    stl.output '\n'
+    ;halt
+  zerocase:
+    stl.output "0\n"
+  halt:
+    stl.loop
+}
+
+// Jump to `yes` if pattern (pbuf[:plen]) matches text at startptr, else `no`.
+// Leaves startptr unchanged (compares through a copy).
+def match_at startptr, pbuf, plen, yes, no @ mloop, eqc < mptr, pptr2, mcnt2, mb, pb {
+    hex.mov hw, mptr, startptr
+    hex.set hw, pptr2, pbuf
+    hex.mov hw, mcnt2, plen
+  mloop:
+    hex.if0 hw, mcnt2, yes
+    hex.read_byte_and_inc mb, mptr
+    hex.read_byte_and_inc pb, pptr2
+    hex.cmp 2, mb, pb, no, eqc, no
+  eqc:
+    hex.dec hw, mcnt2
+    ;mloop
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+pbuf: hex.vec CAP_P
+plen: hex.vec hw
+tbuf: hex.vec CAP_T
+tlen: hex.vec hw
+tptr: hex.vec hw
+wptr: hex.vec hw
+i: hex.vec hw
+count: hex.vec hw
+rem: hex.vec hw
+acnt: hex.vec hw
+mptr: hex.vec hw
+pptr2: hex.vec hw
+mcnt2: hex.vec hw
+mb: hex.vec 2
+pb: hex.vec 2
+bytebuf: hex.vec 2
+nlbyte: hex.vec 2, '\n'

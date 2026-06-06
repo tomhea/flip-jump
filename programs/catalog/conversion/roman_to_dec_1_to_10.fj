@@ -1,0 +1,52 @@
+// Roman To Dec 1 To 10 (#1074)
+
+// Reads a Roman numeral string (one of `I`, `II`, ..., `X`) + `\n` and prints the decimal `1`-`10` + `\n`.
+
+main
+
+def main @ loop, body, getval, isV, setV, isX, accumulate, sub, nosub, done < ch, nl, ci, cv, total, prev, v {
+    stl.startup
+    bit.zero 16, total
+    bit.zero 16, prev
+  loop:
+    bit.input ch
+    bit.if0 8, ch, done
+    bit.cmp 8, ch, nl, body, done, body
+  body:
+    // v = value(ch): I=1, V=5, X=10
+    bit.cmp 8, ch, ci, isV, getval, isV
+  getval:
+    bit.zero 16, v
+    bit.inc 16, v                       // I -> 1
+    ;accumulate
+  isV:
+    bit.cmp 8, ch, cv, isX, setV, isX
+  setV:
+    bit.zero 16, v
+    rep(5, i) bit.inc 16, v             // V -> 5
+    ;accumulate
+  isX:
+    bit.zero 16, v
+    rep(10, i) bit.inc 16, v            // X -> 10
+  accumulate:
+    bit.add 16, total, v                // total += v
+    bit.cmp 16, v, prev, nosub, nosub, sub   // v > prev -> subtractive
+  sub:
+    bit.sub 16, total, prev             // total -= 2*prev
+    bit.sub 16, total, prev
+  nosub:
+    bit.mov 16, prev, v
+    ;loop
+  done:
+    bit.print_dec_uint 16, total
+    stl.output '\n'
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+nl: bit.vec 8, '\n'
+ci: bit.vec 8, 'I'
+cv: bit.vec 8, 'V'
+total: bit.vec 16, 0
+prev: bit.vec 16, 0
+v: bit.vec 16, 0

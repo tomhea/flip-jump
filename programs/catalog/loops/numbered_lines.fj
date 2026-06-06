@@ -1,0 +1,70 @@
+// Numbered Lines (#1097)
+
+// Reads digit N `1`-`9` + `\n` then a `\n`-terminated line ≤ 20 chars. Prints N lines, each prefixed with `<i>: ` (1-based) and then the line.
+
+hw = w / 4
+CAP = 24
+
+main
+
+def main @ loop, done < buf, slen, nval, nch, junk, err, idx {
+    stl.startup_and_init_all
+    bit.input nch
+    bit.ascii2dec err, nval, nch
+    bit.input junk                           // newline after the digit
+    read_line_into buf, slen
+    bit.zero 16, idx
+  loop:
+    bit.if0 8, nval, done
+    bit.inc 16, idx
+    bit.print_dec_uint 16, idx
+    stl.output ": "
+    print_buffer buf, slen
+    stl.output '\n'
+    bit.dec 8, nval
+    ;loop
+  done:
+    stl.loop
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+// Print buf's slen bytes in order.
+def print_buffer buf, slen @ loop, done < pptr, cnt, bytebuf {
+    hex.if0 hw, slen, done
+    hex.set hw, pptr, buf
+    hex.mov hw, cnt, slen
+  loop:
+    hex.if0 hw, cnt, done
+    hex.read_byte_and_inc bytebuf, pptr
+    hex.print bytebuf
+    hex.dec hw, cnt
+    ;loop
+  done:
+}
+
+buf: hex.vec CAP
+slen: hex.vec hw
+wptr: hex.vec hw
+pptr: hex.vec hw
+cnt: hex.vec hw
+bytebuf: hex.vec 2
+nlbyte: hex.vec 2, '\n'
+nval: bit.vec 8, 0
+nch: bit.vec 8, 0
+junk: bit.vec 8, 0
+err: bit.bit
+idx: bit.vec 16, 0

@@ -1,0 +1,54 @@
+// Repeat Line 2X (#1092)
+
+// Reads a `\n`-terminated line ≤ 40 chars and prints its content twice (concatenated, no internal separator), followed by `\n`.
+
+hw = w / 4
+CAP = 44
+
+main
+
+def main < buf, slen {
+    stl.startup_and_init_all
+    read_line_into buf, slen
+    print_buffer buf, slen
+    print_buffer buf, slen
+    stl.output '\n'
+    stl.loop
+}
+
+// Read bytes into buf until `\n` or EOF (0 byte); set slen to the byte count.
+def read_line_into buf, slen @ loop, store, done < wptr, bytebuf, nlbyte {
+    hex.set hw, wptr, buf
+    hex.zero hw, slen
+  loop:
+    hex.input bytebuf
+    hex.if0 2, bytebuf, done
+    hex.cmp 2, bytebuf, nlbyte, store, done, store
+  store:
+    hex.write_byte_and_inc wptr, bytebuf
+    hex.inc hw, slen
+    ;loop
+  done:
+}
+
+// Print buf's slen bytes in order.
+def print_buffer buf, slen @ loop, done < pptr, cnt, bytebuf {
+    hex.if0 hw, slen, done
+    hex.set hw, pptr, buf
+    hex.mov hw, cnt, slen
+  loop:
+    hex.if0 hw, cnt, done
+    hex.read_byte_and_inc bytebuf, pptr
+    hex.print bytebuf
+    hex.dec hw, cnt
+    ;loop
+  done:
+}
+
+buf: hex.vec CAP
+slen: hex.vec hw
+wptr: hex.vec hw
+pptr: hex.vec hw
+cnt: hex.vec hw
+bytebuf: hex.vec 2
+nlbyte: hex.vec 2, '\n'

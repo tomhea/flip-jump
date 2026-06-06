@@ -1,0 +1,34 @@
+// Multiplicative Order Small (#1035)
+
+// Reads decimals `a` `m` (each `2`-`20`, `gcd(a,m)=1`). Finds the smallest `k >= 1` such that `(a^k) mod m == 1`. Prints `k` as decimal + `\n`.
+
+main
+
+def main @ loop, cont, done, err < a, m, acc, k, prod, q, one {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, a, err
+    hex.input_dec_uint 4, m, err
+    hex.div 4, 4, q, acc, a, m, err         // acc = a mod m  (a^1)
+    hex.zero 4, k
+    hex.inc 4, k                            // k = 1
+  loop:
+    hex.cmp 4, acc, one, cont, done, cont   // acc == 1 -> done
+  cont:
+    hex.mul 4, prod, acc, a
+    hex.div 4, 4, q, acc, prod, m, err      // acc = acc * a mod m
+    hex.inc 4, k
+    ;loop
+  done:
+    hex.print_dec_uint 4, k
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+a: hex.vec 4, 0
+m: hex.vec 4, 0
+acc: hex.vec 4, 0
+k: hex.vec 4, 0
+prod: hex.vec 4, 0
+q: hex.vec 4, 0
+one: hex.vec 4, 1

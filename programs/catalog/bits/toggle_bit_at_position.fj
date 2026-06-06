@@ -1,0 +1,29 @@
+// Toggle Bit At Position (#1064)
+
+// Reads one byte, then one ASCII digit `0`-`7` + `\n`. Outputs the byte with the bit at that position XOR'd (toggled). Convention: position `0` is the LSB (matches `bit_at_position`).
+
+main
+
+def main @ shloop, shdone < ch, pch, p, mask, err {
+    stl.startup
+    bit.input ch
+    bit.input pch
+    bit.ascii2dec err, p, pch
+    bit.zero 8, mask
+    bit.inc 8, mask                     // mask = 1
+  shloop:
+    bit.if0 8, p, shdone                // mask = 1 << p
+    bit.shl 8, mask
+    bit.dec 8, p
+    ;shloop
+  shdone:
+    bit.xor 8, ch, mask                 // toggle bit p
+    bit.print ch
+    stl.loop
+}
+
+ch: bit.vec 8, 0
+pch: bit.vec 8, 0
+p: bit.vec 8, 0
+mask: bit.vec 8, 0
+err: bit.bit

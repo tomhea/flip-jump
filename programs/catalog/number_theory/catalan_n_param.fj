@@ -1,0 +1,61 @@
+// Catalan N Param (#1047)
+
+// Reads decimal `N` `0`-`7` + `\n`. Prints the `N`-th Catalan number `C(2N, N) / (N + 1)` as decimal + `\n`.
+
+main
+
+def main @ done < N, twoN, np1, cn, q, r {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, N, done
+    hex.mov 4, twoN, N
+    hex.add 4, twoN, N                       // 2N
+    binom_into 4, cn, twoN, N                // C(2N, N)
+    hex.mov 4, np1, N
+    hex.inc 4, np1                           // N + 1
+    hex.div 4, 4, q, r, cn, np1, done        // q = C(2N, N) / (N + 1)
+    hex.print_dec_uint 4, q
+    stl.output '\n'
+  done:
+    stl.loop
+}
+
+// dst[:n] = C(N, K) via the multiplicative formula (assumes K <= N).
+def binom_into n, dst, N, K @ useK, useNK, kset, loop, cont, end, divz < bk, bnk, bterm, bi, bprod, br {
+    hex.mov n, bnk, N
+    hex.sub n, bnk, K
+    hex.cmp n, K, bnk, useK, useK, useNK
+  useNK:
+    hex.mov n, bk, bnk
+    ;kset
+  useK:
+    hex.mov n, bk, K
+  kset:
+    hex.zero n, dst
+    hex.inc n, dst
+    hex.zero n, bi
+    hex.mov n, bterm, N
+    hex.sub n, bterm, bk
+  loop:
+    hex.cmp n, bi, bk, cont, end, end
+  cont:
+    hex.inc n, bi
+    hex.inc n, bterm
+    hex.mul n, bprod, dst, bterm
+    hex.div n, n, dst, br, bprod, bi, divz
+    ;loop
+  divz:
+  end:
+}
+
+N: hex.vec 4, 0
+twoN: hex.vec 4, 0
+np1: hex.vec 4, 0
+cn: hex.vec 4, 0
+q: hex.vec 4, 0
+r: hex.vec 4, 0
+bk: hex.vec 4, 0
+bnk: hex.vec 4, 0
+bterm: hex.vec 4, 0
+bi: hex.vec 4, 0
+bprod: hex.vec 4, 0
+br: hex.vec 4, 0

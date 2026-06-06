@@ -1,0 +1,36 @@
+// Crt Two Pairs (#1031)
+
+// Reads 4 decimals `r1 m1 r2 m2` (each on own line, `m1`,`m2` coprime, each ≤ `10`). Finds `r` such that `r ≡ r1 mod m1` and `r ≡ r2 mod m2`, with `0 <= r < m1*m2`. Prints `r` as decimal + `\n`.
+
+main
+
+def main @ loop, c1, next, found, err < r1, m1, r2, m2, r, q, rem {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, r1, err
+    hex.input_dec_uint 4, m1, err
+    hex.input_dec_uint 4, r2, err
+    hex.input_dec_uint 4, m2, err
+    hex.zero 4, r
+  loop:
+    hex.div 4, 4, q, rem, r, m1, err        // rem = r mod m1
+    hex.cmp 4, rem, r1, next, c1, next
+  c1:
+    hex.div 4, 4, q, rem, r, m2, err        // rem = r mod m2
+    hex.cmp 4, rem, r2, next, found, next
+  next:
+    hex.inc 4, r
+    ;loop
+  found:
+    hex.print_dec_uint 4, r
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+r1: hex.vec 4, 0
+m1: hex.vec 4, 0
+r2: hex.vec 4, 0
+m2: hex.vec 4, 0
+r: hex.vec 4, 0
+q: hex.vec 4, 0
+rem: hex.vec 4, 0

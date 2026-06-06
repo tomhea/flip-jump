@@ -1,0 +1,86 @@
+// Eulerian N K Small (#1051)
+
+// Reads decimals `N` `K` (`N` `1`-`6`, `K` `0`-`N-1`). Prints the Eulerian number `<N, K>` as decimal + `\n`.
+
+main
+
+def main @ halt < N, K, ans, dp, srow, consts {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, N, halt
+    hex.input_dec_uint 4, K, halt
+    hex.inc 4, dp                           // dp[0] = 1  (<n, 0> = 1 for all n)
+    capture_row 4, N, consts, 0, srow, dp   // capture row 0 if N == 0
+    rep(6, t) eul_round 4, dp, t, N, consts, srow
+    select_col 4, K, consts, srow, ans
+    hex.print_dec_uint 4, ans
+    stl.output '\n'
+  halt:
+    stl.loop
+}
+
+// Build Eulerian row t+1 into dp, then capture it into srow if N matches.
+def eul_round unit, dp, t, N, consts, srow {
+    eul_row unit, dp, t+1
+    capture_row unit, N, consts, t+1, srow, dp
+}
+
+// Build Eulerian row `rownum` (>=1) in place; dp[0] stays 1.
+// <n,k> = (k+1)*<n-1,k> + (n-k)*<n-1,k-1>, updating k = n-1 .. 1.
+def eul_row unit, dp, rownum {
+    rep(rownum-1, kk) eul_k unit, dp, rownum, (rownum-1)-kk
+}
+
+// dp[k] = (k+1)*dp[k] + (rownum-k)*dp[k-1]   (k, rownum compile-time constants).
+def eul_k unit, dp, rownum, k < etmp, etmp2 {
+    hex.zero unit, etmp
+    rep(k+1, ii) hex.add unit, etmp, dp+k*unit*dw            // (k+1)*dp[k]
+    hex.zero unit, etmp2
+    rep(rownum-k, ii) hex.add unit, etmp2, dp+(k-1)*unit*dw  // (rownum-k)*dp[k-1]
+    hex.add unit, etmp, etmp2
+    hex.mov unit, dp+k*unit*dw, etmp
+}
+
+// If N == rownum, copy the current dp row (cells 0..6) into srow.
+def capture_row unit, N, consts, rownum, srow, dp {
+    rep(7, kk) copy_if_eq unit, N, consts+rownum*unit*dw, srow+kk*unit*dw, dp+kk*unit*dw
+}
+
+// ans = srow[K] (select the captured row's K-th cell by runtime K).
+def select_col unit, K, consts, srow, ans {
+    rep(7, kk) copy_if_eq unit, K, consts+kk*unit*dw, ans, srow+kk*unit*dw
+}
+
+// if a[:n] == b[:n] then dst[:n] = src[:n].
+def copy_if_eq n, a, b, dst, src @ no, yes {
+    hex.cmp n, a, b, no, yes, no
+  yes:
+    hex.mov n, dst, src
+  no:
+}
+
+N: hex.vec 4, 0
+K: hex.vec 4, 0
+ans: hex.vec 4, 0
+etmp: hex.vec 4, 0
+etmp2: hex.vec 4, 0
+dp: hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+srow: hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+consts: hex.vec 4, 0
+        hex.vec 4, 1
+        hex.vec 4, 2
+        hex.vec 4, 3
+        hex.vec 4, 4
+        hex.vec 4, 5
+        hex.vec 4, 6
