@@ -1,6 +1,6 @@
-// Tests the hex line/byte-buffer helpers: hex.input_line, hex.print_line, hex.print_from_ptr.
-//   Reads a line, echoes it; prints a 3-byte substring of it through a pointer; then reads and
-//   echoes a SECOND line (proving each call keeps its own scratch and is reusable).
+// Tests the hex line/byte-buffer helpers: hex.input_line, hex.print_from_ptr, hex.print_line_from_ptr.
+//   Reads a line; echoes it via a pointer; prints a 3-byte substring; prints it again until the
+//   buffer's zero terminator (reporting the length); then reads and echoes a SECOND line.
 
 hw = w / 4
 
@@ -8,31 +8,36 @@ stl.startup_and_init_all
 
 hex.input_line buf, len
 stl.output "echo: "
-hex.print_line buf, len
+hex.set hw, p, buf
+hex.print_from_ptr p, len
 stl.output '\n'
 
 stl.output "sub: "
-hex.set hw, sub, buf
-hex.ptr_inc sub
-hex.ptr_inc sub
-hex.print_from_ptr sub, three
+hex.set hw, p, buf
+hex.ptr_inc p
+hex.ptr_inc p
+hex.print_from_ptr p, three
+stl.output '\n'
+
+stl.output "str: "
+hex.set hw, p, buf
+hex.print_line_from_ptr p, slen
+stl.output ' '
+hex.print_dec_uint hw, slen
 stl.output '\n'
 
 hex.input_line buf2, len2
 stl.output "echo2: "
-hex.print_line buf2, len2
+hex.set hw, p, buf2
+hex.print_from_ptr p, len2
 stl.output '\n'
-
-stl.output "empty: ["
-hex.input_line buf2, len2
-hex.print_line buf2, len2
-stl.output "]\n"
 
 stl.loop
 
 buf:   hex.vec 84
-len:   hex.vec hw
 buf2:  hex.vec 84
+len:   hex.vec hw
 len2:  hex.vec hw
-sub:   hex.vec hw
+slen:  hex.vec hw
+p:     hex.vec hw
 three: hex.vec hw, 3

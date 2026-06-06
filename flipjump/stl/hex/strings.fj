@@ -28,30 +28,8 @@ ns hex {
 
     //  Time Complexity:  len(w(@+5) + 21@+27)
     // Space Complexity:  w(2.25@+45) + 16@+179
-    //   Prints len bytes from the buffer at the constant address buf, in order.
-    // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
-    def print_line buf, len @ loop, finish, pptr, cnt, bytebuf, end {
-        .if0 w/4, len, end
-        .set w/4, pptr, buf
-        .mov w/4, cnt, len
-      loop:
-        .if0 w/4, cnt, finish
-        .read_byte_and_inc bytebuf, pptr
-        .print bytebuf
-        .dec w/4, cnt
-        ;loop
-      finish:
-        ;end
-
-      pptr:    .vec w/4
-      cnt:     .vec w/4
-      bytebuf: .vec 2
-      end:
-    }
-
-    //  Time Complexity:  len(w(@+5) + 21@+27)
-    // Space Complexity:  w(2.25@+45) + 16@+179
-    //   Prints len bytes starting at the runtime address held in ptr (ptr is unchanged).
+    //   Prints len bytes starting at the address held in ptr (ptr is unchanged). For a buffer
+    //   label `buf`, point at it first with `hex.set w/4, ptr, buf`.
     // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
     def print_from_ptr ptr, len @ loop, finish, pptr, cnt, bytebuf, end {
         .if0 w/4, len, end
@@ -69,6 +47,32 @@ ns hex {
       pptr:    .vec w/4
       cnt:     .vec w/4
       bytebuf: .vec 2
+      end:
+    }
+
+    //  Time Complexity:  len(w(0.75@+5) + 30@+40)
+    // Space Complexity:  w(2.25@+45) + 20@+200
+    //   Prints bytes from the address held in ptr until (but not including) a '\n' or a 0-byte;
+    //   writes the number of bytes printed (the terminator excluded) into len. ptr is unchanged.
+    // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
+    def print_line_from_ptr ptr, len @ loop, doprint, stop, pptr, bytebuf, nl, end {
+        .mov w/4, pptr, ptr
+        .zero w/4, len
+      loop:
+        .read_byte bytebuf, pptr
+        .if0 2, bytebuf, stop                   // 0-byte = terminator
+        .cmp 2, bytebuf, nl, doprint, stop, doprint   // '\n' = terminator
+      doprint:
+        .print bytebuf
+        .ptr_inc pptr
+        .inc w/4, len
+        ;loop
+      stop:
+        ;end
+
+      pptr:    .vec w/4
+      bytebuf: .vec 2
+      nl:      .vec 2, '\n'
       end:
     }
 }
