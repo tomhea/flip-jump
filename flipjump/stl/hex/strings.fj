@@ -2,7 +2,7 @@
 // (By "buffers" we mean hex.pointers to those buffers.)
 
 ns hex {
-    //  Time Complexity:  len(w(0.75@+5) + 38@+80)   // per byte; hex.write_byte_and_inc dominates
+    //  Time Complexity:  len(w(0.75@+5) + 38@+80)
     // Space Complexity:  w(2@+42) + 33@+366
     //   Reads bytes from input into buf until a '\n' or a 0-byte (EOF); writes the byte count into len.
     // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
@@ -26,7 +26,7 @@ ns hex {
       end:
     }
 
-    //  Time Complexity:  len(w(@+5) + 21@+27)        // per byte; hex.read_byte_and_inc dominates
+    //  Time Complexity:  len(w(@+5) + 21@+27)
     // Space Complexity:  w(2.25@+45) + 16@+179
     //   Prints len bytes from the buffer at the constant address buf, in order.
     // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
@@ -49,7 +49,7 @@ ns hex {
       end:
     }
 
-    //  Time Complexity:  len(w(@+5) + 21@+27)        // per byte; hex.read_byte_and_inc dominates
+    //  Time Complexity:  len(w(@+5) + 21@+27)
     // Space Complexity:  w(2.25@+45) + 16@+179
     //   Prints len bytes starting at the runtime address held in ptr (ptr is unchanged).
     // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
