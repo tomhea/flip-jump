@@ -67,7 +67,7 @@ ns hex {
         .inc w/4, len
         ;loop
       donl:
-        .print bytebuf
+        stl.output '\n'
         ;stop
       stop:
         ;end
