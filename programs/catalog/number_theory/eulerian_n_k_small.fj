@@ -4,16 +4,17 @@
 
 main
 
-def main < N, K, ans, dp, srow, consts {
-    stl.startup
-    read_decimal 16, N
-    read_decimal 16, K
-    bit.inc 16, dp                          // dp[0] = 1  (<n, 0> = 1 for all n)
-    capture_row 16, N, consts, 0, srow, dp  // capture row 0 if N == 0
-    rep(6, t) eul_round 16, dp, t, N, consts, srow
-    select_col 16, K, consts, srow, ans
-    bit.print_dec_uint 16, ans
+def main @ halt < N, K, ans, dp, srow, consts {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, N, halt
+    hex.input_dec_uint 4, K, halt
+    hex.inc 4, dp                           // dp[0] = 1  (<n, 0> = 1 for all n)
+    capture_row 4, N, consts, 0, srow, dp   // capture row 0 if N == 0
+    rep(6, t) eul_round 4, dp, t, N, consts, srow
+    select_col 4, K, consts, srow, ans
+    hex.print_dec_uint 4, ans
     stl.output '\n'
+  halt:
     stl.loop
 }
 
@@ -31,12 +32,12 @@ def eul_row unit, dp, rownum {
 
 // dp[k] = (k+1)*dp[k] + (rownum-k)*dp[k-1]   (k, rownum compile-time constants).
 def eul_k unit, dp, rownum, k < etmp, etmp2 {
-    bit.zero unit, etmp
-    rep(k+1, ii) bit.add unit, etmp, dp+k*unit*dw            // (k+1)*dp[k]
-    bit.zero unit, etmp2
-    rep(rownum-k, ii) bit.add unit, etmp2, dp+(k-1)*unit*dw  // (rownum-k)*dp[k-1]
-    bit.add unit, etmp, etmp2
-    bit.mov unit, dp+k*unit*dw, etmp
+    hex.zero unit, etmp
+    rep(k+1, ii) hex.add unit, etmp, dp+k*unit*dw            // (k+1)*dp[k]
+    hex.zero unit, etmp2
+    rep(rownum-k, ii) hex.add unit, etmp2, dp+(k-1)*unit*dw  // (rownum-k)*dp[k-1]
+    hex.add unit, etmp, etmp2
+    hex.mov unit, dp+k*unit*dw, etmp
 }
 
 // If N == rownum, copy the current dp row (cells 0..6) into srow.
@@ -51,54 +52,35 @@ def select_col unit, K, consts, srow, ans {
 
 // if a[:n] == b[:n] then dst[:n] = src[:n].
 def copy_if_eq n, a, b, dst, src @ no, yes {
-    bit.cmp n, a, b, no, yes, no
+    hex.cmp n, a, b, no, yes, no
   yes:
-    bit.mov n, dst, src
+    hex.mov n, dst, src
   no:
 }
 
-// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
-def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
-    bit.zero n, value
-  loop:
-    bit.input ch
-    bit.if0 8, ch, end
-    bit.cmp 8, ch, nl, add_digit, end, add_digit
-  add_digit:
-    bit.mul10 n, value
-    bit.ascii2dec err, digit, ch
-    bit.add n, value, digit
-    ;loop
-  end:
-}
-
-N: bit.vec 16, 0
-K: bit.vec 16, 0
-ans: bit.vec 16, 0
-etmp: bit.vec 16, 0
-etmp2: bit.vec 16, 0
-dp: bit.vec 16, 0
-    bit.vec 16, 0
-    bit.vec 16, 0
-    bit.vec 16, 0
-    bit.vec 16, 0
-    bit.vec 16, 0
-    bit.vec 16, 0
-srow: bit.vec 16, 0
-      bit.vec 16, 0
-      bit.vec 16, 0
-      bit.vec 16, 0
-      bit.vec 16, 0
-      bit.vec 16, 0
-      bit.vec 16, 0
-consts: bit.vec 16, 0
-        bit.vec 16, 1
-        bit.vec 16, 2
-        bit.vec 16, 3
-        bit.vec 16, 4
-        bit.vec 16, 5
-        bit.vec 16, 6
-ch: bit.vec 8, 0
-nl: bit.vec 8, '\n'
-digit: bit.vec 16, 0
-err: bit.bit
+N: hex.vec 4, 0
+K: hex.vec 4, 0
+ans: hex.vec 4, 0
+etmp: hex.vec 4, 0
+etmp2: hex.vec 4, 0
+dp: hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+    hex.vec 4, 0
+srow: hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+consts: hex.vec 4, 0
+        hex.vec 4, 1
+        hex.vec 4, 2
+        hex.vec 4, 3
+        hex.vec 4, 4
+        hex.vec 4, 5
+        hex.vec 4, 6

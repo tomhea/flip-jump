@@ -4,83 +4,64 @@
 
 main
 
-def main < a, b, c, sumabc, sumbc, c1, c2, res {
-    stl.startup
-    read_decimal 32, a
-    read_decimal 32, b
-    read_decimal 32, c
-    bit.mov 32, sumabc, a
-    bit.add 32, sumabc, b
-    bit.add 32, sumabc, c           // a + b + c
-    bit.mov 32, sumbc, b
-    bit.add 32, sumbc, c            // b + c
-    binom_into 32, c1, sumabc, a    // C(a+b+c, a)
-    binom_into 32, c2, sumbc, b     // C(b+c, b)
-    bit.mov 32, res, c1
-    bit.mul 32, res, c2             // multinomial = C(a+b+c, a) * C(b+c, b)
-    bit.print_dec_uint 32, res
+def main @ done < a, b, c, sumabc, sumbc, c1, c2, res {
+    stl.startup_and_init_all
+    hex.input_dec_uint 8, a, done
+    hex.input_dec_uint 8, b, done
+    hex.input_dec_uint 8, c, done
+    hex.mov 8, sumabc, a
+    hex.add 8, sumabc, b
+    hex.add 8, sumabc, c                     // a + b + c
+    hex.mov 8, sumbc, b
+    hex.add 8, sumbc, c                      // b + c
+    binom_into 8, c1, sumabc, a              // C(a+b+c, a)
+    binom_into 8, c2, sumbc, b               // C(b+c, b)
+    hex.mul 8, res, c1, c2                    // multinomial = C(a+b+c, a) * C(b+c, b)
+    hex.print_dec_uint 8, res
     stl.output '\n'
+  done:
     stl.loop
 }
 
 // dst[:n] = C(N, K) via the multiplicative formula (assumes K <= N).
-def binom_into n, dst, N, K @ useK, useNK, kset, loop, cont, end < bk, bnk, bterm, bi, bq, br {
-    bit.mov n, bnk, N
-    bit.sub n, bnk, K               // bnk = N - K
-    bit.cmp n, K, bnk, useK, useK, useNK
+def binom_into n, dst, N, K @ useK, useNK, kset, loop, cont, end, divz < bk, bnk, bterm, bi, bprod, br {
+    hex.mov n, bnk, N
+    hex.sub n, bnk, K
+    hex.cmp n, K, bnk, useK, useK, useNK
   useNK:
-    bit.mov n, bk, bnk
+    hex.mov n, bk, bnk
     ;kset
   useK:
-    bit.mov n, bk, K
+    hex.mov n, bk, K
   kset:
-    bit.zero n, dst
-    bit.inc n, dst                  // dst = 1
-    bit.zero n, bi                  // i = 0
-    bit.mov n, bterm, N
-    bit.sub n, bterm, bk            // bterm = N - bk
+    hex.zero n, dst
+    hex.inc n, dst
+    hex.zero n, bi
+    hex.mov n, bterm, N
+    hex.sub n, bterm, bk
   loop:
-    bit.cmp n, bi, bk, cont, end, end       // i < bk
+    hex.cmp n, bi, bk, cont, end, end
   cont:
-    bit.inc n, bi
-    bit.inc n, bterm                // bterm = N - bk + i
-    bit.mul n, dst, bterm
-    bit.div n, dst, bi, bq, br
-    bit.mov n, dst, bq              // dst = dst * (N-bk+i) / i
+    hex.inc n, bi
+    hex.inc n, bterm
+    hex.mul n, bprod, dst, bterm
+    hex.div n, n, dst, br, bprod, bi, divz
     ;loop
+  divz:
   end:
 }
 
-// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
-def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
-    bit.zero n, value
-  loop:
-    bit.input ch
-    bit.if0 8, ch, end
-    bit.cmp 8, ch, nl, add_digit, end, add_digit
-  add_digit:
-    bit.mul10 n, value
-    bit.ascii2dec err, digit, ch
-    bit.add n, value, digit
-    ;loop
-  end:
-}
-
-a: bit.vec 32, 0
-b: bit.vec 32, 0
-c: bit.vec 32, 0
-sumabc: bit.vec 32, 0
-sumbc: bit.vec 32, 0
-c1: bit.vec 32, 0
-c2: bit.vec 32, 0
-res: bit.vec 32, 0
-bk: bit.vec 32, 0
-bnk: bit.vec 32, 0
-bterm: bit.vec 32, 0
-bi: bit.vec 32, 0
-bq: bit.vec 32, 0
-br: bit.vec 32, 0
-ch: bit.vec 8, 0
-nl: bit.vec 8, '\n'
-digit: bit.vec 32, 0
-err: bit.bit
+a: hex.vec 8, 0
+b: hex.vec 8, 0
+c: hex.vec 8, 0
+sumabc: hex.vec 8, 0
+sumbc: hex.vec 8, 0
+c1: hex.vec 8, 0
+c2: hex.vec 8, 0
+res: hex.vec 8, 0
+bk: hex.vec 8, 0
+bnk: hex.vec 8, 0
+bterm: hex.vec 8, 0
+bi: hex.vec 8, 0
+bprod: hex.vec 8, 0
+br: hex.vec 8, 0

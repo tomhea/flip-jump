@@ -5,19 +5,19 @@
 main
 
 def main @ usedy, usedx, done < x1, y1, x2, y2, dx, dy {
-    stl.startup
-    read_decimal 16, x1
-    read_decimal 16, y1
-    read_decimal 16, x2
-    read_decimal 16, y2
-    abs_diff_into 16, dx, x1, x2
-    abs_diff_into 16, dy, y1, y2
-    bit.cmp 16, dx, dy, usedy, usedx, usedx  // dx < dy -> dy, else dx
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, x1, done
+    hex.input_dec_uint 4, y1, done
+    hex.input_dec_uint 4, x2, done
+    hex.input_dec_uint 4, y2, done
+    abs_diff_into 4, dx, x1, x2
+    abs_diff_into 4, dy, y1, y2
+    hex.cmp 4, dx, dy, usedy, usedx, usedx  // dx < dy -> dy, else dx
   usedx:
-    bit.print_dec_uint 16, dx
+    hex.print_dec_uint 4, dx
     ;done
   usedy:
-    bit.print_dec_uint 16, dy
+    hex.print_dec_uint 4, dy
   done:
     stl.output '\n'
     stl.loop
@@ -25,39 +25,20 @@ def main @ usedy, usedx, done < x1, y1, x2, y2, dx, dy {
 
 // dst[:n] = |a - b|  (a, b unsigned).
 def abs_diff_into n, dst, a, b @ ge, lt, end {
-    bit.cmp n, a, b, lt, ge, ge
+    hex.cmp n, a, b, lt, ge, ge
   ge:
-    bit.mov n, dst, a
-    bit.sub n, dst, b
+    hex.mov n, dst, a
+    hex.sub n, dst, b
     ;end
   lt:
-    bit.mov n, dst, b
-    bit.sub n, dst, a
+    hex.mov n, dst, b
+    hex.sub n, dst, a
   end:
 }
 
-// Read an unsigned decimal (digits until `\n` or `\0`) into value[:n].
-def read_decimal n, value @ loop, add_digit, end < ch, nl, digit, err {
-    bit.zero n, value
-  loop:
-    bit.input ch
-    bit.if0 8, ch, end
-    bit.cmp 8, ch, nl, add_digit, end, add_digit
-  add_digit:
-    bit.mul10 n, value
-    bit.ascii2dec err, digit, ch
-    bit.add n, value, digit
-    ;loop
-  end:
-}
-
-x1: bit.vec 16, 0
-y1: bit.vec 16, 0
-x2: bit.vec 16, 0
-y2: bit.vec 16, 0
-dx: bit.vec 16, 0
-dy: bit.vec 16, 0
-ch: bit.vec 8, 0
-nl: bit.vec 8, '\n'
-digit: bit.vec 16, 0
-err: bit.bit
+x1: hex.vec 4, 0
+y1: hex.vec 4, 0
+x2: hex.vec 4, 0
+y2: hex.vec 4, 0
+dx: hex.vec 4, 0
+dy: hex.vec 4, 0

@@ -4,96 +4,41 @@
 
 main
 
-def main < x1, y1, x2, y2, x3, y3, t, m, acc {
-    stl.startup
-    read_signed_decimal 32, x1
-    read_signed_decimal 32, y1
-    read_signed_decimal 32, x2
-    read_signed_decimal 32, y2
-    read_signed_decimal 32, x3
-    read_signed_decimal 32, y3
-    bit.zero 32, acc
-    bit.mov 32, t, y2
-    bit.sub 32, t, y3                   // y2 - y3
-    signed_mul_into 32, m, x1, t
-    bit.add 32, acc, m
-    bit.mov 32, t, y3
-    bit.sub 32, t, y1                   // y3 - y1
-    signed_mul_into 32, m, x2, t
-    bit.add 32, acc, m
-    bit.mov 32, t, y1
-    bit.sub 32, t, y2                   // y1 - y2
-    signed_mul_into 32, m, x3, t
-    bit.add 32, acc, m
-    bit.print_dec_int 32, acc
+// Two's-complement low-n-hex products are sign-agnostic, so plain hex.mul gives the
+// correct signed result here (no overflow at these coordinate sizes).
+def main @ done < x1, y1, x2, y2, x3, y3, t, m, acc {
+    stl.startup_and_init_all
+    hex.input_dec_int 8, x1, done
+    hex.input_dec_int 8, y1, done
+    hex.input_dec_int 8, x2, done
+    hex.input_dec_int 8, y2, done
+    hex.input_dec_int 8, x3, done
+    hex.input_dec_int 8, y3, done
+    hex.zero 8, acc
+    hex.mov 8, t, y2
+    hex.sub 8, t, y3                         // y2 - y3
+    hex.mul 8, m, x1, t
+    hex.add 8, acc, m
+    hex.mov 8, t, y3
+    hex.sub 8, t, y1                         // y3 - y1
+    hex.mul 8, m, x2, t
+    hex.add 8, acc, m
+    hex.mov 8, t, y1
+    hex.sub 8, t, y2                         // y1 - y2
+    hex.mul 8, m, x3, t
+    hex.add 8, acc, m
+    hex.print_dec_int 8, acc
     stl.output '\n'
+  done:
     stl.loop
 }
 
-// Read a signed decimal (optional leading `-`, digits until `\n`/`\0`) into value[:n].
-def read_signed_decimal n, value @ neg, body, add_digit, fin, end < ch, nl, minus, digit, err, neg_flag {
-    bit.zero n, value
-    bit.zero neg_flag
-    bit.input ch
-    bit.if0 8, ch, end
-    bit.cmp 8, ch, minus, body, neg, body
-  neg:
-    bit.one neg_flag
-    bit.input ch
-  body:
-    bit.if0 8, ch, fin
-    bit.cmp 8, ch, nl, add_digit, fin, add_digit
-  add_digit:
-    bit.mul10 n, value
-    bit.ascii2dec err, digit, ch
-    bit.add n, value, digit
-    bit.input ch
-    ;body
-  fin:
-    bit.if0 neg_flag, end
-    bit.neg n, value
-  end:
-}
-
-// dst[:n] = a[:n] * b[:n] (signed; magnitudes added |b| times, b kept small).
-def signed_mul_into n, dst, a, b @ chk_b, do_mul, neg_done, end < smul_a, smul_cnt, smul_neg {
-    bit.zero n, dst
-    bit.zero smul_neg
-    bit.mov n, smul_a, a
-    bit.mov n, smul_cnt, b
-    bit.if0 a + (n-1)*dw, chk_b
-    bit.not smul_neg
-    bit.neg n, smul_a
-  chk_b:
-    bit.if0 b + (n-1)*dw, do_mul
-    bit.not smul_neg
-    bit.neg n, smul_cnt
-  do_mul:
-    bit.if0 n, smul_cnt, neg_done
-    bit.add n, dst, smul_a
-    bit.dec n, smul_cnt
-    ;do_mul
-  neg_done:
-    bit.if0 smul_neg, end
-    bit.neg n, dst
-  end:
-}
-
-x1: bit.vec 32, 0
-y1: bit.vec 32, 0
-x2: bit.vec 32, 0
-y2: bit.vec 32, 0
-x3: bit.vec 32, 0
-y3: bit.vec 32, 0
-t: bit.vec 32, 0
-m: bit.vec 32, 0
-acc: bit.vec 32, 0
-smul_a: bit.vec 32, 0
-smul_cnt: bit.vec 32, 0
-smul_neg: bit.bit
-ch: bit.vec 8, 0
-nl: bit.vec 8, '\n'
-digit: bit.vec 32, 0
-err: bit.bit
-minus: bit.vec 8, '-'
-neg_flag: bit.bit
+x1: hex.vec 8, 0
+y1: hex.vec 8, 0
+x2: hex.vec 8, 0
+y2: hex.vec 8, 0
+x3: hex.vec 8, 0
+y3: hex.vec 8, 0
+t: hex.vec 8, 0
+m: hex.vec 8, 0
+acc: hex.vec 8, 0

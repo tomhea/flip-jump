@@ -5,18 +5,18 @@
 main
 
 def main < ways, first {
-    stl.startup
-    bit.inc 16, ways                    // ways[0] = 1
-    rep(5, coin) coin_pass 16, ways, coin+1     // unbounded-knapsack over coins 1..5
+    stl.startup_and_init_all
+    hex.inc 4, ways                         // ways[0] = 1
+    rep(5, coin) coin_pass 4, ways, coin+1  // unbounded-knapsack over coins 1..5
     bit.one first
-    rep(5, j) print_sep_dec 16, ways + (j+1)*16*dw, first   // p(1)..p(5)
+    rep(5, j) print_sep_dec 4, ways + (j+1)*4*dw, first   // p(1)..p(5)
     stl.output '\n'
     stl.loop
 }
 
 // For j = coin..5: ways[j] += ways[j-coin]  (increasing j; unbounded coins).
 def coin_pass unit, ways, coin {
-    rep(6-coin, jj) bit.add unit, ways + (coin+jj)*unit*dw, ways + jj*unit*dw
+    rep(6-coin, jj) hex.add unit, ways + (coin+jj)*unit*dw, ways + jj*unit*dw
 }
 
 // Print ` ` before all but the first term (tracked by `first`), then value[:n] as decimal.
@@ -24,14 +24,14 @@ def print_sep_dec n, value, first @ skip_space {
     bit.if1 first, skip_space
     stl.output ' '
   skip_space:
-    bit.print_dec_uint n, value
+    hex.print_dec_uint n, value
     bit.zero first
 }
 
-ways: bit.vec 16, 0
-      bit.vec 16, 0
-      bit.vec 16, 0
-      bit.vec 16, 0
-      bit.vec 16, 0
-      bit.vec 16, 0
+ways: hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
+      hex.vec 4, 0
 first: bit.bit
