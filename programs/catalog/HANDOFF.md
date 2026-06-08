@@ -156,6 +156,17 @@ what the skill documents):
   Pass 1 that the canonical fixture missed.
 - **Branch first**: `git checkout -b catalog/<batch> main` BEFORE writing files. Twice
   a batch was committed on `main` and the push failed.
+- **Populate the `README.md` tables in the SAME PR — don't defer them.** Each category
+  in `programs/catalog/README.md` has a per-program table (`| # | name | description |`).
+  Pass 2 shipped the 167 programs with those three tables left empty and filled them in
+  a separate follow-up PR (#341) — pure duplicated context-loading; don't repeat it. When
+  you finish a batch, append one row per new program in the same PR:
+  `| NNNN | slug | description |` where **NNNN** is the 4-digit number from the program
+  header's `(#NNNN)` first line, **slug** is the filename without `.fj`, and **description**
+  byte-matches the header / `CATALOG.md` line (a literal `\n` becomes a REAL newline inside
+  the cell — see `number_theory/is_prime_small`). Rows sorted ascending by NNNN within each
+  category. Derive them straight from the `.fj` headers (a throwaway script reading line 1
+  for the number and line 3 for the description), never by hand.
 - **Compile cost is flat ~0.18s/program at w=64** (STL macro resolution, not your
   body). ~1200 programs ≈ a few minutes parallel. Keep CSVs sorted slowest-first.
 - **UTF-8 source (FIXED)**: `fj_parser.lex_parse_curr_file` now reads source with
