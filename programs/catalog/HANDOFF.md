@@ -1,9 +1,17 @@
 # Catalog — Implementation Handoff
 
-Handoff for completing the demonstration catalog. As of this writing: **446 / 1029
-approved specs implemented**, in 15 started categories; **3 categories complete**
-(arithmetic, branching, hello, logic). This document is the plan for the remaining
-~583 programs, plus the lessons that make them fast to write.
+Handoff for completing the demonstration catalog. As of this writing: **526 / 1029
+approved specs implemented**. **Pass 1 is COMPLETE** — all 15 started categories are now
+finished (number_theory, geometry, bits, sequences, conversion, calendar_time, misc, io,
+strings, loops, text_processing, plus the originally-complete arithmetic/branching/hello/logic).
+This document is the plan for the remaining **~503 programs (Passes 2–4)**, plus the lessons
+that make them fast to write.
+
+**Read this first if you're picking up Pass 2+:** the catalog is now **hex-first**. Pass 1
+ended by converting all arithmetic programs from `bit.*` to `hex.*` (≈4× faster in tight
+loops) and adding the `hex/strings.fj` line-buffer macros. Default to `hex.*` for new
+programs; reach for `bit.*` only for genuine bit-level manipulation (the `bits` category).
+See "Lessons" below before writing anything.
 
 ## Before you write a single program — read these, in order
 
@@ -42,28 +50,21 @@ Each program's exact name + spec description is a row in `CATALOG.md` (status
 `APPROVED`). Implement in `CATALOG.md` order within a category. Sizes below are the
 approved-spec counts still unimplemented.
 
-### Pass 1 — finish the 80 gaps in already-started categories (~80)
+### Pass 1 — DONE (80 programs, #1030–#1109)
 
-These are scattered missing specs in categories that are otherwise mostly done.
-Lowest-risk, highest-leverage: the idioms already exist (see Lessons).
-
-| Category | n | Missing slugs |
-|---|---:|---|
-| number_theory | 24 | modular_inverse_brute, crt_two_pairs, mod_factorial, mod_binomial_small, mod_power_table, multiplicative_order_small, legendre_symbol_small, jacobi_symbol_small, mod_double_factorial, wilson_prime_check, inv_mod_via_fermat, primitive_root_check, discrete_log_brute_small, mod_sum_arithmetic, binomial_coefficient_small, multinomial_3_small, permutation_count_pn_k, catalan_n_param, bell_n_param, stirling_2nd_small, derangement_n_param, eulerian_n_k_small, lah_n_k_small, pascal_row_n |
-| misc | 13 | random_choice_pick_3, word_acronym_check, is_valid_username, count_emoji_pairs, is_pangram, is_cli_flag, count_non_alphanumeric, dollar_amount_to_words, letter_position_word, greet_three_times, print_progress_bar_10, bits_to_emoji_face, midi_to_octave |
-| text_processing | 12 | char_freq_table, longest_word, shortest_word, word_with_most_vowels, count_word_occurrences, reverse_words_in_line, count_unique_words, longest_common_prefix_two, longest_common_suffix_two, line_starts_with_substring, line_ends_with_substring, count_substring_occurrences |
-| bits | 9 | bit_at_position, set_bit_at_position, clear_bit_at_position, toggle_bit_at_position, binary_string_to_byte, byte_concat_to_hex_word, byte_split_from_hex_word, clear_low_k_bits, set_low_k_bits |
-| geometry | 7 | manhattan_distance, chebyshev_distance, euclidean_distance_floor, signed_triangle_area_2x, circle_area_approx, circle_circumference_approx, counts_inside_unit_circle_grid_3x3 |
-| loops | 4 | repeat_line_n, hollow_diamond, print_box_with_label, numbered_lines |
-| strings | 3 | is_palindrome_string, repeat_line_2x, repeat_line_3x |
-| sequences | 3 | bell_first_5, partition_first_5, mersenne_check |
-| conversion | 2 | word_to_digit, roman_to_dec_1_to_10 |
-| calendar_time | 2 | dec_year_2digit_to_4digit, days_between_dates_same_year |
-| io | 1 | reverse_line |
-
-> ℹ️ `mersenne_check` was originally deferred because its `CATALOG.md` description
-> contains `√` and `≈`, which crashed the parser under a non-UTF-8 Windows locale. That
-> parser bug is now fixed (source is read as UTF-8), so the constraint no longer applies.
+All gaps in the started categories are implemented, hex-converted, and verified
+(full-domain Python cross-checks; `pytest --catalog` green). Pass 1 established the
+reusable patterns the later passes lean on — read these programs as worked examples:
+- **Decimal compute** (number_theory, geometry, calendar_time): `hex.input_dec_uint/int`
+  → `hex.add/sub/mul/div/cmp` on a `hex.vec 4` (or `8` when the result exceeds 16 bits)
+  → `hex.print_dec_uint/int`. No hand-rolled decimal reader needed.
+- **Line storage / tokenizing** (text_processing, strings, loops, misc): the
+  `hex/strings.fj` macros (below) plus the token-scan (`instate` bit + per-token
+  `(start-ptr, len)`) and parallel-array idioms in `longest_word`, `reverse_words_in_line`,
+  `count_unique_words`, `count_word_occurrences`.
+- **Fixed-size DP** (`bell_n_param`, `stirling_2nd_small`, `eulerian_n_k_small`):
+  compile-time `rep` DP with constant indices + a runtime `copy_if_eq` select — no runtime
+  pointers needed when the table is small and bounded.
 
 ### Pass 2 — algorithms, data_structures, language_demos (167)
 
@@ -99,25 +100,38 @@ Lowest-risk, highest-leverage: the idioms already exist (see Lessons).
 
 ## Lessons learned (catalog-specific — coding lessons are in the skill)
 
-**The STL got richer — use it, don't hand-roll.** Recent additions removed the two
-biggest hand-rolled helpers:
-- **Decimal I/O in hex-land now exists**: `hex.input_dec_uint/int n, dst, error` and
-  `hex.print_dec_uint/int n, x` (+ `hex.mul10`, `hex.min/max`). The old per-program
-  `read_decimal`/`print_dec` helpers are no longer needed for hex programs. (Bit
-  programs still hand-roll the read loop — there is no `bit.input_dec_*`.)
-- **`bit.mul` works now** (was previously broken at macro-resolve). Repeated-addition
-  `mul_into` is no longer required for small multipliers — but it's still the cheapest
-  option when one operand is a tiny constant, and incremental tricks beat both (below).
-- `hex.div`/`hex.idiv` and `bit.div`/`bit.idiv` all work.
+**Hex-first.** New programs use `hex.*` on `hex.vec` numbers, not `bit.*` — ≈4× faster in
+tight loops, and it's the maintainer's standing preference. `bit.*` is only for genuine
+bit-level work (the `bits` category: shifts, masks, per-bit get/set). Width mapping: a
+`bit.vec 16` becomes a `hex.vec 4`; `bit.vec 32` → `hex.vec 8`. **Watch the signatures** —
+hex mul/div are NOT in-place like bit's (see the skill's `quick-signatures.md`):
+- `hex.mul n, res, a, b` — `res = a*b`; `res` is an output that must NOT alias `a`/`b`.
+  (Low-`n` products are two's-complement-correct, so it doubles as signed multiply.)
+- `hex.div n, nb, q, r, a, b, div0` — `q=a/b`, `r=a%b`; jumps to `div0` on `b==0`. Arg
+  order: widths, OUTPUTS, INPUTS, div0-label. `hex.idiv` is signed.
+- `hex.input_dec_uint/int n, dst, error` + `hex.print_dec_uint/int n, x` replace the old
+  hand-rolled `read_decimal`/`print_dec` entirely.
+
+**STL line/byte-buffer macros — `hex/strings.fj` (use these, don't re-roll).** All take a
+hex.pointer to the buffer:
+- `hex.input_ptr_line ptr, len` — read input into `*ptr` until `\n`/0-byte(EOF); `len` := count.
+- `hex.print_ptr_text ptr, len` — print `len` bytes from `*ptr`.
+- `hex.print_ptr_line ptr, len` — print from `*ptr` until `\n`/0-byte; echoes a terminating
+  `\n`; `len` := count (terminator excluded).
+A byte buffer is `hex.vec CAP` (one byte per FJ op). For unbounded input/arrays use a
+**`reserve`d** region (top-level, zeroed, not stored in the `.fjm`):
+`buf:` newline `    reserve dw * 1000000`. The skill's `reference/line-buffer.md` has the
+token-scan / parallel-array recipes built on top.
 
 **Reusable idiom kits that carry across categories** (these are catalog-domain, beyond
 what the skill documents):
 - **EOF sentinel `\0`**: every catalog `.in` ends with `\0`; every reader does
   `bit.if0 8, ch, end` right after `bit.input ch`. `\0` is never data.
-- **Number-theory trio** (powers Pass 1 + algorithms): `is_prime_into n, flag, x`
-  (trial division, `bit.div` remainder), `gcd_into n, dst, a, b` (Euclid),
-  `sum_proper_divisors_into n, dst, x`. perfect/abundant/deficient and `lcm=(a/gcd)*b`
-  all reduce to these. All 16-bit.
+- **Number-theory trio** (powers algorithms in Pass 2): `is_prime_into n, flag, x`
+  (trial division via `hex.div` remainder; bound the loop with the incremental-square
+  trick below), `gcd_into n, dst, a, b` (Euclid), `sum_proper_divisors_into n, dst, x`.
+  perfect/abundant/deficient and `lcm=(a/gcd)*b` all reduce to these. Write them in hex
+  (`hex.vec 4`); see Pass 1's `wilson_prime_check`/`mersenne_check` for the loop shape.
 - **Incremental square for √-bounded loops**: don't `mul` to get `d*d` each step;
   maintain `dsq` via `(d+1)^2 = d^2 + 2d + 1` (`dsq+=d; dsq+=d; dsq+=1; d++`). O(√x)
   adds, no multiply. Used by `is_prime_sqrt_into`.
@@ -131,6 +145,15 @@ what the skill documents):
   the same `*dw`-per-bit stride as the case-flip idiom (see skill "Memory model").
 
 **Workflow gotchas (cost real time):**
+- **Verification: flipjump is installed editable** (`pip install -e .`), so `fj`,
+  `import flipjump`, and `scripts/catalog_register.py` all run the live repo — no stale
+  site-packages, no `sys.path` workaround. Register with
+  `from catalog_register import register; register(category=…, slug=…, in_bytes=…, out_bytes=…)`
+  (compiles `--werror`, byte-checks, appends both CSVs, validates the header vs CATALOG.md).
+- **Cross-check the full input domain, not one fixture.** For each program, compare against
+  a Python reference over its whole spec range — `flipjump.assemble(...)` once, then
+  `run_test_output(fjm, in, out)` over many inputs. This caught 2 real `m==1` edge bugs in
+  Pass 1 that the canonical fixture missed.
 - **Branch first**: `git checkout -b catalog/<batch> main` BEFORE writing files. Twice
   a batch was committed on `main` and the push failed.
 - **Populate the `README.md` tables in the SAME PR — don't defer them.** Each category
