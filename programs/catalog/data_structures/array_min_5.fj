@@ -1,0 +1,26 @@
+// Array Min 5 (#1114)
+
+// Reads exactly 5 decimals and prints the minimum + `\n`.
+
+main
+
+def main @ err < best, val, tmp {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, best, err
+    rep(4, i) read_min best, val, tmp, err
+    hex.print_dec_uint 4, best
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read one decimal and fold it into the running minimum.
+def read_min best, val, tmp, err {
+    hex.input_dec_uint 4, val, err
+    hex.min 4, tmp, best, val
+    hex.mov 4, best, tmp
+}
+
+best: hex.vec 4, 0
+val: hex.vec 4, 0
+tmp: hex.vec 4, 0

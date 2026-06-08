@@ -1,0 +1,17 @@
+// Demo Hex Inc (#1243)
+
+// Reads one hex char + `\n`. Uses `hex.inc`. Prints result hex + `\n` (`f` wraps to `0`).
+
+main
+
+def main @ err < a {
+    stl.startup_and_init_all
+    hex.input_as_hex a, err
+    hex.inc 1, a
+    hex.print_as_digit a, 0
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+a: hex.vec 1, 0

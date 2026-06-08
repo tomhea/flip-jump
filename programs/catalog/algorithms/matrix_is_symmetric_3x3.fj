@@ -1,0 +1,30 @@
+// Matrix Is Symmetric 3x3 (#1204)
+
+// Reads 9 decimals (3×3 row-major). Prints `1\n` if the matrix equals its transpose, else `0\n`.
+
+main
+
+def main @ err < arr, flag {
+    stl.startup_and_init_all
+    rep(9, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    hex.zero 4, flag
+    hex.inc 4, flag
+    check arr + 1*dw*4, arr + 3*dw*4, flag
+    check arr + 2*dw*4, arr + 6*dw*4, flag
+    check arr + 5*dw*4, arr + 7*dw*4, flag
+    hex.print_dec_uint 4, flag
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// If *x != *y, clear flag.
+def check x, y, flag @ bad, keep {
+    hex.cmp 4, x, y, bad, keep, bad
+  bad:
+    hex.zero 4, flag
+  keep:
+}
+
+arr: hex.vec 4*9
+flag: hex.vec 4, 0

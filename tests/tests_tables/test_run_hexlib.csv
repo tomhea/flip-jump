@@ -50,3 +50,5 @@ hexlib-div-8_8, tests/compiled/hexlib_tests/div/test8_8.fjm, ,tests/inout/hexlib
 hexlib-idiv, tests/compiled/hexlib_tests/div/test_idiv.fjm, ,tests/inout/hexlib_tests/div/test_idiv.out, False,False
 hexlib-idiv-cases, tests/compiled/hexlib_tests/div/test_idiv_cases.fjm, ,tests/inout/hexlib_tests/div/test_idiv_cases.out, False,False
 hexlib-strings, tests/compiled/hexlib_tests/basics1/strings.fjm, tests/inout/hexlib_tests/basics1/strings.in,tests/inout/hexlib_tests/basics1/strings.out, True,True
+hexlib-scmp, tests/compiled/hexlib_tests/basics1/scmp.fjm, ,tests/inout/hexlib_tests/basics1/scmp.out, False,False
+hexlib-nth_pointers, tests/compiled/hexlib_tests/basics2/nth_pointers.fjm, ,tests/inout/hexlib_tests/basics2/nth_pointers.out, False,False

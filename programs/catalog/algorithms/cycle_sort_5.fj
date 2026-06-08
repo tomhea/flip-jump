@@ -1,0 +1,129 @@
+// Cycle Sort 5 (#1234)
+
+// Reads exactly 5 decimals and prints them sorted ascending. Implementation: cycle sort (minimum-write sort — find each element's correct position and place via cycle following).
+
+main
+
+def main @ err < arr, nreg, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    hex.set 4, nreg, 5
+    cycle nreg
+    rep(5, i) pc arr + i*dw*4
+  err:
+    stl.loop
+}
+
+// Run a cycle for each start position 0 .. n-2.
+def cycle n @ csloop, csbody, csdone < cs, csm {
+    hex.zero 4, cs
+  csloop:
+    hex.mov 4, csm, n
+    hex.dec 4, csm
+    hex.cmp 4, cs, csm, csbody, csdone, csdone
+  csbody:
+    do_cycle cs, n
+    hex.inc 4, cs
+    ;csloop
+  csdone:
+}
+
+// Place arr[cs] at its sorted position, following the rest of the cycle.
+def do_cycle cs, n @ cont, wloop, wcont, done < item, pos, vpos, arrptr, nthidx, nthcell {
+    hex.mov w/4, nthidx, cs
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, item, nthcell
+    hex.mov 4, pos, cs
+    count_less cs, n, item, pos
+    hex.cmp 4, pos, cs, cont, done, cont
+  cont:
+    skip_dups item, pos
+    hex.mov w/4, nthidx, pos
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vpos, nthcell
+    hex.mov w/4, nthidx, pos
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.write_hex 4, nthcell, item
+    hex.mov 4, item, vpos
+  wloop:
+    hex.cmp 4, pos, cs, wcont, done, wcont
+  wcont:
+    hex.mov 4, pos, cs
+    count_less cs, n, item, pos
+    skip_dups item, pos
+    hex.mov w/4, nthidx, pos
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vpos, nthcell
+    hex.mov w/4, nthidx, pos
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.write_hex 4, nthcell, item
+    hex.mov 4, item, vpos
+    ;wloop
+  done:
+}
+
+// pos += number of arr[cs+1 .. n-1] strictly less than item.
+def count_less cs, n, item, pos @ loop, body, lt, skip, done < i, vi, arrptr, nthidx, nthcell {
+    hex.mov 4, i, cs
+    hex.inc 4, i
+  loop:
+    hex.cmp 4, i, n, body, done, done
+  body:
+    hex.mov w/4, nthidx, i
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vi, nthcell
+    hex.cmp 4, vi, item, lt, skip, skip
+  lt:
+    hex.inc 4, pos
+  skip:
+    hex.inc 4, i
+    ;loop
+  done:
+}
+
+// Advance pos past any cells equal to item (stability for duplicates).
+def skip_dups item, pos @ loop, body, done < vpos, arrptr, nthidx, nthcell {
+  loop:
+    hex.mov w/4, nthidx, pos
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vpos, nthcell
+    hex.cmp 4, vpos, item, done, body, done
+  body:
+    hex.inc 4, pos
+    ;loop
+  done:
+}
+
+// Print one 4-hex cell as decimal + newline.
+def pc c {
+    hex.print_dec_uint 4, c
+    stl.output '\n'
+}
+
+arr: hex.vec 4*5
+arrptr: hex.vec w/4
+nreg: hex.vec 4, 0
+cs: hex.vec w/4, 0
+csm: hex.vec 4, 0
+item: hex.vec 4, 0
+pos: hex.vec w/4, 0
+vpos: hex.vec 4, 0
+i: hex.vec w/4, 0
+vi: hex.vec 4, 0
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

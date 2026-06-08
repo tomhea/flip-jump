@@ -1,0 +1,40 @@
+// Dice Rolls Lcg 5 (#1219)
+
+// Reads one byte (seed). Applies 5 LCG steps and prints `(state mod 6) + 1` as a decimal digit `1`-`6` on its own line (5 lines total).
+
+main
+
+def main @ err < state {
+    stl.startup_and_init_all
+    hex.input state
+    rep(5, i) roll state, err
+  err:
+    stl.loop
+}
+
+// One LCG step, then print (state mod 6) + 1 on its own line.
+def roll state, err < sc, q, r, six {
+    lcg state
+    hex.zero 4, sc
+    hex.mov 2, sc, state
+    hex.div 4, 4, q, r, sc, six, err
+    hex.inc 4, r
+    hex.print_dec_uint 4, r
+    stl.output '\n'
+}
+
+// state = (state*5 + 3) mod 256.
+def lcg state < five, three, tmp {
+    hex.mul 2, tmp, state, five
+    hex.add 2, tmp, three
+    hex.mov 2, state, tmp
+}
+
+state: hex.vec 2, 0
+sc: hex.vec 4, 0
+q: hex.vec 4, 0
+r: hex.vec 4, 0
+six: hex.vec 4, 6
+five: hex.vec 2, 5
+three: hex.vec 2, 3
+tmp: hex.vec 2, 0

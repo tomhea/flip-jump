@@ -1,0 +1,21 @@
+// Demo Hex Add (#1237)
+
+// Reads two lowercase hex chars (each on own line). Uses `hex.add`. Prints the result hex + `\n` (mod 16, carry discarded).
+
+main
+
+def main @ err < a, b, nl {
+    stl.startup_and_init_all
+    hex.input_as_hex a, err
+    hex.input nl
+    hex.input_as_hex b, err
+    hex.add 1, a, b
+    hex.print_as_digit a, 0
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+a: hex.vec 1, 0
+b: hex.vec 1, 0
+nl: hex.vec 2, 0

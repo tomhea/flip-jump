@@ -1,0 +1,104 @@
+// Three Sum Zero (#1189)
+
+// Reads digit N `3`-`9` + `\n`, then N signed decimals. Prints `i j k\n` (0-based, `i < j < k`) of any triple summing to 0, or `none\n`.
+
+main
+
+def main @ err, hit < count, arr, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    hex.input_dec_uint 4, count, err
+    store_signed count, err
+    three_sum count, hit
+    stl.output "none\n"
+  hit:
+    stl.loop
+  err:
+    stl.loop
+}
+
+// Read `count` signed decimals into arr through a write pointer.
+def store_signed count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_int 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Triple-nested scan for i<j<k with a_i+a_j+a_k == 0; print indices and jump to hit.
+def three_sum count, hit @ iloop, ibody, jloop, jbody, kloop, kbody, knext, jnext, inext, found, idone < i, j, k, vi, vj, vk, s, arrptr, nthidx, nthcell {
+    hex.zero 4, i
+  iloop:
+    hex.cmp 4, i, count, ibody, idone, idone
+  ibody:
+    hex.mov w/4, nthidx, i
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vi, nthcell
+    hex.mov 4, j, i
+    hex.inc 4, j
+  jloop:
+    hex.cmp 4, j, count, jbody, inext, inext
+  jbody:
+    hex.mov w/4, nthidx, j
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vj, nthcell
+    hex.mov 4, k, j
+    hex.inc 4, k
+  kloop:
+    hex.cmp 4, k, count, kbody, jnext, jnext
+  kbody:
+    hex.mov w/4, nthidx, k
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vk, nthcell
+    hex.mov 4, s, vi
+    hex.add 4, s, vj
+    hex.add 4, s, vk
+    hex.if0 4, s, found
+  knext:
+    hex.inc 4, k
+    ;kloop
+  jnext:
+    hex.inc 4, j
+    ;jloop
+  inext:
+    hex.inc 4, i
+    ;iloop
+  found:
+    hex.print_dec_uint 4, i
+    stl.output ' '
+    hex.print_dec_uint 4, j
+    stl.output ' '
+    hex.print_dec_uint 4, k
+    stl.output '\n'
+    ;hit
+  idone:
+}
+
+count: hex.vec 4, 0
+arr: hex.vec 4*9
+arrptr: hex.vec w/4
+wptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+i: hex.vec w/4, 0
+j: hex.vec w/4, 0
+k: hex.vec w/4, 0
+vi: hex.vec 4, 0
+vj: hex.vec 4, 0
+vk: hex.vec 4, 0
+s: hex.vec 4, 0
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

@@ -1,0 +1,25 @@
+// Shift Right Zero Fill 5 (#1139)
+
+// Reads exactly 5 decimals and prints them shifted right by 1 with 0-fill on the left (input `a b c d e` → output `0\na\nb\nc\nd\n`).
+
+main
+
+def main @ err < arr {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    stl.output "0\n"
+    pc arr + 0*dw*4
+    pc arr + 1*dw*4
+    pc arr + 2*dw*4
+    pc arr + 3*dw*4
+  err:
+    stl.loop
+}
+
+// Print one 4-hex cell as decimal + newline.
+def pc c {
+    hex.print_dec_uint 4, c
+    stl.output '\n'
+}
+
+arr: hex.vec 4*5

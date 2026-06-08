@@ -1,0 +1,28 @@
+// Demo Bit Mul10 8bit (#1257)
+
+// Reads an 8-char binary + `\n`. Uses `bit.mul10`. Prints the result as decimal + `\n` (assume no overflow).
+
+main
+
+def main < b, ch, d, err {
+    stl.startup
+    bit.zero 8, b
+    rep(8, i) read_bit_into b, ch, d, err
+    bit.mul10 8, b
+    bit.print_dec_uint 8, b
+    stl.output '\n'
+    stl.loop
+}
+
+// b = (b << 1) | next_input_bit  (reads one '0'/'1' char).
+def read_bit_into b, ch, d, err {
+    bit.input ch
+    bit.shl 8, b
+    bit.ascii2dec err, d, ch
+    bit.add 8, b, d
+}
+
+b: bit.vec 8, 0
+ch: bit.vec 8, 0
+d: bit.vec 8, 0
+err: bit.bit

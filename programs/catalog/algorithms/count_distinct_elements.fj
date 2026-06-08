@@ -1,0 +1,60 @@
+// Count Distinct Elements (#1183)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals. Prints the count of distinct values + `\n`.
+
+main
+
+def main @ err < count, distinct, seen {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    scan count, distinct, seen, err
+    hex.print_dec_uint 4, distinct
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// For each value, mark its slot in a 0..99 seen table, counting first sightings.
+def scan count, distinct, seen, err @ loop, body, newv, skip, done < idx, val, sptr, sval {
+    hex.zero 4, distinct
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.set w/4, sptr, seen
+    walk_by sptr, val
+    hex.read_byte sval, sptr
+    hex.if0 2, sval, newv
+    ;skip
+  newv:
+    hex.inc 4, distinct
+    hex.zero 2, sval
+    hex.inc 2, sval
+    hex.write_byte sptr, sval
+  skip:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Advance ptr by `amount` cells (amount is a hex.vec 4 value).
+def walk_by ptr, amount @ loop, body, done < wcnt {
+    hex.zero 4, wcnt
+  loop:
+    hex.cmp 4, wcnt, amount, body, done, done
+  body:
+    hex.ptr_inc ptr
+    hex.inc 4, wcnt
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+distinct: hex.vec 4, 0
+seen: hex.vec 100
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+sptr: hex.vec w/4
+sval: hex.vec 2, 0
+wcnt: hex.vec 4, 0

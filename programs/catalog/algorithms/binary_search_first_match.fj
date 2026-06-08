@@ -1,0 +1,90 @@
+// Binary Search First Match (#1170)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals sorted ascending (may have duplicates), then target. Prints the 0-based index of the FIRST occurrence (lower-bound) + `\n`, or `not found\n`.
+
+main
+
+def main @ err, hit, notf, chk, printit < count, target, lo, gval, arr, arrptr, nthidx, nthcell {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    hex.input_dec_uint 4, count, err
+    store_n count, err
+    hex.input_dec_uint 4, target, err
+    lower_bound count, target, lo
+    hex.cmp 4, lo, count, chk, notf, notf
+  chk:
+    hex.mov w/4, nthidx, lo
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, gval, nthcell
+    hex.cmp 4, gval, target, notf, printit, notf
+  printit:
+    hex.print_dec_uint 4, lo
+    stl.output '\n'
+    ;hit
+  notf:
+    stl.output "not found\n"
+  hit:
+    stl.loop
+  err:
+    stl.loop
+}
+
+// Read `count` decimals into arr through a write pointer.
+def store_n count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// lo := first index whose value is >= target (lower bound), in [0, count].
+def lower_bound count, target, lo @ loop, cont, lt, ge, done < hi, mid, sum, gval, two, r, arrptr, nthidx, nthcell {
+    hex.zero 4, lo
+    hex.mov 4, hi, count
+  loop:
+    hex.cmp 4, lo, hi, cont, done, done
+  cont:
+    hex.mov 4, sum, lo
+    hex.add 4, sum, hi
+    hex.div 4, 4, mid, r, sum, two, done
+    hex.mov w/4, nthidx, mid
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, gval, nthcell
+    hex.cmp 4, gval, target, lt, ge, ge
+  lt:
+    hex.mov 4, lo, mid
+    hex.inc 4, lo
+    ;loop
+  ge:
+    hex.mov 4, hi, mid
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+target: hex.vec 4, 0
+lo: hex.vec w/4, 0
+gval: hex.vec 4, 0
+arr: hex.vec 4*9
+arrptr: hex.vec w/4
+wptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+hi: hex.vec 4, 0
+mid: hex.vec w/4, 0
+sum: hex.vec 4, 0
+two: hex.vec 4, 2
+r: hex.vec 4, 0
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

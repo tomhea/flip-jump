@@ -1,0 +1,33 @@
+// Range 5 Fixed (#1207)
+
+// Reads exactly 5 decimals and prints `max - min` as decimal + `\n`.
+
+main
+
+def main @ err < arr, mx, mn, diff {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    hex.mov 4, mx, arr + 0*dw*4
+    hex.mov 4, mn, arr + 0*dw*4
+    rep(4, i) fold arr + (i+1)*dw*4, mx, mn
+    hex.mov 4, diff, mx
+    hex.sub 4, diff, mn
+    hex.print_dec_uint 4, diff
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Fold *cell into running max (mx) and min (mn).
+def fold cell, mx, mn < t {
+    hex.max 4, t, mx, cell
+    hex.mov 4, mx, t
+    hex.min 4, t, mn, cell
+    hex.mov 4, mn, t
+}
+
+arr: hex.vec 4*5
+mx: hex.vec 4, 0
+mn: hex.vec 4, 0
+diff: hex.vec 4, 0
+t: hex.vec 4, 0

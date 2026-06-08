@@ -1,0 +1,35 @@
+// Array First 3 (#1149)
+
+// Reads digit N `3`-`9` + `\n`, then N decimals. Prints just the first 3 values, one per line.
+
+main
+
+def main @ err < count {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    first3 count, err
+  err:
+    stl.loop
+}
+
+// Read `count` decimals; print only the first three.
+def first3 count, err @ loop, body, prn, skip, done < val, idx, three {
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.cmp 4, idx, three, prn, skip, skip
+  prn:
+    hex.print_dec_uint 4, val
+    stl.output '\n'
+  skip:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0
+three: hex.vec 4, 3

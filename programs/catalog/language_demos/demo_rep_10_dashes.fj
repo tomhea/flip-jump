@@ -1,0 +1,12 @@
+// Demo Rep 10 Dashes (#1262)
+
+// No input. Uses `rep(10, i) stl.output('-')` then `\n`. Prints `----------\n`.
+
+main
+
+def main {
+    stl.startup
+    rep(10, i) stl.output '-'
+    stl.output '\n'
+    stl.loop
+}

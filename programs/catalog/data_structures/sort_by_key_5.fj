@@ -1,0 +1,51 @@
+// Sort By Key 5 (#1167)
+
+// Reads 5 `(key, value)` pairs (each on 2 own lines, key `0`-`9` integer, value `0`-`99`). Sorts ascending by key (stable). Prints each pair as `<key> <value>\n` (5 lines).
+
+main
+
+def main @ err < keys, vals {
+    stl.startup_and_init_all
+    rep(5, i) read_pair keys + i*dw*4, vals + i*dw*4, err
+    rep(4, p) bubble_pass p
+    rep(5, i) print_pair keys + i*dw*4, vals + i*dw*4
+  err:
+    stl.loop
+}
+
+// Read a key then a value into two cells.
+def read_pair kcell, vcell, err {
+    hex.input_dec_uint 4, kcell, err
+    hex.input_dec_uint 4, vcell, err
+}
+
+// One bubble pass over adjacent pairs (swap only on strictly greater key => stable).
+def bubble_pass p < keys, vals {
+    rep(4-p, i) cas_pair keys + i*dw*4, keys + (i+1)*dw*4, vals + i*dw*4, vals + (i+1)*dw*4
+}
+
+// If key a > key b, swap both the keys and the values.
+def cas_pair ka, kb, va, vb @ keep, doswap < tk, tv {
+    hex.cmp 4, ka, kb, keep, keep, doswap
+  doswap:
+    hex.mov 4, tk, ka
+    hex.mov 4, ka, kb
+    hex.mov 4, kb, tk
+    hex.mov 4, tv, va
+    hex.mov 4, va, vb
+    hex.mov 4, vb, tv
+  keep:
+}
+
+// Print `<key> <value>` and a newline.
+def print_pair kcell, vcell {
+    hex.print_dec_uint 4, kcell
+    stl.output ' '
+    hex.print_dec_uint 4, vcell
+    stl.output '\n'
+}
+
+keys: hex.vec 4*5
+vals: hex.vec 4*5
+tk: hex.vec 4, 0
+tv: hex.vec 4, 0

@@ -1,0 +1,23 @@
+// Demo Hex Div (#1249)
+
+// Reads two hex chars (dividend then divisor, divisor non-zero). Uses `hex.div`. Prints quotient hex + `\n`.
+
+main
+
+def main @ err < a, b, q, r, nl {
+    stl.startup_and_init_all
+    hex.input_as_hex a, err
+    hex.input nl
+    hex.input_as_hex b, err
+    hex.div 1, 1, q, r, a, b, err
+    hex.print_as_digit q, 0
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+a: hex.vec 1, 0
+b: hex.vec 1, 0
+q: hex.vec 1, 0
+r: hex.vec 1, 0
+nl: hex.vec 2, 0

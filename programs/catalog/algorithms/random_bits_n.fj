@@ -1,0 +1,50 @@
+// Random Bits N (#1223)
+
+// Reads one byte (seed), then decimal N `1`-`9` + `\n`. Applies N LCG steps and outputs the LSB of each state as a `0` or `1` char, all concatenated on a single line + `\n`.
+
+main
+
+def main @ err, loop, body, done < state, count, idx {
+    stl.startup_and_init_all
+    hex.input state
+    hex.input_dec_uint 4, count, err
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    lcg state
+    emit_bit state
+    hex.inc 4, idx
+    ;loop
+  done:
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Output the low bit of state as '0' or '1'.
+def emit_bit state @ iszero, fin < tmp, onev {
+    hex.mov 2, tmp, state
+    hex.and 2, tmp, onev
+    hex.if0 2, tmp, iszero
+    stl.output '1'
+    ;fin
+  iszero:
+    stl.output '0'
+  fin:
+}
+
+// state = (state*5 + 3) mod 256.
+def lcg state < five, three, tmp {
+    hex.mul 2, tmp, state, five
+    hex.add 2, tmp, three
+    hex.mov 2, state, tmp
+}
+
+state: hex.vec 2, 0
+count: hex.vec 4, 0
+idx: hex.vec 4, 0
+onev: hex.vec 2, 1
+five: hex.vec 2, 5
+three: hex.vec 2, 3
+tmp: hex.vec 2, 0

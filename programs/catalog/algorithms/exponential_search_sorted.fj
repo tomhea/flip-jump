@@ -1,0 +1,110 @@
+// Exponential Search Sorted (#1173)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals sorted ascending, then target. Prints the 0-based index of any match + `\n`, or `not found\n`. Implementation: exponential search (find range by doubling i, then binary search within range).
+
+main
+
+def main @ err, hit < count, target, arr, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    hex.input_dec_uint 4, count, err
+    store_n count, err
+    hex.input_dec_uint 4, target, err
+    exp_search count, target, hit
+    stl.output "not found\n"
+  hit:
+    stl.loop
+  err:
+    stl.loop
+}
+
+// Read `count` decimals into arr through a write pointer.
+def store_n count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Double i until arr[i] >= target or i >= count, then lower-bound in [i/2, min(i+1,count)).
+def exp_search count, target, hit @ dloop, dcont, dadv, dbreak, bloop, bcont, blt, bge, checkit, chk2, found, notf < i, lo, hi, mid, sum, gval, two, r, rangehi, arrptr, nthidx, nthcell {
+    hex.set 4, i, 1
+  dloop:
+    hex.cmp 4, i, count, dcont, dbreak, dbreak
+  dcont:
+    hex.mov w/4, nthidx, i
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, gval, nthcell
+    hex.cmp 4, gval, target, dadv, dbreak, dbreak
+  dadv:
+    hex.add 4, i, i
+    ;dloop
+  dbreak:
+    hex.mov 4, sum, i
+    hex.div 4, 4, lo, r, sum, two, notf
+    hex.mov 4, mid, i
+    hex.inc 4, mid
+    hex.min 4, rangehi, mid, count
+    hex.mov 4, hi, rangehi
+  bloop:
+    hex.cmp 4, lo, hi, bcont, checkit, checkit
+  bcont:
+    hex.mov 4, sum, lo
+    hex.add 4, sum, hi
+    hex.div 4, 4, mid, r, sum, two, notf
+    hex.mov w/4, nthidx, mid
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, gval, nthcell
+    hex.cmp 4, gval, target, blt, bge, bge
+  blt:
+    hex.mov 4, lo, mid
+    hex.inc 4, lo
+    ;bloop
+  bge:
+    hex.mov 4, hi, mid
+    ;bloop
+  checkit:
+    hex.cmp 4, lo, rangehi, chk2, notf, notf
+  chk2:
+    hex.mov w/4, nthidx, lo
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, gval, nthcell
+    hex.cmp 4, gval, target, notf, found, notf
+  found:
+    hex.print_dec_uint 4, lo
+    stl.output '\n'
+    ;hit
+  notf:
+}
+
+count: hex.vec 4, 0
+target: hex.vec 4, 0
+arr: hex.vec 4*9
+arrptr: hex.vec w/4
+wptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+i: hex.vec w/4, 0
+lo: hex.vec w/4, 0
+hi: hex.vec 4, 0
+mid: hex.vec w/4, 0
+sum: hex.vec 4, 0
+gval: hex.vec 4, 0
+two: hex.vec 4, 2
+r: hex.vec 4, 0
+rangehi: hex.vec 4, 0
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

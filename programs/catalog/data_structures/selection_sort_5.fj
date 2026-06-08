@@ -1,0 +1,38 @@
+// Selection Sort 5 (#1144)
+
+// Reads exactly 5 decimals and prints them sorted ascending (one per line), implemented as selection sort (find-min-and-swap each pass).
+
+main
+
+def main @ err < arr {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    rep(4, p) sel_pass p
+    rep(5, i) pc arr + i*dw*4
+  err:
+    stl.loop
+}
+
+// Pass p: compare position p against every later cell, swapping the smaller into p.
+def sel_pass p < arr {
+    rep(4-p, k) cas arr + p*dw*4, arr + (p+1+k)*dw*4
+}
+
+// Compare two 4-hex cells; swap so the smaller is in a.
+def cas a, b @ keep, doswap < tmp {
+    hex.cmp 4, a, b, keep, keep, doswap
+  doswap:
+    hex.mov 4, tmp, a
+    hex.mov 4, a, b
+    hex.mov 4, b, tmp
+  keep:
+}
+
+// Print one 4-hex cell as decimal + newline.
+def pc c {
+    hex.print_dec_uint 4, c
+    stl.output '\n'
+}
+
+arr: hex.vec 4*5
+tmp: hex.vec 4, 0

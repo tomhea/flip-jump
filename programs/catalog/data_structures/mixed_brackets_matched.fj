@@ -1,0 +1,64 @@
+// Mixed Brackets Matched (#1158)
+
+// Reads a `\n`-terminated string ≤ 40 chars containing only `()[]{}`. Prints `1\n` if all three bracket types are balanced AND properly nested (e.g. `([])` valid, `([)]` invalid), else `0\n`. Use an explicit stack.
+
+main
+
+def main @ bad, ok {
+    stl.startup_and_init_all
+    scan_mixed bad
+    stl.output "1\n"
+    ;ok
+  bad:
+    stl.output "0\n"
+  ok:
+    stl.loop
+}
+
+// Push openers on a byte stack; on each closer pop and require the matching opener. Jump bad on any mismatch.
+def scan_mixed bad @ loop, na, nb, nc, push, isclose, notempty, needround, cb, needsq, cc, end, balanced < sp, basep, stack, b, top, lpar, lbrk, lbrace, rpar, rbrk, nlb {
+    hex.set w/4, sp, stack
+    hex.set w/4, basep, stack
+  loop:
+    hex.input b
+    hex.if0 2, b, end
+    hex.cmp 2, b, nlb, na, end, na
+  na:
+    hex.cmp 2, b, lpar, nb, push, nb
+  nb:
+    hex.cmp 2, b, lbrk, nc, push, nc
+  nc:
+    hex.cmp 2, b, lbrace, isclose, push, isclose
+  push:
+    hex.write_byte_and_inc sp, b
+    ;loop
+  isclose:
+    hex.cmp w/4, sp, basep, notempty, bad, notempty
+  notempty:
+    hex.ptr_dec sp
+    hex.read_byte top, sp
+    hex.cmp 2, b, rpar, cb, needround, cb
+  needround:
+    hex.cmp 2, top, lpar, bad, loop, bad
+  cb:
+    hex.cmp 2, b, rbrk, cc, needsq, cc
+  needsq:
+    hex.cmp 2, top, lbrk, bad, loop, bad
+  cc:
+    hex.cmp 2, top, lbrace, bad, loop, bad
+  end:
+    hex.cmp w/4, sp, basep, bad, balanced, bad
+  balanced:
+}
+
+stack: hex.vec 64
+sp: hex.vec w/4
+basep: hex.vec w/4
+b: hex.vec 2, 0
+top: hex.vec 2, 0
+lpar: hex.vec 2, '('
+lbrk: hex.vec 2, '['
+lbrace: hex.vec 2, '{'
+rpar: hex.vec 2, ')'
+rbrk: hex.vec 2, ']'
+nlb: hex.vec 2, '\n'

@@ -1,0 +1,57 @@
+// Demo Bit Shl 4bit (#1255)
+
+// Reads a 4-char binary + `\n`, then digit `0`-`3` + `\n` (shift count). Uses `bit.shl`. Prints result as 4-char binary + `\n`.
+
+main
+
+def main @ loop, body, done < b, ch, d, err, cnt, idx, nl {
+    stl.startup
+    bit.zero 4, b
+    rep(4, i) read_bit_into b, ch, d, err
+    bit.input nl
+    read_count cnt, ch, d, err
+    bit.zero 8, idx
+  loop:
+    bit.cmp 8, idx, cnt, body, done, done
+  body:
+    bit.shl 4, b
+    bit.inc 8, idx
+    ;loop
+  done:
+    rep(4, i) print_bit b + (3-i)*dw
+    stl.output '\n'
+    stl.loop
+}
+
+// b = (b << 1) | next_input_bit  (reads one '0'/'1' char).
+def read_bit_into b, ch, d, err {
+    bit.input ch
+    bit.shl 4, b
+    bit.ascii2dec err, d, ch
+    bit.add 4, b, d
+}
+
+// Read one digit char into cnt (8-bit value).
+def read_count cnt, ch, d, err {
+    bit.input ch
+    bit.ascii2dec err, d, ch
+    bit.mov 8, cnt, d
+}
+
+// Print '1' if the bit at b is set, else '0'.
+def print_bit b @ one, done {
+    bit.if1 b, one
+    stl.output '0'
+    ;done
+  one:
+    stl.output '1'
+  done:
+}
+
+b: bit.vec 4, 0
+ch: bit.vec 8, 0
+d: bit.vec 8, 0
+err: bit.bit
+cnt: bit.vec 8, 0
+idx: bit.vec 8, 0
+nl: bit.vec 8, 0

@@ -1,0 +1,46 @@
+// Parens Matched (#1157)
+
+// Reads a `\n`-terminated string ≤ 40 chars containing only `(` and `)`. Prints `1\n` if the parentheses are balanced (every `(` has a matching `)` in order), else `0\n`.
+
+main
+
+def main < depth, flag {
+    stl.startup_and_init_all
+    scan_parens depth, flag
+    hex.print_dec_uint 4, flag
+    stl.output '\n'
+    stl.loop
+}
+
+// Stream bytes; flag := 1 if parens balanced (depth never negative, ends at 0), else 0.
+def scan_parens depth, flag @ loop, notnl, doopen, doclose, setbad, done, after < b, opb, nlb {
+    hex.zero 4, depth
+    hex.zero 4, flag
+    hex.inc 4, flag
+  loop:
+    hex.input b
+    hex.if0 2, b, done
+    hex.cmp 2, b, nlb, notnl, done, notnl
+  notnl:
+    hex.cmp 2, b, opb, doclose, doopen, doclose
+  doopen:
+    hex.inc 4, depth
+    ;loop
+  doclose:
+    hex.if0 4, depth, setbad
+    hex.dec 4, depth
+    ;loop
+  setbad:
+    hex.zero 4, flag
+    ;loop
+  done:
+    hex.if0 4, depth, after
+    hex.zero 4, flag
+  after:
+}
+
+depth: hex.vec 4, 0
+flag: hex.vec 4, 0
+b: hex.vec 2, 0
+opb: hex.vec 2, '('
+nlb: hex.vec 2, '\n'

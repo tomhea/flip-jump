@@ -1,0 +1,103 @@
+// Sieve Of Eratosthenes 50 (#1198)
+
+// No input. Prints the primes in `[2, 50]` space-separated + `\n`. Implementation: sieve of Eratosthenes.
+
+main
+
+def main < comp, limit {
+    stl.startup_and_init_all
+    hex.set 4, limit, 50
+    do_sieve limit, comp
+    print_primes limit, comp
+    stl.output '\n'
+    stl.loop
+}
+
+// Mark composites: for each prime p, set comp[2p], comp[3p], ... up to limit.
+def do_sieve limit, comp @ ploop, pbody, isprime, pnext, pdone < p, pptr, cval {
+    hex.set 4, p, 2
+    hex.set w/4, pptr, comp
+    hex.ptr_add pptr, 2
+  ploop:
+    hex.cmp 4, p, limit, pbody, pbody, pdone
+  pbody:
+    hex.read_byte cval, pptr
+    hex.if0 2, cval, isprime
+    ;pnext
+  isprime:
+    mark_multiples p, limit, comp
+  pnext:
+    hex.ptr_inc pptr
+    hex.inc 4, p
+    ;ploop
+  pdone:
+}
+
+// Set comp[m] = 1 for m = 2p, 3p, ... <= limit.
+def mark_multiples p, limit, comp @ loop, body, done < m, mptr, one {
+    hex.mov 4, m, p
+    hex.add 4, m, p
+  loop:
+    hex.cmp 4, m, limit, body, body, done
+  body:
+    hex.set w/4, mptr, comp
+    walk_by mptr, m
+    hex.set 2, one, 1
+    hex.write_byte mptr, one
+    hex.add 4, m, p
+    ;loop
+  done:
+}
+
+// Print every v in [2, limit] with comp[v] == 0, space-separated (no leading/trailing space).
+def print_primes limit, comp @ loop, body, isprime, dosep, doprint, pnext, done < v, vptr, cval, first {
+    hex.zero 4, first
+    hex.inc 4, first
+    hex.set 4, v, 2
+    hex.set w/4, vptr, comp
+    hex.ptr_add vptr, 2
+  loop:
+    hex.cmp 4, v, limit, body, body, done
+  body:
+    hex.read_byte cval, vptr
+    hex.if0 2, cval, isprime
+    ;pnext
+  isprime:
+    hex.if0 4, first, dosep
+    ;doprint
+  dosep:
+    stl.output ' '
+  doprint:
+    hex.print_dec_uint 4, v
+    hex.zero 4, first
+  pnext:
+    hex.ptr_inc vptr
+    hex.inc 4, v
+    ;loop
+  done:
+}
+
+// Advance ptr by `amount` cells (a hex.vec 4 value).
+def walk_by ptr, amount @ loop, body, done < wcnt {
+    hex.zero 4, wcnt
+  loop:
+    hex.cmp 4, wcnt, amount, body, done, done
+  body:
+    hex.ptr_inc ptr
+    hex.inc 4, wcnt
+    ;loop
+  done:
+}
+
+comp: hex.vec 51
+limit: hex.vec 4, 0
+p: hex.vec 4, 0
+pptr: hex.vec w/4
+cval: hex.vec 2, 0
+m: hex.vec 4, 0
+mptr: hex.vec w/4
+one: hex.vec 2, 0
+v: hex.vec 4, 0
+vptr: hex.vec w/4
+first: hex.vec 4, 0
+wcnt: hex.vec 4, 0

@@ -1,0 +1,56 @@
+// Count Distinct Bytes (#1159)
+
+// Reads a `\n`-terminated line ≤ 80 chars and prints the count of distinct byte values in the line (excluding the terminating `\n`) as decimal + `\n`.
+
+main
+
+def main < distinct, seen {
+    stl.startup_and_init_all
+    scan_distinct distinct, seen
+    hex.print_dec_uint 4, distinct
+    stl.output '\n'
+    stl.loop
+}
+
+// Stream bytes; for each, mark its slot in a 256-entry seen table, counting first sightings.
+def scan_distinct distinct, seen @ loop, notnl, newb, skip, done < b, sptr, sval, nlb {
+    hex.zero 4, distinct
+  loop:
+    hex.input b
+    hex.if0 2, b, done
+    hex.cmp 2, b, nlb, notnl, done, notnl
+  notnl:
+    hex.set w/4, sptr, seen
+    walk_by sptr, b
+    hex.read_byte sval, sptr
+    hex.if0 2, sval, newb
+    ;skip
+  newb:
+    hex.inc 4, distinct
+    hex.zero 2, sval
+    hex.inc 2, sval
+    hex.write_byte sptr, sval
+  skip:
+    ;loop
+  done:
+}
+
+// Advance ptr by `amount` bytes (amount is a hex.vec 2 byte value).
+def walk_by ptr, amount @ loop, body, done < cnt {
+    hex.zero 2, cnt
+  loop:
+    hex.cmp 2, cnt, amount, body, done, done
+  body:
+    hex.ptr_inc ptr
+    hex.inc 2, cnt
+    ;loop
+  done:
+}
+
+distinct: hex.vec 4, 0
+seen: hex.vec 256
+b: hex.vec 2, 0
+sptr: hex.vec w/4
+sval: hex.vec 2, 0
+nlb: hex.vec 2, '\n'
+cnt: hex.vec 2, 0

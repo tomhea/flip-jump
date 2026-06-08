@@ -1,0 +1,38 @@
+// Demo Bit Dec 4bit (#1252)
+
+// Same as `demo_bit_inc_4bit` but with `bit.dec`.
+
+main
+
+def main < b, ch, d, err {
+    stl.startup
+    bit.zero 4, b
+    rep(4, i) read_bit_into b, ch, d, err
+    bit.dec 4, b
+    rep(4, i) print_bit b + (3-i)*dw
+    stl.output '\n'
+    stl.loop
+}
+
+// b = (b << 1) | next_input_bit  (reads one '0'/'1' char).
+def read_bit_into b, ch, d, err {
+    bit.input ch
+    bit.shl 4, b
+    bit.ascii2dec err, d, ch
+    bit.add 4, b, d
+}
+
+// Print '1' if the bit at b is set, else '0'.
+def print_bit b @ one, done {
+    bit.if1 b, one
+    stl.output '0'
+    ;done
+  one:
+    stl.output '1'
+  done:
+}
+
+b: bit.vec 4, 0
+ch: bit.vec 8, 0
+d: bit.vec 8, 0
+err: bit.bit

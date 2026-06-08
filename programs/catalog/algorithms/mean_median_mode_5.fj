@@ -1,0 +1,85 @@
+// Mean Median Mode 5 (#1194)
+
+// Reads exactly 5 decimals and prints `<mean>\n<median>\n<mode>\n` (floor mean; median = middle of sorted; mode = most frequent value, ties broken by smallest).
+
+main
+
+def main @ err < arr, sum, q, r, bestcount, bestval, five {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    hex.zero 4, sum
+    rep(5, i) add_cell arr + i*dw*4, sum
+    hex.div 4, 4, q, r, sum, five, err
+    hex.print_dec_uint 4, q
+    stl.output '\n'
+    rep(4, p) bubble_pass p
+    hex.print_dec_uint 4, arr + 2*dw*4
+    stl.output '\n'
+    hex.zero 4, bestcount
+    hex.zero 4, bestval
+    hex.not 4, bestval
+    rep(5, i) consider arr + i*dw*4, bestcount, bestval
+    hex.print_dec_uint 4, bestval
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// sum += *cell.
+def add_cell cell, sum {
+    hex.add 4, sum, cell
+}
+
+// One bubble pass over the first 4-p adjacent positions.
+def bubble_pass p < arr {
+    rep(4-p, i) cas arr + i*dw*4, arr + (i+1)*dw*4
+}
+
+// Compare two 4-hex cells; swap so the smaller is in a.
+def cas a, b @ keep, doswap < tmp {
+    hex.cmp 4, a, b, keep, keep, doswap
+  doswap:
+    hex.mov 4, tmp, a
+    hex.mov 4, a, b
+    hex.mov 4, b, tmp
+  keep:
+}
+
+// Fold candidate *cell into the running best (max count, ties keep the smaller value).
+def consider cell, bestcount, bestval @ better, chktie, settie, keep < c {
+    count_occ5 cell, c
+    hex.cmp 4, c, bestcount, keep, chktie, better
+  better:
+    hex.mov 4, bestcount, c
+    hex.mov 4, bestval, cell
+    ;keep
+  chktie:
+    hex.cmp 4, cell, bestval, settie, keep, keep
+  settie:
+    hex.mov 4, bestval, cell
+  keep:
+}
+
+// c := number of array cells equal to *cell.
+def count_occ5 cell, c < arr {
+    hex.zero 4, c
+    rep(5, j) inc_if_eq arr + j*dw*4, cell, c
+}
+
+// If *acell == *cell, increment c.
+def inc_if_eq acell, cell, c @ keep, hit {
+    hex.cmp 4, acell, cell, keep, hit, keep
+  hit:
+    hex.inc 4, c
+  keep:
+}
+
+arr: hex.vec 4*5
+sum: hex.vec 4, 0
+q: hex.vec 4, 0
+r: hex.vec 4, 0
+five: hex.vec 4, 5
+bestcount: hex.vec 4, 0
+bestval: hex.vec 4, 0
+c: hex.vec 4, 0
+tmp: hex.vec 4, 0

@@ -1,0 +1,38 @@
+// Array Count Negatives (#1126)
+
+// Reads digit N `1`-`9` + `\n`, then N signed decimal integers. Prints the count of values `< 0` + `\n`.
+
+main
+
+def main @ err < count, result {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    count_neg count, result, err
+    hex.print_dec_uint 4, result
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read `count` signed decimals; count how many are negative into result.
+def count_neg count, result, err @ loop, body, hit, next, done < val, idx, shalf {
+    hex.zero 4, result
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_int 4, val, err
+    hex.cmp 4, val, shalf, next, hit, hit
+  hit:
+    hex.inc 4, result
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+result: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0
+shalf: hex.vec 4, 0x8000

@@ -1,0 +1,64 @@
+// Array Last 3 (#1151)
+
+// Reads digit N `3`-`9` + `\n`, then N decimals. Prints just the last 3 values, one per line.
+
+main
+
+def main @ err < count {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    last3 count, err
+  err:
+    stl.loop
+}
+
+// Store all `count` decimals, then print the final three.
+def last3 count, err @ sloop, sbody, sdone < wptr, rptr, arr, idx, val, start, three {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  sloop:
+    hex.cmp 4, idx, count, sbody, sdone, sdone
+  sbody:
+    hex.input_dec_uint 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;sloop
+  sdone:
+    hex.mov 4, start, count
+    hex.sub 4, start, three
+    hex.set w/4, rptr, arr
+    advance_cells rptr, start
+    rep(3, k) read_print rptr
+}
+
+// Advance ptr by `m` cells (4 hexes each).
+def advance_cells ptr, m @ loop, body, done < adv {
+    hex.zero 4, adv
+  loop:
+    hex.cmp 4, adv, m, body, done, done
+  body:
+    hex.ptr_add ptr, 4
+    hex.inc 4, adv
+    ;loop
+  done:
+}
+
+// Read one cell through ptr, print it, and advance ptr.
+def read_print ptr < rval {
+    hex.read_hex 4, rval, ptr
+    hex.ptr_add ptr, 4
+    hex.print_dec_uint 4, rval
+    stl.output '\n'
+}
+
+count: hex.vec 4, 0
+arr: hex.vec 4*9
+wptr: hex.vec w/4
+rptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+start: hex.vec 4, 0
+three: hex.vec 4, 3
+adv: hex.vec 4, 0
+rval: hex.vec 4, 0

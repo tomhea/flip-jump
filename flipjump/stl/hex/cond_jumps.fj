@@ -192,3 +192,29 @@ ns hex {
       end:
     }
 }
+
+
+// ---------- Signed Compare
+
+
+ns hex {
+    //  Time Complexity:  n(7@+8) + 8      // worst case (a==b); = 2·mov + 2·xor_by + cmp
+    // Space Complexity:  n(7@+80) + 8     //   (cmp is cheaper than worst when a,b differ in a high hex)
+    //   like bit.cmp but SIGNED (two's complement): jumps to lt if a<b, eq if a==b, gt if a>b.
+    //   a,b are hex[:n] holding signed values; they are NOT modified.
+    //   Method: flip the sign bit (MSB) of copies of a,b, then unsigned-compare — this maps the
+    //   signed range monotonically onto the unsigned range, so it is correct over the whole range
+    //   with no subtraction (hence no overflow).
+    // @requires hex.cmp.init (or hex.init)
+    def scmp n, a, b, lt, eq, gt @ ba, bb {
+        .mov n, ba, a
+        .xor_by ba+(n-1)*dw, 8
+        .mov n, bb, b
+        .xor_by bb+(n-1)*dw, 8
+        .cmp n, ba, bb, lt, eq, gt
+      ba:
+        .vec n
+      bb:
+        .vec n
+    }
+}

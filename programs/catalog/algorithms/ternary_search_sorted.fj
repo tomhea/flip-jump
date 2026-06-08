@@ -1,0 +1,112 @@
+// Ternary Search Sorted (#1174)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals sorted ascending, then target. Prints the 0-based index of any match + `\n`, or `not found\n`. Implementation: ternary search (divide range into thirds).
+
+main
+
+def main @ err, hit < count, target, arr, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    hex.input_dec_uint 4, count, err
+    store_n count, err
+    hex.input_dec_uint 4, target, err
+    tern_search count, target, hit
+    stl.output "not found\n"
+  hit:
+    stl.loop
+  err:
+    stl.loop
+}
+
+// Read `count` decimals into arr through a write pointer.
+def store_n count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Ternary search over [lo, hi]: split into thirds at m1, m2 and narrow.
+def tern_search count, target, hit @ loop, cont, c1, c2, lessm1, c3, grm2, c4, found1, found2, notf < lo, hi, third, m1, m2, v1, v2, diff, r, three, arrptr, nthidx, nthcell {
+    hex.zero 4, lo
+    hex.mov 4, hi, count
+    hex.dec 4, hi
+  loop:
+    hex.cmp 4, lo, hi, cont, cont, notf
+  cont:
+    hex.mov 4, diff, hi
+    hex.sub 4, diff, lo
+    hex.div 4, 4, third, r, diff, three, notf
+    hex.mov 4, m1, lo
+    hex.add 4, m1, third
+    hex.mov 4, m2, hi
+    hex.sub 4, m2, third
+    hex.mov w/4, nthidx, m1
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, v1, nthcell
+    hex.mov w/4, nthidx, m2
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, v2, nthcell
+    hex.cmp 4, v1, target, c1, found1, c1
+  c1:
+    hex.cmp 4, v2, target, c2, found2, c2
+  c2:
+    hex.cmp 4, target, v1, lessm1, c3, c3
+  lessm1:
+    hex.if0 4, m1, notf
+    hex.mov 4, hi, m1
+    hex.dec 4, hi
+    ;loop
+  c3:
+    hex.cmp 4, target, v2, c4, c4, grm2
+  grm2:
+    hex.mov 4, lo, m2
+    hex.inc 4, lo
+    ;loop
+  c4:
+    hex.mov 4, lo, m1
+    hex.inc 4, lo
+    hex.mov 4, hi, m2
+    hex.dec 4, hi
+    ;loop
+  found1:
+    hex.print_dec_uint 4, m1
+    stl.output '\n'
+    ;hit
+  found2:
+    hex.print_dec_uint 4, m2
+    stl.output '\n'
+    ;hit
+  notf:
+}
+
+count: hex.vec 4, 0
+target: hex.vec 4, 0
+arr: hex.vec 4*9
+arrptr: hex.vec w/4
+wptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+lo: hex.vec 4, 0
+hi: hex.vec 4, 0
+third: hex.vec 4, 0
+m1: hex.vec w/4, 0
+m2: hex.vec w/4, 0
+v1: hex.vec 4, 0
+v2: hex.vec 4, 0
+diff: hex.vec 4, 0
+r: hex.vec 4, 0
+three: hex.vec 4, 3
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

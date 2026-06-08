@@ -1,0 +1,41 @@
+// Subleq One Step (#1274)
+
+// Reads three decimals `m_a` `m_b` `pc` (each `0`-`9`, on own lines), then 10 decimals (the SUBLEQ memory cells `mem[0..9]`, each on own line, each `0`-`9`). Executes one SUBLEQ instruction `mem[m_b] = mem[m_b] - mem[m_a]; if mem[m_b] <= 0: pc = ...` (here we ignore the jump target — just the SUBLEQ subtract step). Prints the new value of `mem[m_b]` (signed decimal, may go negative) + `\n`.
+
+main
+
+def main @ err < m_a, m_b, pc, va, vb, res, mem, memptr, nthidx, nthcell {
+    stl.startup_and_init_all
+    hex.set w/4, memptr, mem
+    hex.input_dec_uint 4, m_a, err
+    hex.input_dec_uint 4, m_b, err
+    hex.input_dec_uint 4, pc, err
+    rep(10, i) hex.input_dec_uint 4, mem + i*dw*4, err
+    hex.mov w/4, nthidx, m_a
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, memptr, nthidx
+    hex.read_hex 4, va, nthcell
+    hex.mov w/4, nthidx, m_b
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, memptr, nthidx
+    hex.read_hex 4, vb, nthcell
+    hex.mov 4, res, vb
+    hex.sub 4, res, va
+    hex.print_dec_int 4, res
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+m_a: hex.vec w/4, 0
+m_b: hex.vec w/4, 0
+pc: hex.vec 4, 0
+mem: hex.vec 4*10
+va: hex.vec 4, 0
+vb: hex.vec 4, 0
+res: hex.vec 4, 0
+memptr: hex.vec w/4
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

@@ -1,0 +1,14 @@
+// Demo Bit Print Hex Uint (#1259)
+
+// No input. Declares an internal 8-bit value `255`. Uses `bit.print_hex_uint` to print it as `ff\n`.
+
+main
+
+def main < x {
+    stl.startup
+    bit.print_hex_uint 8, x, 0
+    stl.output '\n'
+    stl.loop
+}
+
+x: bit.vec 8, 255

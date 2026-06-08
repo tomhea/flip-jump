@@ -1,0 +1,11 @@
+// Demo Stl Output String (#1260)
+
+// No input. Uses `stl.output "Hello, FlipJump!\n"` to print the string.
+
+main
+
+def main {
+    stl.startup
+    stl.output "Hello, FlipJump!\n"
+    stl.loop
+}

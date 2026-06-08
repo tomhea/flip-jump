@@ -1,0 +1,53 @@
+// Find Missing In Sequence (#1177)
+
+// Reads digit N `2`-`9` + `\n`, then `N-1` decimals which are some permutation of `{1, 2, ..., N}` with exactly one value missing. Prints the missing value + `\n`.
+
+main
+
+def main @ err < count, total, gsum, m {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    sum_1_to count, total
+    hex.mov 4, m, count
+    hex.dec 4, m
+    read_sum m, gsum, err
+    hex.sub 4, total, gsum
+    hex.print_dec_uint 4, total
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// dst := 1 + 2 + ... + nval.
+def sum_1_to nval, dst @ loop, body, done < k {
+    hex.zero 4, dst
+    hex.set 4, k, 1
+  loop:
+    hex.cmp 4, k, nval, body, body, done
+  body:
+    hex.add 4, dst, k
+    hex.inc 4, k
+    ;loop
+  done:
+}
+
+// Read `m` decimals and accumulate their sum into dst.
+def read_sum m, dst, err @ loop, body, done < k, val {
+    hex.zero 4, dst
+    hex.zero 4, k
+  loop:
+    hex.cmp 4, k, m, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.add 4, dst, val
+    hex.inc 4, k
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+total: hex.vec 4, 0
+gsum: hex.vec 4, 0
+m: hex.vec 4, 0
+k: hex.vec 4, 0
+val: hex.vec 4, 0

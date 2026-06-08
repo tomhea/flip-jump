@@ -1,0 +1,30 @@
+// Min Index 5 (#1140)
+
+// Reads exactly 5 decimals and prints the 0-based index of the minimum value + `\n`. Ties: prints the smallest index among tied positions.
+
+main
+
+def main @ err < arr, best, bidx {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    hex.mov 4, best, arr + 0*dw*4
+    hex.zero 4, bidx
+    rep(4, k) consider_min arr + (k+1)*dw*4, (k+1), best, bidx
+    hex.print_dec_uint 4, bidx
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// If *cell is strictly less than best, adopt it and remember index j.
+def consider_min cell, j, best, bidx @ less, keep {
+    hex.cmp 4, cell, best, less, keep, keep
+  less:
+    hex.mov 4, best, cell
+    hex.set 4, bidx, j
+  keep:
+}
+
+arr: hex.vec 4*5
+best: hex.vec 4, 0
+bidx: hex.vec 4, 0

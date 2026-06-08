@@ -1,0 +1,106 @@
+// Moore Voting Majority (#1195)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals. Prints the majority element (value appearing strictly more than N/2 times) + `\n`, or `none\n` if no majority. Implementation: Boyer-Moore voting (one-pass + verify).
+
+main
+
+def main @ err, none, done, win < count, cand, occ, twice, arr, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    hex.input_dec_uint 4, count, err
+    store_n count, err
+    boyer count, cand
+    count_occ count, cand, occ
+    hex.mov 4, twice, occ
+    hex.add 4, twice, occ
+    hex.cmp 4, twice, count, none, none, win
+  win:
+    hex.print_dec_uint 4, cand
+    stl.output '\n'
+    ;done
+  none:
+    stl.output "none\n"
+  done:
+    stl.loop
+  err:
+    stl.loop
+}
+
+// Read `count` decimals into arr through a write pointer.
+def store_n count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Boyer-Moore vote over the stored array, leaving the candidate in cand.
+def boyer count, cand @ loop, body, fresh, same, dec, next, done < idx, val, cnt, arrptr, nthidx, nthcell {
+    hex.zero 4, cnt
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.mov w/4, nthidx, idx
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, val, nthcell
+    hex.if0 4, cnt, fresh
+    hex.cmp 4, val, cand, dec, same, dec
+  fresh:
+    hex.mov 4, cand, val
+    hex.zero 4, cnt
+    hex.inc 4, cnt
+    ;next
+  same:
+    hex.inc 4, cnt
+    ;next
+  dec:
+    hex.dec 4, cnt
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// occ := number of stored cells equal to cand.
+def count_occ count, cand, occ @ loop, body, eq, next, done < idx, val, arrptr, nthidx, nthcell {
+    hex.zero 4, occ
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.mov w/4, nthidx, idx
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, val, nthcell
+    hex.cmp 4, val, cand, next, eq, next
+  eq:
+    hex.inc 4, occ
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+cand: hex.vec 4, 0
+occ: hex.vec 4, 0
+twice: hex.vec 4, 0
+arr: hex.vec 4*9
+arrptr: hex.vec w/4
+wptr: hex.vec w/4
+idx: hex.vec w/4, 0
+val: hex.vec 4, 0
+cnt: hex.vec 4, 0
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

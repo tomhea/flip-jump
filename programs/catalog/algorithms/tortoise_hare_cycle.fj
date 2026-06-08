@@ -1,0 +1,49 @@
+// Tortoise Hare Cycle (#1196)
+
+// Reads `start` `0`-`15` (own line). Iterates `x = (2*x + 1) mod 16` starting from `start`. Uses Floyd's tortoise-and-hare to detect when the sequence enters a cycle, then prints the cycle length as decimal + `\n`.
+
+main
+
+def main @ err, meet, advance, clen, cdone, cnext, cprint < start, t, h, tmp, len {
+    stl.startup_and_init_all
+    hex.input_dec_uint 1, start, err
+    step start, t
+    step start, tmp
+    step tmp, h
+  meet:
+    hex.cmp 1, t, h, advance, clen, advance
+  advance:
+    step t, tmp
+    hex.mov 1, t, tmp
+    step h, tmp
+    step tmp, h
+    ;meet
+  clen:
+    hex.set 4, len, 1
+    step t, h
+  cdone:
+    hex.cmp 1, h, t, cnext, cprint, cnext
+  cnext:
+    step h, tmp
+    hex.mov 1, h, tmp
+    hex.inc 4, len
+    ;cdone
+  cprint:
+    hex.print_dec_uint 4, len
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// out := (2*x + 1) mod 16  (one nibble wraps mod 16 automatically).
+def step x, out {
+    hex.mov 1, out, x
+    hex.add 1, out, x
+    hex.inc 1, out
+}
+
+start: hex.vec 1, 0
+t: hex.vec 1, 0
+h: hex.vec 1, 0
+tmp: hex.vec 1, 0
+len: hex.vec 4, 0

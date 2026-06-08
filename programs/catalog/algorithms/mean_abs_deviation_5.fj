@@ -1,0 +1,40 @@
+// Mean Abs Deviation 5 (#1208)
+
+// Reads exactly 5 decimals `0`-`99`. Computes `mean = floor(sum/5)`, then prints `floor(sum(|x_i - mean|) / 5)` as decimal + `\n`.
+
+main
+
+def main @ err < arr, sum, mean, r, adsum, mad, five {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    hex.zero 4, sum
+    rep(5, i) hex.add 4, sum, arr + i*dw*4
+    hex.div 4, 4, mean, r, sum, five, err
+    hex.zero 4, adsum
+    rep(5, i) add_abs arr + i*dw*4, mean, adsum
+    hex.div 4, 4, mad, r, adsum, five, err
+    hex.print_dec_uint 4, mad
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// adsum += |*cell - mean|  (computed as max-min of the two unsigned values).
+def add_abs cell, mean, adsum < hi, lo, d {
+    hex.max 4, hi, cell, mean
+    hex.min 4, lo, cell, mean
+    hex.mov 4, d, hi
+    hex.sub 4, d, lo
+    hex.add 4, adsum, d
+}
+
+arr: hex.vec 4*5
+sum: hex.vec 4, 0
+mean: hex.vec 4, 0
+r: hex.vec 4, 0
+adsum: hex.vec 4, 0
+mad: hex.vec 4, 0
+five: hex.vec 4, 5
+hi: hex.vec 4, 0
+lo: hex.vec 4, 0
+d: hex.vec 4, 0

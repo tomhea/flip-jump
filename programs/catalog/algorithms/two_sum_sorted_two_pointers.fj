@@ -1,0 +1,85 @@
+// Two Sum Sorted Two Pointers (#1188)
+
+// Reads digit N `2`-`9` + `\n`, then N decimals sorted ascending, then `target`. Prints `i j\n` (0-based, `i < j`) of any pair summing to target, or `not found\n`. Implementation: two-pointer (left, right).
+
+main
+
+def main @ err, hit < count, target, arr, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    hex.input_dec_uint 4, count, err
+    store_n count, err
+    hex.input_dec_uint 4, target, err
+    two_sum count, target, hit
+    stl.output "not found\n"
+  hit:
+    stl.loop
+  err:
+    stl.loop
+}
+
+// Read `count` decimals into arr through a write pointer.
+def store_n count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Move two pointers inward to find a pair summing to target; print indices and jump to hit.
+def two_sum count, target, hit @ loop, body, lt, gt, found, done < lo, hi, vlo, vhi, s, arrptr, nthidx, nthcell {
+    hex.zero 4, lo
+    hex.mov 4, hi, count
+    hex.dec 4, hi
+  loop:
+    hex.cmp 4, lo, hi, body, done, done
+  body:
+    hex.mov w/4, nthidx, lo
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vlo, nthcell
+    hex.mov w/4, nthidx, hi
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vhi, nthcell
+    hex.mov 4, s, vlo
+    hex.add 4, s, vhi
+    hex.cmp 4, s, target, lt, found, gt
+  lt:
+    hex.inc 4, lo
+    ;loop
+  gt:
+    hex.dec 4, hi
+    ;loop
+  found:
+    hex.print_dec_uint 4, lo
+    stl.output ' '
+    hex.print_dec_uint 4, hi
+    stl.output '\n'
+    ;hit
+  done:
+}
+
+count: hex.vec 4, 0
+target: hex.vec 4, 0
+arr: hex.vec 4*9
+arrptr: hex.vec w/4
+wptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+lo: hex.vec w/4, 0
+hi: hex.vec w/4, 0
+vlo: hex.vec 4, 0
+vhi: hex.vec 4, 0
+s: hex.vec 4, 0
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

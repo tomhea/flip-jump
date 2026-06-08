@@ -1,0 +1,38 @@
+// Insertion Sort 5 (#1143)
+
+// Reads exactly 5 decimals and prints them sorted ascending (one per line), implemented as insertion sort (extend prefix one element at a time).
+
+main
+
+def main @ err < arr {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    rep(4, t) ins_pass t
+    rep(5, i) pc arr + i*dw*4
+  err:
+    stl.loop
+}
+
+// Insert element t+1 into the sorted prefix by sinking it down with swaps.
+def ins_pass t < arr {
+    rep(t+1, m) cas arr + (t-m)*dw*4, arr + (t-m+1)*dw*4
+}
+
+// Compare two 4-hex cells; swap so the smaller is in a.
+def cas a, b @ keep, doswap < t {
+    hex.cmp 4, a, b, keep, keep, doswap
+  doswap:
+    hex.mov 4, t, a
+    hex.mov 4, a, b
+    hex.mov 4, b, t
+  keep:
+}
+
+// Print one 4-hex cell as decimal + newline.
+def pc c {
+    hex.print_dec_uint 4, c
+    stl.output '\n'
+}
+
+arr: hex.vec 4*5
+t: hex.vec 4, 0

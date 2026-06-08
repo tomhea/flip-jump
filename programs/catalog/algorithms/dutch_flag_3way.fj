@@ -1,0 +1,64 @@
+// Dutch Flag 3Way (#1175)
+
+// Reads digit N `1`-`9` + `\n`, then N values each `0`, `1`, or `2` (one per line). Prints the values partitioned in order so all 0s come first, then all 1s, then all 2s (one per line).
+
+main
+
+def main @ err < count, c0, c1, c2 {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    tally count, c0, c1, c2, err
+    print_n c0, '0'
+    print_n c1, '1'
+    print_n c2, '2'
+  err:
+    stl.loop
+}
+
+// Count how many 0s, 1s, and 2s appear among `count` inputs.
+def tally count, c0, c1, c2, err @ loop, body, isz, is1, is2, next, done < val, idx, two {
+    hex.zero 4, c0
+    hex.zero 4, c1
+    hex.zero 4, c2
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.if0 4, val, isz
+    hex.cmp 4, val, two, is1, is2, is2
+  isz:
+    hex.inc 4, c0
+    ;next
+  is1:
+    hex.inc 4, c1
+    ;next
+  is2:
+    hex.inc 4, c2
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Print `cnt` lines, each the character ch followed by a newline.
+def print_n cnt, ch @ loop, body, done < i {
+    hex.zero 4, i
+  loop:
+    hex.cmp 4, i, cnt, body, done, done
+  body:
+    stl.output ch
+    stl.output '\n'
+    hex.inc 4, i
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+c0: hex.vec 4, 0
+c1: hex.vec 4, 0
+c2: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0
+two: hex.vec 4, 2
+i: hex.vec 4, 0

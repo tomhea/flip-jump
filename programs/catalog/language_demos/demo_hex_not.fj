@@ -1,0 +1,17 @@
+// Demo Hex Not (#1242)
+
+// Reads one lowercase hex char + `\n`. Uses `hex.not` (XOR with `f`). Prints result hex + `\n`.
+
+main
+
+def main @ err < a {
+    stl.startup_and_init_all
+    hex.input_as_hex a, err
+    hex.not 1, a
+    hex.print_as_digit a, 0
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+a: hex.vec 1, 0

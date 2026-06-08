@@ -1,0 +1,49 @@
+// Stack Reverse Line (#1155)
+
+// Reads a `\n`-terminated line ≤ 40 chars. Uses an explicit push-all-then-pop-all stack pattern (LIFO) to reverse the line; prints the reversed bytes followed by `\n`. The stack demonstration is the point.
+
+main
+
+def main < buf, p, len {
+    stl.startup_and_init_all
+    hex.set w/4, p, buf
+    hex.input_ptr_line p, len
+    pop_reverse buf, len
+    stl.output '\n'
+    stl.loop
+}
+
+// Walk to the last stored byte, then pop bytes off the top printing each (LIFO).
+def pop_reverse buf, len @ adv, advbody, advdone, ploop, pbody, pdone, empty < rptr, i, cnt, b {
+    hex.if0 w/4, len, empty
+    hex.set w/4, rptr, buf
+    hex.mov w/4, cnt, len
+    hex.dec w/4, cnt
+    hex.zero w/4, i
+  adv:
+    hex.cmp w/4, i, cnt, advbody, advdone, advdone
+  advbody:
+    hex.ptr_inc rptr
+    hex.inc w/4, i
+    ;adv
+  advdone:
+    hex.zero w/4, i
+  ploop:
+    hex.cmp w/4, i, len, pbody, pdone, pdone
+  pbody:
+    hex.read_byte b, rptr
+    hex.print b
+    hex.ptr_dec rptr
+    hex.inc w/4, i
+    ;ploop
+  pdone:
+  empty:
+}
+
+buf: hex.vec 64
+p: hex.vec w/4
+len: hex.vec w/4
+rptr: hex.vec w/4
+i: hex.vec w/4, 0
+cnt: hex.vec w/4, 0
+b: hex.vec 2, 0

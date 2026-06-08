@@ -1,0 +1,124 @@
+// Heap Sort 5 (#1230)
+
+// Reads exactly 5 decimals and prints them sorted ascending (one per line). Implementation: heap sort (build max-heap, repeatedly extract max).
+
+main
+
+def main @ err < arr, sidx, hs, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    hex.set 4, hs, 5
+    hex.set 4, sidx, 1
+    sift_down sidx, hs
+    hex.zero 4, sidx
+    sift_down sidx, hs
+    extract 4
+    extract 3
+    extract 2
+    extract 1
+    rep(5, i) pc arr + i*dw*4
+  err:
+    stl.loop
+}
+
+// Swap the root with arr[endc], then re-heapify the root over arr[0..endc-1].
+def extract endc < arr, sidx, hs, v0, ve {
+    hex.mov 4, v0, arr + 0*dw*4
+    hex.mov 4, ve, arr + endc*dw*4
+    hex.mov 4, arr + 0*dw*4, ve
+    hex.mov 4, arr + endc*dw*4, v0
+    hex.zero 4, sidx
+    hex.set 4, hs, endc
+    sift_down sidx, hs
+}
+
+// Sift arr[iidx] down within a heap of size hs.
+def sift_down iidx, hs @ loop, lvalid, setl, after_l, rvalid, setr, after_r, swapit, done < l, r, largest, vi, vl, vr, vlarge, arrptr, nthidx, nthcell {
+  loop:
+    hex.mov 4, l, iidx
+    hex.add 4, l, iidx
+    hex.inc 4, l
+    hex.mov 4, r, l
+    hex.inc 4, r
+    hex.mov 4, largest, iidx
+    hex.cmp 4, l, hs, lvalid, after_l, after_l
+  lvalid:
+    hex.mov w/4, nthidx, l
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vl, nthcell
+    hex.mov w/4, nthidx, largest
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vlarge, nthcell
+    hex.cmp 4, vl, vlarge, after_l, after_l, setl
+  setl:
+    hex.mov 4, largest, l
+  after_l:
+    hex.cmp 4, r, hs, rvalid, after_r, after_r
+  rvalid:
+    hex.mov w/4, nthidx, r
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vr, nthcell
+    hex.mov w/4, nthidx, largest
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vlarge, nthcell
+    hex.cmp 4, vr, vlarge, after_r, after_r, setr
+  setr:
+    hex.mov 4, largest, r
+  after_r:
+    hex.cmp 4, largest, iidx, swapit, done, swapit
+  swapit:
+    hex.mov w/4, nthidx, iidx
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vi, nthcell
+    hex.mov w/4, nthidx, largest
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vlarge, nthcell
+    hex.mov w/4, nthidx, iidx
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.write_hex 4, nthcell, vlarge
+    hex.mov w/4, nthidx, largest
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.write_hex 4, nthcell, vi
+    hex.mov 4, iidx, largest
+    ;loop
+  done:
+}
+
+// Print one 4-hex cell as decimal + newline.
+def pc c {
+    hex.print_dec_uint 4, c
+    stl.output '\n'
+}
+
+arr: hex.vec 4*5
+arrptr: hex.vec w/4
+sidx: hex.vec w/4, 0
+hs: hex.vec 4, 0
+v0: hex.vec 4, 0
+ve: hex.vec 4, 0
+l: hex.vec w/4, 0
+r: hex.vec w/4, 0
+largest: hex.vec w/4, 0
+vi: hex.vec 4, 0
+vl: hex.vec 4, 0
+vr: hex.vec 4, 0
+vlarge: hex.vec 4, 0
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

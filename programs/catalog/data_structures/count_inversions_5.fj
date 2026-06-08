@@ -1,0 +1,32 @@
+// Count Inversions 5 (#1146)
+
+// Reads exactly 5 decimals and prints the count of inversions (pairs `(i, j)` with `i < j` and `a_i > a_j`) as decimal + `\n`.
+
+main
+
+def main @ err < arr, inv {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    hex.zero 4, inv
+    rep(4, p) inv_pass p, inv
+    hex.print_dec_uint 4, inv
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// For fixed i=p, count later cells j with a_p > a_j.
+def inv_pass p, inv < arr {
+    rep(4-p, k) count_inv arr + p*dw*4, arr + (p+1+k)*dw*4, inv
+}
+
+// If *a > *b, increment inv.
+def count_inv a, b, inv @ keep, hit {
+    hex.cmp 4, a, b, keep, keep, hit
+  hit:
+    hex.inc 4, inv
+  keep:
+}
+
+arr: hex.vec 4*5
+inv: hex.vec 4, 0

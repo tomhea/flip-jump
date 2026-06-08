@@ -1,0 +1,55 @@
+// Weighted Choice Lcg (#1222)
+
+// Reads three decimal weights `w0 w1 w2` (each `0`-`9`, on own lines; sum >= 1), then one byte (seed). Generates one LCG sample `r`, then picks bucket `i` such that `r mod (w0+w1+w2) < w0+w1+...+wi`. Prints `i` as decimal `0`-`2` + `\n`.
+
+main
+
+def main @ err, ck1, out0, out1, out2 < w0, w1, w2, state, total, prefix, sc, q, rmod {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, w0, err
+    hex.input_dec_uint 4, w1, err
+    hex.input_dec_uint 4, w2, err
+    hex.input state
+    lcg state
+    hex.mov 4, total, w0
+    hex.add 4, total, w1
+    hex.add 4, total, w2
+    hex.zero 4, sc
+    hex.mov 2, sc, state
+    hex.div 4, 4, q, rmod, sc, total, err
+    hex.cmp 4, rmod, w0, out0, ck1, ck1
+  ck1:
+    hex.mov 4, prefix, w0
+    hex.add 4, prefix, w1
+    hex.cmp 4, rmod, prefix, out1, out2, out2
+  out0:
+    stl.output "0\n"
+    ;err
+  out1:
+    stl.output "1\n"
+    ;err
+  out2:
+    stl.output "2\n"
+  err:
+    stl.loop
+}
+
+// state = (state*5 + 3) mod 256.
+def lcg state < five, three, tmp {
+    hex.mul 2, tmp, state, five
+    hex.add 2, tmp, three
+    hex.mov 2, state, tmp
+}
+
+w0: hex.vec 4, 0
+w1: hex.vec 4, 0
+w2: hex.vec 4, 0
+state: hex.vec 2, 0
+total: hex.vec 4, 0
+prefix: hex.vec 4, 0
+sc: hex.vec 4, 0
+q: hex.vec 4, 0
+rmod: hex.vec 4, 0
+five: hex.vec 2, 5
+three: hex.vec 2, 3
+tmp: hex.vec 2, 0

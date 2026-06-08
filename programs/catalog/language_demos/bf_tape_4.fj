@@ -1,0 +1,71 @@
+// Bf Tape 4 (#1269)
+
+// Reads a `\n`-terminated BF program ≤ 30 chars using `+`, `-`, `<`, `>`, `.` (other bytes ignored). Interprets on a 4-cell tape (cells initially 0, mod 256). Each `.` outputs the current cell as one raw byte. The tape pointer stays in `[0, 3]` (out-of-bounds moves are silently ignored). Final newline after all output.
+
+main
+
+def main < tptr, pidx, tape {
+    stl.startup_and_init_all
+    hex.set w/4, tptr, tape
+    hex.zero 4, pidx
+    run tptr, pidx
+    stl.loop
+}
+
+// Interpret the whole BF program against the 4-cell tape.
+def run tptr, pidx @ loop, c1, doinc, c2, dodec, c3, doleft, c4, doright, moveright, c5, doprint, done < b, cur, plusb, minusb, ltb, gtb, dotb, nlb, three {
+  loop:
+    hex.input b
+    hex.if0 2, b, done
+    hex.cmp 2, b, nlb, c1, done, c1
+  c1:
+    hex.cmp 2, b, plusb, c2, doinc, c2
+  doinc:
+    hex.read_byte cur, tptr
+    hex.inc 2, cur
+    hex.write_byte tptr, cur
+    ;loop
+  c2:
+    hex.cmp 2, b, minusb, c3, dodec, c3
+  dodec:
+    hex.read_byte cur, tptr
+    hex.dec 2, cur
+    hex.write_byte tptr, cur
+    ;loop
+  c3:
+    hex.cmp 2, b, ltb, c4, doleft, c4
+  doleft:
+    hex.if0 4, pidx, loop
+    hex.ptr_dec tptr
+    hex.dec 4, pidx
+    ;loop
+  c4:
+    hex.cmp 2, b, gtb, c5, doright, c5
+  doright:
+    hex.cmp 4, pidx, three, moveright, loop, loop
+  moveright:
+    hex.ptr_inc tptr
+    hex.inc 4, pidx
+    ;loop
+  c5:
+    hex.cmp 2, b, dotb, loop, doprint, loop
+  doprint:
+    hex.read_byte cur, tptr
+    hex.print cur
+    ;loop
+  done:
+    stl.output '\n'
+}
+
+b: hex.vec 2, 0
+tptr: hex.vec w/4
+pidx: hex.vec 4, 0
+cur: hex.vec 2, 0
+tape: hex.vec 4
+plusb: hex.vec 2, '+'
+minusb: hex.vec 2, '-'
+ltb: hex.vec 2, '<'
+gtb: hex.vec 2, '>'
+dotb: hex.vec 2, '.'
+nlb: hex.vec 2, '\n'
+three: hex.vec 4, 3

@@ -1,0 +1,60 @@
+// Coefficient Of Variation 5 (#1212)
+
+// Reads exactly 5 decimals `1`-`99`. Computes `mean` and `std_dev_5_floor_sqrt`. Prints `floor(std_dev * 100 / mean)` as decimal percent + `\n`.
+
+main
+
+def main @ err < arr, sum, mean, r, var, dsum, five, s, prod, q, hundred {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    hex.zero 4, sum
+    rep(5, i) hex.add 4, sum, arr + i*dw*4
+    hex.div 4, 4, mean, r, sum, five, err
+    hex.zero 4, dsum
+    rep(5, i) add_sq arr + i*dw*4, mean, dsum
+    hex.div 4, 4, var, r, dsum, five, err
+    isqrt var, s
+    hex.mul 4, prod, s, hundred
+    hex.div 4, 4, q, r, prod, mean, err
+    hex.print_dec_uint 4, q
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// dsum += (*cell - mean)^2.
+def add_sq cell, mean, dsum < d, sq {
+    hex.mov 4, d, cell
+    hex.sub 4, d, mean
+    hex.mul 4, sq, d, d
+    hex.add 4, dsum, sq
+}
+
+// s := floor(sqrt(nval)) by linear scan.
+def isqrt nval, s @ loop, body, done < sq, t {
+    hex.zero 4, s
+  loop:
+    hex.mov 4, t, s
+    hex.inc 4, t
+    hex.mul 4, sq, t, t
+    hex.cmp 4, sq, nval, body, body, done
+  body:
+    hex.inc 4, s
+    ;loop
+  done:
+}
+
+arr: hex.vec 4*5
+sum: hex.vec 4, 0
+mean: hex.vec 4, 0
+r: hex.vec 4, 0
+var: hex.vec 4, 0
+dsum: hex.vec 4, 0
+five: hex.vec 4, 5
+s: hex.vec 4, 0
+prod: hex.vec 4, 0
+q: hex.vec 4, 0
+hundred: hex.vec 4, 100
+d: hex.vec 4, 0
+sq: hex.vec 4, 0
+t: hex.vec 4, 0

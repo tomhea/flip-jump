@@ -1,0 +1,44 @@
+// Random Byte In Range (#1224)
+
+// Reads one byte (seed), then `lo` `hi` (each on own line, both `0`-`9`, `lo <= hi`). Applies one LCG step, computes `lo + (state mod (hi - lo + 1))`, and prints as decimal + `\n`.
+
+main
+
+def main @ err < state, lo, hi, range, sc, q, r, res {
+    stl.startup_and_init_all
+    hex.input state
+    hex.input_dec_uint 4, lo, err
+    hex.input_dec_uint 4, hi, err
+    lcg state
+    hex.mov 4, range, hi
+    hex.sub 4, range, lo
+    hex.inc 4, range
+    hex.zero 4, sc
+    hex.mov 2, sc, state
+    hex.div 4, 4, q, r, sc, range, err
+    hex.mov 4, res, lo
+    hex.add 4, res, r
+    hex.print_dec_uint 4, res
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// state = (state*5 + 3) mod 256.
+def lcg state < five, three, tmp {
+    hex.mul 2, tmp, state, five
+    hex.add 2, tmp, three
+    hex.mov 2, state, tmp
+}
+
+state: hex.vec 2, 0
+lo: hex.vec 4, 0
+hi: hex.vec 4, 0
+range: hex.vec 4, 0
+sc: hex.vec 4, 0
+q: hex.vec 4, 0
+r: hex.vec 4, 0
+res: hex.vec 4, 0
+five: hex.vec 2, 5
+three: hex.vec 2, 3
+tmp: hex.vec 2, 0

@@ -1,0 +1,38 @@
+// Array Count Zeros (#1118)
+
+// Reads digit N `1`-`9` + `\n`, then N decimal integers each own line. Prints the count of zeros as decimal + `\n`.
+
+main
+
+def main @ err < count, result {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    count_zeros count, result, err
+    hex.print_dec_uint 4, result
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read `count` decimals; count how many equal zero into result.
+def count_zeros count, result, err @ loop, body, hit, next, done < val, idx {
+    hex.zero 4, result
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.if0 4, val, hit
+    ;next
+  hit:
+    hex.inc 4, result
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+result: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0

@@ -1,0 +1,48 @@
+// Queue Enqueue Dequeue (#1148)
+
+// Reads digit N `1`-`9` + `\n`. Enqueues integers `1..N` then dequeues all, printing each on its own line. Output is `1\n2\n...\nN\n` (FIFO order).
+
+main
+
+def main @ err < count {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    run_queue count
+  err:
+    stl.loop
+}
+
+// Enqueue 1..count at the tail pointer, then dequeue all from the head (FIFO).
+def run_queue count @ eloop, ebody, edone, dloop, dbody, ddone < tail, head, arr, idx, val {
+    hex.set w/4, tail, arr
+    hex.zero 4, idx
+  eloop:
+    hex.cmp 4, idx, count, ebody, edone, edone
+  ebody:
+    hex.mov 4, val, idx
+    hex.inc 4, val
+    hex.write_hex 4, tail, val
+    hex.ptr_add tail, 4
+    hex.inc 4, idx
+    ;eloop
+  edone:
+    hex.set w/4, head, arr
+    hex.zero 4, idx
+  dloop:
+    hex.cmp 4, idx, count, dbody, ddone, ddone
+  dbody:
+    hex.read_hex 4, val, head
+    hex.ptr_add head, 4
+    hex.print_dec_uint 4, val
+    stl.output '\n'
+    hex.inc 4, idx
+    ;dloop
+  ddone:
+}
+
+count: hex.vec 4, 0
+arr: hex.vec 4*9
+tail: hex.vec w/4
+head: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0

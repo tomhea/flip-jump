@@ -1,0 +1,165 @@
+// Quicksort 5 (#1228)
+
+// Reads exactly 5 decimal integers (each on own line) and prints them sorted ascending (one per line). Implementation: quicksort (recursive partition around a pivot).
+
+main
+
+def main @ err < arr, hisptr, losptr, his, los, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    hex.set w/4, losptr, los
+    hex.set w/4, hisptr, his
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    quicksort
+    rep(5, i) pc arr + i*dw*4
+  err:
+    stl.loop
+}
+
+// Iterative quicksort using an explicit stack of (lo,hi) ranges.
+def quicksort @ mloop, mdo, pushleft, chkright, pushright, mdone < lo, hi, pv, sp, plo, phi {
+    hex.zero 4, sp
+    hex.zero 4, plo
+    hex.set 4, phi, 4
+    push plo, phi
+  mloop:
+    hex.if0 4, sp, mdone
+    pop_range
+    hex.cmp 4, lo, hi, mdo, mloop, mloop
+  mdo:
+    partition lo, hi
+    hex.cmp 4, pv, lo, chkright, chkright, pushleft
+  pushleft:
+    hex.mov 4, plo, lo
+    hex.mov 4, phi, pv
+    hex.dec 4, phi
+    push plo, phi
+  chkright:
+    hex.cmp 4, pv, hi, pushright, mloop, mloop
+  pushright:
+    hex.mov 4, plo, pv
+    hex.inc 4, plo
+    hex.mov 4, phi, hi
+    push plo, phi
+    ;mloop
+  mdone:
+}
+
+// Push a range onto the stack.
+def push loval, hival < sp, losptr, hisptr, nthidx, nthcell {
+    hex.mov w/4, nthidx, sp
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, losptr, nthidx
+    hex.write_hex 4, nthcell, loval
+    hex.mov w/4, nthidx, sp
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, hisptr, nthidx
+    hex.write_hex 4, nthcell, hival
+    hex.inc 4, sp
+}
+
+// Pop the top range into lo, hi.
+def pop_range < sp, lo, hi, losptr, hisptr, nthidx, nthcell {
+    hex.dec 4, sp
+    hex.mov w/4, nthidx, sp
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, losptr, nthidx
+    hex.read_hex 4, lo, nthcell
+    hex.mov w/4, nthidx, sp
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, hisptr, nthidx
+    hex.read_hex 4, hi, nthcell
+}
+
+// Lomuto partition of arr[lo..hi] around pivot arr[hi]; leaves pivot index in pv.
+def partition lo, hi @ loop, body, le, skip, done < store, j, pivot, vj, vstore, vhi, pv, arrptr, nthidx, nthcell {
+    hex.mov w/4, nthidx, hi
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, pivot, nthcell
+    hex.mov 4, store, lo
+    hex.mov 4, j, lo
+  loop:
+    hex.cmp 4, j, hi, body, done, done
+  body:
+    hex.mov w/4, nthidx, j
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vj, nthcell
+    hex.cmp 4, vj, pivot, le, le, skip
+  le:
+    hex.mov w/4, nthidx, store
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vstore, nthcell
+    hex.mov w/4, nthidx, store
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.write_hex 4, nthcell, vj
+    hex.mov w/4, nthidx, j
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.write_hex 4, nthcell, vstore
+    hex.inc 4, store
+  skip:
+    hex.inc 4, j
+    ;loop
+  done:
+    hex.mov w/4, nthidx, store
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vstore, nthcell
+    hex.mov w/4, nthidx, hi
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vhi, nthcell
+    hex.mov w/4, nthidx, store
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.write_hex 4, nthcell, vhi
+    hex.mov w/4, nthidx, hi
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.write_hex 4, nthcell, vstore
+    hex.mov 4, pv, store
+}
+
+// Print one 4-hex cell as decimal + newline.
+def pc c {
+    hex.print_dec_uint 4, c
+    stl.output '\n'
+}
+
+arr: hex.vec 4*5
+los: hex.vec 4*16
+his: hex.vec 4*16
+sp: hex.vec w/4, 0
+lo: hex.vec 4, 0
+hi: hex.vec w/4, 0
+pv: hex.vec 4, 0
+plo: hex.vec 4, 0
+phi: hex.vec 4, 0
+store: hex.vec w/4, 0
+j: hex.vec w/4, 0
+pivot: hex.vec 4, 0
+vj: hex.vec 4, 0
+vstore: hex.vec 4, 0
+vhi: hex.vec 4, 0
+arrptr: hex.vec w/4
+losptr: hex.vec w/4
+hisptr: hex.vec w/4
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

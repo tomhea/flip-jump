@@ -1,0 +1,41 @@
+// Is Sorted Ascending (#1131)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals. Prints `1\n` if the sequence is non-decreasing, else `0\n`.
+
+main
+
+def main @ err < count, flag {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    check_asc count, flag, err
+    hex.print_dec_uint 4, flag
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read `count` decimals; flag := 1 if non-decreasing, else 0.
+def check_asc count, flag, err @ loop, body, bad, next, done < val, idx, prev {
+    hex.zero 4, flag
+    hex.inc 4, flag
+    hex.zero 4, prev
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.cmp 4, val, prev, bad, next, next
+  bad:
+    hex.zero 4, flag
+  next:
+    hex.mov 4, prev, val
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+flag: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0
+prev: hex.vec 4, 0

@@ -1,0 +1,29 @@
+// Demo Hex Shr (#1247)
+
+// Same as `demo_hex_shl` but uses `hex.shr`.
+
+main
+
+def main @ err, loop, body, done < a, cnt, idx, nl {
+    stl.startup_and_init_all
+    hex.input_as_hex a, err
+    hex.input nl
+    hex.input_dec_uint 4, cnt, err
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, cnt, body, done, done
+  body:
+    hex.shr_bit 1, a
+    hex.inc 4, idx
+    ;loop
+  done:
+    hex.print_as_digit a, 0
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+a: hex.vec 1, 0
+cnt: hex.vec 4, 0
+idx: hex.vec 4, 0
+nl: hex.vec 2, 0

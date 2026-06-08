@@ -1,0 +1,64 @@
+// Two Register Machine 5 (#1273)
+
+// Reads decimal `R0` `R1` (each `0`-`9`, on own lines). Then 5 instructions on own lines, each one of `ADD0` (`R0 = R0 + R1`), `SUB0` (`R0 = R0 - R1`), `SWAP` (`R0 ↔ R1`), `INC0`, `INC1`. After all 5, prints `<R0> <R1>\n`.
+
+main
+
+def main @ err < r0, r1 {
+    stl.startup_and_init_all
+    hex.input_dec_int 4, r0, err
+    hex.input_dec_int 4, r1, err
+    rep(5, i) do_instr r0, r1
+    hex.print_dec_int 4, r0
+    stl.output ' '
+    hex.print_dec_int 4, r1
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read one 4-letter instruction line and apply it to R0/R1.
+def do_instr r0, r1 @ doADD, chkS, isS, doSUB, doSWAP, chkI, doINC0, doINC1, done < c0, c1, c2, c3, nl, achar, schar, uchar, zerochar, tmp {
+    hex.input c0
+    hex.input c1
+    hex.input c2
+    hex.input c3
+    hex.input nl
+    hex.cmp 2, c0, achar, chkS, doADD, chkS
+  doADD:
+    hex.add 4, r0, r1
+    ;done
+  chkS:
+    hex.cmp 2, c0, schar, chkI, isS, chkI
+  isS:
+    hex.cmp 2, c1, uchar, doSWAP, doSUB, doSWAP
+  doSUB:
+    hex.sub 4, r0, r1
+    ;done
+  doSWAP:
+    hex.mov 4, tmp, r0
+    hex.mov 4, r0, r1
+    hex.mov 4, r1, tmp
+    ;done
+  chkI:
+    hex.cmp 2, c3, zerochar, doINC1, doINC0, doINC1
+  doINC0:
+    hex.inc 4, r0
+    ;done
+  doINC1:
+    hex.inc 4, r1
+  done:
+}
+
+r0: hex.vec 4, 0
+r1: hex.vec 4, 0
+c0: hex.vec 2, 0
+c1: hex.vec 2, 0
+c2: hex.vec 2, 0
+c3: hex.vec 2, 0
+nl: hex.vec 2, 0
+achar: hex.vec 2, 'A'
+schar: hex.vec 2, 'S'
+uchar: hex.vec 2, 'U'
+zerochar: hex.vec 2, '0'
+tmp: hex.vec 4, 0

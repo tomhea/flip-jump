@@ -1,0 +1,29 @@
+// Xorshift Step 8bit (#1216)
+
+// Reads one non-zero byte (state). Applies xorshift8: `s ^= s << 3; s ^= s >> 4; s ^= s << 2;` (all mod 256). Outputs the new state as one raw byte.
+
+main
+
+def main < state {
+    stl.startup_and_init_all
+    hex.input state
+    xorshift state
+    hex.print state
+    stl.loop
+}
+
+// xorshift8: s ^= s<<3; s ^= s>>4; s ^= s<<2 (mod 256).
+def xorshift s < tmp {
+    hex.mov 2, tmp, s
+    rep(3, i) hex.shl_bit 2, tmp
+    hex.xor 2, s, tmp
+    hex.mov 2, tmp, s
+    rep(4, i) hex.shr_bit 2, tmp
+    hex.xor 2, s, tmp
+    hex.mov 2, tmp, s
+    rep(2, i) hex.shl_bit 2, tmp
+    hex.xor 2, s, tmp
+}
+
+state: hex.vec 2, 0
+tmp: hex.vec 2, 0

@@ -1,0 +1,24 @@
+// Blum Blum Shub Tiny (#1221)
+
+// Reads one byte `1`-`15` (state). Applies one BBS step: `state = (state * state) mod 21` (where `21 = 3 * 7`, both Blum primes). Outputs the new state as one raw byte.
+
+main
+
+def main @ err < state, sq, sc, q, r, twone {
+    stl.startup_and_init_all
+    hex.input state
+    hex.mul 2, sq, state, state
+    hex.zero 4, sc
+    hex.mov 2, sc, sq
+    hex.div 4, 4, q, r, sc, twone, err
+    hex.print r
+  err:
+    stl.loop
+}
+
+state: hex.vec 2, 0
+sq: hex.vec 2, 0
+sc: hex.vec 4, 0
+q: hex.vec 4, 0
+r: hex.vec 4, 0
+twone: hex.vec 4, 21

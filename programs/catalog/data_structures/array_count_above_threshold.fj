@@ -1,0 +1,39 @@
+// Array Count Above Threshold (#1128)
+
+// Reads digit N `1`-`9` + `\n`, then `threshold` (signed decimal) + `\n`, then N signed decimals. Prints the count of values strictly greater than threshold + `\n`.
+
+main
+
+def main @ err < count, threshold, result {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    hex.input_dec_int 4, threshold, err
+    count_above count, threshold, result, err
+    hex.print_dec_uint 4, result
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read `count` signed decimals; count how many exceed threshold into result.
+def count_above count, threshold, result, err @ loop, body, hit, next, done < val, idx {
+    hex.zero 4, result
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_int 4, val, err
+    hex.scmp 4, val, threshold, next, next, hit
+  hit:
+    hex.inc 4, result
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+threshold: hex.vec 4, 0
+result: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0

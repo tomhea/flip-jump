@@ -1,0 +1,37 @@
+// Lcg Steps N 8bit (#1215)
+
+// Reads one byte (seed), then one decimal digit N `1`-`9` + `\n`. Applies N LCG steps (constants `5` and `3`, mod 256) and prints each successive state as decimal on its own line (N lines total).
+
+main
+
+def main @ err, loop, body, done < state, count, idx {
+    stl.startup_and_init_all
+    hex.input state
+    hex.input_dec_uint 4, count, err
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    lcg state
+    hex.print_dec_uint 2, state
+    stl.output '\n'
+    hex.inc 4, idx
+    ;loop
+  done:
+  err:
+    stl.loop
+}
+
+// state = (state*5 + 3) mod 256.
+def lcg state < five, three, tmp {
+    hex.mul 2, tmp, state, five
+    hex.add 2, tmp, three
+    hex.mov 2, state, tmp
+}
+
+state: hex.vec 2, 0
+count: hex.vec 4, 0
+idx: hex.vec 4, 0
+five: hex.vec 2, 5
+three: hex.vec 2, 3
+tmp: hex.vec 2, 0

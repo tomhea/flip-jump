@@ -31,3 +31,24 @@ off-limits names are the `w`/`dw`/`dbit` constants, which the compiler now rejec
   reporting the count. A byte buffer is `hex.vec CAP` (one byte per FJ op) or a `reserve`d region;
   requires `stl.startup_and_init_all`. Listed last in `stl/conf.json` (depends on hex pointers + I/O).
   Tested by `programs/hexlib_tests/basics1/strings.fj` (`hexlib-strings`).
+
+
+- **`hex.ptr_index`, `hex.read_nth_byte/hex`, `hex.write_nth_byte/hex`** (in
+  `hex/pointers/{pointer_arithmetics,read_pointers,write_pointers}.fj`) — runtime *indexed* array
+  access. `ptr_index dst, ptr, index` computes `dst = ptr + index*2w` (the address of the index-th
+  dw-aligned op past `*ptr`) using shifts + one add — O(w), independent of `index`, and correct for
+  *negative* `index` too (two's-complement). The `read_nth_*` / `write_nth_*` wrappers compose it
+  with `read_*` / `write_*`; all SINGLE-unit (one hex / one byte) — for n-hex cells the caller scales the index (`hex.mul`/shift)
+  and uses `ptr_index`+`read_hex n`, or stores the array as bytes. The macros use a shared
+  `hex.pointers.nth_ptr` scratch (from `ptr_init`), so they have no per-call data. Replaces the
+  per-program `get_at` / `set_at` "walk the pointer `index` times" helpers (O(index) each) that the
+  Pass-2 programs re-defined ~22×. `@requires hex.init + stl.ptr_init`. Tested by
+  `programs/hexlib_tests/basics2/nth_pointers.fj` (`hexlib-nth_pointers`).
+
+- **`hex.scmp n, a, b, lt, eq, gt`** (in `hex/cond_jumps.fj`) — SIGNED two's-complement compare,
+  the signed counterpart of `hex.cmp` (which is unsigned). Flips the sign bit (MSB) of *copies* of
+  `a,b` (inner scratch, `a,b` unmodified) then unsigned-compares — this maps the signed range
+  monotonically onto the unsigned range, so it is correct over the whole range with no subtraction
+  (hence no overflow; the naive `a-b`-then-test-sign-bit breaks when the difference overflows).
+  Replaces the per-program `scmp4` sign-bias helper that Pass-2 signed programs re-defined ~9×.
+  `@requires hex.cmp.init`. Tested by `programs/hexlib_tests/basics1/scmp.fj` (`hexlib-scmp`).

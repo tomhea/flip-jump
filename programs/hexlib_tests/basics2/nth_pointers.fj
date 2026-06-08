@@ -1,0 +1,42 @@
+// Tests hex.ptr_index and the indexed read_nth_*/write_nth_* pointer macros (single-unit).
+stl.startup_and_init_all
+
+// byte cells: write 10, 200, 99 at indices 0,1,2; read back index 1.
+hex.set w/4, base, barr
+hex.set 2, bv, 10
+hex.write_nth_byte base, i0, bv
+hex.set 2, bv, 200
+hex.write_nth_byte base, i1, bv
+hex.set 2, bv, 99
+hex.write_nth_byte base, i2, bv
+hex.read_nth_byte bv, base, i1
+hex.print_dec_uint 2, bv
+stl.output '\n'
+
+// negative index: point at byte 2, read index -2 -> byte 0 (== 10).
+hex.set w/4, base, barr
+hex.ptr_add base, 2
+hex.read_nth_byte bv, base, im2
+hex.print_dec_uint 2, bv
+stl.output '\n'
+
+// single hex cells.
+hex.set w/4, base, harr
+hex.set 1, hv, 0xd
+hex.write_nth_hex base, i3, hv
+hex.read_nth_hex hv, base, i3
+hex.print_as_digit hv, 0
+stl.output '\n'
+
+stl.loop
+
+barr: hex.vec 8
+harr: hex.vec 8
+base: hex.vec w/4
+bv: hex.vec 2
+hv: hex.vec 1
+i0: hex.vec w/4, 0
+i1: hex.vec w/4, 1
+i2: hex.vec w/4, 2
+i3: hex.vec w/4, 3
+im2: hex.vec w/4, 0-2

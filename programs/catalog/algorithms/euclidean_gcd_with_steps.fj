@@ -1,0 +1,37 @@
+// Euclidean Gcd With Steps (#1199)
+
+// Reads two positive decimals `a`, `b` each `1`-`100` (own lines). Prints each step of Euclidean GCD as `a b\n` (current pair after `a = b, b = a % b`), terminating with `<gcd> 0\n`.
+
+main
+
+def main @ err < a, b {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, a, err
+    hex.input_dec_uint 4, b, err
+    euclid a, b, err
+  err:
+    stl.loop
+}
+
+// Repeatedly (a, b) -> (b, a % b), printing each new pair until b == 0.
+def euclid a, b, err @ loop, done < na, nb, q {
+    hex.zero 4, q
+  loop:
+    hex.if0 4, b, done
+    hex.mov 4, na, b
+    hex.div 4, 4, q, nb, a, b, err
+    hex.mov 4, a, na
+    hex.mov 4, b, nb
+    hex.print_dec_uint 4, a
+    stl.output ' '
+    hex.print_dec_uint 4, b
+    stl.output '\n'
+    ;loop
+  done:
+}
+
+a: hex.vec 4, 0
+b: hex.vec 4, 0
+na: hex.vec 4, 0
+nb: hex.vec 4, 0
+q: hex.vec 4, 0

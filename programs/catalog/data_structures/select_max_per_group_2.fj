@@ -1,0 +1,59 @@
+// Select Max Per Group 2 (#1166)
+
+// Reads 5 `(group, value)` pairs (each on 2 own lines, group `0` or `1`, value `0`-`99`). Prints `group 0 max: <v>\ngroup 1 max: <v>\n` (or `none\n` for either group if no pairs).
+
+main
+
+def main @ err < g, v, max0, max1, has0, has1 {
+    stl.startup_and_init_all
+    hex.zero 4, has0
+    hex.zero 4, has1
+    rep(5, i) feed g, v, max0, max1, has0, has1, err
+    stl.output "group 0 max: "
+    print_or_none has0, max0
+    stl.output "group 1 max: "
+    print_or_none has1, max1
+  err:
+    stl.loop
+}
+
+// Read one (group, value) pair and fold value into that group's running max.
+def feed g, v, max0, max1, has0, has1, err @ go0, go1 {
+    hex.input_dec_uint 4, g, err
+    hex.input_dec_uint 4, v, err
+    hex.if0 4, g, go0
+    update_group v, max1, has1
+    ;go1
+  go0:
+    update_group v, max0, has0
+  go1:
+}
+
+// If this is the group's first value or v exceeds maxv, adopt v.
+def update_group v, maxv, hasv @ setit, keepit {
+    hex.if0 4, hasv, setit
+    hex.cmp 4, v, maxv, keepit, keepit, setit
+  setit:
+    hex.mov 4, maxv, v
+    hex.zero 4, hasv
+    hex.inc 4, hasv
+  keepit:
+}
+
+// Print maxv, or `none`, then a newline.
+def print_or_none hasv, maxv @ none, done {
+    hex.if0 4, hasv, none
+    hex.print_dec_uint 4, maxv
+    ;done
+  none:
+    stl.output "none"
+  done:
+    stl.output '\n'
+}
+
+g: hex.vec 4, 0
+v: hex.vec 4, 0
+max0: hex.vec 4, 0
+max1: hex.vec 4, 0
+has0: hex.vec 4, 0
+has1: hex.vec 4, 0

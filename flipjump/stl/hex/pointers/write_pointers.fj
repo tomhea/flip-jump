@@ -79,3 +79,28 @@ ns hex {
         .ptr_sub ptr, n
     }
 }
+
+// ---------- Indexed (nth) Write Pointers
+
+
+ns hex {
+    //  Time Complexity:  w(3@+10.25) + 11@+25     // for w=64
+    // Space Complexity:  w(3@+69)    + 11@+112     // for w=64
+    //   *(ptr + index*2w) = src   — write src into the index-th hex past *ptr.
+    // src is a hex; ptr is a hex[:w/4]; index is a signed hex[:w/4] (may be negative). ptr,index,src preserved.
+    // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
+    def write_nth_hex ptr, index, src < hex.pointers.nth_ptr {
+        .ptr_index hex.pointers.nth_ptr, ptr, index
+        .write_hex hex.pointers.nth_ptr, src
+    }
+
+    //  Time Complexity:  w(3@+10.25) + 17@+37     // for w=64
+    // Space Complexity:  w(3@+69)    + 17@+200     // for w=64
+    //   *(ptr + index*2w)[:2] = src[:2]   — write the index-th byte past *ptr.
+    // src is a hex[:2]; ptr is a hex[:w/4]; index is a signed hex[:w/4] (may be negative). ptr,index,src preserved.
+    // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
+    def write_nth_byte ptr, index, src < hex.pointers.nth_ptr {
+        .ptr_index hex.pointers.nth_ptr, ptr, index
+        .write_byte hex.pointers.nth_ptr, src
+    }
+}

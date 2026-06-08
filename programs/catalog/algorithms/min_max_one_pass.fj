@@ -1,0 +1,57 @@
+// Min Max One Pass (#1180)
+
+// Reads digit N `1`-`9` + `\n`, then N signed decimals. Prints `<min>\n<max>\n` using a single pass (pair-compare optimization).
+
+main
+
+def main @ err < count, mn, mx {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    scan count, mn, mx, err
+    hex.print_dec_int 4, mn
+    stl.output '\n'
+    hex.print_dec_int 4, mx
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Single pass tracking signed min in mn and signed max in mx.
+def scan count, mn, mx, err @ loop, body, done < val, idx, posbig, negbig {
+    hex.mov 4, mn, posbig
+    hex.mov 4, mx, negbig
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_int 4, val, err
+    smin mn, val
+    smax mx, val
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// best := min(best, val), signed.
+def smin best, val @ keep, set {
+    hex.scmp 4, val, best, set, keep, keep
+  set:
+    hex.mov 4, best, val
+  keep:
+}
+
+// best := max(best, val), signed.
+def smax best, val @ keep, set {
+    hex.scmp 4, val, best, keep, keep, set
+  set:
+    hex.mov 4, best, val
+  keep:
+}
+
+count: hex.vec 4, 0
+mn: hex.vec 4, 0
+mx: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0
+posbig: hex.vec 4, 0x7FFF
+negbig: hex.vec 4, 0x8000

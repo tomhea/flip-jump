@@ -1,0 +1,45 @@
+// Kv Lookup 5 (#1162)
+
+// Reads 5 key-value pairs: each as decimal `key` `0`-`9` + `\n`, then decimal `value` `0`-`99` + `\n` (total 10 lines). Then reads a query key + `\n`. Prints the value for that key as decimal + `\n`, or `not found\n` if the key wasn't among the 5. (Latest write wins on duplicates.)
+
+main
+
+def main @ err, notf, hit < keys, vals, query, found, fval {
+    stl.startup_and_init_all
+    rep(5, i) read_pair keys + i*dw*4, vals + i*dw*4, err
+    hex.input_dec_uint 4, query, err
+    hex.zero 4, found
+    rep(5, i) match keys + i*dw*4, vals + i*dw*4, query, found, fval
+    hex.if0 4, found, notf
+    hex.print_dec_uint 4, fval
+    stl.output '\n'
+    ;hit
+  notf:
+    stl.output "not found\n"
+  hit:
+    stl.loop
+  err:
+    stl.loop
+}
+
+// Read a key then a value into two cells.
+def read_pair kcell, vcell, err {
+    hex.input_dec_uint 4, kcell, err
+    hex.input_dec_uint 4, vcell, err
+}
+
+// If *kcell == query, record *vcell as the answer (later matches overwrite earlier ones).
+def match kcell, vcell, query, found, fval @ keep, eq {
+    hex.cmp 4, kcell, query, keep, eq, keep
+  eq:
+    hex.mov 4, fval, vcell
+    hex.zero 4, found
+    hex.inc 4, found
+  keep:
+}
+
+keys: hex.vec 4*5
+vals: hex.vec 4*5
+query: hex.vec 4, 0
+found: hex.vec 4, 0
+fval: hex.vec 4, 0
