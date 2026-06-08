@@ -1,0 +1,48 @@
+// Zigzag Array Check (#1182)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals. Prints `1\n` if the sequence strictly alternates `a[0] < a[1] > a[2] < a[3] > ...` (starting with rise), else `0\n`.
+
+main
+
+def main @ err < count, flag {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    check_zigzag count, flag, err
+    hex.print_dec_uint 4, flag
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// flag := 1 if odd steps strictly rise and even steps strictly fall, else 0.
+def check_zigzag count, flag, err @ loop, body, needfall, bad, next, done < val, prev, idx, parity, one {
+    hex.zero 4, flag
+    hex.inc 4, flag
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.if0 4, idx, next
+    hex.mov 4, parity, idx
+    hex.and 4, parity, one
+    hex.if0 4, parity, needfall
+    hex.cmp 4, prev, val, next, bad, bad
+  needfall:
+    hex.cmp 4, prev, val, bad, bad, next
+  bad:
+    hex.zero 4, flag
+  next:
+    hex.mov 4, prev, val
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+flag: hex.vec 4, 0
+val: hex.vec 4, 0
+prev: hex.vec 4, 0
+idx: hex.vec 4, 0
+parity: hex.vec 4, 0
+one: hex.vec 4, 1

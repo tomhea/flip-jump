@@ -1,0 +1,55 @@
+// Extended Gcd Small (#1200)
+
+// Reads two positive decimals `a`, `b` each `1`-`30` (own lines). Prints `g x y\n` such that `a*x + b*y = g = gcd(a, b)`, where `x`, `y` may be signed integers.
+
+main
+
+def main @ err, loop, done < a, b, old_r, r, old_s, s, old_t, t, q, rem {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, a, err
+    hex.input_dec_uint 4, b, err
+    hex.mov 4, old_r, a
+    hex.mov 4, r, b
+    hex.set 4, old_s, 1
+    hex.zero 4, s
+    hex.zero 4, old_t
+    hex.set 4, t, 1
+  loop:
+    hex.if0 4, r, done
+    hex.div 4, 4, q, rem, old_r, r, err
+    step3 old_r, r, q
+    step3 old_s, s, q
+    step3 old_t, t, q
+    ;loop
+  done:
+    hex.print_dec_uint 4, old_r
+    stl.output ' '
+    hex.print_dec_int 4, old_s
+    stl.output ' '
+    hex.print_dec_int 4, old_t
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// (old, cur) -> (cur, old - q*cur), signed.
+def step3 old, cur, q < tmp, tmp2 {
+    hex.mul 4, tmp, q, cur
+    hex.mov 4, tmp2, old
+    hex.sub 4, tmp2, tmp
+    hex.mov 4, old, cur
+    hex.mov 4, cur, tmp2
+}
+
+a: hex.vec 4, 0
+b: hex.vec 4, 0
+old_r: hex.vec 4, 0
+r: hex.vec 4, 0
+old_s: hex.vec 4, 0
+s: hex.vec 4, 0
+old_t: hex.vec 4, 0
+t: hex.vec 4, 0
+q: hex.vec 4, 0
+rem: hex.vec 4, 0
+tmp: hex.vec 4, 0
+tmp2: hex.vec 4, 0

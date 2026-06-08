@@ -1,0 +1,74 @@
+// Stack Vm Pop Print (#1271)
+
+// Reads a `\n`-terminated program: `PUSH <d>` and `POP` (pop top and print as decimal + `\n` for each POP). ≤ 10 tokens total.
+
+main
+
+def main @ loop, chkP, isP, doPUSH, doPOP, done < c, c2, t1, dchar, dval, a, sp, stack, asc0, pchar, uchar, nlb, stackptr {
+    stl.startup_and_init_all
+    hex.set w/4, stackptr, stack
+    hex.zero 4, sp
+  loop:
+    hex.input c
+    hex.if0 2, c, done
+    hex.cmp 2, c, nlb, chkP, done, chkP
+  chkP:
+    hex.cmp 2, c, pchar, loop, isP, loop
+  isP:
+    hex.input c2
+    hex.cmp 2, c2, uchar, doPOP, doPUSH, doPOP
+  doPUSH:
+    hex.input t1
+    hex.input t1
+    hex.input t1
+    hex.input dchar
+    hex.zero 4, dval
+    hex.mov 2, dval, dchar
+    hex.sub 4, dval, asc0
+    push_val dval, sp, stackptr
+    ;loop
+  doPOP:
+    hex.input t1
+    pop_val a, sp, stackptr
+    hex.print_dec_uint 4, a
+    stl.output '\n'
+    ;loop
+  done:
+    stl.loop
+}
+
+// stack[sp++] = val.
+def push_val val, sp, sptr < nthidx, nthcell {
+    hex.mov w/4, nthidx, sp
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, sptr, nthidx
+    hex.write_hex 4, nthcell, val
+    hex.inc 4, sp
+}
+
+// out = stack[--sp].
+def pop_val out, sp, sptr < nthidx, nthcell {
+    hex.dec 4, sp
+    hex.mov w/4, nthidx, sp
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, sptr, nthidx
+    hex.read_hex 4, out, nthcell
+}
+
+c: hex.vec 2, 0
+c2: hex.vec 2, 0
+t1: hex.vec 2, 0
+dchar: hex.vec 2, 0
+dval: hex.vec 4, 0
+a: hex.vec 4, 0
+sp: hex.vec w/4, 0
+stack: hex.vec 4*12
+stackptr: hex.vec w/4
+asc0: hex.vec 4, '0'
+pchar: hex.vec 2, 'P'
+uchar: hex.vec 2, 'U'
+nlb: hex.vec 2, '\n'
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

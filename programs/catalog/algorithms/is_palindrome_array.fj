@@ -1,0 +1,77 @@
+// Is Palindrome Array (#1184)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals. Prints `1\n` if the sequence reads the same forward and backward, else `0\n`.
+
+main
+
+def main @ err < count, flag, arr, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    hex.input_dec_uint 4, count, err
+    store_n count, err
+    check_pal count, flag
+    hex.print_dec_uint 4, flag
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read `count` decimals into arr through a write pointer.
+def store_n count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Two-pointer compare from both ends; flag := 1 if symmetric, else 0.
+def check_pal count, flag @ loop, body, bad, cont, done < lo, hi, vlo, vhi, arrptr, nthidx, nthcell {
+    hex.zero 4, flag
+    hex.inc 4, flag
+    hex.zero 4, lo
+    hex.mov 4, hi, count
+    hex.dec 4, hi
+  loop:
+    hex.cmp 4, lo, hi, body, done, done
+  body:
+    hex.mov w/4, nthidx, lo
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vlo, nthcell
+    hex.mov w/4, nthidx, hi
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vhi, nthcell
+    hex.cmp 4, vlo, vhi, bad, cont, bad
+  bad:
+    hex.zero 4, flag
+    ;done
+  cont:
+    hex.inc 4, lo
+    hex.dec 4, hi
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+flag: hex.vec 4, 0
+arr: hex.vec 4*9
+arrptr: hex.vec w/4
+wptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+lo: hex.vec w/4, 0
+hi: hex.vec w/4, 0
+vlo: hex.vec 4, 0
+vhi: hex.vec 4, 0
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

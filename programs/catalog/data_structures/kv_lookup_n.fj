@@ -1,0 +1,78 @@
+// Kv Lookup N (#1163)
+
+// Reads decimal `N` `1`-`9` + `\n`, then N key-value pairs (same format as `kv_lookup_5`). Then reads a query key. Prints the value, or `not found\n`.
+
+main
+
+def main @ err, notf, hit < count, query, found, fval {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    store_pairs count, err
+    hex.input_dec_uint 4, query, err
+    hex.zero 4, found
+    scan_pairs count, query, found, fval
+    hex.if0 4, found, notf
+    hex.print_dec_uint 4, fval
+    stl.output '\n'
+    ;hit
+  notf:
+    stl.output "not found\n"
+  hit:
+    stl.loop
+  err:
+    stl.loop
+}
+
+// Read `count` (key, value) pairs into the keys/vals arrays.
+def store_pairs count, err @ loop, body, done < kptr, vptr, keys, vals, idx, k, v {
+    hex.set w/4, kptr, keys
+    hex.set w/4, vptr, vals
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, k, err
+    hex.input_dec_uint 4, v, err
+    hex.write_hex 4, kptr, k
+    hex.write_hex 4, vptr, v
+    hex.ptr_add kptr, 4
+    hex.ptr_add vptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Forward-scan the first `count` pairs; later matches overwrite earlier (latest write wins).
+def scan_pairs count, query, found, fval @ loop, body, eq, next, done < kptr, vptr, keys, vals, idx, k, v {
+    hex.set w/4, kptr, keys
+    hex.set w/4, vptr, vals
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.read_hex 4, k, kptr
+    hex.read_hex 4, v, vptr
+    hex.ptr_add kptr, 4
+    hex.ptr_add vptr, 4
+    hex.cmp 4, k, query, next, eq, next
+  eq:
+    hex.mov 4, fval, v
+    hex.zero 4, found
+    hex.inc 4, found
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+keys: hex.vec 4*9
+vals: hex.vec 4*9
+kptr: hex.vec w/4
+vptr: hex.vec w/4
+idx: hex.vec 4, 0
+k: hex.vec 4, 0
+v: hex.vec 4, 0
+query: hex.vec 4, 0
+found: hex.vec 4, 0
+fval: hex.vec 4, 0

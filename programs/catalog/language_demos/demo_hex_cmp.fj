@@ -1,0 +1,29 @@
+// Demo Hex Cmp (#1245)
+
+// Reads two hex chars (each own line). Uses `hex.cmp`. Prints `<`, `=`, or `>` + `\n`.
+
+main
+
+def main @ err, lt, eq, gt, done < a, b, nl {
+    stl.startup_and_init_all
+    hex.input_as_hex a, err
+    hex.input nl
+    hex.input_as_hex b, err
+    hex.cmp 1, a, b, lt, eq, gt
+  lt:
+    stl.output '<'
+    ;done
+  eq:
+    stl.output '='
+    ;done
+  gt:
+    stl.output '>'
+  done:
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+a: hex.vec 1, 0
+b: hex.vec 1, 0
+nl: hex.vec 2, 0

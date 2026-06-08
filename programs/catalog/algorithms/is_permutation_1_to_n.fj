@@ -1,0 +1,66 @@
+// Is Permutation 1 To N (#1179)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals. Prints `1\n` if the sequence is a permutation of `{1, 2, ..., N}`, else `0\n`.
+
+main
+
+def main @ err < count, flag, seen {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    check_perm count, flag, seen, err
+    hex.print_dec_uint 4, flag
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// flag := 1 if every value is in [1,N] and distinct, else 0.
+def check_perm count, flag, seen, err @ loop, body, chkseen, mark, bad, next, done < val, idx, sptr, sval {
+    hex.zero 4, flag
+    hex.inc 4, flag
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.if0 4, val, bad
+    hex.cmp 4, val, count, chkseen, chkseen, bad
+  chkseen:
+    hex.set w/4, sptr, seen
+    walk_by sptr, val
+    hex.read_byte sval, sptr
+    hex.if0 2, sval, mark
+    ;bad
+  mark:
+    hex.zero 2, sval
+    hex.inc 2, sval
+    hex.write_byte sptr, sval
+    ;next
+  bad:
+    hex.zero 4, flag
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Advance ptr by `amount` cells (amount is a hex.vec 4 value).
+def walk_by ptr, amount @ loop, body, done < wcnt {
+    hex.zero 4, wcnt
+  loop:
+    hex.cmp 4, wcnt, amount, body, done, done
+  body:
+    hex.ptr_inc ptr
+    hex.inc 4, wcnt
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+flag: hex.vec 4, 0
+seen: hex.vec 16
+val: hex.vec 4, 0
+idx: hex.vec 4, 0
+sptr: hex.vec w/4
+sval: hex.vec 2, 0
+wcnt: hex.vec 4, 0

@@ -1,0 +1,44 @@
+// Queue Print Order (#1156)
+
+// Reads digit N `1`-`9` + `\n`, then exactly N bytes (no separator). Enqueues each byte then dequeues all, outputting them in original input order (FIFO demo).
+
+main
+
+def main @ err < count {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    run_queue count
+  err:
+    stl.loop
+}
+
+// Read N bytes into buf via a tail pointer, then print them all from the head (FIFO).
+def run_queue count @ rloop, rbody, rdone, ploop, pbody, pdone < wptr, rptr, buf, idx, b {
+    hex.set w/4, wptr, buf
+    hex.zero 4, idx
+  rloop:
+    hex.cmp 4, idx, count, rbody, rdone, rdone
+  rbody:
+    hex.input b
+    hex.write_byte_and_inc wptr, b
+    hex.inc 4, idx
+    ;rloop
+  rdone:
+    hex.set w/4, rptr, buf
+    hex.zero 4, idx
+  ploop:
+    hex.cmp 4, idx, count, pbody, pdone, pdone
+  pbody:
+    hex.read_byte_and_inc b, rptr
+    hex.print b
+    hex.inc 4, idx
+    ;ploop
+  pdone:
+}
+
+count: hex.vec 4, 0
+buf: hex.vec 16
+wptr: hex.vec w/4
+rptr: hex.vec w/4
+idx: hex.vec 4, 0
+b: hex.vec 2, 0

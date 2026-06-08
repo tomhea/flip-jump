@@ -1,0 +1,69 @@
+// Linear Search Last (#1169)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals, then target. Prints the 0-based index of the LAST occurrence + `\n`, or `not found\n` if absent.
+
+main
+
+def main @ err, hit < count, target {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    store_n count, err
+    hex.input_dec_uint 4, target, err
+    search_last count, target, hit
+    stl.output "not found\n"
+  hit:
+    stl.loop
+  err:
+    stl.loop
+}
+
+// Read `count` decimals into arr through a write pointer.
+def store_n count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Scan for target; if found print the last matching index and jump to hit, else return.
+def search_last count, target, hit @ loop, body, eq, next, done, ret < rptr, arr, idx, val, lastidx, found {
+    hex.zero 4, found
+    hex.set w/4, rptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.read_hex 4, val, rptr
+    hex.ptr_add rptr, 4
+    hex.cmp 4, val, target, next, eq, next
+  eq:
+    hex.mov 4, lastidx, idx
+    hex.zero 4, found
+    hex.inc 4, found
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+    hex.if0 4, found, ret
+    hex.print_dec_uint 4, lastidx
+    stl.output '\n'
+    ;hit
+  ret:
+}
+
+count: hex.vec 4, 0
+target: hex.vec 4, 0
+arr: hex.vec 4*9
+wptr: hex.vec w/4
+rptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+lastidx: hex.vec 4, 0
+found: hex.vec 4, 0

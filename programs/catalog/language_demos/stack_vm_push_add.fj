@@ -1,0 +1,84 @@
+// Stack Vm Push Add (#1270)
+
+// Reads a `\n`-terminated program string of tokens separated by spaces: `PUSH <d>` (push single digit `0`-`9`) and `ADD` (pop two values, push their sum). After interpreting all tokens, prints the final top of stack as decimal + `\n`. ≤ 10 tokens total.
+
+main
+
+def main < sp, stack, stackptr {
+    stl.startup_and_init_all
+    hex.set w/4, stackptr, stack
+    hex.zero 4, sp
+    run sp, stackptr
+    stl.loop
+}
+
+// Interpret the whole token stream; leaves the final result printed.
+def run sp, sptr @ loop, chkP, doPUSH, chkA, doADD, done < c, t1, dchar, dval, a, b, asc0, pchar, achar, nlb {
+  loop:
+    hex.input c
+    hex.if0 2, c, done
+    hex.cmp 2, c, nlb, chkP, done, chkP
+  chkP:
+    hex.cmp 2, c, pchar, chkA, doPUSH, chkA
+  doPUSH:
+    hex.input t1
+    hex.input t1
+    hex.input t1
+    hex.input t1
+    hex.input dchar
+    hex.zero 4, dval
+    hex.mov 2, dval, dchar
+    hex.sub 4, dval, asc0
+    push_val dval, sp, sptr
+    ;loop
+  chkA:
+    hex.cmp 2, c, achar, loop, doADD, loop
+  doADD:
+    hex.input t1
+    hex.input t1
+    pop_val a, sp, sptr
+    pop_val b, sp, sptr
+    hex.add 4, a, b
+    push_val a, sp, sptr
+    ;loop
+  done:
+    pop_val a, sp, sptr
+    hex.print_dec_uint 4, a
+    stl.output '\n'
+}
+
+// stack[sp++] = val.
+def push_val val, sp, sptr < nthidx, nthcell {
+    hex.mov w/4, nthidx, sp
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, sptr, nthidx
+    hex.write_hex 4, nthcell, val
+    hex.inc 4, sp
+}
+
+// out = stack[--sp].
+def pop_val out, sp, sptr < nthidx, nthcell {
+    hex.dec 4, sp
+    hex.mov w/4, nthidx, sp
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, sptr, nthidx
+    hex.read_hex 4, out, nthcell
+}
+
+c: hex.vec 2, 0
+t1: hex.vec 2, 0
+dchar: hex.vec 2, 0
+dval: hex.vec 4, 0
+a: hex.vec 4, 0
+b: hex.vec 4, 0
+sp: hex.vec w/4, 0
+stack: hex.vec 4*12
+stackptr: hex.vec w/4
+asc0: hex.vec 4, '0'
+pchar: hex.vec 2, 'P'
+achar: hex.vec 2, 'A'
+nlb: hex.vec 2, '\n'
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

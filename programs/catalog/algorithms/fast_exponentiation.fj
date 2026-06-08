@@ -1,0 +1,46 @@
+// Fast Exponentiation (#1201)
+
+// Reads `base` `2`-`5`, `exp` `0`-`10`, `mod` `1`-`100` (each own line). Prints `(base^exp) mod mod` as decimal + `\n`. Implementation: exponentiation-by-squaring.
+
+main
+
+def main @ err, loop, done, skip < base, exp, mod, result, b, e, q, rem, prod, one, two {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, base, err
+    hex.input_dec_uint 4, exp, err
+    hex.input_dec_uint 4, mod, err
+    hex.set 4, prod, 1
+    hex.div 4, 4, q, result, prod, mod, err
+    hex.div 4, 4, q, b, base, mod, err
+    hex.mov 4, e, exp
+  loop:
+    hex.if0 4, e, done
+    hex.mov 4, prod, e
+    hex.and 4, prod, one
+    hex.if0 4, prod, skip
+    hex.mul 4, prod, result, b
+    hex.div 4, 4, q, result, prod, mod, err
+  skip:
+    hex.mul 4, prod, b, b
+    hex.div 4, 4, q, b, prod, mod, err
+    hex.div 4, 4, q, rem, e, two, err
+    hex.mov 4, e, q
+    ;loop
+  done:
+    hex.print_dec_uint 4, result
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+base: hex.vec 4, 0
+exp: hex.vec 4, 0
+mod: hex.vec 4, 0
+result: hex.vec 4, 0
+b: hex.vec 4, 0
+e: hex.vec 4, 0
+q: hex.vec 4, 0
+rem: hex.vec 4, 0
+prod: hex.vec 4, 0
+one: hex.vec 4, 1
+two: hex.vec 4, 2

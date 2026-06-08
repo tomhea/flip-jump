@@ -1,0 +1,34 @@
+// Bf Inc Dec (#1267)
+
+// Reads a `\n`-terminated string ≤ 30 chars containing `+` and `-` (other bytes ignored). Interprets on a single cell (initially 0, mod 256). Prints final cell value as decimal + `\n`.
+
+main
+
+def main @ loop, chkplus, doinc, chkminus, dodec, done < cell, b, plusb, minusb, nlb {
+    stl.startup_and_init_all
+    hex.zero 2, cell
+  loop:
+    hex.input b
+    hex.if0 2, b, done
+    hex.cmp 2, b, nlb, chkplus, done, chkplus
+  chkplus:
+    hex.cmp 2, b, plusb, chkminus, doinc, chkminus
+  doinc:
+    hex.inc 2, cell
+    ;loop
+  chkminus:
+    hex.cmp 2, b, minusb, loop, dodec, loop
+  dodec:
+    hex.dec 2, cell
+    ;loop
+  done:
+    hex.print_dec_uint 2, cell
+    stl.output '\n'
+    stl.loop
+}
+
+cell: hex.vec 2, 0
+b: hex.vec 2, 0
+plusb: hex.vec 2, '+'
+minusb: hex.vec 2, '-'
+nlb: hex.vec 2, '\n'

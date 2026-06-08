@@ -1,0 +1,21 @@
+// Demo Hex Sub (#1238)
+
+// Same I/O as `demo_hex_add` but uses `hex.sub`.
+
+main
+
+def main @ err < a, b, nl {
+    stl.startup_and_init_all
+    hex.input_as_hex a, err
+    hex.input nl
+    hex.input_as_hex b, err
+    hex.sub 1, a, b
+    hex.print_as_digit a, 0
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+a: hex.vec 1, 0
+b: hex.vec 1, 0
+nl: hex.vec 2, 0

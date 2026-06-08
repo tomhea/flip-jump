@@ -1,0 +1,56 @@
+// Shell Sort 5 (#1233)
+
+// Reads exactly 5 decimals and prints them sorted ascending. Implementation: shell sort with gap sequence `2, 1`.
+
+main
+
+def main @ err < arr {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    gap2
+    gap1
+    rep(5, i) pc arr + i*dw*4
+  err:
+    stl.loop
+}
+
+// Gap-2 insertion pass.
+def gap2 < arr {
+    cas arr + 0*dw*4, arr + 2*dw*4
+    cas arr + 1*dw*4, arr + 3*dw*4
+    cas arr + 2*dw*4, arr + 4*dw*4
+    cas arr + 0*dw*4, arr + 2*dw*4
+}
+
+// Gap-1 insertion pass (ordinary insertion sort).
+def gap1 < arr {
+    cas arr + 0*dw*4, arr + 1*dw*4
+    cas arr + 1*dw*4, arr + 2*dw*4
+    cas arr + 0*dw*4, arr + 1*dw*4
+    cas arr + 2*dw*4, arr + 3*dw*4
+    cas arr + 1*dw*4, arr + 2*dw*4
+    cas arr + 0*dw*4, arr + 1*dw*4
+    cas arr + 3*dw*4, arr + 4*dw*4
+    cas arr + 2*dw*4, arr + 3*dw*4
+    cas arr + 1*dw*4, arr + 2*dw*4
+    cas arr + 0*dw*4, arr + 1*dw*4
+}
+
+// Compare two 4-hex cells; swap so the smaller is in a.
+def cas a, b @ keep, doswap < tmp {
+    hex.cmp 4, a, b, keep, keep, doswap
+  doswap:
+    hex.mov 4, tmp, a
+    hex.mov 4, a, b
+    hex.mov 4, b, tmp
+  keep:
+}
+
+// Print one 4-hex cell as decimal + newline.
+def pc c {
+    hex.print_dec_uint 4, c
+    stl.output '\n'
+}
+
+arr: hex.vec 4*5
+tmp: hex.vec 4, 0

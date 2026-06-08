@@ -1,0 +1,28 @@
+// Array Avg 5 (#1116)
+
+// Reads exactly 5 decimals and prints `floor(sum / 5)` + `\n`.
+
+main
+
+def main @ err < sum, val, q, r, five {
+    stl.startup_and_init_all
+    hex.zero 4, sum
+    rep(5, i) read_add sum, val, err
+    hex.div 4, 4, q, r, sum, five, err
+    hex.print_dec_uint 4, q
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read one decimal (own line) and add it into acc.
+def read_add acc, val, err {
+    hex.input_dec_uint 4, val, err
+    hex.add 4, acc, val
+}
+
+sum: hex.vec 4, 0
+val: hex.vec 4, 0
+q: hex.vec 4, 0
+r: hex.vec 4, 0
+five: hex.vec 4, 5

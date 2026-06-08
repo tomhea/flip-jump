@@ -1,0 +1,41 @@
+// Xorshift Steps N 8bit (#1217)
+
+// Reads one non-zero byte (state), then decimal N `1`-`9` + `\n`. Applies N xorshift8 steps. Prints each successive state as decimal on its own line.
+
+main
+
+def main @ err, loop, body, done < state, count, idx {
+    stl.startup_and_init_all
+    hex.input state
+    hex.input_dec_uint 4, count, err
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    xorshift state
+    hex.print_dec_uint 2, state
+    stl.output '\n'
+    hex.inc 4, idx
+    ;loop
+  done:
+  err:
+    stl.loop
+}
+
+// xorshift8: s ^= s<<3; s ^= s>>4; s ^= s<<2 (mod 256).
+def xorshift s < tmp {
+    hex.mov 2, tmp, s
+    rep(3, i) hex.shl_bit 2, tmp
+    hex.xor 2, s, tmp
+    hex.mov 2, tmp, s
+    rep(4, i) hex.shr_bit 2, tmp
+    hex.xor 2, s, tmp
+    hex.mov 2, tmp, s
+    rep(2, i) hex.shl_bit 2, tmp
+    hex.xor 2, s, tmp
+}
+
+state: hex.vec 2, 0
+count: hex.vec 4, 0
+idx: hex.vec 4, 0
+tmp: hex.vec 2, 0

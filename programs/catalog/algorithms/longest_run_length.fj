@@ -1,0 +1,53 @@
+// Longest Run Length (#1176)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals. Prints the length of the longest run of equal consecutive elements as decimal + `\n`.
+
+main
+
+def main @ err < count, maxlen {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    longest count, maxlen, err
+    hex.print_dec_uint 4, maxlen
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Track the longest run of equal consecutive values into maxlen.
+def longest count, maxlen, err @ loop, body, same, reset, after, done < val, prev, idx, curlen, started, t {
+    hex.zero 4, maxlen
+    hex.zero 4, curlen
+    hex.zero 4, started
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.if0 4, started, reset
+    hex.cmp 4, val, prev, reset, same, reset
+  same:
+    hex.inc 4, curlen
+    ;after
+  reset:
+    hex.zero 4, curlen
+    hex.inc 4, curlen
+  after:
+    hex.max 4, t, maxlen, curlen
+    hex.mov 4, maxlen, t
+    hex.mov 4, prev, val
+    hex.zero 4, started
+    hex.inc 4, started
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+maxlen: hex.vec 4, 0
+val: hex.vec 4, 0
+prev: hex.vec 4, 0
+idx: hex.vec 4, 0
+curlen: hex.vec 4, 0
+started: hex.vec 4, 0
+t: hex.vec 4, 0

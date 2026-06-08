@@ -1,0 +1,88 @@
+// Min Product Pair (#1191)
+
+// Reads digit N `2`-`9` + `\n`, then N signed decimals. Prints the minimum product of any two distinct-indexed elements + `\n`.
+
+main
+
+def main @ err < count, best, arr, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    hex.input_dec_uint 4, count, err
+    store_signed count, err
+    minprod count, best
+    hex.print_dec_int 4, best
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read `count` signed decimals into arr through a write pointer.
+def store_signed count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_int 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// best := min over i<j of a_i * a_j (signed).
+def minprod count, best @ iloop, ibody, jloop, jbody, inext, done < i, j, vi, vj, p, posbig, arrptr, nthidx, nthcell {
+    hex.mov 4, best, posbig
+    hex.zero 4, i
+  iloop:
+    hex.cmp 4, i, count, ibody, done, done
+  ibody:
+    hex.mov w/4, nthidx, i
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vi, nthcell
+    hex.mov 4, j, i
+    hex.inc 4, j
+  jloop:
+    hex.cmp 4, j, count, jbody, inext, inext
+  jbody:
+    hex.mov w/4, nthidx, j
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vj, nthcell
+    hex.mul 4, p, vi, vj
+    smin best, p
+    hex.inc 4, j
+    ;jloop
+  inext:
+    hex.inc 4, i
+    ;iloop
+  done:
+}
+
+// best := min(best, val), signed.
+def smin best, val @ keep, set {
+    hex.scmp 4, val, best, set, keep, keep
+  set:
+    hex.mov 4, best, val
+  keep:
+}
+
+count: hex.vec 4, 0
+best: hex.vec 4, 0
+arr: hex.vec 4*9
+arrptr: hex.vec w/4
+wptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+i: hex.vec w/4, 0
+j: hex.vec w/4, 0
+vi: hex.vec 4, 0
+vj: hex.vec 4, 0
+p: hex.vec 4, 0
+posbig: hex.vec 4, 0x7FFF
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

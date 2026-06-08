@@ -1,0 +1,59 @@
+// Accumulator 5 Ops (#1272)
+
+// Reads decimal `acc_initial` `0`-`9` + `\n`, then 5 `<op><digit>` tokens (each a 2-char ASCII pair like `+3`) separated by spaces on one line + `\n`. Applies the 5 ops sequentially to acc. Prints the final acc as decimal + `\n`.
+
+main
+
+def main @ err < acc {
+    stl.startup_and_init_all
+    hex.input_dec_int 4, acc, err
+    rep(5, i) apply_op acc, err
+    hex.print_dec_int 4, acc
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read one "<op><digit>" token (plus its trailing separator) and apply it to acc.
+def apply_op acc, err @ doadd, c_sub, dosub, c_mul, domul, c_div, dodiv, fin < opc, digc, dval, sep, plusb, minusb, mulb, divb, q, r, asc0 {
+    hex.input opc
+    hex.input digc
+    hex.zero 4, dval
+    hex.mov 2, dval, digc
+    hex.sub 4, dval, asc0
+    hex.input sep
+    hex.cmp 2, opc, plusb, c_sub, doadd, c_sub
+  doadd:
+    hex.add 4, acc, dval
+    ;fin
+  c_sub:
+    hex.cmp 2, opc, minusb, c_mul, dosub, c_mul
+  dosub:
+    hex.sub 4, acc, dval
+    ;fin
+  c_mul:
+    hex.cmp 2, opc, mulb, c_div, domul, c_div
+  domul:
+    hex.mul 4, q, acc, dval
+    hex.mov 4, acc, q
+    ;fin
+  c_div:
+    hex.cmp 2, opc, divb, fin, dodiv, fin
+  dodiv:
+    hex.div 4, 4, q, r, acc, dval, err
+    hex.mov 4, acc, q
+  fin:
+}
+
+acc: hex.vec 4, 0
+opc: hex.vec 2, 0
+digc: hex.vec 2, 0
+dval: hex.vec 4, 0
+sep: hex.vec 2, 0
+plusb: hex.vec 2, '+'
+minusb: hex.vec 2, '-'
+mulb: hex.vec 2, '*'
+divb: hex.vec 2, '/'
+q: hex.vec 4, 0
+r: hex.vec 4, 0
+asc0: hex.vec 4, '0'

@@ -1,0 +1,24 @@
+// Array Sum 5 (#1110)
+
+// Reads exactly 5 decimal integers, each on its own line, and prints their sum + `\n`.
+
+main
+
+def main @ err < sum, val {
+    stl.startup_and_init_all
+    hex.zero 4, sum
+    rep(5, i) read_add sum, val, err
+    hex.print_dec_uint 4, sum
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read one decimal (own line) and add it into acc.
+def read_add acc, val, err {
+    hex.input_dec_uint 4, val, err
+    hex.add 4, acc, val
+}
+
+sum: hex.vec 4, 0
+val: hex.vec 4, 0

@@ -1,0 +1,34 @@
+// Weighted Mean 3 (#1213)
+
+// Reads 3 decimals (values `0`-`99` on own lines) then 3 decimals (weights `1`-`9` on own lines). Prints `floor(sum(v_i * w_i) / sum(w_i))` as decimal + `\n`.
+
+main
+
+def main @ err < vals, wts, num, den, q, r {
+    stl.startup_and_init_all
+    rep(3, i) hex.input_dec_uint 4, vals + i*dw*4, err
+    rep(3, i) hex.input_dec_uint 4, wts + i*dw*4, err
+    hex.zero 4, num
+    hex.zero 4, den
+    rep(3, i) accum vals + i*dw*4, wts + i*dw*4, num, den
+    hex.div 4, 4, q, r, num, den, err
+    hex.print_dec_uint 4, q
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// num += v*w ; den += w.
+def accum vcell, wcell, num, den < p {
+    hex.mul 4, p, vcell, wcell
+    hex.add 4, num, p
+    hex.add 4, den, wcell
+}
+
+vals: hex.vec 4*3
+wts: hex.vec 4*3
+num: hex.vec 4, 0
+den: hex.vec 4, 0
+q: hex.vec 4, 0
+r: hex.vec 4, 0
+p: hex.vec 4, 0

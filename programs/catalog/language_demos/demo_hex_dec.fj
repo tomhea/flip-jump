@@ -1,0 +1,17 @@
+// Demo Hex Dec (#1244)
+
+// Same as `demo_hex_inc` but uses `hex.dec` (`0` wraps to `f`).
+
+main
+
+def main @ err < a {
+    stl.startup_and_init_all
+    hex.input_as_hex a, err
+    hex.dec 1, a
+    hex.print_as_digit a, 0
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+a: hex.vec 1, 0

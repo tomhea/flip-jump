@@ -1,0 +1,41 @@
+// Array Dedupe Sorted (#1150)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals already sorted ascending. Prints the unique values in order, one per line.
+
+main
+
+def main @ err < count {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    dedupe count, err
+  err:
+    stl.loop
+}
+
+// Read `count` sorted decimals; print each value the first time it appears.
+def dedupe count, err @ loop, body, doemit, skip, done < val, idx, prev, started {
+    hex.zero 4, idx
+    hex.zero 4, started
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.if0 4, started, doemit
+    hex.cmp 4, val, prev, doemit, skip, doemit
+  doemit:
+    hex.print_dec_uint 4, val
+    stl.output '\n'
+    hex.mov 4, prev, val
+    hex.zero 4, started
+    hex.inc 4, started
+  skip:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0
+prev: hex.vec 4, 0
+started: hex.vec 4, 0

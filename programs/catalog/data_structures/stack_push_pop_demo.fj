@@ -1,0 +1,46 @@
+// Stack Push Pop Demo (#1147)
+
+// Reads digit N `1`-`9` + `\n`. Pushes integers `1..N` onto a stack, then pops all and prints each on its own line. Output is `N\n(N-1)\n...\n1\n` (reverse order).
+
+main
+
+def main @ err < count {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    run_stack count
+  err:
+    stl.loop
+}
+
+// Push 1..count via a stack pointer, then pop all printing each (LIFO).
+def run_stack count @ ploop, pbody, pdone, oloop, obody, odone < sp, arr, idx, val {
+    hex.set w/4, sp, arr
+    hex.zero 4, idx
+  ploop:
+    hex.cmp 4, idx, count, pbody, pdone, pdone
+  pbody:
+    hex.mov 4, val, idx
+    hex.inc 4, val
+    hex.write_hex 4, sp, val
+    hex.ptr_add sp, 4
+    hex.inc 4, idx
+    ;ploop
+  pdone:
+    hex.zero 4, idx
+  oloop:
+    hex.cmp 4, idx, count, obody, odone, odone
+  obody:
+    hex.ptr_sub sp, 4
+    hex.read_hex 4, val, sp
+    hex.print_dec_uint 4, val
+    stl.output '\n'
+    hex.inc 4, idx
+    ;oloop
+  odone:
+}
+
+count: hex.vec 4, 0
+arr: hex.vec 4*9
+sp: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0

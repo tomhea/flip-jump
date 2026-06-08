@@ -1,0 +1,70 @@
+// Fisher Yates Shuffle 5 (#1218)
+
+// Reads 5 decimals `0`-`9` (each on own line), then 5 raw bytes (the PRNG bytes). Applies Fisher-Yates shuffle: for `i` from 4 down to 1, swap `arr[i]` with `arr[byte[5-i] mod (i+1)]`. Prints the shuffled array as 5 decimals space-separated + `\n`.
+
+main
+
+def main @ err < arr, prng {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    rep(5, k) read_byte_cell prng + k*dw*4
+    fy_step 4, 5, 1, err
+    fy_step 3, 4, 2, err
+    fy_step 2, 3, 3, err
+    fy_step 1, 2, 4, err
+    print5 arr
+  err:
+    stl.loop
+}
+
+// Read one raw byte into a 4-hex cell.
+def read_byte_cell cell < bt {
+    hex.input bt
+    hex.zero 4, cell
+    hex.mov 2, cell, bt
+}
+
+// Swap arr[i] with arr[ prng[fivemi] mod ip1 ]  (i, ip1, fivemi are constants).
+def fy_step i, ip1, fivemi, err @ loop, wbody, wdone < jbyte, j, q, divisor, vi, vj, jptr, jcnt, arr, prng {
+    hex.mov 4, jbyte, prng + fivemi*dw*4
+    hex.set 4, divisor, ip1
+    hex.div 4, 4, q, j, jbyte, divisor, err
+    hex.set w/4, jptr, arr
+    hex.zero 4, jcnt
+  loop:
+    hex.cmp 4, jcnt, j, wbody, wdone, wdone
+  wbody:
+    hex.ptr_add jptr, 4
+    hex.inc 4, jcnt
+    ;loop
+  wdone:
+    hex.read_hex 4, vj, jptr
+    hex.mov 4, vi, arr + i*dw*4
+    hex.write_hex 4, jptr, vi
+    hex.mov 4, arr + i*dw*4, vj
+}
+
+// Print the 5 cells space-separated, then a newline.
+def print5 arr {
+    hex.print_dec_uint 4, arr + 0*dw*4
+    rep(4, i) sp_print arr + (i+1)*dw*4
+    stl.output '\n'
+}
+
+// Print a space then the cell's decimal.
+def sp_print cell {
+    stl.output ' '
+    hex.print_dec_uint 4, cell
+}
+
+arr: hex.vec 4*5
+prng: hex.vec 4*5
+bt: hex.vec 2, 0
+jbyte: hex.vec 4, 0
+j: hex.vec 4, 0
+q: hex.vec 4, 0
+divisor: hex.vec 4, 0
+vi: hex.vec 4, 0
+vj: hex.vec 4, 0
+jptr: hex.vec w/4
+jcnt: hex.vec 4, 0

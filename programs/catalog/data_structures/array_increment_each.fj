@@ -1,0 +1,32 @@
+// Array Increment Each (#1120)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals. Prints `a_i + 1` for each input on its own line, in the same order.
+
+main
+
+def main @ err < count {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    inc_each count, err
+  err:
+    stl.loop
+}
+
+// Read `count` decimals; print each+1 on its own line.
+def inc_each count, err @ loop, body, done < val, idx {
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.inc 4, val
+    hex.print_dec_uint 4, val
+    stl.output '\n'
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0

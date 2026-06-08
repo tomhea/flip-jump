@@ -1,0 +1,33 @@
+// Array Median 5 (#1145)
+
+// Reads exactly 5 decimals (any order) and prints the median (middle value when sorted) as decimal + `\n`.
+
+main
+
+def main @ err < arr {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    rep(4, p) bubble_pass p
+    hex.print_dec_uint 4, arr + 2*dw*4
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Pass p of bubble sort: compare-swap adjacent cells over the first 4-p positions.
+def bubble_pass p < arr {
+    rep(4-p, i) cas arr + i*dw*4, arr + (i+1)*dw*4
+}
+
+// Compare two 4-hex cells; swap so the smaller is in a.
+def cas a, b @ keep, doswap < tmp {
+    hex.cmp 4, a, b, keep, keep, doswap
+  doswap:
+    hex.mov 4, tmp, a
+    hex.mov 4, a, b
+    hex.mov 4, b, tmp
+  keep:
+}
+
+arr: hex.vec 4*5
+tmp: hex.vec 4, 0

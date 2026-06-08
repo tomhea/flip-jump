@@ -2,7 +2,7 @@ ns hex {
     ns pointers {
         // NOTE: must be placed just after the startup, so that the read_ptr_byte_table will be in address 256.
         //
-        // Space Complexity: w/2+261
+        // Space Complexity: 0.75w+261
         //   Initializes the global opcodes and pointer-copies required for the pointers macros.
         //   Initializes the read-byte-handling table and the result/return variables to the read-byte table.
         //
@@ -15,7 +15,7 @@ ns hex {
         // @output-param to_jump:  address of opcode that holds a jumping address in its second word. jumping into it will jump to the wanted address.
         // @output-param to_jump_var:  the hex-vector (pointer) that also holds the jumping address.
         def ptr_init @ read_ptr_byte_table > to_flip, to_jump, to_flip_var, to_jump_var, \
-                                             read_byte, ret_after_read_byte {
+                                             read_byte, ret_after_read_byte, nth_ptr {
             pad 256
           // Time Complexity: 4/8 (when jumping to hex.pointers.to_jump, until finished)
           //                      (4 is for reading from an hex memory, 8 is for byte memory).
@@ -39,6 +39,10 @@ ns hex {
           to_flip_var:
             hex.vec w/4, 0
           to_jump_var:
+            hex.vec w/4, 0
+
+          // Shared scratch pointer for the indexed read_nth_*/write_nth_* macros.
+          nth_ptr:
             hex.vec w/4, 0
         }
 

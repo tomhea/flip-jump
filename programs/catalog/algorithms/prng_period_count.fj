@@ -1,0 +1,34 @@
+// Prng Period Count (#1226)
+
+// Reads one byte (seed). Applies LCG steps with constants `5`, `3`, mod 256, counting steps until the state returns to the seed value. Prints the period as decimal + `\n`.
+
+main
+
+def main @ loop, done < seed, state, period {
+    stl.startup_and_init_all
+    hex.input seed
+    hex.mov 2, state, seed
+    hex.zero 4, period
+  loop:
+    lcg state
+    hex.inc 4, period
+    hex.cmp 2, state, seed, loop, done, loop
+  done:
+    hex.print_dec_uint 4, period
+    stl.output '\n'
+    stl.loop
+}
+
+// state = (state*5 + 3) mod 256.
+def lcg state < five, three, tmp {
+    hex.mul 2, tmp, state, five
+    hex.add 2, tmp, three
+    hex.mov 2, state, tmp
+}
+
+seed: hex.vec 2, 0
+state: hex.vec 2, 0
+period: hex.vec 4, 0
+five: hex.vec 2, 5
+three: hex.vec 2, 3
+tmp: hex.vec 2, 0

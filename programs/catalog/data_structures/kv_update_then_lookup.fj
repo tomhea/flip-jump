@@ -1,0 +1,89 @@
+// Kv Update Then Lookup (#1164)
+
+// Reads 5 key-value pairs (same format), then reads one update pair (new key + new value), then a query key. Applies the update (overwrites if key exists, else adds — but if adding would exceed capacity 6, drops the oldest entry). Prints lookup result or `not found\n`.
+
+main
+
+def main @ err, append, afterup, notf, hit < keys, vals, count, uk, uv, matched, query, found, fval {
+    stl.startup_and_init_all
+    rep(5, i) read_pair keys + i*dw*4, vals + i*dw*4, err
+    hex.set 4, count, 5
+    hex.input_dec_uint 4, uk, err
+    hex.input_dec_uint 4, uv, err
+    hex.zero 4, matched
+    rep(5, i) try_update keys + i*dw*4, vals + i*dw*4, uk, uv, matched
+    hex.if0 4, matched, append
+    ;afterup
+  append:
+    hex.mov 4, keys + 5*dw*4, uk
+    hex.mov 4, vals + 5*dw*4, uv
+    hex.inc 4, count
+  afterup:
+    hex.input_dec_uint 4, query, err
+    hex.zero 4, found
+    scan_pairs count, query, found, fval
+    hex.if0 4, found, notf
+    hex.print_dec_uint 4, fval
+    stl.output '\n'
+    ;hit
+  notf:
+    stl.output "not found\n"
+  hit:
+    stl.loop
+  err:
+    stl.loop
+}
+
+// Read a key then a value into two cells.
+def read_pair kcell, vcell, err {
+    hex.input_dec_uint 4, kcell, err
+    hex.input_dec_uint 4, vcell, err
+}
+
+// If *kcell == uk, overwrite *vcell with uv and mark matched.
+def try_update kcell, vcell, uk, uv, matched @ keep, eq {
+    hex.cmp 4, kcell, uk, keep, eq, keep
+  eq:
+    hex.mov 4, vcell, uv
+    hex.zero 4, matched
+    hex.inc 4, matched
+  keep:
+}
+
+// Forward-scan the first `count` pairs; later matches overwrite earlier (latest write wins).
+def scan_pairs count, query, found, fval @ loop, body, eq, next, done < kptr, vptr, keys, vals, idx, k, v {
+    hex.set w/4, kptr, keys
+    hex.set w/4, vptr, vals
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.read_hex 4, k, kptr
+    hex.read_hex 4, v, vptr
+    hex.ptr_add kptr, 4
+    hex.ptr_add vptr, 4
+    hex.cmp 4, k, query, next, eq, next
+  eq:
+    hex.mov 4, fval, v
+    hex.zero 4, found
+    hex.inc 4, found
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+keys: hex.vec 4*6
+vals: hex.vec 4*6
+count: hex.vec 4, 0
+uk: hex.vec 4, 0
+uv: hex.vec 4, 0
+matched: hex.vec 4, 0
+kptr: hex.vec w/4
+vptr: hex.vec w/4
+idx: hex.vec 4, 0
+k: hex.vec 4, 0
+v: hex.vec 4, 0
+query: hex.vec 4, 0
+found: hex.vec 4, 0
+fval: hex.vec 4, 0

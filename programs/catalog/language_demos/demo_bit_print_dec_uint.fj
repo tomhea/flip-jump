@@ -1,0 +1,14 @@
+// Demo Bit Print Dec Uint (#1258)
+
+// No input. Declares an internal 8-bit value `123`. Uses `bit.print_dec_uint` to print it as `123\n`.
+
+main
+
+def main < x {
+    stl.startup
+    bit.print_dec_uint 8, x
+    stl.output '\n'
+    stl.loop
+}
+
+x: bit.vec 8, 123

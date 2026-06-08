@@ -1,0 +1,48 @@
+// Count Local Maxima (#1185)
+
+// Reads digit N `3`-`9` + `\n`, then N decimals. Prints the count of strict local maxima (positions `i` with `0 < i < N-1` and `a[i-1] < a[i] > a[i+1]`) + `\n`.
+
+main
+
+def main @ err < count, cnt {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    scan count, cnt, err
+    hex.print_dec_uint 4, cnt
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Slide a 3-wide window (a,b,c); count positions where the middle b strictly exceeds both.
+def scan count, cnt, err @ loop, body, chk, bgt, hit, shift, done < idx, val, a, b, c, two {
+    hex.zero 4, cnt
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.mov 4, a, b
+    hex.mov 4, b, c
+    hex.mov 4, c, val
+    hex.cmp 4, idx, two, shift, chk, chk
+  chk:
+    hex.cmp 4, b, a, shift, shift, bgt
+  bgt:
+    hex.cmp 4, b, c, shift, shift, hit
+  hit:
+    hex.inc 4, cnt
+  shift:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+cnt: hex.vec 4, 0
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+a: hex.vec 4, 0
+b: hex.vec 4, 0
+c: hex.vec 4, 0
+two: hex.vec 4, 2

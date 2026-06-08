@@ -1,0 +1,83 @@
+// Group By First Letter (#1165)
+
+// Reads `N` `1`-`9` + `\n`, then N `\n`-terminated lowercase words. Groups by first letter and prints each `<letter> <count>\n` line, sorted by letter ascending.
+
+main
+
+def main @ err < count, counts {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    tally_words count, counts
+    print_groups counts
+  err:
+    stl.loop
+}
+
+// For each of `count` words, bump the count slot of its first letter; skip the rest of the word.
+def tally_words count, counts @ loop, body, done < idx, cptr, fc, cval, aconst {
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input fc
+    hex.sub 2, fc, aconst
+    hex.set w/4, cptr, counts
+    walk_by cptr, fc
+    hex.read_byte cval, cptr
+    hex.inc 2, cval
+    hex.write_byte cptr, cval
+    skip_rest
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Advance ptr by `amount` bytes (a hex.vec 2 value).
+def walk_by ptr, amount @ loop, body, done < wcnt {
+    hex.zero 2, wcnt
+  loop:
+    hex.cmp 2, wcnt, amount, body, done, done
+  body:
+    hex.ptr_inc ptr
+    hex.inc 2, wcnt
+    ;loop
+  done:
+}
+
+// Consume input up to and including the next '\n' (or EOF 0-byte).
+def skip_rest @ loop, done < sb, nlb {
+  loop:
+    hex.input sb
+    hex.if0 2, sb, done
+    hex.cmp 2, sb, nlb, loop, done, loop
+  done:
+}
+
+// Walk the 26 letter slots; print `<letter> <count>` for each nonzero count.
+def print_groups counts < cptr {
+    hex.set w/4, cptr, counts
+    rep(26, li) emit_letter cptr, ('a'+li)
+}
+
+// Read one count slot (advancing ptr); if nonzero, print its letter and count.
+def emit_letter cptr, ch @ skip < cval {
+    hex.read_byte cval, cptr
+    hex.ptr_inc cptr
+    hex.if0 2, cval, skip
+    stl.output ch
+    stl.output ' '
+    hex.print_dec_uint 2, cval
+    stl.output '\n'
+  skip:
+}
+
+count: hex.vec 4, 0
+counts: hex.vec 26
+idx: hex.vec 4, 0
+cptr: hex.vec w/4
+fc: hex.vec 2, 0
+cval: hex.vec 2, 0
+aconst: hex.vec 2, 'a'
+wcnt: hex.vec 2, 0
+sb: hex.vec 2, 0
+nlb: hex.vec 2, '\n'

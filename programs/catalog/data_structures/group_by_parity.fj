@@ -1,0 +1,49 @@
+// Group By Parity (#1133)
+
+// Reads `N` `1`-`9` + `\n`, then N decimals on own lines. Prints `even: <e>\nodd: <o>\n` with the counts.
+
+main
+
+def main @ err < count, ecount, ocount {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    tally_parity count, ecount, ocount, err
+    stl.output "even: "
+    hex.print_dec_uint 4, ecount
+    stl.output '\n'
+    stl.output "odd: "
+    hex.print_dec_uint 4, ocount
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read `count` decimals; tally even count into ecount, odd into ocount.
+def tally_parity count, ecount, ocount, err @ loop, body, iseven, next, done < val, idx, tmp, one {
+    hex.zero 4, ecount
+    hex.zero 4, ocount
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.mov 4, tmp, val
+    hex.and 4, tmp, one
+    hex.if0 4, tmp, iseven
+    hex.inc 4, ocount
+    ;next
+  iseven:
+    hex.inc 4, ecount
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+ecount: hex.vec 4, 0
+ocount: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0
+tmp: hex.vec 4, 0
+one: hex.vec 4, 1

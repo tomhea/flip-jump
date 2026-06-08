@@ -1,0 +1,44 @@
+// Array Range (#1123)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals. Prints `max - min` + `\n`.
+
+main
+
+def main @ err < count, mx, mn, diff {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    scan_range count, mx, mn, err
+    hex.mov 4, diff, mx
+    hex.sub 4, diff, mn
+    hex.print_dec_uint 4, diff
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read `count` decimals; leave the maximum in mx and minimum in mn.
+def scan_range count, mx, mn, err @ loop, body, done < val, idx, t {
+    hex.zero 4, mx
+    hex.zero 4, mn
+    hex.not 4, mn
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.max 4, t, mx, val
+    hex.mov 4, mx, t
+    hex.min 4, t, mn, val
+    hex.mov 4, mn, t
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+mx: hex.vec 4, 0
+mn: hex.vec 4, 0
+diff: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0
+t: hex.vec 4, 0

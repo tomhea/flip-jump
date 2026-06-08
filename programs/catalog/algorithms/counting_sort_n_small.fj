@@ -1,0 +1,76 @@
+// Counting Sort N Small (#1231)
+
+// Reads digit N `1`-`9` + `\n`, then N single-digit decimals `0`-`9`. Prints them sorted ascending (one per line) via counting sort (tally each value then emit in order).
+
+main
+
+def main @ err < count, counts {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    tally count, counts, err
+    emit counts
+  err:
+    stl.loop
+}
+
+// Read `count` digits and bump counts[digit].
+def tally count, counts, err @ loop, body, done < idx, val, cptr, cval {
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.set w/4, cptr, counts
+    walk_by cptr, val
+    hex.read_byte cval, cptr
+    hex.inc 2, cval
+    hex.write_byte cptr, cval
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// For each digit 0..9, print it counts[d] times (one per line).
+def emit counts < cptr {
+    hex.set w/4, cptr, counts
+    rep(10, d) emit_digit cptr, d
+}
+
+// Print digit d once per remaining count in *cptr, then advance cptr.
+def emit_digit cptr, d @ loop, body, done < cval, cnt4, k {
+    hex.read_byte cval, cptr
+    hex.ptr_inc cptr
+    hex.zero 4, cnt4
+    hex.mov 2, cnt4, cval
+    hex.zero 4, k
+  loop:
+    hex.cmp 4, k, cnt4, body, done, done
+  body:
+    stl.output ('0' + d)
+    stl.output '\n'
+    hex.inc 4, k
+    ;loop
+  done:
+}
+
+// Advance ptr by `amount` cells (a hex.vec 4 value).
+def walk_by ptr, amount @ loop, body, done < wcnt {
+    hex.zero 4, wcnt
+  loop:
+    hex.cmp 4, wcnt, amount, body, done, done
+  body:
+    hex.ptr_inc ptr
+    hex.inc 4, wcnt
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+counts: hex.vec 10
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+cptr: hex.vec w/4
+cval: hex.vec 2, 0
+cnt4: hex.vec 4, 0
+k: hex.vec 4, 0
+wcnt: hex.vec 4, 0

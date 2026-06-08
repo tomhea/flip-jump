@@ -1,0 +1,14 @@
+// Demo Compile Time Expr (#1264)
+
+// No input. Internally uses a compile-time expression `(1 + 2) * (3 + 4)` to produce constant `21`. Uses `bit.print_dec_uint` to print `21\n`.
+
+main
+
+def main < x {
+    stl.startup
+    bit.print_dec_uint 8, x
+    stl.output '\n'
+    stl.loop
+}
+
+x: bit.vec 8, (1 + 2) * (3 + 4)

@@ -1,0 +1,23 @@
+// Demo Hex Mul (#1248)
+
+// Reads two hex chars. Uses `hex.mul`. Prints product as 2 hex chars + `\n` (high then low nibble).
+
+main
+
+def main @ err < a, b, res, nl {
+    stl.startup_and_init_all
+    hex.input_as_hex a, err
+    hex.input nl
+    hex.input_as_hex b, err
+    hex.mul 2, res, a, b
+    hex.print_as_digit res + dw, 0
+    hex.print_as_digit res, 0
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+a: hex.vec 2, 0
+b: hex.vec 2, 0
+res: hex.vec 2, 0
+nl: hex.vec 2, 0

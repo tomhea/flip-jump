@@ -1,0 +1,31 @@
+// Tests hex.scmp (signed two's-complement compare).
+stl.startup_and_init_all
+
+cmp_print 0-5, 3       // <
+cmp_print 3, 0-5       // >
+cmp_print 0-5, 0-5     // =
+cmp_print 0-5, 0-3     // <
+cmp_print 7, 2         // >
+cmp_print 0-32768, 32767   // <  (extremes)
+stl.output '\n'
+
+stl.loop
+
+// Set a=av, b=bv (signed constants) and print '<'/'='/'>' per hex.scmp.
+def cmp_print av, bv @ lt, eq, gt, done < a, b {
+    hex.set 4, a, av
+    hex.set 4, b, bv
+    hex.scmp 4, a, b, lt, eq, gt
+  lt:
+    stl.output '<'
+    ;done
+  eq:
+    stl.output '='
+    ;done
+  gt:
+    stl.output '>'
+  done:
+}
+
+a: hex.vec 4
+b: hex.vec 4

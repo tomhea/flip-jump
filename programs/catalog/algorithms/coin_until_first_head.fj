@@ -1,0 +1,36 @@
+// Coin Until First Head (#1210)
+
+// Reads up to 20 raw bytes one at a time. Stops as soon as a byte with even value is read ("heads"). Prints the count of bytes read up to and including that first head as decimal + `\n`. If no head appears in 20 bytes, prints `-1\n`.
+
+main
+
+def main @ loop, body, head, nohead, done < cnt, idx, b, tmp, one, twenty {
+    stl.startup_and_init_all
+    hex.zero 4, cnt
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, twenty, body, nohead, nohead
+  body:
+    hex.input b
+    hex.inc 4, cnt
+    hex.mov 2, tmp, b
+    hex.and 2, tmp, one
+    hex.if0 2, tmp, head
+    hex.inc 4, idx
+    ;loop
+  head:
+    hex.print_dec_uint 4, cnt
+    stl.output '\n'
+    ;done
+  nohead:
+    stl.output "-1\n"
+  done:
+    stl.loop
+}
+
+cnt: hex.vec 4, 0
+idx: hex.vec 4, 0
+b: hex.vec 2, 0
+tmp: hex.vec 2, 0
+one: hex.vec 2, 1
+twenty: hex.vec 4, 20

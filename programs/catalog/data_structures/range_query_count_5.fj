@@ -1,0 +1,33 @@
+// Range Query Count 5 (#1160)
+
+// Reads 5 decimals `0`-`99` (each on own line), then `lo` `hi` (`0`-`99`, on own lines). Prints the count of those values that satisfy `lo <= x <= hi` as decimal `0`-`5` + `\n`.
+
+main
+
+def main @ err < arr, lo, hi, cnt {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    hex.input_dec_uint 4, lo, err
+    hex.input_dec_uint 4, hi, err
+    hex.zero 4, cnt
+    rep(5, i) count_in_range arr + i*dw*4, lo, hi, cnt
+    hex.print_dec_uint 4, cnt
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// If lo <= *cell <= hi, increment cnt.
+def count_in_range cell, lo, hi, cnt @ chk, hit, keep {
+    hex.cmp 4, cell, lo, keep, chk, chk
+  chk:
+    hex.cmp 4, cell, hi, hit, hit, keep
+  hit:
+    hex.inc 4, cnt
+  keep:
+}
+
+arr: hex.vec 4*5
+lo: hex.vec 4, 0
+hi: hex.vec 4, 0
+cnt: hex.vec 4, 0

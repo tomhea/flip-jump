@@ -1,0 +1,26 @@
+// One Op Demo (#1277)
+
+// No input. Simulates 5 successive applications of the FlipJump primitive `flip bit a; jump b` on a 4-byte memory region, with hardcoded `a, b` pairs. Prints the final memory contents as 8 hex digits + `\n` (one nibble per output char, MSB first).
+
+main
+
+def main < mem {
+    stl.startup
+    mem + 0*dw + dbit;
+    mem + 5*dw + dbit;
+    mem + 8*dw + dbit;
+    mem + 16*dw + dbit;
+    mem + 31*dw + dbit;
+    rep(8, i) print_nibble mem + (7-i)*4*dw
+    stl.output '\n'
+    stl.loop
+}
+
+// Convert the 4 bits at addr to a hex digit and print it.
+def print_nibble addr < ascii {
+    bit.hex2ascii ascii, addr
+    bit.print ascii
+}
+
+mem: bit.vec 32, 0
+ascii: bit.vec 8, 0

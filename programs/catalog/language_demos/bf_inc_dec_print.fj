@@ -1,0 +1,39 @@
+// Bf Inc Dec Print (#1268)
+
+// Reads a `\n`-terminated Brainfuck program ≤ 30 chars using only `+`, `-`, `.` (other bytes ignored). Interprets on a single cell (initially 0, mod 256). Each `.` outputs the cell value as one raw byte. Final newline after all output.
+
+main
+
+def main @ loop, chkplus, doinc, chkminus, dodec, chkdot, doprint, done < cell, b, plusb, minusb, dotb, nlb {
+    stl.startup_and_init_all
+    hex.zero 2, cell
+  loop:
+    hex.input b
+    hex.if0 2, b, done
+    hex.cmp 2, b, nlb, chkplus, done, chkplus
+  chkplus:
+    hex.cmp 2, b, plusb, chkminus, doinc, chkminus
+  doinc:
+    hex.inc 2, cell
+    ;loop
+  chkminus:
+    hex.cmp 2, b, minusb, chkdot, dodec, chkdot
+  dodec:
+    hex.dec 2, cell
+    ;loop
+  chkdot:
+    hex.cmp 2, b, dotb, loop, doprint, loop
+  doprint:
+    hex.print cell
+    ;loop
+  done:
+    stl.output '\n'
+    stl.loop
+}
+
+cell: hex.vec 2, 0
+b: hex.vec 2, 0
+plusb: hex.vec 2, '+'
+minusb: hex.vec 2, '-'
+dotb: hex.vec 2, '.'
+nlb: hex.vec 2, '\n'

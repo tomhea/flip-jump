@@ -1,0 +1,25 @@
+// Lcg Step 8bit (#1214)
+
+// Reads one byte (the seed/state). Applies one LCG step: `state = (state * 5 + 3) mod 256`. Outputs the new state as one raw byte.
+
+main
+
+def main < state {
+    stl.startup_and_init_all
+    hex.input state
+    lcg state
+    hex.print state
+    stl.loop
+}
+
+// state = (state*5 + 3) mod 256.
+def lcg state < five, three, tmp {
+    hex.mul 2, tmp, state, five
+    hex.add 2, tmp, three
+    hex.mov 2, state, tmp
+}
+
+state: hex.vec 2, 0
+five: hex.vec 2, 5
+three: hex.vec 2, 3
+tmp: hex.vec 2, 0

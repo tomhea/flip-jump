@@ -1,0 +1,35 @@
+// Demo Bit Swap (#1250)
+
+// Reads two single bits `0`/`1` (each on own line). Uses `bit.swap` STL macro to swap them in place. Prints them in swapped order as `<b>\n<a>\n`.
+
+main
+
+def main < a, b, ch, nl {
+    stl.startup
+    bit.input ch
+    bit.mov a, ch
+    bit.input nl
+    bit.input ch
+    bit.mov b, ch
+    bit.swap a, b
+    print_bit b
+    stl.output '\n'
+    print_bit a
+    stl.output '\n'
+    stl.loop
+}
+
+// Print '1' if the bit at p is set, else '0'.
+def print_bit p @ one, done {
+    bit.if1 p, one
+    stl.output '0'
+    ;done
+  one:
+    stl.output '1'
+  done:
+}
+
+a: bit.bit
+b: bit.bit
+ch: bit.vec 8, 0
+nl: bit.vec 8, 0

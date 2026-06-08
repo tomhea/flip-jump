@@ -1,0 +1,25 @@
+// Unary Addition Tm (#1276)
+
+// Reads a `\n`-terminated string of the form `1^a + 1^b` (e.g. `111+11` for 3+2). Outputs `1^(a+b)` + `\n` (`11111` for 3+2).
+
+main
+
+def main @ loop, chkone, emit, done < b, oneb, nlb {
+    stl.startup_and_init_all
+  loop:
+    hex.input b
+    hex.if0 2, b, done
+    hex.cmp 2, b, nlb, chkone, done, chkone
+  chkone:
+    hex.cmp 2, b, oneb, loop, emit, loop
+  emit:
+    hex.print b
+    ;loop
+  done:
+    stl.output '\n'
+    stl.loop
+}
+
+b: hex.vec 2, 0
+oneb: hex.vec 2, '1'
+nlb: hex.vec 2, '\n'

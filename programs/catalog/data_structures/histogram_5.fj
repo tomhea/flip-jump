@@ -1,0 +1,29 @@
+// Histogram 5 (#1125)
+
+// Reads exactly 5 ASCII digits `0`-`5` (each followed by `\n`). For each input value `v`, prints `v` `*` characters then `\n` (5 lines of output total).
+
+main
+
+def main @ err < val {
+    stl.startup_and_init_all
+    rep(5, i) one_bar val, err
+  err:
+    stl.loop
+}
+
+// Read a digit `0`-`5` and print that many '*' then a newline.
+def one_bar val, err @ loop, body, done < cnt {
+    hex.input_dec_uint 4, val, err
+    hex.zero 4, cnt
+  loop:
+    hex.cmp 4, cnt, val, body, done, done
+  body:
+    stl.output '*'
+    hex.inc 4, cnt
+    ;loop
+  done:
+    stl.output '\n'
+}
+
+val: hex.vec 4, 0
+cnt: hex.vec 4, 0

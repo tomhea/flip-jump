@@ -1,0 +1,80 @@
+// Z Score Compare 5 (#1211)
+
+// Reads exactly 5 decimals `0`-`99` (population), then 1 additional decimal `0`-`99` (test value). Computes `mean` and `std_dev_5_floor_sqrt` of the 5 population values. Prints `floor((test - mean) / max(std_dev, 1))` as a signed decimal + `\n`.
+
+main
+
+def main @ err, posbranch, negbranch, exact, printit < arr, test, sum, mean, r, var, dsum, five, s, denom, one, num, q0, rem, result {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    hex.input_dec_uint 4, test, err
+    hex.zero 4, sum
+    rep(5, i) hex.add 4, sum, arr + i*dw*4
+    hex.div 4, 4, mean, r, sum, five, err
+    hex.zero 4, dsum
+    rep(5, i) add_sq arr + i*dw*4, mean, dsum
+    hex.div 4, 4, var, r, dsum, five, err
+    isqrt var, s
+    hex.max 4, denom, s, one
+    hex.cmp 4, test, mean, negbranch, posbranch, posbranch
+  posbranch:
+    hex.mov 4, num, test
+    hex.sub 4, num, mean
+    hex.div 4, 4, result, rem, num, denom, err
+    ;printit
+  negbranch:
+    hex.mov 4, num, mean
+    hex.sub 4, num, test
+    hex.div 4, 4, q0, rem, num, denom, err
+    hex.if0 4, rem, exact
+    hex.inc 4, q0
+  exact:
+    hex.neg 4, q0
+    hex.mov 4, result, q0
+  printit:
+    hex.print_dec_int 4, result
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// dsum += (*cell - mean)^2.
+def add_sq cell, mean, dsum < d, sq {
+    hex.mov 4, d, cell
+    hex.sub 4, d, mean
+    hex.mul 4, sq, d, d
+    hex.add 4, dsum, sq
+}
+
+// s := floor(sqrt(nval)) by linear scan.
+def isqrt nval, s @ loop, body, done < sq, t {
+    hex.zero 4, s
+  loop:
+    hex.mov 4, t, s
+    hex.inc 4, t
+    hex.mul 4, sq, t, t
+    hex.cmp 4, sq, nval, body, body, done
+  body:
+    hex.inc 4, s
+    ;loop
+  done:
+}
+
+arr: hex.vec 4*5
+test: hex.vec 4, 0
+sum: hex.vec 4, 0
+mean: hex.vec 4, 0
+r: hex.vec 4, 0
+var: hex.vec 4, 0
+dsum: hex.vec 4, 0
+five: hex.vec 4, 5
+s: hex.vec 4, 0
+denom: hex.vec 4, 0
+one: hex.vec 4, 1
+num: hex.vec 4, 0
+q0: hex.vec 4, 0
+rem: hex.vec 4, 0
+result: hex.vec 4, 0
+d: hex.vec 4, 0
+sq: hex.vec 4, 0
+t: hex.vec 4, 0

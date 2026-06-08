@@ -1,0 +1,22 @@
+// Demo Segment Reserve (#1263)
+
+// Uses `segment` + `reserve` to set up a small memory region of 8 bytes initialized to zero. Reads no input. Prints the first byte's value (which is `0`) + `\n`.
+
+REGION_START = (1 << (w-1))
+
+main
+
+def main < ptr, byteval {
+    stl.startup_and_init_all
+    hex.set w/4, ptr, REGION_START
+    hex.read_byte byteval, ptr
+    hex.print_dec_uint 2, byteval
+    stl.output '\n'
+    stl.loop
+}
+
+ptr: hex.vec w/4
+byteval: hex.vec 2, 0
+
+segment REGION_START
+    reserve dw * 8

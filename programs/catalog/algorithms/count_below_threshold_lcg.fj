@@ -1,0 +1,39 @@
+// Count Below Threshold Lcg (#1227)
+
+// Reads one byte (seed), then one byte (threshold). Applies 10 LCG steps and counts how many states are strictly `<` threshold. Prints the count as decimal `0`-`10` + `\n`.
+
+main
+
+def main < state, thr, cnt {
+    stl.startup_and_init_all
+    hex.input state
+    hex.input thr
+    hex.zero 4, cnt
+    rep(10, i) trial state, thr, cnt
+    hex.print_dec_uint 4, cnt
+    stl.output '\n'
+    stl.loop
+}
+
+// One LCG step; if the new state is below threshold, increment cnt.
+def trial state, thr, cnt @ below, keep {
+    lcg state
+    hex.cmp 2, state, thr, below, keep, keep
+  below:
+    hex.inc 4, cnt
+  keep:
+}
+
+// state = (state*5 + 3) mod 256.
+def lcg state < five, three, tmp {
+    hex.mul 2, tmp, state, five
+    hex.add 2, tmp, three
+    hex.mov 2, state, tmp
+}
+
+state: hex.vec 2, 0
+thr: hex.vec 2, 0
+cnt: hex.vec 4, 0
+five: hex.vec 2, 5
+three: hex.vec 2, 3
+tmp: hex.vec 2, 0

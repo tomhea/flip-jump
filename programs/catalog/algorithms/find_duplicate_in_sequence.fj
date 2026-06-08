@@ -1,0 +1,53 @@
+// Find Duplicate In Sequence (#1178)
+
+// Reads digit N `2`-`9` + `\n`, then N decimals from `{1, 2, ..., N-1}` with exactly one value duplicated. Prints the duplicated value + `\n`.
+
+main
+
+def main @ err < count, expected, gsum, nm1 {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    hex.mov 4, nm1, count
+    hex.dec 4, nm1
+    sum_1_to nm1, expected
+    read_sum count, gsum, err
+    hex.sub 4, gsum, expected
+    hex.print_dec_uint 4, gsum
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// dst := 1 + 2 + ... + nval.
+def sum_1_to nval, dst @ loop, body, done < k {
+    hex.zero 4, dst
+    hex.set 4, k, 1
+  loop:
+    hex.cmp 4, k, nval, body, body, done
+  body:
+    hex.add 4, dst, k
+    hex.inc 4, k
+    ;loop
+  done:
+}
+
+// Read `m` decimals and accumulate their sum into dst.
+def read_sum m, dst, err @ loop, body, done < k, val {
+    hex.zero 4, dst
+    hex.zero 4, k
+  loop:
+    hex.cmp 4, k, m, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.add 4, dst, val
+    hex.inc 4, k
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+expected: hex.vec 4, 0
+gsum: hex.vec 4, 0
+nm1: hex.vec 4, 0
+k: hex.vec 4, 0
+val: hex.vec 4, 0

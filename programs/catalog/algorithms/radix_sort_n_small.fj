@@ -1,0 +1,161 @@
+// Radix Sort N Small (#1232)
+
+// Reads digit N `1`-`9` + `\n`, then N two-digit decimals `0`-`99`. Prints them sorted ascending (one per line) via radix sort (two passes: ones then tens).
+
+main
+
+def main @ err < count, arr, buf, posptr, counts, bufptr, countsptr, pos, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    hex.set w/4, bufptr, buf
+    hex.set w/4, countsptr, counts
+    hex.set w/4, posptr, pos
+    hex.input_dec_uint 4, count, err
+    store_n count, err
+    csort arrptr, bufptr, count, 1, err
+    csort bufptr, arrptr, count, 10, err
+    print_arr count
+  err:
+    stl.loop
+}
+
+// Read `count` decimals into arr.
+def store_n count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Stable counting sort of src into dst by the digit (value/divisor)%10.
+def csort srcptr, dstptr, count, divisor, err < counts, pos {
+    rep(10, d) hex.zero 4, counts + d*dw*4
+    count_keys srcptr, count, divisor, err
+    hex.zero 4, pos + 0*dw*4
+    rep(9, d) acc_prefix d
+    place srcptr, dstptr, count, divisor, err
+}
+
+// Tally counts[key] for every element of src.
+def count_keys srcptr, count, divisor, err @ loop, body, done < i, v, key, countsptr, nthidx, nthcell {
+    hex.zero 4, i
+  loop:
+    hex.cmp 4, i, count, body, done, done
+  body:
+    hex.mov w/4, nthidx, i
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, srcptr, nthidx
+    hex.read_hex 4, v, nthcell
+    keyof v, divisor, key, err
+    inc_cell countsptr, key
+    hex.inc 4, i
+    ;loop
+  done:
+}
+
+// pos[d+1] = pos[d] + counts[d].
+def acc_prefix d < counts, pos {
+    hex.mov 4, pos + (d+1)*dw*4, pos + d*dw*4
+    hex.add 4, pos + (d+1)*dw*4, counts + d*dw*4
+}
+
+// Place each element of src into dst at its stable output position.
+def place srcptr, dstptr, count, divisor, err @ loop, body, done < i, v, key, p, posptr, nthidx, nthcell {
+    hex.zero 4, i
+  loop:
+    hex.cmp 4, i, count, body, done, done
+  body:
+    hex.mov w/4, nthidx, i
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, srcptr, nthidx
+    hex.read_hex 4, v, nthcell
+    keyof v, divisor, key, err
+    hex.mov w/4, nthidx, key
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, posptr, nthidx
+    hex.read_hex 4, p, nthcell
+    hex.mov w/4, nthidx, p
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, dstptr, nthidx
+    hex.write_hex 4, nthcell, v
+    inc_cell posptr, key
+    hex.inc 4, i
+    ;loop
+  done:
+}
+
+// key := (v / divisor) % 10.
+def keyof v, divisor, key, err < dv, q, q2, r, ten {
+    hex.set 4, dv, divisor
+    hex.div 4, 4, q, r, v, dv, err
+    hex.div 4, 4, q2, key, q, ten, err
+}
+
+// counts/pos cell at runtime idx += 1.
+def inc_cell baseptr, idx < tmp, nthidx, nthcell {
+    hex.mov w/4, nthidx, idx
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, baseptr, nthidx
+    hex.read_hex 4, tmp, nthcell
+    hex.inc 4, tmp
+    hex.mov w/4, nthidx, idx
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, baseptr, nthidx
+    hex.write_hex 4, nthcell, tmp
+}
+
+// Print arr[0..count-1], one per line.
+def print_arr count @ loop, body, done < i, v, arrptr, nthidx, nthcell {
+    hex.zero 4, i
+  loop:
+    hex.cmp 4, i, count, body, done, done
+  body:
+    hex.mov w/4, nthidx, i
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, v, nthcell
+    hex.print_dec_uint 4, v
+    stl.output '\n'
+    hex.inc 4, i
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+arr: hex.vec 4*9
+buf: hex.vec 4*9
+counts: hex.vec 4*10
+pos: hex.vec 4*10
+wptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+i: hex.vec w/4, 0
+v: hex.vec 4, 0
+key: hex.vec w/4, 0
+p: hex.vec w/4, 0
+dv: hex.vec 4, 0
+q: hex.vec 4, 0
+q2: hex.vec 4, 0
+r: hex.vec 4, 0
+ten: hex.vec 4, 10
+tmp: hex.vec w/4, 0
+arrptr: hex.vec w/4
+bufptr: hex.vec w/4
+countsptr: hex.vec w/4
+posptr: hex.vec w/4
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

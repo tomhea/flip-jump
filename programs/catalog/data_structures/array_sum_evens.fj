@@ -1,0 +1,42 @@
+// Array Sum Evens (#1121)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals. Prints the sum of even-valued elements + `\n`.
+
+main
+
+def main @ err < count, result {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    sum_evens count, result, err
+    hex.print_dec_uint 4, result
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read `count` decimals; add the even-valued ones into result.
+def sum_evens count, result, err @ loop, body, addit, next, done < val, idx, tmp, one {
+    hex.zero 4, result
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.mov 4, tmp, val
+    hex.and 4, tmp, one
+    hex.if0 4, tmp, addit
+    ;next
+  addit:
+    hex.add 4, result, val
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+result: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0
+tmp: hex.vec 4, 0
+one: hex.vec 4, 1

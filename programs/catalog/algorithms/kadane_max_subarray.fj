@@ -1,0 +1,47 @@
+// Kadane Max Subarray (#1181)
+
+// Reads digit N `1`-`9` + `\n`, then N signed decimals. Prints the maximum contiguous subarray sum as signed decimal + `\n`. Implementation: Kadane's algorithm.
+
+main
+
+def main @ err < count, best {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    kadane count, best, err
+    hex.print_dec_int 4, best
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Kadane: cur = max(cur+v, v); best = max(best, cur).
+def kadane count, best, err @ loop, body, done < val, idx, cur, negbig {
+    hex.mov 4, best, negbig
+    hex.zero 4, cur
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_int 4, val, err
+    hex.add 4, cur, val
+    smax cur, val
+    smax best, cur
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// best := max(best, val), signed.
+def smax best, val @ keep, set {
+    hex.scmp 4, val, best, keep, keep, set
+  set:
+    hex.mov 4, best, val
+  keep:
+}
+
+count: hex.vec 4, 0
+best: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0
+cur: hex.vec 4, 0
+negbig: hex.vec 4, 0x8000

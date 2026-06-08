@@ -1,0 +1,38 @@
+// Variance 5 (#1205)
+
+// Reads exactly 5 decimals `0`-`99` (each on own line). Computes `mean = floor(sum/5)`, then `variance = sum((x_i - mean)^2) / 5` (floor). Prints variance as decimal + `\n`.
+
+main
+
+def main @ err < arr, sum, mean, r, var, dsum, five {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    hex.zero 4, sum
+    rep(5, i) hex.add 4, sum, arr + i*dw*4
+    hex.div 4, 4, mean, r, sum, five, err
+    hex.zero 4, dsum
+    rep(5, i) add_sq arr + i*dw*4, mean, dsum
+    hex.div 4, 4, var, r, dsum, five, err
+    hex.print_dec_uint 4, var
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// dsum += (*cell - mean)^2.
+def add_sq cell, mean, dsum < d, sq {
+    hex.mov 4, d, cell
+    hex.sub 4, d, mean
+    hex.mul 4, sq, d, d
+    hex.add 4, dsum, sq
+}
+
+arr: hex.vec 4*5
+sum: hex.vec 4, 0
+mean: hex.vec 4, 0
+r: hex.vec 4, 0
+var: hex.vec 4, 0
+dsum: hex.vec 4, 0
+five: hex.vec 4, 5
+d: hex.vec 4, 0
+sq: hex.vec 4, 0

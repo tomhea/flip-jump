@@ -1,0 +1,23 @@
+// Unary Increment Tm (#1275)
+
+// Reads a `\n`-terminated string of `1`s (length 0-30), interpreted as a unary number. Outputs the same string with one additional `1` appended (representing N+1), followed by `\n`.
+
+main
+
+def main @ loop, echo, done < b, nlb {
+    stl.startup_and_init_all
+  loop:
+    hex.input b
+    hex.if0 2, b, done
+    hex.cmp 2, b, nlb, echo, done, echo
+  echo:
+    hex.print b
+    ;loop
+  done:
+    stl.output '1'
+    stl.output '\n'
+    stl.loop
+}
+
+b: hex.vec 2, 0
+nlb: hex.vec 2, '\n'

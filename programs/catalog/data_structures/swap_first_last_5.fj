@@ -1,0 +1,25 @@
+// Swap First Last 5 (#1135)
+
+// Reads exactly 5 decimals and prints them with positions 0 and 4 swapped, one per line.
+
+main
+
+def main @ err < arr {
+    stl.startup_and_init_all
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    pc arr + 4*dw*4
+    pc arr + 1*dw*4
+    pc arr + 2*dw*4
+    pc arr + 3*dw*4
+    pc arr + 0*dw*4
+  err:
+    stl.loop
+}
+
+// Print one 4-hex cell as decimal + newline.
+def pc c {
+    hex.print_dec_uint 4, c
+    stl.output '\n'
+}
+
+arr: hex.vec 4*5

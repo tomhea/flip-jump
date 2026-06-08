@@ -1,0 +1,61 @@
+// Linear Search (#1153)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals, then `target`. Prints the 0-based index of the first match + `\n`, or `not found\n` if absent.
+
+main
+
+def main @ err, hit < count, target {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    store_n count, err
+    hex.input_dec_uint 4, target, err
+    search_index count, target, hit
+    stl.output "not found\n"
+  hit:
+    stl.loop
+  err:
+    stl.loop
+}
+
+// Read `count` decimals into arr through a write pointer.
+def store_n count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Scan arr for target; on first match print its index and jump to hit. Else return.
+def search_index count, target, hit @ loop, body, found_it, next, done < rptr, arr, idx, val {
+    hex.set w/4, rptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.read_hex 4, val, rptr
+    hex.ptr_add rptr, 4
+    hex.cmp 4, val, target, next, found_it, next
+  found_it:
+    hex.print_dec_uint 4, idx
+    stl.output '\n'
+    ;hit
+  next:
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+target: hex.vec 4, 0
+arr: hex.vec 4*9
+wptr: hex.vec w/4
+rptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0

@@ -1,0 +1,43 @@
+// Running Max (#1129)
+
+// Reads digit N `1`-`9` + `\n`, then N signed decimals (each own line). After each input, prints the running maximum so far on its own line (N lines of output).
+
+main
+
+def main @ err < count {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    run_max count, err
+  err:
+    stl.loop
+}
+
+// Read `count` signed decimals; print the running maximum after each.
+def run_max count, err @ loop, body, done < val, idx, best, negbig {
+    hex.mov 4, best, negbig
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_int 4, val, err
+    smax best, val
+    hex.print_dec_int 4, best
+    stl.output '\n'
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// best = max(best, val), signed.
+def smax best, val @ keep, set {
+    hex.scmp 4, val, best, keep, keep, set
+  set:
+    hex.mov 4, best, val
+  keep:
+}
+
+count: hex.vec 4, 0
+val: hex.vec 4, 0
+idx: hex.vec 4, 0
+best: hex.vec 4, 0
+negbig: hex.vec 4, 0x8000

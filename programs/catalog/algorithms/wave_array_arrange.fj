@@ -1,0 +1,127 @@
+// Wave Array Arrange (#1236)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals. Prints them rearranged in wave pattern (sorted ascending, then adjacent pairs swapped: `a[0] >= a[1] <= a[2] >= a[3] <= ...`), one per line.
+
+main
+
+def main @ err < count {
+    stl.startup_and_init_all
+    hex.input_dec_uint 4, count, err
+    store_n count, err
+    bubble count
+    swap_pairs count
+    print_arr count
+  err:
+    stl.loop
+}
+
+// Read `count` decimals into arr through a write pointer.
+def store_n count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Bubble sort arr ascending: `count` passes of adjacent compare-swap.
+def bubble count @ loop, body, done < pass {
+    hex.zero 4, pass
+  loop:
+    hex.cmp 4, pass, count, body, done, done
+  body:
+    cas_pass count
+    hex.inc 4, pass
+    ;loop
+  done:
+}
+
+// One left-to-right pass of adjacent compare-swap over arr[0..count-1].
+def cas_pass count @ loop, body, done < ptr, nptr, j, jlim, a, b, arr {
+    hex.set w/4, ptr, arr
+    hex.mov 4, jlim, count
+    hex.dec 4, jlim
+    hex.zero 4, j
+  loop:
+    hex.cmp 4, j, jlim, body, done, done
+  body:
+    hex.read_hex 4, a, ptr
+    hex.mov w/4, nptr, ptr
+    hex.ptr_add nptr, 4
+    hex.read_hex 4, b, nptr
+    cas_mem ptr, nptr, a, b
+    hex.ptr_add ptr, 4
+    hex.inc 4, j
+    ;loop
+  done:
+}
+
+// If a > b, write them swapped through the two pointers.
+def cas_mem ptr, nptr, a, b @ keep, swap {
+    hex.cmp 4, a, b, keep, keep, swap
+  swap:
+    hex.write_hex 4, ptr, b
+    hex.write_hex 4, nptr, a
+  keep:
+}
+
+// Swap arr[2k] with arr[2k+1] for each full pair.
+def swap_pairs count @ loop, body, done < ptr, nptr, pos, posp1, a, b, two, arr {
+    hex.set w/4, ptr, arr
+    hex.zero 4, pos
+  loop:
+    hex.mov 4, posp1, pos
+    hex.inc 4, posp1
+    hex.cmp 4, posp1, count, body, done, done
+  body:
+    hex.read_hex 4, a, ptr
+    hex.mov w/4, nptr, ptr
+    hex.ptr_add nptr, 4
+    hex.read_hex 4, b, nptr
+    hex.write_hex 4, ptr, b
+    hex.write_hex 4, nptr, a
+    hex.ptr_add ptr, 8
+    hex.add 4, pos, two
+    ;loop
+  done:
+}
+
+// Print arr[0..count-1], one per line.
+def print_arr count @ loop, body, done < ptr, i, v, arr {
+    hex.set w/4, ptr, arr
+    hex.zero 4, i
+  loop:
+    hex.cmp 4, i, count, body, done, done
+  body:
+    hex.read_hex 4, v, ptr
+    hex.ptr_add ptr, 4
+    hex.print_dec_uint 4, v
+    stl.output '\n'
+    hex.inc 4, i
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+arr: hex.vec 4*9
+wptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+pass: hex.vec 4, 0
+ptr: hex.vec w/4
+nptr: hex.vec w/4
+j: hex.vec 4, 0
+jlim: hex.vec 4, 0
+a: hex.vec 4, 0
+b: hex.vec 4, 0
+pos: hex.vec 4, 0
+posp1: hex.vec 4, 0
+two: hex.vec 4, 2
+i: hex.vec 4, 0
+v: hex.vec 4, 0

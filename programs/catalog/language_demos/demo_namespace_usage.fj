@@ -1,0 +1,32 @@
+// Demo Namespace Usage (#1266)
+
+// Defines `ns mathops { def add_one(x) { bit.inc x } }` and uses `mathops.add_one` on a 4-bit value `0011`. Prints result as 4-char binary + `\n`.
+
+main
+
+def main < val {
+    stl.startup
+    mathops.add_one val
+    rep(4, i) print_bit val + (3-i)*dw
+    stl.output '\n'
+    stl.loop
+}
+
+ns mathops {
+    // Increment a 4-bit value in place.
+    def add_one x {
+        bit.inc 4, x
+    }
+}
+
+// Print '1' if the bit at p is set, else '0'.
+def print_bit p @ one, done {
+    bit.if1 p, one
+    stl.output '0'
+    ;done
+  one:
+    stl.output '1'
+  done:
+}
+
+val: bit.vec 4, 0b0011

@@ -1,0 +1,159 @@
+// Mergesort 5 (#1229)
+
+// Reads exactly 5 decimals and prints them sorted ascending (one per line). Implementation: merge sort (recursive split + merge).
+
+main
+
+def main @ err < arr, buf, bufptr, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    hex.set w/4, bufptr, buf
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    merge_pass 1
+    merge_pass 2
+    merge_pass 4
+    rep(5, i) pc arr + i*dw*4
+  err:
+    stl.loop
+}
+
+// One bottom-up pass: merge adjacent runs of `width` from arr into buf, then copy back.
+def merge_pass width @ loop, body, done < lo, mid, hi, nreg, wreg, w2reg, t {
+    hex.set 4, nreg, 5
+    hex.set 4, wreg, width
+    hex.set 4, w2reg, 2*width
+    hex.zero 4, lo
+  loop:
+    hex.cmp 4, lo, nreg, body, done, done
+  body:
+    hex.mov 4, t, lo
+    hex.add 4, t, wreg
+    hex.min 4, mid, t, nreg
+    hex.mov 4, t, lo
+    hex.add 4, t, w2reg
+    hex.min 4, hi, t, nreg
+    merge lo, mid, hi
+    hex.add 4, lo, w2reg
+    ;loop
+  done:
+    copy_back nreg
+}
+
+// Merge arr[lo..mid) and arr[mid..hi) into buf[lo..hi).
+def merge lo, mid, hi @ loop, iok, jok, takei, takej, copyi, ci_body, copyj, cj_body, mdone < i, j, k, vi, vj, bufptr, arrptr, nthidx, nthcell {
+    hex.mov 4, i, lo
+    hex.mov 4, j, mid
+    hex.mov 4, k, lo
+  loop:
+    hex.cmp 4, i, mid, iok, copyj, copyj
+  iok:
+    hex.cmp 4, j, hi, jok, copyi, copyi
+  jok:
+    hex.mov w/4, nthidx, i
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vi, nthcell
+    hex.mov w/4, nthidx, j
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vj, nthcell
+    hex.cmp 4, vi, vj, takei, takei, takej
+  takei:
+    hex.mov w/4, nthidx, k
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, bufptr, nthidx
+    hex.write_hex 4, nthcell, vi
+    hex.inc 4, i
+    hex.inc 4, k
+    ;loop
+  takej:
+    hex.mov w/4, nthidx, k
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, bufptr, nthidx
+    hex.write_hex 4, nthcell, vj
+    hex.inc 4, j
+    hex.inc 4, k
+    ;loop
+  copyi:
+    hex.cmp 4, i, mid, ci_body, mdone, mdone
+  ci_body:
+    hex.mov w/4, nthidx, i
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vi, nthcell
+    hex.mov w/4, nthidx, k
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, bufptr, nthidx
+    hex.write_hex 4, nthcell, vi
+    hex.inc 4, i
+    hex.inc 4, k
+    ;copyi
+  copyj:
+    hex.cmp 4, j, hi, cj_body, mdone, mdone
+  cj_body:
+    hex.mov w/4, nthidx, j
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vj, nthcell
+    hex.mov w/4, nthidx, k
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, bufptr, nthidx
+    hex.write_hex 4, nthcell, vj
+    hex.inc 4, j
+    hex.inc 4, k
+    ;copyj
+  mdone:
+}
+
+// Copy buf[0..n) back into arr[0..n).
+def copy_back n @ loop, body, done < k, v, aptr, bptr, arr, buf {
+    hex.set w/4, aptr, arr
+    hex.set w/4, bptr, buf
+    hex.zero 4, k
+  loop:
+    hex.cmp 4, k, n, body, done, done
+  body:
+    hex.read_hex 4, v, bptr
+    hex.write_hex 4, aptr, v
+    hex.ptr_add aptr, 4
+    hex.ptr_add bptr, 4
+    hex.inc 4, k
+    ;loop
+  done:
+}
+
+// Print one 4-hex cell as decimal + newline.
+def pc c {
+    hex.print_dec_uint 4, c
+    stl.output '\n'
+}
+
+arr: hex.vec 4*5
+buf: hex.vec 4*5
+i: hex.vec w/4, 0
+j: hex.vec w/4, 0
+k: hex.vec w/4, 0
+vi: hex.vec 4, 0
+vj: hex.vec 4, 0
+lo: hex.vec 4, 0
+mid: hex.vec 4, 0
+hi: hex.vec 4, 0
+nreg: hex.vec 4, 0
+wreg: hex.vec 4, 0
+w2reg: hex.vec 4, 0
+t: hex.vec 4, 0
+v: hex.vec 4, 0
+aptr: hex.vec w/4
+bptr: hex.vec w/4
+arrptr: hex.vec w/4
+bufptr: hex.vec w/4
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

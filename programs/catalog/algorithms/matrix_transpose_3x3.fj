@@ -1,0 +1,25 @@
+// Matrix Transpose 3x3 (#1202)
+
+// Reads 9 decimals (3 rows × 3 cols, row-major, each own line). Prints the transposed 3×3 matrix in row-major order, one row per output line with space-separated values + `\n` per row (3 lines total).
+
+main
+
+def main @ err < arr {
+    stl.startup_and_init_all
+    rep(9, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    rep(3, r) prow r
+  err:
+    stl.loop
+}
+
+// Print output row r (= input column r): cells r, r+3, r+6 space-separated.
+def prow r < arr {
+    hex.print_dec_uint 4, arr + r*dw*4
+    stl.output ' '
+    hex.print_dec_uint 4, arr + (r+3)*dw*4
+    stl.output ' '
+    hex.print_dec_uint 4, arr + (r+6)*dw*4
+    stl.output '\n'
+}
+
+arr: hex.vec 4*9

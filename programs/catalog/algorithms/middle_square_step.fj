@@ -1,0 +1,23 @@
+// Middle Square Step (#1220)
+
+// Reads two bytes (low and high of a 16-bit state). Applies one middle-square step: square the 16-bit state to get a 32-bit result, then take the middle 16 bits. Outputs the new state as two raw bytes (low then high).
+
+main
+
+def main < state, state8, sq, newstate {
+    stl.startup_and_init_all
+    hex.input state
+    hex.input state + 2*dw
+    hex.zero 8, state8
+    hex.mov 4, state8, state
+    hex.mul 8, sq, state8, state8
+    hex.mov 4, newstate, sq + 2*dw
+    hex.print newstate
+    hex.print newstate + 2*dw
+    stl.loop
+}
+
+state: hex.vec 4, 0
+state8: hex.vec 8, 0
+sq: hex.vec 8, 0
+newstate: hex.vec 4, 0

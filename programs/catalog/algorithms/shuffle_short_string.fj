@@ -1,0 +1,60 @@
+// Shuffle Short String (#1225)
+
+// Reads a `\n`-terminated line of exactly 5 chars, then 5 raw bytes (PRNG). Applies Fisher-Yates shuffle on the 5 chars using the PRNG bytes (same indexing rule as `fisher_yates_shuffle_5`). Prints shuffled string + `\n`.
+
+main
+
+def main @ done < arr, prng, nl {
+    stl.startup_and_init_all
+    rep(5, k) read_byte_cell arr + k*dw*4
+    hex.input nl
+    rep(5, k) read_byte_cell prng + k*dw*4
+    fy_step 4, 5, 1, done
+    fy_step 3, 4, 2, done
+    fy_step 2, 3, 3, done
+    fy_step 1, 2, 4, done
+    rep(5, k) hex.print arr + k*dw*4
+    stl.output '\n'
+  done:
+    stl.loop
+}
+
+// Read one raw byte into a 4-hex cell.
+def read_byte_cell cell < bt {
+    hex.input bt
+    hex.zero 4, cell
+    hex.mov 2, cell, bt
+}
+
+// Swap arr[i] with arr[ prng[fivemi] mod ip1 ]  (i, ip1, fivemi are constants).
+def fy_step i, ip1, fivemi, err @ loop, wbody, wdone < jbyte, j, q, divisor, vi, vj, jptr, jcnt, arr, prng {
+    hex.mov 4, jbyte, prng + fivemi*dw*4
+    hex.set 4, divisor, ip1
+    hex.div 4, 4, q, j, jbyte, divisor, err
+    hex.set w/4, jptr, arr
+    hex.zero 4, jcnt
+  loop:
+    hex.cmp 4, jcnt, j, wbody, wdone, wdone
+  wbody:
+    hex.ptr_add jptr, 4
+    hex.inc 4, jcnt
+    ;loop
+  wdone:
+    hex.read_hex 4, vj, jptr
+    hex.mov 4, vi, arr + i*dw*4
+    hex.write_hex 4, jptr, vi
+    hex.mov 4, arr + i*dw*4, vj
+}
+
+arr: hex.vec 4*5
+prng: hex.vec 4*5
+nl: hex.vec 2, 0
+bt: hex.vec 2, 0
+jbyte: hex.vec 4, 0
+j: hex.vec 4, 0
+q: hex.vec 4, 0
+divisor: hex.vec 4, 0
+vi: hex.vec 4, 0
+vj: hex.vec 4, 0
+jptr: hex.vec w/4
+jcnt: hex.vec 4, 0

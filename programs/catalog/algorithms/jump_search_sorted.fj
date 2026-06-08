@@ -1,0 +1,109 @@
+// Jump Search Sorted (#1172)
+
+// Reads digit N `1`-`9` + `\n`, then N decimals sorted ascending, then target. Prints the 0-based index of any match + `\n`, or `not found\n`. Implementation: jump search (block size ~√N, linear scan within block).
+
+main
+
+def main @ err, hit < count, target, arr, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    hex.input_dec_uint 4, count, err
+    store_n count, err
+    hex.input_dec_uint 4, target, err
+    jump_search count, target, hit
+    stl.output "not found\n"
+  hit:
+    stl.loop
+  err:
+    stl.loop
+}
+
+// Read `count` decimals into arr through a write pointer.
+def store_n count, err @ loop, body, done < wptr, arr, idx, val {
+    hex.set w/4, wptr, arr
+    hex.zero 4, idx
+  loop:
+    hex.cmp 4, idx, count, body, done, done
+  body:
+    hex.input_dec_uint 4, val, err
+    hex.write_hex 4, wptr, val
+    hex.ptr_add wptr, 4
+    hex.inc 4, idx
+    ;loop
+  done:
+}
+
+// Jump by block size √N to find the block that may hold target, then scan it linearly.
+def jump_search count, target, hit @ jloop, jadv, linear, lloop, lcont, lnext, found, notf < blk, prev, step, lim, li, j, gval, arrptr, nthidx, nthcell {
+    isqrt count, blk
+    hex.zero 4, prev
+    hex.mov 4, step, blk
+  jloop:
+    hex.min 4, lim, step, count
+    hex.mov 4, li, lim
+    hex.dec 4, li
+    hex.mov w/4, nthidx, li
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, gval, nthcell
+    hex.cmp 4, gval, target, jadv, linear, linear
+  jadv:
+    hex.mov 4, prev, step
+    hex.add 4, step, blk
+    hex.cmp 4, prev, count, jloop, notf, notf
+  linear:
+    hex.min 4, lim, step, count
+    hex.mov 4, j, prev
+  lloop:
+    hex.cmp 4, j, lim, lcont, notf, notf
+  lcont:
+    hex.mov w/4, nthidx, j
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, gval, nthcell
+    hex.cmp 4, gval, target, lnext, found, notf
+  lnext:
+    hex.inc 4, j
+    ;lloop
+  found:
+    hex.print_dec_uint 4, j
+    stl.output '\n'
+    ;hit
+  notf:
+}
+
+// s := floor(sqrt(nval)), at least 1 for nval >= 1.
+def isqrt nval, s @ loop, body, done < sq, t {
+    hex.zero 4, s
+    hex.inc 4, s
+  loop:
+    hex.mov 4, t, s
+    hex.inc 4, t
+    hex.mul 4, sq, t, t
+    hex.cmp 4, sq, nval, body, body, done
+  body:
+    hex.inc 4, s
+    ;loop
+  done:
+}
+
+count: hex.vec 4, 0
+target: hex.vec 4, 0
+arr: hex.vec 4*9
+arrptr: hex.vec w/4
+wptr: hex.vec w/4
+idx: hex.vec 4, 0
+val: hex.vec 4, 0
+blk: hex.vec 4, 0
+prev: hex.vec 4, 0
+step: hex.vec 4, 0
+lim: hex.vec 4, 0
+li: hex.vec w/4, 0
+j: hex.vec w/4, 0
+gval: hex.vec 4, 0
+sq: hex.vec 4, 0
+t: hex.vec 4, 0
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

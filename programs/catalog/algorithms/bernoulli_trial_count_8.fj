@@ -1,0 +1,31 @@
+// Bernoulli Trial Count 8 (#1209)
+
+// Reads exactly 8 raw bytes. Counts how many are even (a "success"). Prints count `0`-`8` as decimal + `\n`.
+
+main
+
+def main < cnt {
+    stl.startup_and_init_all
+    hex.zero 4, cnt
+    rep(8, i) one_byte cnt
+    hex.print_dec_uint 4, cnt
+    stl.output '\n'
+    stl.loop
+}
+
+// Read one byte; if its low bit is 0 (even), increment cnt.
+def one_byte cnt @ even, odd < b, tmp, one {
+    hex.input b
+    hex.mov 2, tmp, b
+    hex.and 2, tmp, one
+    hex.if0 2, tmp, even
+    ;odd
+  even:
+    hex.inc 4, cnt
+  odd:
+}
+
+cnt: hex.vec 4, 0
+b: hex.vec 2, 0
+tmp: hex.vec 2, 0
+one: hex.vec 2, 1

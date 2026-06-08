@@ -1,0 +1,97 @@
+// Pancake Sort 5 (#1235)
+
+// Reads exactly 5 decimals and prints them sorted ascending. Implementation: pancake sort — only prefix reversals (no swaps).
+
+main
+
+def main @ err < arr, arrptr {
+    stl.startup_and_init_all
+    hex.set w/4, arrptr, arr
+    rep(5, i) hex.input_dec_uint 4, arr + i*dw*4, err
+    pancake 5
+    pancake 4
+    pancake 3
+    pancake 2
+    rep(5, i) pc arr + i*dw*4
+  err:
+    stl.loop
+}
+
+// Bring the max of arr[0..sz-1] to position sz-1 using two prefix reversals.
+def pancake sz < mi, mip1, szreg {
+    find_max_idx sz, mi
+    hex.mov 4, mip1, mi
+    hex.inc 4, mip1
+    flip_prefix mip1
+    hex.set 4, szreg, sz
+    flip_prefix szreg
+}
+
+// mi := index of the maximum among arr[0..sz-1] (sz is a constant).
+def find_max_idx sz, mi < mxv, arr {
+    hex.mov 4, mxv, arr + 0*dw*4
+    hex.zero 4, mi
+    rep(sz, k) consider_max k, mxv, mi
+}
+
+// If arr[k] > mxv, adopt it and record index k.
+def consider_max k, mxv, mi @ keep, set < arr {
+    hex.cmp 4, arr + k*dw*4, mxv, keep, keep, set
+  set:
+    hex.mov 4, mxv, arr + k*dw*4
+    hex.set 4, mi, k
+  keep:
+}
+
+// Reverse arr[0 .. len-1] in place.
+def flip_prefix len @ loop, body, done < lo, hi, vl, vh, arrptr, nthidx, nthcell {
+    hex.zero 4, lo
+    hex.mov 4, hi, len
+    hex.dec 4, hi
+  loop:
+    hex.cmp 4, lo, hi, body, done, done
+  body:
+    hex.mov w/4, nthidx, lo
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vl, nthcell
+    hex.mov w/4, nthidx, hi
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.read_hex 4, vh, nthcell
+    hex.mov w/4, nthidx, lo
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.write_hex 4, nthcell, vh
+    hex.mov w/4, nthidx, hi
+    hex.shl_bit w/4, nthidx
+    hex.shl_bit w/4, nthidx
+    hex.ptr_index nthcell, arrptr, nthidx
+    hex.write_hex 4, nthcell, vl
+    hex.inc 4, lo
+    hex.dec 4, hi
+    ;loop
+  done:
+}
+
+// Print one 4-hex cell as decimal + newline.
+def pc c {
+    hex.print_dec_uint 4, c
+    stl.output '\n'
+}
+
+arr: hex.vec 4*5
+arrptr: hex.vec w/4
+mi: hex.vec 4, 0
+mip1: hex.vec 4, 0
+szreg: hex.vec 4, 0
+mxv: hex.vec 4, 0
+lo: hex.vec w/4, 0
+hi: hex.vec w/4, 0
+vl: hex.vec 4, 0
+vh: hex.vec 4, 0
+nthidx: hex.vec w/4
+nthcell: hex.vec w/4

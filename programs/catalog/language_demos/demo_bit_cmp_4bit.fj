@@ -1,0 +1,41 @@
+// Demo Bit Cmp 4bit (#1254)
+
+// Reads two 4-char binary strings (each on own line). Uses `bit.cmp`. Prints `<`, `=`, or `>` + `\n`.
+
+main
+
+def main @ lt, eq, gt, done < a, b, ch, d, err, nl {
+    stl.startup
+    bit.zero 4, a
+    rep(4, i) read_bit_into a, ch, d, err
+    bit.input nl
+    bit.zero 4, b
+    rep(4, i) read_bit_into b, ch, d, err
+    bit.cmp 4, a, b, lt, eq, gt
+  lt:
+    stl.output '<'
+    ;done
+  eq:
+    stl.output '='
+    ;done
+  gt:
+    stl.output '>'
+  done:
+    stl.output '\n'
+    stl.loop
+}
+
+// b = (b << 1) | next_input_bit  (reads one '0'/'1' char).
+def read_bit_into b, ch, d, err {
+    bit.input ch
+    bit.shl 4, b
+    bit.ascii2dec err, d, ch
+    bit.add 4, b, d
+}
+
+a: bit.vec 4, 0
+b: bit.vec 4, 0
+ch: bit.vec 8, 0
+d: bit.vec 8, 0
+err: bit.bit
+nl: bit.vec 8, 0
