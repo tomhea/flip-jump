@@ -947,6 +947,172 @@ Blastoff!
 
 | # | name | description |
 |---|---|---|
+| 1110 | array_sum_5 | Reads exactly 5 decimal integers, each on its own line, and prints their sum + `
+`. |
+| 1111 | array_sum_10 | Reads exactly 10 decimal integers, each on its own line, and prints their sum + `
+`. |
+| 1112 | array_max_5 | Reads exactly 5 decimals (each own line) and prints the maximum + `
+`. |
+| 1113 | array_max_10 | Reads exactly 10 decimals (each own line) and prints the maximum + `
+`. |
+| 1114 | array_min_5 | Reads exactly 5 decimals and prints the minimum + `
+`. |
+| 1115 | array_min_10 | Reads exactly 10 decimals and prints the minimum + `
+`. |
+| 1116 | array_avg_5 | Reads exactly 5 decimals and prints `floor(sum / 5)` + `
+`. |
+| 1117 | array_avg_10 | Reads exactly 10 decimals and prints `floor(sum / 10)` + `
+`. |
+| 1118 | array_count_zeros | Reads digit N `1`-`9` + `
+`, then N decimal integers each own line. Prints the count of zeros as decimal + `
+`. |
+| 1119 | array_double_each | Reads digit N `1`-`9` + `
+`, then N decimals. Prints `2*a_i` for each input on its own line, in the same order. |
+| 1120 | array_increment_each | Reads digit N `1`-`9` + `
+`, then N decimals. Prints `a_i + 1` for each input on its own line, in the same order. |
+| 1121 | array_sum_evens | Reads digit N `1`-`9` + `
+`, then N decimals. Prints the sum of even-valued elements + `
+`. |
+| 1122 | array_sum_odds | Reads digit N `1`-`9` + `
+`, then N decimals. Prints the sum of odd-valued elements + `
+`. |
+| 1123 | array_range | Reads digit N `1`-`9` + `
+`, then N decimals. Prints `max - min` + `
+`. |
+| 1124 | partial_sums | Reads digit N `1`-`9` + `
+`, then N decimals. Prints the running cumulative sum after each input, one per line (N lines). |
+| 1125 | histogram_5 | Reads exactly 5 ASCII digits `0`-`5` (each followed by `
+`). For each input value `v`, prints `v` `*` characters then `
+` (5 lines of output total). |
+| 1126 | array_count_negatives | Reads digit N `1`-`9` + `
+`, then N signed decimal integers. Prints the count of values `< 0` + `
+`. |
+| 1127 | array_count_positives | Reads digit N `1`-`9` + `
+`, then N signed decimal integers. Prints the count of values `> 0` + `
+`. |
+| 1128 | array_count_above_threshold | Reads digit N `1`-`9` + `
+`, then `threshold` (signed decimal) + `
+`, then N signed decimals. Prints the count of values strictly greater than threshold + `
+`. |
+| 1129 | running_max | Reads digit N `1`-`9` + `
+`, then N signed decimals (each own line). After each input, prints the running maximum so far on its own line (N lines of output). |
+| 1130 | running_min | Reads digit N `1`-`9` + `
+`, then N signed decimals. After each input, prints the running minimum so far on its own line. |
+| 1131 | is_sorted_ascending | Reads digit N `1`-`9` + `
+`, then N decimals. Prints `1
+` if the sequence is non-decreasing, else `0
+`. |
+| 1132 | is_sorted_descending | Reads digit N `1`-`9` + `
+`, then N decimals. Prints `1
+` if the sequence is non-increasing, else `0
+`. |
+| 1133 | group_by_parity | Reads `N` `1`-`9` + `
+`, then N decimals on own lines. Prints `even: <e>
+odd: <o>
+` with the counts. |
+| 1134 | array_reverse_5 | Reads 5 decimals (each own line) and prints them in reverse order, one per line. |
+| 1135 | swap_first_last_5 | Reads exactly 5 decimals and prints them with positions 0 and 4 swapped, one per line. |
+| 1136 | swap_adjacent_pairs_6 | Reads exactly 6 decimals and prints them with each adjacent pair swapped (positions 0↔1, 2↔3, 4↔5), one per line in the new order. |
+| 1137 | rotate_left_5 | Reads exactly 5 decimals and prints them rotated left by 1 (input `a b c d e` → output `b
+c
+d
+e
+a
+`). |
+| 1138 | rotate_right_5 | Reads exactly 5 decimals and prints them rotated right by 1 (input `a b c d e` → output `e
+a
+b
+c
+d
+`). |
+| 1139 | shift_right_zero_fill_5 | Reads exactly 5 decimals and prints them shifted right by 1 with 0-fill on the left (input `a b c d e` → output `0
+a
+b
+c
+d
+`). |
+| 1140 | min_index_5 | Reads exactly 5 decimals and prints the 0-based index of the minimum value + `
+`. Ties: prints the smallest index among tied positions. |
+| 1141 | max_index_5 | Reads exactly 5 decimals and prints the 0-based index of the maximum value + `
+`. Ties: smallest index among tied positions. |
+| 1142 | bubble_sort_5 | Reads exactly 5 decimals and prints them sorted ascending (one per line), implemented as bubble sort (adjacent-swap passes). The algorithm choice is the point. |
+| 1143 | insertion_sort_5 | Reads exactly 5 decimals and prints them sorted ascending (one per line), implemented as insertion sort (extend prefix one element at a time). |
+| 1144 | selection_sort_5 | Reads exactly 5 decimals and prints them sorted ascending (one per line), implemented as selection sort (find-min-and-swap each pass). |
+| 1145 | array_median_5 | Reads exactly 5 decimals (any order) and prints the median (middle value when sorted) as decimal + `
+`. |
+| 1146 | count_inversions_5 | Reads exactly 5 decimals and prints the count of inversions (pairs `(i, j)` with `i < j` and `a_i > a_j`) as decimal + `
+`. |
+| 1147 | stack_push_pop_demo | Reads digit N `1`-`9` + `
+`. Pushes integers `1..N` onto a stack, then pops all and prints each on its own line. Output is `N
+(N-1)
+...
+1
+` (reverse order). |
+| 1148 | queue_enqueue_dequeue | Reads digit N `1`-`9` + `
+`. Enqueues integers `1..N` then dequeues all, printing each on its own line. Output is `1
+2
+...
+N
+` (FIFO order). |
+| 1149 | array_first_3 | Reads digit N `3`-`9` + `
+`, then N decimals. Prints just the first 3 values, one per line. |
+| 1150 | array_dedupe_sorted | Reads digit N `1`-`9` + `
+`, then N decimals already sorted ascending. Prints the unique values in order, one per line. |
+| 1151 | array_last_3 | Reads digit N `3`-`9` + `
+`, then N decimals. Prints just the last 3 values, one per line. |
+| 1152 | array_contains | Reads digit N `1`-`9` + `
+`, then N decimals, then one more decimal `target`. Prints `1
+` if target appears in the N-element array, else `0
+`. |
+| 1153 | linear_search | Reads digit N `1`-`9` + `
+`, then N decimals, then `target`. Prints the 0-based index of the first match + `
+`, or `not found
+` if absent. |
+| 1154 | binary_search_sorted | Reads digit N `1`-`9` + `
+`, then N decimals already sorted ascending, then `target`. Prints the 0-based index of the match + `
+` (any if duplicates), or `not found
+`. Uses binary search. |
+| 1155 | stack_reverse_line | Reads a `
+`-terminated line ≤ 40 chars. Uses an explicit push-all-then-pop-all stack pattern (LIFO) to reverse the line; prints the reversed bytes followed by `
+`. The stack demonstration is the point. |
+| 1156 | queue_print_order | Reads digit N `1`-`9` + `
+`, then exactly N bytes (no separator). Enqueues each byte then dequeues all, outputting them in original input order (FIFO demo). |
+| 1157 | parens_matched | Reads a `
+`-terminated string ≤ 40 chars containing only `(` and `)`. Prints `1
+` if the parentheses are balanced (every `(` has a matching `)` in order), else `0
+`. |
+| 1158 | mixed_brackets_matched | Reads a `
+`-terminated string ≤ 40 chars containing only `()[]{}`. Prints `1
+` if all three bracket types are balanced AND properly nested (e.g. `([])` valid, `([)]` invalid), else `0
+`. Use an explicit stack. |
+| 1159 | count_distinct_bytes | Reads a `
+`-terminated line ≤ 80 chars and prints the count of distinct byte values in the line (excluding the terminating `
+`) as decimal + `
+`. |
+| 1160 | range_query_count_5 | Reads 5 decimals `0`-`99` (each on own line), then `lo` `hi` (`0`-`99`, on own lines). Prints the count of those values that satisfy `lo <= x <= hi` as decimal `0`-`5` + `
+`. |
+| 1161 | range_query_print_5 | Reads 5 decimals `0`-`99` (each on own line), then `lo` `hi`. Prints each value with `lo <= x <= hi` in input order, one per line. |
+| 1162 | kv_lookup_5 | Reads 5 key-value pairs: each as decimal `key` `0`-`9` + `
+`, then decimal `value` `0`-`99` + `
+` (total 10 lines). Then reads a query key + `
+`. Prints the value for that key as decimal + `
+`, or `not found
+` if the key wasn't among the 5. (Latest write wins on duplicates.) |
+| 1163 | kv_lookup_n | Reads decimal `N` `1`-`9` + `
+`, then N key-value pairs (same format as `kv_lookup_5`). Then reads a query key. Prints the value, or `not found
+`. |
+| 1164 | kv_update_then_lookup | Reads 5 key-value pairs (same format), then reads one update pair (new key + new value), then a query key. Applies the update (overwrites if key exists, else adds — but if adding would exceed capacity 6, drops the oldest entry). Prints lookup result or `not found
+`. |
+| 1165 | group_by_first_letter | Reads `N` `1`-`9` + `
+`, then N `
+`-terminated lowercase words. Groups by first letter and prints each `<letter> <count>
+` line, sorted by letter ascending. |
+| 1166 | select_max_per_group_2 | Reads 5 `(group, value)` pairs (each on 2 own lines, group `0` or `1`, value `0`-`99`). Prints `group 0 max: <v>
+group 1 max: <v>
+` (or `none
+` for either group if no pairs). |
+| 1167 | sort_by_key_5 | Reads 5 `(key, value)` pairs (each on 2 own lines, key `0`-`9` integer, value `0`-`99`). Sorts ascending by key (stable). Prints each pair as `<key> <value>
+` (5 lines). |
 
 ## recursion
 
@@ -1069,6 +1235,177 @@ Blastoff!
 
 | # | name | description |
 |---|---|---|
+| 1168 | linear_search_count | Reads digit N `1`-`9` + `
+`, then N decimals (each own line), then a target decimal. Prints the count of occurrences of the target in the array as decimal + `
+`. |
+| 1169 | linear_search_last | Reads digit N `1`-`9` + `
+`, then N decimals, then target. Prints the 0-based index of the LAST occurrence + `
+`, or `not found
+` if absent. |
+| 1170 | binary_search_first_match | Reads digit N `1`-`9` + `
+`, then N decimals sorted ascending (may have duplicates), then target. Prints the 0-based index of the FIRST occurrence (lower-bound) + `
+`, or `not found
+`. |
+| 1171 | binary_search_last_match | Reads digit N `1`-`9` + `
+`, then N decimals sorted ascending (may have duplicates), then target. Prints the 0-based index of the LAST occurrence (upper-bound-1) + `
+`, or `not found
+`. |
+| 1172 | jump_search_sorted | Reads digit N `1`-`9` + `
+`, then N decimals sorted ascending, then target. Prints the 0-based index of any match + `
+`, or `not found
+`. Implementation: jump search (block size ~√N, linear scan within block). |
+| 1173 | exponential_search_sorted | Reads digit N `1`-`9` + `
+`, then N decimals sorted ascending, then target. Prints the 0-based index of any match + `
+`, or `not found
+`. Implementation: exponential search (find range by doubling i, then binary search within range). |
+| 1174 | ternary_search_sorted | Reads digit N `1`-`9` + `
+`, then N decimals sorted ascending, then target. Prints the 0-based index of any match + `
+`, or `not found
+`. Implementation: ternary search (divide range into thirds). |
+| 1175 | dutch_flag_3way | Reads digit N `1`-`9` + `
+`, then N values each `0`, `1`, or `2` (one per line). Prints the values partitioned in order so all 0s come first, then all 1s, then all 2s (one per line). |
+| 1176 | longest_run_length | Reads digit N `1`-`9` + `
+`, then N decimals. Prints the length of the longest run of equal consecutive elements as decimal + `
+`. |
+| 1177 | find_missing_in_sequence | Reads digit N `2`-`9` + `
+`, then `N-1` decimals which are some permutation of `{1, 2, ..., N}` with exactly one value missing. Prints the missing value + `
+`. |
+| 1178 | find_duplicate_in_sequence | Reads digit N `2`-`9` + `
+`, then N decimals from `{1, 2, ..., N-1}` with exactly one value duplicated. Prints the duplicated value + `
+`. |
+| 1179 | is_permutation_1_to_n | Reads digit N `1`-`9` + `
+`, then N decimals. Prints `1
+` if the sequence is a permutation of `{1, 2, ..., N}`, else `0
+`. |
+| 1180 | min_max_one_pass | Reads digit N `1`-`9` + `
+`, then N signed decimals. Prints `<min>
+<max>
+` using a single pass (pair-compare optimization). |
+| 1181 | kadane_max_subarray | Reads digit N `1`-`9` + `
+`, then N signed decimals. Prints the maximum contiguous subarray sum as signed decimal + `
+`. Implementation: Kadane's algorithm. |
+| 1182 | zigzag_array_check | Reads digit N `1`-`9` + `
+`, then N decimals. Prints `1
+` if the sequence strictly alternates `a[0] < a[1] > a[2] < a[3] > ...` (starting with rise), else `0
+`. |
+| 1183 | count_distinct_elements | Reads digit N `1`-`9` + `
+`, then N decimals. Prints the count of distinct values + `
+`. |
+| 1184 | is_palindrome_array | Reads digit N `1`-`9` + `
+`, then N decimals. Prints `1
+` if the sequence reads the same forward and backward, else `0
+`. |
+| 1185 | count_local_maxima | Reads digit N `3`-`9` + `
+`, then N decimals. Prints the count of strict local maxima (positions `i` with `0 < i < N-1` and `a[i-1] < a[i] > a[i+1]`) + `
+`. |
+| 1186 | count_local_minima | Reads digit N `3`-`9` + `
+`, then N decimals. Prints the count of strict local minima + `
+`. |
+| 1187 | two_sum_unsorted | Reads digit N `2`-`9` + `
+`, then N decimals, then `target`. Prints `i j
+` (0-based, `i < j`) of any pair summing to target, or `not found
+`. Implementation: nested loop. |
+| 1188 | two_sum_sorted_two_pointers | Reads digit N `2`-`9` + `
+`, then N decimals sorted ascending, then `target`. Prints `i j
+` (0-based, `i < j`) of any pair summing to target, or `not found
+`. Implementation: two-pointer (left, right). |
+| 1189 | three_sum_zero | Reads digit N `3`-`9` + `
+`, then N signed decimals. Prints `i j k
+` (0-based, `i < j < k`) of any triple summing to 0, or `none
+`. |
+| 1190 | max_product_pair | Reads digit N `2`-`9` + `
+`, then N signed decimals. Prints the maximum product of any two distinct-indexed elements as signed decimal + `
+`. |
+| 1191 | min_product_pair | Reads digit N `2`-`9` + `
+`, then N signed decimals. Prints the minimum product of any two distinct-indexed elements + `
+`. |
+| 1193 | mode_of_5 | Reads exactly 5 decimals and prints the most frequent value + `
+`. Ties broken by smallest value among the most frequent. |
+| 1194 | mean_median_mode_5 | Reads exactly 5 decimals and prints `<mean>
+<median>
+<mode>
+` (floor mean; median = middle of sorted; mode = most frequent value, ties broken by smallest). |
+| 1195 | moore_voting_majority | Reads digit N `1`-`9` + `
+`, then N decimals. Prints the majority element (value appearing strictly more than N/2 times) + `
+`, or `none
+` if no majority. Implementation: Boyer-Moore voting (one-pass + verify). |
+| 1196 | tortoise_hare_cycle | Reads `start` `0`-`15` (own line). Iterates `x = (2*x + 1) mod 16` starting from `start`. Uses Floyd's tortoise-and-hare to detect when the sequence enters a cycle, then prints the cycle length as decimal + `
+`. |
+| 1197 | sieve_of_eratosthenes_30 | No input. Prints the primes in `[2, 30]` space-separated on one line + `
+`: `2 3 5 7 11 13 17 19 23 29
+`. Implementation: sieve of Eratosthenes (mark composites). |
+| 1198 | sieve_of_eratosthenes_50 | No input. Prints the primes in `[2, 50]` space-separated + `
+`. Implementation: sieve of Eratosthenes. |
+| 1199 | euclidean_gcd_with_steps | Reads two positive decimals `a`, `b` each `1`-`100` (own lines). Prints each step of Euclidean GCD as `a b
+` (current pair after `a = b, b = a % b`), terminating with `<gcd> 0
+`. |
+| 1200 | extended_gcd_small | Reads two positive decimals `a`, `b` each `1`-`30` (own lines). Prints `g x y
+` such that `a*x + b*y = g = gcd(a, b)`, where `x`, `y` may be signed integers. |
+| 1201 | fast_exponentiation | Reads `base` `2`-`5`, `exp` `0`-`10`, `mod` `1`-`100` (each own line). Prints `(base^exp) mod mod` as decimal + `
+`. Implementation: exponentiation-by-squaring. |
+| 1202 | matrix_transpose_3x3 | Reads 9 decimals (3 rows × 3 cols, row-major, each own line). Prints the transposed 3×3 matrix in row-major order, one row per output line with space-separated values + `
+` per row (3 lines total). |
+| 1203 | matrix_diagonal_sum_3x3 | Reads 9 decimals (3×3 row-major). Prints the sum of the main diagonal `a[0][0] + a[1][1] + a[2][2]` as decimal + `
+`. |
+| 1204 | matrix_is_symmetric_3x3 | Reads 9 decimals (3×3 row-major). Prints `1
+` if the matrix equals its transpose, else `0
+`. |
+| 1205 | variance_5 | Reads exactly 5 decimals `0`-`99` (each on own line). Computes `mean = floor(sum/5)`, then `variance = sum((x_i - mean)^2) / 5` (floor). Prints variance as decimal + `
+`. |
+| 1206 | std_dev_5_floor_sqrt | Reads exactly 5 decimals `0`-`99`. Computes variance (as in `variance_5`), then prints `floor(sqrt(variance))` as decimal + `
+`. Use integer-sqrt by linear scan. |
+| 1207 | range_5_fixed | Reads exactly 5 decimals and prints `max - min` as decimal + `
+`. |
+| 1208 | mean_abs_deviation_5 | Reads exactly 5 decimals `0`-`99`. Computes `mean = floor(sum/5)`, then prints `floor(sum(|x_i - mean|) / 5)` as decimal + `
+`. |
+| 1209 | bernoulli_trial_count_8 | Reads exactly 8 raw bytes. Counts how many are even (a "success"). Prints count `0`-`8` as decimal + `
+`. |
+| 1210 | coin_until_first_head | Reads up to 20 raw bytes one at a time. Stops as soon as a byte with even value is read ("heads"). Prints the count of bytes read up to and including that first head as decimal + `
+`. If no head appears in 20 bytes, prints `-1
+`. |
+| 1211 | z_score_compare_5 | Reads exactly 5 decimals `0`-`99` (population), then 1 additional decimal `0`-`99` (test value). Computes `mean` and `std_dev_5_floor_sqrt` of the 5 population values. Prints `floor((test - mean) / max(std_dev, 1))` as a signed decimal + `
+`. |
+| 1212 | coefficient_of_variation_5 | Reads exactly 5 decimals `1`-`99`. Computes `mean` and `std_dev_5_floor_sqrt`. Prints `floor(std_dev * 100 / mean)` as decimal percent + `
+`. |
+| 1213 | weighted_mean_3 | Reads 3 decimals (values `0`-`99` on own lines) then 3 decimals (weights `1`-`9` on own lines). Prints `floor(sum(v_i * w_i) / sum(w_i))` as decimal + `
+`. |
+| 1214 | lcg_step_8bit | Reads one byte (the seed/state). Applies one LCG step: `state = (state * 5 + 3) mod 256`. Outputs the new state as one raw byte. |
+| 1215 | lcg_steps_n_8bit | Reads one byte (seed), then one decimal digit N `1`-`9` + `
+`. Applies N LCG steps (constants `5` and `3`, mod 256) and prints each successive state as decimal on its own line (N lines total). |
+| 1216 | xorshift_step_8bit | Reads one non-zero byte (state). Applies xorshift8: `s ^= s << 3; s ^= s >> 4; s ^= s << 2;` (all mod 256). Outputs the new state as one raw byte. |
+| 1217 | xorshift_steps_n_8bit | Reads one non-zero byte (state), then decimal N `1`-`9` + `
+`. Applies N xorshift8 steps. Prints each successive state as decimal on its own line. |
+| 1218 | fisher_yates_shuffle_5 | Reads 5 decimals `0`-`9` (each on own line), then 5 raw bytes (the PRNG bytes). Applies Fisher-Yates shuffle: for `i` from 4 down to 1, swap `arr[i]` with `arr[byte[5-i] mod (i+1)]`. Prints the shuffled array as 5 decimals space-separated + `
+`. |
+| 1219 | dice_rolls_lcg_5 | Reads one byte (seed). Applies 5 LCG steps and prints `(state mod 6) + 1` as a decimal digit `1`-`6` on its own line (5 lines total). |
+| 1220 | middle_square_step | Reads two bytes (low and high of a 16-bit state). Applies one middle-square step: square the 16-bit state to get a 32-bit result, then take the middle 16 bits. Outputs the new state as two raw bytes (low then high). |
+| 1221 | blum_blum_shub_tiny | Reads one byte `1`-`15` (state). Applies one BBS step: `state = (state * state) mod 21` (where `21 = 3 * 7`, both Blum primes). Outputs the new state as one raw byte. |
+| 1222 | weighted_choice_lcg | Reads three decimal weights `w0 w1 w2` (each `0`-`9`, on own lines; sum >= 1), then one byte (seed). Generates one LCG sample `r`, then picks bucket `i` such that `r mod (w0+w1+w2) < w0+w1+...+wi`. Prints `i` as decimal `0`-`2` + `
+`. |
+| 1223 | random_bits_n | Reads one byte (seed), then decimal N `1`-`9` + `
+`. Applies N LCG steps and outputs the LSB of each state as a `0` or `1` char, all concatenated on a single line + `
+`. |
+| 1224 | random_byte_in_range | Reads one byte (seed), then `lo` `hi` (each on own line, both `0`-`9`, `lo <= hi`). Applies one LCG step, computes `lo + (state mod (hi - lo + 1))`, and prints as decimal + `
+`. |
+| 1225 | shuffle_short_string | Reads a `
+`-terminated line of exactly 5 chars, then 5 raw bytes (PRNG). Applies Fisher-Yates shuffle on the 5 chars using the PRNG bytes (same indexing rule as `fisher_yates_shuffle_5`). Prints shuffled string + `
+`. |
+| 1226 | prng_period_count | Reads one byte (seed). Applies LCG steps with constants `5`, `3`, mod 256, counting steps until the state returns to the seed value. Prints the period as decimal + `
+`. |
+| 1227 | count_below_threshold_lcg | Reads one byte (seed), then one byte (threshold). Applies 10 LCG steps and counts how many states are strictly `<` threshold. Prints the count as decimal `0`-`10` + `
+`. |
+| 1228 | quicksort_5 | Reads exactly 5 decimal integers (each on own line) and prints them sorted ascending (one per line). Implementation: quicksort (recursive partition around a pivot). |
+| 1229 | mergesort_5 | Reads exactly 5 decimals and prints them sorted ascending (one per line). Implementation: merge sort (recursive split + merge). |
+| 1230 | heap_sort_5 | Reads exactly 5 decimals and prints them sorted ascending (one per line). Implementation: heap sort (build max-heap, repeatedly extract max). |
+| 1231 | counting_sort_n_small | Reads digit N `1`-`9` + `
+`, then N single-digit decimals `0`-`9`. Prints them sorted ascending (one per line) via counting sort (tally each value then emit in order). |
+| 1232 | radix_sort_n_small | Reads digit N `1`-`9` + `
+`, then N two-digit decimals `0`-`99`. Prints them sorted ascending (one per line) via radix sort (two passes: ones then tens). |
+| 1233 | shell_sort_5 | Reads exactly 5 decimals and prints them sorted ascending. Implementation: shell sort with gap sequence `2, 1`. |
+| 1234 | cycle_sort_5 | Reads exactly 5 decimals and prints them sorted ascending. Implementation: cycle sort (minimum-write sort — find each element's correct position and place via cycle following). |
+| 1235 | pancake_sort_5 | Reads exactly 5 decimals and prints them sorted ascending. Implementation: pancake sort — only prefix reversals (no swaps). |
+| 1236 | wave_array_arrange | Reads digit N `1`-`9` + `
+`, then N decimals. Prints them rearranged in wave pattern (sorted ascending, then adjacent pairs swapped: `a[0] >= a[1] <= a[2] >= a[3] <= ...`), one per line. |
 
 ## geometry
 
@@ -1353,6 +1690,99 @@ Blastoff!
 
 | # | name | description |
 |---|---|---|
+| 1237 | demo_hex_add | Reads two lowercase hex chars (each on own line). Uses `hex.add`. Prints the result hex + `
+` (mod 16, carry discarded). |
+| 1238 | demo_hex_sub | Same I/O as `demo_hex_add` but uses `hex.sub`. |
+| 1239 | demo_hex_xor | Same I/O but uses `hex.xor`. |
+| 1240 | demo_hex_and | Same I/O but uses `hex.and`. |
+| 1241 | demo_hex_or | Same I/O but uses `hex.or`. |
+| 1242 | demo_hex_not | Reads one lowercase hex char + `
+`. Uses `hex.not` (XOR with `f`). Prints result hex + `
+`. |
+| 1243 | demo_hex_inc | Reads one hex char + `
+`. Uses `hex.inc`. Prints result hex + `
+` (`f` wraps to `0`). |
+| 1244 | demo_hex_dec | Same as `demo_hex_inc` but uses `hex.dec` (`0` wraps to `f`). |
+| 1245 | demo_hex_cmp | Reads two hex chars (each own line). Uses `hex.cmp`. Prints `<`, `=`, or `>` + `
+`. |
+| 1246 | demo_hex_shl | Reads one hex char + `
+`, then shift count `0`-`3` + `
+`. Uses `hex.shl`. Prints result hex + `
+`. |
+| 1247 | demo_hex_shr | Same as `demo_hex_shl` but uses `hex.shr`. |
+| 1248 | demo_hex_mul | Reads two hex chars. Uses `hex.mul`. Prints product as 2 hex chars + `
+` (high then low nibble). |
+| 1249 | demo_hex_div | Reads two hex chars (dividend then divisor, divisor non-zero). Uses `hex.div`. Prints quotient hex + `
+`. |
+| 1250 | demo_bit_swap | Reads two single bits `0`/`1` (each on own line). Uses `bit.swap` STL macro to swap them in place. Prints them in swapped order as `<b>
+<a>
+`. |
+| 1251 | demo_bit_inc_4bit | Reads a 4-char `0`/`1` binary string + `
+`. Uses `bit.inc` (4-bit). Prints result as 4-char binary + `
+` (mod 16). |
+| 1252 | demo_bit_dec_4bit | Same as `demo_bit_inc_4bit` but with `bit.dec`. |
+| 1253 | demo_bit_mov | Reads a 4-char binary + `
+`. Uses `bit.mov` to copy it into another variable, then prints the copy as 4-char binary + `
+`. |
+| 1254 | demo_bit_cmp_4bit | Reads two 4-char binary strings (each on own line). Uses `bit.cmp`. Prints `<`, `=`, or `>` + `
+`. |
+| 1255 | demo_bit_shl_4bit | Reads a 4-char binary + `
+`, then digit `0`-`3` + `
+` (shift count). Uses `bit.shl`. Prints result as 4-char binary + `
+`. |
+| 1256 | demo_bit_shr_4bit | Same as `demo_bit_shl_4bit` but with `bit.shr`. |
+| 1257 | demo_bit_mul10_8bit | Reads an 8-char binary + `
+`. Uses `bit.mul10`. Prints the result as decimal + `
+` (assume no overflow). |
+| 1258 | demo_bit_print_dec_uint | No input. Declares an internal 8-bit value `123`. Uses `bit.print_dec_uint` to print it as `123
+`. |
+| 1259 | demo_bit_print_hex_uint | No input. Declares an internal 8-bit value `255`. Uses `bit.print_hex_uint` to print it as `ff
+`. |
+| 1260 | demo_stl_output_string | No input. Uses `stl.output "Hello, FlipJump!
+"` to print the string. |
+| 1261 | demo_rep_5_stars | No input. Uses `rep(5, i) stl.output('*')` then `stl.output('
+')` to print `*****
+`. |
+| 1262 | demo_rep_10_dashes | No input. Uses `rep(10, i) stl.output('-')` then `
+`. Prints `----------
+`. |
+| 1263 | demo_segment_reserve | Uses `segment` + `reserve` to set up a small memory region of 8 bytes initialized to zero. Reads no input. Prints the first byte's value (which is `0`) + `
+`. |
+| 1264 | demo_compile_time_expr | No input. Internally uses a compile-time expression `(1 + 2) * (3 + 4)` to produce constant `21`. Uses `bit.print_dec_uint` to print `21
+`. |
+| 1265 | demo_macro_one_arg | Defines a macro `print_byte(b)` that calls `stl.output(b)`. The top-level invokes `print_byte('A')`. Prints `A
+`. |
+| 1266 | demo_namespace_usage | Defines `ns mathops { def add_one(x) { bit.inc x } }` and uses `mathops.add_one` on a 4-bit value `0011`. Prints result as 4-char binary + `
+`. |
+| 1267 | bf_inc_dec | Reads a `
+`-terminated string ≤ 30 chars containing `+` and `-` (other bytes ignored). Interprets on a single cell (initially 0, mod 256). Prints final cell value as decimal + `
+`. |
+| 1268 | bf_inc_dec_print | Reads a `
+`-terminated Brainfuck program ≤ 30 chars using only `+`, `-`, `.` (other bytes ignored). Interprets on a single cell (initially 0, mod 256). Each `.` outputs the cell value as one raw byte. Final newline after all output. |
+| 1269 | bf_tape_4 | Reads a `
+`-terminated BF program ≤ 30 chars using `+`, `-`, `<`, `>`, `.` (other bytes ignored). Interprets on a 4-cell tape (cells initially 0, mod 256). Each `.` outputs the current cell as one raw byte. The tape pointer stays in `[0, 3]` (out-of-bounds moves are silently ignored). Final newline after all output. |
+| 1270 | stack_vm_push_add | Reads a `
+`-terminated program string of tokens separated by spaces: `PUSH <d>` (push single digit `0`-`9`) and `ADD` (pop two values, push their sum). After interpreting all tokens, prints the final top of stack as decimal + `
+`. ≤ 10 tokens total. |
+| 1271 | stack_vm_pop_print | Reads a `
+`-terminated program: `PUSH <d>` and `POP` (pop top and print as decimal + `
+` for each POP). ≤ 10 tokens total. |
+| 1272 | accumulator_5_ops | Reads decimal `acc_initial` `0`-`9` + `
+`, then 5 `<op><digit>` tokens (each a 2-char ASCII pair like `+3`) separated by spaces on one line + `
+`. Applies the 5 ops sequentially to acc. Prints the final acc as decimal + `
+`. |
+| 1273 | two_register_machine_5 | Reads decimal `R0` `R1` (each `0`-`9`, on own lines). Then 5 instructions on own lines, each one of `ADD0` (`R0 = R0 + R1`), `SUB0` (`R0 = R0 - R1`), `SWAP` (`R0 ↔ R1`), `INC0`, `INC1`. After all 5, prints `<R0> <R1>
+`. |
+| 1274 | subleq_one_step | Reads three decimals `m_a` `m_b` `pc` (each `0`-`9`, on own lines), then 10 decimals (the SUBLEQ memory cells `mem[0..9]`, each on own line, each `0`-`9`). Executes one SUBLEQ instruction `mem[m_b] = mem[m_b] - mem[m_a]; if mem[m_b] <= 0: pc = ...` (here we ignore the jump target — just the SUBLEQ subtract step). Prints the new value of `mem[m_b]` (signed decimal, may go negative) + `
+`. |
+| 1275 | unary_increment_tm | Reads a `
+`-terminated string of `1`s (length 0-30), interpreted as a unary number. Outputs the same string with one additional `1` appended (representing N+1), followed by `
+`. |
+| 1276 | unary_addition_tm | Reads a `
+`-terminated string of the form `1^a + 1^b` (e.g. `111+11` for 3+2). Outputs `1^(a+b)` + `
+` (`11111` for 3+2). |
+| 1277 | one_op_demo | No input. Simulates 5 successive applications of the FlipJump primitive `flip bit a; jump b` on a 4-byte memory region, with hardcoded `a, b` pairs. Prints the final memory contents as 8 hex digits + `
+` (one nibble per output char, MSB first). |
 
 ## cryptography
 
