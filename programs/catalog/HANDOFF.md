@@ -1,11 +1,12 @@
 # Catalog — Implementation Handoff
 
-Handoff for completing the demonstration catalog. As of this writing: **902 / 1029
-approved specs implemented**. **Passes 1, 2, and 3 are COMPLETE** — Pass 1 finished the 15
-started categories; Pass 2 added algorithms/data_structures/language_demos (#1110–#1277);
-Pass 3 added puzzles/cryptography/encoding/interactive/graphics_ascii/parsing (#1278–#1486).
-This document is the plan for the remaining **127 programs (Pass 4)**, plus the lessons
-that make them fast to write.
+Handoff for completing the demonstration catalog. **The catalog is COMPLETE: 1029 / 1029
+approved specs implemented** (`pytest --catalog --compile --run` green). **All four passes are
+DONE** — Pass 1 finished the 15 started categories; Pass 2 added
+algorithms/data_structures/language_demos (#1110–#1277); Pass 3 added
+puzzles/cryptography/encoding/interactive/graphics_ascii/parsing (#1278–#1486); Pass 4 added
+simulation/games/memory_layout/state_machines/recursion/language_meta (#1487–#1613). This
+document preserves the plan and the lessons that made the passes fast to write.
 
 **Read this first if you're picking up Pass 2+:** the catalog is now **hex-first**. Pass 1
 ended by converting all arithmetic programs from `bit.*` to `hex.*` (≈4× faster in tight
@@ -96,11 +97,13 @@ delimited fields), and a two-stack shunting-yard evaluator (`propositional_eval`
 | graphics_ascii | 31 | ASCII shapes/grids/charts |
 | parsing | 29 | tokenize/validate/evaluate tiny grammars |
 
-### Pass 4 — simulation‥language_meta (127)
+### Pass 4 — DONE (127 programs, #1487–#1613)
 
-**The remaining pass. Its dedicated, actionable handoff is [`HANDOFF_PASS4.md`](HANDOFF_PASS4.md)**
-(numbers #1487–#1613, the proven oracle-batch workflow, carry-forward kits + traps, the one new
-technique — `stl.call` recursion — and per-category guidance).
+simulation (27), games (25), memory_layout (22), state_machines (20), recursion (18),
+language_meta (15) — all implemented and verified (`pytest --catalog` green; full-domain
+Python cross-checks). The dedicated handoff [`HANDOFF_PASS4.md`](HANDOFF_PASS4.md) records the
+oracle-batch workflow, carry-forward kits + traps, and the one new technique (`stl.call`
+recursion). This pass completes the catalog (1029/1029).
 
 | Category | n | Flavor |
 |---|---:|---|

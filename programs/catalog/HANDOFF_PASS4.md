@@ -1,8 +1,10 @@
 # Catalog — Pass 4 Handoff (the final pass)
 
-**Status:** Passes 1–3 are complete (902 / 1029 specs; Pass 3 = #1278–#1486). **Pass 4 is the
-last 127 specs**, six categories, numbered **#1487–#1613** (continue sequentially in
-(category-order, CATALOG.md-row-order)). Finishing Pass 4 completes the catalog (1029/1029).
+**Status: DONE.** Pass 4 is complete — all 127 specs across six categories, numbered
+**#1487–#1613** (simulation 27, games 25, memory_layout 22, state_machines 20, recursion 18,
+language_meta 15), implemented and verified (`pytest --catalog --compile --run` green:
+1029/1029). **This completes the catalog (1029/1029).** The notes below are preserved as the
+record of the workflow, kits, and traps that made the pass fast.
 
 This is a focused handoff; the master plan and the Pass-1/2/3 lessons live in
 [`HANDOFF.md`](HANDOFF.md). Read that, [`CONVENTIONS.md`](CONVENTIONS.md), and the

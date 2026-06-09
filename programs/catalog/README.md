@@ -1118,6 +1118,60 @@ group 1 max: <v>
 
 | # | name | description |
 |---|---|---|
+| 1581 | factorial_recursive | Reads decimal N in `0`-`6` and prints `N!` using a recursive macro (via `stl.call` / `stl.return`). Same I/O as `arithmetic/factorial_small`; the purpose is to demonstrate recursion. |
+| 1582 | fibonacci_recursive | Reads decimal N in `0`-`10` and prints `F(N)` using a recursive macro. The purpose is to demonstrate naive double-recursion (not iteration). |
+| 1583 | sum_to_n_recursive | Reads decimal N in `0`-`10` and prints `1+2+...+N` using a recursive macro. Same I/O as `arithmetic/sum_to_n`; demonstrates the recursive accumulator pattern. |
+| 1584 | count_down_recursive | Reads decimal N in `0`-`9` + `
+`. Prints `N
+(N-1)
+...
+1
+` using a recursive macro that prints then recurses on N-1. |
+| 1585 | count_up_recursive | Reads decimal N in `0`-`9` + `
+`. Prints `1
+2
+...
+N
+` using a recursive macro that recurses on N-1 then prints. |
+| 1586 | power_recursive | Reads `base` `0`-`3` then `exp` `0`-`3` (each own line). Prints `base^exp` using a recursive macro `pow(b,e) = b * pow(b, e-1)`. |
+| 1587 | gcd_recursive | Reads two decimals `a`, `b` (each ≤ 50, own line). Prints `gcd(a,b)` using the recursive Euclidean algorithm. |
+| 1588 | multiply_by_addition | Reads two decimals each `0`-`8` and prints `a*b` computed via the recursive macro `mul(a,b) = a + mul(a, b-1)`. |
+| 1589 | is_even_mutual_recursive | Reads decimal N `0`-`10` and prints `1
+` if even else `0
+`, computed via mutual recursion: `is_even(0)=1`, `is_even(N) = is_odd(N-1)`, `is_odd(N) = is_even(N-1)`. |
+| 1590 | gcd_recursive_with_steps | Reads two decimals `a`, `b` (each `1`-`50`, own line). Computes `gcd(a, b)` via recursive macro and prints each step `a b
+` (current pair after `a = b, b = a % b`), terminating with `<gcd> 0
+`. (Different from `gcd_recursive` which prints only final value.) |
+| 1591 | sum_of_digits_recursive | Reads decimal N in `0`-`999` + `
+`. Computes sum of digits via recursive macro `digit_sum(N) = (N == 0) ? 0 : (N % 10) + digit_sum(N / 10)`. Prints decimal sum + `
+`. |
+| 1592 | reverse_digits_recursive | Reads decimal N in `0`-`999` + `
+`. Computes the decimal reverse via recursive macro (each level extracts last digit and recurses on N/10). Prints reversed digits + `
+`. |
+| 1593 | binary_search_recursive | Reads digit N `1`-`9` + `
+`, then N sorted decimals (each on own line), then target. Implements binary search via recursive macro that halves the search interval. Prints 0-based index + `
+` or `not found
+`. |
+| 1594 | mutual_recursion_ping_pong | No input. Two mutually-recursive macros: `ping(N) { stl.output "ping
+"; if N>0: pong(N-1) }` and `pong(N) { stl.output "pong
+"; if N>0: ping(N-1) }`. Top-level invokes `ping(3)`. Output: `ping
+pong
+ping
+pong
+`. |
+| 1595 | count_down_recursive_no_print | Reads digit N `1`-`9` + `
+`. Recursive macro that counts down without printing intermediate steps; at base case (N=0) prints `done
+`. Demonstrates pure recursion without side effects in the chain. |
+| 1596 | binary_to_decimal_recursive | Reads an 8-char `0`/`1` binary string + `
+`. Computes its decimal value via recursive macro `b2d(s) = head(s) * 2^(len-1) + b2d(tail(s))`. Prints decimal `0`-`255` + `
+`. |
+| 1597 | tail_recursion_demo | Reads decimal N `0`-`9` + `
+`. Uses tail-recursive macro to compute `2^N` (each call doubles an accumulator). Prints decimal + `
+`. Demonstrates tail-call pattern. |
+| 1598 | depth_of_recursion_proof | Reads digit N `0`-`9` + `
+`. Recursive macro that just decrements N to 0, then prints `Reached depth <N>
+` from the deepest call. Output: `Reached depth N
+`. |
 
 ## interactive
 
@@ -1762,6 +1816,65 @@ control: <C>
 
 | # | name | description |
 |---|---|---|
+| 1487 | rule_30_one_step | Reads an 8-char binary string `0`/`1` + `
+` (initial cellular state). Computes the next generation using Wolfram Rule 30 with periodic boundary conditions (cell `i` depends on cells `i-1`, `i`, `i+1` modulo 8). Prints the resulting 8-char binary string + `
+`. |
+| 1488 | rule_90_one_step | Same I/O as `rule_30_one_step` but applies Rule 90. |
+| 1489 | rule_110_one_step | Same I/O but Rule 110. |
+| 1490 | rule_184_one_step | Same I/O but Rule 184 (traffic-flow CA). |
+| 1491 | rule_30_n_steps | Reads an 8-char binary string + `
+`, then a digit N `1`-`5` + `
+`. Prints N successive generations of Rule 30 (one per line, each an 8-char binary string + `
+`). |
+| 1492 | rule_90_n_steps | Same shape, Rule 90. |
+| 1493 | rule_110_n_steps | Same shape, Rule 110. |
+| 1494 | game_of_life_one_step_5x5 | Reads a 5×5 binary grid: 5 lines, each 5 chars of `0`/`1` + `
+`. Applies one Conway's Game of Life step with dead-boundary (cells outside grid treated as 0). Prints the resulting 5×5 grid in the same format. |
+| 1495 | game_of_life_blinker_3 | No input. Prints 3 successive generations of a fixed blinker pattern on a 5×5 grid (initial state: middle row `00100
+00100
+00100
+` framed by blank rows). Each generation is 5 lines of 5 chars + `
+`; generations separated by an empty line `
+`. |
+| 1496 | game_of_life_glider_5 | No input. Prints 5 successive generations of a fixed glider pattern on a 7×7 grid. Each generation is 7 lines of 7 chars + `
+`; generations separated by an empty line. |
+| 1497 | langton_ant_5_steps | No input. Simulates 5 steps of Langton's ant on a 7×7 grid (all cells initially white `.`), starting at center facing up. Prints the resulting grid (7 lines of 7 chars, where `.`=white, `#`=black) + `
+`. |
+| 1498 | langton_ant_10_steps | No input. Same as `langton_ant_5_steps` but 10 steps. |
+| 1499 | brownian_walk_1d | Reads digit N `1`-`9` + `
+`, then N raw bytes. Starts at position 0. For each byte, advances position by `+1` if byte value is even, `-1` if odd. Prints the final position as signed decimal + `
+`. |
+| 1500 | random_walk_grid_2d | Reads digit N `1`-`9` + `
+`, then N raw bytes. Starts at `(0,0)`. For each byte, moves according to `byte mod 4`: `0`=up (`y+1`), `1`=right (`x+1`), `2`=down (`y-1`), `3`=left (`x-1`). Prints final `<x> <y>
+`. |
+| 1501 | bouncing_ball_1d | Reads `pos` `0`-`9`, `velo` `-3` to `3` (signed), `steps` `1`-`9` (each own line). The ball moves on positions `0..9`; on hitting position `0` or `9`, velocity reverses sign. Prints the position after each of the `steps` steps, one per line. |
+| 1502 | bouncing_ball_2d | Same as `bouncing_ball_1d` but in 2D: reads `x` `y` `vx` `vy` `steps`. Both axes bounce independently at `[0,9]`. Prints `<x> <y>
+` after each step. |
+| 1503 | snake_advance_one_step | Reads a `
+`-terminated string of length `1`-`5` representing the snake's body positions on a 1D 10-cell line (`H` head, `B` body); positions separated by `.` for empty cells. Then reads one direction byte `L` or `R` + `
+`. Moves the head by 1 in that direction (no wrap; clamp to bounds); body follows. Prints the new state + `
+`. |
+| 1504 | tetris_print_empty_board_6x10 | No input. Prints an empty 6-row × 10-column Tetris board: 6 lines of `..........
+`. |
+| 1505 | tetris_drop_piece_o | Reads column `0`-`8` + `
+`. Drops an O-piece (2×2 square) at that column into an otherwise empty 6×10 board. Prints the resulting board (6 lines of 10 chars each, `.` empty, `#` occupied). |
+| 1506 | forest_fire_spread_3x3 | Reads a 3×3 grid: 3 lines of 3 chars each, where chars are `T` (tree), `F` (fire), `.` (empty). Applies one step: each `F` stays `F`, each `T` adjacent (4-neighborhood, no diagonal) to an `F` becomes `F`, all other cells unchanged. Prints the new 3×3 grid. |
+| 1507 | predator_prey_one_step | Reads `prey` `0`-`50`, `pred` `0`-`20` (each own line). Applies one Lotka-Volterra-inspired step: `prey' = prey + prey/4 - pred`, `pred' = pred + prey/10 - pred/4` (integer divisions, clamp at 0). Prints `<prey'> <pred'>
+`. |
+| 1508 | epidemic_si_one_step | Reads `S` `0`-`99`, `I` `0`-`99` (each own line). Applies one SI-model step: `new_infections = S * I / 100` (clamp to remaining S), `S' = S - new_infections`, `I' = I + new_infections`. Prints `<S'> <I'>
+`. |
+| 1509 | bacteria_double_n_times | Reads `pop` `1`-`99` (own line), `N` `0`-`6` (own line). Prints `pop * 2^N` as decimal + `
+`. |
+| 1510 | radioactive_decay_half_n | Reads `count` `0`-`9999` (own line), `N` `0`-`9` (own line). Prints `count / 2^N` (integer halving N times) as decimal + `
+`. |
+| 1511 | queue_advance_n_customers | Reads digit N `1`-`9` + `
+`. Prints N lines `serving customer K
+` for `K = 1..N`. |
+| 1512 | percolation_2x2 | Reads a 2×2 binary grid: 2 lines of 2 chars `0`/`1` each (1 = open, 0 = blocked). Prints `1
+` if there's a 4-connected path from any top-row open cell to any bottom-row open cell, else `0
+`. |
+| 1513 | flock_1d_step | Reads digit N `2`-`5` + `
+`, then N decimals `0`-`9` (each own line) representing positions on a 1D line. Computes the mean position (floor). Then each cell moves +1 if it's below mean, -1 if above, unchanged if equal. Prints the new positions, one per line. |
 
 ## puzzles
 
@@ -2072,6 +2185,88 @@ control: <C>
 
 | # | name | description |
 |---|---|---|
+| 1561 | traffic_light_cycle | Reads digit N `1`-`9` + `
+`. Prints the traffic-light states cycling `Red
+Green
+Yellow
+` (starting with Red), totaling exactly N lines. |
+| 1562 | dfa_even_zeros | Reads a `
+`-terminated binary string of `0`/`1` (≤ 30 chars). Prints `1
+` if the count of `0` bytes (excluding `
+`) is even, else `0
+`. |
+| 1563 | dfa_odd_ones | Reads a `
+`-terminated binary string of `0`/`1` (≤ 30 chars). Prints `1
+` if the count of `1` bytes (excluding `
+`) is odd, else `0
+`. |
+| 1564 | dfa_ends_with_01 | Reads a `
+`-terminated binary string of `0`/`1` (≤ 30 chars). Prints `1
+` if the string ends with the two-byte pattern `01` (immediately before the `
+`), else `0
+`. |
+| 1565 | dfa_contains_substring_abc | Reads a `
+`-terminated ASCII string ≤ 40 chars. Prints `1
+` if the string contains the substring `abc` anywhere, else `0
+`. Use a 4-state DFA. |
+| 1566 | dfa_starts_a_ends_z | Reads a `
+`-terminated ASCII string of length ≥ 2 ≤ 30 chars. Prints `1
+` if first byte is `a` and last byte (immediately before `
+`) is `z`, else `0
+`. |
+| 1567 | mealy_invert_bits | Reads a `
+`-terminated sequence of bits `0`/`1` (≤ 30 chars). For each input bit, outputs the inverted bit (Mealy machine: output depends on input transition). Prints all output bits as one concatenated string + `
+`. |
+| 1568 | moore_count_state_mod4 | Reads a `
+`-terminated sequence of bits `0`/`1` (≤ 20 chars). State starts at `0`; each input bit increments state modulo 4. After each input, prints the current state (`0`-`3`); states are space-separated on a single line + `
+`. (Moore machine: output depends on current state.) |
+| 1569 | lexer_digit_letter_other | Reads a `
+`-terminated ASCII string ≤ 40 chars. For each byte, prints `D` if digit, `L` if letter, `O` otherwise. All output chars on one line, then `
+`. |
+| 1570 | vending_machine_state | Reads digit codes `1`/`2`/`3` (each `
+`-terminated; `1`=nickel(5¢), `2`=dime(10¢), `3`=quarter(25¢)) up to 10 inputs. Accumulates total; as soon as total ≥ 25, prints `Soda dispensed (change: <change>)
+` (where `change = total - 25`) and exits. If 10 inputs reached without 25, prints `Insufficient: <total>
+` and exits. |
+| 1571 | matching_parens_depth_track | Reads a `
+`-terminated string of `(` and `)` (≤ 30 chars). Tracks depth starting at 0. After each input char, prints depth as decimal, comma-separated entries on one line + `
+`. Example: `(())` → `1,2,1,0
+`. |
+| 1572 | ping_pong_toggle_state | Reads a `
+`-terminated bit string (`0`/`1`, ≤ 20 chars). State starts at `Ping`. On each `1` input, state toggles (`Ping↔Pong`); on each `0`, state stays. After each input, prints the current state + `
+` (one state per line). |
+| 1573 | password_state_machine | Reads bytes one per line (`
+`-terminated; one byte per line) until either: state-accumulated last 4 bytes form the string `open` (then prints `Unlocked!
+` and exits) or 10 bytes have been read without forming `open` (then prints `Locked
+` and exits). |
+| 1574 | dfa_divisible_by_3 | Reads a `
+`-terminated decimal-digit string ≤ 6 chars representing a non-negative integer N. Prints `1
+` if N is divisible by 3, else `0
+`. Implementation: 3-state DFA on digit stream (state = current N mod 3). |
+| 1575 | dfa_divisible_by_2 | Reads a `
+`-terminated decimal-digit string ≤ 6 chars. Prints `1
+` if the represented N is divisible by 2, else `0
+`. Implementation: track last-digit parity (no need for multi-state). |
+| 1576 | dfa_divisible_by_5 | Reads a `
+`-terminated decimal-digit string ≤ 6 chars. Prints `1
+` if the represented N is divisible by 5 (last digit is `0` or `5`), else `0
+`. |
+| 1577 | nfa_a_or_b_then_c | Reads a `
+`-terminated string of exactly 2 lowercase letters. Prints `1
+` if the string matches the regex `(a|b)c` (first byte is `a` or `b`, second byte is `c`), else `0
+`. Demonstrates a simple NFA / regex matcher. |
+| 1578 | regex_star_a | Reads a `
+`-terminated string of lowercase letters ≤ 30 chars. Prints `1
+` if the string matches `a*` (zero or more `a`s, no other characters), else `0
+`. |
+| 1579 | regex_aa_repeated | Reads a `
+`-terminated string of lowercase letters ≤ 30 chars. Prints `1
+` if the string matches `(aa)*` (zero or more `aa` pairs, even count of `a`s, no other characters), else `0
+`. |
+| 1580 | dfa_third_last_is_one | Reads a `
+`-terminated bit string of length ≥ 3, ≤ 30 chars. Prints `1
+` if the third-to-last bit (i.e. the bit two positions before the final bit, before `
+`) is `1`, else `0
+`. Implementation: 8-state DFA tracking last 3 bits. |
 
 ## parsing
 
@@ -2457,16 +2652,196 @@ Day: <D>
 
 | # | name | description |
 |---|---|---|
+| 1539 | stack_overflow_demo | Reads digit N `0`-`9` + `
+`. Allocates a fixed-size stack of capacity 5. Pushes N items (values 1..N); if N > 5, prints `Stack overflow at item <N>!
+` and exits when the 6th push would happen. If N ≤ 5, pushes all N then prints `Pushed <N> items.
+`. |
+| 1540 | queue_overflow_demo | Same shape as `stack_overflow_demo` but with a queue of capacity 5. Prints `Queue overflow at item <N>!
+` or `Enqueued <N> items.
+`. |
+| 1541 | pointer_basic | Reads decimal address `0`-`15` + `
+`, then decimal value `0`-`255` + `
+`. Writes the value at the address (in a 16-byte array initially zeroed), then reads it back and prints the value + `
+`. |
+| 1542 | memory_dump_zero_to_15 | No input. Initializes a 16-byte array to `addr * 17 mod 256` for `addr = 0..15`. Prints the 16 byte values as 2-char lowercase hex space-separated + `
+` (e.g. `00 11 22 ... ff`). |
+| 1543 | variable_swap_no_temp | Reads two decimals `a` `b` (each `0`-`99`, own line). Swaps using XOR trick (no temporary variable): `a ^= b; b ^= a; a ^= b;`. Prints `<new_a>
+<new_b>
+`. |
+| 1544 | variable_swap_with_temp | Reads two decimals `a` `b` (each `0`-`99`, own line). Swaps using a temporary variable `t = a; a = b; b = t;`. Prints `<new_a>
+<new_b>
+`. |
+| 1545 | array_indexed_access_5 | Reads 5 decimals (each `0`-`99`, own line), then a decimal index `0`-`4` (own line). Prints the array element at that index + `
+`. |
+| 1546 | linked_list_print_3 | No input. Builds a 3-node linked list with values `10`, `20`, `30` (head→tail). Traverses head-to-tail and prints each value on its own line. |
+| 1547 | stack_clear_demo | No input. Pushes 3 values onto a stack, then clears the stack (pops all without using results), then attempts to pop and prints `Stack empty
+` because pop on empty stack must report empty. |
+| 1548 | show_local_vs_global | No input. Declares a global variable `g = 100` and a local variable inside `main` `l = 200`. Prints `Local: 200
+Global: 100
+`. |
+| 1549 | ptr_advance_demo | Reads decimal base address `0`-`15` + `
+`, then offset `0`-`15` + `
+`. Prints `(base + offset) mod 16` as decimal + `
+` (simulates pointer advance with wraparound). |
+| 1550 | ptr_read_at_offset | Reads 16 decimals (each `0`-`255`, own line) representing a 16-byte array, then a base index `0`-`15` + `
+`, then an offset `0`-`15` + `
+`. Prints `array[(base + offset) mod 16]` as decimal + `
+`. |
+| 1551 | ptr_write_at_offset | Reads a base index `0`-`15` + `
+`, then offset `0`-`15` + `
+`, then a value `0`-`255` + `
+`. Writes the value at `(base + offset) mod 16` in an initially-zero 16-byte array, then prints the array as 16 decimals space-separated + `
+`. |
+| 1552 | memcpy_short | Reads digit N `1`-`8` + `
+`, then N source bytes (each on own line as decimal `0`-`255`). Copies the bytes into a destination buffer of size N, then prints the destination as N decimals space-separated + `
+`. |
+| 1553 | memset_short | Reads digit N `1`-`9` + `
+`, then decimal value V `0`-`255` + `
+`. Fills an N-byte buffer with V, then prints all N bytes as decimals space-separated + `
+`. |
+| 1554 | memcmp_short | Reads digit N `1`-`5` + `
+`, then N decimals (`0`-`255`, own line) for array A, then N decimals for array B. Prints `1
+` if all N pairs match, else `0
+`. |
+| 1555 | struct_two_fields | Reads two decimals `a` `b` (each `0`-`99`, own line) representing a 2-field struct `{a, b}`. Prints `field1=<a> field2=<b>
+`. |
+| 1556 | array_2d_access_3x3 | Reads 9 decimals (3×3 grid, row-major, each on own line), then a row `0`-`2` + `
+`, then a col `0`-`2` + `
+`. Prints `grid[row][col]` as decimal + `
+`. |
+| 1557 | array_2d_assign_3x3 | Reads 9 decimals (3×3 grid), then row `0`-`2`, col `0`-`2`, value (each own line). Updates the cell, then prints the new grid as 3 lines of 3 decimals space-separated + `
+` each. |
+| 1558 | linked_list_insert_at_head | No input. Starts with fixed list `[10, 20, 30]`. Inserts `99` at the head (so list becomes `[99, 10, 20, 30]`). Prints the new list values one per line. |
+| 1559 | linked_list_reverse | No input. Starts with fixed list `[10, 20, 30]`. Reverses by in-place pointer manipulation (head becomes 30). Prints `[30, 20, 10]` one value per line. |
+| 1560 | stack_of_stacks_demo | No input. Has two stacks `A` and `B`. Pushes `[1, 2, 3]` onto A and `[4, 5]` onto B. Then pops all from A printing each, then pops all from B printing each. Output: `3
+2
+1
+5
+4
+`. |
 
 ## language_meta
 
 | # | name | description |
 |---|---|---|
+| 1599 | print_word_size_compile_time | No input. Uses the compile-time constant `#w` to print the program's word size as decimal + `
+` (e.g. `64
+` if compiled with `w=64`, `32
+` if `w=32`). |
+| 1600 | print_motto | No input. Prints `Flip a bit, then jump.
+`. |
+| 1601 | print_one_instruction_explanation | No input. Prints `The only operation is: a;b (flip bit at a, jump to b).
+`. |
+| 1602 | print_self_description_short | No input. Prints `I am a FlipJump program.
+`. |
+| 1603 | print_self_description_long | No input. Prints a 4-line self-description: `I am a FlipJump program.
+My only operation is flip-and-jump.
+I was assembled from macros.
+I run in a finite memory.
+`. |
+| 1604 | print_compile_time_factorial_5 | No input. Internally computes `5! = 120` at compile time (using a `rep`-based multiplicative chain). Prints `120
+`. |
+| 1605 | print_compile_time_fibonacci_8 | No input. Internally computes `F(8) = 21` at compile time. Prints `21
+`. |
+| 1606 | macro_arg_substitution_demo | Defines a macro `outer(x) { inner(x, x) }` and `inner(a, b) { stl.output(a); stl.output(b) }`. Top-level invokes `outer('X')`. Output: `XX
+`. |
+| 1607 | namespace_isolation_demo | Defines two namespaces `foo` and `bar`, each with a macro `say()` printing different text. Top-level invokes `foo.say()` then `bar.say()`. Output: `from foo
+from bar
+`. |
+| 1608 | print_macro_call_count_static | No input. The program defines a macro `count()` that increments a runtime variable and calls itself nothing further (just bumps a counter). The macro is invoked 5 times at top level. After the 5th call, the program prints the final counter value as decimal + `
+` (i.e. `5
+`). |
+| 1609 | print_label_address_modulo | No input. Defines a label `here`, then prints `<address-of-here> mod 256` as decimal + `
+`. (The value depends on the compiled layout but is deterministic per build.) |
+| 1610 | print_address_difference | No input. Defines two labels `a` and `b` with `b` placed 4 ops after `a`. Prints the byte-distance `b - a` as decimal + `
+` (deterministic per FJM encoding). |
+| 1611 | rep_print_compile_time_unwind | No input. Uses `rep(8, i) stl.output('0' + i)` to print `01234567
+`. Demonstrates compile-time loop expansion. |
+| 1612 | compile_time_string_length | No input. Internally has the string `"FlipJump"`. Uses `#"FlipJump"` or `strlen` macro to compute its length at compile time. Prints `8
+`. |
+| 1613 | infinite_loop_explanation | No input. Prints `A FlipJump program ends with a self-loop.
+`, then enters `stl.loop`. |
 
 ## games
 
 | # | name | description |
 |---|---|---|
+| 1514 | tic_tac_toe_status | Reads 3 lines of 3 chars each (board state with `X`, `O`, `.`). Prints exactly one of `X wins
+`, `O wins
+`, `Draw
+` (board full, no winner), or `In progress
+` (no winner, board not full). |
+| 1515 | hangman_state_print | Reads a `
+`-terminated secret word ≤ 10 chars (lowercase letters), then a `
+`-terminated string of guessed letters ≤ 26 chars. Prints the secret with un-guessed letters as `_` (e.g. secret `hello`, guesses `el` → `_ell_
+`). |
+| 1516 | hangman_lives_check | Reads a digit `0`-`6` + `
+` (number of wrong guesses so far). Prints `<lives>
+` where `lives = 6 - wrong`. If `lives == 0`, additionally prints `Game over!
+` on a second line. |
+| 1517 | blackjack_hand_value | Reads digit N `1`-`9` + `
+`, then N card-value codes (each one of `A`, `2`-`9`, `T`, `J`, `Q`, `K` on its own line). Computes the best total (`A` is `1` or `11`, face cards `J`/`Q`/`K` are `10`). Prints the best total `≤ 21` (or, if even with `A=1` all hands bust, prints the minimum bust total). |
+| 1518 | blackjack_bust_check | Reads digit N `1`-`9` + `
+`, then N card-value codes (same alphabet as `blackjack_hand_value`). Prints `1
+` if minimum total (treating all aces as 1) exceeds 21, else `0
+`. |
+| 1519 | coin_toss_streak | Reads a `
+`-terminated string of `H`/`T` chars (≤ 20). Prints the length of the longest run of consecutive identical results as decimal + `
+`. |
+| 1520 | dice_three_rolls | Reads exactly 3 bytes (no separators). For each byte `b`, prints `(b mod 6) + 1` as decimal on its own line (3 lines of output). |
+| 1521 | card_blackjack_value | Reads exactly one card-value char (`A`, `2`-`9`, `T`, `J`, `Q`, `K`). Prints the blackjack value: `A` → `1`, `2`-`9` → that digit, `T`/`J`/`Q`/`K` → `10`. Output is decimal + `
+`. |
+| 1522 | minesweeper_count_center | Reads 3 lines of 3 chars each (each char `M` for mine or `.` for empty). Prints the count of mines (`M`) in the 8 cells around the center `(1,1)` (excluding center itself) as decimal + `
+`. |
+| 1523 | minesweeper_count_grid | Reads 3 lines of 3 chars each (chars are `M` for mine, `.` for empty). Prints a 3×3 output grid where each cell shows the number of mine-neighbors (`0`-`8`) if not a mine, or `*` if it is a mine. 3 lines of 3 chars each + `
+`. |
+| 1524 | game_2048_one_merge_row | Reads exactly 4 single-digit decimals `0`-`9` (each own line) representing 4 values in a row. Applies one 2048 merge step (slide non-zero values left, merge adjacent equal pairs once left-to-right, then slide again). Prints the resulting 4 values on one line, space-separated, + `
+`. |
+| 1525 | game_2048_check_done | Reads a 4×4 grid of decimal digits `0`-`9` (4 lines, each 4 chars). Prints `1
+` if no moves are possible (no zeros AND no two adjacent-equal pairs horizontally or vertically), else `0
+`. |
+| 1526 | battleship_hit_check | Reads a 4×4 grid (`S` = ship, `.` = water): 4 lines of 4 chars each. Then reads a hit coordinate `r c` (each digit `0`-`3` on its own line). Prints `hit
+` if grid[r][c] is `S`, else `miss
+`. |
+| 1527 | battleship_ships_remaining | Reads a 4×4 grid (4 lines, each 4 chars; `S` = ship cell, `.` = water), then a `
+`-terminated stream of `H`/`M` chars (each char represents the outcome at the corresponding `S` cell, in row-major order, skipping `.` cells). Prints the count of `S` cells that received `M` (or no value) — i.e. ship cells NOT hit yet — as decimal + `
+`. |
+| 1528 | rps_play_3_rounds | Reads 6 chars (3 pairs): player 1 then player 2 for each of 3 rounds (each char on own line; `r`/`p`/`s`). Determines round winner for each (P1, P2, or tie). Prints final summary `P1: <p1_wins>
+P2: <p2_wins>
+Ties: <ties>
+`. |
+| 1529 | word_guess_reveal | Reads a `
+`-terminated secret word ≤ 8 chars (lowercase) and a `
+`-terminated guess char (single lowercase letter). Prints the secret with un-revealed letters as `_` (only the guess char is "revealed"; others stay as `_`). E.g. secret `apple`, guess `p` → `_pp__
+`. |
+| 1530 | nim_winner_three_heaps | Reads 3 decimals (each `0`-`7`, own line) representing heap sizes. Prints `first
+` if first player has a winning strategy (XOR of heaps != 0), else `second
+`. |
+| 1531 | chess_piece_count | Reads exactly 8 lines, each 8 chars, where each char is a chess piece (`P`/`R`/`N`/`B`/`Q`/`K` for white, lowercase for black, `.` for empty). Prints `white: <w>
+black: <b>
+` with counts. |
+| 1532 | chess_pawn_at_promotion | Reads 2 decimals `r c` (each `0`-`7`, own line) — a white pawn's position. Prints `1
+` if `r == 0` (white pawn at promotion row), else `0
+`. |
+| 1533 | spelling_bee_check | Reads a `
+`-terminated set of 7 lowercase letters (the allowed letters), then a `
+`-terminated candidate word ≤ 10 chars. Prints `1
+` if every letter of the word is in the allowed set, else `0
+`. |
+| 1534 | wordle_feedback | Reads a `
+`-terminated secret word (exactly 5 lowercase letters), then a `
+`-terminated guess (exactly 5 lowercase letters). Prints exactly 5 feedback chars + `
+`: `G` for green (right letter, right position), `Y` for yellow (right letter, wrong position; track multiplicity correctly per standard Wordle rules), `_` for grey. |
+| 1535 | mastermind_feedback | Reads a `
+`-terminated 4-char secret code (each char `1`-`6`) and a `
+`-terminated 4-char guess. Prints `<black> <white>
+` where `black` = exact position matches, `white` = right color wrong position (with proper multiplicity per Mastermind rules). |
+| 1536 | game_of_life_count_alive_5x5 | Reads a 5×5 binary grid (5 lines of 5 chars `0`/`1`). Prints the count of `1` cells as decimal + `
+`. |
+| 1537 | snake_eat_food | Reads two decimals `pos_snake` `pos_food` (each `0`-`9`, own line). Prints `1
+` if equal (snake eats food), else `0
+`. |
+| 1538 | tetris_piece_rotate | Reads a 2×2 piece description (2 lines of 2 chars `*`/`.`). Prints the piece rotated 90° clockwise (still 2×2). |
 
 ## calendar_time
 
