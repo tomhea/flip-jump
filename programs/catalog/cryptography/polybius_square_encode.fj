@@ -28,10 +28,8 @@ def main @ err, afterI, calc < ch, skipnl, v, row, col, ci, ca, c5, one {
 ch: hex.vec 2
 skipnl: hex.vec 2
 v: hex.vec 4
-idx: hex.vec 4
 row: hex.vec 4
 col: hex.vec 4
-q: hex.vec 4
 ci: hex.vec 2, 'I'
 ca: hex.vec 4, 'A'
 c5: hex.vec 4, 5

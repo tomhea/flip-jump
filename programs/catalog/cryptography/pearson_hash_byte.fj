@@ -29,18 +29,18 @@ def main @ err, loop, go, done < b, nl, h, idxw, newh, tptr, ptable {
     stl.loop
 }
 
-// Fill ptable[i] = (167*i + 13) mod 256 for i = 0..255 (a fixed permutation).
-def build_table @ bloop, bbody, bdone < wp, i, prod, c167, c13, c256, ptable {
+// Fill ptable[idx] = (167*idx + 13) mod 256 for idx = 0..255 (a fixed permutation).
+def build_table @ bloop, bbody, bdone < wp, idx, prod, c167, c13, c256, ptable {
     hex.set w/4, wp, ptable
-    hex.zero 4, i
+    hex.zero 4, idx
   bloop:
-    hex.cmp 4, i, c256, bbody, bdone, bdone
+    hex.cmp 4, idx, c256, bbody, bdone, bdone
   bbody:
-    hex.mul 4, prod, i, c167
+    hex.mul 4, prod, idx, c167
     hex.add 4, prod, c13
     hex.write_byte wp, prod
     hex.ptr_inc wp
-    hex.inc 4, i
+    hex.inc 4, idx
     ;bloop
   bdone:
 }
@@ -52,7 +52,7 @@ idxw: hex.vec hw
 newh: hex.vec 2
 tptr: hex.vec hw
 wp: hex.vec hw
-i: hex.vec 4
+idx: hex.vec 4
 prod: hex.vec 4
 c167: hex.vec 4, 167
 c13: hex.vec 4, 13

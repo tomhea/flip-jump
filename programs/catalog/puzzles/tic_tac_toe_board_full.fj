@@ -22,5 +22,4 @@ def main @ loop, go, full, dot, done < b, dotc {
 }
 
 b: hex.vec 2
-nlc: hex.vec 2, '\n'
 dotc: hex.vec 2, '.'

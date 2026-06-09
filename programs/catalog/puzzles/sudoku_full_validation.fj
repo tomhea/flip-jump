@@ -250,9 +250,6 @@ c3: hex.vec hw, 3
 c3l: hex.vec hw, 3
 c9l: hex.vec hw, 9
 c27: hex.vec hw, 27
-c10: hex.vec hw, 10
-one9: hex.vec hw, 1
-nine9: hex.vec hw, 9
 c0c: hex.vec 4, '0'
 c9c: hex.vec 4, '9'
 c0b: hex.vec 2, '0'

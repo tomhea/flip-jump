@@ -68,9 +68,7 @@ bptr: hex.vec hw
 nval: hex.vec hw
 k: hex.vec hw
 mv: hex.vec 4
-mvb: hex.vec 2
 player: hex.vec 2
-side: hex.vec 2
 bi: hex.vec hw
 cellv: hex.vec 2
 q: hex.vec 4

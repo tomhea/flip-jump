@@ -34,7 +34,6 @@ def read_digit dst < db, c0 {
 }
 
 d0: hex.vec 2
-d1: hex.vec 2
 row: hex.vec 4
 col: hex.vec 4
 idx: hex.vec 4

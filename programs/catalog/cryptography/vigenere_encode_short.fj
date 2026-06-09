@@ -86,7 +86,6 @@ kbyte: hex.vec 2
 keyval: hex.vec 4
 nn: hex.vec 4
 out: hex.vec 2
-q: hex.vec 4
 sv: hex.vec 4
 st: hex.vec 4
 la: hex.vec 4, 'a'

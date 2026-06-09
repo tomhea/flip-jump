@@ -6,7 +6,7 @@ hw = w / 4
 
 main
 
-def main @ err, clr, cbody, cdone, oloop, obody, odone, iloop, ibody, checkval, found, icont, notfound, nexti, no, fin < nval, i, j, arr1, arr2, used, a1ptr, a2ptr, uptr, vi, vj, uj, one, zb2 {
+def main @ err, clr, cbody, cdone, oloop, obody, odone, iloop, ibody, checkval, found, icont, notfound, nexti, no, fin < nval, idx, j, arr1, arr2, used, a1ptr, a2ptr, uptr, vi, vj, uj, one, zb2 {
     stl.startup_and_init_all
     hex.input_dec_uint 4, nval, err
     hex.set hw, a1ptr, arr1
@@ -14,22 +14,22 @@ def main @ err, clr, cbody, cdone, oloop, obody, odone, iloop, ibody, checkval, 
     hex.set hw, a2ptr, arr2
     read_array a2ptr, nval, err
     hex.set hw, uptr, used
-    hex.zero hw, i
+    hex.zero hw, idx
   clr:
-    hex.cmp hw, i, nval, cbody, cdone, cdone
+    hex.cmp hw, idx, nval, cbody, cdone, cdone
   cbody:
     hex.write_byte_and_inc uptr, zb2
-    hex.inc hw, i
+    hex.inc hw, idx
     ;clr
   cdone:
     hex.set hw, a1ptr, arr1
     hex.set hw, a2ptr, arr2
     hex.set hw, uptr, used
-    hex.zero hw, i
+    hex.zero hw, idx
   oloop:
-    hex.cmp hw, i, nval, obody, odone, odone
+    hex.cmp hw, idx, nval, obody, odone, odone
   obody:
-    get_cell a1ptr, i, vi
+    get_cell a1ptr, idx, vi
     hex.zero hw, j
   iloop:
     hex.cmp hw, j, nval, ibody, notfound, notfound
@@ -49,7 +49,7 @@ def main @ err, clr, cbody, cdone, oloop, obody, odone, iloop, ibody, checkval, 
   notfound:
     ;no
   nexti:
-    hex.inc hw, i
+    hex.inc hw, idx
     ;oloop
   odone:
     stl.output "1\n"
@@ -89,7 +89,7 @@ def read_array bufptr, n, err @ loop, body, done < ridx, val {
 }
 
 nval: hex.vec hw
-i: hex.vec hw
+idx: hex.vec hw
 j: hex.vec hw
 arr1: hex.vec 4*9
 arr2: hex.vec 4*9
