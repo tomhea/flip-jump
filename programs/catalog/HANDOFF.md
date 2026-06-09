@@ -1,10 +1,10 @@
 # Catalog — Implementation Handoff
 
-Handoff for completing the demonstration catalog. As of this writing: **526 / 1029
-approved specs implemented**. **Pass 1 is COMPLETE** — all 15 started categories are now
-finished (number_theory, geometry, bits, sequences, conversion, calendar_time, misc, io,
-strings, loops, text_processing, plus the originally-complete arithmetic/branching/hello/logic).
-This document is the plan for the remaining **~503 programs (Passes 2–4)**, plus the lessons
+Handoff for completing the demonstration catalog. As of this writing: **902 / 1029
+approved specs implemented**. **Passes 1, 2, and 3 are COMPLETE** — Pass 1 finished the 15
+started categories; Pass 2 added algorithms/data_structures/language_demos (#1110–#1277);
+Pass 3 added puzzles/cryptography/encoding/interactive/graphics_ascii/parsing (#1278–#1486).
+This document is the plan for the remaining **127 programs (Pass 4)**, plus the lessons
 that make them fast to write.
 
 **Read this first if you're picking up Pass 2+:** the catalog is now **hex-first**. Pass 1
@@ -66,7 +66,9 @@ reusable patterns the later passes lean on — read these programs as worked exa
   compile-time `rep` DP with constant indices + a runtime `copy_if_eq` select — no runtime
   pointers needed when the table is small and bounded.
 
-### Pass 2 — algorithms, data_structures, language_demos (167)
+### Pass 2 — DONE (167 programs, #1110–#1277)
+
+algorithms (68), data_structures (58), language_demos (41) — all implemented and verified.
 
 | Category | n | Flavor (see CATALOG.md for the exact rows) |
 |---|---:|---|
@@ -74,7 +76,16 @@ reusable patterns the later passes lean on — read these programs as worked exa
 | data_structures | 58 | array/stack/queue/set/lookup over N decimals (`array_count_*` shape) |
 | language_demos | 41 | showcase FlipJump features themselves (macros, rep, pointers, self-modification) |
 
-### Pass 3 — puzzles + cryptography‥parsing (209)
+### Pass 3 — DONE (209 programs, #1278–#1486)
+
+All six categories implemented and verified (`pytest --catalog` green). One program needs
+`w=32` (`sudoku_full_validation` — at `w=64` its indexed-pointer line-scan runs too long;
+`w=32` keeps both compile and run under a few seconds). Reusable idioms this pass added:
+caesar `shift_byte` (normalize the signed shift to `0..25`, then in-case wrap), an 8-bit
+hash framework (`mulmod state,factor` = `state*factor mod 256` + a streaming byte loop —
+djb2/fnv/crc8/pearson/adler all instances of it), a `read_num`-until-delimiter reader for
+mid-string fields (`hex.input_dec_uint` errors on any non-`\n`/`\0` byte, so it can't parse
+delimited fields), and a two-stack shunting-yard evaluator (`propositional_eval`/`tautology`).
 
 | Category | n | Flavor |
 |---|---:|---|

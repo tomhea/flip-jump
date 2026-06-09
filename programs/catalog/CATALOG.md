@@ -601,8 +601,8 @@ CR-ist found 9 overlaps within batch or with prior batches; other 91 are APPROVE
 | APPROVED | interactive | customer_rating | Reads digit `1`-`5` + `\n`. Prints `Thank you for your <N>-star review!\n`. |
 | APPROVED | interactive | clock_set | Reads two decimals on separate lines: hour `0`-`23` then minute `0`-`59`. Prints `Time set to <HH>:<MM>\n` (each zero-padded to 2 digits). |
 | APPROVED | interactive | greeting_user_age | Reads a `\n`-terminated name (≤ 20 chars) then a decimal age `0`-`120` + `\n`. Prints `Hello, <name>! You are <age> years old.\n`. |
-| APPROVED | interactive | todo_add | Reads a `\n`-terminated task description (≤ 40 chars). Prints `Added: <task>\n`. |
-| OVERLAP | interactive | todo_complete | OVERLAP with todo_add: identical read-line-then-prefix-and-echo; differs only in the prefix word. Dropped. |
+| APPROVED | interactive | to_do_add | Reads a `\n`-terminated task description (≤ 40 chars). Prints `Added: <task>\n`. |
+| OVERLAP | interactive | todo_complete | OVERLAP with to_do_add: identical read-line-then-prefix-and-echo; differs only in the prefix word. Dropped. |
 | APPROVED | interactive | shopping_cart_check | Reads decimal price `0`-`999` + `\n` then decimal budget `0`-`999` + `\n`. If `price <= budget` prints `affordable\n`, else prints `over budget by <X>\n` where `X = price - budget`. |
 | APPROVED | interactive | number_guess_three_tries | Secret value is `5`. Reads up to 3 decimal guesses `1`-`10` (each `\n`-terminated). After each guess prints `too low\n`, `too high\n`, or `correct!\n` then exits on correct. If 3 wrong guesses, prints `Out of tries. Secret was 5.\n` and exits. |
 | APPROVED | interactive | odd_one_out | Reads three decimals (each `\n`-terminated). If exactly two are equal, prints the third (unique) value + `\n`. Otherwise prints `none\n` (covers both all-equal and all-different cases). |
