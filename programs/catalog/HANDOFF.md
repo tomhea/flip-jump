@@ -98,6 +98,10 @@ delimited fields), and a two-stack shunting-yard evaluator (`propositional_eval`
 
 ### Pass 4 — simulation‥language_meta (127)
 
+**The remaining pass. Its dedicated, actionable handoff is [`HANDOFF_PASS4.md`](HANDOFF_PASS4.md)**
+(numbers #1487–#1613, the proven oracle-batch workflow, carry-forward kits + traps, the one new
+technique — `stl.call` recursion — and per-category guidance).
+
 | Category | n | Flavor |
 |---|---:|---|
 | simulation | 27 | step a small state over time (cellular/physics-lite/counters) |
