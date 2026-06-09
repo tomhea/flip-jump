@@ -22,7 +22,7 @@ def main @ err, loop, go, done < b, nl, h, p, bx, px, bp, c31 {
     mulmod p, c31
     ;loop
   done:
-    print_hex_byte h
+    hex.print_as_digit 2, h, 0
     stl.output '\n'
   err:
     stl.loop
@@ -34,12 +34,6 @@ def mulmod state, factor < mh4, mt4 {
     hex.mov 2, mh4, state
     hex.mul 4, mt4, mh4, factor
     hex.mov 2, state, mt4
-}
-
-// Print a byte register (hex.vec 2) as 2 lowercase hex chars.
-def print_hex_byte hb {
-    hex.print_as_digit hb + dw, 0
-    hex.print_as_digit hb, 0
 }
 
 

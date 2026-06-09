@@ -5,11 +5,11 @@
 main
 
 def main @ n1, no2, affirm, negate, done < ch, yc, nc {
-    stl.startup
-    bit.input ch
-    bit.cmp 8, ch, yc, n1, affirm, n1
+    stl.startup_and_init_all
+    hex.input ch
+    hex.cmp 2, ch, yc, n1, affirm, n1
   n1:
-    bit.cmp 8, ch, nc, no2, negate, no2
+    hex.cmp 2, ch, nc, no2, negate, no2
   no2:
     stl.output "Please answer y or n\n"
     ;done
@@ -22,6 +22,6 @@ def main @ n1, no2, affirm, negate, done < ch, yc, nc {
     stl.loop
 }
 
-ch: bit.vec 8, 0
-yc: bit.vec 8, 'y'
-nc: bit.vec 8, 'n'
+ch: hex.vec 2, 0
+yc: hex.vec 2, 'y'
+nc: hex.vec 2, 'n'

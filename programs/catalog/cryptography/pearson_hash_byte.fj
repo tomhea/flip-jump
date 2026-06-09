@@ -23,16 +23,10 @@ def main @ err, loop, go, done < b, nl, h, idxw, newh, tptr, ptable {
     hex.mov 2, h, newh
     ;loop
   done:
-    print_hex_byte h
+    hex.print_as_digit 2, h, 0
     stl.output '\n'
   err:
     stl.loop
-}
-
-// Print a byte register (hex.vec 2) as 2 lowercase hex chars.
-def print_hex_byte hb {
-    hex.print_as_digit hb + dw, 0
-    hex.print_as_digit hb, 0
 }
 
 // Fill ptable[i] = (167*i + 13) mod 256 for i = 0..255 (a fixed permutation).

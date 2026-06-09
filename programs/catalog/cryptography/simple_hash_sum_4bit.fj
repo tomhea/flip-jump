@@ -29,12 +29,6 @@ def mulmod state, factor < mh4, mt4 {
     hex.mov 2, state, mt4
 }
 
-// Print a byte register (hex.vec 2) as 2 lowercase hex chars.
-def print_hex_byte hb {
-    hex.print_as_digit hb + dw, 0
-    hex.print_as_digit hb, 0
-}
-
 
 b: hex.vec 2
 nl: hex.vec 2, '\n'

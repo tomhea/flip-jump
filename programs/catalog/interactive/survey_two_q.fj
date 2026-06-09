@@ -5,17 +5,17 @@
 main
 
 def main @ an, bb1, m1, d1, definitely, maybe, probnot, defnot, done < a, b, skip, yc {
-    stl.startup
-    bit.input a
-    bit.input skip
-    bit.input b
-    bit.cmp 8, a, yc, an, bb1, an
+    stl.startup_and_init_all
+    hex.input a
+    hex.input skip
+    hex.input b
+    hex.cmp 2, a, yc, an, bb1, an
   bb1:
-    bit.cmp 8, b, yc, m1, definitely, m1
+    hex.cmp 2, b, yc, m1, definitely, m1
   m1:
     ;maybe
   an:
-    bit.cmp 8, b, yc, d1, probnot, d1
+    hex.cmp 2, b, yc, d1, probnot, d1
   d1:
     ;defnot
   definitely:
@@ -33,7 +33,7 @@ def main @ an, bb1, m1, d1, definitely, maybe, probnot, defnot, done < a, b, ski
     stl.loop
 }
 
-a: bit.vec 8, 0
-b: bit.vec 8, 0
-skip: bit.vec 8, 0
-yc: bit.vec 8, 'y'
+a: hex.vec 2, 0
+b: hex.vec 2, 0
+skip: hex.vec 2, 0
+yc: hex.vec 2, 'y'

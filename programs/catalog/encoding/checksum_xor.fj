@@ -15,16 +15,10 @@ def main @ err, loop, go, done < b, nl, x {
     hex.xor 2, x, b
     ;loop
   done:
-    print_hex_byte x
+    hex.print_as_digit 2, x, 0
     stl.output '\n'
   err:
     stl.loop
-}
-
-// Print a byte register (hex.vec 2) as 2 lowercase hex chars (high nibble first).
-def print_hex_byte b {
-    hex.print_as_digit b + dw, 0
-    hex.print_as_digit b, 0
 }
 
 b: hex.vec 2

@@ -18,18 +18,12 @@ def main @ err, loop, go, fb, emit, done < b, nl, first {
   fb:
     bit.zero first
   emit:
-    print_hex_byte b
+    hex.print_as_digit 2, b, 0
     ;loop
   done:
     stl.output '\n'
   err:
     stl.loop
-}
-
-// Print a byte register (hex.vec 2) as 2 lowercase hex chars (high nibble first).
-def print_hex_byte b {
-    hex.print_as_digit b + dw, 0
-    hex.print_as_digit b, 0
 }
 
 b: hex.vec 2

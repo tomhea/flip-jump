@@ -1,0 +1,42 @@
+// Tests hex.input_dec_uint_until / hex.input_dec_int_until: decimals read out of
+// delimited fields (stop on a caller-chosen byte), and the bad-byte error path.
+
+main
+
+def main @ errA, goterr, after_err, done < val {
+    stl.startup_and_init_all
+
+    stl.output "uint: "
+    hex.input_dec_uint_until 4, val, ',', errA
+    hex.print_dec_uint 4, val
+    stl.output ' '
+    hex.input_dec_uint_until 4, val, '\n', errA
+    hex.print_dec_uint 4, val
+    stl.output '\n'
+
+    stl.output "int: "
+    hex.input_dec_int_until 4, val, ',', errA
+    hex.print_dec_int 4, val
+    stl.output ' '
+    hex.input_dec_int_until 4, val, '\n', errA
+    hex.print_dec_int 4, val
+    stl.output '\n'
+
+    // A byte that is neither a digit nor the stop byte jumps to the error label.
+    stl.output "err: "
+    hex.input_dec_uint_until 4, val, ',', goterr
+    stl.output 'N'
+    ;after_err
+  goterr:
+    stl.output 'E'
+  after_err:
+    stl.output '\n'
+    ;done
+
+  errA:
+    stl.output 'X'
+  done:
+    stl.loop
+}
+
+val: hex.vec 4

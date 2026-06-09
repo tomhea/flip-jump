@@ -8,7 +8,7 @@ def main < h {
     stl.startup_and_init_all
     hex.set 2, h, 0x78
     rep(4, i) murmur_step
-    print_hex_byte h
+    hex.print_as_digit 2, h, 0
     stl.output '\n'
     stl.loop
 }
@@ -19,12 +19,6 @@ def mulmod state, factor < mh4, mt4 {
     hex.mov 2, mh4, state
     hex.mul 4, mt4, mh4, factor
     hex.mov 2, state, mt4
-}
-
-// Print a byte register (hex.vec 2) as 2 lowercase hex chars.
-def print_hex_byte hb {
-    hex.print_as_digit hb + dw, 0
-    hex.print_as_digit hb, 0
 }
 
 // Read one byte and fold it into h: h = ((h ^ b) * 5) mod 256.

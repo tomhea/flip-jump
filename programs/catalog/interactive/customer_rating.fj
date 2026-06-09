@@ -5,12 +5,12 @@
 main
 
 def main < ch {
-    stl.startup
-    bit.input ch
+    stl.startup_and_init_all
+    hex.input ch
     stl.output "Thank you for your "
-    bit.print ch
+    hex.print ch
     stl.output "-star review!\n"
     stl.loop
 }
 
-ch: bit.vec 8, 0
+ch: hex.vec 2, 0
