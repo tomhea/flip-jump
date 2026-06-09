@@ -4,17 +4,17 @@
 
 main
 
-def main @ err < h, m {
+def main < h, m, sb {
     stl.startup_and_init_all
-    hex.input_dec_uint_until 8, h, ':', err
-    hex.input_dec_uint_until 8, m, '\n', err
+    hex.input_dec_uint_until 8, h, sb
+    hex.input_dec_uint_until 8, m, sb
     hex.print_dec_uint 8, h
     stl.output ':'
     hex.print_dec_uint 8, m
     stl.output '\n'
-  err:
     stl.loop
 }
 
 h: hex.vec 8
 m: hex.vec 8
+sb: hex.vec 2

@@ -4,10 +4,10 @@
 
 main
 
-def main @ err < dollar, d, c1, c2, cc, total, c100 {
+def main < dollar, d, c1, c2, cc, total, c100, sb {
     stl.startup_and_init_all
     hex.input dollar
-    hex.input_dec_uint_until 8, d, '.', err
+    hex.input_dec_uint_until 8, d, sb
     read_digit c1
     read_digit c2
     hex.mov 8, cc, c1
@@ -17,7 +17,6 @@ def main @ err < dollar, d, c1, c2, cc, total, c100 {
     hex.add 8, total, cc
     hex.print_dec_uint 8, total
     stl.output '\n'
-  err:
     stl.loop
 }
 
@@ -36,5 +35,6 @@ c2: hex.vec 8
 cc: hex.vec 8
 total: hex.vec 8
 c100: hex.vec 8, 100
+sb: hex.vec 2
 db: hex.vec 2
 c0: hex.vec 8, '0'

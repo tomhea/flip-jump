@@ -4,11 +4,11 @@
 
 main
 
-def main @ err < year, mon, day {
+def main < year, mon, day, sb {
     stl.startup_and_init_all
-    hex.input_dec_uint_until 8, year, '-', err
-    hex.input_dec_uint_until 8, mon, '-', err
-    hex.input_dec_uint_until 8, day, '\n', err
+    hex.input_dec_uint_until 8, year, sb
+    hex.input_dec_uint_until 8, mon, sb
+    hex.input_dec_uint_until 8, day, sb
     stl.output "Year: "
     hex.print_dec_uint 8, year
     stl.output "\nMonth: "
@@ -16,10 +16,10 @@ def main @ err < year, mon, day {
     stl.output "\nDay: "
     hex.print_dec_uint 8, day
     stl.output '\n'
-  err:
     stl.loop
 }
 
 year: hex.vec 8
 mon: hex.vec 8
 day: hex.vec 8
+sb: hex.vec 2

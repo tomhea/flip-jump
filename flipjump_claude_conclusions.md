@@ -53,14 +53,15 @@ off-limits names are the `w`/`dw`/`dbit` constants, which the compiler now rejec
   Replaces the per-program `scmp4` sign-bias helper that Pass-2 signed programs re-defined ~9×.
   `@requires hex.cmp.init`. Tested by `programs/hexlib_tests/basics1/scmp.fj` (`hexlib-scmp`).
 
-- **`hex.input_dec_uint_until`, `hex.input_dec_int_until`** (`n, dst, stop_byte, error`, in
-  `hex/input.fj`) — the delimited-field analogs of `hex.input_dec_uint/int`. The existing readers
-  stop only on `'\n'`/`'\0'` and **error on any other non-digit**, so they can't parse a decimal
-  that ends at a `,` / `:` / `.` / `}` etc. The `_until` variants take the field terminator as a
-  (constant) byte param: they read digits (signed form allows a leading `-`) until they read
-  `stop_byte`, which is consumed; any byte that is neither `'0'..'9'` nor `stop_byte` jumps to
-  `error`. Same `if_flags`-dispatch body as the originals plus one `hex.cmp` against the stop byte.
-  Replaces the per-program `read_num` "loop `input` + `mul10` + accumulate, stop on a non-digit"
-  helper that Pass-3 parsing programs re-defined (date/time/rgb/dimensions/version/currency/json_int).
-  `@requires hex.init`. Tested by `programs/hexlib_tests/basics1/input_dec_until.fj`
-  (`hexlib-input_dec_until`).
+- **`hex.input_dec_uint_until`, `hex.input_dec_int_until`** (`n, dst, stop_byte`, in
+  `hex/input.fj`) — the general decimal-field readers, and now the **primitives** that
+  `hex.input_dec_uint`/`int` are built on. They read ASCII `'0'..'9'` (signed form allows a
+  leading `'-'`) and **stop at the first non-digit byte**, which they write to `stop_byte[:2]`
+  (an *output*) and consume. Every input is valid — there is **no error path**; the caller
+  inspects `stop_byte` to learn the terminator (`,`/`:`/`.`/`}`/`'\n'`/`'\0'`/…). This replaced the
+  per-program `read_num` helper Pass-3 parsing re-defined (date/time/rgb/dimensions/version/
+  currency/json_int). The plain `hex.input_dec_uint/int n, dst, error` are now thin wrappers:
+  call the `_until` primitive, then `if_flags` the returned `stop_byte` against `'\n'`/`'\0'` and
+  jump `error` otherwise — identical behavior to before, less duplicated code, and no `hex.cmp`
+  dependency (pure `if_flags`). `@requires hex.init`. Tested by
+  `programs/hexlib_tests/basics1/input_dec_until.fj` (`hexlib-input_dec_until`).
