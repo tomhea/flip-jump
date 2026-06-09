@@ -172,3 +172,56 @@ what the skill documents):
 - **UTF-8 source (FIXED)**: `fj_parser.lex_parse_curr_file` now reads source with
   `open('r', encoding='utf-8')`, so non-ASCII source chars no longer depend on the OS
   locale. No `PYTHONUTF8=1` / ASCII-only-header workaround needed anymore.
+
+---
+
+## Documentation style — match the existing form, don't invent your own
+
+When you add an STL macro or a Python function, write its doc in the form already used
+in the file you're editing, at the **same terseness**. The format below is the one the
+maintainer keeps; generated docs that drift from it (extra prose, restating types, a
+different tag vocabulary, fuller "bloat") get rewritten back to this. Don't make that
+round-trip happen — write it this way the first time. When unsure, copy the nearest
+existing macro/function in the same file and adapt.
+
+**FlipJump macros** — a `//` comment block directly above `def`, in this order (see
+`hex.ptr_index` in `stl/hex/pointers/pointer_arithmetics.fj`, `hex.scmp` in
+`stl/hex/cond_jumps.fj`, and the existing `hex.cmp`):
+
+```
+//  Time Complexity:  <expr>      // optional trailing note, e.g. "for w=64" or "worst case (a==b); = 2·mov + …"
+// Space Complexity:  <expr>      // a note aligned under the Time one
+//   <one line: the effect, as an assignment or the branch list>   (parenthetical clarification)
+// <operands: their hex/bit sizes, and which are modified vs preserved>
+// <Method: …  — one or two lines, ONLY when the algorithm is non-obvious>
+// @requires <init macro> (or hex.init)
+// @Assumes: <value/size constraints>      // only if there are any
+def name args { … }
+```
+
+- Right-align the labels (two spaces before `Time`, one before `Space`) so the colons
+  line up. Give complexity in the same `@`-cost / `n(...)` / `w(...)` units the rest of
+  the STL uses, with a trailing `//` for the concrete value or a `= …` worst-case
+  breakdown — don't switch to prose like "linear in n".
+- Effect line is indented 3 spaces (`//   `); the operand-types line sits at 1 space
+  (`// `). For a multi-target macro, enumerate the branches (`if a < b: goto lt; …`),
+  as `hex.cmp` does.
+- Only `@requires` / `@Assumes` — don't invent other `@tags`. Drop the Method and
+  `@Assumes` lines when there's nothing non-obvious to say.
+
+**Python functions** — Doxygen-style docstrings (NOT Google/NumPy sections), terse and
+lowercase (see `flipjump/fjm/fjm_writer.py`, `flipjump/flipjump_cli.py`):
+
+```
+"""one-line lowercase summary, ending with a period.
+@param name: what it is   (prefix [in] / [in,out] when the direction matters)
+@return: what comes back
+@note: a caveat or call-ordering requirement"""
+```
+
+- One summary line, one `@param` per argument, `@return` / `@note` only as needed.
+  Don't restate types Python already shows, and don't write multi-paragraph prose.
+
+**Bloat level**: a macro doc is ~4–7 comment lines; a Python docstring is the summary
+plus its `@param`s. A Method / `@Assumes` / `@note` line earns its place only when the
+thing is genuinely non-obvious. Default to shorter.
