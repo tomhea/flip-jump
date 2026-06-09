@@ -113,7 +113,7 @@ pip install flipjump[stats,tests]
 
 
 IDE Plugins:
-FlipJump has official plugins for [JetBrains IDEs](https://plugins.jetbrains.com/plugin/32134-flipjump/reviews) and [VS Code](https://marketplace.visualstudio.com/items?itemName=flipjump.flipjump). Both offer full FlipJump syntax highlighting, and "jump to definition" functionality with ctrl+click on a macro name.
+FlipJump has official plugins for [JetBrains IDEs](https://plugins.jetbrains.com/plugin/32134-flipjump) and [VS Code](https://marketplace.visualstudio.com/items?itemName=flipjump.flipjump). Both offer full FlipJump syntax highlighting, and "jump to definition" functionality with ctrl+click on a macro name.
 
 # How to run?
 
