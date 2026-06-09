@@ -13,8 +13,8 @@ def main @ err, bb_loop, bb_done, bb_xhi, bb_xlo, bb_xlo_clamp, bb_xok < bb_pos,
   bb_loop:
     hex.if0 4, bb_cnt, bb_done
     hex.add 4, bb_pos, bb_velo
-    // check pos >= 9
-    hex.cmp 4, bb_pos, bb_nine, bb_xlo, bb_xok, bb_xhi
+    // check pos >= 9 (signed: pos can be negative after a negative-velocity step)
+    hex.scmp 4, bb_pos, bb_nine, bb_xlo, bb_xok, bb_xhi
   bb_xhi:
     // pos > 9: new = 18 - pos; flip velo
     hex.set 4, bb_tmp, 18
@@ -25,8 +25,8 @@ def main @ err, bb_loop, bb_done, bb_xhi, bb_xlo, bb_xlo_clamp, bb_xok < bb_pos,
     hex.mov 4, bb_velo, bb_tmp
     ;bb_xok
   bb_xlo:
-    // pos < 9; check pos <= 0
-    hex.cmp 4, bb_pos, bb_zero4, bb_xlo_clamp, bb_xok, bb_xok
+    // pos < 9; check pos <= 0 (signed)
+    hex.scmp 4, bb_pos, bb_zero4, bb_xlo_clamp, bb_xok, bb_xok
   bb_xlo_clamp:
     // pos < 0: new = -pos; flip velo
     hex.zero 4, bb_tmp

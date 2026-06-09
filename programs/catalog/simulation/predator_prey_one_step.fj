@@ -14,8 +14,8 @@ def main @ err, pp_cp, pp_pp, pp_clp, pp_ppp < pp_prey, pp_pred, pp_tmp, pp_q, p
     hex.div 4, 4, pp_q, pp_r, pp_prey, pp_four, err
     hex.add 4, pp_prey, pp_q
     hex.sub 4, pp_prey, pp_pred
-    // clamp at 0
-    hex.cmp 4, pp_prey, pp_zero4, pp_cp, pp_pp, pp_pp
+    // clamp at 0 (signed: prey + prey/4 - pred can be negative)
+    hex.scmp 4, pp_prey, pp_zero4, pp_cp, pp_pp, pp_pp
   pp_cp:
     hex.zero 4, pp_prey
   pp_pp:
@@ -27,8 +27,8 @@ def main @ err, pp_cp, pp_pp, pp_clp, pp_ppp < pp_prey, pp_pred, pp_tmp, pp_q, p
     hex.div 4, 4, pp_q, pp_r, pp_oprey, pp_ten, err
     hex.add 4, pp_pred, pp_q
     hex.sub 4, pp_pred, pp_tmp
-    // clamp at 0
-    hex.cmp 4, pp_pred, pp_zero4, pp_clp, pp_ppp, pp_ppp
+    // clamp at 0 (signed, for consistency)
+    hex.scmp 4, pp_pred, pp_zero4, pp_clp, pp_ppp, pp_ppp
   pp_clp:
     hex.zero 4, pp_pred
   pp_ppp:

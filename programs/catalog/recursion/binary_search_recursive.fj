@@ -39,7 +39,7 @@ def main @ err, arr_loop, arr_body, arr_done, bs_notfound_print, bs_print_idx, b
 
 // Binary search bs_lo..bs_hi for bs_target; writes bs_result (0xff=not found)
 bsearch_fn:
-    hex.cmp 4, bs_lo, bs_hi, bs_cont, bs_cont, bs_notfound
+    hex.scmp 4, bs_lo, bs_hi, bs_cont, bs_cont, bs_notfound
   bs_cont:
     hex.mov 4, bs_sum, bs_lo
     hex.add 4, bs_sum, bs_hi
