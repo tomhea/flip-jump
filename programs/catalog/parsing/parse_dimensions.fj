@@ -1,0 +1,41 @@
+// Parse Dimensions (#1400)
+
+// Reads `WxH\n` where `W` and `H` are decimals `0`-`99`. Prints `W * H` + `\n`.
+
+main
+
+def main < wv, hv, prod {
+    stl.startup_and_init_all
+    read_num wv
+    read_num hv
+    hex.mul 8, prod, wv, hv
+    hex.print_dec_uint 8, prod
+    stl.output '\n'
+    stl.loop
+}
+
+// Read decimal digits into dst[:8] until a non-digit; that byte is left in `lastbyte`.
+def read_num dst @ loop, ge0, isdig, stop < lastbyte, digval, c0, c9 {
+    hex.zero 8, dst
+  loop:
+    hex.input lastbyte
+    hex.zero 8, digval
+    hex.mov 2, digval, lastbyte
+    hex.cmp 8, digval, c0, stop, ge0, ge0
+  ge0:
+    hex.cmp 8, digval, c9, isdig, isdig, stop
+  isdig:
+    hex.mul10 8, dst
+    hex.sub 8, digval, c0
+    hex.add 8, dst, digval
+    ;loop
+  stop:
+}
+
+wv: hex.vec 8
+hv: hex.vec 8
+prod: hex.vec 8
+lastbyte: hex.vec 2
+digval: hex.vec 8
+c0: hex.vec 8, '0'
+c9: hex.vec 8, '9'

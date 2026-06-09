@@ -1,0 +1,56 @@
+// Parse Rgb To Grayscale (#1402)
+
+// Reads `R,G,B\n` (each `0`-`255`, decimals separated by commas). Prints `floor((R*30 + G*59 + B*11) / 100)` as decimal + `\n`.
+
+main
+
+def main @ err < r, g, b, acc, t, gray, rem, c30, c59, c11, c100 {
+    stl.startup_and_init_all
+    read_num r
+    read_num g
+    read_num b
+    hex.mul 8, acc, r, c30
+    hex.mul 8, t, g, c59
+    hex.add 8, acc, t
+    hex.mul 8, t, b, c11
+    hex.add 8, acc, t
+    hex.div 8, 8, gray, rem, acc, c100, err
+    hex.print_dec_uint 8, gray
+    stl.output '\n'
+  err:
+    stl.loop
+}
+
+// Read decimal digits into dst[:8] until a non-digit; that byte is left in `lastbyte`.
+def read_num dst @ loop, ge0, isdig, stop < lastbyte, digval, c0, c9 {
+    hex.zero 8, dst
+  loop:
+    hex.input lastbyte
+    hex.zero 8, digval
+    hex.mov 2, digval, lastbyte
+    hex.cmp 8, digval, c0, stop, ge0, ge0
+  ge0:
+    hex.cmp 8, digval, c9, isdig, isdig, stop
+  isdig:
+    hex.mul10 8, dst
+    hex.sub 8, digval, c0
+    hex.add 8, dst, digval
+    ;loop
+  stop:
+}
+
+r: hex.vec 8
+g: hex.vec 8
+b: hex.vec 8
+acc: hex.vec 8
+t: hex.vec 8
+gray: hex.vec 8
+rem: hex.vec 8
+c30: hex.vec 8, 30
+c59: hex.vec 8, 59
+c11: hex.vec 8, 11
+c100: hex.vec 8, 100
+lastbyte: hex.vec 2
+digval: hex.vec 8
+c0: hex.vec 8, '0'
+c9: hex.vec 8, '9'

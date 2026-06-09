@@ -1123,6 +1123,146 @@ group 1 max: <v>
 
 | # | name | description |
 |---|---|---|
+| 1309 | echo_bot | Reads each `
+`-terminated input line until an empty line (just `
+`). For each non-empty line, prints `> <line>
+`. |
+| 1310 | greeting_bot | Reads a name (`
+`-terminated, ≤ 20 chars) and prints `Hello, <name>!
+Goodbye, <name>!
+`. |
+| 1311 | magic_eight_ball | Reads any `
+`-terminated question (≤ 60 chars). Prints exactly one of 5 fixed answers selected by `(input_length_excluding_newline) mod 5`: `0→Yes
+`, `1→No
+`, `2→Maybe
+`, `3→Ask again later
+`, `4→Definitely
+`. |
+| 1312 | yes_no_validator | Reads `y` or `n` + `
+` (any case is treated as exact byte). Prints `Affirmative
+` for `y`, `Negative
+` for `n`, otherwise `Please answer y or n
+`. |
+| 1313 | guess_one_round | Reads a single decimal digit `1`-`9` + `
+`. Secret value is `7`. Prints `correct!
+` if `7`, `too low
+` if `<7`, `too high
+` if `>7`. |
+| 1314 | menu_selection | Reads a single digit `1`-`4` + `
+`. Prints `Pizza
+`, `Burger
+`, `Salad
+`, or `Soup
+` for `1`/`2`/`3`/`4` respectively. |
+| 1315 | password_check | Reads a `
+`-terminated string ≤ 20 chars. Prints `Access granted
+` if the line content (excluding `
+`) equals the literal `flipjump`, else `Access denied
+`. |
+| 1316 | addition_quiz | Reads two single-digit decimals (each `
+`-terminated), then a decimal answer (`
+`-terminated, may be 1-2 digits). Prints `correct
+` if the answer equals the sum of the two digits, else `wrong (expected <S>)
+` with `S` the actual sum. |
+| 1317 | multiplication_quiz | Same I/O shape as `addition_quiz` but for multiplication. Prints `correct
+` if the answer equals the product, else `wrong (expected <P>)
+`. |
+| 1318 | interactive_calc | Reads one operator byte `+`, `-`, or `*` + `
+`, then two decimal integers (each `
+`-terminated). Prints the integer result + `
+`. (For `-`, prints signed result.) |
+| 1319 | user_input_loop_3 | Reads exactly 3 `
+`-terminated lines (each ≤ 30 chars). Prints `1: <line1>
+2: <line2>
+3: <line3>
+`. |
+| 1320 | coin_flip_pseudo | Reads exactly one byte. Prints `Heads
+` if its value is even, `Tails
+` if odd. (Pseudo-random via input parity.) |
+| 1321 | dice_roll_pseudo | Reads exactly one byte. Prints decimal `(byte mod 6) + 1` + `
+` (range `1`-`6`). |
+| 1322 | lucky_seven | Reads exactly one byte. Prints `Lucky!
+` if `byte mod 7 == 0`, else `Try again
+`. |
+| 1323 | trivia_capital_france | First prints `What's the capital of France?
+` on stdout. Then reads a `
+`-terminated answer (≤ 20 chars). Prints `correct!
+` if the answer is exactly `Paris`, else `wrong
+`. |
+| 1324 | trivia_largest_planet | First prints `What's the largest planet?
+`. Then reads a `
+`-terminated answer. Prints `correct!
+` if exactly `Jupiter`, else `wrong
+`. |
+| 1325 | trivia_math | First prints `What's 2+2?
+`. Then reads a decimal `
+`-terminated answer. Prints `correct!
+` if exactly `4`, else `wrong
+`. |
+| 1326 | balance_check | Reads decimal `0`-`9999` + `
+`. Prints `low
+` if `<100`, `ok
+` if `100`-`999`, `high
+` if `>=1000`. |
+| 1327 | tip_calculator | Reads decimal bill `0`-`99` + `
+`. Prints `(bill * 120) / 100` (20% tip, integer division) + `
+`. |
+| 1328 | tax_calculator | Reads decimal amount `0`-`999` + `
+`. Prints `(amount * 110) / 100` (10% tax, integer division) + `
+`. |
+| 1329 | simple_login | Reads a `
+`-terminated username, then a `
+`-terminated password (each ≤ 20 chars). Prints `Welcome!
+` if username is exactly `admin` and password is exactly `root`, else `Denied
+`. |
+| 1330 | survey_two_q | Reads two `
+`-terminated `y`/`n` answers. Prints `Definitely
+` for `y/y`, `Maybe
+` for `y/n`, `Probably not
+` for `n/y`, `Definitely not
+` for `n/n`. |
+| 1331 | cheer_team | Reads digit `1`-`3` + `
+`. Prints `Go team <N>!
+` exactly three times. |
+| 1332 | quiz_show_score | Reads three single-digit decimals `0` or `1` (each `
+`-terminated; `1` = correct, `0` = wrong for 3 rounds). Prints `Total: <S>
+Grade: <G>
+`, where `S` is the sum (0-3) and `G` is `A`/`B`/`C`/`F` for `3`/`2`/`1`/`0`. |
+| 1333 | customer_rating | Reads digit `1`-`5` + `
+`. Prints `Thank you for your <N>-star review!
+`. |
+| 1334 | clock_set | Reads two decimals on separate lines: hour `0`-`23` then minute `0`-`59`. Prints `Time set to <HH>:<MM>
+` (each zero-padded to 2 digits). |
+| 1335 | greeting_user_age | Reads a `
+`-terminated name (≤ 20 chars) then a decimal age `0`-`120` + `
+`. Prints `Hello, <name>! You are <age> years old.
+`. |
+| 1336 | todo_add | Reads a `
+`-terminated task description (≤ 40 chars). Prints `Added: <task>
+`. |
+| 1337 | shopping_cart_check | Reads decimal price `0`-`999` + `
+` then decimal budget `0`-`999` + `
+`. If `price <= budget` prints `affordable
+`, else prints `over budget by <X>
+` where `X = price - budget`. |
+| 1338 | number_guess_three_tries | Secret value is `5`. Reads up to 3 decimal guesses `1`-`10` (each `
+`-terminated). After each guess prints `too low
+`, `too high
+`, or `correct!
+` then exits on correct. If 3 wrong guesses, prints `Out of tries. Secret was 5.
+` and exits. |
+| 1339 | odd_one_out | Reads three decimals (each `
+`-terminated). If exactly two are equal, prints the third (unique) value + `
+`. Otherwise prints `none
+` (covers both all-equal and all-different cases). |
+| 1340 | chatbot_simple_reply | Reads a `
+`-terminated line ≤ 40 chars. If equals `hi`, prints `Hello!
+`. If equals `bye`, prints `Goodbye!
+`. Otherwise prints `I don't understand.
+`. |
+| 1341 | interactive_addition_three | Reads three decimals (each `
+`-terminated). Prints the human-readable expression `<a> + <b> + <c> = <sum>
+`. |
 
 ## conversion
 
@@ -1230,6 +1370,141 @@ group 1 max: <v>
 
 | # | name | description |
 |---|---|---|
+| 1342 | hex_dump_line | Reads a `
+`-terminated line ≤ 16 chars. For each byte (excluding `
+`), prints its 2-char lowercase hex, with space separators between bytes, then `
+`. Example: input `hi
+` → output `68 69
+`. Empty input → just `
+`. |
+| 1343 | binary_dump_line | Reads a `
+`-terminated line ≤ 16 chars. For each byte (excluding `
+`), prints its 8-char binary representation (MSB first), space-separated, then `
+`. |
+| 1344 | octal_dump_line | Reads a `
+`-terminated line ≤ 16 chars. For each byte (excluding `
+`), prints its 3-char octal representation (zero-padded), space-separated, then `
+`. |
+| 1345 | decimal_dump_line | Reads a `
+`-terminated line ≤ 16 chars. For each byte (excluding `
+`), prints its decimal value (1-3 chars, no zero padding), space-separated, then `
+`. |
+| 1346 | ascii_table_printable_32_126 | No input. Prints lines `<code> <char>
+` for each ASCII code 32-126 (printable range, 95 lines total). |
+| 1347 | run_length_encode_simple | Reads a `
+`-terminated lowercase-letter string ≤ 30 chars (runs of length ≤ 9). Prints run-length encoding as alternating `<letter><count>` concatenated, then `
+`. Example: `aabcccccaaa` → `a2b1c5a3
+`. |
+| 1348 | run_length_decode_simple | Reads a `
+`-terminated RLE string of alternating `<letter><digit 1-9>` ≤ 30 chars. Prints decoded string + `
+`. Example: `a2b1c5` → `aabccccc
+`. |
+| 1349 | percent_encode_space | Reads a `
+`-terminated line ≤ 40 chars. Replaces each space byte (` `) with `%20`. Other bytes unchanged. Prints result + `
+`. |
+| 1350 | percent_decode_space | Reads a `
+`-terminated line ≤ 60 chars (may contain `%20` sequences). Replaces each `%20` triplet with a single space. Other bytes unchanged. Prints result + `
+`. |
+| 1351 | html_entity_encode_basic | Reads a `
+`-terminated line ≤ 40 chars. Replaces `&` with `&amp;`, `<` with `&lt;`, `>` with `&gt;`. Other bytes unchanged. Prints result + `
+`. |
+| 1352 | html_entity_decode_basic | Reads a `
+`-terminated line ≤ 80 chars (may contain `&amp;`/`&lt;`/`&gt;` sequences). Replaces each with `&`/`<`/`>` respectively. Other bytes unchanged. Prints result + `
+`. |
+| 1353 | atbash_cipher | Reads a `
+`-terminated line ≤ 80 chars. For each letter, maps `a↔z`, `b↔y`, ..., `m↔n` (and the same within `A-Z`). Non-letters unchanged. Prints result + `
+`. |
+| 1354 | nato_phonetic_letter | Reads exactly one byte `A`-`Z` (no `
+` required). Prints the NATO phonetic word for that letter (`Alpha`/`Bravo`/`Charlie`/.../`Zulu`) followed by `
+`. |
+| 1355 | nato_phonetic_word | Reads a `
+`-terminated NATO phonetic word (one of the 26 standard words, exactly as spelled, capitalized). Prints the corresponding single uppercase letter (`A`-`Z`) + `
+`. |
+| 1356 | xor_key_07_roundtrip | Reads a `
+`-terminated line ≤ 30 chars. XORs each byte (excluding `
+`) with `0x07`. Outputs the XORed bytes followed by `
+`. (Self-inverse — running twice on the same input yields original.) |
+| 1357 | checksum_byte_sum | Reads a `
+`-terminated line ≤ 30 chars. Prints the sum of the byte values (excluding `
+`) modulo 256 as decimal + `
+`. |
+| 1358 | checksum_xor | Reads a `
+`-terminated line ≤ 30 chars. Prints the XOR of all byte values (excluding `
+`) as two lowercase hex chars + `
+`. |
+| 1359 | parity_byte_compute | Reads exactly 7 ASCII bits (each `0` or `1` byte, all on one `
+`-terminated line, e.g. `1010101
+`). Prints `0
+` if the count of 1s among the 7 input bits is even, `1
+` if odd. (This is the parity bit that, when appended, makes total ones EVEN.) |
+| 1360 | nibble_dump_hex_colon | Reads a `
+`-terminated line ≤ 16 chars. For each byte (excluding `
+`), prints `<high>:<low>` where `<high>` is the high nibble's hex char and `<low>` is the low nibble's. Entries are space-separated; final `
+`. Example: input `Aa
+` → output `4:1 6:1
+`. |
+| 1361 | quoted_printable_simple | Reads a `
+`-terminated line ≤ 20 chars. Each byte (excluding `
+`) that is NOT printable ASCII (`0x20`-`0x7e`) becomes `=NN` where `NN` is its 2-char uppercase hex. Printable bytes unchanged. Prints result + `
+`. |
+| 1362 | count_chars_per_class | Reads a `
+`-terminated line ≤ 80 chars. Prints `digits: <D>
+letters: <L>
+spaces: <S>
+other: <O>
+` where `D`/`L`/`S`/`O` are the counts of digits, letters, spaces, and other byte classes respectively (excluding the terminating `
+`). |
+| 1363 | csv_split_one_field | Reads a `
+`-terminated CSV line ≤ 60 chars (no embedded commas in fields, no quotes). Prints each comma-separated field on its own line. |
+| 1364 | tsv_to_csv | Reads a `
+`-terminated TSV line ≤ 60 chars (tab-separated). Outputs the same line with each `\t` replaced by `,`. Final `
+` preserved. |
+| 1365 | csv_to_tsv | Reads a `
+`-terminated CSV line ≤ 60 chars (no quoted commas). Outputs the same line with each `,` replaced by `\t`. Final `
+` preserved. |
+| 1366 | ascii_to_hex_concat | Reads a `
+`-terminated line ≤ 20 chars. Prints all bytes (excluding `
+`) as concatenated lowercase hex (no separators) followed by `
+`. Example: `Hi
+` → `4869
+`. |
+| 1367 | hex_concat_to_ascii | Reads a `
+`-terminated lowercase-hex string ≤ 40 chars (even length). Prints decoded bytes + `
+`. |
+| 1368 | xor_encrypt_cycling_key | Reads a `
+`-terminated key (`≤ 8 chars`), then a `
+`-terminated message (`≤ 30 chars`). XORs each message byte (excluding terminating `
+`) with `key[i mod key_length]`. Outputs the XOR'd bytes followed by `
+`. |
+| 1369 | ascii_to_morse_letter | Reads exactly one byte (a single lowercase letter `a`-`z` or digit `0`-`9`). Prints the International Morse Code representation using `.` and `-` (no spaces) + `
+`. Example: `a` → `.-
+`; `0` → `-----
+`. |
+| 1370 | morse_to_ascii_letter | Reads a `
+`-terminated Morse Code sequence (using only `.` and `-`, ≤ 6 chars, one of the 36 lowercase-letter / digit codes). Prints the decoded ASCII byte (no extra `
+`). |
+| 1371 | nibble_to_base64_char | Reads a decimal `0`-`15` + `
+`. Prints the corresponding base64 alphabet character (`A` for 0, `B` for 1, ..., `P` for 15), followed by `
+`. |
+| 1372 | emoji_smiley_or_frown | Reads exactly one byte `0` or `1` followed by `
+`. Prints `:)
+` for `1`, `:(
+` for `0`. |
+| 1373 | byte_class_counts | Reads a `
+`-terminated line ≤ 80 chars. Prints `printable: <P>
+control: <C>
+` where `P` is the count of printable bytes (`0x20`-`0x7e`) and `C` is the count of control bytes (`<0x20` or `0x7f`), all excluding the terminating `
+`. |
+| 1374 | binary_xor_two_inputs | Reads two `
+`-terminated 8-char binary strings (each on its own line, each is 8 chars of `0`/`1`). Prints their bitwise XOR as an 8-char binary string + `
+`. |
+| 1375 | binary_and_two_inputs | Same I/O shape as `binary_xor_two_inputs` but prints bitwise AND. |
+| 1376 | binary_or_two_inputs | Same I/O shape as `binary_xor_two_inputs` but prints bitwise OR. |
+| 1377 | xxd_style_dump | Reads a `
+`-terminated line ≤ 16 chars. Prints one line: 4-digit zero-padded offset `0000`, two spaces, then hex bytes (lowercase, space-separated, max 16 bytes), then 2 spaces, then the printable ASCII (non-printables as `.`), then `
+`. Example: input `hi
+` → `0000  68 69  hi
+`. |
 
 ## algorithms
 
@@ -1492,6 +1767,128 @@ group 1 max: <v>
 
 | # | name | description |
 |---|---|---|
+| 1444 | n_queens_4_count | No input. Prints the number of distinct solutions to the 4-queens problem (`2`) + `
+`. |
+| 1445 | eight_queens_solution_count | No input. Prints `92` + `
+` (the number of distinct solutions to the 8-queens problem). |
+| 1446 | eight_queens_one_solution | No input. Prints one valid 8-queens solution as 8 column indices `0`-`7` for rows 0..7, space-separated, then `
+`. (Use a canonical first solution.) |
+| 1447 | magic_square_check_3x3 | Reads 9 decimals (3×3 row-major, each on own line). Prints `1
+` if all 3 rows, all 3 columns, and both diagonals have the same sum, else `0
+`. |
+| 1448 | magic_square_fill_missing | Reads 9 decimals (3×3 row-major, each on own line) representing a known-valid 3×3 magic square with EXACTLY ONE cell replaced by `0` (the missing value). Prints the missing value as decimal + `
+`. |
+| 1449 | magic_constant_for_n | Reads digit N `3`-`9` + `
+`. Prints `N * (N^2 + 1) / 2` (the magic constant for an N×N magic square containing `1..N²`) + `
+`. |
+| 1450 | sudoku_row_check_9 | Reads 9 decimals `1`-`9` (each on own line). Prints `1
+` if all 9 values are distinct (a valid Sudoku row/column/block), else `0
+`. |
+| 1451 | sudoku_full_validation | Reads 9 lines, each 9 decimals (separated by spaces) representing a 9×9 Sudoku grid filled with `1`-`9`. Prints `1
+` if all 9 rows AND all 9 columns AND all 9 3×3 boxes contain `1..9` (every row/col/box has 9 distinct values), else `0
+`. |
+| 1452 | tic_tac_toe_winner | Reads 3 lines of 3 chars each (`X`, `O`, or `.`) representing a tic-tac-toe board. Prints `X
+` if X has won (three in a row/col/diag), `O
+` if O has won, else `none
+`. (Assume at most one side has won.) |
+| 1453 | tic_tac_toe_board_full | Reads 3 lines of 3 chars each. Prints `1
+` if no `.` chars remain (board is full), else `0
+`. |
+| 1454 | tic_tac_toe_simulate_moves | Reads digit N `1`-`9` + `
+`, then N moves (each one digit `0`-`8` on its own line, indicating cell position 0=top-left, row-major). Players alternate starting with `X`. Prints the final 3×3 board (3 lines of 3 chars each, `.` for unmoved cells). |
+| 1455 | tower_of_hanoi_count | Reads digit N `1`-`9` + `
+`. Prints `2^N - 1` (minimum moves) + `
+`. |
+| 1456 | tower_of_hanoi_print_moves_3 | No input. Prints all 7 moves for the 3-disk Tower of Hanoi (from peg `A` to peg `C` using `B`), one per line, formatted `<disk>: <src>-><dst>
+`. Example first move: `1: A->C
+`. |
+| 1457 | tower_of_hanoi_print_moves_4 | No input. Same format as `tower_of_hanoi_print_moves_3` but for 4 disks (15 moves total). |
+| 1458 | word_anagram_check | Reads two `
+`-terminated lowercase words (each ≤ 10 chars). Prints `1
+` if they are anagrams (same multiset of letters), else `0
+`. |
+| 1459 | permutation_check_n | Reads digit N `1`-`9` + `
+`, then N decimals (each own line), then another N decimals. Prints `1
+` if the second N-tuple is a permutation of the first (same multiset), else `0
+`. |
+| 1460 | arithmetic_progression_check_5 | Reads exactly 5 signed decimals (each own line). Prints `1
+` if they form an arithmetic progression (constant difference between consecutive elements), else `0
+`. |
+| 1461 | geometric_progression_check_4 | Reads exactly 4 decimals each `1`-`50` (own line). Prints `1
+` if they form a geometric progression with integer common ratio `>= 2` (i.e. `a[i+1] = a[i] * r` for some integer `r >= 2`), else `0
+`. |
+| 1462 | fibonacci_5_check | Reads exactly 5 decimals (each own line). Prints `1
+` if they match the first 5 Fibonacci values `0 1 1 2 3` exactly in order, else `0
+`. |
+| 1463 | find_missing_arith_progression | Reads exactly 4 decimals (each own line) with the value `0` representing a single missing element of a 4-element arithmetic progression. The remaining 3 values are in their correct AP positions; the `0` is the placeholder. Prints the missing value as decimal + `
+`. |
+| 1464 | find_missing_geom_progression | Reads exactly 4 decimals `1`-`50` with one being `0` (the missing entry) of a 4-element geometric progression with integer common ratio `>= 2`. Prints the missing value + `
+`. |
+| 1465 | counting_squares_2x2 | No input. Prints `5
+` (the number of squares in a 2×2 lattice grid: four unit squares + one 2×2 square). |
+| 1466 | counting_squares_3x3 | No input. Prints `14
+` (number of squares in a 3×3 lattice grid: 9 unit + 4 of side 2 + 1 of side 3). |
+| 1467 | counting_rectangles_3x3 | No input. Prints `36
+` (number of rectangles in a 3×3 lattice grid). |
+| 1468 | coin_change_count_small | Reads decimal amount `1`-`20` + `
+`. Prints the number of distinct ways to make `amount` cents using coins of denominations `{1, 5, 10}` (order doesn't matter) + `
+`. |
+| 1469 | eight_puzzle_check_solved | Reads 9 decimals (each `0`-`8`, own line) representing a 3×3 8-puzzle state (0 = blank). Prints `1
+` if it equals the solved state `1 2 3 4 5 6 7 8 0` (row-major), else `0
+`. |
+| 1470 | fifteen_puzzle_check_solved | Reads 16 decimals (each `0`-`15`, own line) representing a 4×4 15-puzzle state (0 = blank). Prints `1
+` if it equals the solved state `1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 0` (row-major), else `0
+`. |
+| 1471 | cryptarithm_one_plus_one | Reads exactly 3 decimal digits `a b c` (each `0`-`9`, own line). Prints `1
+` if `a + b == c` (i.e. the cryptarithm `a + b = c` is satisfied), else `0
+`. |
+| 1472 | river_crossing_count_classic | No input. Prints `7
+` (the minimum number of trips for the classic farmer-wolf-goat-cabbage river crossing puzzle). |
+| 1473 | bishop_attack_check | Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line) — the two bishops' chessboard positions. Prints `1
+` if they're on the same diagonal (i.e. `|r1-r2| == |c1-c2|`), else `0
+`. |
+| 1474 | rook_attack_check | Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line). Prints `1
+` if they're on the same row or same column, else `0
+`. |
+| 1475 | knight_attack_check | Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line). Prints `1
+` if they're one knight's move apart (i.e. `(|Δr|, |Δc|) == (1,2)` or `(2,1)`), else `0
+`. |
+| 1476 | queen_attack_check | Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line). Prints `1
+` if same row OR same column OR same diagonal, else `0
+`. |
+| 1477 | king_attack_check | Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line). Prints `1
+` if `max(|r1-r2|, |c1-c2|) == 1` (king's move neighbors), else `0
+`. |
+| 1478 | pawn_white_move_count | Reads 2 decimals `r c` (each `0`-`7`, own line) — a white pawn's position. Prints the number of legal forward moves (`1` from a non-starting row, `2` from row 6, `0` from row 0). |
+| 1479 | is_chessboard_color | Reads 2 decimals `r c` (each `0`-`7`, own line). Prints `0
+` if the square is "white" (i.e. `(r + c)` is even with a8/`r=0,c=0` treated as white), else `1
+`. |
+| 1480 | eight_queens_attack_pair_count | Reads exactly 8 decimals (each `0`-`7`, own line) representing the column of a queen for each row 0..7. Prints the count of pairs `(i, j)` with `i < j` such that queens on rows i and j attack each other (same column, or `|rows[i] - rows[j]| == |i - j|`) + `
+`. |
+| 1481 | dragon_curve_3_iterations | No input. Prints the heighway-dragon L/R turn sequence after exactly 3 paper-fold iterations, where `L` denotes a left turn and `R` denotes a right turn. The 3rd-iteration sequence has length `2^3 - 1 = 7`. Convention: start with a single `L` (1st iteration), and each next iteration appends `L` then the reverse-and-swap of the prior sequence. This yields iteration-3 = `LLRLLRR`. Output is exactly `LLRLLRR
+`. |
+| 1482 | partition_count_n | Reads digit N `1`-`9` + `
+`. Prints the number of integer partitions of N (e.g. `p(4) = 5`) + `
+`. |
+| 1483 | knights_knaves_2 | Reads 2 decimals `s1` `s2` (each `0` or `1`, on own lines) representing two islanders' statements about each other: `s1`=0 means islander A says "B is a knight"; `s1`=1 means A says "B is a knave"; `s2` similarly is B's statement about A. Prints one of `AK BK
+`, `AK BN
+`, `AN BK
+`, `AN BN
+` (the consistent assignment) or `paradox
+` if no consistent assignment exists. |
+| 1484 | cnf_2var_2clause_sat | Reads two 2-CNF clauses as lines, each in the form `<lit1> <lit2>` where each literal is `x`, `!x`, `y`, or `!y`. Prints `SAT
+` if there's an assignment to x, y making both clauses true, else `UNSAT
+`. |
+| 1485 | propositional_eval_2var | Reads a formula string `
+`-terminated using only `x`, `y`, `&` (AND), `|` (OR), `!` (NOT), `(`, `)`. Then reads `x` value `0` or `1` + `
+` and `y` value `0` or `1` + `
+`. Prints `0
+` or `1
+` based on the evaluated formula. Formula ≤ 15 chars. |
+| 1486 | tautology_check_2var | Reads a formula string `
+`-terminated (same syntax as `propositional_eval_2var`, ≤ 15 chars). Prints `1
+` if the formula is true for all 4 assignments of `x`, `y`, else `0
+`. |
 
 ## sequences
 
@@ -1680,11 +2077,158 @@ group 1 max: <v>
 
 | # | name | description |
 |---|---|---|
+| 1378 | parse_integer_echo | Reads a `
+`-terminated unsigned decimal `0`-`999999` and prints it back as decimal + `
+`. Round-trip parse → integer → print. |
+| 1379 | parse_signed_integer_echo | Reads a `
+`-terminated signed decimal `-9999`..`9999` (may have leading `-` or `+`) and prints the canonical signed form + `
+` (no leading `+`). |
+| 1380 | eval_simple_expr_add | Reads `<a>+<b>` + `
+` where `a` and `b` are single digits `0`-`9`. Prints `a + b` as decimal + `
+`. |
+| 1381 | eval_simple_expr_sub | Reads `<a>-<b>` + `
+` (single digits). Prints `a - b` (signed) + `
+`. |
+| 1382 | eval_simple_expr_mul | Reads `<a>*<b>` + `
+` (single digits). Prints `a * b` + `
+`. |
+| 1383 | eval_two_op_expr | Reads `<a><op><b>` + `
+` where `op` is one of `+`, `-`, `*` and `a`, `b` are single digits. Prints the result + `
+`. |
+| 1384 | eval_three_op_lr | Reads `<a><op1><b><op2><c>` + `
+` (single digits, `op` ∈ `+`/`-`/`*`). Evaluates strictly left-to-right (no precedence) and prints the result + `
+`. |
+| 1385 | eval_three_op_precedence | Reads `<a><op1><b><op2><c>` + `
+` (single digits, `op` ∈ `+`/`-`/`*`). Applies standard precedence (`*` before `+`/`-`) and prints the result + `
+`. |
+| 1386 | tokenize_split_on_whitespace | Reads a `
+`-terminated line ≤ 40 chars. Splits on runs of whitespace (`' '`, `'\t'`) and prints each non-empty token on its own line. |
+| 1387 | tokenize_split_on_char | Reads exactly one separator byte + `
+`, then a `
+`-terminated line ≤ 40 chars. Splits the line on the separator byte and prints each token (including empty) on its own line. |
+| 1388 | parse_hex_color | Reads `#RRGGBB
+` (exactly 7 bytes + `
+`, lowercase hex). Prints `R: <r>
+G: <g>
+B: <b>
+` where `r`, `g`, `b` are decimal values `0`-`255`. |
+| 1389 | parse_date_iso | Reads `YYYY-MM-DD
+` (10 bytes + `
+`). Prints `Year: <Y>
+Month: <M>
+Day: <D>
+` with no leading zeros. |
+| 1390 | parse_time_hhmm | Reads `HH:MM
+` (5 bytes + `
+`). Prints `<H>:<M>
+` with no leading zeros (e.g. `09:05` → `9:5
+`). |
+| 1391 | parse_phone_simple | Reads `XXX-XXX-XXXX
+` (12 bytes + `
+`, dashes at positions 3 and 7). Prints the 10 digits concatenated (no dashes) + `
+`. |
+| 1392 | parse_url_protocol | Reads `<proto>://<rest>
+` (proto is `1`-`8` lowercase letters). Prints the protocol + `
+`. |
+| 1393 | parse_email_at | Reads `<user>@<domain>
+` (≤ 30 chars total, exactly one `@`). Prints `<user>
+<domain>
+`. |
+| 1394 | parse_yaml_kv_simple | Reads `<key>: <value>
+` (single colon-space separator; key is letters only, value any byte). Prints `<key>
+<value>
+`. |
+| 1395 | parse_json_int | Reads `{"x":<num>}
+` where `<num>` is a decimal `0`-`9999`. Prints `<num>` + `
+`. |
+| 1396 | parse_json_string | Reads `{"s":"<str>"}
+` where `<str>` is any ASCII bytes (no escapes, no embedded `"`). Prints `<str>` + `
+`. |
+| 1397 | parse_json_bool | Reads `{"b":true}
+` or `{"b":false}
+`. Prints `1
+` for `true`, `0
+` for `false`. |
+| 1398 | parse_decimal_list_sum | Reads a `
+`-terminated comma-separated list of decimals (each `0`-`99`, up to 10 entries). Prints the sum + `
+`. |
+| 1399 | parse_decimal_list_max | Reads same format as `parse_decimal_list_sum`. Prints the maximum + `
+`. |
+| 1400 | parse_dimensions | Reads `WxH
+` where `W` and `H` are decimals `0`-`99`. Prints `W * H` + `
+`. |
+| 1401 | parse_version_string | Reads `v<MAJOR>.<MINOR>.<PATCH>
+` where each segment is `0`-`99`. Prints `<MAJOR> <MINOR> <PATCH>
+` space-separated. |
+| 1402 | parse_rgb_to_grayscale | Reads `R,G,B
+` (each `0`-`255`, decimals separated by commas). Prints `floor((R*30 + G*59 + B*11) / 100)` as decimal + `
+`. |
+| 1403 | parse_simple_assignment | Reads `<var>=<value>
+` where `var` is a single lowercase letter and `value` is a decimal `0`-`999`. Prints `<var> is <value>
+`. |
+| 1404 | parse_currency_dollars_cents | Reads `$<D>.<CC>
+` where `D` is decimal `0`-`99` (no zero pad) and `CC` is exactly 2 decimal digits. Prints `D * 100 + CC` (total cents) + `
+`. |
+| 1405 | parse_signed_hex | Reads `[+-]?0x<HH>
+` (optional sign byte then `0x` then exactly 2 lowercase hex chars). Prints the signed decimal value `-255`..`255` + `
+`. |
+| 1406 | parse_unit_value | Reads `<num><unit>
+` where `num` is decimal `0`-`99` and `unit` is exactly one byte `s` (seconds), `m` (minutes), or `h` (hours). Prints `num` converted to seconds as decimal + `
+`. |
 
 ## graphics_ascii
 
 | # | name | description |
 |---|---|---|
+| 1278 | print_house_3 | No input. Prints a fixed 3-line ASCII house: line 1 ` /\ `, line 2 `/__\`, line 3 `|  |`, each + `
+`. |
+| 1279 | print_house_5 | No input. Prints a fixed 5-line ASCII house (taller and wider than `print_house_3`): line 1 `  /\  `, line 2 ` /  \ `, line 3 `/____\`, line 4 `|    |`, line 5 `|____|`, each + `
+`. |
+| 1280 | print_christmas_tree_5 | No input. Prints a fixed 5-row centered Christmas tree of `*` (rows of width 1,3,5,7,9 centered in a 9-col field with leading spaces). |
+| 1281 | print_christmas_tree_7 | No input. Same shape as `print_christmas_tree_5` but with 7 rows (widths 1,3,5,7,9,11,13 in a 13-col field). |
+| 1282 | print_star_5_point | No input. Prints a fixed 5-row 5-pointed star ASCII art (centered on 9-col field, using `*` and spaces). |
+| 1283 | print_arrow_right_short | No input. Prints `--->
+`. |
+| 1284 | print_arrow_up_3 | No input. Prints a fixed 3-line upward arrow (`/\`, `||`, `||`), each + `
+`. |
+| 1285 | print_arrow_down_3 | No input. Prints a fixed 3-line downward arrow (`||`, `||`, `\/`), each + `
+`. |
+| 1286 | print_smiley_face_static | No input. Prints `:)
+`. (Distinct from `emoji_smiley_or_frown` which reads input first.) |
+| 1287 | print_heart_3 | No input. Prints a 3-row ASCII heart shape using `*`, e.g. line 1 ` * *`, line 2 `*****`, line 3 ` *** `, each + `
+`. |
+| 1288 | print_filled_diamond_5 | No input. Prints a 5-row filled diamond of `*` centered in a 5-col field: rows ` * `, `***`, `*****` (truncated to 5-col), `***`, ` * ` — actually use rows widths 1,3,5,3,1 centered on width-5 grid with leading spaces. |
+| 1289 | print_filled_diamond_7 | No input. Same shape as `print_filled_diamond_5` but 7-row (widths 1,3,5,7,5,3,1 on 7-col grid). |
+| 1290 | print_diamond_outline_5 | No input. Prints a 5-row outline-only diamond: rows ` * `, `* *`, ` * ` for top half mirrored... wait the precise pattern: row 1 `  *  `, row 2 ` * * `, row 3 `*   *`, row 4 ` * * `, row 5 `  *  ` (5×5 grid, only outline cells are `*`, others are space). |
+| 1291 | print_box_with_text | Reads a `
+`-terminated line ≤ 10 chars. Prints a 3-row box around the text: top row `+<dashes>+
+`, middle row `| <text padded to 10 chars> |
+`, bottom row `+<dashes>+
+`. Box width is fixed (text padded with trailing spaces to 10 chars, total width 14). |
+| 1292 | print_table_2x3 | No input. Prints a fixed 2-row × 3-column ASCII table with `+`, `-`, `|` separators and fixed contents (`Name` / `Age` / `City` headers + one data row `Alice` / `30` / `Paris`). |
+| 1293 | print_chess_pawn | No input. Prints a multi-line ASCII chess pawn (3 lines, e.g. ` ○ 
+ /_\\
+ |_|`). |
+| 1294 | print_chess_king | No input. Prints a multi-line ASCII chess king (4 lines, with `+`, `|`, `_`). |
+| 1295 | print_chess_queen | No input. Prints a multi-line ASCII chess queen (4 lines, distinct shape from king). |
+| 1296 | print_chess_bishop | No input. Prints a multi-line ASCII chess bishop (4 lines). |
+| 1297 | print_chess_knight | No input. Prints a multi-line ASCII chess knight (4 lines, e.g. with `/\\`). |
+| 1298 | print_chess_rook | No input. Prints a multi-line ASCII chess rook (4 lines, like a tower). |
+| 1299 | print_dollar_sign_5x5 | No input. Prints a fixed 5×5 ASCII `$` sign using `*` and spaces. |
+| 1300 | print_circle_radius_3 | No input. Prints a rasterized circle of radius 3 centered on a 7×7 grid: each cell is `*` if `i² + j² <= 9` (with `i, j` from `-3` to `3`), else `.`. |
+| 1301 | print_circle_radius_4 | No input. Same construction as `print_circle_radius_3` but radius 4 on a 9×9 grid. |
+| 1302 | print_sin_wave_one_period | No input. Prints a 5-row × 20-column ASCII approximation of one full sine wave period using `*` for plot points and `.` for empty. Use the formula `y = round(2 * sin(2π * x / 20)) + 2` for `x = 0..19` and plot `*` at `(y, x)`. |
+| 1303 | print_bar_chart_v_3 | Reads 3 decimals each `0`-`5` (own line). Prints a 5-row × 3-col vertical bar chart: for each column `i`, `*` for rows ≥ `5 - input_i`, `.` otherwise. |
+| 1304 | print_bar_chart_v_5 | Reads 5 decimals each `0`-`5` (own line). Same construction as `print_bar_chart_v_3` but 5 columns. |
+| 1305 | print_bar_chart_h_3 | Reads 3 decimals each `0`-`9` (own line). Prints 3 rows: row `i` is `input_i` consecutive `*`s + `
+`. |
+| 1306 | print_bar_chart_h_5 | Reads 5 decimals each `0`-`9` (own line). Same as `print_bar_chart_h_3` with 5 rows. |
+| 1307 | print_arrow_with_label | Reads a `
+`-terminated line ≤ 20 chars. Prints `--> <line>
+`. |
+| 1308 | print_thermometer_5 | Reads decimal `0`-`5` + `
+`. Prints a 5-row vertical thermometer: row `i` (counted from top) is `|` if `i >= 5 - input`, else ` `; then `
+` after each row. |
 
 ## language_demos
 
@@ -1788,6 +2332,126 @@ group 1 max: <v>
 
 | # | name | description |
 |---|---|---|
+| 1407 | caesar_shift_n | Reads a signed decimal shift `-25`..`25` + `
+`, then a `
+`-terminated line ≤ 80 chars. Shifts each letter by `n` positions within its case (wrapping at `a`/`z`/`A`/`Z`); non-letters unchanged. Prints result + `
+`. |
+| 1408 | caesar_brute_force | Reads a `
+`-terminated ciphertext ≤ 20 chars (letters and spaces only). Prints all 26 possible Caesar-decrypts (shifts `0`-`25`), one per line. |
+| 1409 | vigenere_encode_short | Reads a `
+`-terminated lowercase key `1`-`8` chars, then a `
+`-terminated plaintext ≤ 40 chars. Applies Vigenère: each plaintext letter is shifted by `key[i mod key_length] - 'a'` positions (within its case, non-letters unchanged). Prints ciphertext + `
+`. |
+| 1410 | vigenere_decode_short | Reads the same input format as `vigenere_encode_short` (key, then ciphertext). Applies the inverse shift (negative direction). Prints plaintext + `
+`. |
+| 1411 | simple_substitution_encode | Reads a 26-char `
+`-terminated lowercase substitution mapping (the letter at position 0 is the substitution for `a`, position 1 for `b`, etc.). Then reads a `
+`-terminated plaintext ≤ 40 chars; substitutes each lowercase letter using the mapping (non-letters unchanged). Prints + `
+`. |
+| 1412 | simple_substitution_decode | Reads the same 26-char mapping then ciphertext. Inverts the mapping (build inverse table) and applies to decode. Prints plaintext + `
+`. |
+| 1413 | rail_fence_2_rails | Reads a `
+`-terminated plaintext ≤ 30 chars (no `
+`s inside). Encodes using 2-rail rail-fence cipher (write zigzag on 2 rails, read row-by-row). Prints ciphertext + `
+`. |
+| 1414 | rail_fence_3_rails | Same I/O as `rail_fence_2_rails` but with 3 rails. |
+| 1415 | columnar_transposition_3x3 | Reads a `
+`-terminated plaintext of exactly 9 chars. Writes them into a 3×3 grid row-major, then reads out column-by-column. Prints the result + `
+`. |
+| 1416 | binary_complement_cipher | Reads a `
+`-terminated line ≤ 30 chars. For each byte (excluding `
+`), outputs the bitwise complement `~byte` as a raw byte. Final `
+`. |
+| 1417 | ascii_offset_encode_n | Reads a signed decimal shift `-128`..`127` + `
+`, then a `
+`-terminated line ≤ 30 chars. For each input byte, outputs `(byte + n) mod 256` as a raw byte. Final `
+`. |
+| 1418 | fermat_test_witness | Reads three decimals `a`, `n` (each `2`-`30`, own line). Prints `1
+` if `a^(n-1) ≡ 1 (mod n)`, else `0
+`. (Fermat's little theorem witness; passing doesn't guarantee primality.) |
+| 1419 | simple_hash_sum_4bit | Reads a `
+`-terminated line ≤ 30 chars. Computes the sum of all byte values (excluding `
+`) modulo 16. Prints the result as a single lowercase hex char + `
+`. |
+| 1420 | one_time_pad_xor | Reads a `
+`-terminated pad of `1`-`30` bytes, then a `
+`-terminated message of EXACTLY the same length. XORs corresponding bytes; outputs the result as raw bytes + `
+`. (Self-inverse — applying twice with the same pad returns the original.) |
+| 1421 | polybius_square_encode | Reads exactly one uppercase letter `A`-`Z` (excluding `J`; `I` and `J` are merged) + `
+`. Prints two decimal digits `<row><col>` (each `1`-`5`) + `
+` based on the standard 5×5 Polybius square (row-major fill of `A B C D E F G H I/J K L M N O P Q R S T U V W X Y Z`). |
+| 1422 | polybius_square_decode | Reads two decimal digits + `
+` (e.g. `42`). Prints the corresponding uppercase letter from the standard 5×5 Polybius square + `
+`. |
+| 1423 | caesar_validate | Reads a signed decimal shift `-25`..`25` + `
+`, then plaintext + `
+`, then candidate ciphertext + `
+` (each ≤ 20 chars). Prints `1
+` if applying Caesar shift to plaintext yields the candidate ciphertext exactly, else `0
+`. |
+| 1424 | encrypt_then_reverse | Reads a `
+`-terminated plaintext ≤ 20 chars. Applies Caesar shift of `+3` (ROT3) then reverses the result. Prints the final string + `
+`. |
+| 1425 | xor_with_position | Reads a `
+`-terminated line ≤ 30 chars. For each byte at 0-based position `i`, outputs `byte XOR i` as a raw byte. Final `
+`. |
+| 1426 | shift_letter_by_position | Reads a `
+`-terminated line ≤ 20 chars. For each letter at 0-based position `i`, shifts it by `i` positions within its case (non-letters unchanged). Prints result + `
+`. |
+| 1427 | encrypt_then_uppercase | Reads a `
+`-terminated plaintext ≤ 20 chars. Applies Caesar shift of `+5`, then uppercases all letters. Prints + `
+`. |
+| 1428 | count_distinct_letters_ciphertext | Reads a `
+`-terminated line ≤ 80 chars. Prints the count of distinct LETTER bytes (case-insensitive; `A` and `a` count as one) as decimal + `
+`. |
+| 1429 | modular_arith_demo | Reads three decimals `a`, `b`, `m` (each `0`-`50`, own line; `m >= 1`). Prints `(a+b) mod m
+(a*b) mod m
+` on two lines. |
+| 1430 | djb2_hash_short | Reads a `
+`-terminated line ≤ 30 chars. Computes the djb2 hash modulo 256: `h = 5381; for each byte b: h = ((h * 33) + b) mod 256`. Prints `h` as 2 lowercase hex chars + `
+`. |
+| 1431 | fnv1a_hash_short | Reads a `
+`-terminated line ≤ 30 chars. Computes FNV-1a hash modulo 256: `h = 0; for each byte b: h = ((h XOR b) * 0x93) mod 256` (`0x93` = FNV prime `16777619 mod 256`). Prints `h` as 2 lowercase hex chars + `
+`. (Distinct from `fnv1_hash_short` by operation order — XOR then multiply vs multiply then XOR.) |
+| 1432 | polynomial_hash_mod_256 | Reads a `
+`-terminated line ≤ 30 chars. Computes `sum(byte[i] * 31^i) mod 256` for `i = 0..n-1`. Prints `h` as 2 lowercase hex chars + `
+`. |
+| 1433 | crc8_simple | Reads a `
+`-terminated line ≤ 30 chars. Computes CRC-8 using polynomial `0x07` starting with `crc = 0`. Prints CRC as 2 lowercase hex chars + `
+`. |
+| 1434 | pearson_hash_byte | Reads a `
+`-terminated line ≤ 30 chars. Applies Pearson's 8-bit hash using a fixed 256-byte permutation table (defined in code). Prints hash as 2 lowercase hex chars + `
+`. |
+| 1435 | adler_lite_hash | Reads a `
+`-terminated line ≤ 30 chars. Computes an Adler-32-style hash with small modulus: `a = 1; b = 0; for each byte: a = (a + byte) mod 251; b = (b + a) mod 251;` then prints `b * 256 + a` as 4 lowercase hex chars + `
+`. |
+| 1436 | rolling_hash_step | Reads decimal state `0`-`255` + `
+`, then one byte. Updates state via `state = ((state * 31) + byte) mod 256` and prints the new state as 2 lowercase hex chars + `
+`. |
+| 1437 | djb2_compare_two | Reads two `
+`-terminated lines (each ≤ 20 chars). Computes djb2 hash mod 256 of each. Prints `1
+` if the hashes match, else `0
+`. |
+| 1438 | murmur_lite_4byte | Reads exactly 4 raw bytes. Computes a tiny Murmur-style hash: `h = 0x12345678; for each byte b: h = ((h XOR b) * 0x05) mod 256`. Prints `h` as 2 lowercase hex chars + `
+`. |
+| 1439 | fnv1_hash_short | Reads a `
+`-terminated line ≤ 30 chars. Computes FNV-1 mod 256 with explicit multiplier `0x93` (FNV prime mod 256): `h = 0; for each byte b: h = ((h * 0x93) mod 256) XOR b`. Prints hash as 2 lowercase hex chars + `
+`. (Distinct from `fnv1a_hash_short` by operation order — multiply then XOR vs XOR then multiply.) |
+| 1440 | polynomial_hash_prime_251 | Reads a `
+`-terminated line ≤ 30 chars. Same algorithm as `polynomial_hash_mod_256` but with modulus 251 instead of 256. Prints hash as decimal `0`-`250` + `
+`. |
+| 1441 | hash_to_bucket_10 | Reads a `
+`-terminated line ≤ 20 chars. Computes djb2 hash, then takes `hash mod 10`. Prints the bucket index `0`-`9` as one decimal digit + `
+`. |
+| 1442 | hash_match_target | Reads exactly 2 hex chars + `
+` (target hash), then a `
+`-terminated line ≤ 20 chars. Prints `1
+` if `djb2_hash_short(line) == target`, else `0
+`. |
+| 1443 | djb2_first_n_chars | Reads digit N `1`-`9` + `
+`, then a `
+`-terminated line ≥ N chars. Computes djb2 hash mod 256 of only the first N bytes of the line. Prints hash as 2 lowercase hex chars + `
+`. |
 
 ## memory_layout
 

@@ -1,0 +1,11 @@
+// Print Arrow Right Short (#1283)
+
+// No input. Prints `--->\n`.
+
+main
+
+def main {
+    stl.startup
+    stl.output "--->\n"
+    stl.loop
+}

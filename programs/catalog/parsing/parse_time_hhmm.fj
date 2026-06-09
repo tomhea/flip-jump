@@ -1,0 +1,41 @@
+// Parse Time Hhmm (#1390)
+
+// Reads `HH:MM\n` (5 bytes + `\n`). Prints `<H>:<M>\n` with no leading zeros (e.g. `09:05` → `9:5\n`).
+
+main
+
+def main < h, m {
+    stl.startup_and_init_all
+    read_num h
+    read_num m
+    hex.print_dec_uint 8, h
+    stl.output ':'
+    hex.print_dec_uint 8, m
+    stl.output '\n'
+    stl.loop
+}
+
+// Read decimal digits into dst[:8] until a non-digit; that byte is left in `lastbyte`.
+def read_num dst @ loop, ge0, isdig, stop < lastbyte, digval, c0, c9 {
+    hex.zero 8, dst
+  loop:
+    hex.input lastbyte
+    hex.zero 8, digval
+    hex.mov 2, digval, lastbyte
+    hex.cmp 8, digval, c0, stop, ge0, ge0
+  ge0:
+    hex.cmp 8, digval, c9, isdig, isdig, stop
+  isdig:
+    hex.mul10 8, dst
+    hex.sub 8, digval, c0
+    hex.add 8, dst, digval
+    ;loop
+  stop:
+}
+
+h: hex.vec 8
+m: hex.vec 8
+lastbyte: hex.vec 2
+digval: hex.vec 8
+c0: hex.vec 8, '0'
+c9: hex.vec 8, '9'

@@ -1,0 +1,43 @@
+// Parse Simple Assignment (#1403)
+
+// Reads `<var>=<value>\n` where `var` is a single lowercase letter and `value` is a decimal `0`-`999`. Prints `<var> is <value>\n`.
+
+main
+
+def main < vbyte, eqb, val {
+    stl.startup_and_init_all
+    hex.input vbyte
+    hex.input eqb
+    read_num val
+    hex.print vbyte
+    stl.output " is "
+    hex.print_dec_uint 8, val
+    stl.output '\n'
+    stl.loop
+}
+
+// Read decimal digits into dst[:8] until a non-digit; that byte is left in `lastbyte`.
+def read_num dst @ loop, ge0, isdig, stop < lastbyte, digval, c0, c9 {
+    hex.zero 8, dst
+  loop:
+    hex.input lastbyte
+    hex.zero 8, digval
+    hex.mov 2, digval, lastbyte
+    hex.cmp 8, digval, c0, stop, ge0, ge0
+  ge0:
+    hex.cmp 8, digval, c9, isdig, isdig, stop
+  isdig:
+    hex.mul10 8, dst
+    hex.sub 8, digval, c0
+    hex.add 8, dst, digval
+    ;loop
+  stop:
+}
+
+vbyte: hex.vec 2
+eqb: hex.vec 2
+val: hex.vec 8
+lastbyte: hex.vec 2
+digval: hex.vec 8
+c0: hex.vec 8, '0'
+c9: hex.vec 8, '9'
