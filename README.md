@@ -112,9 +112,8 @@ pip install flipjump[stats,tests]
 ```
 
 
-Pycharm Extensions:
-- Add <span style="color:orange">syntax highlighting</span> support for *.fj files - just import the [PycharmHighlighting.zip](ide-extensions/pycharm/PycharmHighlighting.zip) settings.
-- Add a ctrl+shift+click (find fj-macro definition) functionality by using the [AutoHotKey script](ide-extensions/pycharm/fj-pycharm-def-finder.ahk).
+IDE Plugins:
+FlipJump has official plugins for [JetBrains IDEs](https://plugins.jetbrains.com/plugin/32134-flipjump/reviews) and [VS Code](https://marketplace.visualstudio.com/items?itemName=flipjump.flipjump). Both offer full FlipJump syntax highlighting, and "jump to definition" functionality with ctrl+click on a macro name.
 
 # How to run?
 
