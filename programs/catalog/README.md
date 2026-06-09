@@ -1237,7 +1237,7 @@ Grade: <G>
 `-terminated name (≤ 20 chars) then a decimal age `0`-`120` + `
 `. Prints `Hello, <name>! You are <age> years old.
 `. |
-| 1336 | todo_add | Reads a `
+| 1336 | to_do_add | Reads a `
 `-terminated task description (≤ 40 chars). Prints `Added: <task>
 `. |
 | 1337 | shopping_cart_check | Reads decimal price `0`-`999` + `

@@ -1,4 +1,4 @@
-// Todo Add (#1336)
+// To-do Add (#1336)
 
 // Reads a `\n`-terminated task description (≤ 40 chars). Prints `Added: <task>\n`.
 

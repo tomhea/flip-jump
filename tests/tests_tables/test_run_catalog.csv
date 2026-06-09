@@ -327,7 +327,7 @@ cat_fibonacci_sum_first_n, tests/compiled/catalog/sequences/fibonacci_sum_first_
 cat_running_min, tests/compiled/catalog/data_structures/running_min.fjm, tests/inout/catalog/data_structures/running_min.in,tests/inout/catalog/data_structures/running_min.out, True,True
 cat_greeting_bot, tests/compiled/catalog/interactive/greeting_bot.fjm, tests/inout/catalog/interactive/greeting_bot.in,tests/inout/catalog/interactive/greeting_bot.out, True,True
 cat_trivia_capital_france, tests/compiled/catalog/interactive/trivia_capital_france.fjm, tests/inout/catalog/interactive/trivia_capital_france.in,tests/inout/catalog/interactive/trivia_capital_france.out, True,True
-cat_todo_add, tests/compiled/catalog/interactive/todo_add.fjm, tests/inout/catalog/interactive/todo_add.in,tests/inout/catalog/interactive/todo_add.out, True,True
+cat_to_do_add, tests/compiled/catalog/interactive/to_do_add.fjm, tests/inout/catalog/interactive/to_do_add.in,tests/inout/catalog/interactive/to_do_add.out, True,True
 cat_lah_n_k_small, tests/compiled/catalog/number_theory/lah_n_k_small.fjm, tests/inout/catalog/number_theory/lah_n_k_small.in,tests/inout/catalog/number_theory/lah_n_k_small.out, True,True
 cat_stack_reverse_line, tests/compiled/catalog/data_structures/stack_reverse_line.fjm, tests/inout/catalog/data_structures/stack_reverse_line.in,tests/inout/catalog/data_structures/stack_reverse_line.out, True,True
 cat_min_or_max_select, tests/compiled/catalog/branching/min_or_max_select.fjm, tests/inout/catalog/branching/min_or_max_select.in,tests/inout/catalog/branching/min_or_max_select.out, True,True

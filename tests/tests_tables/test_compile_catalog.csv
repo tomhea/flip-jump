@@ -254,7 +254,7 @@ cat_octal_dump_line, programs/catalog/encoding/octal_dump_line.fj,tests/compiled
 cat_binomial_coefficient_small, programs/catalog/number_theory/binomial_coefficient_small.fj,tests/compiled/catalog/number_theory/binomial_coefficient_small.fjm, 64,3,0, True,True
 cat_numbered_lines, programs/catalog/loops/numbered_lines.fj,tests/compiled/catalog/loops/numbered_lines.fjm, 64,3,0, True,True
 cat_primitive_root_check, programs/catalog/number_theory/primitive_root_check.fj,tests/compiled/catalog/number_theory/primitive_root_check.fjm, 64,3,0, True,True
-cat_todo_add, programs/catalog/interactive/todo_add.fj,tests/compiled/catalog/interactive/todo_add.fjm, 64,3,0, True,True
+cat_to_do_add, programs/catalog/interactive/to_do_add.fj,tests/compiled/catalog/interactive/to_do_add.fjm, 64,3,0, True,True
 cat_mod_binomial_small, programs/catalog/number_theory/mod_binomial_small.fj,tests/compiled/catalog/number_theory/mod_binomial_small.fjm, 64,3,0, True,True
 cat_mod_by_4, programs/catalog/arithmetic/mod_by_4.fj,tests/compiled/catalog/arithmetic/mod_by_4.fjm, 64,3,0, True,True
 cat_repeat_line_2x, programs/catalog/strings/repeat_line_2x.fj,tests/compiled/catalog/strings/repeat_line_2x.fjm, 64,3,0, True,True
