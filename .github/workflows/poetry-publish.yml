@@ -1,5 +1,4 @@
-# This workflow will upload the new flipjump python package to pypi, everytime a new release is created.
-
+# This workflow will upload this project as a new python package to pypi, everytime a new release is created.
 
 name: Upload python package
 
@@ -21,6 +20,6 @@ jobs:
       - name: Build package
         run: poetry build
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.14.0
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
