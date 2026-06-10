@@ -1,4 +1,4 @@
-// Greeting User Age (#1335)
+// Greeting User Age (#0459)
 
 // Reads a `\n`-terminated name (≤ 20 chars) then a decimal age `0`-`120` + `\n`. Prints `Hello, <name>! You are <age> years old.\n`.
 

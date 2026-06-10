@@ -1,4 +1,4 @@
-// Battleship Ships Remaining (#1527)
+// Battleship Ships Remaining (#0962)
 
 // Reads a 4×4 grid (4 lines, each 4 chars; `S` = ship cell, `.` = water), then a `\n`-terminated stream of `H`/`M` chars (each char represents the outcome at the corresponding `S` cell, in row-major order, skipping `.` cells). Prints the count of `S` cells that received `M` (or no value) — i.e. ship cells NOT hit yet — as decimal + `\n`.
 

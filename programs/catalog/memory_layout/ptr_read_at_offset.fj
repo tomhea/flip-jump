@@ -1,4 +1,4 @@
-// Ptr Read At Offset (#1550)
+// Ptr Read At Offset (#0923)
 
 // Reads 16 decimals (each `0`-`255`, own line) representing a 16-byte array, then a base index `0`-`15` + `\n`, then an offset `0`-`15` + `\n`. Prints `array[(base + offset) mod 16]` as decimal + `\n`.
 

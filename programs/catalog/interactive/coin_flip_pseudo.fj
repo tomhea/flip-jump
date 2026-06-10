@@ -1,4 +1,4 @@
-// Coin Flip Pseudo (#1320)
+// Coin Flip Pseudo (#0444)
 
 // Reads exactly one byte. Prints `Heads\n` if its value is even, `Tails\n` if odd. (Pseudo-random via input parity.)
 

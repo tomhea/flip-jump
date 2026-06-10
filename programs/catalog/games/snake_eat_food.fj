@@ -1,4 +1,4 @@
-// Snake Eat Food (#1537)
+// Snake Eat Food (#0972)
 
 // Reads two decimals `pos_snake` `pos_food` (each `0`-`9`, own line). Prints `1\n` if equal (snake eats food), else `0\n`.
 

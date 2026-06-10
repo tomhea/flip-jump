@@ -1,4 +1,4 @@
-// Tetris Piece Rotate (#1538)
+// Tetris Piece Rotate (#0973)
 
 // Reads a 2×2 piece description (2 lines of 2 chars `*`/`.`). Prints the piece rotated 90° clockwise (still 2×2).
 

@@ -1,4 +1,4 @@
-// Checksum Xor (#1358)
+// Checksum Xor (#0512)
 
 // Reads a `\n`-terminated line ≤ 30 chars. Prints the XOR of all byte values (excluding `\n`) as two lowercase hex chars + `\n`.
 

@@ -1,4 +1,4 @@
-// Vigenere Encode Short (#1409)
+// Vigenere Encode Short (#0877)
 
 // Reads a `\n`-terminated lowercase key `1`-`8` chars, then a `\n`-terminated plaintext ≤ 40 chars. Applies Vigenère: each plaintext letter is shifted by `key[i mod key_length] - 'a'` positions (within its case, non-letters unchanged). Prints ciphertext + `\n`.
 

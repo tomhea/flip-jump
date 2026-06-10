@@ -1,4 +1,4 @@
-// Power Recursive (#1586)
+// Power Recursive (#0420)
 
 // Reads `base` `0`-`3` then `exp` `0`-`3` (each own line). Prints `base^exp` using a recursive macro `pow(b,e) = b * pow(b, e-1)`.
 

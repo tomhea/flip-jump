@@ -1,4 +1,4 @@
-// Array 2D Access 3X3 (#1556)
+// Array 2D Access 3X3 (#0929)
 
 // Reads 9 decimals (3×3 grid, row-major, each on own line), then a row `0`-`2` + `\n`, then a col `0`-`2` + `\n`. Prints `grid[row][col]` as decimal + `\n`.
 

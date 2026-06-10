@@ -1,4 +1,4 @@
-// Brownian Walk 1D (#1499)
+// Brownian Walk 1D (#0639)
 
 // Reads digit N `1`-`9` + `\n`, then N raw bytes. Starts at position 0. For each byte, advances position by `+1` if byte value is even, `-1` if odd. Prints the final position as signed decimal + `\n`.
 

@@ -1,4 +1,4 @@
-// Array Indexed Access 5 (#1545)
+// Array Indexed Access 5 (#0918)
 
 // Reads 5 decimals (each `0`-`99`, own line), then a decimal index `0`-`4` (own line). Prints the array element at that index + `\n`.
 

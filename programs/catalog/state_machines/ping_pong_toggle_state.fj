@@ -1,4 +1,4 @@
-// Ping Pong Toggle State (#1572)
+// Ping Pong Toggle State (#0765)
 
 // Reads a `\n`-terminated bit string (`0`/`1`, ≤ 20 chars). State starts at `Ping`. On each `1` input, state toggles (`Ping↔Pong`); on each `0`, state stays. After each input, prints the current state + `\n` (one state per line).
 

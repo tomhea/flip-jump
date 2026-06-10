@@ -1,4 +1,4 @@
-// Snake Advance One Step (#1503)
+// Snake Advance One Step (#0643)
 
 // Reads a `\n`-terminated string of length `1`-`5` representing the snake's body positions on a 1D 10-cell line (`H` head, `B` body); positions separated by `.` for empty cells. Then reads one direction byte `L` or `R` + `\n`. Moves the head by 1 in that direction (no wrap; clamp to bounds); body follows. Prints the new state + `\n`.
 

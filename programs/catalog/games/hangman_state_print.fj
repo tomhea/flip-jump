@@ -1,4 +1,4 @@
-// Hangman State Print (#1515)
+// Hangman State Print (#0950)
 
 // Reads a `\n`-terminated secret word ≤ 10 chars (lowercase letters), then a `\n`-terminated string of guessed letters ≤ 26 chars. Prints the secret with un-guessed letters as `_` (e.g. secret `hello`, guesses `el` → `_ell_\n`).
 

@@ -1,4 +1,4 @@
-// Polynomial Hash Mod 256 (#1432)
+// Polynomial Hash Mod 256 (#0900)
 
 // Reads a `\n`-terminated line ≤ 30 chars. Computes `sum(byte[i] * 31^i) mod 256` for `i = 0..n-1`. Prints `h` as 2 lowercase hex chars + `\n`.
 

@@ -1,4 +1,4 @@
-// Regex Aa Repeated (#1579)
+// Regex Aa Repeated (#0772)
 
 // Reads a `\n`-terminated string of lowercase letters ≤ 30 chars. Prints `1\n` if the string matches `(aa)*` (zero or more `aa` pairs, even count of `a`s, no other characters), else `0\n`.
 

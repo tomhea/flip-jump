@@ -1,4 +1,4 @@
-// Game Of Life Glider 5 (#1496)
+// Game Of Life Glider 5 (#0636)
 
 // No input. Prints 5 successive generations of a fixed glider pattern on a 7×7 grid. Each generation is 7 lines of 7 chars + `\n`; generations separated by an empty line.
 

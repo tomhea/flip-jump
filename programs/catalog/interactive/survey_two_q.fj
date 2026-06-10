@@ -1,4 +1,4 @@
-// Survey Two Q (#1330)
+// Survey Two Q (#0454)
 
 // Reads two `\n`-terminated `y`/`n` answers. Prints `Definitely\n` for `y/y`, `Maybe\n` for `y/n`, `Probably not\n` for `n/y`, `Definitely not\n` for `n/n`.
 

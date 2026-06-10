@@ -1,4 +1,4 @@
-// Print House 3 (#1278)
+// Print House 3 (#0803)
 
 // No input. Prints a fixed 3-line ASCII house: line 1 ` /\ `, line 2 `/__\`, line 3 `|  |`, each + `\n`.
 

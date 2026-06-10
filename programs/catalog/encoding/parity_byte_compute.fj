@@ -1,4 +1,4 @@
-// Parity Byte Compute (#1359)
+// Parity Byte Compute (#0513)
 
 // Reads exactly 7 ASCII bits (each `0` or `1` byte, all on one `\n`-terminated line, e.g. `1010101\n`). Prints `0\n` if the count of 1s among the 7 input bits is even, `1\n` if odd. (This is the parity bit that, when appended, makes total ones EVEN.)
 

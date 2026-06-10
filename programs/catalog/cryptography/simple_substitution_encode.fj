@@ -1,4 +1,4 @@
-// Simple Substitution Encode (#1411)
+// Simple Substitution Encode (#0879)
 
 // Reads a 26-char `\n`-terminated lowercase substitution mapping (the letter at position 0 is the substitution for `a`, position 1 for `b`, etc.). Then reads a `\n`-terminated plaintext ≤ 40 chars; substitutes each lowercase letter using the mapping (non-letters unchanged). Prints + `\n`.
 

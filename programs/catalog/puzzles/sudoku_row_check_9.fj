@@ -1,4 +1,4 @@
-// Sudoku Row Check 9 (#1450)
+// Sudoku Row Check 9 (#0660)
 
 // Reads 9 decimals `1`-`9` (each on own line). Prints `1\n` if all 9 values are distinct (a valid Sudoku row/column/block), else `0\n`.
 

@@ -1,4 +1,4 @@
-// Blackjack Hand Value (#1517)
+// Blackjack Hand Value (#0952)
 
 // Reads digit N `1`-`9` + `\n`, then N card-value codes (each one of `A`, `2`-`9`, `T`, `J`, `Q`, `K` on its own line). Computes the best total (`A` is `1` or `11`, face cards `J`/`Q`/`K` are `10`). Prints the best total `≤ 21` (or, if even with `A=1` all hands bust, prints the minimum bust total).
 

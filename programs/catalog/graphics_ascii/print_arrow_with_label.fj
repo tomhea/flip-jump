@@ -1,4 +1,4 @@
-// Print Arrow With Label (#1307)
+// Print Arrow With Label (#0832)
 
 // Reads a `\n`-terminated line ≤ 20 chars. Prints `--> <line>\n`.
 

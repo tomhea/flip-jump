@@ -1,4 +1,4 @@
-// Coin Change Count Small (#1468)
+// Coin Change Count Small (#0678)
 
 // Reads decimal amount `1`-`20` + `\n`. Prints the number of distinct ways to make `amount` cents using coins of denominations `{1, 5, 10}` (order doesn't matter) + `\n`.
 

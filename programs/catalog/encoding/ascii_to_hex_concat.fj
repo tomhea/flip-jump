@@ -1,4 +1,4 @@
-// Ascii To Hex Concat (#1366)
+// Ascii To Hex Concat (#0520)
 
 // Reads a `\n`-terminated line ≤ 20 chars. Prints all bytes (excluding `\n`) as concatenated lowercase hex (no separators) followed by `\n`. Example: `Hi\n` → `4869\n`.
 

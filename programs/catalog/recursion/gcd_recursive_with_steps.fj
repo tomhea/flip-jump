@@ -1,4 +1,4 @@
-// Gcd Recursive With Steps (#1590)
+// Gcd Recursive With Steps (#0424)
 
 // Reads two decimals `a`, `b` (each `1`-`50`, own line). Computes `gcd(a, b)` via recursive macro and prints each step `a b\n` (current pair after `a = b, b = a % b`), terminating with `<gcd> 0\n`. (Different from `gcd_recursive` which prints only final value.)
 

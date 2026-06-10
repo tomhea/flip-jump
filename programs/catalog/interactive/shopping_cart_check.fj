@@ -1,4 +1,4 @@
-// Shopping Cart Check (#1337)
+// Shopping Cart Check (#0461)
 
 // Reads decimal price `0`-`999` + `\n` then decimal budget `0`-`999` + `\n`. If `price <= budget` prints `affordable\n`, else prints `over budget by <X>\n` where `X = price - budget`.
 

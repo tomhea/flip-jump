@@ -1,4 +1,4 @@
-// Xor Encrypt Cycling Key (#1368)
+// Xor Encrypt Cycling Key (#0522)
 
 // Reads a `\n`-terminated key (`≤ 8 chars`), then a `\n`-terminated message (`≤ 30 chars`). XORs each message byte (excluding terminating `\n`) with `key[i mod key_length]`. Outputs the XOR'd bytes followed by `\n`.
 

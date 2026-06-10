@@ -1,4 +1,4 @@
-// Linked List Print 3 (#1546)
+// Linked List Print 3 (#0919)
 
 // No input. Builds a 3-node linked list with values `10`, `20`, `30` (head→tail). Traverses head-to-tail and prints each value on its own line.
 

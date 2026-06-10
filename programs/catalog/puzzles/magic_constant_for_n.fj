@@ -1,4 +1,4 @@
-// Magic Constant For N (#1449)
+// Magic Constant For N (#0659)
 
 // Reads digit N `3`-`9` + `\n`. Prints `N * (N^2 + 1) / 2` (the magic constant for an N×N magic square containing `1..N²`) + `\n`.
 

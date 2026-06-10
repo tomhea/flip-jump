@@ -1,4 +1,4 @@
-// Variable Swap No Temp (#1543)
+// Variable Swap No Temp (#0916)
 
 // Reads two decimals `a` `b` (each `0`-`99`, own line). Swaps using XOR trick (no temporary variable): `a ^= b; b ^= a; a ^= b;`. Prints `<new_a>\n<new_b>\n`.
 

@@ -1,4 +1,4 @@
-// Card Blackjack Value (#1521)
+// Card Blackjack Value (#0956)
 
 // Reads exactly one card-value char (`A`, `2`-`9`, `T`, `J`, `Q`, `K`). Prints the blackjack value: `A` → `1`, `2`-`9` → that digit, `T`/`J`/`Q`/`K` → `10`. Output is decimal + `\n`.
 

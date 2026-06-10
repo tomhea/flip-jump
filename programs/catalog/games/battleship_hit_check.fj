@@ -1,4 +1,4 @@
-// Battleship Hit Check (#1526)
+// Battleship Hit Check (#0961)
 
 // Reads a 4×4 grid (`S` = ship, `.` = water): 4 lines of 4 chars each. Then reads a hit coordinate `r c` (each digit `0`-`3` on its own line). Prints `hit\n` if grid[r][c] is `S`, else `miss\n`.
 

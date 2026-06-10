@@ -1,4 +1,4 @@
-// Atbash Cipher (#1353)
+// Atbash Cipher (#0507)
 
 // Reads a `\n`-terminated line ≤ 80 chars. For each letter, maps `a↔z`, `b↔y`, ..., `m↔n` (and the same within `A-Z`). Non-letters unchanged. Prints result + `\n`.
 

@@ -1,4 +1,4 @@
-// Nibble Dump Hex Colon (#1360)
+// Nibble Dump Hex Colon (#0514)
 
 // Reads a `\n`-terminated line ≤ 16 chars. For each byte (excluding `\n`), prints `<high>:<low>` where `<high>` is the high nibble's hex char and `<low>` is the low nibble's. Entries are space-separated; final `\n`. Example: input `Aa\n` → output `4:1 6:1\n`.
 

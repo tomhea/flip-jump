@@ -1,4 +1,4 @@
-// Knight Attack Check (#1475)
+// Knight Attack Check (#0685)
 
 // Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line). Prints `1\n` if they're one knight's move apart (i.e. `(|Δr|, |Δc|) == (1,2)` or `(2,1)`), else `0\n`.
 

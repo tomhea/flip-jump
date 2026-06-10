@@ -1,4 +1,4 @@
-// Parse Json Bool (#1397)
+// Parse Json Bool (#0793)
 
 // Reads `{"b":true}\n` or `{"b":false}\n`. Prints `1\n` for `true`, `0\n` for `false`.
 

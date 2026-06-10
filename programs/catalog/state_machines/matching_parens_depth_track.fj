@@ -1,4 +1,4 @@
-// Matching Parens Depth Track (#1571)
+// Matching Parens Depth Track (#0764)
 
 // Reads a `\n`-terminated string of `(` and `)` (≤ 30 chars). Tracks depth starting at 0. After each input char, prints depth as decimal, comma-separated entries on one line + `\n`. Example: `(())` → `1,2,1,0\n`.
 

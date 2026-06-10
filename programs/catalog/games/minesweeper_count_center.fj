@@ -1,4 +1,4 @@
-// Minesweeper Count Center (#1522)
+// Minesweeper Count Center (#0957)
 
 // Reads 3 lines of 3 chars each (each char `M` for mine or `.` for empty). Prints the count of mines (`M`) in the 8 cells around the center `(1,1)` (excluding center itself) as decimal + `\n`.
 

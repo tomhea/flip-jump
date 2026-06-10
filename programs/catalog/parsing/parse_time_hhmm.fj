@@ -1,4 +1,4 @@
-// Parse Time Hhmm (#1390)
+// Parse Time Hhmm (#0786)
 
 // Reads `HH:MM\n` (5 bytes + `\n`). Prints `<H>:<M>\n` with no leading zeros (e.g. `09:05` → `9:5\n`).
 

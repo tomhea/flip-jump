@@ -1,4 +1,4 @@
-// Tokenize Split On Whitespace (#1386)
+// Tokenize Split On Whitespace (#0782)
 
 // Reads a `\n`-terminated line ≤ 40 chars. Splits on runs of whitespace (`' '`, `'\t'`) and prints each non-empty token on its own line.
 

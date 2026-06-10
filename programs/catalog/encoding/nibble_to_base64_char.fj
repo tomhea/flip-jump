@@ -1,4 +1,4 @@
-// Nibble To Base64 Char (#1371)
+// Nibble To Base64 Char (#0525)
 
 // Reads a decimal `0`-`15` + `\n`. Prints the corresponding base64 alphabet character (`A` for 0, `B` for 1, ..., `P` for 15), followed by `\n`.
 

@@ -1,4 +1,4 @@
-// Parse Decimal List Sum (#1398)
+// Parse Decimal List Sum (#0794)
 
 // Reads a `\n`-terminated comma-separated list of decimals (each `0`-`99`, up to 10 entries). Prints the sum + `\n`.
 

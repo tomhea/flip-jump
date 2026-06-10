@@ -1,4 +1,4 @@
-// Caesar Validate (#1423)
+// Caesar Validate (#0891)
 
 // Reads a signed decimal shift `-25`..`25` + `\n`, then plaintext + `\n`, then candidate ciphertext + `\n` (each ≤ 20 chars). Prints `1\n` if applying Caesar shift to plaintext yields the candidate ciphertext exactly, else `0\n`.
 

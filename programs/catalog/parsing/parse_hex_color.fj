@@ -1,4 +1,4 @@
-// Parse Hex Color (#1388)
+// Parse Hex Color (#0784)
 
 // Reads `#RRGGBB\n` (exactly 7 bytes + `\n`, lowercase hex). Prints `R: <r>\nG: <g>\nB: <b>\n` where `r`, `g`, `b` are decimal values `0`-`255`.
 

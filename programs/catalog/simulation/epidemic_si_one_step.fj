@@ -1,4 +1,4 @@
-// Epidemic Si One Step (#1508)
+// Epidemic Si One Step (#0648)
 
 // Reads `S` `0`-`99`, `I` `0`-`99` (each own line). Applies one SI-model step: `new_infections = S * I / 100` (clamp to remaining S), `S' = S - new_infections`, `I' = I + new_infections`. Prints `<S'> <I'>\n`.
 

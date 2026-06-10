@@ -1,4 +1,4 @@
-// Polybius Square Encode (#1421)
+// Polybius Square Encode (#0889)
 
 // Reads exactly one uppercase letter `A`-`Z` (excluding `J`; `I` and `J` are merged) + `\n`. Prints two decimal digits `<row><col>` (each `1`-`5`) + `\n` based on the standard 5×5 Polybius square (row-major fill of `A B C D E F G H I/J K L M N O P Q R S T U V W X Y Z`).
 

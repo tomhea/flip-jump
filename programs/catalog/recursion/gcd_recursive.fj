@@ -1,4 +1,4 @@
-// Gcd Recursive (#1587)
+// Gcd Recursive (#0421)
 
 // Reads two decimals `a`, `b` (each ≤ 50, own line). Prints `gcd(a,b)` using the recursive Euclidean algorithm.
 

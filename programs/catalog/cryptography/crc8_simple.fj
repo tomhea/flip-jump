@@ -1,4 +1,4 @@
-// Crc8 Simple (#1433)
+// Crc8 Simple (#0901)
 
 // Reads a `\n`-terminated line ≤ 30 chars. Computes CRC-8 using polynomial `0x07` starting with `crc = 0`. Prints CRC as 2 lowercase hex chars + `\n`.
 

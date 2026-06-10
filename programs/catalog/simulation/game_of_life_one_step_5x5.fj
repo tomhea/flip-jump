@@ -1,4 +1,4 @@
-// Game Of Life One Step 5X5 (#1494)
+// Game Of Life One Step 5X5 (#0634)
 
 // Reads a 5×5 binary grid: 5 lines, each 5 chars of `0`/`1` + `\n`. Applies one Conway's Game of Life step with dead-boundary (cells outside grid treated as 0). Prints the resulting 5×5 grid in the same format.
 

@@ -1,4 +1,4 @@
-// Is Even Mutual Recursive (#1589)
+// Is Even Mutual Recursive (#0423)
 
 // Reads decimal N `0`-`10` and prints `1\n` if even else `0\n`, computed via mutual recursion: `is_even(0)=1`, `is_even(N) = is_odd(N-1)`, `is_odd(N) = is_even(N-1)`.
 

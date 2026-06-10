@@ -1,4 +1,4 @@
-// Pearson Hash Byte (#1434)
+// Pearson Hash Byte (#0902)
 
 // Reads a `\n`-terminated line ≤ 30 chars. Applies Pearson's 8-bit hash using a fixed 256-byte permutation table (defined in code). Prints hash as 2 lowercase hex chars + `\n`.
 

@@ -1,4 +1,4 @@
-// Morse To Ascii Letter (#1370)
+// Morse To Ascii Letter (#0524)
 
 // Reads a `\n`-terminated Morse Code sequence (using only `.` and `-`, ≤ 6 chars, one of the 36 lowercase-letter / digit codes). Prints the decoded ASCII byte (no extra `\n`).
 

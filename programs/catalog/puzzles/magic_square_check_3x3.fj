@@ -1,4 +1,4 @@
-// Magic Square Check 3X3 (#1447)
+// Magic Square Check 3X3 (#0657)
 
 // Reads 9 decimals (3×3 row-major, each on own line). Prints `1\n` if all 3 rows, all 3 columns, and both diagonals have the same sum, else `0\n`.
 

@@ -1,4 +1,4 @@
-// Rule 30 N Steps (#1491)
+// Rule 30 N Steps (#0631)
 
 // Reads an 8-char binary string + `\n`, then a digit N `1`-`5` + `\n`. Prints N successive generations of Rule 30 (one per line, each an 8-char binary string + `\n`).
 

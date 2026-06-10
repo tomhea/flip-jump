@@ -1,4 +1,4 @@
-// Polynomial Hash Prime 251 (#1440)
+// Polynomial Hash Prime 251 (#0908)
 
 // Reads a `\n`-terminated line ≤ 30 chars. Same algorithm as `polynomial_hash_mod_256` but with modulus 251 instead of 256. Prints hash as decimal `0`-`250` + `\n`.
 

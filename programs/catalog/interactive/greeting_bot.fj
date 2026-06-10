@@ -1,4 +1,4 @@
-// Greeting Bot (#1310)
+// Greeting Bot (#0434)
 
 // Reads a name (`\n`-terminated, ≤ 20 chars) and prints `Hello, <name>!\nGoodbye, <name>!\n`.
 

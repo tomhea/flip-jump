@@ -1,4 +1,4 @@
-// Odd One Out (#1339)
+// Odd One Out (#0463)
 
 // Reads three decimals (each `\n`-terminated). If exactly two are equal, prints the third (unique) value + `\n`. Otherwise prints `none\n` (covers both all-equal and all-different cases).
 

@@ -1,4 +1,4 @@
-// Quiz Show Score (#1332)
+// Quiz Show Score (#0456)
 
 // Reads three single-digit decimals `0` or `1` (each `\n`-terminated; `1` = correct, `0` = wrong for 3 rounds). Prints `Total: <S>\nGrade: <G>\n`, where `S` is the sum (0-3) and `G` is `A`/`B`/`C`/`F` for `3`/`2`/`1`/`0`.
 

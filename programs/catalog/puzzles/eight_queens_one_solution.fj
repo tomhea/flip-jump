@@ -1,4 +1,4 @@
-// Eight Queens One Solution (#1446)
+// Eight Queens One Solution (#0656)
 
 // No input. Prints one valid 8-queens solution as 8 column indices `0`-`7` for rows 0..7, space-separated, then `\n`. (Use a canonical first solution.)
 

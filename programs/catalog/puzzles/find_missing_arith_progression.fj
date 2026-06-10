@@ -1,4 +1,4 @@
-// Find Missing Arith Progression (#1463)
+// Find Missing Arith Progression (#0673)
 
 // Reads exactly 4 decimals (each own line) with the value `0` representing a single missing element of a 4-element arithmetic progression. The remaining 3 values are in their correct AP positions; the `0` is the placeholder. Prints the missing value as decimal + `\n`.
 

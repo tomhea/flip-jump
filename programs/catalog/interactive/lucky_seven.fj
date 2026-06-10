@@ -1,4 +1,4 @@
-// Lucky Seven (#1322)
+// Lucky Seven (#0446)
 
 // Reads exactly one byte. Prints `Lucky!\n` if `byte mod 7 == 0`, else `Try again\n`.
 

@@ -1,4 +1,4 @@
-// Hangman Lives Check (#1516)
+// Hangman Lives Check (#0951)
 
 // Reads a digit `0`-`6` + `\n` (number of wrong guesses so far). Prints `<lives>\n` where `lives = 6 - wrong`. If `lives == 0`, additionally prints `Game over!\n` on a second line.
 

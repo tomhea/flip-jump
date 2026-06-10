@@ -1,4 +1,4 @@
-// Array 2D Assign 3X3 (#1557)
+// Array 2D Assign 3X3 (#0930)
 
 // Reads 9 decimals (3×3 grid), then row `0`-`2`, col `0`-`2`, value (each own line). Updates the cell, then prints the new grid as 3 lines of 3 decimals space-separated + `\n` each.
 

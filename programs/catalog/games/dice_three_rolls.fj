@@ -1,4 +1,4 @@
-// Dice Three Rolls (#1520)
+// Dice Three Rolls (#0955)
 
 // Reads exactly 3 bytes (no separators). For each byte `b`, prints `(b mod 6) + 1` as decimal on its own line (3 lines of output).
 

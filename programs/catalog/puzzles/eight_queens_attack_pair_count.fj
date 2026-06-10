@@ -1,4 +1,4 @@
-// Eight Queens Attack Pair Count (#1480)
+// Eight Queens Attack Pair Count (#0690)
 
 // Reads exactly 8 decimals (each `0`-`7`, own line) representing the column of a queen for each row 0..7. Prints the count of pairs `(i, j)` with `i < j` such that queens on rows i and j attack each other (same column, or `|rows[i] - rows[j]| == |i - j|`) + `\n`.
 

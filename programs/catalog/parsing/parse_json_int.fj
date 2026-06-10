@@ -1,4 +1,4 @@
-// Parse Json Int (#1395)
+// Parse Json Int (#0791)
 
 // Reads `{"x":<num>}\n` where `<num>` is a decimal `0`-`9999`. Prints `<num>` + `\n`.
 

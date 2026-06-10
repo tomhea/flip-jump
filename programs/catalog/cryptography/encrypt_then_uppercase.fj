@@ -1,4 +1,4 @@
-// Encrypt Then Uppercase (#1427)
+// Encrypt Then Uppercase (#0895)
 
 // Reads a `\n`-terminated plaintext ≤ 20 chars. Applies Caesar shift of `+5`, then uppercases all letters. Prints + `\n`.
 

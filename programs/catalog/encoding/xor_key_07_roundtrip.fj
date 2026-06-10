@@ -1,4 +1,4 @@
-// Xor Key 07 Roundtrip (#1356)
+// Xor Key 07 Roundtrip (#0510)
 
 // Reads a `\n`-terminated line ≤ 30 chars. XORs each byte (excluding `\n`) with `0x07`. Outputs the XORed bytes followed by `\n`. (Self-inverse — running twice on the same input yields original.)
 

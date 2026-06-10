@@ -1,4 +1,4 @@
-// Spelling Bee Check (#1533)
+// Spelling Bee Check (#0968)
 
 // Reads a `\n`-terminated set of 7 lowercase letters (the allowed letters), then a `\n`-terminated candidate word ≤ 10 chars. Prints `1\n` if every letter of the word is in the allowed set, else `0\n`.
 

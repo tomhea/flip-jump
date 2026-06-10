@@ -1,4 +1,4 @@
-// Is Chessboard Color (#1479)
+// Is Chessboard Color (#0689)
 
 // Reads 2 decimals `r c` (each `0`-`7`, own line). Prints `0\n` if the square is "white" (i.e. `(r + c)` is even with a8/`r=0,c=0` treated as white), else `1\n`.
 

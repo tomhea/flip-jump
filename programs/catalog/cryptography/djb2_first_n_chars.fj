@@ -1,4 +1,4 @@
-// Djb2 First N Chars (#1443)
+// Djb2 First N Chars (#0911)
 
 // Reads digit N `1`-`9` + `\n`, then a `\n`-terminated line ≥ N chars. Computes djb2 hash mod 256 of only the first N bytes of the line. Prints hash as 2 lowercase hex chars + `\n`.
 

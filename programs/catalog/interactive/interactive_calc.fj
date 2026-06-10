@@ -1,4 +1,4 @@
-// Interactive Calc (#1318)
+// Interactive Calc (#0442)
 
 // Reads one operator byte `+`, `-`, or `*` + `\n`, then two decimal integers (each `\n`-terminated). Prints the integer result + `\n`. (For `-`, prints signed result.)
 

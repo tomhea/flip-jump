@@ -1,4 +1,4 @@
-// Multiplication Quiz (#1317)
+// Multiplication Quiz (#0441)
 
 // Same I/O shape as `addition_quiz` but for multiplication. Prints `correct\n` if the answer equals the product, else `wrong (expected <P>)\n`.
 

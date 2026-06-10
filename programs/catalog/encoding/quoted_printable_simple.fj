@@ -1,4 +1,4 @@
-// Quoted Printable Simple (#1361)
+// Quoted Printable Simple (#0515)
 
 // Reads a `\n`-terminated line ≤ 20 chars. Each byte (excluding `\n`) that is NOT printable ASCII (`0x20`-`0x7e`) becomes `=NN` where `NN` is its 2-char uppercase hex. Printable bytes unchanged. Prints result + `\n`.
 

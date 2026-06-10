@@ -1,4 +1,4 @@
-// Rps Play 3 Rounds (#1528)
+// Rps Play 3 Rounds (#0963)
 
 // Reads 6 chars (3 pairs): player 1 then player 2 for each of 3 rounds (each char on own line; `r`/`p`/`s`). Determines round winner for each (P1, P2, or tie). Prints final summary `P1: <p1_wins>\nP2: <p2_wins>\nTies: <ties>\n`.
 

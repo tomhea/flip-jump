@@ -1,4 +1,4 @@
-// Parse Url Protocol (#1392)
+// Parse Url Protocol (#0788)
 
 // Reads `<proto>://<rest>\n` (proto is `1`-`8` lowercase letters). Prints the protocol + `\n`.
 

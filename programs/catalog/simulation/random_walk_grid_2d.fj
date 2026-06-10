@@ -1,4 +1,4 @@
-// Random Walk Grid 2D (#1500)
+// Random Walk Grid 2D (#0640)
 
 // Reads digit N `1`-`9` + `\n`, then N raw bytes. Starts at `(0,0)`. For each byte, moves according to `byte mod 4`: `0`=up (`y+1`), `1`=right (`x+1`), `2`=down (`y-1`), `3`=left (`x-1`). Prints final `<x> <y>\n`.
 

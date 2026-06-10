@@ -1,4 +1,4 @@
-// Sudoku Full Validation (#1451)
+// Sudoku Full Validation (#0661)
 
 // Reads 9 lines, each 9 decimals (separated by spaces) representing a 9×9 Sudoku grid filled with `1`-`9`. Prints `1\n` if all 9 rows AND all 9 columns AND all 9 3×3 boxes contain `1..9` (every row/col/box has 9 distinct values), else `0\n`.
 

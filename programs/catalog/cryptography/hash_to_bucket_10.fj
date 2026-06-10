@@ -1,4 +1,4 @@
-// Hash To Bucket 10 (#1441)
+// Hash To Bucket 10 (#0909)
 
 // Reads a `\n`-terminated line ≤ 20 chars. Computes djb2 hash, then takes `hash mod 10`. Prints the bucket index `0`-`9` as one decimal digit + `\n`.
 

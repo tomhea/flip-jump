@@ -1,4 +1,4 @@
-// Tower Of Hanoi Count (#1455)
+// Tower Of Hanoi Count (#0665)
 
 // Reads digit N `1`-`9` + `\n`. Prints `2^N - 1` (minimum moves) + `\n`.
 

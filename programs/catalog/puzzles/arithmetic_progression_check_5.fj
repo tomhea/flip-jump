@@ -1,4 +1,4 @@
-// Arithmetic Progression Check 5 (#1460)
+// Arithmetic Progression Check 5 (#0670)
 
 // Reads exactly 5 signed decimals (each own line). Prints `1\n` if they form an arithmetic progression (constant difference between consecutive elements), else `0\n`.
 

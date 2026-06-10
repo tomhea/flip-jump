@@ -1,4 +1,4 @@
-// Dfa Ends With 01 (#1564)
+// Dfa Ends With 01 (#0757)
 
 // Reads a `\n`-terminated binary string of `0`/`1` (≤ 30 chars). Prints `1\n` if the string ends with the two-byte pattern `01` (immediately before the `\n`), else `0\n`.
 

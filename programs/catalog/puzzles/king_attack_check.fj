@@ -1,4 +1,4 @@
-// King Attack Check (#1477)
+// King Attack Check (#0687)
 
 // Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line). Prints `1\n` if `max(|r1-r2|, |c1-c2|) == 1` (king's move neighbors), else `0\n`.
 

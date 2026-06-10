@@ -1,4 +1,4 @@
-// Trivia Capital France (#1323)
+// Trivia Capital France (#0447)
 
 // First prints `What's the capital of France?\n` on stdout. Then reads a `\n`-terminated answer (≤ 20 chars). Prints `correct!\n` if the answer is exactly `Paris`, else `wrong\n`.
 

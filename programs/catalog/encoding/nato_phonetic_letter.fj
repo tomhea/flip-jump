@@ -1,4 +1,4 @@
-// Nato Phonetic Letter (#1354)
+// Nato Phonetic Letter (#0508)
 
 // Reads exactly one byte `A`-`Z` (no `\n` required). Prints the NATO phonetic word for that letter (`Alpha`/`Bravo`/`Charlie`/.../`Zulu`) followed by `\n`.
 

@@ -1,4 +1,4 @@
-// Dfa Starts A Ends Z (#1566)
+// Dfa Starts A Ends Z (#0759)
 
 // Reads a `\n`-terminated ASCII string of length ≥ 2 ≤ 30 chars. Prints `1\n` if first byte is `a` and last byte (immediately before `\n`) is `z`, else `0\n`.
 

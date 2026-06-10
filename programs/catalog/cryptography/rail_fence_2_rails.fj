@@ -1,4 +1,4 @@
-// Rail Fence 2 Rails (#1413)
+// Rail Fence 2 Rails (#0881)
 
 // Reads a `\n`-terminated plaintext ≤ 30 chars (no `\n`s inside). Encodes using 2-rail rail-fence cipher (write zigzag on 2 rails, read row-by-row). Prints ciphertext + `\n`.
 

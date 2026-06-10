@@ -1,4 +1,4 @@
-// Sum To N Recursive (#1583)
+// Sum To N Recursive (#0417)
 
 // Reads decimal N in `0`-`10` and prints `1+2+...+N` using a recursive macro. Same I/O as `arithmetic/sum_to_n`; demonstrates the recursive accumulator pattern.
 

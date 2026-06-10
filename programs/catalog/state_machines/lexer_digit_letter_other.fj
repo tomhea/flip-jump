@@ -1,4 +1,4 @@
-// Lexer Digit Letter Other (#1569)
+// Lexer Digit Letter Other (#0762)
 
 // Reads a `\n`-terminated ASCII string ≤ 40 chars. For each byte, prints `D` if digit, `L` if letter, `O` otherwise. All output chars on one line, then `\n`.
 

@@ -1,4 +1,4 @@
-// Octal Dump Line (#1344)
+// Octal Dump Line (#0498)
 
 // Reads a `\n`-terminated line ≤ 16 chars. For each byte (excluding `\n`), prints its 3-char octal representation (zero-padded), space-separated, then `\n`.
 

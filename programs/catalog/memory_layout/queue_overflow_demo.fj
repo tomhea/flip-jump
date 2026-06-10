@@ -1,4 +1,4 @@
-// Queue Overflow Demo (#1540)
+// Queue Overflow Demo (#0913)
 
 // Same shape as `stack_overflow_demo` but with a queue of capacity 5. Prints `Queue overflow at item <N>!\n` or `Enqueued <N> items.\n`.
 

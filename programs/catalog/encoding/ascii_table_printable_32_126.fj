@@ -1,4 +1,4 @@
-// Ascii Table Printable 32 126 (#1346)
+// Ascii Table Printable 32 126 (#0500)
 
 // No input. Prints lines `<code> <char>\n` for each ASCII code 32-126 (printable range, 95 lines total).
 

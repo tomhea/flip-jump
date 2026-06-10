@@ -1,4 +1,4 @@
-// Macro Arg Substitution Demo (#1606)
+// Macro Arg Substitution Demo (#0941)
 
 // Defines a macro `outer(x) { inner(x, x) }` and `inner(a, b) { stl.output(a); stl.output(b) }`. Top-level invokes `outer('X')`. Output: `XX\n`.
 

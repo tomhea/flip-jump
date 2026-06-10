@@ -1,4 +1,4 @@
-// Polybius Square Decode (#1422)
+// Polybius Square Decode (#0890)
 
 // Reads two decimal digits + `\n` (e.g. `42`). Prints the corresponding uppercase letter from the standard 5×5 Polybius square + `\n`.
 

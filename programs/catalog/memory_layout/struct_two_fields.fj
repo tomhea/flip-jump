@@ -1,4 +1,4 @@
-// Struct Two Fields (#1555)
+// Struct Two Fields (#0928)
 
 // Reads two decimals `a` `b` (each `0`-`99`, own line) representing a 2-field struct `{a, b}`. Prints `field1=<a> field2=<b>\n`.
 

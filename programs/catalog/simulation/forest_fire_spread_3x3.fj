@@ -1,4 +1,4 @@
-// Forest Fire Spread 3X3 (#1506)
+// Forest Fire Spread 3X3 (#0646)
 
 // Reads a 3×3 grid: 3 lines of 3 chars each, where chars are `T` (tree), `F` (fire), `.` (empty). Applies one step: each `F` stays `F`, each `T` adjacent (4-neighborhood, no diagonal) to an `F` becomes `F`, all other cells unchanged. Prints the new 3×3 grid.
 

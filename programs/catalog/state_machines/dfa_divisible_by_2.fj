@@ -1,4 +1,4 @@
-// Dfa Divisible By 2 (#1575)
+// Dfa Divisible By 2 (#0768)
 
 // Reads a `\n`-terminated decimal-digit string ≤ 6 chars. Prints `1\n` if the represented N is divisible by 2, else `0\n`. Implementation: track last-digit parity (no need for multi-state).
 

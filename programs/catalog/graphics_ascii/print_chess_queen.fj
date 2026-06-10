@@ -1,4 +1,4 @@
-// Print Chess Queen (#1295)
+// Print Chess Queen (#0820)
 
 // No input. Prints a multi-line ASCII chess queen (4 lines, distinct shape from king).
 

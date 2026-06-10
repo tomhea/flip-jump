@@ -1,4 +1,4 @@
-// Namespace Isolation Demo (#1607)
+// Namespace Isolation Demo (#0942)
 
 // Defines two namespaces `foo` and `bar`, each with a macro `say()` printing different text. Top-level invokes `foo.say()` then `bar.say()`. Output: `from foo\nfrom bar\n`.
 

@@ -1,4 +1,4 @@
-// Parse Phone Simple (#1391)
+// Parse Phone Simple (#0787)
 
 // Reads `XXX-XXX-XXXX\n` (12 bytes + `\n`, dashes at positions 3 and 7). Prints the 10 digits concatenated (no dashes) + `\n`.
 

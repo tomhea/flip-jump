@@ -1,4 +1,4 @@
-// Ascii To Morse Letter (#1369)
+// Ascii To Morse Letter (#0523)
 
 // Reads exactly one byte (a single lowercase letter `a`-`z` or digit `0`-`9`). Prints the International Morse Code representation using `.` and `-` (no spaces) + `\n`. Example: `a` → `.-\n`; `0` → `-----\n`.
 

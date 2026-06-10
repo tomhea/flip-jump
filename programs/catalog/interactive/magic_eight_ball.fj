@@ -1,4 +1,4 @@
-// Magic Eight Ball (#1311)
+// Magic Eight Ball (#0435)
 
 // Reads any `\n`-terminated question (≤ 60 chars). Prints exactly one of 5 fixed answers selected by `(input_length_excluding_newline) mod 5`: `0→Yes\n`, `1→No\n`, `2→Maybe\n`, `3→Ask again later\n`, `4→Definitely\n`.
 

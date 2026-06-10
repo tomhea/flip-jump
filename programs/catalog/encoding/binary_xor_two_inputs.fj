@@ -1,4 +1,4 @@
-// Binary Xor Two Inputs (#1374)
+// Binary Xor Two Inputs (#0528)
 
 // Reads two `\n`-terminated 8-char binary strings (each on its own line, each is 8 chars of `0`/`1`). Prints their bitwise XOR as an 8-char binary string + `\n`.
 

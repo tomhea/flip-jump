@@ -1,4 +1,4 @@
-// Djb2 Compare Two (#1437)
+// Djb2 Compare Two (#0905)
 
 // Reads two `\n`-terminated lines (each ≤ 20 chars). Computes djb2 hash mod 256 of each. Prints `1\n` if the hashes match, else `0\n`.
 

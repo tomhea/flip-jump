@@ -1,4 +1,4 @@
-// Run Length Encode Simple (#1347)
+// Run Length Encode Simple (#0501)
 
 // Reads a `\n`-terminated lowercase-letter string ≤ 30 chars (runs of length ≤ 9). Prints run-length encoding as alternating `<letter><count>` concatenated, then `\n`. Example: `aabcccccaaa` → `a2b1c5a3\n`.
 

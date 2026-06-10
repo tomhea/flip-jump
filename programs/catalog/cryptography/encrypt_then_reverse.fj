@@ -1,4 +1,4 @@
-// Encrypt Then Reverse (#1424)
+// Encrypt Then Reverse (#0892)
 
 // Reads a `\n`-terminated plaintext ≤ 20 chars. Applies Caesar shift of `+3` (ROT3) then reverses the result. Prints the final string + `\n`.
 

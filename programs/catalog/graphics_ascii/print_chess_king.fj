@@ -1,4 +1,4 @@
-// Print Chess King (#1294)
+// Print Chess King (#0819)
 
 // No input. Prints a multi-line ASCII chess king (4 lines, with `+`, `|`, `_`).
 

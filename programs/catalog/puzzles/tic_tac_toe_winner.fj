@@ -1,4 +1,4 @@
-// Tic Tac Toe Winner (#1452)
+// Tic Tac Toe Winner (#0662)
 
 // Reads 3 lines of 3 chars each (`X`, `O`, or `.`) representing a tic-tac-toe board. Prints `X\n` if X has won (three in a row/col/diag), `O\n` if O has won, else `none\n`. (Assume at most one side has won.)
 

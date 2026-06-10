@@ -1,4 +1,4 @@
-// Binary Search Recursive (#1593)
+// Binary Search Recursive (#0427)
 
 // Reads digit N `1`-`9` + `\n`, then N sorted decimals (each on own line), then target. Implements binary search via recursive macro that halves the search interval. Prints 0-based index + `\n` or `not found\n`.
 

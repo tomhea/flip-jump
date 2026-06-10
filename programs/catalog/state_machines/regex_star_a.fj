@@ -1,4 +1,4 @@
-// Regex Star A (#1578)
+// Regex Star A (#0771)
 
 // Reads a `\n`-terminated string of lowercase letters ≤ 30 chars. Prints `1\n` if the string matches `a*` (zero or more `a`s, no other characters), else `0\n`.
 

@@ -1,4 +1,4 @@
-// Html Entity Decode Basic (#1352)
+// Html Entity Decode Basic (#0506)
 
 // Reads a `\n`-terminated line ≤ 80 chars (may contain `&amp;`/`&lt;`/`&gt;` sequences). Replaces each with `&`/`<`/`>` respectively. Other bytes unchanged. Prints result + `\n`.
 

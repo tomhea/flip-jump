@@ -1,4 +1,4 @@
-// Blackjack Bust Check (#1518)
+// Blackjack Bust Check (#0953)
 
 // Reads digit N `1`-`9` + `\n`, then N card-value codes (same alphabet as `blackjack_hand_value`). Prints `1\n` if minimum total (treating all aces as 1) exceeds 21, else `0\n`.
 

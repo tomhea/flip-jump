@@ -1,4 +1,4 @@
-// Dfa Divisible By 3 (#1574)
+// Dfa Divisible By 3 (#0767)
 
 // Reads a `\n`-terminated decimal-digit string ≤ 6 chars representing a non-negative integer N. Prints `1\n` if N is divisible by 3, else `0\n`. Implementation: 3-state DFA on digit stream (state = current N mod 3).
 

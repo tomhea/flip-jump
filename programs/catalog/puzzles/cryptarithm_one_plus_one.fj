@@ -1,4 +1,4 @@
-// Cryptarithm One Plus One (#1471)
+// Cryptarithm One Plus One (#0681)
 
 // Reads exactly 3 decimal digits `a b c` (each `0`-`9`, own line). Prints `1\n` if `a + b == c` (i.e. the cryptarithm `a + b = c` is satisfied), else `0\n`.
 

@@ -1,4 +1,4 @@
-// Guess One Round (#1313)
+// Guess One Round (#0437)
 
 // Reads a single decimal digit `1`-`9` + `\n`. Secret value is `7`. Prints `correct!\n` if `7`, `too low\n` if `<7`, `too high\n` if `>7`.
 

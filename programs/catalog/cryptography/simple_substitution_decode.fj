@@ -1,4 +1,4 @@
-// Simple Substitution Decode (#1412)
+// Simple Substitution Decode (#0880)
 
 // Reads the same 26-char mapping then ciphertext. Inverts the mapping (build inverse table) and applies to decode. Prints plaintext + `\n`.
 

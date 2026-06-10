@@ -1,4 +1,4 @@
-// Print Address Difference (#1610)
+// Print Address Difference (#0945)
 
 // No input. Defines two labels `a` and `b` with `b` placed 4 ops after `a`. Prints the byte-distance `b - a` as decimal + `\n` (deterministic per FJM encoding).
 

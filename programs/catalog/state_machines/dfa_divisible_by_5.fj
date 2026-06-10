@@ -1,4 +1,4 @@
-// Dfa Divisible By 5 (#1576)
+// Dfa Divisible By 5 (#0769)
 
 // Reads a `\n`-terminated decimal-digit string ≤ 6 chars. Prints `1\n` if the represented N is divisible by 5 (last digit is `0` or `5`), else `0\n`.
 

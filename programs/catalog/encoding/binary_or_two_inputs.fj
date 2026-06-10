@@ -1,4 +1,4 @@
-// Binary Or Two Inputs (#1376)
+// Binary Or Two Inputs (#0530)
 
 // Same I/O shape as `binary_xor_two_inputs` but prints bitwise OR.
 

@@ -1,4 +1,4 @@
-// One Time Pad Xor (#1420)
+// One Time Pad Xor (#0888)
 
 // Reads a `\n`-terminated pad of `1`-`30` bytes, then a `\n`-terminated message of EXACTLY the same length. XORs corresponding bytes; outputs the result as raw bytes + `\n`. (Self-inverse — applying twice with the same pad returns the original.)
 

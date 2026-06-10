@@ -1,4 +1,4 @@
-// Flock 1D Step (#1513)
+// Flock 1D Step (#0653)
 
 // Reads digit N `2`-`5` + `\n`, then N decimals `0`-`9` (each own line) representing positions on a 1D line. Computes the mean position (floor). Then each cell moves +1 if it's below mean, -1 if above, unchanged if equal. Prints the new positions, one per line.
 

@@ -1,4 +1,4 @@
-// Rolling Hash Step (#1436)
+// Rolling Hash Step (#0904)
 
 // Reads decimal state `0`-`255` + `\n`, then one byte. Updates state via `state = ((state * 31) + byte) mod 256` and prints the new state as 2 lowercase hex chars + `\n`.
 

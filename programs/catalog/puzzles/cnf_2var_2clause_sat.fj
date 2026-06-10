@@ -1,4 +1,4 @@
-// Cnf 2Var 2Clause Sat (#1484)
+// Cnf 2Var 2Clause Sat (#0694)
 
 // Reads two 2-CNF clauses as lines, each in the form `<lit1> <lit2>` where each literal is `x`, `!x`, `y`, or `!y`. Prints `SAT\n` if there's an assignment to x, y making both clauses true, else `UNSAT\n`.
 

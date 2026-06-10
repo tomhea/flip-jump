@@ -1,4 +1,4 @@
-// Ptr Write At Offset (#1551)
+// Ptr Write At Offset (#0924)
 
 // Reads a base index `0`-`15` + `\n`, then offset `0`-`15` + `\n`, then a value `0`-`255` + `\n`. Writes the value at `(base + offset) mod 16` in an initially-zero 16-byte array, then prints the array as 16 decimals space-separated + `\n`.
 

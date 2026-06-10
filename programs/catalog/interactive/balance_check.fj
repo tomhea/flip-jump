@@ -1,4 +1,4 @@
-// Balance Check (#1326)
+// Balance Check (#0450)
 
 // Reads decimal `0`-`9999` + `\n`. Prints `low\n` if `<100`, `ok\n` if `100`-`999`, `high\n` if `>=1000`.
 

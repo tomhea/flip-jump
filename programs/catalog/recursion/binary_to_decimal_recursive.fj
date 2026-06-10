@@ -1,4 +1,4 @@
-// Binary To Decimal Recursive (#1596)
+// Binary To Decimal Recursive (#0430)
 
 // Reads an 8-char `0`/`1` binary string + `\n`. Computes its decimal value via recursive macro `b2d(s) = head(s) * 2^(len-1) + b2d(tail(s))`. Prints decimal `0`-`255` + `\n`.
 

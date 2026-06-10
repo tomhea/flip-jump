@@ -1,4 +1,4 @@
-// Eight Queens Solution Count (#1445)
+// Eight Queens Solution Count (#0655)
 
 // No input. Prints `92` + `\n` (the number of distinct solutions to the 8-queens problem).
 

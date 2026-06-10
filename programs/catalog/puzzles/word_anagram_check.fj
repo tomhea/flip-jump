@@ -1,4 +1,4 @@
-// Word Anagram Check (#1458)
+// Word Anagram Check (#0668)
 
 // Reads two `\n`-terminated lowercase words (each ≤ 10 chars). Prints `1\n` if they are anagrams (same multiset of letters), else `0\n`.
 
