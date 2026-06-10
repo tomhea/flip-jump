@@ -52,7 +52,7 @@ class Writer:
         @param lzma_preset: the preset to be used when compressing the .fjm data
         """
         if memory_width not in SUPPORTED_MEMORY_WIDTHS:
-            raise FlipJumpWriteFjmException(f"Word size {memory_width} is not in {set(SUPPORTED_MEMORY_WIDTHS)}.")
+            raise FlipJumpWriteFjmException(f"Word size {memory_width} is not in {sorted(SUPPORTED_MEMORY_WIDTHS)}.")
         if version not in SUPPORTED_VERSIONS_NAMES:
             raise FlipJumpWriteFjmException(
                 f'Error: unsupported version ({version}, this program supports {str(SUPPORTED_VERSIONS_NAMES)}).'
