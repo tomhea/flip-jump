@@ -1,4 +1,4 @@
-// Sum Of Digits Recursive (#1591)
+// Sum Of Digits Recursive (#0425)
 
 // Reads decimal N in `0`-`999` + `\n`. Computes sum of digits via recursive macro `digit_sum(N) = (N == 0) ? 0 : (N % 10) + digit_sum(N / 10)`. Prints decimal sum + `\n`.
 

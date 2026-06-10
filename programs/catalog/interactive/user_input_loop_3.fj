@@ -1,4 +1,4 @@
-// User Input Loop 3 (#1319)
+// User Input Loop 3 (#0443)
 
 // Reads exactly 3 `\n`-terminated lines (each ≤ 30 chars). Prints `1: <line1>\n2: <line2>\n3: <line3>\n`.
 

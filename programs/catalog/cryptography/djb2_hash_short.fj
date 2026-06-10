@@ -1,4 +1,4 @@
-// Djb2 Hash Short (#1430)
+// Djb2 Hash Short (#0898)
 
 // Reads a `\n`-terminated line ≤ 30 chars. Computes the djb2 hash modulo 256: `h = 5381; for each byte b: h = ((h * 33) + b) mod 256`. Prints `h` as 2 lowercase hex chars + `\n`.
 

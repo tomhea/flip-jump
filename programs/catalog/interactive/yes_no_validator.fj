@@ -1,4 +1,4 @@
-// Yes No Validator (#1312)
+// Yes No Validator (#0436)
 
 // Reads `y` or `n` + `\n` (any case is treated as exact byte). Prints `Affirmative\n` for `y`, `Negative\n` for `n`, otherwise `Please answer y or n\n`.
 

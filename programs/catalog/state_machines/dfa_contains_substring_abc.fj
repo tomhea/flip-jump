@@ -1,4 +1,4 @@
-// Dfa Contains Substring Abc (#1565)
+// Dfa Contains Substring Abc (#0758)
 
 // Reads a `\n`-terminated ASCII string ≤ 40 chars. Prints `1\n` if the string contains the substring `abc` anywhere, else `0\n`. Use a 4-state DFA.
 

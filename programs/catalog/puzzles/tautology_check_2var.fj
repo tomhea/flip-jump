@@ -1,4 +1,4 @@
-// Tautology Check 2Var (#1486)
+// Tautology Check 2Var (#0696)
 
 // Reads a formula string `\n`-terminated (same syntax as `propositional_eval_2var`, ≤ 15 chars). Prints `1\n` if the formula is true for all 4 assignments of `x`, `y`, else `0\n`.
 

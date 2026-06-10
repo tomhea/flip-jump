@@ -1,4 +1,4 @@
-// Magic Square Fill Missing (#1448)
+// Magic Square Fill Missing (#0658)
 
 // Reads 9 decimals (3×3 row-major, each on own line) representing a known-valid 3×3 magic square with EXACTLY ONE cell replaced by `0` (the missing value). Prints the missing value as decimal + `\n`.
 

@@ -1,4 +1,4 @@
-// Geometric Progression Check 4 (#1461)
+// Geometric Progression Check 4 (#0671)
 
 // Reads exactly 4 decimals each `1`-`50` (own line). Prints `1\n` if they form a geometric progression with integer common ratio `>= 2` (i.e. `a[i+1] = a[i] * r` for some integer `r >= 2`), else `0\n`.
 

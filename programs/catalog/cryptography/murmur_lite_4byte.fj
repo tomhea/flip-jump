@@ -1,4 +1,4 @@
-// Murmur Lite 4Byte (#1438)
+// Murmur Lite 4Byte (#0906)
 
 // Reads exactly 4 raw bytes. Computes a tiny Murmur-style hash: `h = 0x12345678; for each byte b: h = ((h XOR b) * 0x05) mod 256`. Prints `h` as 2 lowercase hex chars + `\n`.
 

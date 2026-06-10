@@ -1,4 +1,4 @@
-// Find Missing Geom Progression (#1464)
+// Find Missing Geom Progression (#0674)
 
 // Reads exactly 4 decimals `1`-`50` with one being `0` (the missing entry) of a 4-element geometric progression with integer common ratio `>= 2`. Prints the missing value + `\n`.
 

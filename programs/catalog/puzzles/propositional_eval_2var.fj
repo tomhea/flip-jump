@@ -1,4 +1,4 @@
-// Propositional Eval 2Var (#1485)
+// Propositional Eval 2Var (#0695)
 
 // Reads a formula string `\n`-terminated using only `x`, `y`, `&` (AND), `|` (OR), `!` (NOT), `(`, `)`. Then reads `x` value `0` or `1` + `\n` and `y` value `0` or `1` + `\n`. Prints `0\n` or `1\n` based on the evaluated formula. Formula ≤ 15 chars.
 

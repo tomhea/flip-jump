@@ -1,4 +1,4 @@
-// Wordle Feedback (#1534)
+// Wordle Feedback (#0969)
 
 // Reads a `\n`-terminated secret word (exactly 5 lowercase letters), then a `\n`-terminated guess (exactly 5 lowercase letters). Prints exactly 5 feedback chars + `\n`: `G` for green (right letter, right position), `Y` for yellow (right letter, wrong position; track multiplicity correctly per standard Wordle rules), `_` for grey.
 

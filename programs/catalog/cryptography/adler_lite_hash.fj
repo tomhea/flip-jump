@@ -1,4 +1,4 @@
-// Adler Lite Hash (#1435)
+// Adler Lite Hash (#0903)
 
 // Reads a `\n`-terminated line ≤ 30 chars. Computes an Adler-32-style hash with small modulus: `a = 1; b = 0; for each byte: a = (a + byte) mod 251; b = (b + a) mod 251;` then prints `b * 256 + a` as 4 lowercase hex chars + `\n`.
 

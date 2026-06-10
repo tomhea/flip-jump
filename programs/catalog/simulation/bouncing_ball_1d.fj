@@ -1,4 +1,4 @@
-// Bouncing Ball 1D (#1501)
+// Bouncing Ball 1D (#0641)
 
 // Reads `pos` `0`-`9`, `velo` `-3` to `3` (signed), `steps` `1`-`9` (each own line). The ball moves on positions `0..9`; on hitting position `0` or `9`, velocity reverses sign. Prints the position after each of the `steps` steps, one per line.
 

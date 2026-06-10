@@ -1,4 +1,4 @@
-// Parse Integer Echo (#1378)
+// Parse Integer Echo (#0774)
 
 // Reads a `\n`-terminated unsigned decimal `0`-`999999` and prints it back as decimal + `\n`. Round-trip parse → integer → print.
 

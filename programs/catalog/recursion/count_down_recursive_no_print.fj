@@ -1,4 +1,4 @@
-// Count Down Recursive No Print (#1595)
+// Count Down Recursive No Print (#0429)
 
 // Reads digit N `1`-`9` + `\n`. Recursive macro that counts down without printing intermediate steps; at base case (N=0) prints `done\n`. Demonstrates pure recursion without side effects in the chain.
 

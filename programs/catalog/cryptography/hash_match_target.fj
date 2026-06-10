@@ -1,4 +1,4 @@
-// Hash Match Target (#1442)
+// Hash Match Target (#0910)
 
 // Reads exactly 2 hex chars + `\n` (target hash), then a `\n`-terminated line ≤ 20 chars. Prints `1\n` if `djb2_hash_short(line) == target`, else `0\n`.
 

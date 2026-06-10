@@ -1,4 +1,4 @@
-// Html Entity Encode Basic (#1351)
+// Html Entity Encode Basic (#0505)
 
 // Reads a `\n`-terminated line ≤ 40 chars. Replaces `&` with `&amp;`, `<` with `&lt;`, `>` with `&gt;`. Other bytes unchanged. Prints result + `\n`.
 

@@ -1,4 +1,4 @@
-// Bouncing Ball 2D (#1502)
+// Bouncing Ball 2D (#0642)
 
 // Same as `bouncing_ball_1d` but in 2D: reads `x` `y` `vx` `vy` `steps`. Both axes bounce independently at `[0,9]`. Prints `<x> <y>\n` after each step.
 

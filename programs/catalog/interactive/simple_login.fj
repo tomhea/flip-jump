@@ -1,4 +1,4 @@
-// Simple Login (#1329)
+// Simple Login (#0453)
 
 // Reads a `\n`-terminated username, then a `\n`-terminated password (each ≤ 20 chars). Prints `Welcome!\n` if username is exactly `admin` and password is exactly `root`, else `Denied\n`.
 

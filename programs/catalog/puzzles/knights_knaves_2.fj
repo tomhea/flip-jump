@@ -1,4 +1,4 @@
-// Knights Knaves 2 (#1483)
+// Knights Knaves 2 (#0693)
 
 // Reads 2 decimals `s1` `s2` (each `0` or `1`, on own lines) representing two islanders' statements about each other: `s1`=0 means islander A says "B is a knight"; `s1`=1 means A says "B is a knave"; `s2` similarly is B's statement about A. Prints one of `AK BK\n`, `AK BN\n`, `AN BK\n`, `AN BN\n` (the consistent assignment) or `paradox\n` if no consistent assignment exists.
 

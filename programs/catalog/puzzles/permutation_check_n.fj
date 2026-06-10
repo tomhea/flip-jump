@@ -1,4 +1,4 @@
-// Permutation Check N (#1459)
+// Permutation Check N (#0669)
 
 // Reads digit N `1`-`9` + `\n`, then N decimals (each own line), then another N decimals. Prints `1\n` if the second N-tuple is a permutation of the first (same multiset), else `0\n`.
 

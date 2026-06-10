@@ -1,4 +1,4 @@
-// Tic Tac Toe Simulate Moves (#1454)
+// Tic Tac Toe Simulate Moves (#0664)
 
 // Reads digit N `1`-`9` + `\n`, then N moves (each one digit `0`-`8` on its own line, indicating cell position 0=top-left, row-major). Players alternate starting with `X`. Prints the final 3×3 board (3 lines of 3 chars each, `.` for unmoved cells).
 

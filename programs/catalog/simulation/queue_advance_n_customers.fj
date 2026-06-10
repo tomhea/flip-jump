@@ -1,4 +1,4 @@
-// Queue Advance N Customers (#1511)
+// Queue Advance N Customers (#0651)
 
 // Reads digit N `1`-`9` + `\n`. Prints N lines `serving customer K\n` for `K = 1..N`.
 

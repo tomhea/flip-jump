@@ -31,8 +31,9 @@ Each program has a four-digit catalog number. The number appears in:
 - The source header: `// Program Name (#NNNN)`.
 - The `README.md` row.
 
-Numbers are never recycled. A retired program keeps its number; any
-replacement gets a fresh higher number.
+Numbers run `0001`–`1029` contiguously, grouped by category in the order the
+categories appear in `README.md`, so each category occupies a consecutive
+block.
 
 ## Program header — every `.fj` starts with this
 

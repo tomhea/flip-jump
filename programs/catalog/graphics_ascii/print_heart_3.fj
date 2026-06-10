@@ -1,4 +1,4 @@
-// Print Heart 3 (#1287)
+// Print Heart 3 (#0812)
 
 // No input. Prints a 3-row ASCII heart shape using `*`, e.g. line 1 ` * *`, line 2 `*****`, line 3 ` *** `, each + `\n`.
 

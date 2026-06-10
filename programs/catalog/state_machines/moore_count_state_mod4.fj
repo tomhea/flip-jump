@@ -1,4 +1,4 @@
-// Moore Count State Mod4 (#1568)
+// Moore Count State Mod4 (#0761)
 
 // Reads a `\n`-terminated sequence of bits `0`/`1` (≤ 20 chars). State starts at `0`; each input bit increments state modulo 4. After each input, prints the current state (`0`-`3`); states are space-separated on a single line + `\n`. (Moore machine: output depends on current state.)
 

@@ -1,4 +1,4 @@
-// Game Of Life Count Alive 5X5 (#1536)
+// Game Of Life Count Alive 5X5 (#0971)
 
 // Reads a 5×5 binary grid (5 lines of 5 chars `0`/`1`). Prints the count of `1` cells as decimal + `\n`.
 

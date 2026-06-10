@@ -1,4 +1,4 @@
-// Dice Roll Pseudo (#1321)
+// Dice Roll Pseudo (#0445)
 
 // Reads exactly one byte. Prints decimal `(byte mod 6) + 1` + `\n` (range `1`-`6`).
 

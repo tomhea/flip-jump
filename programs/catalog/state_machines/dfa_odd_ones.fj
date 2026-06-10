@@ -1,4 +1,4 @@
-// Dfa Odd Ones (#1563)
+// Dfa Odd Ones (#0756)
 
 // Reads a `\n`-terminated binary string of `0`/`1` (≤ 30 chars). Prints `1\n` if the count of `1` bytes (excluding `\n`) is odd, else `0\n`.
 

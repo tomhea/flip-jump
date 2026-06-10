@@ -1,4 +1,4 @@
-// Mastermind Feedback (#1535)
+// Mastermind Feedback (#0970)
 
 // Reads a `\n`-terminated 4-char secret code (each char `1`-`6`) and a `\n`-terminated 4-char guess. Prints `<black> <white>\n` where `black` = exact position matches, `white` = right color wrong position (with proper multiplicity per Mastermind rules).
 

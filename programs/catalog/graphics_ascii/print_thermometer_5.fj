@@ -1,4 +1,4 @@
-// Print Thermometer 5 (#1308)
+// Print Thermometer 5 (#0833)
 
 // Reads decimal `0`-`5` + `\n`. Prints a 5-row vertical thermometer: row `i` (counted from top) is `|` if `i >= 5 - input`, else ` `; then `\n` after each row.
 

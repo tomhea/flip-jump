@@ -1,4 +1,4 @@
-// Caesar Brute Force (#1408)
+// Caesar Brute Force (#0876)
 
 // Reads a `\n`-terminated ciphertext ≤ 20 chars (letters and spaces only). Prints all 26 possible Caesar-decrypts (shifts `0`-`25`), one per line.
 

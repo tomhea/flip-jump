@@ -1,4 +1,4 @@
-// Game 2048 One Merge Row (#1524)
+// Game 2048 One Merge Row (#0959)
 
 // Reads exactly 4 single-digit decimals `0`-`9` (each own line) representing 4 values in a row. Applies one 2048 merge step (slide non-zero values left, merge adjacent equal pairs once left-to-right, then slide again). Prints the resulting 4 values on one line, space-separated, + `\n`.
 

@@ -1,4 +1,4 @@
-// Minesweeper Count Grid (#1523)
+// Minesweeper Count Grid (#0958)
 
 // Reads 3 lines of 3 chars each (chars are `M` for mine, `.` for empty). Prints a 3×3 output grid where each cell shows the number of mine-neighbors (`0`-`8`) if not a mine, or `*` if it is a mine. 3 lines of 3 chars each + `\n`.
 

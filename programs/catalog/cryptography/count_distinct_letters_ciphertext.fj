@@ -1,4 +1,4 @@
-// Count Distinct Letters Ciphertext (#1428)
+// Count Distinct Letters Ciphertext (#0896)
 
 // Reads a `\n`-terminated line ≤ 80 chars. Prints the count of distinct LETTER bytes (case-insensitive; `A` and `a` count as one) as decimal + `\n`.
 

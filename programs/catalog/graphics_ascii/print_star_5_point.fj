@@ -1,4 +1,4 @@
-// Print Star 5 Point (#1282)
+// Print Star 5 Point (#0807)
 
 // No input. Prints a fixed 5-row 5-pointed star ASCII art (centered on 9-col field, using `*` and spaces).
 

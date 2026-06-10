@@ -1,4 +1,4 @@
-// Factorial Recursive (#1581)
+// Factorial Recursive (#0415)
 
 // Reads decimal N in `0`-`6` and prints `N!` using a recursive macro (via `stl.call` / `stl.return`). Same I/O as `arithmetic/factorial_small`; the purpose is to demonstrate recursion.
 

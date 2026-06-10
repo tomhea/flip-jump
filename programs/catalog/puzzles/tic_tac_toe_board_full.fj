@@ -1,4 +1,4 @@
-// Tic Tac Toe Board Full (#1453)
+// Tic Tac Toe Board Full (#0663)
 
 // Reads 3 lines of 3 chars each. Prints `1\n` if no `.` chars remain (board is full), else `0\n`.
 

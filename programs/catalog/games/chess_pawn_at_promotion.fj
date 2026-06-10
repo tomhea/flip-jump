@@ -1,4 +1,4 @@
-// Chess Pawn At Promotion (#1532)
+// Chess Pawn At Promotion (#0967)
 
 // Reads 2 decimals `r c` (each `0`-`7`, own line) — a white pawn's position. Prints `1\n` if `r == 0` (white pawn at promotion row), else `0\n`.
 

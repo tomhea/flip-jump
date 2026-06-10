@@ -1,4 +1,4 @@
-// Chess Piece Count (#1531)
+// Chess Piece Count (#0966)
 
 // Reads exactly 8 lines, each 8 chars, where each char is a chess piece (`P`/`R`/`N`/`B`/`Q`/`K` for white, lowercase for black, `.` for empty). Prints `white: <w>\nblack: <b>\n` with counts.
 

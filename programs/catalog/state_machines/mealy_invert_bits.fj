@@ -1,4 +1,4 @@
-// Mealy Invert Bits (#1567)
+// Mealy Invert Bits (#0760)
 
 // Reads a `\n`-terminated sequence of bits `0`/`1` (≤ 30 chars). For each input bit, outputs the inverted bit (Mealy machine: output depends on input transition). Prints all output bits as one concatenated string + `\n`.
 

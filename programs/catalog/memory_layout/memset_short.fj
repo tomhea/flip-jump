@@ -1,4 +1,4 @@
-// Memset Short (#1553)
+// Memset Short (#0926)
 
 // Reads digit N `1`-`9` + `\n`, then decimal value V `0`-`255` + `\n`. Fills an N-byte buffer with V, then prints all N bytes as decimals space-separated + `\n`.
 

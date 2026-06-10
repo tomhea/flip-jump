@@ -1,4 +1,4 @@
-// Pointer Basic (#1541)
+// Pointer Basic (#0914)
 
 // Reads decimal address `0`-`15` + `\n`, then decimal value `0`-`255` + `\n`. Writes the value at the address (in a 16-byte array initially zeroed), then reads it back and prints the value + `\n`.
 

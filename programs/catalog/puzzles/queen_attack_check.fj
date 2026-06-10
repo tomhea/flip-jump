@@ -1,4 +1,4 @@
-// Queen Attack Check (#1476)
+// Queen Attack Check (#0686)
 
 // Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line). Prints `1\n` if same row OR same column OR same diagonal, else `0\n`.
 

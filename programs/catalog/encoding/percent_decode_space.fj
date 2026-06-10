@@ -1,4 +1,4 @@
-// Percent Decode Space (#1350)
+// Percent Decode Space (#0504)
 
 // Reads a `\n`-terminated line ≤ 60 chars (may contain `%20` sequences). Replaces each `%20` triplet with a single space. Other bytes unchanged. Prints result + `\n`.
 

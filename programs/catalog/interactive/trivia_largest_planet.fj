@@ -1,4 +1,4 @@
-// Trivia Largest Planet (#1324)
+// Trivia Largest Planet (#0448)
 
 // First prints `What's the largest planet?\n`. Then reads a `\n`-terminated answer. Prints `correct!\n` if exactly `Jupiter`, else `wrong\n`.
 

@@ -1,4 +1,4 @@
-// Ptr Advance Demo (#1549)
+// Ptr Advance Demo (#0922)
 
 // Reads decimal base address `0`-`15` + `\n`, then offset `0`-`15` + `\n`. Prints `(base + offset) mod 16` as decimal + `\n` (simulates pointer advance with wraparound).
 

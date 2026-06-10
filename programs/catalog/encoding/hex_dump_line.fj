@@ -1,4 +1,4 @@
-// Hex Dump Line (#1342)
+// Hex Dump Line (#0496)
 
 // Reads a `\n`-terminated line ≤ 16 chars. For each byte (excluding `\n`), prints its 2-char lowercase hex, with space separators between bytes, then `\n`. Example: input `hi\n` → output `68 69\n`. Empty input → just `\n`.
 

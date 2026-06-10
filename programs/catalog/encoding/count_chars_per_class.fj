@@ -1,4 +1,4 @@
-// Count Chars Per Class (#1362)
+// Count Chars Per Class (#0516)
 
 // Reads a `\n`-terminated line ≤ 80 chars. Prints `digits: <D>\nletters: <L>\nspaces: <S>\nother: <O>\n` where `D`/`L`/`S`/`O` are the counts of digits, letters, spaces, and other byte classes respectively (excluding the terminating `\n`).
 

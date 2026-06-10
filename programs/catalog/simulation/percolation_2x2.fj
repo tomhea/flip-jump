@@ -1,4 +1,4 @@
-// Percolation 2X2 (#1512)
+// Percolation 2X2 (#0652)
 
 // Reads a 2×2 binary grid: 2 lines of 2 chars `0`/`1` each (1 = open, 0 = blocked). Prints `1\n` if there's a 4-connected path from any top-row open cell to any bottom-row open cell, else `0\n`.
 

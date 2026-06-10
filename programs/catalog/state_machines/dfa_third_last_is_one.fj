@@ -1,4 +1,4 @@
-// Dfa Third Last Is One (#1580)
+// Dfa Third Last Is One (#0773)
 
 // Reads a `\n`-terminated bit string of length ≥ 3, ≤ 30 chars. Prints `1\n` if the third-to-last bit (i.e. the bit two positions before the final bit, before `\n`) is `1`, else `0\n`. Implementation: 8-state DFA tracking last 3 bits.
 

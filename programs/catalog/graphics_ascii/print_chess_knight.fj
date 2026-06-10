@@ -1,4 +1,4 @@
-// Print Chess Knight (#1297)
+// Print Chess Knight (#0822)
 
 // No input. Prints a multi-line ASCII chess knight (4 lines, e.g. with `/\\`).
 

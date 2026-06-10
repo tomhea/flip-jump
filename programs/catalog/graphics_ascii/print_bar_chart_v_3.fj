@@ -1,4 +1,4 @@
-// Print Bar Chart V 3 (#1303)
+// Print Bar Chart V 3 (#0828)
 
 // Reads 3 decimals each `0`-`5` (own line). Prints a 5-row × 3-col vertical bar chart: for each column `i`, `*` for rows ≥ `5 - input_i`, `.` otherwise.
 

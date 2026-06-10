@@ -1,4 +1,4 @@
-// Nato Phonetic Word (#1355)
+// Nato Phonetic Word (#0509)
 
 // Reads a `\n`-terminated NATO phonetic word (one of the 26 standard words, exactly as spelled, capitalized). Prints the corresponding single uppercase letter (`A`-`Z`) + `\n`.
 

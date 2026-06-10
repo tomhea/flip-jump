@@ -1,4 +1,4 @@
-// Hex Concat To Ascii (#1367)
+// Hex Concat To Ascii (#0521)
 
 // Reads a `\n`-terminated lowercase-hex string ≤ 40 chars (even length). Prints decoded bytes + `\n`.
 

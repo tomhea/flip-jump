@@ -1,4 +1,4 @@
-// Fnv1A Hash Short (#1431)
+// Fnv1A Hash Short (#0899)
 
 // Reads a `\n`-terminated line ≤ 30 chars. Computes FNV-1a hash modulo 256: `h = 0; for each byte b: h = ((h XOR b) * 0x93) mod 256` (`0x93` = FNV prime `16777619 mod 256`). Prints `h` as 2 lowercase hex chars + `\n`. (Distinct from `fnv1_hash_short` by operation order — XOR then multiply vs multiply then XOR.)
 

@@ -1,4 +1,4 @@
-// Rule 30 One Step (#1487)
+// Rule 30 One Step (#0627)
 
 // Reads an 8-char binary string `0`/`1` + `\n` (initial cellular state). Computes the next generation using Wolfram Rule 30 with periodic boundary conditions (cell `i` depends on cells `i-1`, `i`, `i+1` modulo 8). Prints the resulting 8-char binary string + `\n`.
 

@@ -1,4 +1,4 @@
-// Percent Encode Space (#1349)
+// Percent Encode Space (#0503)
 
 // Reads a `\n`-terminated line ≤ 40 chars. Replaces each space byte (` `) with `%20`. Other bytes unchanged. Prints result + `\n`.
 

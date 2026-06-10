@@ -1,4 +1,4 @@
-// Partition Count N (#1482)
+// Partition Count N (#0692)
 
 // Reads digit N `1`-`9` + `\n`. Prints the number of integer partitions of N (e.g. `p(4) = 5`) + `\n`.
 

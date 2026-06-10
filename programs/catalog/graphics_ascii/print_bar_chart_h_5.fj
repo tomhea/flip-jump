@@ -1,4 +1,4 @@
-// Print Bar Chart H 5 (#1306)
+// Print Bar Chart H 5 (#0831)
 
 // Reads 5 decimals each `0`-`9` (own line). Same as `print_bar_chart_h_3` with 5 rows.
 

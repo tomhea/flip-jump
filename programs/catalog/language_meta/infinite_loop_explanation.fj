@@ -1,4 +1,4 @@
-// Infinite Loop Explanation (#1613)
+// Infinite Loop Explanation (#0948)
 
 // No input. Prints `A FlipJump program ends with a self-loop.\n`, then enters `stl.loop`.
 

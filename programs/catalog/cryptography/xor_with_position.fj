@@ -1,4 +1,4 @@
-// Xor With Position (#1425)
+// Xor With Position (#0893)
 
 // Reads a `\n`-terminated line ≤ 30 chars. For each byte at 0-based position `i`, outputs `byte XOR i` as a raw byte. Final `\n`.
 

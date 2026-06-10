@@ -1,4 +1,4 @@
-// Game 2048 Check Done (#1525)
+// Game 2048 Check Done (#0960)
 
 // Reads a 4×4 grid of decimal digits `0`-`9` (4 lines, each 4 chars). Prints `1\n` if no moves are possible (no zeros AND no two adjacent-equal pairs horizontally or vertically), else `0\n`.
 

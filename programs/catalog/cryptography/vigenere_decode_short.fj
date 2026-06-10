@@ -1,4 +1,4 @@
-// Vigenere Decode Short (#1410)
+// Vigenere Decode Short (#0878)
 
 // Reads the same input format as `vigenere_encode_short` (key, then ciphertext). Applies the inverse shift (negative direction). Prints plaintext + `\n`.
 

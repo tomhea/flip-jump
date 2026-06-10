@@ -1,4 +1,4 @@
-// Bishop Attack Check (#1473)
+// Bishop Attack Check (#0683)
 
 // Reads 4 decimals `r1 c1 r2 c2` (each `0`-`7`, own line) — the two bishops' chessboard positions. Prints `1\n` if they're on the same diagonal (i.e. `|r1-r2| == |c1-c2|`), else `0\n`.
 

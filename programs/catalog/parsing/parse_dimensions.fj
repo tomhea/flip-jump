@@ -1,4 +1,4 @@
-// Parse Dimensions (#1400)
+// Parse Dimensions (#0796)
 
 // Reads `WxH\n` where `W` and `H` are decimals `0`-`99`. Prints `W * H` + `\n`.
 

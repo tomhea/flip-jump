@@ -1,4 +1,4 @@
-// Binary Complement Cipher (#1416)
+// Binary Complement Cipher (#0884)
 
 // Reads a `\n`-terminated line ≤ 30 chars. For each byte (excluding `\n`), outputs the bitwise complement `~byte` as a raw byte. Final `\n`.
 

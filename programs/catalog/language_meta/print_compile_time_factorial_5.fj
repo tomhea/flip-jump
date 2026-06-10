@@ -1,4 +1,4 @@
-// Print Compile Time Factorial 5 (#1604)
+// Print Compile Time Factorial 5 (#0939)
 
 // No input. Internally computes `5! = 120` at compile time (using a `rep`-based multiplicative chain). Prints `120\n`.
 

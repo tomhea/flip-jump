@@ -1,4 +1,4 @@
-// Radioactive Decay Half N (#1510)
+// Radioactive Decay Half N (#0650)
 
 // Reads `count` `0`-`9999` (own line), `N` `0`-`9` (own line). Prints `count / 2^N` (integer halving N times) as decimal + `\n`.
 

@@ -1,4 +1,4 @@
-// Print Bar Chart H 3 (#1305)
+// Print Bar Chart H 3 (#0830)
 
 // Reads 3 decimals each `0`-`9` (own line). Prints 3 rows: row `i` is `input_i` consecutive `*`s + `\n`.
 

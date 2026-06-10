@@ -1,4 +1,4 @@
-// Traffic Light Cycle (#1561)
+// Traffic Light Cycle (#0754)
 
 // Reads digit N `1`-`9` + `\n`. Prints the traffic-light states cycling `Red\nGreen\nYellow\n` (starting with Red), totaling exactly N lines.
 

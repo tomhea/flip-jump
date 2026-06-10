@@ -1,4 +1,4 @@
-// Fermat Test Witness (#1418)
+// Fermat Test Witness (#0886)
 
 // Reads three decimals `a`, `n` (each `2`-`30`, own line). Prints `1\n` if `a^(n-1) ≡ 1 (mod n)`, else `0\n`. (Fermat's little theorem witness; passing doesn't guarantee primality.)
 

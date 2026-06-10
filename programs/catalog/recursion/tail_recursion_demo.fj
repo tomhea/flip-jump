@@ -1,4 +1,4 @@
-// Tail Recursion Demo (#1597)
+// Tail Recursion Demo (#0431)
 
 // Reads decimal N `0`-`9` + `\n`. Uses tail-recursive macro to compute `2^N` (each call doubles an accumulator). Prints decimal + `\n`. Demonstrates tail-call pattern.
 

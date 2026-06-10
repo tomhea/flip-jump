@@ -1,4 +1,4 @@
-// Simple Hash Sum 4Bit (#1419)
+// Simple Hash Sum 4Bit (#0887)
 
 // Reads a `\n`-terminated line ≤ 30 chars. Computes the sum of all byte values (excluding `\n`) modulo 16. Prints the result as a single lowercase hex char + `\n`.
 

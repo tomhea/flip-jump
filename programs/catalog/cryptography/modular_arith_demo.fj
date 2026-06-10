@@ -1,4 +1,4 @@
-// Modular Arith Demo (#1429)
+// Modular Arith Demo (#0897)
 
 // Reads three decimals `a`, `b`, `m` (each `0`-`50`, own line; `m >= 1`). Prints `(a+b) mod m\n(a*b) mod m\n` on two lines.
 

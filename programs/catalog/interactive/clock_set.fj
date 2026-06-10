@@ -1,4 +1,4 @@
-// Clock Set (#1334)
+// Clock Set (#0458)
 
 // Reads two decimals on separate lines: hour `0`-`23` then minute `0`-`59`. Prints `Time set to <HH>:<MM>\n` (each zero-padded to 2 digits).
 

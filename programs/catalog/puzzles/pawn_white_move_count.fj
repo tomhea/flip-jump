@@ -1,4 +1,4 @@
-// Pawn White Move Count (#1478)
+// Pawn White Move Count (#0688)
 
 // Reads 2 decimals `r c` (each `0`-`7`, own line) — a white pawn's position. Prints the number of legal forward moves (`1` from a non-starting row, `2` from row 6, `0` from row 0).
 

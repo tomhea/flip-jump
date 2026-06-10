@@ -1,4 +1,4 @@
-// Coin Toss Streak (#1519)
+// Coin Toss Streak (#0954)
 
 // Reads a `\n`-terminated string of `H`/`T` chars (≤ 20). Prints the length of the longest run of consecutive identical results as decimal + `\n`.
 

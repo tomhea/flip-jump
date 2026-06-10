@@ -1,4 +1,4 @@
-// Ascii Offset Encode N (#1417)
+// Ascii Offset Encode N (#0885)
 
 // Reads a signed decimal shift `-128`..`127` + `\n`, then a `\n`-terminated line ≤ 30 chars. For each input byte, outputs `(byte + n) mod 256` as a raw byte. Final `\n`.
 

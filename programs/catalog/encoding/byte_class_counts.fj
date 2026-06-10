@@ -1,4 +1,4 @@
-// Byte Class Counts (#1373)
+// Byte Class Counts (#0527)
 
 // Reads a `\n`-terminated line ≤ 80 chars. Prints `printable: <P>\ncontrol: <C>\n` where `P` is the count of printable bytes (`0x20`-`0x7e`) and `C` is the count of control bytes (`<0x20` or `0x7f`), all excluding the terminating `\n`.
 

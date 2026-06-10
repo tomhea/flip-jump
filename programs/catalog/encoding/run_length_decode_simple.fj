@@ -1,4 +1,4 @@
-// Run Length Decode Simple (#1348)
+// Run Length Decode Simple (#0502)
 
 // Reads a `\n`-terminated RLE string of alternating `<letter><digit 1-9>` ≤ 30 chars. Prints decoded string + `\n`. Example: `a2b1c5` → `aabccccc\n`.
 

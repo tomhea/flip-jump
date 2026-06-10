@@ -1,4 +1,4 @@
-// Xxd Style Dump (#1377)
+// Xxd Style Dump (#0531)
 
 // Reads a `\n`-terminated line ≤ 16 chars. Prints one line: 4-digit zero-padded offset `0000`, two spaces, then hex bytes (lowercase, space-separated, max 16 bytes), then 2 spaces, then the printable ASCII (non-printables as `.`), then `\n`. Example: input `hi\n` → `0000  68 69  hi\n`.
 

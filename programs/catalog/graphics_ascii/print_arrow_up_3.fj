@@ -1,4 +1,4 @@
-// Print Arrow Up 3 (#1284)
+// Print Arrow Up 3 (#0809)
 
 // No input. Prints a fixed 3-line upward arrow (`/\`, `||`, `||`), each + `\n`.
 

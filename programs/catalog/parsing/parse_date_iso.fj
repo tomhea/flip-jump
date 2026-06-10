@@ -1,4 +1,4 @@
-// Parse Date Iso (#1389)
+// Parse Date Iso (#0785)
 
 // Reads `YYYY-MM-DD\n` (10 bytes + `\n`). Prints `Year: <Y>\nMonth: <M>\nDay: <D>\n` with no leading zeros.
 

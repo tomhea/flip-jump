@@ -1,4 +1,4 @@
-// Parse Rgb To Grayscale (#1402)
+// Parse Rgb To Grayscale (#0798)
 
 // Reads `R,G,B\n` (each `0`-`255`, decimals separated by commas). Prints `floor((R*30 + G*59 + B*11) / 100)` as decimal + `\n`.
 

@@ -1,4 +1,4 @@
-// Binary Dump Line (#1343)
+// Binary Dump Line (#0497)
 
 // Reads a `\n`-terminated line ≤ 16 chars. For each byte (excluding `\n`), prints its 8-char binary representation (MSB first), space-separated, then `\n`.
 

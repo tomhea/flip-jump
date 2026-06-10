@@ -1,4 +1,4 @@
-// Mutual Recursion Ping Pong (#1594)
+// Mutual Recursion Ping Pong (#0428)
 
 // No input. Two mutually-recursive macros: `ping(N) { stl.output "ping\n"; if N>0: pong(N-1) }` and `pong(N) { stl.output "pong\n"; if N>0: ping(N-1) }`. Top-level invokes `ping(3)`. Output: `ping\npong\nping\npong\n`.
 

@@ -1,4 +1,4 @@
-// Checksum Byte Sum (#1357)
+// Checksum Byte Sum (#0511)
 
 // Reads a `\n`-terminated line ≤ 30 chars. Prints the sum of the byte values (excluding `\n`) modulo 256 as decimal + `\n`.
 

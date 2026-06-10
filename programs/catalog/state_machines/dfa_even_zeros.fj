@@ -1,4 +1,4 @@
-// Dfa Even Zeros (#1562)
+// Dfa Even Zeros (#0755)
 
 // Reads a `\n`-terminated binary string of `0`/`1` (≤ 30 chars). Prints `1\n` if the count of `0` bytes (excluding `\n`) is even, else `0\n`.
 

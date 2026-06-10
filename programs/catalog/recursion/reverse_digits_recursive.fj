@@ -1,4 +1,4 @@
-// Reverse Digits Recursive (#1592)
+// Reverse Digits Recursive (#0426)
 
 // Reads decimal N in `0`-`999` + `\n`. Computes the decimal reverse via recursive macro (each level extracts last digit and recurses on N/10). Prints reversed digits + `\n`.
 

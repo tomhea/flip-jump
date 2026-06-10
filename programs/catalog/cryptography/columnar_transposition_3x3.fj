@@ -1,4 +1,4 @@
-// Columnar Transposition 3X3 (#1415)
+// Columnar Transposition 3X3 (#0883)
 
 // Reads a `\n`-terminated plaintext of exactly 9 chars. Writes them into a 3×3 grid row-major, then reads out column-by-column. Prints the result + `\n`.
 

@@ -1,4 +1,4 @@
-// Nfa A Or B Then C (#1577)
+// Nfa A Or B Then C (#0770)
 
 // Reads a `\n`-terminated string of exactly 2 lowercase letters. Prints `1\n` if the string matches the regex `(a|b)c` (first byte is `a` or `b`, second byte is `c`), else `0\n`. Demonstrates a simple NFA / regex matcher.
 

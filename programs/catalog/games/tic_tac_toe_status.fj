@@ -1,4 +1,4 @@
-// Tic Tac Toe Status (#1514)
+// Tic Tac Toe Status (#0949)
 
 // Reads 3 lines of 3 chars each (board state with `X`, `O`, `.`). Prints exactly one of `X wins\n`, `O wins\n`, `Draw\n` (board full, no winner), or `In progress\n` (no winner, board not full).
 

@@ -1,4 +1,4 @@
-// Tax Calculator (#1328)
+// Tax Calculator (#0452)
 
 // Reads decimal amount `0`-`999` + `\n`. Prints `(amount * 110) / 100` (10% tax, integer division) + `\n`.
 

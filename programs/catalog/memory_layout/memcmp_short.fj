@@ -1,4 +1,4 @@
-// Memcmp Short (#1554)
+// Memcmp Short (#0927)
 
 // Reads digit N `1`-`5` + `\n`, then N decimals (`0`-`255`, own line) for array A, then N decimals for array B. Prints `1\n` if all N pairs match, else `0\n`.
 

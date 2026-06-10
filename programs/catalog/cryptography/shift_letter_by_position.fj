@@ -1,4 +1,4 @@
-// Shift Letter By Position (#1426)
+// Shift Letter By Position (#0894)
 
 // Reads a `\n`-terminated line ≤ 20 chars. For each letter at 0-based position `i`, shifts it by `i` positions within its case (non-letters unchanged). Prints result + `\n`.
 

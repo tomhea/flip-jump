@@ -1,4 +1,4 @@
-// Caesar Shift N (#1407)
+// Caesar Shift N (#0875)
 
 // Reads a signed decimal shift `-25`..`25` + `\n`, then a `\n`-terminated line ≤ 80 chars. Shifts each letter by `n` positions within its case (wrapping at `a`/`z`/`A`/`Z`); non-letters unchanged. Prints result + `\n`.
 

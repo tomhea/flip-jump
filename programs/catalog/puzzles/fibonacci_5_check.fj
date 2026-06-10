@@ -1,4 +1,4 @@
-// Fibonacci 5 Check (#1462)
+// Fibonacci 5 Check (#0672)
 
 // Reads exactly 5 decimals (each own line). Prints `1\n` if they match the first 5 Fibonacci values `0 1 1 2 3` exactly in order, else `0\n`.
 

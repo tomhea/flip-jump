@@ -1,4 +1,4 @@
-// Eval Simple Expr Mul (#1382)
+// Eval Simple Expr Mul (#0778)
 
 // Reads `<a>*<b>` + `\n` (single digits). Prints `a * b` + `\n`.
 

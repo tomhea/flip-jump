@@ -1,4 +1,4 @@
-// Print Compile Time Fibonacci 8 (#1605)
+// Print Compile Time Fibonacci 8 (#0940)
 
 // No input. Internally computes `F(8) = 21` at compile time. Prints `21\n`.
 

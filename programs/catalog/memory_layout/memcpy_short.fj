@@ -1,4 +1,4 @@
-// Memcpy Short (#1552)
+// Memcpy Short (#0925)
 
 // Reads digit N `1`-`8` + `\n`, then N source bytes (each on own line as decimal `0`-`255`). Copies the bytes into a destination buffer of size N, then prints the destination as N decimals space-separated + `\n`.
 

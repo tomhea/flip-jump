@@ -1,4 +1,4 @@
-// Parse Unit Value (#1406)
+// Parse Unit Value (#0802)
 
 // Reads `<num><unit>\n` where `num` is decimal `0`-`99` and `unit` is exactly one byte `s` (seconds), `m` (minutes), or `h` (hours). Prints `num` converted to seconds as decimal + `\n`.
 

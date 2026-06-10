@@ -1,4 +1,4 @@
-// Number Guess Three Tries (#1338)
+// Number Guess Three Tries (#0462)
 
 // Secret value is `5`. Reads up to 3 decimal guesses `1`-`10` (each `\n`-terminated). After each guess prints `too low\n`, `too high\n`, or `correct!\n` then exits on correct. If 3 wrong guesses, prints `Out of tries. Secret was 5.\n` and exits.
 

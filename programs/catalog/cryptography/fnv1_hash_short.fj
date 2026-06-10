@@ -1,4 +1,4 @@
-// Fnv1 Hash Short (#1439)
+// Fnv1 Hash Short (#0907)
 
 // Reads a `\n`-terminated line ≤ 30 chars. Computes FNV-1 mod 256 with explicit multiplier `0x93` (FNV prime mod 256): `h = 0; for each byte b: h = ((h * 0x93) mod 256) XOR b`. Prints hash as 2 lowercase hex chars + `\n`. (Distinct from `fnv1a_hash_short` by operation order — multiply then XOR vs XOR then multiply.)
 

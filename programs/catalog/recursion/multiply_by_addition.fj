@@ -1,4 +1,4 @@
-// Multiply By Addition (#1588)
+// Multiply By Addition (#0422)
 
 // Reads two decimals each `0`-`8` and prints `a*b` computed via the recursive macro `mul(a,b) = a + mul(a, b-1)`.
 

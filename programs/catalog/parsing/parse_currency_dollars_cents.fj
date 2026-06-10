@@ -1,4 +1,4 @@
-// Parse Currency Dollars Cents (#1404)
+// Parse Currency Dollars Cents (#0800)
 
 // Reads `$<D>.<CC>\n` where `D` is decimal `0`-`99` (no zero pad) and `CC` is exactly 2 decimal digits. Prints `D * 100 + CC` (total cents) + `\n`.
 

@@ -1,4 +1,4 @@
-// Nim Winner Three Heaps (#1530)
+// Nim Winner Three Heaps (#0965)
 
 // Reads 3 decimals (each `0`-`7`, own line) representing heap sizes. Prints `first\n` if first player has a winning strategy (XOR of heaps != 0), else `second\n`.
 

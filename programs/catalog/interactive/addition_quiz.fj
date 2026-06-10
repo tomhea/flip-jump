@@ -1,4 +1,4 @@
-// Addition Quiz (#1316)
+// Addition Quiz (#0440)
 
 // Reads two single-digit decimals (each `\n`-terminated), then a decimal answer (`\n`-terminated, may be 1-2 digits). Prints `correct\n` if the answer equals the sum of the two digits, else `wrong (expected <S>)\n` with `S` the actual sum.
 

@@ -1,4 +1,4 @@
-// Predator Prey One Step (#1507)
+// Predator Prey One Step (#0647)
 
 // Reads `prey` `0`-`50`, `pred` `0`-`20` (each own line). Applies one Lotka-Volterra-inspired step: `prey' = prey + prey/4 - pred`, `pred' = pred + prey/10 - pred/4` (integer divisions, clamp at 0). Prints `<prey'> <pred'>\n`.
 

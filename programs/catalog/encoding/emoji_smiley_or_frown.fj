@@ -1,4 +1,4 @@
-// Emoji Smiley Or Frown (#1372)
+// Emoji Smiley Or Frown (#0526)
 
 // Reads exactly one byte `0` or `1` followed by `\n`. Prints `:)\n` for `1`, `:(\n` for `0`.
 
