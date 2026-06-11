@@ -72,6 +72,8 @@ class ScreenWindow:
 
     def ensure_open(self, width: int, height: int) -> None:
         """open (or resize) the window for a width x height logical screen."""
+        if self._screen_surface is not None and self._screen_surface.get_size() == (width, height):
+            return  # already open at this size - recreating the window would flicker
         pg = self._pygame
         pg.display.init()
         pg.display.set_caption(self._title)

@@ -42,12 +42,7 @@ def test_cli_assemble_and_run(tmp_path: Path) -> None:
     assemble_run_according_to_cmd_line_args(cmd_line_args=['--no_stl', '-s', '--no_output', str(fj_path)])
 
 
-try:
-    from flipjump.interpreter import _fjcore  # type: ignore[attr-defined]
-except ImportError:
-    _fjcore = None
-
-native_engine_required = pytest.mark.skipif(_fjcore is None, reason='the native engine (_fjcore) is not built')
+from tests.unit.unit_utils import native_engine_required  # noqa: E402
 
 
 @native_engine_required

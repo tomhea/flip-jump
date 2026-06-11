@@ -79,10 +79,15 @@ def test_user_only_files_are_never_cached(isolated_cache: Path, tmp_path: Path) 
     assert len(fj_parser._stl_prefix_cache) == 0
 
 
-def test_assembling_twice_in_one_process_is_bit_identical(tmp_path: Path) -> None:
-    # the real stl, twice (the second pass uses the real cache): byte-identical outputs
+def test_assembling_twice_in_one_process_is_bit_identical(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # the real stl, from a cold cache: the first assemble fills it, the second hits it,
+    # and the outputs are byte-identical
+    cold_cache: Dict[fj_parser._StlCacheKey, fj_parser._StlCacheValue] = {}
+    monkeypatch.setattr(fj_parser, '_stl_prefix_cache', cold_cache)
     (tmp_path / 'a').mkdir()
     (tmp_path / 'b').mkdir()
     first = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path / 'a', use_stl=True)
+    assert len(cold_cache) == 1  # the stl prefix was snapshotted
     second = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path / 'b', use_stl=True)
+    assert len(cold_cache) == 1  # ... and reused
     assert first.read_bytes() == second.read_bytes()

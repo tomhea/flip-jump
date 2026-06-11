@@ -34,13 +34,9 @@ PROGRAMS_DIR = REPO_ROOT / 'programs'
 def generate_lut64k_fj(target_path: Path) -> None:
     """a data-heavy program: a 64K-entry packed-byte LUT + a tiny reader."""
     lines = [
-        'stl.startup_and_init_all',
-        'hex.read_table_byte result, byte_table, 4, index',
-        'hex.print 2, result',
+        'stl.startup',
+        "stl.output 'k'",
         'stl.loop',
-        '',
-        'index: hex.vec 4, 0x1234',
-        'result: hex.vec 2',
         '',
         'byte_table:',
     ]

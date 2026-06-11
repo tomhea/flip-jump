@@ -4,8 +4,8 @@ Programs won't work on their first run. They just can't. That's why we support t
 - No debugging flags at all: Shows the last 10 executed addresses of tests that failed their run (i.e. finished not by looping). 
 - `-d [PATH]`: Save debug information: Adds [very extensive label names](../../../tests/README.md#example-label-name-youll-get-with-using---debuginfo-len), Which are like a "**macro-stack**" for each of the last executed address. (can be used with `--debug-ops-list LEN`)
 - `--debug-ops-list LEN`: Shows the last _LEN_ executed addresses (instead of 10). (can be used with `-d`)
-- `-b NAME [NAME ...]`: Places breakpoints at every specified label NAMEs (note that label names are long: [more information about labels](../../README.md#generated-label-names)). (requires `-b`)
-- `-B NAME [NAME ...]`: Places breakpoints at every label that contains one of the given NAMEs. (requires `-b`)
+- `-b NAME [NAME ...]`: Places breakpoints at every specified label NAMEs (note that label names are long: [more information about labels](../../README.md#generated-label-names)). (requires `-d`)
+- `-B NAME [NAME ...]`: Places breakpoints at every label that contains one of the given NAMEs. (requires `-d`)
 
 The debugger can single-step, read-memory, read flipjump variables (bit/hex/byte, and their vectors), continue, or skip forward a fixed number of opcodes.
 

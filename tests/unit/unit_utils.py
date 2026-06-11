@@ -9,6 +9,8 @@ FixedIO - so the individual test files stay short and focused.
 from pathlib import Path
 from typing import List, Tuple, Union
 
+import pytest
+
 from flipjump import assemble
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_reader import GarbageHandling, Reader
@@ -16,6 +18,14 @@ from flipjump.interpreter import fjm_run
 from flipjump.interpreter.fjm_run import TerminationStatistics
 from flipjump.interpreter.io_devices.FixedIO import FixedIO
 from flipjump.utils.constants import DEFAULT_MAX_MACRO_RECURSION_DEPTH
+
+try:
+    from flipjump.interpreter import _fjcore  # type: ignore[attr-defined]
+except ImportError:
+    _fjcore = None
+
+# skip marker for tests that need the compiled native engine
+native_engine_required = pytest.mark.skipif(_fjcore is None, reason='the native engine (_fjcore) is not built')
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 PROGRAMS_DIR = REPO_ROOT / 'programs'

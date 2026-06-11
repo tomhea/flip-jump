@@ -26,7 +26,7 @@ struct {
         u64 data_length;    // in the outer-struct.data words (w-bits)
     } *segments;        // segments[segment_num]
     u8* data;       // the data (might be compressed in some versions)
-} fjm_file;     // Flip-Jump Memory file
+} fjm_file;     // FlipJump Memory file
 """
 
 

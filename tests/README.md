@@ -110,6 +110,16 @@ In summary, they check:
 | [test_utils.py](unit/test_utils.py)             | the shared utilities: debug-label round-trip, file helpers, and the run-statistics counters                     |
 | [test_cli.py](unit/test_cli.py)                 | the command-line entry-point, and the .fjm-version defaulting/validation                                         |
 | [test_quickstart.py](unit/test_quickstart.py)   | the high-level API end-to-end: `assemble_and_run` across the versions and memory-widths                         |
+| [test_fast_run.py](unit/test_fast_run.py)       | the pure-python fast loop matches the featured loop                                                              |
+| [test_native_memory.py](unit/test_native_memory.py) | the native engine memory: lazy footprint, the flat-storage limit knobs, and `storage_mode`                  |
+| [test_parse_cache.py](unit/test_parse_cache.py) | the assembler's stl-prefix parse cache: hits, invalidation, and bit-identical outputs                            |
+| [test_breakpoints.py](unit/test_breakpoints.py) | the debugger machinery: breakpoint resolution, debug actions, memory/variable reading, and an E2E break          |
+| [test_cli_debugger.py](unit/test_cli_debugger.py) | the terminal prompts of the debugger (messages, text answers, choice picking)                                  |
+| [test_device_memory.py](unit/test_device_memory.py) | the device<->memory hook over both engines                                                                  |
+| [test_keyboard_io.py](unit/test_keyboard_io.py) | the keyboard device: the status-hex protocol and scripted event files                                            |
+| [test_screen_io.py](unit/test_screen_io.py)     | the headless screen device: the command stream, palettes, PNGs, and frame hashes                                 |
+| [test_screen_window.py](unit/test_screen_window.py) | the interactive screen window (headless via SDL''s dummy driver): presenting, live keys, fullscreen, closing |
+| [test_devices_e2e.py](unit/test_devices_e2e.py) | .fj programs driving the screen/keyboard devices end-to-end, and the `--di`/`--do` CLI plumbing                  |
 
 To add a unit-test, just add a `test_*` function to the relevant file (or a new `test_*.py` module)
 under [unit/](unit) - the shared helpers live in [unit_utils.py](unit/unit_utils.py).

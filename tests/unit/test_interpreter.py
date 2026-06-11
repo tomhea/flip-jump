@@ -26,12 +26,7 @@ from tests.unit.unit_utils import (
     run_source,
 )
 
-try:
-    from flipjump.interpreter import _fjcore  # type: ignore[attr-defined]
-except ImportError:
-    _fjcore = None
-
-native_engine_required = pytest.mark.skipif(_fjcore is None, reason='the native engine (_fjcore) is not built')
+from tests.unit.unit_utils import native_engine_required
 
 
 def test_hello_world_output(tmp_path: Path) -> None:

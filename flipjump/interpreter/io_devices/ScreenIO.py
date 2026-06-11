@@ -28,8 +28,8 @@ memory layout contracts (op-structured "packed bytes", one byte per fj-op, strid
 the headless backend (default) keeps the expanded RGB frame (last_frame_rgb), writes one
 PNG per present into frames_dir, timestamps presents, and keeps a per-frame hash log
 (frame_hashes: sha256 over the raw pixel indices + palette bytes) for golden tests -
-measured fps comes from this log, not hand-timing. an interactive (pygame) backend can be
-plugged behind the same present() interface.
+measured fps comes from this log, not hand-timing. the interactive (pygame) backend in
+ScreenWindow.py presents the same command stream into a real window.
 """
 
 import hashlib

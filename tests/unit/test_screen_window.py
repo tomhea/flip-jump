@@ -73,10 +73,11 @@ def test_init_screen_opens_the_window() -> None:
 def test_present_draws_the_frame_pixels() -> None:
     device = InteractiveScreen256()
     init_2x2_screen(device)
+    device.palette = [(9, 8, 7)]  # a palette entry, so the drawn pixel is not the default black
     present_raw_2x2(device)
     assert device.frame_count == 1
     surface = pygame.display.get_surface()
-    assert surface.get_at((0, 0))[:3] == (0, 0, 0)  # palette_size=0 -> black
+    assert surface.get_at((0, 0))[:3] == (9, 8, 7)
 
 
 def test_live_key_events_reach_a_keyboard_device() -> None:
@@ -104,14 +105,17 @@ def test_special_keys_use_the_byte_keycodes() -> None:
     assert read_byte(keyboard) == KEYCODE_UP
 
 
-def test_f11_toggles_fullscreen_and_is_not_delivered() -> None:
+def test_f11_toggles_fullscreen_and_is_not_delivered(monkeypatch: pytest.MonkeyPatch) -> None:
     device = InteractiveScreen256()
     init_2x2_screen(device)
     keyboard = KeyboardIO(device.key_event_source)
-    post_key(pygame.K_F11)  # captured (the dummy driver makes the toggle a no-op)
+    toggle_calls = []
+    monkeypatch.setattr(pygame.display, 'toggle_fullscreen', lambda: toggle_calls.append(True))
+    post_key(pygame.K_F11)
     post_key(pygame.K_b)
     assert read_status_hex(keyboard) == 0x9
-    assert read_byte(keyboard) == ord('b')
+    assert read_byte(keyboard) == ord('b')  # 'b' arrives; F11 was consumed by the toggle
+    assert toggle_calls == [True]
 
 
 def test_unmapped_keys_are_ignored() -> None:
@@ -159,3 +163,27 @@ def test_cli_screen_with_live_keyboard_wiring() -> None:
     assert isinstance(io_device.output_device, InteractiveScreen256)
     assert isinstance(io_device.input_device, KeyboardIO)
     assert io_device.input_device.event_source is io_device.output_device.key_event_source
+
+
+@pytest.fixture(params=['fast-python', 'native'])
+def engine(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> str:
+    if request.param == 'native':
+        if fjm_run._fjcore is None:  # type: ignore[attr-defined]
+            pytest.skip('the native engine (_fjcore) is not built')
+    else:
+        monkeypatch.setattr(fjm_run, '_fjcore', None)
+    return str(request.param)
+
+
+def test_closing_the_window_terminates_a_real_run(tmp_path: Path, engine: str) -> None:
+    # QUIT is already pending when the program presents its first frame: the pump raises
+    # KeyboardInterrupt inside the run, and the interpreter must turn it into a clean
+    # keyboard-interrupt termination (on both engines).
+    fjm_path = assemble_to_path(RAW_SCREEN_PROGRAM, tmp_path, use_stl=True)
+    device = InteractiveScreen256()
+    device.window.ensure_open(4, 2)  # open early so the QUIT event can be posted
+    pygame.event.post(pygame.event.Event(pygame.QUIT))
+
+    statistics = fjm_run.run(fjm_path, io_device=device, print_time=False)
+    assert statistics.termination_cause == TerminationCause.KeyboardInterrupt
+    assert device.window.closed

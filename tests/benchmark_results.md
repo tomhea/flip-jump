@@ -16,7 +16,7 @@ Calibration: a minimal synthetic dict-based fetch/flip/jump loop runs at ~4.9M o
 on this machine — the upper bound for any pure-Python interpreter here. The ≥10M fj/s target
 therefore requires the native fallback (MSVC Build Tools available on this machine).
 
-## Python fast-loop (fast-run mode, fallback default since 1.5.0)
+## Python fast-loop (fast-run mode, the fallback default)
 
 The run-loop with inlined memory accesses and IO/termination checks, per-op statistics skipped.
 
@@ -28,7 +28,7 @@ The run-loop with inlined memory accesses and IO/termination checks, per-op stat
 w=64 is markedly slower than w=32: addresses are >2^60 (prime_sieve's table sits at 1<<63), so
 every int is a multi-digit CPython PyLong, and the small-int fast paths don't apply.
 
-## Native engine (_fjcore C-extension, default since 1.5.0 when built)
+## Native engine (_fjcore C-extension, the default when built)
 
 Segment-aware paged memory (lazily-allocated 128KB pages) + the run-loop in C; Python is
 called back only for IO. Build with `python build_fjcore.py`.
@@ -80,10 +80,10 @@ is ~7-8 cycles/op (~600M fj/s); the paged-path floor is ~13-15 cycles (~330M fj/
 (prime_sieve at w=32 is limited to n <= ~5792: its mark-pointer `p*p*dw` wraps the 2^32-bit
 address space beyond that — a property of the program, reproduced identically on all engines.)
 
-### Re-measurement at the 1.5.0 finish-up (PGO rebuild, June 2026)
+### Re-measurement after the configurable-flat-limit work (PGO rebuild, June 2026)
 
-After the finish-up engine changes (configurable flat limit + storage-mode getter +
-speculation counting mode - none on the per-op paths) the engine was PGO-rebuilt (trained
+After the configurable flat limit + storage-mode getter changes (none on the per-op
+paths) the engine was PGO-rebuilt (trained
 on both loop and sieve) and re-measured: **loop w=32 334M fj/s** (above the recorded
 280-286M), sieve w=32/w=64 ~97-105M on short runs, and 72M on the sustained 1.3B-op run.
 The sustained-run gap vs the recorded 132M is machine-state, not code: the pre-change
@@ -120,6 +120,10 @@ What changed (all output-preserving):
 | hello_world | 0.149s | 0.020s (warm) | 7.5x | stl parse (cold only) |
 | prime_sieve | 2.35s | 1.58s | 1.5x | macro resolve + lzma |
 | lut64k (64K-entry LUT) | 5.31s | 4.03s | 1.3x | SLY parsing of 64K data lines |
+
+(the lut64k generator was later slimmed to a data-only program - the absolute numbers of a
+fresh `benchmark_assembler.py` run are lower than this table, measured with the original
+generator; the before/after comparison above used the same workload on both sides.)
 | catalog compile (1,029 programs) | ~14 min | 9:03 | 1.55x | per-program macro resolve |
 
 Known remaining costs (documented, not pursued): the SLY lexer/parser's pure-python
@@ -155,8 +159,7 @@ holds as conjectured: most executed ops (truth-table cells, straight-line code) 
 words that never change after init; wflip-mutability concentrates in few dispatch/return
 cells. With a correctly-predicted op the next op's two loads start one serial-chain step
 early, so the expected gain is +50-80% on the flat path (~450-600M fj/s).
-**Verdict: GO - build the speculation tier** (as engine work after 1.5.0; the 160x100@25fps
-game target already fits the current engine, so this tier is headroom, not a dependency).
+**Verdict: GO - the speculation tier is worth building** (as future engine work).
 
 
 ## OQ-A1 — decoded-op cache: measured, and rejected

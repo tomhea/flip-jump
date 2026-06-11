@@ -39,7 +39,7 @@ class TestScriptedKeyEventSource:
         assert source.events == [KeyEvent(3, True, 10), KeyEvent(4, False, 11)]
 
 
-class TestKeyboardStreamMode:
+class TestKeyboard:
     def test_replay_is_deterministic_and_never_eofs(self) -> None:
         source = ScriptedKeyEventSource.from_text('0, down, 72\n2, up, 72\n')
         device = KeyboardIO(source)

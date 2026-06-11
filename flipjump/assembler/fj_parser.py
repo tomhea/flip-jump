@@ -7,7 +7,7 @@ macro definitions and the operations (flips, jumps, labels, etc.) that make up e
 import re
 from os import path
 from pathlib import Path
-from typing import Set, List, Tuple, Dict, Union
+from typing import Set, List, Tuple, Dict, Optional, Union
 
 import sly
 
@@ -939,10 +939,15 @@ def _stl_prefix_length(input_files: List[Tuple[str, Path]]) -> int:
 
 def _stl_cache_key(
     input_files: List[Tuple[str, Path]], prefix_length: int, memory_width: int, warning_as_errors: bool
-) -> _StlCacheKey:
+) -> Optional[_StlCacheKey]:
+    """the cache key of the prefix files, or None when it can't be built (e.g. a missing
+    file - the regular parse flow will report it clearly)."""
     files_key = []
     for short_name, file_path in input_files[:prefix_length]:
-        file_stat = file_path.stat()
+        try:
+            file_stat = file_path.stat()
+        except OSError:
+            return None
         files_key.append((short_name, str(file_path.resolve()), file_stat.st_mtime_ns, file_stat.st_size))
     return memory_width, warning_as_errors, tuple(files_key)
 
