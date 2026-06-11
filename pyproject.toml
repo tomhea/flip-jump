@@ -85,4 +85,4 @@ skip-string-normalization = true
 [tool.cibuildwheel]
 # abi3: build once per platform/arch with CPython 3.10 - the wheel covers >= 3.10
 build = "cp310-*"
-test-command = "python -c 'import flipjump.interpreter._fjcore as fjcore; fjcore.Memory(32)'"
+test-command = 'python -c "import flipjump.interpreter._fjcore as fjcore; fjcore.Memory(32)"'

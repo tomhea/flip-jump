@@ -3,10 +3,10 @@ The interpreter speed benchmark (fj/s) - prime_sieve.fj at w=32 and w=64.
 
 Used to track the interpreter speedup work (flipjump 1.5.0, WI-A):
 every interpreter change is measured against the recorded baseline in
-scripts/benchmark_results.md.
+tests/benchmark_results.md.
 
 Usage:
-    python scripts/benchmark_interpreter.py [n=10000] [--w 32 64] [--fast]
+    python tests/benchmark_interpreter.py [n=10000] [--w 32 64] [--fast]
 
 The compiled .fjm files are cached under tests/compiled/benchmark/ (keyed by width),
 so only the first invocation pays the assemble time.

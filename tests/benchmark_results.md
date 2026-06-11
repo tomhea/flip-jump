@@ -33,11 +33,14 @@ every int is a multi-digit CPython PyLong, and the small-int fast paths don't ap
 Segment-aware paged memory (lazily-allocated 128KB pages) + the run-loop in C; Python is
 called back only for IO. Build with `python build_fjcore.py`.
 
-| width | n      | ops           | time   | speed            | vs baseline |
-|-------|-------:|--------------:|-------:|-----------------:|------------:|
-| w=32  |  5,000 |    16,580,560 |  0.17s |  96,305,331 fj/s |        572x |
-| w=64  |  5,000 |    33,304,073 |  0.34s |  96,574,982 fj/s |        651x |
-| w=64  | 200,000| 1,332,300,215 | 12.83s | 103,819,945 fj/s |        700x |
+The shipping engine (v6 below; sieve = sparse/paged path, loop = compact/flat path):
+
+| program            | width | ops           | speed             | vs baseline |
+|--------------------|-------|--------------:|------------------:|------------:|
+| sieve (n=5,000)    | w=32  |    16,580,560 |  ~122M fj/s       |        727x |
+| sieve (n=5,000)    | w=64  |    33,304,073 |  ~128M fj/s       |        864x |
+| sieve (n=200,000)  | w=64  | 1,332,300,215 |  ~132M fj/s       |        892x |
+| loop (compact)     | w=32  |   298,927,147 |  ~280M fj/s       |      1,664x |
 
 **The ≥10M fj/s acceptance is met with ~10x margin on every row.**
 

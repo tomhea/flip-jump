@@ -22,7 +22,7 @@ from typing import Deque, List, NamedTuple, Optional, Tuple
 
 from flipjump.interpreter.io_devices.IODevice import IODevice
 from flipjump.interpreter.io_devices.device_memory import DeviceMemory
-from flipjump.utils.exceptions import IODeviceException
+from flipjump.utils.exceptions import IncompleteOutput, IODeviceException
 
 
 class KeyEvent(NamedTuple):
@@ -64,7 +64,13 @@ class ScriptedKeyEventSource(KeyEventSource):
                 is_down = False
             else:
                 raise IODeviceException(f'bad down/up value on scripted-keyboard line {line_number}: {down_up!r}')
-            events.append(KeyEvent(int(tic, 0), is_down, int(keycode, 0)))
+            try:
+                tic_number, keycode_number = int(tic, 0), int(keycode, 0)
+            except ValueError:
+                raise IODeviceException(f'bad number on scripted-keyboard line {line_number}: {line!r}') from None
+            if not 0 <= keycode_number <= 0xFF:
+                raise IODeviceException(f'keycode on scripted-keyboard line {line_number} is not a byte: {keycode!r}')
+            events.append(KeyEvent(tic_number, is_down, keycode_number))
         return cls(events)
 
     @classmethod
@@ -158,4 +164,6 @@ class KeyboardIO(IODevice):
             self._output_bits_count = 0
 
     def get_output(self, *, allow_incomplete_output: bool = False) -> bytes:
+        if not allow_incomplete_output and self._output_bits_count != 0:
+            raise IncompleteOutput('the keyboard device was sent an unaligned number of output bits')
         return self._output

@@ -23,6 +23,27 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+/* a monotonic wall clock in seconds - matches the python reference pause-timer, which uses
+   wall time around blocking IO reads (C clock() is process-CPU time on POSIX: ~0 while
+   blocked on input, which would under-report the paused time there). */
+static double monotonic_seconds(void)
+{
+#ifdef _WIN32
+    LARGE_INTEGER frequency, counter;
+    QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&counter);
+    return (double)counter.QuadPart / (double)frequency.QuadPart;
+#else
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
+#endif
+}
+
 #define PAGE_BITS 14
 #define PAGE_WORDS (1ull << PAGE_BITS) /* 16K words, 128KB per page */
 #define PAGE_MASK (PAGE_WORDS - 1)
@@ -89,6 +110,7 @@ typedef struct {
     uint64_t error_bit_address;
 
     unsigned long long last_run_op_count; /* op count of the last run (also on exceptions) */
+    double last_run_paused_seconds;       /* IO-paused seconds of the last run (also on exceptions) */
 } MemoryObject;
 
 /* ---------------------------------------------------------------- pages */
@@ -356,6 +378,13 @@ static inline int mem_get_word_unaligned(MemoryObject* m, uint64_t bit_address, 
     if (bit_offset == 0) {
         return mem_read_word(m, word_address, out);
     }
+    if (word_address == m->word_mask) {
+        /* an unaligned read whose high word would wrap past the top of the address space -
+           the python reference terminates with a memory error here */
+        m->mem_error = 1;
+        m->error_bit_address = bit_address;
+        return -1;
+    }
     if (mem_read_word(m, word_address, &lsw) < 0) {
         return -1;
     }
@@ -472,6 +501,7 @@ static int Memory_init(PyObject* op, PyObject* args, PyObject* kwds)
     self->mem_error = 0;
     self->error_bit_address = 0;
     self->last_run_op_count = 0;
+    self->last_run_paused_seconds = 0.0;
     return 0;
 }
 
@@ -500,6 +530,12 @@ static PyObject* Memory_add_segment(MemoryObject* self, PyObject* args)
 {
     unsigned long long start_word, length_words;
     if (!PyArg_ParseTuple(args, "KK", &start_word, &length_words)) {
+        return NULL;
+    }
+    /* reject overflowing ranges - a wrapped end would corrupt the flat-array build
+       (memset/memcpy with a wild size) and the validity binary-search invariants */
+    if (start_word + length_words < start_word) {
+        PyErr_SetString(PyExc_ValueError, "segment range overflows the 64-bit word-address space");
         return NULL;
     }
     if (self->segment_count == self->segment_capacity) {
@@ -684,9 +720,9 @@ static int run_flat_loop(MemoryObject* self, PyObject* read_bit, PyObject* write
         if (ip <= in_addr && ip > in_lo_exclusive) {
             PyObject* result;
             int bit_value;
-            clock_t io_start = clock();
+            double io_start = monotonic_seconds();
             result = PyObject_CallNoArgs(read_bit);
-            *paused_seconds_out += (double)(clock() - io_start) / CLOCKS_PER_SEC;
+            *paused_seconds_out += monotonic_seconds() - io_start;
             if (!result) {
                 if (PyErr_ExceptionMatches(eof_exception_type)) {
                     PyErr_Clear();
@@ -757,6 +793,7 @@ memory_error:
     }
 done:
     self->last_run_op_count = ops;
+    self->last_run_paused_seconds = *paused_seconds_out;
     *ops_out = ops;
     return cause;
 }
@@ -938,9 +975,9 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
             if (ip <= in_addr && ip > in_lo_exclusive) {
                 PyObject* result;
                 int bit_value;
-                clock_t io_start = clock();
+                double io_start = monotonic_seconds();
                 result = PyObject_CallNoArgs(read_bit);
-                paused_seconds += (double)(clock() - io_start) / CLOCKS_PER_SEC;
+                paused_seconds += monotonic_seconds() - io_start;
                 if (!result) {
                     if (PyErr_ExceptionMatches(eof_exception_type)) {
                         PyErr_Clear();
@@ -1007,18 +1044,21 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
     }
 
     self->last_run_op_count = ops;
+    self->last_run_paused_seconds = paused_seconds;
     return build_run_result(self, cause, ops, last_ops_ring, last_ops_length, ring_writes, paused_seconds);
 
 memory_or_python_error:
     if (self->mem_error) {
         self->mem_error = 0;
         self->last_run_op_count = ops;
+        self->last_run_paused_seconds = paused_seconds;
         return build_run_result(self, TERM_MEMORY_ERROR, ops, last_ops_ring, last_ops_length, ring_writes,
                                 paused_seconds);
     }
     /* fallthrough: a python error during a memory callback */
 python_error:
     self->last_run_op_count = ops;
+    self->last_run_paused_seconds = paused_seconds;
     free(last_ops_ring);
     return NULL;
 }
@@ -1027,6 +1067,12 @@ static PyObject* Memory_get_op_count(MemoryObject* self, void* closure)
 {
     (void)closure;
     return PyLong_FromUnsignedLongLong(self->last_run_op_count);
+}
+
+static PyObject* Memory_get_paused_seconds(MemoryObject* self, void* closure)
+{
+    (void)closure;
+    return PyFloat_FromDouble(self->last_run_paused_seconds);
 }
 
 static PyObject* Memory_get_allocated_bytes(MemoryObject* self, void* closure)
@@ -1052,6 +1098,8 @@ static PyMethodDef Memory_methods[] = {
 static PyGetSetDef Memory_getset[] = {
     {"last_run_op_count", (getter)Memory_get_op_count, NULL, "op count of the last run (valid on exceptions too)",
      NULL},
+    {"last_run_paused_seconds", (getter)Memory_get_paused_seconds, NULL,
+     "IO-paused seconds of the last run (valid on exceptions too)", NULL},
     {"allocated_bytes", (getter)Memory_get_allocated_bytes, NULL,
      "bytes allocated for memory pages (footprint scales with touched memory, not segment sizes)", NULL},
     {NULL, NULL, NULL, NULL, NULL},

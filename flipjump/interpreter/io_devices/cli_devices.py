@@ -46,9 +46,14 @@ def create_input_device(di_spec: str) -> IODevice:
         mailbox_bit_address: Optional[int] = None
         if '@' in keyboard_arg:
             events_path, mailbox_str = keyboard_arg.rsplit('@', maxsplit=1)
-            mailbox_bit_address = int(mailbox_str, 0)
+            try:
+                mailbox_bit_address = int(mailbox_str, 0)
+            except ValueError:
+                raise IODeviceException(f'bad keyboard mailbox address: {mailbox_str!r}') from None
         else:
             events_path = keyboard_arg
+        if not Path(events_path).is_file():
+            raise IODeviceException(f'keyboard events file does not exist: {events_path}')
         event_source = ScriptedKeyEventSource.from_file(Path(events_path))
         return KeyboardIO(event_source, mailbox_bit_address=mailbox_bit_address)
     raise IODeviceException(

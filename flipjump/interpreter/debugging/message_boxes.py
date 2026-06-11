@@ -59,6 +59,9 @@ def display_message_box_with_choices_and_get_answer(
         if raw_answer.isdigit() and 1 <= int(raw_answer) <= len(choices):
             return choices[int(raw_answer) - 1]
 
+        exact_matches = [choice for choice in choices if choice.lower() == raw_answer.lower()]
+        if exact_matches:
+            return exact_matches[0]
         name_matches = [choice for choice in choices if choice.lower().startswith(raw_answer.lower())]
         if len(name_matches) == 1:
             return name_matches[0]

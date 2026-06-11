@@ -33,14 +33,21 @@ class DeviceMemory(ABC):
 
     def read_data_byte(self, op_bit_address: int) -> int:
         """read the packed data-byte (bits dbit..dbit+7) of the op at the dw-aligned bit-address."""
+        self._require_byte_capable_width()
         return (self.read_word(self._jump_word_address(op_bit_address)) >> self._data_bit_offset) & 0xFF
 
     def write_data_byte(self, op_bit_address: int, value: int) -> None:
         """write the packed data-byte (bits dbit..dbit+7) of the op at the dw-aligned bit-address."""
+        self._require_byte_capable_width()
         jump_word_address = self._jump_word_address(op_bit_address)
         jump_word = self.read_word(jump_word_address)
         byte_mask = 0xFF << self._data_bit_offset
         self.write_word(jump_word_address, (jump_word & ~byte_mask) | ((value & 0xFF) << self._data_bit_offset))
+
+    def _require_byte_capable_width(self) -> None:
+        # a packed byte spans bits #w..#w+7 of the jump word - it only fits when w >= 16
+        if self.memory_width < 16:
+            raise ValueError(f'packed data-bytes require memory_width >= 16, got {self.memory_width}')
 
     @property
     def _data_bit_offset(self) -> int:
@@ -59,10 +66,12 @@ class ReaderDeviceMemory(DeviceMemory):
         self.memory_width = reader.memory_width
 
     def read_word(self, word_address: int) -> int:
-        return self._reader.memory.get(word_address, 0)
+        # mask like the Reader's own accessors, so device addresses wrap consistently
+        return self._reader.memory.get(word_address & ((1 << self.memory_width) - 1), 0)
 
     def write_word(self, word_address: int, value: int) -> None:
-        self._reader.memory[word_address] = value & ((1 << self.memory_width) - 1)
+        word_mask = (1 << self.memory_width) - 1
+        self._reader.memory[word_address & word_mask] = value & word_mask
 
 
 class NativeDeviceMemory(DeviceMemory):

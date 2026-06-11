@@ -7,7 +7,7 @@
 
 ns hex {
     //  Time Complexity: 4n^2(5.5@+20) + n(8@+33)
-    // Space Complexity: 4n^2(5.5@+20) + n(30@+100)
+    // Space Complexity: n(50@+1000)
     //   dst[:n] = (a[:n] * b[:n]) >> 4f    (signed fixed-point multiply)
     //
     // a,b,dst are signed Q-format hex[:n] with f fraction-nibbles (dst may alias a/b).
@@ -32,8 +32,8 @@ ns hex {
     }
 
 
-    //  Time Complexity: 4n^2(36@+100) + n(15@+50)
-    // Space Complexity: 4n^2(30@+441) + n(25@+100)
+    //  Time Complexity: n^2(76@+216) + n(15@+50)
+    // Space Complexity: n(45@+600)
     //   if b==0: goto div0
     //   dst[:n] = (a[:n] << 4f) / b[:n]    (signed fixed-point divide, truncated toward zero)
     //
@@ -58,8 +58,8 @@ ns hex {
     }
 
 
-    //  Time Complexity: #c(n(0.75@+5)) + (#on-bits of c)(n(0.75@+5))
-    // Space Complexity: #c(n(2@+30))
+    //  Time Complexity: n(2@+12) + #c(n(@+1)) + (#on-bits of c)(n(4@+12))
+    // Space Complexity: #c(n(5@+25)) + n(4@+40)
     //   dst[:n] = src[:n] * c    (c is a compile-time constant)
     //
     // The strength-reduced constant multiply: c's set bits become shifted adds, so sparse
@@ -85,7 +85,7 @@ ns hex {
     }
 
 
-    //  Time Complexity: n(w(0.75@+5) + 18@+27) + #(n*dw)(w/4(1.5@+10)) + 22@+60
+    //  Time Complexity: n(w(0.75@+5) + 16@+27) + #(n*dw)(w/4(1.5@+10)) + 22@+60
     // Space Complexity: n(w(1.13@+32) + 14@+127) + #(n*dw)(w/4(2@+30))
     //   dst[:n] = table[idx]    (entry idx of a LUT of hex[:n] entries)
     //

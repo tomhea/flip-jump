@@ -153,6 +153,8 @@ class InMemoryScreen256(IODevice):
     def _init_screen(self, width: int, height: int, bpp: int, palette_size: int) -> None:
         if bpp not in (4, 8):
             raise IODeviceException(f'screen bpp must be 4 or 8, got {bpp}')
+        if width == 0 or height == 0:
+            raise IODeviceException(f'screen size must be nonzero, got {width}x{height}')
         self.width, self.height, self.bpp, self.palette_size = width, height, bpp, palette_size
         self.palette = [(0, 0, 0)] * palette_size
         self.pixel_indices = [0] * (width * height)
@@ -169,13 +171,23 @@ class InMemoryScreen256(IODevice):
             (rgb_bytes[3 * k], rgb_bytes[3 * k + 1], rgb_bytes[3 * k + 2]) for k in range(self.palette_size)
         ]
 
+    def _require_initialized_screen(self) -> None:
+        if self.width == 0 or self.height == 0:
+            raise IODeviceException('the screen was not initialized (send the init_screen command first)')
+
     def _update_screen(self, screen_bit_address: int) -> None:
+        self._require_initialized_screen()
         pixel_mask = (1 << self.bpp) - 1
         raw = self._read_packed_bytes(screen_bit_address, self.width * self.height)
         self.pixel_indices = [pixel & pixel_mask for pixel in raw]
         self._present()
 
     def _update_rectangle(self, x: int, y: int, rect_width: int, rect_height: int, rect_bit_address: int) -> None:
+        self._require_initialized_screen()
+        if x + rect_width > self.width or y + rect_height > self.height:
+            raise IODeviceException(
+                f'update_rectangle [{x},{y}] {rect_width}x{rect_height} exceeds the {self.width}x{self.height} screen'
+            )
         pixel_mask = (1 << self.bpp) - 1
         raw = self._read_packed_bytes(rect_bit_address, rect_width * rect_height)
         for row in range(rect_height):

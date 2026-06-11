@@ -261,11 +261,12 @@ def _run_native(mem: fjm_reader.Reader, io_device: IODevice, statistics: RunStat
             last_ops_length=last_ops.maxlen if last_ops is not None and last_ops.maxlen else 0,
         )
     finally:
-        # keep op_counter valid on the exception paths too (Ctrl+C, IO-device errors)
+        # keep op_counter and the IO-paused time valid on the exception paths too
+        # (Ctrl+C, IO-device errors)
         statistics.op_counter = core.last_run_op_count
+        statistics.pause_timer.paused_time += core.last_run_paused_seconds
 
     statistics.op_counter = op_count
-    statistics.pause_timer.paused_time += paused_seconds
     if last_ops is not None:
         last_ops.extend(native_last_ops)
 
@@ -336,8 +337,8 @@ def _run_fast(  # noqa: C901
     """
     the fast run-loop. behaves exactly like the featured loop, but the memory accesses and
     the IO/termination checks are inlined into the loop, and the per-op flip/jump counters
-    are skipped (op_counter is still maintained).
-    the loop body is duplicated: with and without last-ops tracking (tracking costs ~10%).
+    are skipped (op_counter is still maintained). last-ops tracking, when requested, costs
+    one predictable branch + one deque-append per op (~10%).
     """
     memory = mem.memory
     w = mem.memory_width
