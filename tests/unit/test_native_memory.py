@@ -128,3 +128,21 @@ def test_flat_allocation_failure_falls_back_to_paged(monkeypatch: pytest.MonkeyP
     memory = _looping_memory()
     _run_to_looping(memory)  # the run must still succeed, just paged
     assert memory.storage_mode == 'paged'
+
+
+def test_reinitializing_a_memory_does_not_crash() -> None:
+    # __init__ can be called again on a live object - the old allocations must be released
+    memory = _looping_memory()
+    _run_to_looping(memory)  # builds the flat array
+    memory.__init__(16)
+    memory.add_segment(0, 8)
+    memory.set_word(3, 0x123)
+    assert memory.get_word(3) == 0x123
+
+
+def test_set_words_beyond_the_flat_span_raises() -> None:
+    memory = _looping_memory()
+    _run_to_looping(memory)  # flat storage is built now
+    assert memory.storage_mode == 'flat'
+    with pytest.raises(ValueError):
+        memory.set_words(6, [1, 2, 3])  # words 6..8, beyond the 8-word span

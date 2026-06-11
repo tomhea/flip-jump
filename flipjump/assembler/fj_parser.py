@@ -919,9 +919,13 @@ _StlCacheValue = Tuple[Dict[str, Expr], Dict[MacroName, Macro], List[Op]]
 _stl_prefix_cache: Dict[_StlCacheKey, _StlCacheValue] = {}
 
 
+# the directory whose files are considered cacheable (module-level so tests can redirect it)
+_STL_DIR = (Path(__file__).parent.parent / 'stl').resolve()
+
+
 def _stl_prefix_length(input_files: List[Tuple[str, Path]]) -> int:
     """the length of the leading run of input files that live inside the packaged stl."""
-    stl_dir = (Path(__file__).parent.parent / 'stl').resolve()
+    stl_dir = _STL_DIR
     prefix_length = 0
     for _, file_path in input_files:
         try:

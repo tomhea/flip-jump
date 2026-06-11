@@ -449,6 +449,9 @@ static int mem_decide_storage(MemoryObject* m)
     if (max_end > mem_flat_words_limit(m)) {
         return 0; /* paged */
     }
+    if (max_end > SIZE_MAX / sizeof(uint64_t)) {
+        return 0; /* paged - the flat byte-size would overflow size_t (a raised limit) */
+    }
 
     {
         /* deterministic allocation-failure injection for the fallback-path tests
@@ -502,6 +505,25 @@ static int mem_decide_storage(MemoryObject* m)
 
 /* ---------------------------------------------------------------- Memory type */
 
+/* free every owned allocation (also safe on a fresh zeroed object) */
+static void mem_free_allocations(MemoryObject* self)
+{
+    if (self->slots) {
+        for (uint64_t i = 0; i < self->slot_count; i++) {
+            if (self->slots[i].key_plus1) {
+                free(self->slots[i].page->words);
+                free(self->slots[i].page);
+            }
+        }
+        free(self->slots);
+        self->slots = NULL;
+    }
+    free(self->flat);
+    self->flat = NULL;
+    free(self->segments);
+    self->segments = NULL;
+}
+
 static int Memory_init(PyObject* op, PyObject* args, PyObject* kwds)
 {
     MemoryObject* self = (MemoryObject*)op;
@@ -515,6 +537,7 @@ static int Memory_init(PyObject* op, PyObject* args, PyObject* kwds)
         PyErr_SetString(PyExc_ValueError, "memory_width must be 8, 16, 32 or 64");
         return -1;
     }
+    mem_free_allocations(self); /* __init__ may be called again on a live object */
     self->w = w;
     self->ww = (w == 8) ? 3 : (w == 16) ? 4 : (w == 32) ? 5 : 6;
     self->word_mask = (w == 64) ? ~0ull : ((1ull << w) - 1);
@@ -544,17 +567,7 @@ static void Memory_dealloc(PyObject* op)
     MemoryObject* self = (MemoryObject*)op;
     PyTypeObject* type = Py_TYPE(op);
     freefunc tp_free;
-    if (self->slots) {
-        for (uint64_t i = 0; i < self->slot_count; i++) {
-            if (self->slots[i].key_plus1) {
-                free(self->slots[i].page->words);
-                free(self->slots[i].page);
-            }
-        }
-        free(self->slots);
-    }
-    free(self->flat);
-    free(self->segments);
+    mem_free_allocations(self);
     tp_free = (freefunc)PyType_GetSlot(type, Py_tp_free);
     tp_free(op);
     Py_DECREF(type); /* heap types own a reference from their instances */
@@ -650,6 +663,14 @@ static PyObject* Memory_set_words(MemoryObject* self, PyObject* args)
     if (count < 0) {
         return NULL;
     }
+    if (start_word + (uint64_t)count < start_word) {
+        PyErr_SetString(PyExc_ValueError, "set_words range overflows the 64-bit word-address space");
+        return NULL;
+    }
+    if (self->flat && start_word + (uint64_t)count > self->flat_count) {
+        PyErr_SetString(PyExc_ValueError, "set_words address is beyond the flat-storage span");
+        return NULL;
+    }
     Py_INCREF(values);
     for (i = 0; i < count; i++) {
         unsigned long long value;
@@ -666,11 +687,6 @@ static PyObject* Memory_set_words(MemoryObject* self, PyObject* args)
             return NULL;
         }
         if (self->flat) {
-            if ((uint64_t)(start_word + i) >= self->flat_count) {
-                Py_DECREF(values);
-                PyErr_SetString(PyExc_ValueError, "set_words address is beyond the flat-storage span");
-                return NULL;
-            }
             self->flat[start_word + i] = value & self->word_mask;
             continue;
         }
@@ -895,6 +911,9 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOO|nK", kwlist, &read_bit, &write_bit, &eof_exception_type,
                                      &last_ops_length, &start_ip)) {
         return NULL;
+    }
+    if (last_ops_length < 0) {
+        last_ops_length = 0;
     }
 
     if (mem_decide_storage(self) < 0) {
