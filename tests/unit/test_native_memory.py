@@ -128,3 +128,46 @@ def test_flat_allocation_failure_falls_back_to_paged(monkeypatch: pytest.MonkeyP
     memory = _looping_memory()
     _run_to_looping(memory)  # the run must still succeed, just paged
     assert memory.storage_mode == 'paged'
+
+
+# ---------------------------------------------------------- speculation measurement (WI-F)
+
+
+def test_speculation_stats_are_none_without_the_measure_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv('FLIPJUMP_MEASURE_SPECULATION', raising=False)
+    memory = _looping_memory()
+    _run_to_looping(memory)
+    assert memory.speculation_stats is None
+
+
+def test_speculation_stats_stable_jump_words(monkeypatch: pytest.MonkeyPatch) -> None:
+    # a straight-line program: every ip executes once - no jump word ever differs.
+    # ops sit at bits 0/128/256 (skipping the w=32 input range, ips 39..102): each flips a
+    # harmless word-30 bit and jumps to the next; the last jumps to itself (looping).
+    monkeypatch.setenv('FLIPJUMP_MEASURE_SPECULATION', '1')
+    memory = _fjcore.Memory(32)
+    memory.add_segment(0, 32)
+    memory.set_words(0, [960, 128])  # op at bit 0: jump to bit 128
+    memory.set_words(4, [961, 256])  # op at bit 128: jump to bit 256
+    memory.set_words(8, [962, 256])  # op at bit 256: jump to itself - looping
+    cause, op_count, _, _, _ = memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+    assert cause == _fjcore.TERM_LOOPING
+    assert op_count == 3
+    assert memory.speculation_stats == {'ops': 3, 'first_executions': 3, 'misses': 0}
+
+
+def test_speculation_stats_count_jump_word_changes(monkeypatch: pytest.MonkeyPatch) -> None:
+    # the op at bit 128 executes twice: first jumping to bit 256; the bit-256 op flips
+    # bit 6 of its jump word (word 5 -> bit address 5*32+6=166, turning 256 into 320), so
+    # its second execution jumps to bit 320 - exactly one speculation miss.
+    monkeypatch.setenv('FLIPJUMP_MEASURE_SPECULATION', '1')
+    memory = _fjcore.Memory(32)
+    memory.add_segment(0, 32)
+    memory.set_words(0, [960, 128])  # bit 0: jump to bit 128
+    memory.set_words(4, [961, 256])  # bit 128: jump to bit 256 (becomes 320 after the flip)
+    memory.set_words(8, [166, 128])  # bit 256: flip the bit-128 op's jump-word bit 6, jump back
+    memory.set_words(10, [962, 320])  # bit 320: jump to itself - looping
+    cause, op_count, _, _, _ = memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+    assert cause == _fjcore.TERM_LOOPING
+    assert op_count == 5  # bits 0, 128, 256, 128 (miss), 320
+    assert memory.speculation_stats == {'ops': 5, 'first_executions': 4, 'misses': 1}
