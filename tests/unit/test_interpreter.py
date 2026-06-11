@@ -8,6 +8,8 @@ last-ops debugging deque.
 
 from pathlib import Path
 
+import pytest
+
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_writer import Writer
 from flipjump.interpreter import fjm_run
@@ -23,6 +25,13 @@ from tests.unit.unit_utils import (
     assemble_to_path,
     run_source,
 )
+
+try:
+    from flipjump.interpreter import _fjcore  # type: ignore[attr-defined]
+except ImportError:
+    _fjcore = None
+
+native_engine_required = pytest.mark.skipif(_fjcore is None, reason='the native engine (_fjcore) is not built')
 
 
 def test_hello_world_output(tmp_path: Path) -> None:
@@ -77,3 +86,26 @@ def test_last_ops_addresses_deque(tmp_path: Path) -> None:
 
     statistics_none = fjm_run.run(fjm_path, io_device=FixedIO(b''), print_time=False)
     assert statistics_none.last_ops_addresses is None
+
+
+@native_engine_required
+def test_native_run_reports_flat_storage_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv('FLIPJUMP_NO_NATIVE', raising=False)
+    monkeypatch.delenv('FLIPJUMP_NO_FLAT', raising=False)
+    statistics, _ = run_source(INFINITE_LOOP_PROGRAM, tmp_path, memory_width=32)
+    assert statistics.storage_mode == 'flat'
+
+
+@native_engine_required
+def test_run_flat_max_words_forces_paged(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv('FLIPJUMP_NO_NATIVE', raising=False)
+    fjm_path = assemble_to_path(INFINITE_LOOP_PROGRAM, tmp_path, memory_width=32)
+    statistics = fjm_run.run(fjm_path, io_device=FixedIO(b''), print_time=False, flat_max_words=4)
+    assert statistics.termination_cause == TerminationCause.Looping
+    assert statistics.storage_mode == 'paged'
+
+
+def test_python_run_storage_mode_is_none(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv('FLIPJUMP_NO_NATIVE', '1')
+    statistics, _ = run_source(INFINITE_LOOP_PROGRAM, tmp_path, memory_width=32)
+    assert statistics.storage_mode is None

@@ -92,6 +92,8 @@ class RunStatistics:
         self.jump_counter = 0
         # False when the run-loop skips the flip/jump counters (the fast loop).
         self.detailed_statistics = True
+        # 'flat'/'paged' when the native engine ran (which memory storage it chose); None otherwise.
+        self.storage_mode: Optional[str] = None
 
         self.last_ops_addresses: Optional[Deque[int]] = None
         if last_ops_debugging_list_length is not None:

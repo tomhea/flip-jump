@@ -102,6 +102,7 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
         print_termination=not args.silent,
         last_ops_debugging_list_length=args.debug_ops_list,
         profile=args.profile,
+        flat_max_words=args.flat_max_words,
     )
 
 
@@ -235,6 +236,16 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         '--profile',
         help="collect the full per-op statistics (flips/jumps percentages). uses the slower featured run-loop",
         action='store_true',
+    )
+    run_arguments.add_argument(
+        '--flat-max-words',
+        metavar='N',
+        type=_check_int_positive,
+        default=None,
+        help="the native engine's flat-storage span limit, in words (2^23 by default; programs "
+        "whose memory span exceeds it run in the slower paged mode). raising it costs startup "
+        "time and memory (8 bytes per word of span), never per-op speed. the "
+        "FLIPJUMP_FLAT_MAX_WORDS environment variable sets the same limit",
     )
     run_arguments.add_argument(
         '--di',

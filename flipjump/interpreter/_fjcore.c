@@ -51,10 +51,14 @@ static double monotonic_seconds(void)
 /* how often to check for signals (Ctrl+C): every 2^18 ops */
 #define SIGNAL_CHECK_MASK 0x3FFFFull
 
-/* flat-storage mode: programs whose segments all end below this word-count (and with
+/* flat-storage mode: programs whose segments all end below a word-count limit (and with
    w<=32, so bit 63 is free to mark out-of-segment words) use one dense array instead of
-   the page table - removing the page lookup from the serial jump-address chain. */
-#define FLAT_MAX_WORDS (1ull << 23) /* 8M words, 64MB */
+   the page table - removing the page lookup from the serial jump-address chain.
+   the limit is the Memory(flat_max_words=...) parameter, else the FLIPJUMP_FLAT_MAX_WORDS
+   environment variable, else this default. raising it trades startup time + footprint
+   (the array is sentinel-filled: RSS = 8 bytes x span, fill ~0.1s/GB) for flat-path speed;
+   the per-op cost is unaffected by the limit's value. */
+#define FLAT_MAX_WORDS_DEFAULT (1ull << 23) /* 8M words, 64MB */
 #define GARBAGE_SENTINEL (1ull << 63)
 
 /* termination causes (mapped to TerminationCause in fjm_run.py) */
@@ -104,6 +108,7 @@ typedef struct {
     /* flat-storage mode (built at the first run when eligible; NULL = paged mode) */
     uint64_t* flat;
     uint64_t flat_count;
+    uint64_t flat_max_words; /* constructor override; 0 = use the env var / default */
     int storage_decided;
 
     int mem_error;            /* set when garbage_stop fired */
@@ -395,9 +400,29 @@ static inline int mem_get_word_unaligned(MemoryObject* m, uint64_t bit_address, 
     return 0;
 }
 
+/* the effective flat-storage span limit: the constructor parameter, else the
+   FLIPJUMP_FLAT_MAX_WORDS environment variable, else the built-in default. */
+static uint64_t mem_flat_words_limit(MemoryObject* m)
+{
+    if (m->flat_max_words) {
+        return m->flat_max_words;
+    }
+    {
+        const char* env_limit = getenv("FLIPJUMP_FLAT_MAX_WORDS");
+        if (env_limit && env_limit[0]) {
+            uint64_t limit = strtoull(env_limit, NULL, 0);
+            if (limit) {
+                return limit;
+            }
+        }
+    }
+    return FLAT_MAX_WORDS_DEFAULT;
+}
+
 /* decide the storage mode (once, at the first run): build the flat array when eligible -
    w<=32 (bit 63 is free for the garbage sentinel), garbage-stop mode, and all segments
-   ending below FLAT_MAX_WORDS. copies the already-loaded page data in, then frees the pages. */
+   ending below the flat-words limit. copies the already-loaded page data in, then frees
+   the pages. a failed flat-array allocation falls back to paged mode (never an error). */
 static int mem_decide_storage(MemoryObject* m)
 {
     uint64_t max_end = 0, i;
@@ -421,14 +446,21 @@ static int mem_decide_storage(MemoryObject* m)
             max_end = m->segments[seg].end;
         }
     }
-    if (max_end > FLAT_MAX_WORDS) {
+    if (max_end > mem_flat_words_limit(m)) {
         return 0; /* paged */
     }
 
+    {
+        /* deterministic allocation-failure injection for the fallback-path tests
+           (a real flat-array OOM is not safely reproducible across platforms) */
+        const char* simulate_alloc_fail = getenv("FLIPJUMP_TEST_FLAT_ALLOC_FAIL");
+        if (simulate_alloc_fail && simulate_alloc_fail[0] == '1') {
+            return 0; /* paged */
+        }
+    }
     m->flat = (uint64_t*)malloc((size_t)max_end * sizeof(uint64_t));
     if (!m->flat) {
-        PyErr_NoMemory();
-        return -1;
+        return 0; /* paged fallback - the program still runs, just slower */
     }
     m->flat_count = max_end;
     for (i = 0; i < max_end; i++) {
@@ -473,9 +505,10 @@ static int mem_decide_storage(MemoryObject* m)
 static int Memory_init(PyObject* op, PyObject* args, PyObject* kwds)
 {
     MemoryObject* self = (MemoryObject*)op;
-    static char* kwlist[] = {"memory_width", "garbage_stop", NULL};
+    static char* kwlist[] = {"memory_width", "garbage_stop", "flat_max_words", NULL};
     int w, garbage_stop = 1;
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "i|p", kwlist, &w, &garbage_stop)) {
+    unsigned long long flat_max_words = 0; /* 0: use FLIPJUMP_FLAT_MAX_WORDS / the default */
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "i|pK", kwlist, &w, &garbage_stop, &flat_max_words)) {
         return -1;
     }
     if (w != 8 && w != 16 && w != 32 && w != 64) {
@@ -497,6 +530,7 @@ static int Memory_init(PyObject* op, PyObject* args, PyObject* kwds)
     self->segments_sorted = 1;
     self->flat = NULL;
     self->flat_count = 0;
+    self->flat_max_words = flat_max_words;
     self->storage_decided = 0;
     self->mem_error = 0;
     self->error_bit_address = 0;
@@ -1075,6 +1109,15 @@ static PyObject* Memory_get_paused_seconds(MemoryObject* self, void* closure)
     return PyFloat_FromDouble(self->last_run_paused_seconds);
 }
 
+static PyObject* Memory_get_storage_mode(MemoryObject* self, void* closure)
+{
+    (void)closure;
+    if (!self->storage_decided) {
+        Py_RETURN_NONE;
+    }
+    return PyUnicode_FromString(self->flat ? "flat" : "paged");
+}
+
 static PyObject* Memory_get_allocated_bytes(MemoryObject* self, void* closure)
 {
     (void)closure;
@@ -1102,6 +1145,8 @@ static PyGetSetDef Memory_getset[] = {
      "IO-paused seconds of the last run (valid on exceptions too)", NULL},
     {"allocated_bytes", (getter)Memory_get_allocated_bytes, NULL,
      "bytes allocated for memory pages (footprint scales with touched memory, not segment sizes)", NULL},
+    {"storage_mode", (getter)Memory_get_storage_mode, NULL,
+     "'flat'/'paged' - the storage mode chosen at the first run (None before it)", NULL},
     {NULL, NULL, NULL, NULL, NULL},
 };
 

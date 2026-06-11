@@ -80,6 +80,7 @@ def run(
     print_termination: bool = True,
     last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
     profile: bool = False,
+    flat_max_words: Optional[int] = None,
 ) -> TerminationStatistics:
     """
     runs a .fjm file (with the FlipJump interpreter)
@@ -91,6 +92,7 @@ def run(
     @param print_termination: if true print the termination statistics
     @param last_ops_debugging_list_length: The length of the last-ops list
     @param profile: if true collect the full per-op statistics (uses the slower featured run-loop)
+    @param flat_max_words: the native engine's flat-storage span limit, in words (2^23 by default)
     @return: the run's termination-statistics
 
     :note: This is a wrapper function to the fjm_run.run() function.
@@ -107,6 +109,7 @@ def run(
         print_termination=print_termination,
         last_ops_debugging_list_length=last_ops_debugging_list_length,
         profile=profile,
+        flat_max_words=flat_max_words,
     )
 
 
@@ -123,6 +126,7 @@ def debug(
     print_termination: bool = True,
     last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
     profile: bool = False,
+    flat_max_words: Optional[int] = None,
 ) -> TerminationStatistics:
     """
     debugs a .fjm file (with the FlipJump interpreter+debugger)
@@ -139,6 +143,7 @@ def debug(
     @param print_termination: if true print the termination statistics
     @param last_ops_debugging_list_length: The length of the last-ops list
     @param profile: if true collect the full per-op statistics (uses the slower featured run-loop)
+    @param flat_max_words: the native engine's flat-storage span limit, in words (2^23 by default)
     @return: the run's termination-statistics
 
     :note: This is a wrapper function to the fjm_run.run() function.
@@ -157,6 +162,7 @@ def debug(
         breakpoint_handler=breakpoint_handler if breakpoint_handler.breakpoints else None,
         last_ops_debugging_list_length=last_ops_debugging_list_length,
         profile=profile,
+        flat_max_words=flat_max_words,
     )
     if print_termination:
         termination_statistics.print(

@@ -58,6 +58,7 @@ class TerminationStatistics:
         self.flip_counter = run_statistics.flip_counter
         self.jump_counter = run_statistics.jump_counter
         self.detailed_statistics = run_statistics.detailed_statistics
+        self.storage_mode = run_statistics.storage_mode
         self.last_ops_addresses: Optional[Deque[int]] = run_statistics.last_ops_addresses
 
         self.termination_cause = termination_cause
@@ -85,6 +86,8 @@ class TerminationStatistics:
             flips_percentage = self.flip_counter / self.op_counter * 100
             jumps_percentage = self.jump_counter / self.op_counter * 100
             flips_jumps_str = f'; {flips_percentage:.2f}% flips, {jumps_percentage:.2f}% jumps'
+
+        storage_str = f'; {self.storage_mode} memory' if self.storage_mode else ''
 
         last_ops_str = ''
         output_str = ''
@@ -116,6 +119,7 @@ class TerminationStatistics:
             f'('
             f'{self.op_counter:,} ops executed'
             f'{flips_jumps_str}'
+            f'{storage_str}'
             f').'
             f'{last_ops_str}'
         )
@@ -169,6 +173,7 @@ def run(
     print_time: bool = False,
     last_ops_debugging_list_length: Optional[int] = None,
     profile: bool = False,
+    flat_max_words: Optional[int] = None,
 ) -> TerminationStatistics:
     """
     run / debug a .fjm file (a FlipJump interpreter)
@@ -180,6 +185,10 @@ def run(
     @param last_ops_debugging_list_length: The length of the last-ops list
     @param profile: if true use the featured loop and collect the full per-op statistics
     (flip/jump counters). by default the fast loop is used (which skips them).
+    @param flat_max_words: the native engine's flat-storage span limit, in words (default 2^23,
+    also settable with the FLIPJUMP_FLAT_MAX_WORDS environment variable). programs whose memory
+    span exceeds it run in paged mode. raising it costs startup time + footprint
+    (8 bytes x span), never per-op speed.
     @return: the run's termination-statistics
     """
     with PrintTimer('  loading memory:  ', print_time=print_time):
@@ -195,7 +204,7 @@ def run(
             io_device.attach_memory(ReaderDeviceMemory(mem))
             return _run_featured(mem, io_device, statistics, breakpoint_handler, show_trace)
         if _is_native_engine_usable(mem):
-            return _run_native(mem, io_device, statistics)
+            return _run_native(mem, io_device, statistics, flat_max_words)
         io_device.attach_memory(ReaderDeviceMemory(mem))
         return _run_fast(mem, io_device, statistics)
 
@@ -225,13 +234,18 @@ def _is_native_engine_usable(mem: fjm_reader.Reader) -> bool:
     )
 
 
-def _run_native(mem: fjm_reader.Reader, io_device: IODevice, statistics: RunStatistics) -> TerminationStatistics:
+def _run_native(
+    mem: fjm_reader.Reader,
+    io_device: IODevice,
+    statistics: RunStatistics,
+    flat_max_words: Optional[int] = None,
+) -> TerminationStatistics:
     """
     run with the native (C) engine: load the parsed program into a _fjcore.Memory and
     execute the run-loop in C. behaves exactly like the python fast loop.
     """
     assert _fjcore is not None
-    core = _fjcore.Memory(mem.memory_width)
+    core = _fjcore.Memory(mem.memory_width, flat_max_words=flat_max_words if flat_max_words else 0)
     for segment_start, segment_length in mem.word_segments:
         core.add_segment(segment_start, segment_length)
 
@@ -261,10 +275,11 @@ def _run_native(mem: fjm_reader.Reader, io_device: IODevice, statistics: RunStat
             last_ops_length=last_ops.maxlen if last_ops is not None and last_ops.maxlen else 0,
         )
     finally:
-        # keep op_counter and the IO-paused time valid on the exception paths too
-        # (Ctrl+C, IO-device errors)
+        # keep op_counter, the IO-paused time and the storage mode valid on the exception
+        # paths too (Ctrl+C, IO-device errors)
         statistics.op_counter = core.last_run_op_count
         statistics.pause_timer.paused_time += core.last_run_paused_seconds
+        statistics.storage_mode = core.storage_mode
 
     statistics.op_counter = op_count
     if last_ops is not None:
