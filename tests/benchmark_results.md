@@ -80,6 +80,17 @@ is ~7-8 cycles/op (~600M fj/s); the paged-path floor is ~13-15 cycles (~330M fj/
 (prime_sieve at w=32 is limited to n <= ~5792: its mark-pointer `p*p*dw` wraps the 2^32-bit
 address space beyond that — a property of the program, reproduced identically on all engines.)
 
+### Re-measurement at the 1.5.0 finish-up (PGO rebuild, June 2026)
+
+After the finish-up engine changes (configurable flat limit + storage-mode getter +
+speculation counting mode - none on the per-op paths) the engine was PGO-rebuilt (trained
+on both loop and sieve) and re-measured: **loop w=32 334M fj/s** (above the recorded
+280-286M), sieve w=32/w=64 ~97-105M on short runs, and 72M on the sustained 1.3B-op run.
+The sustained-run gap vs the recorded 132M is machine-state, not code: the pre-change
+commit was rebuilt and measured in an A/B worktree the same hour and gives the same 71M -
+long runs on this laptop decay from boost clocks. Short-run paged numbers sit within the
+historical 96-140M band.
+
 ## WI-E - assembler speedup (1.5.0)
 
 Benchmark: `python tests/benchmark_assembler.py` - three workload shapes: hello_world.fj
