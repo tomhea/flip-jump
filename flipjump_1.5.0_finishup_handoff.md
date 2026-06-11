@@ -58,17 +58,23 @@ The branch will NOT be merged by the executing session - the owner CRs manually 
 The interpreter got ~1,700x faster; the assembler is now the slow half (catalog compile:
 1,029 programs ~ 14 min, ~0.8s per small program; DOOM mega-tables will stress it more).
 
-1. **Profile first** (cProfile / py-spy) on three workloads: `hello_world.fj` (fixed cost),
-   `prime_sieve.fj` (macro-heavy), and a generated ~64K-entry LUT program (data-heavy -
-   generate with `flipjump.lut_generator`; this is the DOOM-shaped workload, R-C risk).
+**Owner's knowledge (start from this, then verify with measurements):** the parsing+lexing
+phase is one of the SMALL parts. The dominant phases are **macro resolve** and
+**create binary** - profile those first (the assembler already prints per-phase times;
+cProfile/py-spy inside them).
+
+1. **Profile first** on three workloads: `hello_world.fj` (fixed cost), `prime_sieve.fj`
+   (macro-heavy), and a generated ~64K-entry LUT program (data-heavy - generate with
+   `flipjump.lut_generator`; this is the DOOM-shaped workload, R-C risk).
 2. **Suspected wins, in expected order:**
-   - **The STL is re-lexed and re-parsed for every program** (34 files, every assemble).
-     Cache the parse result keyed by file-content hash (pickle of the parsed macros).
-     Likely the dominant fixed cost for small programs.
-   - sly-parser overhead per token; expression-tree evaluation churn in
-     `preprocessor.resolve_macros` / `expr.py` (memoize? flatten constant subtrees early).
-   - `wflip` emission and label resolution data structures (look for quadratic behavior on
-     mega-tables); `fjm_writer` word packing + lzma preset cost.
+   - **Macro resolve** (`preprocessor.resolve_macros`): expression-tree (`expr.py`)
+     evaluation/substitution churn per macro instantiation, label-dict building, `rep`
+     expansion. Look for per-op object allocations and quadratic label handling.
+   - **Create binary** (`assembler.py` + `fjm_writer`): the `wflip` resolution/emission,
+     big-int bit packing of the words, lzma compression cost.
+   - Minor (fixed cost on small programs): the STL's 34 files are re-lexed/re-parsed on
+     every assemble - a parse cache keyed by file-content hash helps the catalog's many
+     small programs, but is NOT the main event.
 3. **Acceptance:** bit-identical `.fjm` outputs (hash-compare a catalog sample before/after);
    measured speedup reported for all three workloads; catalog compile-phase time recorded in
    `tests/benchmark_results.md` (add an "assembler" section); full catalog green.
@@ -93,6 +99,9 @@ dispatch/return cells.
    building (expected +50-80%, toward ~450-600M fj/s); else document and close.
 
 ### WI-G - Screen device: raw-frame command (decision + small implementation)
+
+(DOOM is 256-color - an 8-bit palettized framebuffer with colormap-based light diminishing -
+so bpp=8 is the game baseline; bpp=4 exists for small demos.)
 
 Per the owner: a "no memory-hook" mode is philosophically interesting. The numbers
 (96x64 @ 10fps, budget re-baselined below): a full frame as a **fixed-address** hex.vec
@@ -124,6 +133,26 @@ status-bar/menu only), so full-frame is the common case anyway.
   map data, and LUT reads (`read_table`/`read_table_byte`). Packed-byte buffers for
   pointer-streamed data; `hex.vec` for anything needing arithmetic. Keep every segment
   below 8M words so the native engine flat mode applies.
+  - Note on LUTs: their BASE addresses are compile-time labels, but the INDEX (angle,
+    distance) is runtime - so reads go through pointers. Only a compile-time-constant index
+    is a static read.
+- **The generated LUT tables live in the `doom-flipjump` repo** (same github user; PR
+  there) - flipjump ships only the generator (`flipjump.lut_generator`). The game repo
+  generates its `finesine`/reciprocal/colormap tables at build time.
+- **OPEN: hex-memory vs byte-memory for pixels (decide in the game repo, R1).** Owner's
+  criterion: if pixel-color computation can run "statically" on fixed compile-time-known
+  addresses (no FJ-pointer dereferences), hex-memory wins big; otherwise packed-byte wins.
+  Two credible static designs to evaluate with real measurements:
+  (a) **fixed column buffer**: render each column into a fixed-address `hex.vec` buffer
+  (all per-pixel math static), then one sequential pointer pass blits it into the
+  framebuffer (`write_byte_and_inc` x height) - per-pixel compute static, one pointer op
+  per pixel for placement;
+  (b) **full column unroll**: `rep(SCREEN_WIDTH, x) render_column x` makes even the
+  framebuffer stores static (every column's addresses compile-time) - zero pointer
+  dereferences on the whole pixel path, at the cost of SCREEN_WIDTH copies of the column
+  code (program size + assemble time - feeds the WI-E mega-program workload).
+  At 256 colors a static byte store is two static hex stores - still far cheaper than one
+  pointer dereference (~O(w) ops).
 - **No decoded-op cache** (measured, rejected - OQ-A1); **no GUI debugger**; **the screen
   reads memory via the hook** as primary (the raw command of WI-G is an addition, not a
   replacement).
