@@ -16,6 +16,7 @@ from flipjump.assembler import assembler
 from flipjump.fjm.fjm_consts import FJMVersion, SUPPORTED_VERSIONS_NAMES
 from flipjump.fjm.fjm_writer import Writer
 from flipjump.interpretter.io_devices.StandardIO import StandardIO
+from flipjump.interpretter.io_devices.cli_devices import create_io_device
 from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, DEFAULT_MAX_MACRO_RECURSION_DEPTH
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
 
@@ -84,13 +85,18 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
     if debug_file:
         verify_file_exists(error_func, debug_file)
 
+    if args.di or args.do:
+        io_device = create_io_device(args.di, args.do)
+    else:
+        io_device = StandardIO(not args.no_output)
+
     flipjump_quickstart.debug(
         in_fjm_path,
         debug_file,
         breakpoints_addresses=set(),
         breakpoints=set(args.breakpoint),
         breakpoints_contains=set(args.breakpoint_contains),
-        io_device=StandardIO(not args.no_output),
+        io_device=io_device,
         show_trace=args.trace,
         print_time=not args.silent,
         print_termination=not args.silent,
@@ -229,6 +235,20 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         '--profile',
         help="collect the full per-op statistics (flips/jumps percentages). uses the slower featured run-loop",
         action='store_true',
+    )
+    run_arguments.add_argument(
+        '--di',
+        metavar='DEVICE',
+        default=None,
+        help="the input device: standard (default), or keyboard=EVENTS_FILE[@MAILBOX_BIT_ADDRESS] "
+        "(a scripted, non-blocking keyboard; the events file holds 'tic, down/up, keycode' lines)",
+    )
+    run_arguments.add_argument(
+        '--do',
+        metavar='DEVICE',
+        default=None,
+        help="the output device: standard (default), or screen=FRAMES_DIR "
+        "(the headless InMemoryScreen256 - writes one PNG per frame and a frame-hash log)",
     )
 
     run_arguments.add_argument(

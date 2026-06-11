@@ -36,6 +36,7 @@ from flipjump.utils.exceptions import (
 )
 from flipjump.interpretter.io_devices.BrokenIO import BrokenIO
 from flipjump.interpretter.io_devices.IODevice import IODevice
+from flipjump.interpretter.io_devices.device_memory import NativeDeviceMemory, ReaderDeviceMemory
 
 
 class TerminationStatistics:
@@ -191,9 +192,11 @@ def run(
 
     try:
         if profile or show_trace or breakpoint_handler is not None:
+            io_device.attach_memory(ReaderDeviceMemory(mem))
             return _run_featured(mem, io_device, statistics, breakpoint_handler, show_trace)
         if _is_native_engine_usable(mem):
             return _run_native(mem, io_device, statistics)
+        io_device.attach_memory(ReaderDeviceMemory(mem))
         return _run_fast(mem, io_device, statistics)
 
     except FlipJumpRuntimeMemoryException as mem_e:
@@ -245,6 +248,8 @@ def _run_native(mem: fjm_reader.Reader, io_device: IODevice, statistics: RunStat
         next_address = address + 1
     if run_start is not None:
         core.set_words(run_start, run_values)
+
+    io_device.attach_memory(NativeDeviceMemory(core, mem.memory_width))
 
     last_ops = statistics.last_ops_addresses
     statistics.detailed_statistics = False

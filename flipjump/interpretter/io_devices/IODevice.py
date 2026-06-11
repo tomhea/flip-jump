@@ -5,12 +5,23 @@ interpreter can stay agnostic of where its input/output actually goes.
 """
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from flipjump.interpretter.io_devices.device_memory import DeviceMemory
 
 
 class IODevice(ABC):
     """
     abstract IO device
     """
+
+    def attach_memory(self, device_memory: 'DeviceMemory') -> None:
+        """
+        called by the interpreter right before the run-loop starts, with the device<->memory
+        hook (G17) - the device may keep it and read/write interpreter memory during the run.
+        the default implementation ignores it.
+        """
 
     @abstractmethod
     def read_bit(self) -> bool:
