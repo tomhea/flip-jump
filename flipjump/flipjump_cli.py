@@ -251,15 +251,18 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         '--di',
         metavar='DEVICE',
         default=None,
-        help="the input device: standard (default), or keyboard=EVENTS_FILE "
-        "(a scripted, non-blocking keyboard; the events file holds 'tic, down/up, keycode' lines)",
+        help="the input device: standard (default); keyboard=EVENTS_FILE (a scripted, "
+        "non-blocking keyboard; 'tic, down/up, keycode' lines); or keyboard (live keys "
+        "from the interactive screen window - needs '--do screen')",
     )
     run_arguments.add_argument(
         '--do',
         metavar='DEVICE',
         default=None,
-        help="the output device: standard (default), or screen=FRAMES_DIR "
-        "(a headless 256-color screen - writes one PNG per frame and a frame-hash log)",
+        help="the output device: standard (default); screen=FRAMES_DIR (a headless "
+        "256-color screen - one PNG per frame + a frame-hash log); or screen (an "
+        "interactive window: scaled, F11 toggles fullscreen, closing it stops the run; "
+        "needs pygame - pip install flipjump[screen])",
     )
 
     run_arguments.add_argument(

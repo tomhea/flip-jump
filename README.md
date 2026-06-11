@@ -174,9 +174,14 @@ fj --run program.fjm --di keyboard=events.txt --do screen=frames_dir
 - `--do screen=FRAMES_DIR` - a headless 256-color paletted **screen**: the program sends
   draw commands over the output stream, and the device saves one PNG per frame plus a
   frame-hash log.
+- `--do screen` - the same screen as an **interactive window** (needs pygame:
+  `pip install flipjump[screen]`): frames are presented scaled-up, F11 toggles fullscreen,
+  and closing the window stops the run. Works on Windows, Linux and macOS.
 - `--di keyboard=EVENTS_FILE` - a non-blocking, virtual-time **keyboard**: the program polls
   one status hex per tic; events come from a scripted `tic, down/up, keycode` file
   (deterministic replays).
+- `--di keyboard` - the same keyboard fed by **live key presses** on the interactive screen
+  window (combine with `--do screen`).
 - Devices can also read the program's memory through the `DeviceMemory` hook
   (`IODevice.attach_memory`) - e.g. the screen reads pixel data straight from memory.
 
