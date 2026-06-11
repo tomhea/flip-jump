@@ -92,7 +92,9 @@ def run(
     @param print_termination: if true print the termination statistics
     @param last_ops_debugging_list_length: The length of the last-ops list
     @param profile: if true collect the full per-op statistics (uses the slower featured run-loop)
-    @param flat_max_words: the native engine's flat-storage span limit, in words (2^23 by default)
+    @param flat_max_words: the native engine's flat-storage span limit, in words (2^23 by default).
+    only affects native-engine runs - ignored when a pure-python loop runs (e.g. when
+    breakpoints/tracing/profiling force the featured loop)
     @return: the run's termination-statistics
 
     :note: This is a wrapper function to the fjm_run.run() function.
@@ -143,7 +145,9 @@ def debug(
     @param print_termination: if true print the termination statistics
     @param last_ops_debugging_list_length: The length of the last-ops list
     @param profile: if true collect the full per-op statistics (uses the slower featured run-loop)
-    @param flat_max_words: the native engine's flat-storage span limit, in words (2^23 by default)
+    @param flat_max_words: the native engine's flat-storage span limit, in words (2^23 by default).
+    only affects native-engine runs - ignored when a pure-python loop runs (e.g. when
+    breakpoints/tracing/profiling force the featured loop)
     @return: the run's termination-statistics
 
     :note: This is a wrapper function to the fjm_run.run() function.

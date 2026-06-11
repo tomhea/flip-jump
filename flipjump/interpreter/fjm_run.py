@@ -1,12 +1,12 @@
 """
 the flipjump interpreter.
-executes a compiled .fjm program one flip-jump op at a time - managing the memory,
+executes a compiled .fjm program one flipjump op at a time - managing the memory,
 routing input/output through an IODevice, handling breakpoints, detecting termination,
 and collecting run statistics (returned as TerminationStatistics).
 
 three run-loops (engines) are implemented:
 - the native engine (the default when built): the _fjcore C-extension - segment-aware paged
-  memory and the fetch-flip-jump loop in C, calling back into python only for IO. ~500x
+  memory and the fetch-flipjump loop in C, calling back into python only for IO. ~500x
   faster than the featured loop. build it with `python build_fjcore.py`; disable it with the
   FLIPJUMP_NO_NATIVE=1 environment variable.
 - the fast loop (the default otherwise): pure-python, the memory accesses and IO/termination
@@ -59,7 +59,6 @@ class TerminationStatistics:
         self.jump_counter = run_statistics.jump_counter
         self.detailed_statistics = run_statistics.detailed_statistics
         self.storage_mode = run_statistics.storage_mode
-        self.speculation_stats = run_statistics.speculation_stats
         self.last_ops_addresses: Optional[Deque[int]] = run_statistics.last_ops_addresses
 
         self.termination_cause = termination_cause
@@ -247,8 +246,8 @@ def _run_native(
     """
     assert _fjcore is not None
     core = _fjcore.Memory(mem.memory_width, flat_max_words=flat_max_words if flat_max_words else 0)
-    for segment_start, segment_length in mem.word_segments:
-        core.add_segment(segment_start, segment_length)
+    for memory_segment in mem.memory_segments:
+        core.add_segment(memory_segment.segment_start, memory_segment.segment_length)
 
     # bulk-load the parsed memory words, grouped into contiguous runs
     run_start: Optional[int] = None
@@ -281,7 +280,6 @@ def _run_native(
         statistics.op_counter = core.last_run_op_count
         statistics.pause_timer.paused_time += core.last_run_paused_seconds
         statistics.storage_mode = core.storage_mode
-        statistics.speculation_stats = core.speculation_stats
 
     statistics.op_counter = op_count
     if last_ops is not None:

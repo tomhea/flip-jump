@@ -8,7 +8,7 @@ There are many ways to contribute, from writing tutorials or blog posts, writing
 
 Also, please take 2 minutes to show this project to the people you know that would **see the magic in this language.**
 
-Please, don't use the issue tracker for support-questions. Instead, use the [Questions thread](https://github.com/tomhea/flip-jump/discussions/176), or the [Discussions](https://github.com/tomhea/flip-jump/discussions) in general. 
+Please, don't use the issue tracker for support-questions. Instead, use the [Questions thread](https://github.com/tomhea/flipjump/discussions/176), or the [Discussions](https://github.com/tomhea/flipjump/discussions) in general. 
 
 ## Responsibilities
  * Ensure cross-platform compatibility for every change that's accepted. Windows & Ubuntu & Macos.
@@ -20,7 +20,7 @@ Please, don't use the issue tracker for support-questions. Instead, use the [Que
 
 ## Your First Contribution
 Unsure where to begin contributing to FlipJump? You can start by creating and running your own FlipJump programs, on your own repos, and spread the rumor :)  
-Also, please take a look at the [Contribution thread](https://github.com/tomhea/flip-jump/discussions/148).
+Also, please take a look at the [Contribution thread](https://github.com/tomhea/flipjump/discussions/148).
 
 Working on your first Pull Request? You can learn how from this free series, [How to Contribute to an Open Source Project on GitHub](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github).
 
@@ -52,7 +52,7 @@ When filing an issue, make sure to answer these five questions:
  3. What did you do?
  4. What did you expect to see?
  5. What did you see instead?
-General questions should go to the [Questions thread](https://github.com/tomhea/flip-jump/discussions/176), or the [Discussions](https://github.com/tomhea/flip-jump/discussions) in general. 
+General questions should go to the [Questions thread](https://github.com/tomhea/flipjump/discussions/176), or the [Discussions](https://github.com/tomhea/flipjump/discussions) in general. 
 
 # How to suggest a feature or enhancement
 The FlipJump philosophy is to be the simplest language of all, that can do any modern computation.
@@ -69,7 +69,7 @@ If you find yourself wishing for a feature that doesn't exist, you are probably 
 After feedback has been given to the Pull Request, we expect responses within two weeks. After two weeks we may close the pull request if it isn't showing any activity.
 
 # Community
-You can chat with the core team and the community on [GitHub Discussions](https://github.com/tomhea/flip-jump/discussions).
+You can chat with the core team and the community on [GitHub Discussions](https://github.com/tomhea/flipjump/discussions).
 
 # Clean Code
 Get familiar with [Clean Code](https://gist.github.com/wojteklu/73c6914cc446146b8b533c0988cf8d29) (mainly the functions/names sections).

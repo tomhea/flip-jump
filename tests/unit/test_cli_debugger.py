@@ -1,5 +1,5 @@
 """
-unit-tests for the CLI debugger (WI-C): the headless terminal prompts that replaced the
+unit-tests for the CLI debugger: the headless terminal prompts that replaced the
 easygui message-boxes, and an end-to-end breakpoint session (break -> read memory ->
 single step -> continue) driven through scripted stdin answers.
 """
@@ -10,7 +10,7 @@ from typing import Iterator, List
 import pytest
 
 from flipjump.interpreter import fjm_run
-from flipjump.interpreter.debugging import message_boxes
+from flipjump.interpreter.debugging import user_queries
 from flipjump.interpreter.debugging.breakpoints import get_breakpoint_handler
 from flipjump.interpreter.io_devices.FixedIO import FixedIO
 from flipjump.utils.classes import TerminationCause
@@ -39,36 +39,36 @@ def feed_answers(monkeypatch: pytest.MonkeyPatch, answers: List[str]) -> None:
 
 
 class TestPromptFunctions:
-    def test_message_box_prints_body_and_title(self, capsys: pytest.CaptureFixture[str]) -> None:
-        message_boxes.display_message_box('the body', 'The Title')
+    def test_show_message_prints_body_and_title(self, capsys: pytest.CaptureFixture[str]) -> None:
+        user_queries.show_message('the body', 'The Title')
         captured = capsys.readouterr().out
         assert 'The Title' in captured
         assert 'the body' in captured
 
     def test_choices_by_number_and_by_name(self, monkeypatch: pytest.MonkeyPatch) -> None:
         feed_answers(monkeypatch, ['2'])
-        assert message_boxes.display_message_box_with_choices_and_get_answer('b', 't', ['A', 'B', 'C'], 'C') == 'B'
+        assert user_queries.ask_for_choice('b', 't', ['A', 'B', 'C'], 'C') == 'B'
 
         feed_answers(monkeypatch, ['single step'])
         choices = ['Read Memory', 'Single Step', 'Continue All']
-        answer = message_boxes.display_message_box_with_choices_and_get_answer('b', 't', choices, 'Continue All')
+        answer = user_queries.ask_for_choice('b', 't', choices, 'Continue All')
         assert answer == 'Single Step'
 
     def test_choices_default_on_eof_and_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
         feed_answers(monkeypatch, [])
-        assert message_boxes.display_message_box_with_choices_and_get_answer('b', 't', ['A', 'B'], 'B') == 'B'
+        assert user_queries.ask_for_choice('b', 't', ['A', 'B'], 'B') == 'B'
         feed_answers(monkeypatch, [''])
-        assert message_boxes.display_message_box_with_choices_and_get_answer('b', 't', ['A', 'B'], 'B') == 'B'
+        assert user_queries.ask_for_choice('b', 't', ['A', 'B'], 'B') == 'B'
 
     def test_choices_reprompts_on_invalid(self, monkeypatch: pytest.MonkeyPatch) -> None:
         feed_answers(monkeypatch, ['nonsense', '1'])
-        assert message_boxes.display_message_box_with_choices_and_get_answer('b', 't', ['A', 'B'], 'B') == 'A'
+        assert user_queries.ask_for_choice('b', 't', ['A', 'B'], 'B') == 'A'
 
     def test_text_answer_and_cancel(self, monkeypatch: pytest.MonkeyPatch) -> None:
         feed_answers(monkeypatch, ['  0x40  '])
-        assert message_boxes.display_message_box_and_get_text_answer('b', 't') == '0x40'
+        assert user_queries.ask_for_text('b', 't') == '0x40'
         feed_answers(monkeypatch, [''])
-        assert message_boxes.display_message_box_and_get_text_answer('b', 't') is None
+        assert user_queries.ask_for_text('b', 't') is None
 
 
 class TestDebuggerEndToEnd:

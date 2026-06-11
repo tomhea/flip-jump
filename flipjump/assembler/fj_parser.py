@@ -282,9 +282,9 @@ class FJParser(sly.Parser):
     #  terminals). 'UMINUS'/'UNOT' give the unary "-"/"~" rules a higher precedence
     #  than the binary ones via "%prec" (this is what lets unary minus coexist with
     #  binary minus). 'LEADING_ID' is put on the (expr_ -> id) rule so that a statement
-    #  starting with "id -" reduces (binary minus, e.g. a flip-jump "x-1 ; y") instead
+    #  starting with "id -" reduces (binary minus, e.g. a flipjump "x-1 ; y") instead
     #  of shifting into a unary-minus macro-argument - this keeps the pre-existing
-    #  flip-jump behavior and matches how a leading "id +" already behaves.
+    #  flipjump behavior and matches how a leading "id +" already behaves.
     precedence = (
         ('right', '?', ':'),
         ('left', LOR),

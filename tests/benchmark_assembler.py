@@ -1,12 +1,12 @@
 """
-The assembler speed benchmark (flipjump 1.5.0, WI-E).
+The assembler speed benchmark.
 
 Times the assemble pipeline (parse / macro resolve / labels resolve / create binary) on
 three workload shapes:
 - hello_world.fj: the fixed cost (stl parsing dominates)
 - prime_sieve.fj: macro-heavy (deep stl macro expansion)
-- lut64k.fj (generated): data-heavy - a 64K-entry byte-LUT program, the DOOM-shaped
-  mega-table workload
+- lut64k.fj (generated): data-heavy - a 64K-entry byte-LUT program (the mega-data-table
+  workload shape)
 
 Usage:
     python tests/benchmark_assembler.py [--profile [PHASE_SUBSTRING]] [--runs N]
@@ -32,7 +32,7 @@ PROGRAMS_DIR = REPO_ROOT / 'programs'
 
 
 def generate_lut64k_fj(target_path: Path) -> None:
-    """a data-heavy program: a 64K-entry packed-byte LUT + a tiny reader (DOOM-shaped)."""
+    """a data-heavy program: a 64K-entry packed-byte LUT + a tiny reader."""
     lines = [
         'stl.startup_and_init_all',
         'hex.read_table_byte result, byte_table, 4, index',

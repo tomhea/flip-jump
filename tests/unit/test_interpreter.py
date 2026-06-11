@@ -109,17 +109,3 @@ def test_python_run_storage_mode_is_none(tmp_path: Path, monkeypatch: pytest.Mon
     monkeypatch.setenv('FLIPJUMP_NO_NATIVE', '1')
     statistics, _ = run_source(INFINITE_LOOP_PROGRAM, tmp_path, memory_width=32)
     assert statistics.storage_mode is None
-
-
-@native_engine_required
-def test_native_run_reports_speculation_stats_when_measuring(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv('FLIPJUMP_NO_NATIVE', raising=False)
-    monkeypatch.setenv('FLIPJUMP_MEASURE_SPECULATION', '1')
-    statistics, _ = run_source(INFINITE_LOOP_PROGRAM, tmp_path, memory_width=32)
-    assert statistics.termination_cause == TerminationCause.Looping
-    assert statistics.speculation_stats is not None
-    assert statistics.speculation_stats['ops'] == statistics.op_counter > 0
-
-    monkeypatch.delenv('FLIPJUMP_MEASURE_SPECULATION')
-    statistics, _ = run_source(INFINITE_LOOP_PROGRAM, tmp_path, memory_width=32)
-    assert statistics.speculation_stats is None

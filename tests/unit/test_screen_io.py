@@ -1,5 +1,5 @@
 """
-unit-tests for the InMemoryScreen256 output-device (WI-B) - headless-first.
+unit-tests for the InMemoryScreen256 output-device - headless-first.
 
 the FJ program emits command bytes over the output stream (init_screen / set_palette /
 update_screen / update_rectangle); buffer contents are read from the interpreter memory via

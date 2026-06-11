@@ -1,8 +1,8 @@
 """
-the split io-device + the --di/--do device factory (WI-B).
+the split io-device + the --di/--do device factory.
 SplitIO routes read_bit to an input device and write_bit to an output device, attaching
 both to the interpreter memory. create_io_device builds the io-device from the CLI specs:
-  --di standard | keyboard=EVENTS_FILE[@MAILBOX_BIT_ADDRESS]
+  --di standard | keyboard=EVENTS_FILE
   --do standard | screen=FRAMES_DIR
 """
 
@@ -42,23 +42,11 @@ def create_input_device(di_spec: str) -> IODevice:
     if di_spec == 'standard':
         return StandardIO(True)
     if di_spec.startswith('keyboard='):
-        keyboard_arg = di_spec[len('keyboard=') :]  # noqa: E203
-        mailbox_bit_address: Optional[int] = None
-        if '@' in keyboard_arg:
-            events_path, mailbox_str = keyboard_arg.rsplit('@', maxsplit=1)
-            try:
-                mailbox_bit_address = int(mailbox_str, 0)
-            except ValueError:
-                raise IODeviceException(f'bad keyboard mailbox address: {mailbox_str!r}') from None
-        else:
-            events_path = keyboard_arg
+        events_path = di_spec[len('keyboard=') :]  # noqa: E203
         if not Path(events_path).is_file():
             raise IODeviceException(f'keyboard events file does not exist: {events_path}')
-        event_source = ScriptedKeyEventSource.from_file(Path(events_path))
-        return KeyboardIO(event_source, mailbox_bit_address=mailbox_bit_address)
-    raise IODeviceException(
-        f'unknown input device: {di_spec!r}. supported: standard, keyboard=EVENTS_FILE[@MAILBOX_BIT_ADDRESS]'
-    )
+        return KeyboardIO(ScriptedKeyEventSource.from_file(Path(events_path)))
+    raise IODeviceException(f'unknown input device: {di_spec!r}. supported: standard, keyboard=EVENTS_FILE')
 
 
 def create_output_device(do_spec: str) -> IODevice:

@@ -53,13 +53,5 @@ hexlib-strings, tests/compiled/hexlib_tests/basics1/strings.fjm, tests/inout/hex
 hexlib-scmp, tests/compiled/hexlib_tests/basics1/scmp.fjm, ,tests/inout/hexlib_tests/basics1/scmp.out, False,False
 hexlib-nth_pointers, tests/compiled/hexlib_tests/basics2/nth_pointers.fjm, ,tests/inout/hexlib_tests/basics2/nth_pointers.out, False,False
 hexlib-input_dec_until, tests/compiled/hexlib_tests/basics1/input_dec_until.fjm, tests/inout/hexlib_tests/basics1/input_dec_until.in,tests/inout/hexlib_tests/basics1/input_dec_until.out, True,True
-hexlib-fixed_mul, tests/compiled/hexlib_tests/fixed_point/fixed_mul.fjm, ,tests/inout/hexlib_tests/fixed_point/fixed_mul.out, False,False
-hexlib-fixed_div, tests/compiled/hexlib_tests/fixed_point/fixed_div.fjm, ,tests/inout/hexlib_tests/fixed_point/fixed_div.out, False,False
-hexlib-mul_const, tests/compiled/hexlib_tests/fixed_point/mul_const.fjm, ,tests/inout/hexlib_tests/fixed_point/mul_const.out, False,False
-hexlib-read_table, tests/compiled/hexlib_tests/fixed_point/read_table.fjm, ,tests/inout/hexlib_tests/fixed_point/read_table.out, False,False
-hexlib-fixed_mul_w32, tests/compiled/hexlib_tests/fixed_point/fixed_mul_w32.fjm, ,tests/inout/hexlib_tests/fixed_point/fixed_mul.out, False,False
-hexlib-fixed_div_w32, tests/compiled/hexlib_tests/fixed_point/fixed_div_w32.fjm, ,tests/inout/hexlib_tests/fixed_point/fixed_div.out, False,False
-hexlib-mul_const_w32, tests/compiled/hexlib_tests/fixed_point/mul_const_w32.fjm, ,tests/inout/hexlib_tests/fixed_point/mul_const.out, False,False
-hexlib-read_table_w32, tests/compiled/hexlib_tests/fixed_point/read_table_w32.fjm, ,tests/inout/hexlib_tests/fixed_point/read_table.out, False,False
-hexlib-doom_helpers_w64, tests/compiled/hexlib_tests/doom_prep/helpers_w64.fjm, ,tests/inout/hexlib_tests/doom_prep/helpers.out, False,False
-hexlib-doom_helpers_w32, tests/compiled/hexlib_tests/doom_prep/helpers_w32.fjm, ,tests/inout/hexlib_tests/doom_prep/helpers.out, False,False
+hexlib-helpers_w64, tests/compiled/hexlib_tests/helpers/helpers_w64.fjm, ,tests/inout/hexlib_tests/helpers/helpers.out, False,False
+hexlib-helpers_w32, tests/compiled/hexlib_tests/helpers/helpers_w32.fjm, ,tests/inout/hexlib_tests/helpers/helpers.out, False,False

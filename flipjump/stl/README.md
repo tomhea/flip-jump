@@ -135,7 +135,7 @@ The FlipJump stl should be minimalistic, efficient in both space and time, and o
 The generic stl macro should look like `macro_name n dst src` for an n-bit/hex variable, with dst being the destination-variable, and src being the source-variable.
 - e.g. the [hex/math.fj](hex/math.fj) / `hex.add n, dst, src`. 
 
-For more information about contributions, see [I-Want-To-Contribute Thread](https://github.com/tomhea/flip-jump/discussions/148) and [CONTRIBUTING.md](../../CONTRIBUTING.md).
+For more information about contributions, see [I-Want-To-Contribute Thread](https://github.com/tomhea/flipjump/discussions/148) and [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 
 # Read More

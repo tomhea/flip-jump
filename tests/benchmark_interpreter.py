@@ -1,7 +1,7 @@
 """
 The interpreter speed benchmark (fj/s) - prime_sieve.fj at w=32 and w=64.
 
-Used to track the interpreter speedup work (flipjump 1.5.0, WI-A):
+Used to track the interpreter speedup work:
 every interpreter change is measured against the recorded baseline in
 tests/benchmark_results.md.
 

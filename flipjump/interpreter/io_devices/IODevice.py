@@ -19,7 +19,7 @@ class IODevice(ABC):
     def attach_memory(self, device_memory: 'DeviceMemory') -> None:
         """
         called by the interpreter right before the run-loop starts, with the device<->memory
-        hook (G17) - the device may keep it and read/write interpreter memory during the run.
+        hook - the device may keep it and read/write interpreter memory during the run.
         the default implementation ignores it.
         """
 

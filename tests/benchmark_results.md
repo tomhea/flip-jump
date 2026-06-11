@@ -1,4 +1,4 @@
-# Interpreter benchmark results (WI-A, flipjump 1.5.0)
+# Interpreter benchmark results
 
 Benchmark: `python tests/benchmark_interpreter.py 2000` — `prime_sieve.fj`, sieve up to 2000,
 `FixedIO` input, statistics timer (IO-paused) as the denominator.
@@ -63,7 +63,7 @@ The shipping engine (v6 below; sieve = sparse/paged path, loop = compact/flat pa
   garbage-stop, get one dense array instead of the page table; out-of-segment words carry a
   bit-63 sentinel. This removes the page lookup from the serial jump-dependency chain
   (jump-word load -> next op's address -> next load), which bounds the loop: ~2x on
-  compact-memory programs (DOOM's layout). prime_sieve declares a half-address-space segment,
+  compact-memory programs. prime_sieve declares a half-address-space segment,
   so it stays on the paged path (rows unchanged, run-to-run variance shown).
   `FLIPJUMP_NO_FLAT=1` forces the paged path (for A/B measurement).
 
@@ -91,11 +91,11 @@ commit was rebuilt and measured in an A/B worktree the same hour and gives the s
 long runs on this laptop decay from boost clocks. Short-run paged numbers sit within the
 historical 96-140M band.
 
-## WI-E - assembler speedup (1.5.0)
+## Assembler speedup
 
 Benchmark: `python tests/benchmark_assembler.py` - three workload shapes: hello_world.fj
 (the per-program fixed cost), prime_sieve.fj (macro-heavy), and a generated 64K-entry
-byte-LUT program (data-heavy, the DOOM-mega-table shape). Acceptance: bit-identical .fjm
+byte-LUT program (data-heavy, the mega-data-table shape). Acceptance: bit-identical .fjm
 outputs - verified by sha256 on 14 outputs (10 catalog programs across categories + the 3
 workloads, w=64 and w=32), cold- and warm-cache, before vs after.
 
@@ -127,14 +127,14 @@ per-token overhead dominates mega-table source files (~2.4s of lut64k - generati
 as fewer, longer lines or assembling them once into a library would sidestep it); LZMA
 compression (preset 6) is most of "create binary" and is part of the .fjm format itself.
 
-## WI-F - jump-target speculation: miss-rate study. Verdict: **GO**
+## Jump-target speculation: miss-rate study. Verdict: **GO**
 
 The native engine is bounded (~16 cycles/op flat) by the serial chain: this op's jump-word
 load -> next op address -> next load. Jump-target speculation (remember the last jump target
 per op address, start the next op's loads early, verify) only pays if the jump word at a
 given ip rarely changes between executions. Measured with the exact counting mode
-(`FLIPJUMP_MEASURE_SPECULATION=1` -> a dedicated slow reference loop in `_fjcore`, normal
-hot paths untouched; `python tests/measure_speculation.py`):
+(an exact counting mode that lived in `_fjcore` for the study and was removed once the
+measurements were done - see commit 282a0ea for the tool):
 
 | program | ops | first executions | misses | miss-rate | warm miss-rate |
 |---|---:|---:|---:|---:|---:|
@@ -175,7 +175,7 @@ synthetic no-op-body ceiling on this machine is ~4.9M). The native engine reads 
 from dense pages directly (no decode step exists), so a cache buys nothing there. Decision:
 **no decoded-op cache**; the native engine is the speed path, the plain fast loop the fallback.
 
-## w=32 vs w=64 — recommendation: **w=32** (for DOOM and op-heavy programs)
+## w=32 vs w=64 — recommendation: **w=32** (for op-heavy programs)
 
 - **Op count (dominant factor):** hex/bit STL macro costs scale with w (`hex.add` is O(w/4)
   ops, pointers/wflip are O(w) flips). The same algorithm runs ~2x fewer fj-ops at w=32 —
@@ -186,10 +186,10 @@ from dense pages directly (no decode step exists), so a cache buys nothing there
   of the op-count halving.
 - **Memory:** native pages store 8B/word regardless of w, so footprint is the same per touched
   word — but w=32 programs touch half the words. The .fjm file is also half the size.
-- **Fixed-point fit:** DOOM's 16.16 fixed-point fits w=32 exactly. The intermediate-width trap
+- **Fixed-point fit:** 16.16 fixed-point fits w=32 exactly. The intermediate-width trap
   (U5): a 16.16 multiply needs a 64-bit product — two words + hand-carried overflow at w=32
-  (extra ops in FixedMul, budgeted in WI-D), free at w=64. The LUT-heavy design (WI-D) keeps
+  (extra ops in a fixed-point multiply), free at w=64. A LUT-heavy design keeps
   runtime multiplies rare, so this doesn't flip the verdict.
-- **Address-space caveat:** w=32 has 2^32 bits of address space. Compact fixed layouts (DOOM's)
+- **Address-space caveat:** w=32 has 2^32 bits of address space. Compact fixed layouts
   fit easily, but quadratic pointer arithmetic can wrap (see the prime_sieve note above) —
   keep address computations bounded.

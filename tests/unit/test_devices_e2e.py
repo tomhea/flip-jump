@@ -1,5 +1,5 @@
 """
-end-to-end tests for WI-B: an .fj program drives the InMemoryScreen256 over the output
+end-to-end tests for the io-devices: an .fj program drives the InMemoryScreen256 over the output
 stream (golden frame-hash + PNG output), a scripted keyboard replays deterministically into
 an .fj polling loop, and the --di/--do CLI plumbing runs a full program with both devices.
 """

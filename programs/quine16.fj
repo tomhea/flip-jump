@@ -260,7 +260,7 @@
 //
 // ## Future work
 // At first glance you could think this 2244 bytes (compiled) program is the smallest
-// possible quine for flip-jump, but it is not.
+// possible quine for flipjump, but it is not.
 // I already managed to make it less than 2000 bytes
 // (sha256: 6a5c528d0a4a5a79aa15cb12425e56afb84b06cb808fbcc9f0ac53c6d5110f73) and
 // I'm pretty sure it can still be improved, but those are small bruteforce marginal

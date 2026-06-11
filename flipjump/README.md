@@ -2,7 +2,7 @@
 
 In this documentation file you could find information about every python source file in the flipjump module.
 
-> [Visualization of the flipjump codebase](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=Tomhea%2Fflip-jump)
+> [Visualization of the flipjump codebase](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=Tomhea%2Fflipjump)
 
 ## The FlipJump Macro-Assembler
 
@@ -22,13 +22,13 @@ The whole process is executed within the [assemble()](assembler/assembler.py) fu
 
 The Interpreter ([fjm_run.py](interpreter/fjm_run.py)) dispatches each run to one of three engines:
 
-- **The native engine** ([_fjcore.c](interpreter/_fjcore.c)) - the default whenever its compiled module is present (the official wheels ship it prebuilt for Linux glibc/musl x86_64+aarch64, macOS x86_64+arm64, and Windows amd64+arm64, for every CPython >= 3.10; elsewhere build it with `python build_fjcore.py`). It runs the fetch-flip-jump loop in C over a segment-aware memory: compact programs (all segments below the flat-storage limit, at w<=32) get one dense flat array, sparse programs get lazily-allocated 128KB pages - so the footprint scales with the memory actually touched, never with the declared segment sizes. Python is called back only for IO. It is **much much faster** than any previous way to run FlipJump: ~100-300M fj-ops/s (measure yours with `python tests/benchmark_interpreter.py`; per-step history in [benchmark_results.md](../tests/benchmark_results.md)). `FLIPJUMP_NO_NATIVE=1` disables it.
+- **The native engine** ([_fjcore.c](interpreter/_fjcore.c)) - the run-loop in C, used automatically whenever its compiled module is present (prebuilt in the official wheels for Linux/macOS/Windows, every CPython >= 3.10; elsewhere `python build_fjcore.py`). ~100-300M fj-ops/s (`python tests/benchmark_interpreter.py`; history in [benchmark_results.md](../tests/benchmark_results.md)). Compact programs (all segments below the flat-storage limit, at w<=32) run over one dense flat array; sparse programs over lazily-allocated pages, so the footprint scales with the memory actually touched. `FLIPJUMP_NO_NATIVE=1` disables it.
 
-  The flat-storage limit is 2^23 words by default, configurable with the `fj --flat-max-words N` CLI flag, the `flat_max_words` parameter of `fjm_run.run()`, or the `FLIPJUMP_FLAT_MAX_WORDS` environment variable. Raising it never costs per-op speed (the flat/paged decision happens once, at run start), but the flat array is allocated and sentinel-filled across the whole memory span at startup: RSS = 8 bytes x span (a 2^26-word span costs 512MB) and the fill takes ~0.1s/GB. If the flat array cannot be allocated, the run transparently falls back to paged mode. The mode that actually ran is reported as `flat memory` / `paged memory` in the (non-silent) termination statistics line, and programmatically as `TerminationStatistics.storage_mode` (`None` when a pure-python loop ran).
+  The flat-storage limit defaults to 2^23 words; set it with `fj --flat-max-words N`, `fjm_run.run(flat_max_words=)`, or the `FLIPJUMP_FLAT_MAX_WORDS` environment variable. It never affects per-op speed - only startup time and memory (8 bytes per word of span; an impossible allocation falls back to paged mode). The mode that ran is reported in the termination statistics line and as `TerminationStatistics.storage_mode`.
 - **The pure-python fast loop** - the fallback when the native engine isn't built (~4M fj-ops/s). Stores the memory in a dictionary {address: value}, with the memory accesses and IO/termination checks inlined into the loop.
 - **The featured loop** - used for tracing, breakpoints, and `--profile` (full per-op statistics). This is the loop the debugger runs on.
 
-All three engines behave identically (same outputs, same termination causes, same op-counts - pinned by the test-suite), support unaligned-word access, and route IO through the same [io_devices](interpreter/io_devices). Devices can also read/write the running program's memory through the [device_memory.py](interpreter/io_devices/device_memory.py) hook - that's how the screen device reads the framebuffer and the keyboard device fills its mailbox.
+All three engines behave identically (same outputs, same termination causes, same op-counts - pinned by the test-suite), support unaligned-word access, and route IO through the same [io_devices](interpreter/io_devices). Devices can also read/write the running program's memory through the [device_memory.py](interpreter/io_devices/device_memory.py) hook - e.g. the screen device reads pixel data straight from the program memory.
 
 The whole interpretation is done within the [run()](interpreter/fjm_run.py) function (also uses the [fjm_reader.py](fjm/fjm_reader.py) to read the fjm file - i.e. to get the flipjump program memory from the compiled fjm file).  
 More about [how to run](../README.md#how-to-run).
@@ -36,10 +36,7 @@ More about [how to run](../README.md#how-to-run).
 
 ### The Debugger
 
-The Interpreter has a built-in debugger, and it's activated by specifying breakpoints when called (via the [breakpoints.py](interpreter/debugging/breakpoints.py)'s `BreakpointHandler`).  
-The debugger can stop on the next breakpoint, read memory, read flipjump variables, or on a fixed number of executed ops after the current breakpoint.    
-In order to call the debugger with the right labels, get familiar with the [generating label names](README.md#Generated-Label-Names) (and see the debugger-image there), and use the `-d`/`-b`/`-B` cli options.  
-More about [how to debug](../README.md#how-to-debug).
+The Interpreter has a built-in CLI debugger, activated by specifying breakpoints (via the [breakpoints.py](interpreter/debugging/breakpoints.py) `BreakpointHandler`) - take a look at the [debugging documentation](interpreter/debugging/README.md).
 
 ### Macro Usage
 

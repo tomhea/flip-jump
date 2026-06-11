@@ -33,9 +33,9 @@ classifiers = [
 dependencies = ["sly>=0.5,<0.6"]
 
 [project.urls]
-homepage = "https://esolangs.org/wiki/FlipJump"
-repository = "https://github.com/tomhea/flip-jump"
-documentation = "https://github.com/tomhea/flip-jump/wiki"
+homepage = "https://fjdocs.tomhe.app/"
+repository = "https://github.com/tomhea/flipjump"
+documentation = "https://fjdocs.tomhe.app/"
 
 [project.scripts]
 fj = "flipjump.flipjump_cli:main"

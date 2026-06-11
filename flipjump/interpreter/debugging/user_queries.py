@@ -1,9 +1,7 @@
 """
-cli prompts for interactive debugging (headless / agent-usable).
-the terminal replacements of the old easygui message-boxes, used at breakpoints to show
-messages and to prompt the user for input/choices - no GUI dependency. EOF (or an empty
-answer where a default exists) selects the safe default, so piped/scripted sessions and
-agents can drive the debugger deterministically.
+terminal prompts for the interactive debugger: show a message, ask for a one-line answer,
+or ask to pick a choice. EOF / an empty answer selects the safe default, so piped and
+scripted sessions behave deterministically.
 """
 
 from typing import List, Optional
@@ -15,14 +13,14 @@ def _print_message(body_message: str, title_message: str) -> None:
     print(body_message)
 
 
-def display_message_box(body_message: str, title_message: str) -> None:
+def show_message(body_message: str, title_message: str) -> None:
     """
     Displays the message to the user (terminal).
     """
     _print_message(body_message, title_message)
 
 
-def display_message_box_and_get_text_answer(body_message: str, title_message: str) -> Optional[str]:
+def ask_for_text(body_message: str, title_message: str) -> Optional[str]:
     """
     Displays the message (terminal), and reads a one-line textual answer.
     @return: the stripped answer, or None on an empty answer / EOF (= cancel).
@@ -35,9 +33,7 @@ def display_message_box_and_get_text_answer(body_message: str, title_message: st
     return answer if answer else None
 
 
-def display_message_box_with_choices_and_get_answer(
-    body_message: str, title_message: str, choices: List[str], default_cancel_answer: str
-) -> str:
+def ask_for_choice(body_message: str, title_message: str, choices: List[str], default_cancel_answer: str) -> str:
     """
     Displays the message and the numbered choices (terminal), and reads the chosen one -
     by number, or by (case-insensitive, unique-prefix) name.

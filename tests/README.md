@@ -7,7 +7,7 @@ The project has a CI tests suit, that runs on each pull-request:
    - They run on the latest supported python, on ubuntu.
 3. `pytest --all` (the compile+run program tests) in parallel.
    - Runs on the latest supported python, on ubuntu.
-   - The results are printed as a table in the workflow summery ([for example](https://github.com/tomhea/flip-jump/actions/runs/7170673166/attempts/1#summary-19523946921)).
+   - The results are printed as a table in the workflow summery ([for example](https://github.com/tomhea/flipjump/actions/runs/7170673166/attempts/1#summary-19523946921)).
 4. `pytest --unit-tests` (the [assembler/interpreter unit-tests](#the-unit-tests)) in parallel.
    - Runs on the latest supported python, on ubuntu, as its own job - in parallel with the program tests.
 

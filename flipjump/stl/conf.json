@@ -27,7 +27,6 @@
     "hex/output",
     "hex/mul",
     "hex/div",
-    "hex/fixed_point",
 
     "hex/pointers/basic_pointers",
     "hex/pointers/xor_to_pointer",

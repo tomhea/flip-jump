@@ -148,9 +148,7 @@ class Reader:
         self.memory = {}
         self.zeros_boundaries = []
 
-        self.memory_segments = []
-        # (segment_start, segment_length) in word addresses - used by the native engine.
-        self.word_segments: List[Tuple[int, int]] = []
+        self.memory_segments: List[MemorySegment] = []
         for segment_start, segment_length, data_start, data_length in segments:
             # data is laid out as (flip-word, jump-word) op-pairs, so its length must be even
             #  (the relative-jump reconstruction below relies on this).
@@ -163,13 +161,7 @@ class Reader:
                     f"Bad .fjm file: segment data range [{data_start}, {data_start + data_length})"
                     f" exceeds data pool length {len(data)}."
                 )
-            self.memory_segments.append(
-                MemorySegment(
-                    segment_start << (self.memory_width.bit_length() - 1),
-                    segment_length << (self.memory_width.bit_length() - 1),
-                )
-            )
-            self.word_segments.append((segment_start, segment_length))
+            self.memory_segments.append(MemorySegment(segment_start, segment_length))
             if self.version in (FJMVersion.RelativeJumpVersion, FJMVersion.CompressedVersion):
                 word = (1 << self.memory_width) - 1
                 for i in range(0, data_length, 2):

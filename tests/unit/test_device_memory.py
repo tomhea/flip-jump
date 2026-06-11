@@ -1,9 +1,9 @@
 """
-unit-tests for the device<->memory hook (the G17 primitive of WI-B).
+unit-tests for the device<->memory hook.
 
 an IODevice can be attached to the interpreter memory at run-start (attach_memory), and can
 then read and write interpreter memory by address during the run - the screen device reads
-the framebuffer/palette, the keyboard device writes its mailbox. pinned here over both the
+data straight out of the program memory. pinned here over both the
 pure-python and the native engine.
 """
 
@@ -30,7 +30,7 @@ def engine(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> s
 
 class MemorySpyIO(FixedIO):
     """a FixedIO that captures the attached DeviceMemory, reads some words on attach,
-    and writes a word into the mailbox address."""
+    and writes a word into a fixed address."""
 
     def __init__(self, read_word_address: int, write_word_address: int, write_value: int):
         super().__init__(b'')

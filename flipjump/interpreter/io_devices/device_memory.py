@@ -1,7 +1,7 @@
 """
-the device<->memory hook (G17).
-lets an IODevice read and write the interpreter memory by address during a run: the screen
-device reads the framebuffer and the palette table, the keyboard device writes its mailbox.
+the device<->memory hook.
+lets an IODevice read and write the interpreter memory by address during a run (e.g. a
+screen device reading pixel data straight out of the program memory).
 
 the interpreter attaches a DeviceMemory to the io-device (IODevice.attach_memory) right
 before the run-loop starts - one adapter per engine (the python Reader / the native Memory).
@@ -19,7 +19,7 @@ from flipjump.fjm.fjm_reader import Reader
 
 
 class DeviceMemory(ABC):
-    """read/write the interpreter memory by address during a run (the G17 device hook)."""
+    """read/write the interpreter memory by address during a run."""
 
     memory_width: int
 

@@ -123,10 +123,10 @@ class TestVariableInspection:
         assert calculate_variable_value(('b', 2, 0), 0, reader)[0] == 0b10
         assert calculate_variable_value(('b', 2, 1), 0, reader)[0] == 0b01
 
-    def test_message_box_body_mentions_flip_and_jump(self, tmp_path: Path) -> None:
+    def test_breakpoint_message_body_mentions_flip_and_jump(self, tmp_path: Path) -> None:
         reader = build_reader_with_data(tmp_path, [112, 64, 0, 0])
         handler = make_handler(labels={'op0': 0})
-        body = handler.get_message_box_body(0, reader, op_counter=7)
+        body = handler.get_breakpoint_message_body(0, reader, op_counter=7)
         assert '7 ops executed' in body
         assert 'flip' in body and 'jump' in body
         assert '0x70' in body  # the flip target

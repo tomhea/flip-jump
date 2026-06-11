@@ -195,7 +195,7 @@ ns hex {
     }
 
 
-    //  Time Complexity: ~2@+4n    (the negate runs only for negative values)
+    //  Time Complexity: 2@+4n
     // Space Complexity: n(1.5@+20)
     //   x[:n] = |x[:n]|    (two's complement; the minimal value -2^(4n-1) stays itself)
     def abs n, x @ negative, end {

@@ -1,5 +1,5 @@
 """
-the InMemoryScreen256 output-device (WI-B) - headless-first.
+the InMemoryScreen256 output-device - headless-first.
 
 the FJ program drives the screen with command bytes over the regular output stream; the
 device reads the referenced buffers from the interpreter memory (the device<->memory hook),

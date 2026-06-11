@@ -251,7 +251,7 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         '--di',
         metavar='DEVICE',
         default=None,
-        help="the input device: standard (default), or keyboard=EVENTS_FILE[@MAILBOX_BIT_ADDRESS] "
+        help="the input device: standard (default), or keyboard=EVENTS_FILE "
         "(a scripted, non-blocking keyboard; the events file holds 'tic, down/up, keycode' lines)",
     )
     run_arguments.add_argument(
@@ -259,7 +259,7 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         metavar='DEVICE',
         default=None,
         help="the output device: standard (default), or screen=FRAMES_DIR "
-        "(the headless InMemoryScreen256 - writes one PNG per frame and a frame-hash log)",
+        "(a headless 256-color screen - writes one PNG per frame and a frame-hash log)",
     )
 
     run_arguments.add_argument(

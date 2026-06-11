@@ -1,13 +1,13 @@
 # FlipJump
 
-[![Tests](https://github.com/tomhea/flip-jump/actions/workflows/tests.yml/badge.svg)](https://github.com/tomhea/flip-jump/actions/workflows/tests.yml)
+[![Tests](https://github.com/tomhea/flipjump/actions/workflows/tests.yml/badge.svg)](https://github.com/tomhea/flipjump/actions/workflows/tests.yml)
 [![PyPI - Version](https://img.shields.io/pypi/v/flipjump)](https://pypi.org/project/flipjump/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)  
 [![Website](https://img.shields.io/website?down_color=red&down_message=down&up_message=up&url=https%3A%2F%2Fesolangs.org%2Fwiki%2FFlipJump)](https://esolangs.org/wiki/FlipJump)
-[![GitHub Discussions](https://img.shields.io/github/discussions/tomhea/flip-jump)](https://github.com/tomhea/flip-jump/discussions)
-[![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/tomhea/flip-jump)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=Tomhea%2Fflip-jump)
-[![GitHub](https://img.shields.io/github/license/tomhea/flip-jump)](LICENSE)
+[![GitHub Discussions](https://img.shields.io/github/discussions/tomhea/flipjump)](https://github.com/tomhea/flipjump/discussions)
+[![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/tomhea/flipjump)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=Tomhea%2Fflipjump)
+[![GitHub](https://img.shields.io/github/license/tomhea/flipjump)](LICENSE)
 
 FlipJump is the simplest programing language.  
 Yet, it can do **any modern computation**. See the [C -> FlipJump compiler](https://github.com/tomhea/c2fj).
@@ -151,13 +151,11 @@ fj --run hello_world.fjm
 
 ### Make it fast
 
-The interpreter has three engines (since 1.5.0):
-- **The native engine** (~100-300M fj-ops/s) - a C-extension, **much much faster** than any
-  previous way of running FlipJump. The official wheels ship it prebuilt for
-  Linux (glibc & musl, x86_64 & aarch64), macOS (x86_64 & arm64) and Windows (amd64 & arm64),
-  on every CPython >= 3.10 - so a plain `pip install flipjump` already has it. On any other
-  platform, build it once with `python build_fjcore.py` (needs a C compiler); it is used
-  automatically whenever present (set `FLIPJUMP_NO_NATIVE=1` to disable it).
+The interpreter has three engines:
+- **The native engine** (~100-300M fj-ops/s) - a C-extension, prebuilt in the official wheels
+  (Linux glibc/musl, macOS, Windows; every CPython >= 3.10), so a plain `pip install flipjump`
+  already has it. Elsewhere, build it once with `python build_fjcore.py`; it is used
+  automatically whenever present (`FLIPJUMP_NO_NATIVE=1` disables it).
 - **The fast loop** (~4M fj-ops/s) - pure python, the fallback when the native engine isn't built.
 - **The featured loop** - used for `--trace`/breakpoints, or with `--profile` for the full
   per-op statistics (flips/jumps percentages).
@@ -167,72 +165,26 @@ w=32-vs-w=64 recommendation are recorded in [tests/benchmark_results.md](tests/b
 
 ### IO devices
 
-The interpreter's IO is pluggable (since 1.5.0):
+The interpreter's IO is pluggable:
 
 ```bash
-fj --run game.fjm --di keyboard=events.txt --do screen=frames_dir
+fj --run program.fjm --di keyboard=events.txt --do screen=frames_dir
 ```
 
-- `--do screen=FRAMES_DIR` - the headless **InMemoryScreen256**: the program sends
-  init/palette/update commands over the output stream, the device reads the framebuffer
-  from the program's memory, and writes one PNG per frame plus a frame-hash log.
-  The memory-hook update commands are the primary path (a blit costs the program just a
-  few ops); the `0x05` raw command alternatively streams the full frame's pixel bytes
-  over the output itself - it needs no memory hook, at the cost of outputting every pixel.
-- `--di keyboard=EVENTS_FILE[@MAILBOX]` - a non-blocking, virtual-time **keyboard**: the
-  program polls one status byte per tic; events come from a scripted `tic, down/up, keycode`
-  file (deterministic replays), or land in a fixed memory mailbox.
-- Devices can read/write the program's memory through the `DeviceMemory` hook
-  (`IODevice.attach_memory`) - the primitive both devices are built on.
+- `--do screen=FRAMES_DIR` - a headless 256-color paletted **screen**: the program sends
+  draw commands over the output stream, and the device saves one PNG per frame plus a
+  frame-hash log.
+- `--di keyboard=EVENTS_FILE` - a non-blocking, virtual-time **keyboard**: the program polls
+  one status hex per tic; events come from a scripted `tic, down/up, keycode` file
+  (deterministic replays).
+- Devices can also read the program's memory through the `DeviceMemory` hook
+  (`IODevice.attach_memory`) - e.g. the screen reads pixel data straight from memory.
 
 ### How to Debug?
-Programs won't work on their first run. They just can't. That's why we support the next debugging flags.
 
-- No debugging flags at all: Shows the last 10 executed addresses of tests that failed their run (i.e. finished not by looping). 
-- `-d [PATH]`: Save debug information: Adds [very extensive label names](tests/README.md#example-label-name-youll-get-with-using---debuginfo-len), Which are like a "**macro-stack**" for each of the last executed address. (can be used with `--debug-ops-list LEN`)
-- `--debug-ops-list LEN`: Shows the last _LEN_ executed addresses (instead of 10). (can be used with `-d`)
-- `-b NAME [NAME ...]`: Places breakpoints at every specified label NAMEs (note that label names are long: [more information about labels](flipjump/README.md#generated-label-names)). (requires `-b`)
-- `-B NAME [NAME ...]`: Places breakpoints at every label that contains one of the given NAMEs. (requires `-b`)
-
-The debugger can single-step, read-memory, read flipjump variables (bit/hex/byte, and their vectors), continue, or skip forward a fixed number of opcodes.
-
-The debugger is a CLI (since 1.5.0 - no GUI dependency): at a breakpoint it prints the current address (with its macro-stack label), and prompts for the next action in the terminal - so it works over ssh, in CI, and for agents (EOF/empty answers pick the safe default, Continue All). A session looks like this:
-
-```
-$ fj my_program.fj -d -B my_loop
-  program break
-==== Breakpoint ====
-Address 0x180:
-    my_loop.
-
-2 ops executed.
-
-flip 0x0:
-    stl.startup -> ... -> :start:.
-jump 0x180:
-    my_loop.
-  1. Read Memory
-  2. Single Step
-  3. Skip 10
-  4. Skip 100
-  5. Continue
-  6. Continue All  (default)
-choice> 1
-
-==== Debug: read memory address ====
-What memory-word would you like to read? ...
-> 0x80
-
-==== Read Memory ====
-Reading 0x80:
-memory[0x80] = 0  (or 0x0).
-
-This address also goes by this label name:
-0x80:
-    stl.IO
-```
-
-Choices are picked by number or by a unique name prefix (`single` selects Single Step).
+Programs won't work on their first run. They just can't. The interpreter ships a CLI
+debugger (breakpoints, single-stepping, memory and flipjump-variable inspection) - take a
+look at the [debugging documentation](flipjump/interpreter/debugging/README.md).
 
 # Get Started with FlipJump
 - Install flipjump: `pip install flipjump`
@@ -256,7 +208,7 @@ _You can also use the `flipjump.assemble_run_according_to_cmd_line_args(cmd_line
 
 **[flipjump](flipjump/README.md)** (assembler + interpreter source files):
   - [flipjump_cli.py](flipjump/flipjump_cli.py) - Main CLI script fot the FlipJump Assembler & Interpreter.
-  - [fjm/](flipjump/fjm) - Tools for reading/writing .fjm (flip-jump-memory) files.
+  - [fjm/](flipjump/fjm) - Tools for reading/writing .fjm (flipjump-memory) files.
   - [interpreter/fjm_run.py](flipjump/interpreter/fjm_run.py) - Interpreter + debugger for assembled fj files.
   - [assembler/](flipjump/assembler) - Components for assembling FlipJump code.
     - [fj_parser.py](flipjump/assembler/fj_parser.py) - Pythonic lex/yacc parser.
@@ -303,7 +255,7 @@ Take a look at the other READMEs:
 * Read more about [how to run the tests](tests/README.md).
 * Read more about the [standard library](flipjump/stl/README.md).
 
-A very extensive explanation can be found on the [GitHub wiki page](https://github.com/tomhea/flip-jump/wiki/Learn-FlipJump).
+A very extensive explanation can be found on the [GitHub wiki page](https://github.com/tomhea/flipjump/wiki/Learn-FlipJump).
 
 More detailed explanation and the **specifications of the FlipJump assembly** can be found on the [FlipJump esolangs page](https://esolangs.org/wiki/FlipJump).
 
@@ -324,7 +276,7 @@ Take a look at the [prime numbers c program](https://github.com/tomhea/c2fj/blob
 
 # Contribute
 
-If you want to contribute to this project, read the [CONTRIBUTING.md](CONTRIBUTING.md) file, and take a look at the [I-Want-To-Contribute Thread](https://github.com/tomhea/flip-jump/discussions/148).
+If you want to contribute to this project, read the [CONTRIBUTING.md](CONTRIBUTING.md) file, and take a look at the [I-Want-To-Contribute Thread](https://github.com/tomhea/flipjump/discussions/148).
 
 Actually, just writing your own flipjump programs and sharing them with the world is a great contribution to the community :)  
 Take a look at what the [standard library](flipjump/stl/README.md) offers, and see some [example programs](programs) to get you inspired!
