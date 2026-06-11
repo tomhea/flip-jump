@@ -60,8 +60,10 @@ typedef struct {
     uint64_t slot_count; /* power of two */
     uint64_t slots_used;
 
-    uint64_t last_page_index_plus1; /* 1-entry page cache */
-    Page* last_page;
+    /* direct-mapped page cache (keyed by the page-index low bits): the ip/jump page and
+       the wandering flip-target pages coexist instead of evicting each other. */
+    uint64_t page_cache_key_plus1[16];
+    Page* page_cache_page[16];
 
     SegmentRange* segments; /* sorted, merged */
     Py_ssize_t segment_count;
@@ -156,9 +158,10 @@ static void page_compute_validity(MemoryObject* m, uint64_t page_index, Page* pa
 static Page* mem_get_page(MemoryObject* m, uint64_t page_index)
 {
     uint64_t key = page_index + 1;
+    uint64_t cache_slot = page_index & 15;
     uint64_t h;
-    if (key == m->last_page_index_plus1) {
-        return m->last_page;
+    if (key == m->page_cache_key_plus1[cache_slot]) {
+        return m->page_cache_page[cache_slot];
     }
     if (m->slots_used * 2 >= m->slot_count) {
         if (mem_grow_slots(m) < 0) {
@@ -168,8 +171,8 @@ static Page* mem_get_page(MemoryObject* m, uint64_t page_index)
     h = (key * 0x9E3779B97F4A7C15ull) & (m->slot_count - 1);
     while (m->slots[h].key_plus1) {
         if (m->slots[h].key_plus1 == key) {
-            m->last_page_index_plus1 = key;
-            m->last_page = m->slots[h].page;
+            m->page_cache_key_plus1[cache_slot] = key;
+            m->page_cache_page[cache_slot] = m->slots[h].page;
             return m->slots[h].page;
         }
         h = (h + 1) & (m->slot_count - 1);
@@ -191,8 +194,8 @@ static Page* mem_get_page(MemoryObject* m, uint64_t page_index)
         m->slots[h].key_plus1 = key;
         m->slots[h].page = page;
         m->slots_used++;
-        m->last_page_index_plus1 = key;
-        m->last_page = page;
+        m->page_cache_key_plus1[cache_slot] = key;
+        m->page_cache_page[cache_slot] = page;
         return page;
     }
 }
@@ -306,8 +309,8 @@ static int Memory_init(MemoryObject* self, PyObject* args, PyObject* kwds)
     self->slots = NULL;
     self->slot_count = 0;
     self->slots_used = 0;
-    self->last_page_index_plus1 = 0;
-    self->last_page = NULL;
+    memset(self->page_cache_key_plus1, 0, sizeof(self->page_cache_key_plus1));
+    memset(self->page_cache_page, 0, sizeof(self->page_cache_page));
     self->segments = NULL;
     self->segment_count = 0;
     self->segment_capacity = 0;
