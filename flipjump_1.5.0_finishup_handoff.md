@@ -113,6 +113,28 @@ status-bar/menu only), so full-frame is the common case anyway.
   no memory read. TDD like the other commands (golden frame-hash + an .fj E2E).
 - Keep the memory-hook commands as the primary (they are ~free and DMA-like); document both.
 
+### WI-G2 - Flat-storage mode: configurable limit + observability (owner ask)
+
+The game MUST run on the native engine's flat path. Aligned dispatch tables inflate the
+address span (each table pads to a power-of-two boundary), so the game may exceed today's
+hardcoded `FLAT_MAX_WORDS` (2^23 words = 64MB of flat array).
+
+1. Make the limit runtime-configurable: keep the 2^23 default, add a `Memory` constructor
+   parameter, plumbed from `fjm_run.run(...)`, an `fj --flat-max-words N` CLI flag, and a
+   `FLIPJUMP_FLAT_MAX_WORDS` env var. (Answer to "will it hurt anything?": no hot-path cost
+   - the decision happens once at run start; the per-op loop is unchanged regardless of the
+   limit's value.)
+2. On flat-array allocation failure, fall back to PAGED mode instead of erroring.
+3. **Observability**: expose which mode ran (`Memory.storage_mode` -> 'flat'/'paged',
+   surfaced in the non-silent run output) so "the game runs flat" is verifiable, not assumed.
+4. Costs to document (answers to "will it hurt the speed?"): per-op speed - none. Startup +
+   footprint - real: the flat build sentinel-fills the whole span, touching every page, so
+   RSS = 8 bytes x span and fill time ~0.1s/GB. A game with a 2^26-word span costs 512MB
+   RAM. Optional improvement if that bites: chunk the sentinel fill / use a high-water-mark
+   scheme so untouched tail pages stay virtual.
+5. Tests: flat/paged selection across limits (env/CLI/param), the fallback path, and
+   storage_mode reporting.
+
 ### WI-H - CR loop + release mechanics
 
 1. Address the owner manual-CR findings (the branch is presented for review - do NOT merge).
@@ -122,23 +144,27 @@ status-bar/menu only), so full-frame is the common case anyway.
    `.github/workflows/wheels.yml` via workflow_dispatch (repo is public; the arm runners
    `ubuntu-24.04-arm` / `windows-11-arm` are available).
 
-## Stretch target: 320x200 @ 25fps (owner ask - feasibility math)
+## THE game target (owner decision): 160x100, textured, 25fps
 
-64,000 pixels/frame, 25fps. Budget: ~11.2M fj-ops/frame on the current engine (280M fj/s),
+16,000 pixels/frame, 25fps. Budget: ~11.2M fj-ops/frame on the current engine (280M fj/s),
 ~18-24M after the speculation tier (WI-F -> implementation, if GO).
 
-| per-frame cost | static stores + dispatch-LUTs | pointer everything |
-|---|---|---|
-| pixel stores (64K x) | ~80 ops -> 5.1M | ~500 ops -> 32M (impossible) |
-| texture+colormap reads | ~100-200 ops -> 6.4-12.8M (dispatch) | ~1-3K ops (read_table) - impossible |
-| column math + game logic | ~2-3M | same |
+| per-frame cost | static stores + dispatch-LUTs (required) |
+|---|---|
+| pixel stores (16K x ~80 ops) | ~1.3M |
+| texture+colormap dispatch reads (16K x ~100-200 ops) | ~1.6-3.2M |
+| column math (160 cols) + BSP + game logic | ~1.5-3M |
+| **total** | **~5-7M of 11.2M - fits the CURRENT engine with margin** |
 
-Verdict: **flat-shaded 320x200@25 fits the current engine** (~8-9M/frame, tight);
-**textured 320x200@25 needs all three**: static pixel stores, dispatch-LUTs, and the
-speculation speedup landing (~450M+ fj/s). Plausible, not guaranteed - the WI-F measurement
-is the gate. Fallbacks that keep 25fps: 320x200 flat-shaded, or textured at 320x100 /
-160x200 (line-doubling), or 12.5fps textured. The screen device itself is
-resolution-agnostic (PNG writing 64K pixels per present is host-side and trivial).
+So textured 160x100@25 does NOT depend on the speculation tier - that tier becomes pure
+headroom (eventually 320x200). Mandatory techniques: static pixel stores (fixed
+column-buffer or column-unroll) and dispatch-LUTs for ALL table reads.
+
+**Owner directive: fixed-address-LUT (aligned dispatch tables, the hex.and way) everything
+that can be** - finesine/finecosine, reciprocal/scale, yslope, viewangletox/xtoviewangle,
+the colormaps, and evaluate texture data itself as dispatch tables. Each generated table
+gets its own thorough test (hexlib-style: generated program + host-reference fixtures over
+many indices, including the first/last entries and wrap boundaries).
 
 ## Design decisions already made (do not relitigate without new data)
 
