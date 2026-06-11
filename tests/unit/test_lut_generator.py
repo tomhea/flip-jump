@@ -12,6 +12,7 @@ import pytest
 
 from flipjump.lut_generator import (
     encode_fixed_point,
+    generate_byte_lut_fj,
     generate_lut_fj,
     generate_reciprocal_lut_fj,
     generate_sine_lut_fj,
@@ -77,3 +78,18 @@ class TestCannedGenerators:
         expected_sin_6 = encode_fixed_point(math.sin(2 * math.pi * 6 / 8), 16, 32)
         assert expected_sin_6 > 0x80000000
         assert f'hex.vec 8, {hex(expected_sin_6)}' in fj_source
+
+
+class TestGenerateByteLutFj:
+    def test_emits_packed_byte_ops(self) -> None:
+        fj_source = generate_byte_lut_fj("colormap", [0, 0x41, 255])
+        assert "colormap:" in fj_source
+        assert fj_source.count("* dw") == 3
+        assert ";0x41 * dw" in fj_source
+        assert ";0xff * dw" in fj_source
+
+    def test_non_byte_values_rejected(self) -> None:
+        with pytest.raises(ValueError):
+            generate_byte_lut_fj("t", [256])
+        with pytest.raises(ValueError):
+            generate_byte_lut_fj("t", [-1])

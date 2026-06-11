@@ -195,6 +195,17 @@ ns hex {
     }
 
 
+    //  Time Complexity: ~2@+4n    (the negate runs only for negative values)
+    // Space Complexity: n(1.5@+20)
+    //   x[:n] = |x[:n]|    (two's complement; the minimal value -2^(4n-1) stays itself)
+    def abs n, x @ negative, end {
+        .sign n, x, negative, end
+      negative:
+        .neg n, x
+      end:
+    }
+
+
     //  Time Complexity: (full_n - signed_n)(@+4)
     // Space Complexity: (full_n - signed_n)(@+16)
     //   sign-extends hex[:signed_n] into hex[:full_n]

@@ -108,3 +108,29 @@ ns hex {
       end:
     }
 }
+
+
+ns hex {
+    //  Time Complexity: w(0.75@+5) + #(dw)(w/4(1.5@+10)) + 40@+80
+    // Space Complexity: w(2.25@+50) + #(dw)(w/4(2@+30)) + 40@+300
+    //   dst[:2] = table[idx]    (entry idx of a LUT of packed bytes)
+    //
+    // table is a compile-time address (label) of consecutive packed-byte ops (one byte per
+    //  fj-op - the layout flipjump.lut_generator's generate_byte_lut_fj emits), so entry k
+    //  sits at table + k*dw. Byte tables are 2x smaller and cheaper to read than
+    //  hex.read_table's hex[:n]-entry tables - right for colormaps/light-level tables.
+    // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst must not alias idx.
+    // @requires hex.init & stl.ptr_init
+    def read_table_byte dst, table, idx_n, idx @ ptr, table_address, end {
+        .zero w/4, ptr
+        .mov idx_n, ptr, idx
+        .mul_const w/4, ptr, ptr, dw
+        .add w/4, ptr, table_address
+        .read_byte dst, ptr
+        ;end
+
+      ptr: .vec w/4
+      table_address: .vec w/4, table
+      end:
+    }
+}

@@ -62,3 +62,5 @@ hexlib-fixed_mul_w32, programs/hexlib_tests/fixed_point/fixed_mul.fj,tests/compi
 hexlib-fixed_div_w32, programs/hexlib_tests/fixed_point/fixed_div.fj,tests/compiled/hexlib_tests/fixed_point/fixed_div_w32.fjm, 32,3,0, True,True
 hexlib-mul_const_w32, programs/hexlib_tests/fixed_point/mul_const.fj,tests/compiled/hexlib_tests/fixed_point/mul_const_w32.fjm, 32,3,0, True,True
 hexlib-read_table_w32, programs/hexlib_tests/fixed_point/read_table.fj,tests/compiled/hexlib_tests/fixed_point/read_table_w32.fjm, 32,3,0, True,True
+hexlib-doom_helpers_w64, programs/hexlib_tests/doom_prep/helpers.fj,tests/compiled/hexlib_tests/doom_prep/helpers_w64.fjm, 64,3,0, True,True
+hexlib-doom_helpers_w32, programs/hexlib_tests/doom_prep/helpers.fj,tests/compiled/hexlib_tests/doom_prep/helpers_w32.fjm, 32,3,0, True,True
