@@ -52,16 +52,13 @@ def benchmark(memory_width: int, n: int) -> None:
     )
     wall_time = time() - start_time
 
-    assert termination_statistics.termination_cause == TerminationCause.Looping, (
-        f'benchmark run failed: {termination_statistics.termination_cause}'
-    )
+    assert (
+        termination_statistics.termination_cause == TerminationCause.Looping
+    ), f'benchmark run failed: {termination_statistics.termination_cause}'
 
     ops = termination_statistics.op_counter
     run_time = termination_statistics.run_time
-    print(
-        f'w={memory_width}: {ops:,} ops in {run_time:.2f}s (wall {wall_time:.2f}s) '
-        f'=> {ops / run_time:,.0f} fj/s'
-    )
+    print(f'w={memory_width}: {ops:,} ops in {run_time:.2f}s (wall {wall_time:.2f}s) ' f'=> {ops / run_time:,.0f} fj/s')
 
 
 def main() -> None:

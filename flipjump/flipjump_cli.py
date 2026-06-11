@@ -95,6 +95,7 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
         print_time=not args.silent,
         print_termination=not args.silent,
         last_ops_debugging_list_length=args.debug_ops_list,
+        profile=args.profile,
     )
 
 
@@ -224,6 +225,11 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
 
     run_arguments.add_argument('-t', '--trace', help="output every running opcode", action='store_true')
     run_arguments.add_argument('--no_output', help="don't print the program's output", action='store_true')
+    run_arguments.add_argument(
+        '--profile',
+        help="collect the full per-op statistics (flips/jumps percentages). uses the slower featured run-loop",
+        action='store_true',
+    )
 
     run_arguments.add_argument(
         '-b', '--breakpoint', metavar='NAME', default=[], nargs="+", help="pause when reaching this label"

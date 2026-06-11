@@ -90,6 +90,8 @@ class RunStatistics:
         self.op_counter = 0
         self.flip_counter = 0
         self.jump_counter = 0
+        # False when the run-loop skips the flip/jump counters (the fast loop).
+        self.detailed_statistics = True
 
         self.last_ops_addresses: Optional[Deque[int]] = None
         if last_ops_debugging_list_length is not None:
