@@ -32,6 +32,7 @@ def main() -> None:
                 'flipjump.interpreter._fjcore',
                 sources=['flipjump/interpreter/_fjcore.c'],
                 extra_link_args=extra_link_args,
+                py_limited_api=True,  # abi3: one binary covers every CPython >= 3.10
             )
         ],
         script_args=['build_ext', '--inplace', '--force'] + args,

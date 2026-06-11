@@ -14,6 +14,10 @@
  */
 
 #define PY_SSIZE_T_CLEAN
+/* the stable ABI (abi3): one wheel per platform/arch covers every CPython >= 3.10 */
+#ifndef Py_LIMITED_API
+#define Py_LIMITED_API 0x030A0000
+#endif
 #include <Python.h>
 #include <stdint.h>
 #include <string.h>
@@ -437,8 +441,9 @@ static int mem_decide_storage(MemoryObject* m)
 
 /* ---------------------------------------------------------------- Memory type */
 
-static int Memory_init(MemoryObject* self, PyObject* args, PyObject* kwds)
+static int Memory_init(PyObject* op, PyObject* args, PyObject* kwds)
 {
+    MemoryObject* self = (MemoryObject*)op;
     static char* kwlist[] = {"memory_width", "garbage_stop", NULL};
     int w, garbage_stop = 1;
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "i|p", kwlist, &w, &garbage_stop)) {
@@ -470,8 +475,11 @@ static int Memory_init(MemoryObject* self, PyObject* args, PyObject* kwds)
     return 0;
 }
 
-static void Memory_dealloc(MemoryObject* self)
+static void Memory_dealloc(PyObject* op)
 {
+    MemoryObject* self = (MemoryObject*)op;
+    PyTypeObject* type = Py_TYPE(op);
+    freefunc tp_free;
     if (self->slots) {
         for (uint64_t i = 0; i < self->slot_count; i++) {
             if (self->slots[i].key_plus1) {
@@ -483,7 +491,9 @@ static void Memory_dealloc(MemoryObject* self)
     }
     free(self->flat);
     free(self->segments);
-    Py_TYPE(self)->tp_free((PyObject*)self);
+    tp_free = (freefunc)PyType_GetSlot(type, Py_tp_free);
+    tp_free(op);
+    Py_DECREF(type); /* heap types own a reference from their instances */
 }
 
 static PyObject* Memory_add_segment(MemoryObject* self, PyObject* args)
@@ -566,14 +576,21 @@ static PyObject* Memory_set_words(MemoryObject* self, PyObject* args)
     if (!PyArg_ParseTuple(args, "KO", &start_word, &values)) {
         return NULL;
     }
-    values = PySequence_Fast(values, "set_words expects a sequence");
-    if (!values) {
+    count = PySequence_Size(values);
+    if (count < 0) {
         return NULL;
     }
-    count = PySequence_Fast_GET_SIZE(values);
+    Py_INCREF(values);
     for (i = 0; i < count; i++) {
-        unsigned long long value = PyLong_AsUnsignedLongLong(PySequence_Fast_GET_ITEM(values, i));
+        unsigned long long value;
         Page* page;
+        PyObject* item = PySequence_GetItem(values, i);
+        if (!item) {
+            Py_DECREF(values);
+            return NULL;
+        }
+        value = PyLong_AsUnsignedLongLong(item);
+        Py_DECREF(item);
         if (value == (unsigned long long)-1 && PyErr_Occurred()) {
             Py_DECREF(values);
             return NULL;
@@ -1040,17 +1057,22 @@ static PyGetSetDef Memory_getset[] = {
     {NULL, NULL, NULL, NULL, NULL},
 };
 
-static PyTypeObject MemoryType = {
-    PyVarObject_HEAD_INIT(NULL, 0) /* */
-    .tp_name = "_fjcore.Memory",
-    .tp_basicsize = sizeof(MemoryObject),
-    .tp_dealloc = (destructor)Memory_dealloc,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_doc = "segment-aware paged FlipJump memory + native run-loop",
-    .tp_methods = Memory_methods,
-    .tp_getset = Memory_getset,
-    .tp_init = (initproc)Memory_init,
-    .tp_new = PyType_GenericNew,
+static PyType_Slot Memory_type_slots[] = {
+    {Py_tp_dealloc, (void*)Memory_dealloc},
+    {Py_tp_doc, (void*)"segment-aware FlipJump memory (flat/paged) + native run-loop"},
+    {Py_tp_methods, (void*)Memory_methods},
+    {Py_tp_getset, (void*)Memory_getset},
+    {Py_tp_init, (void*)Memory_init},
+    {Py_tp_new, (void*)PyType_GenericNew},
+    {0, NULL},
+};
+
+static PyType_Spec Memory_type_spec = {
+    "_fjcore.Memory",        /* name */
+    sizeof(MemoryObject),    /* basicsize */
+    0,                       /* itemsize */
+    Py_TPFLAGS_DEFAULT,      /* flags */
+    Memory_type_slots,       /* slots */
 };
 
 static PyModuleDef fjcore_module = {
@@ -1060,16 +1082,17 @@ static PyModuleDef fjcore_module = {
 PyMODINIT_FUNC PyInit__fjcore(void)
 {
     PyObject* module;
-    if (PyType_Ready(&MemoryType) < 0) {
+    PyObject* memory_type = PyType_FromSpec(&Memory_type_spec);
+    if (!memory_type) {
         return NULL;
     }
     module = PyModule_Create(&fjcore_module);
     if (!module) {
+        Py_DECREF(memory_type);
         return NULL;
     }
-    Py_INCREF(&MemoryType);
-    if (PyModule_AddObject(module, "Memory", (PyObject*)&MemoryType) < 0) {
-        Py_DECREF(&MemoryType);
+    if (PyModule_AddObject(module, "Memory", memory_type) < 0) {
+        Py_DECREF(memory_type);
         Py_DECREF(module);
         return NULL;
     }

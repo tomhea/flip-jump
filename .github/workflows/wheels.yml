@@ -1,0 +1,66 @@
+# Builds the release artifacts: one abi3 wheel per platform/arch (with the compiled native
+# interpreter engine) + the pure sdist, and publishes them to PyPI on every release.
+# The abi3 tag means each wheel covers every CPython >= 3.10.
+
+name: Build wheels and publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-wheels:
+    name: wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest        # manylinux + musllinux, x86_64
+          - ubuntu-24.04-arm     # manylinux + musllinux, aarch64
+          - windows-latest       # win amd64
+          - windows-11-arm       # win arm64
+          - macos-13             # macOS x86_64
+          - macos-latest         # macOS arm64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.23.3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl
+
+  build-sdist:
+    name: sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build sdist
+        run: pipx run build --sdist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  publish:
+    name: Publish to PyPI
+    if: github.event_name == 'release'
+    needs: [build-wheels, build-sdist]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
