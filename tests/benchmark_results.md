@@ -48,7 +48,9 @@ called back only for IO. Build with `python build_fjcore.py`.
 | v1: 1-entry page cache | 78M | 84M | 40M | - |
 | v2: 16-way direct-mapped page cache | 96M | 97M | 104M | - |
 | v3: one page lookup per op-pair | 127M | 129M | 140M | 123M |
-| v4: flat storage for compact programs | 112-127M | 115-129M | 125-140M | **246M** |
+| v4: flat storage for compact programs | 112-127M | 115-129M | 125-140M | 246M |
+| v5: dedicated flat loop (no ring/paged branches) | - | - | - | 273M |
+| v6: + MSVC PGO (`build_fjcore.py --pgo-*`, optional) | 122M | 128M | 132M | **280-286M** |
 
 - v2: the ip/jump page and the flip-target page alternated every op and thrashed the single
   cached entry, forcing a hash lookup per access.
@@ -62,7 +64,13 @@ called back only for IO. Build with `python build_fjcore.py`.
   so it stays on the paged path (rows unchanged, run-to-run variance shown).
   `FLIPJUMP_NO_FLAT=1` forces the paged path (for A/B measurement).
 
-Cycle accounting at ~4.6GHz: v1 was ~46 CPU-cycles per fj-op, v4-flat is ~19. The serial
+- v5: when the memory is flat and no last-ops ring is requested (the shipping default),
+  a dedicated loop runs with zero paged-mode/ring branches in the per-op path.
+- v6: profile-guided optimization is available for local builds
+  (`--pgo-instrument`, train on both the flat and paged paths, `--pgo-use`);
+  the prebuilt wheels ship without it.
+
+Cycle accounting at ~4.6GHz: v1 was ~46 CPU-cycles per fj-op, v6-flat is ~16. The serial
 dependency floor (jump-word load -> address arithmetic -> next jump-word load, L1-resident)
 is ~7-8 cycles/op (~600M fj/s); the paged-path floor is ~13-15 cycles (~330M fj/s).
 

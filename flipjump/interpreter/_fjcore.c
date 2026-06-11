@@ -598,6 +598,152 @@ static PyObject* Memory_set_words(MemoryObject* self, PyObject* args)
     Py_RETURN_NONE;
 }
 
+#define CAUSE_PYTHON_ERROR (-2)
+
+/* the dedicated flat-storage run loop - the common fast case (no last-ops ring, flat
+   memory): all paged-mode and ring branches are out of the per-op path.
+   returns the termination cause, or CAUSE_PYTHON_ERROR with the python error set. */
+static int run_flat_loop(MemoryObject* self, PyObject* read_bit, PyObject* write_bit, PyObject* eof_exception_type,
+                         uint64_t start_ip, uint64_t* ops_out, double* paused_seconds_out)
+{
+    const uint64_t width = (uint64_t)self->w;
+    const uint64_t ww = (uint64_t)self->ww;
+    const uint64_t bit_mask = width - 1;
+    const uint64_t dw = 2 * width;
+    const uint64_t out1 = dw + 1;
+    const uint64_t in_addr = 3 * width + ww + 1; /* 3w + #w */
+    const uint64_t in_lo_exclusive = in_addr - dw;
+    uint64_t* const flat = self->flat;
+    const uint64_t flat_count = self->flat_count;
+
+    uint64_t ip = start_ip, ops = 0;
+    int cause = CAUSE_PYTHON_ERROR;
+
+    self->mem_error = 0;
+    for (;;) {
+        uint64_t word_address, f, flip_word_address, flip_value, j;
+
+        if ((ops & SIGNAL_CHECK_MASK) == SIGNAL_CHECK_MASK) {
+            self->last_run_op_count = ops;
+            if (PyErr_CheckSignals() < 0) {
+                goto done;
+            }
+        }
+
+        /* read flip word */
+        if (ip & bit_mask) {
+            if (mem_get_word_unaligned(self, ip, &f) < 0) {
+                goto memory_error;
+            }
+            word_address = (uint64_t)-2; /* the jump word is read the slow way below */
+        } else {
+            word_address = ip >> ww;
+            if (word_address + 1 >= flat_count) {
+                if (!flat_garbage(self, word_address)) {
+                    goto memory_error;
+                }
+                f = 0;
+            } else {
+                f = flat[word_address];
+                if (f & GARBAGE_SENTINEL) {
+                    if (!flat_garbage(self, word_address)) {
+                        goto memory_error;
+                    }
+                    f = 0;
+                }
+            }
+        }
+
+        /* handle output */
+        if (f <= out1 && f >= dw) {
+            PyObject* result = PyObject_CallFunctionObjArgs(write_bit, (f == out1) ? Py_True : Py_False, NULL);
+            if (!result) {
+                goto done;
+            }
+            Py_DECREF(result);
+        }
+
+        /* handle input */
+        if (ip <= in_addr && ip > in_lo_exclusive) {
+            PyObject* result;
+            int bit_value;
+            clock_t io_start = clock();
+            result = PyObject_CallNoArgs(read_bit);
+            *paused_seconds_out += (double)(clock() - io_start) / CLOCKS_PER_SEC;
+            if (!result) {
+                if (PyErr_ExceptionMatches(eof_exception_type)) {
+                    PyErr_Clear();
+                    cause = TERM_EOF;
+                    goto done;
+                }
+                goto done;
+            }
+            bit_value = PyObject_IsTrue(result);
+            Py_DECREF(result);
+            if (bit_value < 0) {
+                goto done;
+            }
+            if (mem_write_bit(self, in_addr, bit_value) < 0) {
+                goto memory_error;
+            }
+        }
+
+        /* FLIP! */
+        flip_word_address = f >> ww;
+        if (flip_word_address >= flat_count) {
+            if (!flat_garbage(self, flip_word_address)) {
+                goto memory_error;
+            }
+        } else {
+            flip_value = flat[flip_word_address];
+            if (flip_value & GARBAGE_SENTINEL) {
+                if (!flat_garbage(self, flip_word_address)) {
+                    goto memory_error;
+                }
+                flip_value = 0;
+            }
+            flat[flip_word_address] = flip_value ^ (1ull << (f & bit_mask));
+        }
+
+        /* read jump word (after the flip - the flip may modify it) */
+        if (word_address + 1 < flat_count) {
+            j = flat[word_address + 1];
+            if (j & GARBAGE_SENTINEL) {
+                if (!flat_garbage(self, word_address + 1)) {
+                    goto memory_error;
+                }
+                j = 0;
+            }
+        } else if (mem_get_word_unaligned(self, ip + width, &j) < 0) {
+            goto memory_error;
+        }
+        ops++;
+
+        /* check finish? */
+        if (j == ip && !(f >= ip && f - ip < dw)) {
+            cause = TERM_LOOPING;
+            goto done;
+        }
+        if (j < dw) {
+            cause = TERM_NULL_IP;
+            goto done;
+        }
+
+        /* JUMP! */
+        ip = j;
+    }
+
+memory_error:
+    if (self->mem_error) {
+        self->mem_error = 0;
+        cause = TERM_MEMORY_ERROR;
+    }
+done:
+    self->last_run_op_count = ops;
+    *ops_out = ops;
+    return cause;
+}
+
 /* build the (cause, op_count, error_bit_address_or_None, last_ops, paused_seconds) result tuple.
    takes ownership of last_ops_ring (frees it). */
 static PyObject* build_run_result(MemoryObject* self, int cause, uint64_t ops, uint64_t* last_ops_ring,
@@ -665,6 +811,18 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
 
     if (mem_decide_storage(self) < 0) {
         return NULL;
+    }
+
+    if (self->flat && last_ops_length == 0) {
+        /* the common fast case gets the dedicated loop (no ring, no paged branches) */
+        uint64_t fast_ops = 0;
+        double fast_paused = 0.0;
+        int fast_cause =
+            run_flat_loop(self, read_bit, write_bit, eof_exception_type, start_ip, &fast_ops, &fast_paused);
+        if (fast_cause == CAUSE_PYTHON_ERROR) {
+            return NULL;
+        }
+        return build_run_result(self, fast_cause, fast_ops, NULL, 0, 0, fast_paused);
     }
 
     if (last_ops_length > 0) {
