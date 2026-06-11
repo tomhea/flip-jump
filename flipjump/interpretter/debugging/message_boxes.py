@@ -10,7 +10,8 @@ from typing import List, Optional
 
 
 def _print_message(body_message: str, title_message: str) -> None:
-    print(f'\n──── {title_message} ────')
+    # ascii-only: the prompts must survive any console encoding (e.g. legacy windows codepages)
+    print(f'\n==== {title_message} ====')
     print(body_message)
 
 
