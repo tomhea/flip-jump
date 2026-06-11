@@ -1,0 +1,33 @@
+// Tests hex.mul_const - the strength-reduced multiply by a compile-time constant.
+// Expected outputs computed by the host-side reference: (src*c) mod 2^4n.
+
+stl.startup_and_init_all
+
+hex.mul_const 8, res8, x1, 320       // DOOM screen-stride constant
+hex.print_as_digit 8, res8, 0
+stl.output '\n'
+
+hex.mul_const 8, res8, x2, 1
+hex.print_as_digit 8, res8, 0
+stl.output '\n'
+
+hex.mul_const 8, res8, x3, 5         // wraps modulo 2^32
+hex.print_as_digit 8, res8, 0
+stl.output '\n'
+
+hex.mul_const 8, res8, x4, 0
+hex.print_as_digit 8, res8, 0
+stl.output '\n'
+
+hex.mul_const 8, x5, x5, 320         // dst aliases src
+hex.print_as_digit 8, x5, 0
+stl.output '\n'
+
+stl.loop
+
+x1: hex.vec 8, 0x00001234
+x2: hex.vec 8, 0x12345678
+x3: hex.vec 8, 0xFFFFFFFF
+x4: hex.vec 8, 0xABCD0123
+x5: hex.vec 8, 0x00001234
+res8: hex.vec 8

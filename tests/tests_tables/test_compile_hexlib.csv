@@ -54,3 +54,7 @@ hexlib-strings, programs/hexlib_tests/basics1/strings.fj,tests/compiled/hexlib_t
 hexlib-scmp, programs/hexlib_tests/basics1/scmp.fj,tests/compiled/hexlib_tests/basics1/scmp.fjm, 64,3,0, True,True
 hexlib-nth_pointers, programs/hexlib_tests/basics2/nth_pointers.fj,tests/compiled/hexlib_tests/basics2/nth_pointers.fjm, 64,3,0, True,True
 hexlib-input_dec_until, programs/hexlib_tests/basics1/input_dec_until.fj,tests/compiled/hexlib_tests/basics1/input_dec_until.fjm, 64,3,0, True,True
+hexlib-fixed_mul, programs/hexlib_tests/fixed_point/fixed_mul.fj,tests/compiled/hexlib_tests/fixed_point/fixed_mul.fjm, 64,3,0, True,True
+hexlib-fixed_div, programs/hexlib_tests/fixed_point/fixed_div.fj,tests/compiled/hexlib_tests/fixed_point/fixed_div.fjm, 64,3,0, True,True
+hexlib-mul_const, programs/hexlib_tests/fixed_point/mul_const.fj,tests/compiled/hexlib_tests/fixed_point/mul_const.fjm, 64,3,0, True,True
+hexlib-read_table, programs/hexlib_tests/fixed_point/read_table.fj,tests/compiled/hexlib_tests/fixed_point/read_table.fjm, 64,3,0, True,True

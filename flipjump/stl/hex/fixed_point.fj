@@ -1,0 +1,110 @@
+// ---------- Fixed-Point Math
+// Signed Q-format fixed-point helpers (no floating point) - e.g. DOOM's 16.16 format
+//  is n=8, f=4 (8 nibbles total, 4 nibbles of fraction); 8.8 is n=4, f=2.
+// The LUT-side of this design (replacing runtime divides/trig with data tables) is
+//  generated host-side by flipjump.lut_generator, and read with hex.read_table below.
+
+
+ns hex {
+    //  Time Complexity: 4n^2(5.5@+20) + n(8@+33)    // the 2n-nibble multiply dominates
+    // Space Complexity: 4n^2(5.5@+20) + n(30@+100)
+    //   dst[:n] = (a[:n] * b[:n]) >> 4f    (signed fixed-point multiply)
+    //
+    // a,b,dst are signed Q-format hex[:n] with f fraction-nibbles (dst may alias a/b).
+    // The product is computed at full 2n-nibble width (no intermediate overflow), then
+    //  shifted right by the (nibble-aligned) fraction - so no runtime-amount shift is needed.
+    // The result is truncated to n nibbles (wraps modulo 2^4n, like C's fixed-point casts).
+    // @Assumes: 0 < f <= n.
+    // @requires hex.init
+    def fixed_mul n, f, dst, a, b @ wide_a, wide_b, product, end {
+        .mov n, wide_a, a
+        .sign_extend 2*n, n, wide_a
+        .mov n, wide_b, b
+        .sign_extend 2*n, n, wide_b
+        .mul 2*n, product, wide_a, wide_b
+        .mov n, dst, product + f*dw
+        ;end
+
+      wide_a: .vec 2*n
+      wide_b: .vec 2*n
+      product: .vec 2*n
+      end:
+    }
+
+
+    //  Time Complexity: 4n^2(36@+100) + n(15@+50)   // the 2n-nibble signed divide dominates
+    // Space Complexity: 4n^2(30@+441) + n(25@+100)
+    //   if b==0: goto div0
+    //   dst[:n] = (a[:n] << 4f) / b[:n]    (signed fixed-point divide, truncated toward zero)
+    //
+    // a,b,dst are signed Q-format hex[:n] with f fraction-nibbles (dst may alias a/b).
+    // The dividend is pre-shifted at full 2n-nibble width (nibble-aligned - no runtime shift).
+    // @note: a runtime divide is expensive - prefer a reciprocal LUT (flipjump.lut_generator)
+    //  in hot paths.
+    // @Assumes: 0 < f <= n.
+    // @requires hex.init
+    def fixed_div n, f, dst, a, b, div0 @ wide_a, q, r, end {
+        .zero f, wide_a
+        .mov n, wide_a + f*dw, a
+        .sign_extend 2*n, n+f, wide_a
+        .idiv 2*n, n, q, r, wide_a, b, div0, 1
+        .mov n, dst, q
+        ;end
+
+      wide_a: .vec 2*n
+      q: .vec 2*n
+      r: .vec n
+      end:
+    }
+
+
+    //  Time Complexity: #c(n(0.75@+5)) + (#on-bits of c)(n(0.75@+5))
+    // Space Complexity: #c(n(2@+30))
+    //   dst[:n] = src[:n] * c    (c is a compile-time constant)
+    //
+    // The strength-reduced constant multiply: c's set bits become shifted adds, so sparse
+    //  constants are cheap, and no multiplication tables are needed.
+    // dst may alias src.
+    // @requires hex.add.init (or hex.init)
+    def mul_const n, dst, src, c @ shifted, end {
+        .mov n, shifted, src
+        .zero n, dst
+        rep(#c, i) .mul_const.maybe_add_shifted n, dst, shifted, (c>>i)&1
+        ;end
+
+      shifted: .vec n
+      end:
+    }
+    ns mul_const {
+        def maybe_add_shifted n, dst, shifted, bit @ skip {
+            stl.comp_if0 bit, skip
+            ..add n, dst, shifted
+          skip:
+            ..shl_bit n, shifted
+        }
+    }
+
+
+    //  Time Complexity: n(w(0.75@+5) + 18@+27) + #(n*dw)(w/4(1.5@+10)) + 22@+60
+    // Space Complexity: n(w(1.13@+32) + 14@+127) + #(n*dw)(w/4(2@+30))
+    //   dst[:n] = table[idx]    (entry idx of a LUT of hex[:n] entries)
+    //
+    // table is a compile-time address (label) of consecutive hex[:n] entries - the layout
+    //  flipjump.lut_generator emits - so entry k sits at table + k*n*dw.
+    // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst must not alias idx.
+    // The entry address is computed with the strength-reduced mul_const (no runtime-amount
+    //  shift), then read through a pointer.
+    // @requires hex.init & stl.ptr_init
+    def read_table n, dst, table, idx_n, idx @ ptr, table_address, end {
+        .zero w/4, ptr
+        .mov idx_n, ptr, idx
+        .mul_const w/4, ptr, ptr, n*dw
+        .add w/4, ptr, table_address
+        .read_hex n, dst, ptr
+        ;end
+
+      ptr: .vec w/4
+      table_address: .vec w/4, table
+      end:
+    }
+}
