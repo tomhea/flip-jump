@@ -58,3 +58,7 @@ hexlib-fixed_mul, programs/hexlib_tests/fixed_point/fixed_mul.fj,tests/compiled/
 hexlib-fixed_div, programs/hexlib_tests/fixed_point/fixed_div.fj,tests/compiled/hexlib_tests/fixed_point/fixed_div.fjm, 64,3,0, True,True
 hexlib-mul_const, programs/hexlib_tests/fixed_point/mul_const.fj,tests/compiled/hexlib_tests/fixed_point/mul_const.fjm, 64,3,0, True,True
 hexlib-read_table, programs/hexlib_tests/fixed_point/read_table.fj,tests/compiled/hexlib_tests/fixed_point/read_table.fjm, 64,3,0, True,True
+hexlib-fixed_mul_w32, programs/hexlib_tests/fixed_point/fixed_mul.fj,tests/compiled/hexlib_tests/fixed_point/fixed_mul_w32.fjm, 32,3,0, True,True
+hexlib-fixed_div_w32, programs/hexlib_tests/fixed_point/fixed_div.fj,tests/compiled/hexlib_tests/fixed_point/fixed_div_w32.fjm, 32,3,0, True,True
+hexlib-mul_const_w32, programs/hexlib_tests/fixed_point/mul_const.fj,tests/compiled/hexlib_tests/fixed_point/mul_const_w32.fjm, 32,3,0, True,True
+hexlib-read_table_w32, programs/hexlib_tests/fixed_point/read_table.fj,tests/compiled/hexlib_tests/fixed_point/read_table_w32.fjm, 32,3,0, True,True

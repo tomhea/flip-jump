@@ -57,3 +57,7 @@ hexlib-fixed_mul, tests/compiled/hexlib_tests/fixed_point/fixed_mul.fjm, ,tests/
 hexlib-fixed_div, tests/compiled/hexlib_tests/fixed_point/fixed_div.fjm, ,tests/inout/hexlib_tests/fixed_point/fixed_div.out, False,False
 hexlib-mul_const, tests/compiled/hexlib_tests/fixed_point/mul_const.fjm, ,tests/inout/hexlib_tests/fixed_point/mul_const.out, False,False
 hexlib-read_table, tests/compiled/hexlib_tests/fixed_point/read_table.fjm, ,tests/inout/hexlib_tests/fixed_point/read_table.out, False,False
+hexlib-fixed_mul_w32, tests/compiled/hexlib_tests/fixed_point/fixed_mul_w32.fjm, ,tests/inout/hexlib_tests/fixed_point/fixed_mul.out, False,False
+hexlib-fixed_div_w32, tests/compiled/hexlib_tests/fixed_point/fixed_div_w32.fjm, ,tests/inout/hexlib_tests/fixed_point/fixed_div.out, False,False
+hexlib-mul_const_w32, tests/compiled/hexlib_tests/fixed_point/mul_const_w32.fjm, ,tests/inout/hexlib_tests/fixed_point/mul_const.out, False,False
+hexlib-read_table_w32, tests/compiled/hexlib_tests/fixed_point/read_table_w32.fjm, ,tests/inout/hexlib_tests/fixed_point/read_table.out, False,False

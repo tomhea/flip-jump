@@ -6,7 +6,7 @@
 
 
 ns hex {
-    //  Time Complexity: 4n^2(5.5@+20) + n(8@+33)    // the 2n-nibble multiply dominates
+    //  Time Complexity: 4n^2(5.5@+20) + n(8@+33)
     // Space Complexity: 4n^2(5.5@+20) + n(30@+100)
     //   dst[:n] = (a[:n] * b[:n]) >> 4f    (signed fixed-point multiply)
     //
@@ -32,7 +32,7 @@ ns hex {
     }
 
 
-    //  Time Complexity: 4n^2(36@+100) + n(15@+50)   // the 2n-nibble signed divide dominates
+    //  Time Complexity: 4n^2(36@+100) + n(15@+50)
     // Space Complexity: 4n^2(30@+441) + n(25@+100)
     //   if b==0: goto div0
     //   dst[:n] = (a[:n] << 4f) / b[:n]    (signed fixed-point divide, truncated toward zero)

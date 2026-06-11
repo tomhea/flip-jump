@@ -198,8 +198,8 @@ ns hex {
 
 
 ns hex {
-    //  Time Complexity:  n(7@+8) + 8      // worst case (a==b); = 2·mov + 2·xor_by + cmp
-    // Space Complexity:  n(7@+80) + 8     //   (cmp is cheaper than worst when a,b differ in a high hex)
+    //  Time Complexity:  n(7@+8) + 8
+    // Space Complexity:  n(7@+80) + 8
     //   like bit.cmp but SIGNED (two's complement): jumps to lt if a<b, eq if a==b, gt if a>b.
     //   a,b are hex[:n] holding signed values; they are NOT modified.
     //   Method: flip the sign bit (MSB) of copies of a,b, then unsigned-compare — this maps the

@@ -23,6 +23,18 @@ hex.fixed_div 4, 2, res4, p1, q1, bad_div0   // 8.8: -5.0 / 2.5 = -2.0
 hex.print_as_digit 4, res4, 0
 stl.output '\n'
 
+hex.fixed_div 8, 4, res8, a1, nb1, bad_div0  // 3.0 / -2.0 = -1.5
+hex.print_as_digit 8, res8, 0
+stl.output '\n'
+
+hex.fixed_div 8, 4, res8, a2, nb1, bad_div0  // -3.0 / -2.0 = 1.5
+hex.print_as_digit 8, res8, 0
+stl.output '\n'
+
+hex.fixed_div 8, 4, d1, d1, b1, bad_div0     // dst aliases a: 3.0 / 2.0 = 1.5 (in place)
+hex.print_as_digit 8, d1, 0
+stl.output '\n'
+
 hex.fixed_div 8, 4, res8, a1, zero8, good_div0   // x / 0 jumps to DIV0\n
 bad_div0:
     stl.output "BAD\n"
@@ -42,6 +54,8 @@ a4: hex.vec 8, 0x00010000
 b4: hex.vec 8, 0x00030000
 p1: hex.vec 4, 0xFB00
 q1: hex.vec 4, 0x0280
+nb1: hex.vec 8, 0xFFFE0000
+d1: hex.vec 8, 0x00030000
 zero8: hex.vec 8, 0
 res8: hex.vec 8
 res4: hex.vec 4

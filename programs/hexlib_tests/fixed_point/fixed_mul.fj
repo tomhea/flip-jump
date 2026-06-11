@@ -27,6 +27,14 @@ hex.fixed_mul 4, 2, res4, p1, q1     // 8.8: 2.5 * -2.0 = -5.0
 hex.print_as_digit 4, res4, 0
 stl.output '\n'
 
+hex.fixed_mul 8, 4, m1, m1, b1       // dst aliases a: 1.5 * 2.0 = 3.0 (in place)
+hex.print_as_digit 8, m1, 0
+stl.output '\n'
+
+hex.fixed_mul 8, 4, res8, n1, n1     // -0.5 * -0.5 = 0.25 (both sign-extended, b aliases a)
+hex.print_as_digit 8, res8, 0
+stl.output '\n'
+
 stl.loop
 
 a1: hex.vec 8, 0x00018000
@@ -41,5 +49,7 @@ a5: hex.vec 8, 0x00008000
 b5: hex.vec 8, 0x00008000
 p1: hex.vec 4, 0x0280
 q1: hex.vec 4, 0xFE00
+m1: hex.vec 8, 0x00018000
+n1: hex.vec 8, 0xFFFF8000
 res8: hex.vec 8
 res4: hex.vec 4

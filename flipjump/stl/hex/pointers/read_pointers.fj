@@ -70,8 +70,9 @@ ns hex {
 
 
 ns hex {
-    //  Time Complexity:  w(3@+10.25) + 7@+13      // for w=64
-    // Space Complexity:  w(3@+69)    + 7@+48      // for w=64
+    //  Time Complexity:  w(3@+10.25) + 7@+13
+    // Space Complexity:  w(3@+69)    + 7@+48
+    // @note: The complexity is calculated for w=64. For w=32/16, add 0.25@/0.5@ in both complexities.
     //   dst = *(ptr + index*2w)   — read the index-th hex past *ptr.
     // dst is a hex; ptr is a hex[:w/4]; index is a signed hex[:w/4] (may be negative). ptr,index preserved.
     // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
@@ -80,8 +81,9 @@ ns hex {
         .read_hex dst, hex.pointers.nth_ptr
     }
 
-    //  Time Complexity:  w(3@+10.25) + 9@+13      // for w=64
-    // Space Complexity:  w(3@+69)    + 9@+72      // for w=64
+    //  Time Complexity:  w(3@+10.25) + 9@+13
+    // Space Complexity:  w(3@+69)    + 9@+72
+    // @note: The complexity is calculated for w=64. For w=32/16, add 0.25@/0.5@ in both complexities.
     //   dst[:2] = *(ptr + index*2w)   — read the index-th byte past *ptr.
     // dst is a hex[:2]; ptr is a hex[:w/4]; index is a signed hex[:w/4] (may be negative). ptr,index preserved.
     // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
