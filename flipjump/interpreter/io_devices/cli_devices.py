@@ -9,11 +9,11 @@ both to the interpreter memory. create_io_device builds the io-device from the C
 from pathlib import Path
 from typing import Optional
 
-from flipjump.interpretter.io_devices.IODevice import IODevice
-from flipjump.interpretter.io_devices.KeyboardIO import KeyboardIO, ScriptedKeyEventSource
-from flipjump.interpretter.io_devices.ScreenIO import InMemoryScreen256
-from flipjump.interpretter.io_devices.StandardIO import StandardIO
-from flipjump.interpretter.io_devices.device_memory import DeviceMemory
+from flipjump.interpreter.io_devices.IODevice import IODevice
+from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO, ScriptedKeyEventSource
+from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen256
+from flipjump.interpreter.io_devices.StandardIO import StandardIO
+from flipjump.interpreter.io_devices.device_memory import DeviceMemory
 from flipjump.utils.exceptions import IODeviceException
 
 

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional, Dict, Set, Tuple
 
 from flipjump.fjm import fjm_reader
-from flipjump.interpretter.debugging.message_boxes import (
+from flipjump.interpreter.debugging.message_boxes import (
     display_message_box,
     display_message_box_and_get_text_answer,
     display_message_box_with_choices_and_get_answer,

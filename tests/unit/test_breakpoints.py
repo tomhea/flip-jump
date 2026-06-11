@@ -1,5 +1,5 @@
 """
-unit-tests for the breakpoint machinery (flipjump/interpretter/debugging/breakpoints.py):
+unit-tests for the breakpoint machinery (flipjump/interpreter/debugging/breakpoints.py):
 breakpoint resolution (by address / exact label / label-substring), address-to-label
 formatting, the debug actions (single step / skips / continue), and the memory- and
 fj-variable-inspection helpers - all headless.
@@ -13,7 +13,7 @@ import pytest
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_writer import Writer
 from flipjump.fjm.fjm_reader import Reader
-from flipjump.interpretter.debugging.breakpoints import (
+from flipjump.interpreter.debugging.breakpoints import (
     BreakpointHandler,
     BreakpointHandlerUnnecessary,
     calculate_variable_value,

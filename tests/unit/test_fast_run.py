@@ -1,5 +1,5 @@
 """
-unit-tests for the interpreter fast run-loops (flipjump/interpretter/fjm_run.py).
+unit-tests for the interpreter fast run-loops (flipjump/interpreter/fjm_run.py).
 
 the interpreter has three engines: the featured loop (trace / breakpoints / full statistics,
 selected with profile=True), the pure-python fast loop, and the native (C) engine. these
@@ -15,9 +15,9 @@ import pytest
 
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.interpretter import fjm_run
-from flipjump.interpretter.fjm_run import TerminationStatistics
-from flipjump.interpretter.io_devices.FixedIO import FixedIO
+from flipjump.interpreter import fjm_run
+from flipjump.interpreter.fjm_run import TerminationStatistics
+from flipjump.interpreter.io_devices.FixedIO import FixedIO
 from flipjump.utils.classes import TerminationCause
 from tests.unit.unit_utils import (
     CAT_PROGRAM,

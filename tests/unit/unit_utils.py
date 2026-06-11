@@ -12,9 +12,9 @@ from typing import List, Tuple, Union
 from flipjump import assemble
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_reader import GarbageHandling, Reader
-from flipjump.interpretter import fjm_run
-from flipjump.interpretter.fjm_run import TerminationStatistics
-from flipjump.interpretter.io_devices.FixedIO import FixedIO
+from flipjump.interpreter import fjm_run
+from flipjump.interpreter.fjm_run import TerminationStatistics
+from flipjump.interpreter.io_devices.FixedIO import FixedIO
 from flipjump.utils.constants import DEFAULT_MAX_MACRO_RECURSION_DEPTH
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent

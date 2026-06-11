@@ -12,8 +12,8 @@ import zlib
 from pathlib import Path
 from typing import Dict
 
-from flipjump.interpretter.io_devices.ScreenIO import InMemoryScreen256
-from flipjump.interpretter.io_devices.device_memory import DeviceMemory
+from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen256
+from flipjump.interpreter.io_devices.device_memory import DeviceMemory
 
 
 class FakeDeviceMemory(DeviceMemory):

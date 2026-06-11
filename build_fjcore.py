@@ -1,5 +1,5 @@
 """
-Build the optional native interpreter engine (flipjump/interpretter/_fjcore.c) in-place.
+Build the optional native interpreter engine (flipjump/interpreter/_fjcore.c) in-place.
 
     python build_fjcore.py
 
@@ -18,8 +18,8 @@ def main() -> None:
         name='flipjump-fjcore',
         ext_modules=[
             Extension(
-                'flipjump.interpretter._fjcore',
-                sources=['flipjump/interpretter/_fjcore.c'],
+                'flipjump.interpreter._fjcore',
+                sources=['flipjump/interpreter/_fjcore.c'],
             )
         ],
         script_args=['build_ext', '--inplace'] + sys.argv[1:],

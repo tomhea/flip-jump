@@ -1,5 +1,5 @@
 """
-unit-tests for the interpreter run-loop (flipjump/interpretter/fjm_run.py).
+unit-tests for the interpreter run-loop (flipjump/interpreter/fjm_run.py).
 
 covers a real output program, each termination cause (Looping / NullIP / RuntimeMemoryError
 / EOF), the input path (via a hand-built .fjm and via the stl cat program), and the
@@ -10,8 +10,8 @@ from pathlib import Path
 
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.interpretter import fjm_run
-from flipjump.interpretter.io_devices.FixedIO import FixedIO
+from flipjump.interpreter import fjm_run
+from flipjump.interpreter.io_devices.FixedIO import FixedIO
 from flipjump.utils.classes import TerminationCause
 from flipjump import assemble_and_run
 from tests.unit.unit_utils import (

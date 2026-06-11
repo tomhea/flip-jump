@@ -258,7 +258,7 @@ _You can also use the `flipjump.assemble_run_according_to_cmd_line_args(cmd_line
 **[flipjump](flipjump/README.md)** (assembler + interpreter source files):
   - [flipjump_cli.py](flipjump/flipjump_cli.py) - Main CLI script fot the FlipJump Assembler & Interpreter.
   - [fjm/](flipjump/fjm) - Tools for reading/writing .fjm (flip-jump-memory) files.
-  - [interpreter/fjm_run.py](flipjump/interpretter/fjm_run.py) - Interpreter + debugger for assembled fj files.
+  - [interpreter/fjm_run.py](flipjump/interpreter/fjm_run.py) - Interpreter + debugger for assembled fj files.
   - [assembler/](flipjump/assembler) - Components for assembling FlipJump code.
     - [fj_parser.py](flipjump/assembler/fj_parser.py) - Pythonic lex/yacc parser.
     - [preprocessor.py](flipjump/assembler/preprocessor.py) - Unwinds all macros and reps (repetitions).

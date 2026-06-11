@@ -31,8 +31,8 @@ import zlib
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from flipjump.interpretter.io_devices.IODevice import IODevice
-from flipjump.interpretter.io_devices.device_memory import DeviceMemory
+from flipjump.interpreter.io_devices.IODevice import IODevice
+from flipjump.interpreter.io_devices.device_memory import DeviceMemory
 from flipjump.utils.exceptions import IODeviceException, IOReadOnEOF
 
 CMD_INIT_SCREEN = 0x01

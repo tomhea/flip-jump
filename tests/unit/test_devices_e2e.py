@@ -10,10 +10,10 @@ from pathlib import Path
 import pytest
 
 from flipjump import assemble_run_according_to_cmd_line_args
-from flipjump.interpretter import fjm_run
-from flipjump.interpretter.io_devices.KeyboardIO import KeyboardIO, ScriptedKeyEventSource
-from flipjump.interpretter.io_devices.ScreenIO import InMemoryScreen256
-from flipjump.interpretter.io_devices.cli_devices import SplitIO
+from flipjump.interpreter import fjm_run
+from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO, ScriptedKeyEventSource
+from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen256
+from flipjump.interpreter.io_devices.cli_devices import SplitIO
 from flipjump.utils.classes import TerminationCause
 from tests.unit.unit_utils import assemble_to_path
 

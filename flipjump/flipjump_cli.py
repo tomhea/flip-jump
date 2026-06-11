@@ -15,8 +15,8 @@ from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
 from flipjump.fjm.fjm_consts import FJMVersion, SUPPORTED_VERSIONS_NAMES
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.interpretter.io_devices.StandardIO import StandardIO
-from flipjump.interpretter.io_devices.cli_devices import create_io_device
+from flipjump.interpreter.io_devices.StandardIO import StandardIO
+from flipjump.interpreter.io_devices.cli_devices import create_io_device
 from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, DEFAULT_MAX_MACRO_RECURSION_DEPTH
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
 

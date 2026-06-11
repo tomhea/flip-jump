@@ -10,7 +10,7 @@ import collections
 import sys
 from typing import Dict, Tuple, Iterable, Union, Deque, Set, List, Optional, NoReturn
 
-from flipjump.interpretter.debugging.macro_usage_graph import show_macro_usage_pie_graph
+from flipjump.interpreter.debugging.macro_usage_graph import show_macro_usage_pie_graph
 from flipjump.utils.constants import (
     MACRO_SEPARATOR_STRING,
     STARTING_LABEL_IN_MACROS_STRING,

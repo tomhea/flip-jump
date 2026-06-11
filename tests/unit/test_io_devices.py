@@ -1,5 +1,5 @@
 """
-unit-tests for the IO devices (flipjump/interpretter/io_devices/).
+unit-tests for the IO devices (flipjump/interpreter/io_devices/).
 
 covers FixedIO's LSB-first bit ordering, output assembly, EOF and incomplete-output
 errors, and BrokenIO raising on any access.
@@ -7,8 +7,8 @@ errors, and BrokenIO raising on any access.
 
 import pytest
 
-from flipjump.interpretter.io_devices.BrokenIO import BrokenIO
-from flipjump.interpretter.io_devices.FixedIO import FixedIO
+from flipjump.interpreter.io_devices.BrokenIO import BrokenIO
+from flipjump.interpreter.io_devices.FixedIO import FixedIO
 from flipjump.utils.exceptions import BrokenIOUsed, IncompleteOutput, IOReadOnEOF
 
 

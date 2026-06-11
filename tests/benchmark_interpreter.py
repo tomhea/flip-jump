@@ -21,8 +21,8 @@ REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 from flipjump import assemble  # noqa: E402
-from flipjump.interpretter import fjm_run  # noqa: E402
-from flipjump.interpretter.io_devices.FixedIO import FixedIO  # noqa: E402
+from flipjump.interpreter import fjm_run  # noqa: E402
+from flipjump.interpreter.io_devices.FixedIO import FixedIO  # noqa: E402
 from flipjump.utils.classes import TerminationCause  # noqa: E402
 
 PROGRAMS = {

@@ -10,7 +10,7 @@ words actually touched, not with the declared segment sizes.
 import pytest
 
 try:
-    from flipjump.interpretter import _fjcore  # type: ignore[attr-defined]
+    from flipjump.interpreter import _fjcore  # type: ignore[attr-defined]
 except ImportError:
     _fjcore = None
 

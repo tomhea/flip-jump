@@ -10,12 +10,12 @@ scripted event file makes replays deterministic; idle polling never EOFs.
 
 from typing import Dict
 
-from flipjump.interpretter.io_devices.KeyboardIO import (
+from flipjump.interpreter.io_devices.KeyboardIO import (
     KeyEvent,
     KeyboardIO,
     ScriptedKeyEventSource,
 )
-from flipjump.interpretter.io_devices.device_memory import DeviceMemory
+from flipjump.interpreter.io_devices.device_memory import DeviceMemory
 
 
 class FakeDeviceMemory(DeviceMemory):

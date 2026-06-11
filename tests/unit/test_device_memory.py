@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
-from flipjump.interpretter import fjm_run
-from flipjump.interpretter.io_devices.FixedIO import FixedIO
-from flipjump.interpretter.io_devices.device_memory import DeviceMemory
+from flipjump.interpreter import fjm_run
+from flipjump.interpreter.io_devices.FixedIO import FixedIO
+from flipjump.interpreter.io_devices.device_memory import DeviceMemory
 from flipjump.utils.classes import TerminationCause
 from tests.unit.unit_utils import assemble_to_path
 

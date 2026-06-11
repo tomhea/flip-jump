@@ -9,10 +9,10 @@ from typing import Iterator, List
 
 import pytest
 
-from flipjump.interpretter import fjm_run
-from flipjump.interpretter.debugging import message_boxes
-from flipjump.interpretter.debugging.breakpoints import get_breakpoint_handler
-from flipjump.interpretter.io_devices.FixedIO import FixedIO
+from flipjump.interpreter import fjm_run
+from flipjump.interpreter.debugging import message_boxes
+from flipjump.interpreter.debugging.breakpoints import get_breakpoint_handler
+from flipjump.interpreter.io_devices.FixedIO import FixedIO
 from flipjump.utils.classes import TerminationCause
 from tests.unit.unit_utils import assemble_to_path
 

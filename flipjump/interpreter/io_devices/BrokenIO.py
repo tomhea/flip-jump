@@ -4,7 +4,7 @@ used to run programs that are expected to perform no input/output - any read or 
 turns into an error.
 """
 
-from flipjump.interpretter.io_devices.IODevice import IODevice
+from flipjump.interpreter.io_devices.IODevice import IODevice
 from flipjump.utils.exceptions import BrokenIOUsed
 
 

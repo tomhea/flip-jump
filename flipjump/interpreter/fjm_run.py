@@ -23,10 +23,10 @@ from flipjump.fjm import fjm_reader
 from flipjump.fjm.fjm_reader import GarbageHandling
 
 try:
-    from flipjump.interpretter import _fjcore  # type: ignore[attr-defined]
+    from flipjump.interpreter import _fjcore  # type: ignore[attr-defined]
 except ImportError:  # the native engine is optional - fall back to the pure-python loops
     _fjcore = None
-from flipjump.interpretter.debugging.breakpoints import BreakpointHandler, handle_breakpoint
+from flipjump.interpreter.debugging.breakpoints import BreakpointHandler, handle_breakpoint
 from flipjump.utils.classes import TerminationCause, PrintTimer, RunStatistics
 from flipjump.utils.exceptions import (
     FlipJumpRuntimeMemoryException,
@@ -34,9 +34,9 @@ from flipjump.utils.exceptions import (
     FlipJumpException,
     FlipJumpRuntimeException,
 )
-from flipjump.interpretter.io_devices.BrokenIO import BrokenIO
-from flipjump.interpretter.io_devices.IODevice import IODevice
-from flipjump.interpretter.io_devices.device_memory import NativeDeviceMemory, ReaderDeviceMemory
+from flipjump.interpreter.io_devices.BrokenIO import BrokenIO
+from flipjump.interpreter.io_devices.IODevice import IODevice
+from flipjump.interpreter.io_devices.device_memory import NativeDeviceMemory, ReaderDeviceMemory
 
 
 class TerminationStatistics:

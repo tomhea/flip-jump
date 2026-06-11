@@ -18,8 +18,8 @@ from collections import deque
 from pathlib import Path
 from typing import Deque, List, NamedTuple, Optional, Tuple
 
-from flipjump.interpretter.io_devices.IODevice import IODevice
-from flipjump.interpretter.io_devices.device_memory import DeviceMemory
+from flipjump.interpreter.io_devices.IODevice import IODevice
+from flipjump.interpreter.io_devices.device_memory import DeviceMemory
 from flipjump.utils.exceptions import IODeviceException
 
 
