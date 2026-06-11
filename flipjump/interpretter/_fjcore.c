@@ -26,6 +26,12 @@
 /* how often to check for signals (Ctrl+C): every 2^18 ops */
 #define SIGNAL_CHECK_MASK 0x3FFFFull
 
+/* flat-storage mode: programs whose segments all end below this word-count (and with
+   w<=32, so bit 63 is free to mark out-of-segment words) use one dense array instead of
+   the page table - removing the page lookup from the serial jump-address chain. */
+#define FLAT_MAX_WORDS (1ull << 23) /* 8M words, 64MB */
+#define GARBAGE_SENTINEL (1ull << 63)
+
 /* termination causes (mapped to TerminationCause in fjm_run.py) */
 #define TERM_LOOPING 0
 #define TERM_EOF 1
@@ -69,6 +75,11 @@ typedef struct {
     Py_ssize_t segment_count;
     Py_ssize_t segment_capacity;
     int segments_sorted;
+
+    /* flat-storage mode (built at the first run when eligible; NULL = paged mode) */
+    uint64_t* flat;
+    uint64_t flat_count;
+    int storage_decided;
 
     int mem_error;            /* set when garbage_stop fired */
     uint64_t error_bit_address;
@@ -220,11 +231,41 @@ static inline int access_check(MemoryObject* m, Page* page, uint64_t word_addres
     return 0;
 }
 
+static inline int flat_garbage(MemoryObject* m, uint64_t word_address)
+{
+    if (!m->garbage_stop) {
+        return 1; /* continue-mode reads 0 (flat mode requires garbage_stop, but be safe) */
+    }
+    m->mem_error = 1;
+    m->error_bit_address = word_address << m->ww;
+    return 0;
+}
+
 /* read the w-bit word at the word-address. returns 0 on success, -1 on stop (mem_error or
    python error - distinguish via m->mem_error). */
 static inline int mem_read_word(MemoryObject* m, uint64_t word_address, uint64_t* out)
 {
-    Page* page = mem_get_page(m, word_address >> PAGE_BITS);
+    Page* page;
+    if (m->flat) {
+        uint64_t value;
+        if (word_address >= m->flat_count) {
+            if (!flat_garbage(m, word_address)) {
+                return -1;
+            }
+            *out = 0;
+            return 0;
+        }
+        value = m->flat[word_address];
+        if (value & GARBAGE_SENTINEL) {
+            if (!flat_garbage(m, word_address)) {
+                return -1;
+            }
+            value = 0;
+        }
+        *out = value;
+        return 0;
+    }
+    page = mem_get_page(m, word_address >> PAGE_BITS);
     if (!page) {
         return -1;
     }
@@ -239,7 +280,23 @@ static inline int mem_read_word(MemoryObject* m, uint64_t word_address, uint64_t
 static inline int mem_flip_bit(MemoryObject* m, uint64_t bit_address)
 {
     uint64_t word_address = bit_address >> m->ww;
-    Page* page = mem_get_page(m, word_address >> PAGE_BITS);
+    Page* page;
+    if (m->flat) {
+        uint64_t value;
+        if (word_address >= m->flat_count) {
+            return flat_garbage(m, word_address) ? 0 : -1;
+        }
+        value = m->flat[word_address];
+        if (value & GARBAGE_SENTINEL) {
+            if (!flat_garbage(m, word_address)) {
+                return -1;
+            }
+            value = 0; /* continue-mode: the garbage word becomes a live 0 */
+        }
+        m->flat[word_address] = value ^ (1ull << (bit_address & (uint64_t)(m->w - 1)));
+        return 0;
+    }
+    page = mem_get_page(m, word_address >> PAGE_BITS);
     if (!page) {
         return -1;
     }
@@ -255,7 +312,23 @@ static inline int mem_write_bit(MemoryObject* m, uint64_t bit_address, int bit_v
 {
     uint64_t word_address = bit_address >> m->ww;
     uint64_t bit = 1ull << (bit_address & (uint64_t)(m->w - 1));
-    Page* page = mem_get_page(m, word_address >> PAGE_BITS);
+    Page* page;
+    if (m->flat) {
+        uint64_t value;
+        if (word_address >= m->flat_count) {
+            return flat_garbage(m, word_address) ? 0 : -1;
+        }
+        value = m->flat[word_address];
+        if (value & GARBAGE_SENTINEL) {
+            if (!flat_garbage(m, word_address)) {
+                return -1;
+            }
+            value = 0;
+        }
+        m->flat[word_address] = bit_value ? (value | bit) : (value & ~bit);
+        return 0;
+    }
+    page = mem_get_page(m, word_address >> PAGE_BITS);
     if (!page) {
         return -1;
     }
@@ -289,6 +362,79 @@ static inline int mem_get_word_unaligned(MemoryObject* m, uint64_t bit_address, 
     return 0;
 }
 
+/* decide the storage mode (once, at the first run): build the flat array when eligible -
+   w<=32 (bit 63 is free for the garbage sentinel), garbage-stop mode, and all segments
+   ending below FLAT_MAX_WORDS. copies the already-loaded page data in, then frees the pages. */
+static int mem_decide_storage(MemoryObject* m)
+{
+    uint64_t max_end = 0, i;
+    Py_ssize_t seg;
+    if (m->storage_decided) {
+        return 0;
+    }
+    m->storage_decided = 1;
+
+    if (m->w > 32 || !m->garbage_stop || m->segment_count == 0) {
+        return 0; /* paged */
+    }
+    {
+        const char* no_flat = getenv("FLIPJUMP_NO_FLAT");
+        if (no_flat && no_flat[0] == '1') {
+            return 0; /* paged (forced - for A/B benchmarking and debugging) */
+        }
+    }
+    for (seg = 0; seg < m->segment_count; seg++) {
+        if (m->segments[seg].end > max_end) {
+            max_end = m->segments[seg].end;
+        }
+    }
+    if (max_end > FLAT_MAX_WORDS) {
+        return 0; /* paged */
+    }
+
+    m->flat = (uint64_t*)malloc((size_t)max_end * sizeof(uint64_t));
+    if (!m->flat) {
+        PyErr_NoMemory();
+        return -1;
+    }
+    m->flat_count = max_end;
+    for (i = 0; i < max_end; i++) {
+        m->flat[i] = GARBAGE_SENTINEL;
+    }
+    for (seg = 0; seg < m->segment_count; seg++) {
+        memset(m->flat + m->segments[seg].start, 0,
+               (size_t)(m->segments[seg].end - m->segments[seg].start) * sizeof(uint64_t));
+    }
+    /* copy the loaded data: each allocated page, intersected with each segment */
+    if (m->slots) {
+        for (i = 0; i < m->slot_count; i++) {
+            uint64_t page_start, page_end;
+            if (!m->slots[i].key_plus1) {
+                continue;
+            }
+            page_start = (m->slots[i].key_plus1 - 1) << PAGE_BITS;
+            page_end = page_start + PAGE_WORDS;
+            for (seg = 0; seg < m->segment_count; seg++) {
+                uint64_t lo = (m->segments[seg].start > page_start) ? m->segments[seg].start : page_start;
+                uint64_t hi = (m->segments[seg].end < page_end) ? m->segments[seg].end : page_end;
+                if (lo < hi) {
+                    memcpy(m->flat + lo, m->slots[i].page->words + (lo - page_start),
+                           (size_t)(hi - lo) * sizeof(uint64_t));
+                }
+            }
+            free(m->slots[i].page->words);
+            free(m->slots[i].page);
+        }
+        free(m->slots);
+        m->slots = NULL;
+        m->slot_count = 0;
+        m->slots_used = 0;
+        memset(m->page_cache_key_plus1, 0, sizeof(m->page_cache_key_plus1));
+        memset(m->page_cache_page, 0, sizeof(m->page_cache_page));
+    }
+    return 0;
+}
+
 /* ---------------------------------------------------------------- Memory type */
 
 static int Memory_init(MemoryObject* self, PyObject* args, PyObject* kwds)
@@ -315,6 +461,9 @@ static int Memory_init(MemoryObject* self, PyObject* args, PyObject* kwds)
     self->segment_count = 0;
     self->segment_capacity = 0;
     self->segments_sorted = 1;
+    self->flat = NULL;
+    self->flat_count = 0;
+    self->storage_decided = 0;
     self->mem_error = 0;
     self->error_bit_address = 0;
     self->last_run_op_count = 0;
@@ -332,6 +481,7 @@ static void Memory_dealloc(MemoryObject* self)
         }
         free(self->slots);
     }
+    free(self->flat);
     free(self->segments);
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
@@ -373,6 +523,14 @@ static PyObject* Memory_set_word(MemoryObject* self, PyObject* args)
     if (!PyArg_ParseTuple(args, "KK", &word_address, &value)) {
         return NULL;
     }
+    if (self->flat) {
+        if (word_address >= self->flat_count) {
+            PyErr_SetString(PyExc_ValueError, "set_word address is beyond the flat-storage span");
+            return NULL;
+        }
+        self->flat[word_address] = value & self->word_mask;
+        Py_RETURN_NONE;
+    }
     page = mem_get_page(self, word_address >> PAGE_BITS);
     if (!page) {
         return NULL;
@@ -387,6 +545,10 @@ static PyObject* Memory_get_word(MemoryObject* self, PyObject* args)
     Page* page;
     if (!PyArg_ParseTuple(args, "K", &word_address)) {
         return NULL;
+    }
+    if (self->flat) {
+        uint64_t value = (word_address < self->flat_count) ? self->flat[word_address] : 0;
+        return PyLong_FromUnsignedLongLong((value & GARBAGE_SENTINEL) ? 0 : value);
     }
     page = mem_get_page(self, word_address >> PAGE_BITS);
     if (!page) {
@@ -415,6 +577,15 @@ static PyObject* Memory_set_words(MemoryObject* self, PyObject* args)
         if (value == (unsigned long long)-1 && PyErr_Occurred()) {
             Py_DECREF(values);
             return NULL;
+        }
+        if (self->flat) {
+            if ((uint64_t)(start_word + i) >= self->flat_count) {
+                Py_DECREF(values);
+                PyErr_SetString(PyExc_ValueError, "set_words address is beyond the flat-storage span");
+                return NULL;
+            }
+            self->flat[start_word + i] = value & self->word_mask;
+            continue;
         }
         page = mem_get_page(self, (start_word + i) >> PAGE_BITS);
         if (!page) {
@@ -492,6 +663,10 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
         return NULL;
     }
 
+    if (mem_decide_storage(self) < 0) {
+        return NULL;
+    }
+
     if (last_ops_length > 0) {
         last_ops_ring = (uint64_t*)calloc((size_t)last_ops_length, sizeof(uint64_t));
         if (!last_ops_ring) {
@@ -507,6 +682,8 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
         const uint64_t out1 = dw + 1;
         const uint64_t in_addr = 3 * width + ww + 1; /* 3w + #w */
         const uint64_t in_lo_exclusive = in_addr - dw;
+        uint64_t* const flat = self->flat;
+        const uint64_t flat_count = self->flat_count;
 
         ip = start_ip;
         self->mem_error = 0;
@@ -514,6 +691,9 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
 
         for (;;) {
             uint64_t f, j, bit_offset;
+            Page* op_page = NULL; /* the page holding both op words (aligned, non-straddling ops) */
+            uint64_t op_offset = 0;
+            uint64_t* op_flat_jump = NULL; /* flat mode: where this op's jump word lives */
 
             if ((ops & SIGNAL_CHECK_MASK) == SIGNAL_CHECK_MASK) {
                 self->last_run_op_count = ops;
@@ -527,14 +707,47 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
                 ring_writes++;
             }
 
-            /* read flip word */
+            /* read flip word - flat mode reads it straight out of the dense array; paged
+               mode shares one page lookup for the op's two words (unless the op straddles
+               a page boundary, or the ip is unaligned) */
             bit_offset = ip & bit_mask;
-            if (bit_offset) {
+            if (flat && !bit_offset) {
+                uint64_t word_address = ip >> ww;
+                if (word_address + 1 >= flat_count) {
+                    if (mem_read_word(self, word_address, &f) < 0) {
+                        goto memory_or_python_error;
+                    }
+                } else {
+                    f = flat[word_address];
+                    if (f & GARBAGE_SENTINEL) {
+                        if (!flat_garbage(self, word_address)) {
+                            goto memory_or_python_error;
+                        }
+                        f = 0;
+                    }
+                    op_flat_jump = flat + word_address + 1;
+                }
+            } else if (bit_offset) {
                 if (mem_get_word_unaligned(self, ip, &f) < 0) {
                     goto memory_or_python_error;
                 }
-            } else if (mem_read_word(self, ip >> ww, &f) < 0) {
-                goto memory_or_python_error;
+            } else {
+                uint64_t word_address = ip >> ww;
+                op_offset = word_address & PAGE_MASK;
+                if (op_offset != PAGE_MASK) {
+                    op_page = mem_get_page(self, word_address >> PAGE_BITS);
+                    if (!op_page) {
+                        goto memory_or_python_error;
+                    }
+                    if (!(op_offset >= op_page->valid_start && op_offset < op_page->valid_end)) {
+                        if (!access_check(self, op_page, word_address)) {
+                            goto memory_or_python_error;
+                        }
+                    }
+                    f = op_page->words[op_offset];
+                } else if (mem_read_word(self, word_address, &f) < 0) {
+                    goto memory_or_python_error;
+                }
             }
 
             /* handle output */
@@ -576,8 +789,25 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
                 goto memory_or_python_error;
             }
 
-            /* read jump word (after the flip - the flip may modify it) */
-            if (bit_offset) {
+            /* read jump word (after the flip - the flip may modify it, including this word) */
+            if (op_flat_jump) {
+                j = *op_flat_jump;
+                if (j & GARBAGE_SENTINEL) {
+                    if (!flat_garbage(self, (uint64_t)(op_flat_jump - flat))) {
+                        goto memory_or_python_error;
+                    }
+                    j = 0;
+                }
+            } else if (op_page) {
+                /* the jump word's validity is checked here, at read time (after the flip) -
+                   matching the reference loops' op order exactly */
+                if (!(op_offset + 1 >= op_page->valid_start && op_offset + 1 < op_page->valid_end)) {
+                    if (!access_check(self, op_page, (ip >> ww) + 1)) {
+                        goto memory_or_python_error;
+                    }
+                }
+                j = op_page->words[op_offset + 1];
+            } else if (bit_offset) {
                 if (mem_get_word_unaligned(self, ip + width, &j) < 0) {
                     goto memory_or_python_error;
                 }
@@ -627,7 +857,8 @@ static PyObject* Memory_get_op_count(MemoryObject* self, void* closure)
 static PyObject* Memory_get_allocated_bytes(MemoryObject* self, void* closure)
 {
     (void)closure;
-    return PyLong_FromUnsignedLongLong(self->slots_used * PAGE_WORDS * sizeof(uint64_t) +
+    return PyLong_FromUnsignedLongLong(self->flat_count * sizeof(uint64_t) +
+                                       self->slots_used * PAGE_WORDS * sizeof(uint64_t) +
                                        self->slot_count * sizeof(Slot));
 }
 

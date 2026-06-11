@@ -41,9 +41,30 @@ called back only for IO. Build with `python build_fjcore.py`.
 
 **The ≥10M fj/s acceptance is met with ~10x margin on every row.**
 
-(History: the first engine version used a 1-entry page cache; the ip/jump page and the
-flip-target page alternated every op and thrashed it, dropping the long run to 40M fj/s.
-A 16-entry direct-mapped page cache fixed it — the long run is now the fastest row.)
+## Native-engine optimization history (i7-12700H, P-core ~4.6GHz)
+
+| step | sieve w=32 | sieve w=64 | sieve w=64 1.3B-op | loop w=32 (compact) |
+|---|---:|---:|---:|---:|
+| v1: 1-entry page cache | 78M | 84M | 40M | - |
+| v2: 16-way direct-mapped page cache | 96M | 97M | 104M | - |
+| v3: one page lookup per op-pair | 127M | 129M | 140M | 123M |
+| v4: flat storage for compact programs | 112-127M | 115-129M | 125-140M | **246M** |
+
+- v2: the ip/jump page and the flip-target page alternated every op and thrashed the single
+  cached entry, forcing a hash lookup per access.
+- v3: an op's flip-word and jump-word are adjacent (word_address, word_address+1) - one page
+  lookup serves both (~30%).
+- v4 (flat storage): programs whose segments all end below 8M words, at w<=32 with
+  garbage-stop, get one dense array instead of the page table; out-of-segment words carry a
+  bit-63 sentinel. This removes the page lookup from the serial jump-dependency chain
+  (jump-word load -> next op's address -> next load), which bounds the loop: ~2x on
+  compact-memory programs (DOOM's layout). prime_sieve declares a half-address-space segment,
+  so it stays on the paged path (rows unchanged, run-to-run variance shown).
+  `FLIPJUMP_NO_FLAT=1` forces the paged path (for A/B measurement).
+
+Cycle accounting at ~4.6GHz: v1 was ~46 CPU-cycles per fj-op, v4-flat is ~19. The serial
+dependency floor (jump-word load -> address arithmetic -> next jump-word load, L1-resident)
+is ~7-8 cycles/op (~600M fj/s); the paged-path floor is ~13-15 cycles (~330M fj/s).
 
 (prime_sieve at w=32 is limited to n <= ~5792: its mark-pointer `p*p*dw` wraps the 2^32-bit
 address space beyond that — a property of the program, reproduced identically on all engines.)

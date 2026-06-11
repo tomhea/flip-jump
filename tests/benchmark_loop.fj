@@ -1,0 +1,18 @@
+// A compact-memory interpreter benchmark: a tight counting loop (the whole program sits
+// in one small low-memory segment, unlike prime_sieve's half-address-space reserve).
+// Used by tests/benchmark_interpreter.py --program loop.
+
+hw = w/4
+
+stl.startup_and_init_all
+
+loop:
+    hex.dec hw, counter
+    hex.if0 hw, counter, end
+    ;loop
+
+end:
+    stl.output 'K'      // a tiny output so the run is verifiable
+    stl.loop
+
+counter: hex.vec hw, 10000000

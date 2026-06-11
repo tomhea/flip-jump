@@ -25,23 +25,27 @@ from flipjump.interpretter import fjm_run  # noqa: E402
 from flipjump.interpretter.io_devices.FixedIO import FixedIO  # noqa: E402
 from flipjump.utils.classes import TerminationCause  # noqa: E402
 
-PRIME_SIEVE_FJ = REPO_ROOT / 'programs' / 'prime_sieve.fj'
+PROGRAMS = {
+    'sieve': REPO_ROOT / 'programs' / 'prime_sieve.fj',
+    'loop': REPO_ROOT / 'tests' / 'benchmark_loop.fj',
+}
 COMPILED_DIR = REPO_ROOT / 'tests' / 'compiled' / 'benchmark'
 
 
-def get_benchmark_fjm(memory_width: int) -> Path:
-    """assemble prime_sieve.fj at the given width (cached on disk)."""
+def get_benchmark_fjm(program: str, memory_width: int) -> Path:
+    """assemble the benchmark program at the given width (cached on disk)."""
+    fj_path = PROGRAMS[program]
     COMPILED_DIR.mkdir(parents=True, exist_ok=True)
-    fjm_path = COMPILED_DIR / f'prime_sieve_w{memory_width}.fjm'
-    if not fjm_path.exists() or fjm_path.stat().st_mtime < PRIME_SIEVE_FJ.stat().st_mtime:
-        print(f'assembling prime_sieve.fj at w={memory_width}...')
-        assemble([PRIME_SIEVE_FJ], fjm_path, memory_width=memory_width, print_time=False)
+    fjm_path = COMPILED_DIR / f'{program}_w{memory_width}.fjm'
+    if not fjm_path.exists() or fjm_path.stat().st_mtime < fj_path.stat().st_mtime:
+        print(f'assembling {fj_path.name} at w={memory_width}...')
+        assemble([fj_path], fjm_path, memory_width=memory_width, print_time=False)
     return fjm_path
 
 
-def benchmark(memory_width: int, n: int) -> None:
-    fjm_path = get_benchmark_fjm(memory_width)
-    io_device = FixedIO(f'{n}\n'.encode())
+def benchmark(program: str, memory_width: int, n: int) -> None:
+    fjm_path = get_benchmark_fjm(program, memory_width)
+    io_device = FixedIO(f'{n}\n'.encode() if program == 'sieve' else b'')
 
     start_time = time()
     termination_statistics = fjm_run.run(
@@ -65,13 +69,20 @@ def main() -> None:
     # note: at w=32, prime_sieve's mark-pointer (PRIMES_MEMORY_START + p*p*dw) wraps the
     # 2^32-bit address space for n > ~5792, ending the run with a runtime-memory-error.
     # keep n <= 5000 when benchmarking w=32.
-    parser = argparse.ArgumentParser(description='FlipJump interpreter speed benchmark (prime_sieve.fj)')
+    parser = argparse.ArgumentParser(description='FlipJump interpreter speed benchmark')
     parser.add_argument('n', type=int, nargs='?', default=5000, help='sieve upper bound (default 5000)')
     parser.add_argument('--w', type=int, nargs='+', default=[32, 64], help='memory widths to benchmark')
+    parser.add_argument(
+        '--program',
+        choices=sorted(PROGRAMS),
+        default='sieve',
+        help="the benchmark program: 'sieve' (sparse, half-address-space segment - the paged"
+        " path) or 'loop' (compact memory - the flat-storage path at w<=32)",
+    )
     args = parser.parse_args()
 
     for memory_width in args.w:
-        benchmark(memory_width, args.n)
+        benchmark(args.program, memory_width, args.n)
 
 
 if __name__ == '__main__':
