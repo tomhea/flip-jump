@@ -118,7 +118,7 @@ In summary, they check:
 | [test_device_memory.py](unit/test_device_memory.py) | the device<->memory hook over both engines                                                                  |
 | [test_keyboard_io.py](unit/test_keyboard_io.py) | the keyboard device: the status-hex protocol and scripted event files                                            |
 | [test_screen_io.py](unit/test_screen_io.py)     | the headless screen device: the command stream, palettes, PNGs, and frame hashes                                 |
-| [test_screen_window.py](unit/test_screen_window.py) | the interactive screen window (headless via SDL''s dummy driver): presenting, live keys, fullscreen, closing |
+| [test_screen_window.py](unit/test_screen_window.py) | the interactive screen window (headless via the SDL dummy driver): presenting, live keys, fullscreen, closing |
 | [test_devices_e2e.py](unit/test_devices_e2e.py) | .fj programs driving the screen/keyboard devices end-to-end, and the `--di`/`--do` CLI plumbing                  |
 
 To add a unit-test, just add a `test_*` function to the relevant file (or a new `test_*.py` module)

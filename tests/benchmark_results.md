@@ -120,11 +120,11 @@ What changed (all output-preserving):
 | hello_world | 0.149s | 0.020s (warm) | 7.5x | stl parse (cold only) |
 | prime_sieve | 2.35s | 1.58s | 1.5x | macro resolve + lzma |
 | lut64k (64K-entry LUT) | 5.31s | 4.03s | 1.3x | SLY parsing of 64K data lines |
+| catalog compile (1,029 programs) | ~14 min | 9:03 | 1.55x | per-program macro resolve |
 
 (the lut64k generator was later slimmed to a data-only program - the absolute numbers of a
 fresh `benchmark_assembler.py` run are lower than this table, measured with the original
 generator; the before/after comparison above used the same workload on both sides.)
-| catalog compile (1,029 programs) | ~14 min | 9:03 | 1.55x | per-program macro resolve |
 
 Known remaining costs (documented, not pursued): the SLY lexer/parser's pure-python
 per-token overhead dominates mega-table source files (~2.4s of lut64k - generating tables

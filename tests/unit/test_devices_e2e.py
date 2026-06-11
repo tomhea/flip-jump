@@ -7,8 +7,6 @@ an .fj polling loop, and the --di/--do CLI plumbing runs a full program with bot
 import hashlib
 from pathlib import Path
 
-import pytest
-
 from flipjump import assemble_run_according_to_cmd_line_args
 from flipjump.interpreter import fjm_run
 from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO, ScriptedKeyEventSource
@@ -135,16 +133,6 @@ status:   hex.hex
 keycode:  hex.vec 2
 KEY_DOWN: hex.hex 9
 """
-
-
-@pytest.fixture(params=['fast-python', 'native'])
-def engine(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> str:
-    if request.param == 'native':
-        if fjm_run._fjcore is None:  # type: ignore[attr-defined]
-            pytest.skip('the native engine (_fjcore) is not built')
-    else:
-        monkeypatch.setattr(fjm_run, '_fjcore', None)
-    return str(request.param)
 
 
 def test_fj_program_drives_the_screen(tmp_path: Path, engine: str) -> None:

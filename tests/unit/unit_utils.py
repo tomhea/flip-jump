@@ -27,6 +27,7 @@ except ImportError:
 # skip marker for tests that need the compiled native engine
 native_engine_required = pytest.mark.skipif(_fjcore is None, reason='the native engine (_fjcore) is not built')
 
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 PROGRAMS_DIR = REPO_ROOT / 'programs'
 HELLO_NO_STL = PROGRAMS_DIR / 'print_tests' / 'hello_no-stl.fj'

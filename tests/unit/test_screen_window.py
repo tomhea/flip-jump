@@ -165,16 +165,6 @@ def test_cli_screen_with_live_keyboard_wiring() -> None:
     assert io_device.input_device.event_source is io_device.output_device.key_event_source
 
 
-@pytest.fixture(params=['fast-python', 'native'])
-def engine(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> str:
-    if request.param == 'native':
-        if fjm_run._fjcore is None:  # type: ignore[attr-defined]
-            pytest.skip('the native engine (_fjcore) is not built')
-    else:
-        monkeypatch.setattr(fjm_run, '_fjcore', None)
-    return str(request.param)
-
-
 def test_closing_the_window_terminates_a_real_run(tmp_path: Path, engine: str) -> None:
     # QUIT is already pending when the program presents its first frame: the pump raises
     # KeyboardInterrupt inside the run, and the interpreter must turn it into a clean
@@ -187,3 +177,5 @@ def test_closing_the_window_terminates_a_real_run(tmp_path: Path, engine: str) -
     statistics = fjm_run.run(fjm_path, io_device=device, print_time=False)
     assert statistics.termination_cause == TerminationCause.KeyboardInterrupt
     assert device.window.closed
+    # storage_mode is set only by the native engine - prove the right engine actually ran
+    assert (statistics.storage_mode is not None) == (engine == 'native')

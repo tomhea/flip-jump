@@ -36,7 +36,6 @@ Offers macros for manipulating binary variables and vectors (i.e. numbers):
 - [mul.fj](bit/mul.fj) - mul10, mul, mul_loop
 - [div.fj](bit/div.fj) - div10, {i}div, {i}div_loop (i stands for signed)
 - [pointers.fj](bit/pointers.fj) - bit-vec pointers: flip, jump, xor_to, xor_from, inc/dec; pointers init
-- [strings.fj](hex/strings.fj) - the byte-buffer block helpers: input_ptr_line, print_ptr_text/line, fill_bytes, copy_bytes
 
 ### [hex/](hex)
 Defines the `hex` data-structure (for hexadecimal variables).
@@ -55,6 +54,7 @@ Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers):
 - [math.fj](hex/math.fj) - add/sub, {add/sub}_shifted, {add/sub}_constant
 - [mul.fj](hex/mul.fj) - add_mul, mul (works for signed & unsigned), mul10
 - [div.fj](hex/div.fj) - div, idiv (signed)
+- [strings.fj](hex/strings.fj) - the byte-buffer block helpers: input_ptr_line, print_ptr_text/line, fill_bytes, copy_bytes
 - [tables_init.fj](hex/tables_init.fj) - initializes the "results-tables" for the next hex macros: or,and, add,sub, cmp, mul
 - [pointers/](hex/pointers) - hex-vec pointers subdirectory: [flip](hex/pointers/xor_to_pointer.fj), [jump](hex/pointers/basic_pointers.fj), [xor_to](hex/pointers/xor_to_pointer.fj), [xor_from](hex/pointers/xor_from_pointer.fj); [stack](hex/pointers/stack.fj)/[pointers](hex/pointers/basic_pointers.fj) init. [pointer arithmetics](hex/pointers/pointer_arithmetics.fj), [stack arithmetics + push/pop](hex/pointers/stack.fj).
 
