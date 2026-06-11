@@ -80,6 +80,42 @@ is ~7-8 cycles/op (~600M fj/s); the paged-path floor is ~13-15 cycles (~330M fj/
 (prime_sieve at w=32 is limited to n <= ~5792: its mark-pointer `p*p*dw` wraps the 2^32-bit
 address space beyond that — a property of the program, reproduced identically on all engines.)
 
+## WI-E - assembler speedup (1.5.0)
+
+Benchmark: `python tests/benchmark_assembler.py` - three workload shapes: hello_world.fj
+(the per-program fixed cost), prime_sieve.fj (macro-heavy), and a generated 64K-entry
+byte-LUT program (data-heavy, the DOOM-mega-table shape). Acceptance: bit-identical .fjm
+outputs - verified by sha256 on 14 outputs (10 catalog programs across categories + the 3
+workloads, w=64 and w=32), cold- and warm-cache, before vs after.
+
+What changed (all output-preserving):
+- **Expr sharing** (`expr.py`): `eval_new` returns unchanged (sub)expressions as-is instead
+  of deep-cloning them - Expr objects are immutable, so trees share nodes. Substituting a
+  parameter is now a node swap, not a clone of the parameter's tree. Single-pass
+  fold/unchanged detection. `FlipJump`/`WordFlip` ops likewise return themselves when
+  nothing was substituted. This was the dominant macro-resolve cost (~1.1M `eval_new`
+  calls assembling prime_sieve).
+- **stl-prefix parse cache** (`fj_parser.py`): the parser state after the stl files (the
+  consts + macros dicts and the main macro's ops) is snapshotted once per
+  (stl files mtime/size, w, werror) and reused by every later assemble in the process.
+  The parsed Macro/op objects are immutable from then on (the preprocessor
+  clones-or-shares, never mutates), so sharing them is safe. This removes the ~0.13s
+  per-program fixed cost the catalog used to pay ~1,000 times.
+- `exact_eval` fast paths (labels resolve); bulk `struct.pack` of the data words and a
+  lazy error-string in `add_segment` (fjm_writer).
+
+| workload | before | after | speedup | now dominated by |
+|---|---:|---:|---:|---|
+| hello_world | 0.149s | 0.020s (warm) | 7.5x | stl parse (cold only) |
+| prime_sieve | 2.35s | 1.58s | 1.5x | macro resolve + lzma |
+| lut64k (64K-entry LUT) | 5.31s | 4.03s | 1.3x | SLY parsing of 64K data lines |
+| catalog compile (1,029 programs) | ~14 min | 9:03 | 1.55x | per-program macro resolve |
+
+Known remaining costs (documented, not pursued): the SLY lexer/parser's pure-python
+per-token overhead dominates mega-table source files (~2.4s of lut64k - generating tables
+as fewer, longer lines or assembling them once into a library would sidestep it); LZMA
+compression (preset 6) is most of "create binary" and is part of the .fjm format itself.
+
 ## WI-F - jump-target speculation: miss-rate study. Verdict: **GO**
 
 The native engine is bounded (~16 cycles/op flat) by the serial chain: this op's jump-word

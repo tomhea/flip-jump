@@ -906,6 +906,66 @@ def lex_parse_curr_file(lexer: FJLexer, parser: FJParser) -> None:
     exit_if_errors()
 
 
+# ---- the stl-prefix parse cache ----
+# parsing the standard library (the leading stl files of almost every assemble) is a fixed
+# cost (~0.1s); the test catalog assembles ~1,000 programs in one process and used to pay
+# it every time. the parser state after the stl prefix is tiny (the consts dict + the
+# macros dict + the main macro's accumulated top-level ops), and the parsed Macro/op
+# objects are immutable from then on (the preprocessor clones-or-shares, never mutates) -
+# so it is snapshotted once per (stl files, memory-width, warnings-mode) and reused.
+# user files are never cached.
+_StlCacheKey = Tuple[int, bool, Tuple[Tuple[str, str, int, int], ...]]
+_StlCacheValue = Tuple[Dict[str, Expr], Dict[MacroName, Macro], List[Op]]
+_stl_prefix_cache: Dict[_StlCacheKey, _StlCacheValue] = {}
+
+
+def _stl_prefix_length(input_files: List[Tuple[str, Path]]) -> int:
+    """the length of the leading run of input files that live inside the packaged stl."""
+    stl_dir = (Path(__file__).parent.parent / 'stl').resolve()
+    prefix_length = 0
+    for _, file_path in input_files:
+        try:
+            if not file_path.resolve().is_relative_to(stl_dir):
+                break
+        except OSError:
+            break
+        prefix_length += 1
+    return prefix_length
+
+
+def _stl_cache_key(
+    input_files: List[Tuple[str, Path]], prefix_length: int, memory_width: int, warning_as_errors: bool
+) -> _StlCacheKey:
+    files_key = []
+    for short_name, file_path in input_files[:prefix_length]:
+        file_stat = file_path.stat()
+        files_key.append((short_name, str(file_path.resolve()), file_stat.st_mtime_ns, file_stat.st_size))
+    return memory_width, warning_as_errors, tuple(files_key)
+
+
+def _restore_parser_from_cache(parser: FJParser, cached: _StlCacheValue) -> None:
+    cached_consts, cached_macros, cached_main_ops = cached
+    parser.consts = dict(cached_consts)
+    parser.macros = dict(cached_macros)
+    cached_main_macro = cached_macros[INITIAL_MACRO_NAME]
+    # the main macro accumulates top-level ops while parsing - give this parse its own copy
+    parser.macros[INITIAL_MACRO_NAME] = Macro(
+        list(cached_main_macro.params),
+        list(cached_main_macro.local_params),
+        list(cached_main_ops),
+        cached_main_macro.namespace,
+        cached_main_macro.code_position,
+    )
+
+
+def _snapshot_parser_to_cache(parser: FJParser, cache_key: _StlCacheKey) -> None:
+    _stl_prefix_cache[cache_key] = (
+        dict(parser.consts),
+        dict(parser.macros),
+        list(parser.macros[INITIAL_MACRO_NAME].ops),
+    )
+
+
 def parse_macro_tree(
     input_files: List[Tuple[str, Path]], memory_width: int, warning_as_errors: bool
 ) -> Dict[MacroName, Macro]:
@@ -929,9 +989,23 @@ def parse_macro_tree(
     lexer = FJLexer()
     parser = FJParser(memory_width, warning_as_errors, input_files[0])
 
-    for curr_file_short_name, curr_file in input_files:
+    prefix_length = _stl_prefix_length(input_files)
+    cache_key = _stl_cache_key(input_files, prefix_length, memory_width, warning_as_errors) if prefix_length else None
+
+    first_uncached_index = 0
+    if cache_key is not None and cache_key in _stl_prefix_cache:
+        _restore_parser_from_cache(parser, _stl_prefix_cache[cache_key])
+        for curr_file_short_name, curr_file in input_files[:prefix_length]:
+            validate_current_file(files_seen)
+        first_uncached_index = prefix_length
+
+    for file_index, (curr_file_short_name, curr_file) in enumerate(input_files):
+        if file_index < first_uncached_index:
+            continue
         validate_current_file(files_seen)
         lex_parse_curr_file(lexer, parser)
+        if cache_key is not None and file_index == prefix_length - 1:
+            _snapshot_parser_to_cache(parser, cache_key)
 
     parser.validate_no_label_const_collisions()
     exit_if_errors()

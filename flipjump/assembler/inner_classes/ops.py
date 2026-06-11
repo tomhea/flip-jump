@@ -83,7 +83,10 @@ class FlipJump:
         return f"Flip: {self.flip}, Jump: {self.jump}, at {self.code_position}"
 
     def eval_new(self, labels_dict: Dict[str, Expr]) -> FlipJump:
-        return FlipJump(self.flip.eval_new(labels_dict), self.jump.eval_new(labels_dict), self.code_position)
+        flip, jump = self.flip.eval_new(labels_dict), self.jump.eval_new(labels_dict)
+        if flip is self.flip and jump is self.jump:
+            return self  # FlipJump ops are immutable - share them (data ops dominate LUT programs)
+        return FlipJump(flip, jump, self.code_position)
 
     def all_unknown_labels(self) -> Set[str]:
         return {label for expr in (self.flip, self.jump) for label in expr.all_unknown_labels()}
@@ -113,12 +116,16 @@ class WordFlip:
         )
 
     def eval_new(self, labels_dict: Dict[str, Expr]) -> WordFlip:
-        return WordFlip(
-            self.word_address.eval_new(labels_dict),
-            self.flip_value.eval_new(labels_dict),
-            self.return_address.eval_new(labels_dict),
-            self.code_position,
-        )
+        word_address = self.word_address.eval_new(labels_dict)
+        flip_value = self.flip_value.eval_new(labels_dict)
+        return_address = self.return_address.eval_new(labels_dict)
+        if (
+            word_address is self.word_address
+            and flip_value is self.flip_value
+            and return_address is self.return_address
+        ):
+            return self  # WordFlip ops are immutable - share them
+        return WordFlip(word_address, flip_value, return_address, self.code_position)
 
     def all_unknown_labels(self) -> Set[str]:
         return {
