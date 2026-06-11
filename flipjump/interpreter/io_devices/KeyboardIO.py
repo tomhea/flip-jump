@@ -1,12 +1,13 @@
 """
 the keyboard input-device (WI-B).
-non-blocking, virtual-time, scriptable: the FJ program polls one status byte per tic
-(0x00 = NO_EVENT, 0xFE = an event is due) and keeps its own frame-counter clock - there is
-no timer device, and idle polling never EOFs.
+non-blocking, virtual-time, scriptable: the FJ program polls one status BIT per tic
+(0 = no event, 1 = an event is due) and keeps its own frame-counter clock - there is no
+timer device, and idle polling never EOFs (and costs the program a single input op).
 
-event payload [is_down][keycode] is delivered either through the input stream right after
-the status byte (stream mode), or written into a fixed memory mailbox (two packed-byte ops:
-mailbox, mailbox+dw) via the device<->memory hook before the status byte is returned
+the event payload - one is_down bit (1 = key pressed, 0 = released) followed by one keycode
+byte - is delivered either through the input stream right after the status bit (stream
+mode), or written into a fixed memory mailbox (two packed-byte ops: is_down at mailbox,
+keycode at mailbox+dw) via the device<->memory hook before the status bit is returned
 (mailbox mode - pass mailbox_bit_address).
 
 the event source is pluggable: ScriptedKeyEventSource replays a `tic, down/up, keycode`
@@ -96,8 +97,8 @@ class KeyboardIO(IODevice):
     output written to this device is buffered (get_output), so it can also be used standalone.
     """
 
-    NO_EVENT = 0x00
-    EVENT_MARKER = 0xFE
+    NO_EVENT_BIT = False
+    EVENT_BIT = True
 
     def __init__(self, event_source: KeyEventSource, *, mailbox_bit_address: Optional[int] = None):
         self.event_source = event_source
@@ -119,11 +120,11 @@ class KeyboardIO(IODevice):
             self._pending_input_bits.append((value >> i) & 1 == 1)
 
     def _poll(self) -> None:
-        """one tic: queue the status byte (and deliver the payload, by mode)."""
+        """one tic: queue the status bit (and deliver the payload, by mode)."""
         event = self.event_source.next_due_event(self.tic)
         self.tic += 1
         if event is None:
-            self._queue_input_byte(self.NO_EVENT)
+            self._pending_input_bits.append(self.NO_EVENT_BIT)
             return
 
         is_down, keycode = event
@@ -133,10 +134,10 @@ class KeyboardIO(IODevice):
             dw = 2 * self.device_memory.memory_width
             self.device_memory.write_data_byte(self.mailbox_bit_address, int(is_down))
             self.device_memory.write_data_byte(self.mailbox_bit_address + dw, keycode)
-            self._queue_input_byte(self.EVENT_MARKER)
+            self._pending_input_bits.append(self.EVENT_BIT)
         else:
-            self._queue_input_byte(self.EVENT_MARKER)
-            self._queue_input_byte(int(is_down))
+            self._pending_input_bits.append(self.EVENT_BIT)
+            self._pending_input_bits.append(bool(is_down))
             self._queue_input_byte(keycode)
 
     def read_bit(self) -> bool:
