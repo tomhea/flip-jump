@@ -149,6 +149,36 @@ fj --run hello_world.fjm
 - The first line will assemble your code.
 - The second line will run your code.
 
+### Make it fast
+
+The interpreter has three engines (since 1.5.0):
+- **The native engine** (~80M fj-ops/s) - an optional C-extension. Build it once with
+  `python build_fjcore.py` (needs a C compiler); it is then used automatically
+  (set `FLIPJUMP_NO_NATIVE=1` to disable it).
+- **The fast loop** (~4M fj-ops/s) - pure python, the default when the native engine isn't built.
+- **The featured loop** - used for `--trace`/breakpoints, or with `--profile` for the full
+  per-op statistics (flips/jumps percentages).
+
+Benchmark them yourself with `python tests/benchmark_interpreter.py` (results and the
+w=32-vs-w=64 recommendation are recorded in [tests/benchmark_results.md](tests/benchmark_results.md)).
+
+### IO devices
+
+The interpreter's IO is pluggable (since 1.5.0):
+
+```bash
+fj --run game.fjm --di keyboard=events.txt --do screen=frames_dir
+```
+
+- `--do screen=FRAMES_DIR` - the headless **InMemoryScreen256**: the program sends
+  init/palette/update commands over the output stream, the device reads the framebuffer
+  from the program's memory, and writes one PNG per frame plus a frame-hash log.
+- `--di keyboard=EVENTS_FILE[@MAILBOX]` - a non-blocking, virtual-time **keyboard**: the
+  program polls one status byte per tic; events come from a scripted `tic, down/up, keycode`
+  file (deterministic replays), or land in a fixed memory mailbox.
+- Devices can read/write the program's memory through the `DeviceMemory` hook
+  (`IODevice.attach_memory`) - the primitive both devices are built on.
+
 You can also use the faster [cpp-based interpreter](https://github.com/tomhea/fji-cpp):
 
 ```bash
@@ -166,6 +196,8 @@ Programs won't work on their first run. They just can't. That's why we support t
 - `-B NAME [NAME ...]`: Places breakpoints at every label that contains one of the given NAMEs. (requires `-b`)
 
 The debugger can single-step, read-memory, read flipjump variables (bit/hex/byte, and their vectors), continue, or skip forward a fixed number of opcodes.
+
+The debugger is a CLI (since 1.5.0 - no GUI dependency): at a breakpoint it prints the current address (with its macro-stack label), and prompts for the next action in the terminal - so it works over ssh, in CI, and for agents (EOF/empty answers pick the safe default, Continue All).
 
 # Get Started with FlipJump
 - Install flipjump: `pip install flipjump`
