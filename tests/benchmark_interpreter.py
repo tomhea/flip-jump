@@ -62,8 +62,11 @@ def benchmark(memory_width: int, n: int) -> None:
 
 
 def main() -> None:
+    # note: at w=32, prime_sieve's mark-pointer (PRIMES_MEMORY_START + p*p*dw) wraps the
+    # 2^32-bit address space for n > ~5792, ending the run with a runtime-memory-error.
+    # keep n <= 5000 when benchmarking w=32.
     parser = argparse.ArgumentParser(description='FlipJump interpreter speed benchmark (prime_sieve.fj)')
-    parser.add_argument('n', type=int, nargs='?', default=10000, help='sieve upper bound (default 10000)')
+    parser.add_argument('n', type=int, nargs='?', default=5000, help='sieve upper bound (default 5000)')
     parser.add_argument('--w', type=int, nargs='+', default=[32, 64], help='memory widths to benchmark')
     args = parser.parse_args()
 

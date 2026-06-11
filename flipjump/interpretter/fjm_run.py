@@ -4,17 +4,28 @@ executes a compiled .fjm program one flip-jump op at a time - managing the memor
 routing input/output through an IODevice, handling breakpoints, detecting termination,
 and collecting run statistics (returned as TerminationStatistics).
 
-two run-loops are implemented:
-- the fast loop (the default): the memory accesses and IO/termination checks are inlined,
-  and the per-op statistics (flip/jump counters) are skipped. ~20x faster.
+three run-loops (engines) are implemented:
+- the native engine (the default when built): the _fjcore C-extension - segment-aware paged
+  memory and the fetch-flip-jump loop in C, calling back into python only for IO. ~500x
+  faster than the featured loop. build it with `python build_fjcore.py`; disable it with the
+  FLIPJUMP_NO_NATIVE=1 environment variable.
+- the fast loop (the default otherwise): pure-python, the memory accesses and IO/termination
+  checks are inlined, and the per-op statistics (flip/jump counters) are skipped. ~20x faster.
 - the featured loop: supports breakpoints, tracing, and full statistics. selected when
   debugging features are requested, or explicitly with profile=True.
 """
 
+from os import environ
 from pathlib import Path
-from typing import Optional, Deque
+from typing import List, Optional, Deque
 
 from flipjump.fjm import fjm_reader
+from flipjump.fjm.fjm_reader import GarbageHandling
+
+try:
+    from flipjump.interpretter import _fjcore  # type: ignore[attr-defined]
+except ImportError:  # the native engine is optional - fall back to the pure-python loops
+    _fjcore = None
 from flipjump.interpretter.debugging.breakpoints import BreakpointHandler, handle_breakpoint
 from flipjump.utils.classes import TerminationCause, PrintTimer, RunStatistics
 from flipjump.utils.exceptions import (
@@ -181,6 +192,8 @@ def run(
     try:
         if profile or show_trace or breakpoint_handler is not None:
             return _run_featured(mem, io_device, statistics, breakpoint_handler, show_trace)
+        if _is_native_engine_usable(mem):
+            return _run_native(mem, io_device, statistics)
         return _run_fast(mem, io_device, statistics)
 
     except FlipJumpRuntimeMemoryException as mem_e:
@@ -195,6 +208,71 @@ def run(
         raise FlipJumpRuntimeException(
             "Unknown exception during running an .fjm file, please report this bug"
         ) from unknown_exception
+
+
+def _is_native_engine_usable(mem: fjm_reader.Reader) -> bool:
+    """
+    is the native (C) engine available and able to run this program?
+    (it implements the Stop garbage-handling only - the default of fjm_run.run.)
+    """
+    return (
+        _fjcore is not None
+        and environ.get('FLIPJUMP_NO_NATIVE') != '1'
+        and mem.garbage_handling == GarbageHandling.Stop
+    )
+
+
+def _run_native(mem: fjm_reader.Reader, io_device: IODevice, statistics: RunStatistics) -> TerminationStatistics:
+    """
+    run with the native (C) engine: load the parsed program into a _fjcore.Memory and
+    execute the run-loop in C. behaves exactly like the python fast loop.
+    """
+    assert _fjcore is not None
+    core = _fjcore.Memory(mem.memory_width)
+    for segment_start, segment_length in mem.word_segments:
+        core.add_segment(segment_start, segment_length)
+
+    # bulk-load the parsed memory words, grouped into contiguous runs
+    run_start: Optional[int] = None
+    next_address = 0
+    run_values: List[int] = []
+    for address in sorted(mem.memory):
+        if run_start is None or address != next_address:
+            if run_start is not None:
+                core.set_words(run_start, run_values)
+            run_start, run_values = address, []
+        run_values.append(mem.memory[address])
+        next_address = address + 1
+    if run_start is not None:
+        core.set_words(run_start, run_values)
+
+    last_ops = statistics.last_ops_addresses
+    statistics.detailed_statistics = False
+    try:
+        cause, op_count, error_bit_address, native_last_ops, paused_seconds = core.run(
+            io_device.read_bit,
+            io_device.write_bit,
+            IOReadOnEOF,
+            last_ops_length=last_ops.maxlen if last_ops is not None and last_ops.maxlen else 0,
+        )
+    finally:
+        # keep op_counter valid on the exception paths too (Ctrl+C, IO-device errors)
+        statistics.op_counter = core.last_run_op_count
+
+    statistics.op_counter = op_count
+    statistics.pause_timer.paused_time += paused_seconds
+    if last_ops is not None:
+        last_ops.extend(native_last_ops)
+
+    if cause == _fjcore.TERM_LOOPING:
+        return TerminationStatistics(statistics, TerminationCause.Looping)
+    if cause == _fjcore.TERM_EOF:
+        return TerminationStatistics(statistics, TerminationCause.EOF)
+    if cause == _fjcore.TERM_NULL_IP:
+        return TerminationStatistics(statistics, TerminationCause.NullIP)
+    return TerminationStatistics(
+        statistics, TerminationCause.RuntimeMemoryError, memory_error_address=error_bit_address
+    )
 
 
 def _run_featured(

@@ -1,11 +1,11 @@
 """
-unit-tests for the interpreter fast run-loop (flipjump/interpretter/fjm_run.py).
+unit-tests for the interpreter fast run-loops (flipjump/interpretter/fjm_run.py).
 
-the interpreter has two run-loops: the featured loop (trace / breakpoints / full statistics,
-selected with profile=True) and the fast loop (the default). these tests pin the two loops
-to identical behavior - same output, same termination cause, same op-counts - over programs
-covering every interpreter path: output, input+EOF, unaligned ops, zeros-boundary segments,
-runtime memory errors, and each termination cause.
+the interpreter has three engines: the featured loop (trace / breakpoints / full statistics,
+selected with profile=True), the pure-python fast loop, and the native (C) engine. these
+tests pin all engines to identical behavior - same output, same termination cause, same
+op-counts - over programs covering every interpreter path: output, input+EOF, unaligned ops,
+zeros-boundary segments, runtime memory errors, and each termination cause.
 """
 
 from pathlib import Path
@@ -56,10 +56,21 @@ def build_unaligned_fjm(tmp_path: Path) -> Path:
     return fjm_path
 
 
+@pytest.fixture(params=['fast-python', 'native'])
+def engine(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> str:
+    """select the non-featured engine under test (the native one only if it was built)."""
+    if request.param == 'native':
+        if fjm_run._fjcore is None:  # type: ignore[attr-defined]
+            pytest.skip('the native engine (_fjcore) is not built')
+    else:
+        monkeypatch.setattr(fjm_run, '_fjcore', None)
+    return str(request.param)
+
+
 def run_both_loops(
     fjm_path: Path, fixed_input: bytes
 ) -> Tuple[TerminationStatistics, TerminationStatistics, bytes, bytes]:
-    """run the .fjm with the fast loop (default) and the featured loop (profile=True)."""
+    """run the .fjm with the engine under test (the default loop) and the featured loop."""
     fast_io, featured_io = FixedIO(fixed_input), FixedIO(fixed_input)
     fast_stats = fjm_run.run(fjm_path, io_device=fast_io, print_time=False)
     featured_stats = fjm_run.run(fjm_path, io_device=featured_io, print_time=False, profile=True)
@@ -85,6 +96,7 @@ def run_both_loops(
 )
 def test_fast_and_featured_loops_are_equivalent(
     tmp_path: Path,
+    engine: str,
     program_id: str,
     fixed_input: bytes,
     expected_termination_cause: TerminationCause,
@@ -120,7 +132,7 @@ def _build_program(program_id: str, tmp_path: Path) -> Path:
     raise ValueError(program_id)
 
 
-def test_unaligned_op_runs_correctly(tmp_path: Path) -> None:
+def test_unaligned_op_runs_correctly(tmp_path: Path, engine: str) -> None:
     fjm_path = build_unaligned_fjm(tmp_path)
     statistics = fjm_run.run(fjm_path, io_device=FixedIO(b''), print_time=False)
     assert statistics.termination_cause == TerminationCause.Looping
@@ -140,7 +152,7 @@ def test_fast_loop_is_the_default_and_skips_detailed_counters(tmp_path: Path) ->
     assert featured_stats.jump_counter > 0
 
 
-def test_fast_loop_tracks_last_ops_when_requested(tmp_path: Path) -> None:
+def test_fast_loop_tracks_last_ops_when_requested(tmp_path: Path, engine: str) -> None:
     fjm_path = assemble_to_path(INFINITE_LOOP_PROGRAM, tmp_path)
 
     statistics = fjm_run.run(fjm_path, io_device=FixedIO(b''), print_time=False, last_ops_debugging_list_length=3)
@@ -152,7 +164,7 @@ def test_fast_loop_tracks_last_ops_when_requested(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize('last_ops_length', [None, 10])
-def test_eof_op_counting_matches_featured_loop(tmp_path: Path, last_ops_length: Optional[int]) -> None:
+def test_eof_op_counting_matches_featured_loop(tmp_path: Path, engine: str, last_ops_length: Optional[int]) -> None:
     # the op that reads past the input-end is not counted - in either loop.
     fjm_path = assemble_to_path(CAT_PROGRAM.read_text(), tmp_path, use_stl=True)
 
