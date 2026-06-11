@@ -152,10 +152,13 @@ fj --run hello_world.fjm
 ### Make it fast
 
 The interpreter has three engines (since 1.5.0):
-- **The native engine** (~80M fj-ops/s) - an optional C-extension. Build it once with
-  `python build_fjcore.py` (needs a C compiler); it is then used automatically
-  (set `FLIPJUMP_NO_NATIVE=1` to disable it).
-- **The fast loop** (~4M fj-ops/s) - pure python, the default when the native engine isn't built.
+- **The native engine** (~100-300M fj-ops/s) - a C-extension, **much much faster** than any
+  previous way of running FlipJump. The official wheels ship it prebuilt for
+  Linux (glibc & musl, x86_64 & aarch64), macOS (x86_64 & arm64) and Windows (amd64 & arm64),
+  on every CPython >= 3.10 - so a plain `pip install flipjump` already has it. On any other
+  platform, build it once with `python build_fjcore.py` (needs a C compiler); it is used
+  automatically whenever present (set `FLIPJUMP_NO_NATIVE=1` to disable it).
+- **The fast loop** (~4M fj-ops/s) - pure python, the fallback when the native engine isn't built.
 - **The featured loop** - used for `--trace`/breakpoints, or with `--profile` for the full
   per-op statistics (flips/jumps percentages).
 
@@ -178,13 +181,6 @@ fj --run game.fjm --di keyboard=events.txt --do screen=frames_dir
   file (deterministic replays), or land in a fixed memory mailbox.
 - Devices can read/write the program's memory through the `DeviceMemory` hook
   (`IODevice.attach_memory`) - the primitive both devices are built on.
-
-You can also use the faster [cpp-based interpreter](https://github.com/tomhea/fji-cpp):
-
-```bash
->>> fji hello.fjm -s
-Hello, World!
-```
 
 ### How to Debug?
 Programs won't work on their first run. They just can't. That's why we support the next debugging flags.

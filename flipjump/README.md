@@ -20,7 +20,13 @@ The whole process is executed within the [assemble()](assembler/assembler.py) fu
 
 ## The FlipJump Interpreter
 
-The Interpreter ([fjm_run.py](interpreter/fjm_run.py)) stores the entire memory in a dictionary {address: value}, and supports unaligned-word access. 
+The Interpreter ([fjm_run.py](interpreter/fjm_run.py)) dispatches each run to one of three engines:
+
+- **The native engine** ([_fjcore.c](interpreter/_fjcore.c)) - the default whenever its compiled module is present (the official wheels ship it prebuilt for Linux glibc/musl x86_64+aarch64, macOS x86_64+arm64, and Windows amd64+arm64, for every CPython >= 3.10; elsewhere build it with `python build_fjcore.py`). It runs the fetch-flip-jump loop in C over a segment-aware memory: compact programs (all segments below 8M words, at w<=32) get one dense flat array, sparse programs get lazily-allocated 128KB pages - so the footprint scales with the memory actually touched, never with the declared segment sizes. Python is called back only for IO. It is **much much faster** than any previous way to run FlipJump: ~100-300M fj-ops/s (measure yours with `python tests/benchmark_interpreter.py`; per-step history in [benchmark_results.md](../tests/benchmark_results.md)). `FLIPJUMP_NO_NATIVE=1` disables it.
+- **The pure-python fast loop** - the fallback when the native engine isn't built (~4M fj-ops/s). Stores the memory in a dictionary {address: value}, with the memory accesses and IO/termination checks inlined into the loop.
+- **The featured loop** - used for tracing, breakpoints, and `--profile` (full per-op statistics). This is the loop the debugger runs on.
+
+All three engines behave identically (same outputs, same termination causes, same op-counts - pinned by the test-suite), support unaligned-word access, and route IO through the same [io_devices](interpreter/io_devices). Devices can also read/write the running program's memory through the [device_memory.py](interpreter/io_devices/device_memory.py) hook - that's how the screen device reads the framebuffer and the keyboard device fills its mailbox.
 
 The whole interpretation is done within the [run()](interpreter/fjm_run.py) function (also uses the [fjm_reader.py](fjm/fjm_reader.py) to read the fjm file - i.e. to get the flipjump program memory from the compiled fjm file).  
 More about [how to run](../README.md#how-to-run).
