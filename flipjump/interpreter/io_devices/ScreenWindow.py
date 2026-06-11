@@ -1,8 +1,8 @@
 """
 the interactive screen backend: a real window (pygame/SDL) behind the same command
-stream as the headless InMemoryScreen256, plus a live keyboard source.
+stream as the headless InMemoryScreen, plus a live keyboard source.
 
-InteractiveScreen256 presents every frame into a window (scaled up from the logical
+InteractiveScreen presents every frame into a window (scaled up from the logical
 screen size; F11 toggles fullscreen), and exposes key_event_source - a KeyEventSource
 fed by the window's real key events - so a KeyboardIO over it receives whatever is
 pressed while the window is focused. Closing the window raises KeyboardInterrupt,
@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Deque, List, Optional, Tuple
 
 from flipjump.interpreter.io_devices.KeyboardIO import KeyEventSource
-from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen256
+from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
 from flipjump.utils.exceptions import IODeviceException
 
 # the >=0x80 keycodes (the SDL keycodes of these keys don't fit a byte)
@@ -135,8 +135,8 @@ class WindowKeyEventSource(KeyEventSource):
         return self._window.key_events.popleft() if self._window.key_events else None
 
 
-class InteractiveScreen256(InMemoryScreen256):
-    """the InMemoryScreen256 command stream, presented into a real window.
+class InteractiveScreen(InMemoryScreen):
+    """the InMemoryScreen command stream, presented into a real window.
 
     key_event_source delivers the window's live key events - wire a KeyboardIO over it
     (the --di keyboard CLI spec does exactly that when --do screen is windowed)."""

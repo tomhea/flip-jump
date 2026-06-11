@@ -1,5 +1,5 @@
 """
-the InMemoryScreen256 output-device - headless-first.
+the InMemoryScreen output-device - headless-first.
 
 the FJ program drives the screen with command bytes over the regular output stream; the
 device reads the referenced buffers from the interpreter memory (the device<->memory hook),
@@ -68,7 +68,7 @@ def encode_png(width: int, height: int, rgb_rows: bytes) -> bytes:
     return PNG_SIGNATURE + chunk(b'IHDR', ihdr) + chunk(b'IDAT', zlib.compress(rgb_rows)) + chunk(b'IEND', b'')
 
 
-class InMemoryScreen256(IODevice):
+class InMemoryScreen(IODevice):
     """see the module docstring for the command stream and the memory layout contracts."""
 
     def __init__(self, *, frames_dir: Optional[Path] = None):

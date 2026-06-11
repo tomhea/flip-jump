@@ -1,5 +1,5 @@
 """
-unit-tests for the InMemoryScreen256 output-device - headless-first.
+unit-tests for the InMemoryScreen output-device - headless-first.
 
 the FJ program emits command bytes over the output stream (init_screen / set_palette /
 update_screen / update_rectangle); buffer contents are read from the interpreter memory via
@@ -14,7 +14,7 @@ from typing import Dict
 
 import pytest
 
-from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen256
+from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
 from flipjump.interpreter.io_devices.device_memory import DeviceMemory
 from flipjump.utils.exceptions import IODeviceException
 
@@ -31,24 +31,24 @@ class FakeDeviceMemory(DeviceMemory):
         self.words[word_address] = value & ((1 << self.memory_width) - 1)
 
 
-def write_byte(device: InMemoryScreen256, value: int) -> None:
+def write_byte(device: InMemoryScreen, value: int) -> None:
     for i in range(8):
         device.write_bit((value >> i) & 1 == 1)
 
 
-def write_u16(device: InMemoryScreen256, value: int) -> None:
+def write_u16(device: InMemoryScreen, value: int) -> None:
     write_byte(device, value & 0xFF)
     write_byte(device, (value >> 8) & 0xFF)
 
 
-def write_address(device: InMemoryScreen256, bit_address: int, memory_width: int = 64) -> None:
+def write_address(device: InMemoryScreen, bit_address: int, memory_width: int = 64) -> None:
     for i in range(memory_width // 8):
         write_byte(device, (bit_address >> (8 * i)) & 0xFF)
 
 
-def make_screen(tmp_path: Path) -> 'tuple[InMemoryScreen256, FakeDeviceMemory]':
+def make_screen(tmp_path: Path) -> 'tuple[InMemoryScreen, FakeDeviceMemory]':
     memory = FakeDeviceMemory()
-    device = InMemoryScreen256(frames_dir=tmp_path)
+    device = InMemoryScreen(frames_dir=tmp_path)
     device.attach_memory(memory)
     return device, memory
 
@@ -72,7 +72,7 @@ def store_pixels(memory: FakeDeviceMemory, base: int, pixels: 'list[int]') -> No
         memory.write_data_byte(base + k * DW, pixel)
 
 
-def init_4x2(device: InMemoryScreen256, memory: FakeDeviceMemory, bpp: int = 8) -> None:
+def init_4x2(device: InMemoryScreen, memory: FakeDeviceMemory, bpp: int = 8) -> None:
     write_byte(device, 1)  # CMD init_screen
     write_u16(device, 4)
     write_u16(device, 2)
@@ -180,7 +180,7 @@ def test_update_screen_raw_requires_initialized_screen(tmp_path: Path) -> None:
 
 def test_update_screen_raw_works_without_the_memory_hook(tmp_path: Path) -> None:
     # raw frames need no device<->memory hook at all (palette_size=0: all pixels are black)
-    device = InMemoryScreen256(frames_dir=tmp_path)
+    device = InMemoryScreen(frames_dir=tmp_path)
     write_byte(device, 1)  # CMD init_screen
     write_u16(device, 4)
     write_u16(device, 2)

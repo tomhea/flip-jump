@@ -1,5 +1,5 @@
 """
-end-to-end tests for the io-devices: an .fj program drives the InMemoryScreen256 over the output
+end-to-end tests for the io-devices: an .fj program drives the InMemoryScreen over the output
 stream (golden frame-hash + PNG output), a scripted keyboard replays deterministically into
 an .fj polling loop, and the --di/--do CLI plumbing runs a full program with both devices.
 """
@@ -10,7 +10,7 @@ from pathlib import Path
 from flipjump import assemble_run_according_to_cmd_line_args
 from flipjump.interpreter import fjm_run
 from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO, ScriptedKeyEventSource
-from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen256
+from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
 from flipjump.interpreter.io_devices.cli_devices import SplitIO
 from flipjump.utils.classes import TerminationCause
 from tests.unit.unit_utils import assemble_to_path
@@ -138,7 +138,7 @@ KEY_DOWN: hex.hex 9
 def test_fj_program_drives_the_screen(tmp_path: Path, engine: str) -> None:
     fjm_path = assemble_to_path(SCREEN_PROGRAM, tmp_path, use_stl=True)
     frames_dir = tmp_path / 'frames'
-    screen = InMemoryScreen256(frames_dir=frames_dir)
+    screen = InMemoryScreen(frames_dir=frames_dir)
 
     statistics = fjm_run.run(fjm_path, io_device=screen, print_time=False)
 
@@ -153,7 +153,7 @@ def test_fj_program_drives_the_screen(tmp_path: Path, engine: str) -> None:
 def test_fj_program_drives_the_screen_with_the_raw_command(tmp_path: Path, engine: str) -> None:
     fjm_path = assemble_to_path(RAW_SCREEN_PROGRAM, tmp_path, use_stl=True)
     frames_dir = tmp_path / 'frames'
-    screen = InMemoryScreen256(frames_dir=frames_dir)
+    screen = InMemoryScreen(frames_dir=frames_dir)
 
     statistics = fjm_run.run(fjm_path, io_device=screen, print_time=False)
 
@@ -177,7 +177,7 @@ def test_scripted_keyboard_replay_is_deterministic(tmp_path: Path, engine: str) 
 
 def test_split_io_combines_keyboard_and_screen(tmp_path: Path, engine: str) -> None:
     fjm_path = assemble_to_path(SCREEN_PROGRAM, tmp_path, use_stl=True)
-    screen = InMemoryScreen256(frames_dir=tmp_path / 'frames')
+    screen = InMemoryScreen(frames_dir=tmp_path / 'frames')
     keyboard = KeyboardIO(ScriptedKeyEventSource.from_text(''))
     statistics = fjm_run.run(fjm_path, io_device=SplitIO(keyboard, screen), print_time=False)
     assert statistics.termination_cause == TerminationCause.Looping

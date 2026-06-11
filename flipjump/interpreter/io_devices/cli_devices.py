@@ -13,7 +13,7 @@ from typing import Optional
 
 from flipjump.interpreter.io_devices.IODevice import IODevice
 from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO, ScriptedKeyEventSource
-from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen256
+from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
 from flipjump.interpreter.io_devices.StandardIO import StandardIO
 from flipjump.interpreter.io_devices.device_memory import DeviceMemory
 from flipjump.utils.exceptions import IODeviceException
@@ -45,9 +45,9 @@ def create_input_device(di_spec: str, output_device: IODevice) -> IODevice:
         return StandardIO(True)
     if di_spec == 'keyboard':
         # live keys: whatever is pressed while the interactive screen window is focused
-        from flipjump.interpreter.io_devices.ScreenWindow import InteractiveScreen256
+        from flipjump.interpreter.io_devices.ScreenWindow import InteractiveScreen
 
-        if not isinstance(output_device, InteractiveScreen256):
+        if not isinstance(output_device, InteractiveScreen):
             raise IODeviceException('a live keyboard (--di keyboard) needs the interactive screen (--do screen)')
         return KeyboardIO(output_device.key_event_source)
     if di_spec.startswith('keyboard='):
@@ -63,11 +63,11 @@ def create_output_device(do_spec: str) -> IODevice:
         return StandardIO(True)
     if do_spec == 'screen':
         # an interactive window (scaled; F11 = fullscreen; closing it stops the run)
-        from flipjump.interpreter.io_devices.ScreenWindow import InteractiveScreen256
+        from flipjump.interpreter.io_devices.ScreenWindow import InteractiveScreen
 
-        return InteractiveScreen256()
+        return InteractiveScreen()
     if do_spec.startswith('screen='):
-        return InMemoryScreen256(frames_dir=Path(do_spec[len('screen=') :]))  # noqa: E203
+        return InMemoryScreen(frames_dir=Path(do_spec[len('screen=') :]))  # noqa: E203
     raise IODeviceException(f'unknown output device: {do_spec!r}. supported: standard, screen=FRAMES_DIR, screen')
 
 

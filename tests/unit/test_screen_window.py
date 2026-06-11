@@ -18,7 +18,7 @@ from flipjump.interpreter import fjm_run  # noqa: E402
 from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO  # noqa: E402
 from flipjump.interpreter.io_devices.ScreenWindow import (  # noqa: E402
     KEYCODE_UP,
-    InteractiveScreen256,
+    InteractiveScreen,
 )
 from flipjump.utils.classes import TerminationCause  # noqa: E402
 from flipjump.utils.exceptions import IODeviceException  # noqa: E402
@@ -35,7 +35,7 @@ def headless_sdl(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     pygame.quit()
 
 
-def init_2x2_screen(device: InteractiveScreen256) -> None:
+def init_2x2_screen(device: InteractiveScreen) -> None:
     write_byte(device, 1)  # CMD init_screen
     write_u16(device, 2)
     write_u16(device, 2)
@@ -43,7 +43,7 @@ def init_2x2_screen(device: InteractiveScreen256) -> None:
     write_u16(device, 0)  # palette_size
 
 
-def present_raw_2x2(device: InteractiveScreen256) -> None:
+def present_raw_2x2(device: InteractiveScreen) -> None:
     write_byte(device, 5)  # CMD update_screen_raw
     for pixel in (0, 0, 0, 0):
         write_byte(device, pixel)
@@ -63,7 +63,7 @@ def read_byte(keyboard: KeyboardIO) -> int:
 
 
 def test_init_screen_opens_the_window() -> None:
-    device = InteractiveScreen256()
+    device = InteractiveScreen()
     init_2x2_screen(device)
     surface = pygame.display.get_surface()
     assert surface is not None
@@ -71,7 +71,7 @@ def test_init_screen_opens_the_window() -> None:
 
 
 def test_present_draws_the_frame_pixels() -> None:
-    device = InteractiveScreen256()
+    device = InteractiveScreen()
     init_2x2_screen(device)
     device.palette = [(9, 8, 7)]  # a palette entry, so the drawn pixel is not the default black
     present_raw_2x2(device)
@@ -81,7 +81,7 @@ def test_present_draws_the_frame_pixels() -> None:
 
 
 def test_live_key_events_reach_a_keyboard_device() -> None:
-    device = InteractiveScreen256()
+    device = InteractiveScreen()
     init_2x2_screen(device)
     keyboard = KeyboardIO(device.key_event_source)
 
@@ -97,7 +97,7 @@ def test_live_key_events_reach_a_keyboard_device() -> None:
 
 
 def test_special_keys_use_the_byte_keycodes() -> None:
-    device = InteractiveScreen256()
+    device = InteractiveScreen()
     init_2x2_screen(device)
     keyboard = KeyboardIO(device.key_event_source)
     post_key(pygame.K_UP)
@@ -106,7 +106,7 @@ def test_special_keys_use_the_byte_keycodes() -> None:
 
 
 def test_f11_toggles_fullscreen_and_is_not_delivered(monkeypatch: pytest.MonkeyPatch) -> None:
-    device = InteractiveScreen256()
+    device = InteractiveScreen()
     init_2x2_screen(device)
     keyboard = KeyboardIO(device.key_event_source)
     toggle_calls = []
@@ -119,7 +119,7 @@ def test_f11_toggles_fullscreen_and_is_not_delivered(monkeypatch: pytest.MonkeyP
 
 
 def test_unmapped_keys_are_ignored() -> None:
-    device = InteractiveScreen256()
+    device = InteractiveScreen()
     init_2x2_screen(device)
     keyboard = KeyboardIO(device.key_event_source)
     post_key(pygame.K_F5)  # no byte keycode - ignored
@@ -127,7 +127,7 @@ def test_unmapped_keys_are_ignored() -> None:
 
 
 def test_closing_the_window_raises_keyboard_interrupt() -> None:
-    device = InteractiveScreen256()
+    device = InteractiveScreen()
     init_2x2_screen(device)
     pygame.event.post(pygame.event.Event(pygame.QUIT))
     with pytest.raises(KeyboardInterrupt):
@@ -138,7 +138,7 @@ def test_closing_the_window_raises_keyboard_interrupt() -> None:
 def test_fj_program_presents_into_the_window(tmp_path: Path) -> None:
     # the raw-command E2E program, now presented into a (dummy-driver) window
     fjm_path = assemble_to_path(RAW_SCREEN_PROGRAM, tmp_path, use_stl=True)
-    device = InteractiveScreen256()
+    device = InteractiveScreen()
     statistics = fjm_run.run(fjm_path, io_device=device, print_time=False)
     assert statistics.termination_cause == TerminationCause.Looping
     assert device.frame_count == 1
@@ -160,7 +160,7 @@ def test_cli_screen_with_live_keyboard_wiring() -> None:
 
     io_device = create_io_device('keyboard', 'screen')
     assert isinstance(io_device, SplitIO)
-    assert isinstance(io_device.output_device, InteractiveScreen256)
+    assert isinstance(io_device.output_device, InteractiveScreen)
     assert isinstance(io_device.input_device, KeyboardIO)
     assert io_device.input_device.event_source is io_device.output_device.key_event_source
 
@@ -170,7 +170,7 @@ def test_closing_the_window_terminates_a_real_run(tmp_path: Path, engine: str) -
     # KeyboardInterrupt inside the run, and the interpreter must turn it into a clean
     # keyboard-interrupt termination (on both engines).
     fjm_path = assemble_to_path(RAW_SCREEN_PROGRAM, tmp_path, use_stl=True)
-    device = InteractiveScreen256()
+    device = InteractiveScreen()
     device.window.ensure_open(4, 2)  # open early so the QUIT event can be posted
     pygame.event.post(pygame.event.Event(pygame.QUIT))
 
