@@ -11,6 +11,14 @@ i.e. memory_width/8 bytes):
   [0x02][palette_fj_bit_address:w/8]                    set_palette
   [0x03][screen_fj_bit_address:w/8]                     update_screen (presents a frame)
   [0x04][x:2][y:2][rect_w:2][rect_h:2][addr:w/8]        update_rectangle (presents a frame)
+  [0x05][width*height pixel bytes]                      update_screen_raw (presents a frame)
+
+the memory-hook commands (update_screen/update_rectangle) are the primary path - reading
+the framebuffer straight out of program memory is DMA-like, ~free for the fj program.
+update_screen_raw is the no-memory-hook alternative: the full frame's pixel bytes arrive
+in-stream (row-major, one byte each, masked to bpp bits), so it works without
+attach_memory - at the cost of the program outputting every pixel byte each frame.
+it requires a prior init_screen (the pixel count defines the command length).
 
 memory layout contracts (op-structured "packed bytes", one byte per fj-op, stride dw):
   framebuffer: pixel k (row-major) is the packed byte at screen_address + k*dw, masked
@@ -39,6 +47,7 @@ CMD_INIT_SCREEN = 0x01
 CMD_SET_PALETTE = 0x02
 CMD_UPDATE_SCREEN = 0x03
 CMD_UPDATE_RECTANGLE = 0x04
+CMD_UPDATE_SCREEN_RAW = 0x05
 
 PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 
@@ -113,6 +122,9 @@ class InMemoryScreen256(IODevice):
             return 1 + self._address_bytes()
         if command == CMD_UPDATE_RECTANGLE:
             return 1 + 2 + 2 + 2 + 2 + self._address_bytes()
+        if command == CMD_UPDATE_SCREEN_RAW:
+            self._require_initialized_screen()  # the pixel count defines the command length
+            return 1 + self.width * self.height
         raise IODeviceException(f'unknown screen-device command: {command:#x}')
 
     def _handle_byte(self, byte: int) -> None:
@@ -147,6 +159,8 @@ class InMemoryScreen256(IODevice):
                 self._u16(payload, 6),
                 self._read_address(payload, 8),
             )
+        elif command == CMD_UPDATE_SCREEN_RAW:
+            self._update_screen_raw(payload)
 
     # ---------------------------------------------------------------- screen functions
 
@@ -180,6 +194,13 @@ class InMemoryScreen256(IODevice):
         pixel_mask = (1 << self.bpp) - 1
         raw = self._read_packed_bytes(screen_bit_address, self.width * self.height)
         self.pixel_indices = [pixel & pixel_mask for pixel in raw]
+        self._present()
+
+    def _update_screen_raw(self, pixels: List[int]) -> None:
+        """a full frame whose pixel bytes arrived in-stream - no memory-hook read."""
+        self._require_initialized_screen()
+        pixel_mask = (1 << self.bpp) - 1
+        self.pixel_indices = [pixel & pixel_mask for pixel in pixels]
         self._present()
 
     def _update_rectangle(self, x: int, y: int, rect_width: int, rect_height: int, rect_bit_address: int) -> None:

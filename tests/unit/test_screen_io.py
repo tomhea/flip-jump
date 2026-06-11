@@ -12,8 +12,11 @@ import zlib
 from pathlib import Path
 from typing import Dict
 
+import pytest
+
 from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen256
 from flipjump.interpreter.io_devices.device_memory import DeviceMemory
+from flipjump.utils.exceptions import IODeviceException
 
 
 class FakeDeviceMemory(DeviceMemory):
@@ -140,6 +143,57 @@ def test_bpp4_masks_pixel_indices(tmp_path: Path) -> None:
     write_byte(device, 3)
     write_address(device, SCREEN_ADDRESS)
     assert device.last_frame_rgb[0] == (200, 100, 0)
+
+
+def test_update_screen_raw_streams_pixels(tmp_path: Path) -> None:
+    device, memory = make_screen(tmp_path)
+    init_4x2(device, memory)
+
+    write_byte(device, 5)  # CMD update_screen_raw - pixels arrive in-stream, no memory read
+    for pixel in [0, 1, 0, 1, 1, 0, 1, 0]:
+        write_byte(device, pixel)
+
+    assert device.frame_count == 1
+    assert device.last_frame_rgb[0] == (10, 20, 30)
+    assert device.last_frame_rgb[1] == (200, 100, 0)
+    # byte-identical frame-hash to a memory-hook update_screen of the same pixels
+    expected = hashlib.sha256(bytes([0, 1, 0, 1, 1, 0, 1, 0]) + bytes([10, 20, 30, 200, 100, 0])).hexdigest()
+    assert device.frame_hashes[0][1] == expected
+
+
+def test_update_screen_raw_masks_bpp4(tmp_path: Path) -> None:
+    device, memory = make_screen(tmp_path)
+    init_4x2(device, memory, bpp=4)
+
+    write_byte(device, 5)
+    write_byte(device, 0x31)  # masked to its low nibble (1) at bpp=4
+    for _ in range(7):
+        write_byte(device, 0)
+    assert device.last_frame_rgb[0] == (200, 100, 0)
+
+
+def test_update_screen_raw_requires_initialized_screen(tmp_path: Path) -> None:
+    device, _ = make_screen(tmp_path)
+    with pytest.raises(IODeviceException):
+        write_byte(device, 5)
+
+
+def test_update_screen_raw_works_without_the_memory_hook(tmp_path: Path) -> None:
+    # raw frames need no device<->memory hook at all (palette_size=0: all pixels are black)
+    device = InMemoryScreen256(frames_dir=tmp_path)
+    write_byte(device, 1)  # CMD init_screen
+    write_u16(device, 4)
+    write_u16(device, 2)
+    write_byte(device, 8)
+    write_u16(device, 0)  # palette_size
+
+    write_byte(device, 5)
+    for pixel in [0, 1, 0, 1, 1, 0, 1, 0]:
+        write_byte(device, pixel)
+
+    assert device.frame_count == 1
+    assert device.last_frame_rgb == [(0, 0, 0)] * 8
+    assert (tmp_path / 'frame_000000.png').exists()
 
 
 def test_png_pixels_decode_correctly(tmp_path: Path) -> None:

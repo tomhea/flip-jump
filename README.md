@@ -176,6 +176,9 @@ fj --run game.fjm --di keyboard=events.txt --do screen=frames_dir
 - `--do screen=FRAMES_DIR` - the headless **InMemoryScreen256**: the program sends
   init/palette/update commands over the output stream, the device reads the framebuffer
   from the program's memory, and writes one PNG per frame plus a frame-hash log.
+  The memory-hook update commands are the primary path (a blit costs the program just a
+  few ops); the `0x05` raw command alternatively streams the full frame's pixel bytes
+  over the output itself - it needs no memory hook, at the cost of outputting every pixel.
 - `--di keyboard=EVENTS_FILE[@MAILBOX]` - a non-blocking, virtual-time **keyboard**: the
   program polls one status byte per tic; events come from a scripted `tic, down/up, keycode`
   file (deterministic replays), or land in a fixed memory mailbox.
