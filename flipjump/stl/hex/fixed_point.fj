@@ -2,7 +2,9 @@
 // Signed Q-format fixed-point helpers (no floating point) - e.g. DOOM's 16.16 format
 //  is n=8, f=4 (8 nibbles total, 4 nibbles of fraction); 8.8 is n=4, f=2.
 // The LUT-side of this design (replacing runtime divides/trig with data tables) is
-//  generated host-side by flipjump.lut_generator, and read with hex.read_table below.
+//  generated host-side (e.g. by the doom-flipjump LUT generator), and read with
+//  hex.read_table / hex.read_table_byte below - their entry-layout contracts are
+//  documented on the macros themselves.
 
 
 ns hex {
@@ -39,8 +41,7 @@ ns hex {
     //
     // a,b,dst are signed Q-format hex[:n] with f fraction-nibbles (dst may alias a/b).
     // The dividend is pre-shifted at full 2n-nibble width (nibble-aligned - no runtime shift).
-    // @note: a runtime divide is expensive - prefer a reciprocal LUT (flipjump.lut_generator)
-    //  in hot paths.
+    // @note: a runtime divide is expensive - prefer a reciprocal LUT in hot paths.
     // @Assumes: 0 < f <= n.
     // @requires hex.init
     def fixed_div n, f, dst, a, b, div0 @ wide_a, q, r, end {
@@ -89,8 +90,10 @@ ns hex {
     // Space Complexity: n(w(1.13@+32) + 14@+127) + #(n*dw)(w/4(2@+30))
     //   dst[:n] = table[idx]    (entry idx of a LUT of hex[:n] entries)
     //
-    // table is a compile-time address (label) of consecutive hex[:n] entries - the layout
-    //  flipjump.lut_generator emits - so entry k sits at table + k*n*dw.
+    // table is a compile-time address (label) of consecutive hex[:n] entries.
+    // Entry-layout contract: entry k sits at table + k*n*dw; each entry is n hex data-ops
+    //  (exactly a `hex.vec n` value: nibble i of the value is the data bits of op i,
+    //  little-endian nibbles, each op `;nibble * dw`).
     // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst must not alias idx.
     // The entry address is computed with the strength-reduced mul_const (no runtime-amount
     //  shift), then read through a pointer.
@@ -115,10 +118,11 @@ ns hex {
     // Space Complexity: w(2.25@+50) + #(dw)(w/4(2@+30)) + 40@+300
     //   dst[:2] = table[idx]    (entry idx of a LUT of packed bytes)
     //
-    // table is a compile-time address (label) of consecutive packed-byte ops (one byte per
-    //  fj-op - the layout flipjump.lut_generator's generate_byte_lut_fj emits), so entry k
-    //  sits at table + k*dw. Byte tables are 2x smaller and cheaper to read than
-    //  hex.read_table's hex[:n]-entry tables - right for colormaps/light-level tables.
+    // table is a compile-time address (label) of consecutive packed-byte ops.
+    // Entry-layout contract: entry k sits at table + k*dw; each entry is one fj data-op
+    //  whose data bits hold the byte (i.e. `;value * dw`). Byte tables are 2x smaller and
+    //  cheaper to read than hex.read_table's hex[:n]-entry tables - right for
+    //  colormaps/light-level tables.
     // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst must not alias idx.
     // @requires hex.init & stl.ptr_init
     def read_table_byte dst, table, idx_n, idx @ ptr, table_address, end {
