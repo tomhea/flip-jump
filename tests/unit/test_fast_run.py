@@ -56,17 +56,6 @@ def build_unaligned_fjm(tmp_path: Path) -> Path:
     return fjm_path
 
 
-@pytest.fixture(params=['fast-python', 'native'])
-def engine(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> str:
-    """select the non-featured engine under test (the native one only if it was built)."""
-    if request.param == 'native':
-        if fjm_run._fjcore is None:  # type: ignore[attr-defined]
-            pytest.skip('the native engine (_fjcore) is not built')
-    else:
-        monkeypatch.setattr(fjm_run, '_fjcore', None)
-    return str(request.param)
-
-
 def run_both_loops(
     fjm_path: Path, fixed_input: bytes
 ) -> Tuple[TerminationStatistics, TerminationStatistics, bytes, bytes]:

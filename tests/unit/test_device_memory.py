@@ -9,23 +9,11 @@ pure-python and the native engine.
 
 from pathlib import Path
 
-import pytest
-
 from flipjump.interpreter import fjm_run
 from flipjump.interpreter.io_devices.FixedIO import FixedIO
 from flipjump.interpreter.io_devices.device_memory import DeviceMemory
 from flipjump.utils.classes import TerminationCause
 from tests.unit.unit_utils import assemble_to_path
-
-
-@pytest.fixture(params=['fast-python', 'native'])
-def engine(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> str:
-    if request.param == 'native':
-        if fjm_run._fjcore is None:  # type: ignore[attr-defined]
-            pytest.skip('the native engine (_fjcore) is not built')
-    else:
-        monkeypatch.setattr(fjm_run, '_fjcore', None)
-    return str(request.param)
 
 
 class MemorySpyIO(FixedIO):
