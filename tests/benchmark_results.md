@@ -33,14 +33,17 @@ every int is a multi-digit CPython PyLong, and the small-int fast paths don't ap
 Segment-aware paged memory (lazily-allocated 128KB pages) + the run-loop in C; Python is
 called back only for IO. Build with `python build_fjcore.py`.
 
-| width | n      | ops           | time   | speed           | vs baseline |
-|-------|-------:|--------------:|-------:|----------------:|------------:|
-| w=32  |  5,000 |    16,580,560 |  0.21s | 78,066,070 fj/s |        463x |
-| w=64  |  5,000 |    33,304,073 |  0.40s | 83,917,307 fj/s |        566x |
-| w=64  | 200,000| 1,332,300,215 | 33.43s | 39,855,322 fj/s |        269x |
+| width | n      | ops           | time   | speed            | vs baseline |
+|-------|-------:|--------------:|-------:|-----------------:|------------:|
+| w=32  |  5,000 |    16,580,560 |  0.17s |  96,305,331 fj/s |        572x |
+| w=64  |  5,000 |    33,304,073 |  0.34s |  96,574,982 fj/s |        651x |
+| w=64  | 200,000| 1,332,300,215 | 12.83s | 103,819,945 fj/s |        700x |
 
-The long w=64 run drops to ~40M fj/s as the working set outgrows the CPU caches — still 4x
-above the 10M fj/s target. **The ≥10M fj/s acceptance is met with margin on every row.**
+**The ≥10M fj/s acceptance is met with ~10x margin on every row.**
+
+(History: the first engine version used a 1-entry page cache; the ip/jump page and the
+flip-target page alternated every op and thrashed it, dropping the long run to 40M fj/s.
+A 16-entry direct-mapped page cache fixed it — the long run is now the fastest row.)
 
 (prime_sieve at w=32 is limited to n <= ~5792: its mark-pointer `p*p*dw` wraps the 2^32-bit
 address space beyond that — a property of the program, reproduced identically on all engines.)
