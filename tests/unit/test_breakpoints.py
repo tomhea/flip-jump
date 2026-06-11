@@ -131,4 +131,3 @@ class TestVariableInspection:
         assert 'flip' in body and 'jump' in body
         assert '0x70' in body  # the flip target
         assert '0x40' in body  # the jump target
-
