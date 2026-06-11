@@ -1,62 +1,65 @@
 """
-gui message-boxes for interactive debugging.
-thin wrappers over the optional easygui library, used at breakpoints to show messages and
-to prompt the user for input/choices, with a helpful error if easygui isn't installed.
+cli prompts for interactive debugging (headless / agent-usable).
+the terminal replacements of the old easygui message-boxes, used at breakpoints to show
+messages and to prompt the user for input/choices - no GUI dependency. EOF (or an empty
+answer where a default exists) selects the safe default, so piped/scripted sessions and
+agents can drive the debugger deterministically.
 """
 
 from typing import List, Optional
 
-from flipjump.utils.exceptions import FlipJumpMissingImportException
 
-EASYGUI_NOT_INSTALLED_MESSAGE = (
-    "This debug feature requires the easygui python library.\n"
-    "Try `pip install easygui`, and also install tkinter on your system."
-)
+def _print_message(body_message: str, title_message: str) -> None:
+    print(f'\n──── {title_message} ────')
+    print(body_message)
+
+
+def display_message_box(body_message: str, title_message: str) -> None:
+    """
+    Displays the message to the user (terminal).
+    """
+    _print_message(body_message, title_message)
+
+
+def display_message_box_and_get_text_answer(body_message: str, title_message: str) -> Optional[str]:
+    """
+    Displays the message (terminal), and reads a one-line textual answer.
+    @return: the stripped answer, or None on an empty answer / EOF (= cancel).
+    """
+    _print_message(body_message, title_message)
+    try:
+        answer = input('> ').strip()
+    except EOFError:
+        return None
+    return answer if answer else None
 
 
 def display_message_box_with_choices_and_get_answer(
     body_message: str, title_message: str, choices: List[str], default_cancel_answer: str
 ) -> str:
     """
-    Displays the message box query (with fixed choices), and return the answer.
-    If easygui isn't installed correctly, raises an exception.
+    Displays the message and the numbered choices (terminal), and reads the chosen one -
+    by number, or by (case-insensitive, unique-prefix) name.
+    @return: the chosen choice; an empty answer / EOF returns the default.
     """
-    try:
-        # might generate an 'import from collections is deprecated' warning if using easygui-version <= 0.98.3.
-        import easygui
-    except ImportError:
-        raise FlipJumpMissingImportException(EASYGUI_NOT_INSTALLED_MESSAGE)
+    _print_message(body_message, title_message)
+    for index, choice in enumerate(choices, start=1):
+        default_mark = '  (default)' if choice == default_cancel_answer else ''
+        print(f'  {index}. {choice}{default_mark}')
 
-    answer: Optional[str] = easygui.buttonbox(body_message, title_message, choices)
-    if answer is None:
-        return default_cancel_answer
-    return answer
+    while True:
+        try:
+            raw_answer = input('choice> ').strip()
+        except EOFError:
+            return default_cancel_answer
+        if not raw_answer:
+            return default_cancel_answer
 
+        if raw_answer.isdigit() and 1 <= int(raw_answer) <= len(choices):
+            return choices[int(raw_answer) - 1]
 
-def display_message_box(body_message: str, title_message: str) -> None:
-    """
-    Displays the message box to the user.
-    If easygui isn't installed correctly, raises an exception.
-    """
-    try:
-        # might generate an 'import from collections is deprecated' warning if using easygui-version <= 0.98.3.
-        import easygui
-    except ImportError:
-        raise FlipJumpMissingImportException(EASYGUI_NOT_INSTALLED_MESSAGE)
+        name_matches = [choice for choice in choices if choice.lower().startswith(raw_answer.lower())]
+        if len(name_matches) == 1:
+            return name_matches[0]
 
-    easygui.msgbox(msg=body_message, title=title_message)
-
-
-def display_message_box_and_get_text_answer(body_message: str, title_message: str) -> Optional[str]:
-    """
-    Displays the message box query, and return the textual answer.
-    If easygui isn't installed correctly, raises an exception.
-    """
-    try:
-        # might generate an 'import from collections is deprecated' warning if using easygui-version <= 0.98.3.
-        import easygui
-    except ImportError:
-        raise FlipJumpMissingImportException(EASYGUI_NOT_INSTALLED_MESSAGE)
-
-    answer: Optional[str] = easygui.enterbox(msg=body_message, title=title_message)
-    return answer
+        print(f'  invalid choice: {raw_answer!r}. enter a number (1-{len(choices)}) or a unique choice prefix.')

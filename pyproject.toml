@@ -43,7 +43,6 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.10"
 sly = "^0.5"
-easygui = "^0.98.3"
 
 # statistics
 plotly = { version = "^6.8.0", optional = true }
@@ -72,8 +71,8 @@ fj = 'flipjump.flipjump_cli:main'
 [tool.mypy]
 files = ["flipjump", "tests"]
 strict = true
-# `import-not-found` covers sly/easygui — both are pure-Python deps
-# without `py.typed` markers, so mypy 2.x flags them. (mypy 1.x used
+# `import-not-found` covers sly — a pure-Python dep
+# without a `py.typed` marker, so mypy 2.x flags it. (mypy 1.x used
 # `import-untyped` for the same case; kept too so configs from earlier
 # checkouts still parse.)
 disable_error_code = ["import-untyped", "import-not-found"]
