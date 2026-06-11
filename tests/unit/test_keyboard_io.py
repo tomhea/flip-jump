@@ -1,11 +1,11 @@
 """
 unit-tests for the keyboard input-device (WI-B).
 
-the keyboard is non-blocking and runs on virtual time: the FJ program polls one status BIT
-per tic - 0 = no event, 1 = an event is due. the event payload (one is_down bit + one
-keycode byte) is delivered either through the input stream (stream mode) or written into a
-fixed memory mailbox via the device<->memory hook (mailbox mode). the event source is
-pluggable: a scripted event file makes replays deterministic; idle polling never EOFs.
+the keyboard is non-blocking and runs on virtual time: the FJ program polls one status HEX
+per tic - 0x0 = no event, 0x8 = key released, 0x9 = key pressed. on an event the keycode
+byte follows, through the input stream (stream mode) or written into a fixed memory mailbox
+via the device<->memory hook (mailbox mode). the event source is pluggable: a scripted
+event file makes replays deterministic; idle polling never EOFs.
 """
 
 from typing import Dict
@@ -37,10 +37,12 @@ def read_byte(device: KeyboardIO) -> int:
     return value
 
 
-def read_event(device: KeyboardIO) -> 'tuple[bool, int]':
-    """read [is_down bit][keycode byte] from the stream (after a 1 status bit)."""
-    is_down = device.read_bit()
-    return is_down, read_byte(device)
+def read_status_hex(device: KeyboardIO) -> int:
+    """read the 4-bit (lsb-first) status hex - what hex.input_hex sees."""
+    value = 0
+    for i in range(4):
+        value |= int(device.read_bit()) << i
+    return value
 
 
 class TestScriptedKeyEventSource:
@@ -58,27 +60,25 @@ class TestKeyboardStreamMode:
         source = ScriptedKeyEventSource.from_text('0, down, 72\n2, up, 72\n')
         device = KeyboardIO(source)
 
-        # tic 0: event due -> status bit 1, then [is_down=1][72]
-        assert device.read_bit() is True
-        assert read_event(device) == (True, 72)
-        # tic 1: nothing -> a single 0 bit
-        assert device.read_bit() is False
-        # tic 2: the up event
-        assert device.read_bit() is True
-        assert read_event(device) == (False, 72)
-        # idle forever - one 0 bit per tic, never raises IOReadOnEOF
+        # tic 0: key-down event -> status 0x9, then the keycode byte
+        assert read_status_hex(device) == 0x9
+        assert read_byte(device) == 72
+        # tic 1: nothing -> status 0x0
+        assert read_status_hex(device) == 0x0
+        # tic 2: the key-up event -> status 0x8
+        assert read_status_hex(device) == 0x8
+        assert read_byte(device) == 72
+        # idle forever - one 0x0 status hex per tic, never raises IOReadOnEOF
         for _ in range(50):
-            assert device.read_bit() is False
+            assert read_status_hex(device) == 0x0
 
     def test_late_events_are_delivered_in_order(self) -> None:
         # two events on the same tic: the second is delivered on the next poll
         source = ScriptedKeyEventSource.from_text('0, down, 1\n0, down, 2\n')
         device = KeyboardIO(source)
-        assert device.read_bit() is True
-        assert read_event(device) == (True, 1)
-        assert device.read_bit() is True
-        assert read_event(device) == (True, 2)
-        assert device.read_bit() is False
+        assert (read_status_hex(device), read_byte(device)) == (0x9, 1)
+        assert (read_status_hex(device), read_byte(device)) == (0x9, 2)
+        assert read_status_hex(device) == 0x0
 
 
 class TestKeyboardMailboxMode:
@@ -89,11 +89,10 @@ class TestKeyboardMailboxMode:
         device = KeyboardIO(source, mailbox_bit_address=mailbox_bit_address)
         device.attach_memory(memory)
 
-        # only the status bit passes through the stream
-        assert device.read_bit() is True
-        assert memory.read_data_byte(mailbox_bit_address) == 0x01  # is_down
-        assert memory.read_data_byte(mailbox_bit_address + 128) == 72  # keycode (dw = 128)
+        # only the status hex passes through the stream (is_down is inside it)
+        assert read_status_hex(device) == 0x9
+        assert memory.read_data_byte(mailbox_bit_address) == 72  # the keycode
 
         # next poll: no event; the mailbox is not rewritten
-        assert device.read_bit() is False
-        assert memory.read_data_byte(mailbox_bit_address + 128) == 72
+        assert read_status_hex(device) == 0x0
+        assert memory.read_data_byte(mailbox_bit_address) == 72

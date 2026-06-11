@@ -1,14 +1,15 @@
 """
 the keyboard input-device (WI-B).
-non-blocking, virtual-time, scriptable: the FJ program polls one status BIT per tic
-(0 = no event, 1 = an event is due) and keeps its own frame-counter clock - there is no
-timer device, and idle polling never EOFs (and costs the program a single input op).
+non-blocking, virtual-time, scriptable: the FJ program polls one status HEX per tic
+(read with `hex.input_hex`, 4 input bits lsb-first) and keeps its own frame-counter clock -
+there is no timer device, and idle polling never EOFs.
 
-the event payload - one is_down bit (1 = key pressed, 0 = released) followed by one keycode
-byte - is delivered either through the input stream right after the status bit (stream
-mode), or written into a fixed memory mailbox (two packed-byte ops: is_down at mailbox,
-keycode at mailbox+dw) via the device<->memory hook before the status bit is returned
-(mailbox mode - pass mailbox_bit_address).
+the status hex: 0x0 = no event; 0x8 = a key was released; 0x9 = a key was pressed
+(bit 3 = event-present, bit 0 = is_down). on an event, the keycode byte follows - either
+through the input stream right after the status hex (stream mode - read it with
+`hex.input`), or written into a fixed memory mailbox (one packed-byte op at
+mailbox_bit_address) via the device<->memory hook before the status hex is returned
+(mailbox mode).
 
 the event source is pluggable: ScriptedKeyEventSource replays a `tic, down/up, keycode`
 event file (deterministic E2E tests and CI - the DOOM-demo-playback equivalent), and
@@ -97,8 +98,9 @@ class KeyboardIO(IODevice):
     output written to this device is buffered (get_output), so it can also be used standalone.
     """
 
-    NO_EVENT_BIT = False
-    EVENT_BIT = True
+    NO_KEY_STATUS = 0x0
+    KEY_UP_STATUS = 0x8
+    KEY_DOWN_STATUS = 0x9
 
     def __init__(self, event_source: KeyEventSource, *, mailbox_bit_address: Optional[int] = None):
         self.event_source = event_source
@@ -119,25 +121,27 @@ class KeyboardIO(IODevice):
         for i in range(8):
             self._pending_input_bits.append((value >> i) & 1 == 1)
 
+    def _queue_input_hex(self, value: int) -> None:
+        for i in range(4):
+            self._pending_input_bits.append((value >> i) & 1 == 1)
+
     def _poll(self) -> None:
-        """one tic: queue the status bit (and deliver the payload, by mode)."""
+        """one tic: queue the status hex (and deliver the keycode, by mode)."""
         event = self.event_source.next_due_event(self.tic)
         self.tic += 1
         if event is None:
-            self._pending_input_bits.append(self.NO_EVENT_BIT)
+            self._queue_input_hex(self.NO_KEY_STATUS)
             return
 
         is_down, keycode = event
+        status = self.KEY_DOWN_STATUS if is_down else self.KEY_UP_STATUS
         if self.mailbox_bit_address is not None:
             if self.device_memory is None:
                 raise IODeviceException('mailbox-mode keyboard is not attached to the interpreter memory')
-            dw = 2 * self.device_memory.memory_width
-            self.device_memory.write_data_byte(self.mailbox_bit_address, int(is_down))
-            self.device_memory.write_data_byte(self.mailbox_bit_address + dw, keycode)
-            self._pending_input_bits.append(self.EVENT_BIT)
+            self.device_memory.write_data_byte(self.mailbox_bit_address, keycode)
+            self._queue_input_hex(status)
         else:
-            self._pending_input_bits.append(self.EVENT_BIT)
-            self._pending_input_bits.append(bool(is_down))
+            self._queue_input_hex(status)
             self._queue_input_byte(keycode)
 
     def read_bit(self) -> bool:

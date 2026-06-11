@@ -67,8 +67,8 @@ screen:                 // 4x2 pixels, one packed byte each
 EXPECTED_FRAME_HASH = hashlib.sha256(bytes([0, 1, 0, 1, 1, 0, 1, 0]) + bytes([10, 20, 30, 200, 100, 0])).hexdigest()
 
 
-# polls the keyboard 5 tics (one status BIT each): prints D/U + the keycode char per
-# event, '.' when idle, and '!' at the end.
+# polls the keyboard 5 tics (one status HEX each: 0x0 idle, 0x8 key-up, 0x9 key-down):
+# prints D/U + the keycode char per event, '.' when idle, and '!' at the end.
 KEYBOARD_PROGRAM = """
 stl.startup_and_init_all
 
@@ -77,13 +77,12 @@ rep(5, i) poll_once
 stl.output '!'
 stl.loop
 
-def poll_once @ event, down, up, after_downup, no_event, end < status, downup, keycode {
-    bit.input_bit status
-    bit.if status, no_event, event
+def poll_once @ event, down, up, after_downup, no_event, end < status, keycode, KEY_DOWN {
+    hex.input_hex status
+    hex.if status, no_event, event
   event:
-    bit.input_bit downup
     hex.input keycode
-    bit.if downup, up, down
+    hex.cmp 1, status, KEY_DOWN, up, down, up
   down:
     stl.output 'D'
     ;after_downup
@@ -97,9 +96,9 @@ def poll_once @ event, down, up, after_downup, no_event, end < status, downup, k
   end:
 }
 
-status:  bit.bit
-downup:  bit.bit
-keycode: hex.vec 2
+status:   hex.hex
+keycode:  hex.vec 2
+KEY_DOWN: hex.hex 9
 """
 
 
