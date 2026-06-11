@@ -122,6 +122,24 @@ status-bar/menu only), so full-frame is the common case anyway.
    `.github/workflows/wheels.yml` via workflow_dispatch (repo is public; the arm runners
    `ubuntu-24.04-arm` / `windows-11-arm` are available).
 
+## Stretch target: 320x200 @ 25fps (owner ask - feasibility math)
+
+64,000 pixels/frame, 25fps. Budget: ~11.2M fj-ops/frame on the current engine (280M fj/s),
+~18-24M after the speculation tier (WI-F -> implementation, if GO).
+
+| per-frame cost | static stores + dispatch-LUTs | pointer everything |
+|---|---|---|
+| pixel stores (64K x) | ~80 ops -> 5.1M | ~500 ops -> 32M (impossible) |
+| texture+colormap reads | ~100-200 ops -> 6.4-12.8M (dispatch) | ~1-3K ops (read_table) - impossible |
+| column math + game logic | ~2-3M | same |
+
+Verdict: **flat-shaded 320x200@25 fits the current engine** (~8-9M/frame, tight);
+**textured 320x200@25 needs all three**: static pixel stores, dispatch-LUTs, and the
+speculation speedup landing (~450M+ fj/s). Plausible, not guaranteed - the WI-F measurement
+is the gate. Fallbacks that keep 25fps: 320x200 flat-shaded, or textured at 320x100 /
+160x200 (line-doubling), or 12.5fps textured. The screen device itself is
+resolution-agnostic (PNG writing 64K pixels per present is host-side and trivial).
+
 ## Design decisions already made (do not relitigate without new data)
 
 - **Budget re-baseline:** the original plan budgeted 1M fj-ops/frame assuming 10M fj/s.
@@ -136,10 +154,14 @@ status-bar/menu only), so full-frame is the common case anyway.
   - Note on LUTs: their BASE addresses are compile-time labels, but the INDEX (angle,
     distance) is runtime - so reads go through pointers. Only a compile-time-constant index
     is a static read.
-- **The generated LUT tables live in the `doom-flipjump` repo** (same github user; PR
-  there) - flipjump ships only the generator (`flipjump.lut_generator`). The game repo
-  generates its `finesine`/reciprocal/colormap tables at build time.
-- **OPEN: hex-memory vs byte-memory for pixels (decide in the game repo, R1).** Owner's
+- **The LUT generator AND the generated tables live in the `doom-flipjump` repo** (same
+  github user; PR there). A finish-up task in THIS repo: relocate `flipjump/lut_generator.py`
+  (+ its tests) out of flipjump into doom-flipjump; keep the generic `hex.read_table` /
+  `hex.read_table_byte` STL macros here, with their entry-layout contract documented in the
+  STL itself (not by reference to the generator). The flipjump test programs that embed
+  generated tables keep their inlined copies.
+- **OPEN (owner: keep thinking about it): hex-memory vs byte-memory for pixels (decide in
+  the game repo, R1).** Owner's
   criterion: if pixel-color computation can run "statically" on fixed compile-time-known
   addresses (no FJ-pointer dereferences), hex-memory wins big; otherwise packed-byte wins.
   Two credible static designs to evaluate with real measurements:
@@ -153,6 +175,27 @@ status-bar/menu only), so full-frame is the common case anyway.
   code (program size + assemble time - feeds the WI-E mega-program workload).
   At 256 colors a static byte store is two static hex stores - still far cheaper than one
   pointer dereference (~O(w) ops).
+- **LUT access must be redesigned the `hex.and` way (owner directive) - aligned
+  code-table dispatch, NOT pointer reads.** Study `stl/hex/tables_init.fj` until this is
+  obvious; the mechanism:
+  1. The table is a `pad`-aligned CODE region (entry k at `base + k*dw`; base's low address
+     bits are zero). A dedicated jumper op's jump word points at `base`.
+  2. A hex variable's data bits sit at jump-word bits `#w..` - exactly the bit positions
+     that encode `k*dw` inside an address. So `hex.xor jumper, index` (one per index nibble,
+     at `jumper`, `jumper+4`, ...) IS the `base+index` computation - a few @ each, no O(w)
+     pointer machinery. `wflip ret+w, return, jumper` then jumps through it.
+  3. Entries are single ops ("stride 1") that jump to where the entry is really handled:
+     either the hypercube chain (`clean_table_entry__table`: entry d flips one result bit
+     and jumps to entry `d ^ (1 << (#d - 1))`, cascading to entry 0 -> ret; avg log(n)/2
+     ops per lookup), or per-entry handler code for arbitrary values.
+  4. For multi-nibble LUT values (e.g. 32-bit finesine entries), evaluate both shapes:
+     one aligned table per result-nibble using the hypercube chain (8 cheap dispatches), vs
+     one table of per-entry handlers xoring the whole value into a result register
+     (1 dispatch + ~popcount flips). Estimate: ~10-30x cheaper than `hex.read_table`
+     (~10@ vs ~w-scaled pointer reads), at a space cost of entries x handler-size.
+  The doom-flipjump generator emits these dispatch-code tables; a generic
+  `hex.xor_table_lookup`-style macro may belong in the flipjump STL (decide during
+  implementation). The index must be kept nibble-aligned (it already is - U6).
 - **No decoded-op cache** (measured, rejected - OQ-A1); **no GUI debugger**; **the screen
   reads memory via the hook** as primary (the raw command of WI-G is an addition, not a
   replacement).
