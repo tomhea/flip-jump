@@ -182,10 +182,15 @@ fj --run program.fjm --di keyboard --do screen     # or just:  fj --run program.
   window (it shares the `--do screen` window when there is one, or opens its own small input
   window). Use `--di keyboard=EVENTS_FILE` instead for a scripted, virtual-time keyboard that
   replays `tic, down/up, keycode` lines (deterministic, no window).
+- **`--do console`** - plain text output to the terminal (the same as the standard output;
+  a clearly-named output to pair with a non-standard input, e.g. `--di keyboard --do console`
+  for live key capture with text output).
 - Devices can also read the program's memory through the `DeviceMemory` hook
   (`IODevice.attach_memory`) - e.g. the screen reads pixel data straight from memory.
 
 `--pc` is shorthand for `--di keyboard --do screen` (an interactive window driven by live keys).
+The devices live in a small registry (`io_devices/cli_devices.py`); adding a new `--di`/`--do`
+device - windowed or not - is one registry entry.
 </details>
 
 ### How to Debug?

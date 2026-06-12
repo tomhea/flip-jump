@@ -2,14 +2,19 @@
 unit-tests for the IO devices (flipjump/interpreter/io_devices/).
 
 covers FixedIO's LSB-first bit ordering, output assembly, EOF and incomplete-output
-errors, and BrokenIO raising on any access.
+errors, BrokenIO raising on any access, and the --di/--do device registry/factory
+(the non-windowed paths - the windowed wiring is in test_screen_window.py).
 """
+
+from pathlib import Path
 
 import pytest
 
 from flipjump.interpreter.io_devices.BrokenIO import BrokenIO
 from flipjump.interpreter.io_devices.FixedIO import FixedIO
-from flipjump.utils.exceptions import BrokenIOUsed, IncompleteOutput, IOReadOnEOF
+from flipjump.interpreter.io_devices.StandardIO import StandardIO
+from flipjump.interpreter.io_devices.cli_devices import SplitIO, create_io_device
+from flipjump.utils.exceptions import BrokenIOUsed, IncompleteOutput, IODeviceException, IOReadOnEOF
 
 
 def test_fixed_io_reads_lsb_first() -> None:
@@ -66,3 +71,35 @@ def test_broken_io_raises_on_any_access() -> None:
         BrokenIO().write_bit(True)
     with pytest.raises(BrokenIOUsed):
         BrokenIO().get_output()
+
+
+class TestDeviceRegistry:
+    """the --di/--do factory for the devices that don't use the interactive window."""
+
+    def test_standard_only_is_a_plain_standard_io(self) -> None:
+        assert isinstance(create_io_device(None, None), StandardIO)
+        assert isinstance(create_io_device('standard', 'standard'), StandardIO)
+
+    def test_console_output_with_standard_input(self) -> None:
+        # a non-windowed mix: standard input + console (terminal text) output
+        io_device = create_io_device('standard', 'console')
+        assert isinstance(io_device, SplitIO)
+        assert isinstance(io_device.output_device, StandardIO)
+        assert isinstance(io_device.input_device, StandardIO)
+
+    def test_unknown_input_device_lists_the_supported_forms(self) -> None:
+        with pytest.raises(IODeviceException) as error:
+            create_io_device('joystick', 'standard')
+        assert 'unknown input device' in str(error.value)
+        assert 'keyboard' in str(error.value)  # the supported forms are listed
+
+    def test_unknown_output_device_lists_the_supported_forms(self) -> None:
+        with pytest.raises(IODeviceException) as error:
+            create_io_device('standard', 'hologram')
+        assert 'unknown output device' in str(error.value)
+        assert 'screen' in str(error.value) and 'console' in str(error.value)
+
+    def test_missing_scripted_keyboard_file_is_reported(self, tmp_path: Path) -> None:
+        with pytest.raises(IODeviceException) as error:
+            create_io_device(f'keyboard={tmp_path / "nope.txt"}', 'console')
+        assert 'does not exist' in str(error.value)

@@ -266,8 +266,9 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         '--do',
         metavar='DEVICE',
         default=None,
-        help="the output device. the standard output by default; `screen` for an interactive "
-        "window (scaled, F11 toggles fullscreen, closing it stops the run; needs pygame - "
+        help="the output device. the standard output by default; `console` for plain text to "
+        "the terminal (handy to pair with `--di keyboard`); `screen` for an interactive window "
+        "(scaled, F11 toggles fullscreen, closing it stops the run; needs pygame - "
         "`pip install flipjump[screen]`); or `screen=FRAMES_DIR` for a headless 256-color "
         "screen writing one PNG per frame plus a frame-hash log",
     )

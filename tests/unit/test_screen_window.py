@@ -179,6 +179,21 @@ def test_cli_screen_and_keyboard_share_one_window() -> None:
     assert keyboard_window is io_device.output_device.window
 
 
+def test_cli_live_keyboard_with_console_output() -> None:
+    # the user's example: windowed live-key capture (its own input window) + plain console
+    # text output. the keyboard gets a window; the output device is a non-windowed StandardIO.
+    from flipjump.interpreter.io_devices.StandardIO import StandardIO
+    from flipjump.interpreter.io_devices.cli_devices import SplitIO, create_io_device
+
+    io_device = create_io_device('keyboard', 'console')
+    assert isinstance(io_device, SplitIO)
+    assert isinstance(io_device.input_device, KeyboardIO)
+    assert isinstance(io_device.output_device, StandardIO)  # console = terminal text output
+    window = io_device.input_device.event_source._window  # type: ignore[attr-defined]
+    assert isinstance(window, PygameWindow)
+    assert window.is_open  # the keyboard opened its own input window (no screen to size it)
+
+
 def test_closing_the_window_terminates_a_real_run(tmp_path: Path, engine: str) -> None:
     # QUIT is already pending when the program presents its first frame: the pump raises
     # KeyboardInterrupt inside the run, and the interpreter must turn it into a clean
