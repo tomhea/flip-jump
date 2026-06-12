@@ -124,3 +124,7 @@ def test_cli_pc_rejects_combining_with_di_do(tmp_path: Path) -> None:
         assemble_run_according_to_cmd_line_args(
             cmd_line_args=['--run', '-s', '--pc', '--di', 'keyboard=events.txt', str(fjm_path)]
         )
+    with pytest.raises(SystemExit):
+        assemble_run_according_to_cmd_line_args(
+            cmd_line_args=['--run', '-s', '--pc', '--do', 'screen=frames', str(fjm_path)]
+        )

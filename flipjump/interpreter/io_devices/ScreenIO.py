@@ -32,7 +32,7 @@ the headless backend (default) keeps the expanded RGB frame (last_frame_rgb), wr
 PNG per present into frames_dir, timestamps presents, and keeps a per-frame hash log
 (frame_hashes: sha256 over the raw pixel indices + palette bytes) for golden tests -
 measured fps comes from this log, not hand-timing. the interactive (pygame) backend in
-ScreenWindow.py presents the same command stream into a real window.
+pygame_window.py presents the same command stream into a real window.
 """
 
 import hashlib

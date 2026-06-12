@@ -265,6 +265,18 @@ class TestQueryUserForDebugAction:
         feed_commands(monkeypatch, [])  # immediate EOF
         assert make_handler().query_user_for_debug_action(0, reader, op_counter=0) == ('exit', 0)
 
+    def test_malformed_commands_reprompt_with_a_message(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        reader = build_reader_with_data(tmp_path, [112, 64, 0, 0])
+        # read-without-target, non-numeric skip, and non-positive skip all re-prompt, then 'c'
+        feed_commands(monkeypatch, ['read', 'skip x', 'skip 0', 'c'])
+        assert make_handler().query_user_for_debug_action(0, reader, op_counter=0) == ('continue', 0)
+        out = capsys.readouterr().out
+        assert 'usage: read' in out
+        assert 'skip needs a number' in out
+        assert 'skip needs a positive count' in out
+
     def test_breakpoint_vs_debug_step_title(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
