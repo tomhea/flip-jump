@@ -41,7 +41,9 @@ def _import_pygame() -> Any:
         import pygame
     except ImportError as import_error:
         raise IODeviceException(
-            'the interactive screen needs pygame - install it with `pip install flipjump[screen]`'
+            'the interactive screen window needs the pygame package, which is not installed. '
+            'install it with `pip install pygame`, or `pip install flipjump[screen]` to pull it '
+            'in as a flipjump extra.'
         ) from import_error
     return pygame
 
