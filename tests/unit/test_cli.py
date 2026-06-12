@@ -12,7 +12,7 @@ import pytest
 from flipjump import assemble_run_according_to_cmd_line_args
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_reader import Reader
-from flipjump.flipjump_cli import get_version
+from flipjump.flipjump_cli import get_version, parse_arguments
 from tests.unit.unit_utils import HELLO_NO_STL, assemble_to_path
 
 
@@ -112,18 +112,25 @@ def test_cli_invalid_flat_max_words_rejected(tmp_path: Path) -> None:
         assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--flat-max-words', '0', str(fjm_path)])
 
 
-def test_cli_invalid_io_mode_rejected(tmp_path: Path) -> None:
+def test_cli_invalid_io_mode_rejected(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     # --io only accepts the registered mode names; rejected at parse time (no pygame needed)
     fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
     with pytest.raises(SystemExit):
         assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--io', 'hologram', str(fjm_path)])
+    assert 'argument --io' in capsys.readouterr().err  # argparse rejected it, before any assemble/run
 
 
-def test_cli_io_mode_parameters_rejected(tmp_path: Path) -> None:
+def test_cli_io_mode_parameters_rejected(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     # mode parameters (whitespace-separated after the name) parse, but no current mode takes any
     fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
     with pytest.raises(SystemExit):
         assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--io', 'standard loud', str(fjm_path)])
+    assert 'no parameters' in capsys.readouterr().err  # the factory's message reaches the user
+
+
+def test_cli_io_default_is_standard() -> None:
+    args, _ = parse_arguments(cmd_line_args=['prog.fjm'])
+    assert args.io == 'standard'
 
 
 def test_cli_no_output_flag_is_gone(tmp_path: Path) -> None:

@@ -15,7 +15,7 @@ from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
 from flipjump.fjm.fjm_consts import FJMVersion, SUPPORTED_VERSIONS_NAMES
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.interpreter.io_devices.cli_devices import IO_MODES, make_io_device
+from flipjump.interpreter.io_devices.cli_devices import IO_MODES, make_io_device, split_io_mode
 from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, DEFAULT_MAX_MACRO_RECURSION_DEPTH
 from flipjump.utils.exceptions import IODeviceException
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
@@ -251,8 +251,7 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
     def _io_mode(value: str) -> str:
         # the mode name (the first whitespace-separated part) must be registered; any
         # parameters after it are validated by the mode's factory at run time.
-        parts = value.split()
-        mode_name = parts[0] if parts else ''
+        mode_name, _ = split_io_mode(value)
         if mode_name not in IO_MODES:
             raise argparse.ArgumentTypeError(f"unknown --io mode {mode_name!r}. supported: {', '.join(IO_MODES)}")
         return value

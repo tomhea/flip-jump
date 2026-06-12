@@ -16,7 +16,7 @@ built programmatically and passed straight to fjm_run.run(io_device=...) - e.g.
 PcIO.headless(events_file, frames_dir) - they are not --io modes.
 """
 
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Tuple
 
 from flipjump.interpreter.io_devices.IODevice import IODevice
 from flipjump.interpreter.io_devices.StandardIO import StandardIO
@@ -49,13 +49,18 @@ IO_MODES: Dict[str, Callable[[List[str]], IODevice]] = {
 }
 
 
+def split_io_mode(io_mode: str) -> Tuple[str, List[str]]:
+    """split an --io mode string into (mode_name, parameters), on whitespace."""
+    parts = io_mode.split()
+    return (parts[0] if parts else '', parts[1:])
+
+
 def make_io_device(io_mode: str) -> IODevice:
     """build the complete io-device for the given --io mode string: the mode name,
     optionally followed by whitespace-separated parameters for the mode's factory."""
-    parts = io_mode.split()
-    if not parts:
+    mode_name, parameters = split_io_mode(io_mode)
+    if not mode_name:
         raise IODeviceException(f'empty --io mode. supported: {", ".join(IO_MODES)}')
-    mode_name, parameters = parts[0], parts[1:]
     factory = IO_MODES.get(mode_name)
     if factory is None:
         raise IODeviceException(f'unknown --io mode: {mode_name!r}. supported: {", ".join(IO_MODES)}')
