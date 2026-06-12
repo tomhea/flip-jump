@@ -54,7 +54,7 @@ The shipping engine (v6 below; sieve = sparse/paged path, loop = compact/flat pa
 | v4: flat storage for compact programs | 112-127M | 115-129M | 125-140M | 246M |
 | v5: dedicated flat loop (no ring/paged branches) | - | - | - | 273M |
 | v6: + MSVC PGO (`build_fjcore.py --pgo-*`, optional) | 122M | 128M | 132M | **280-286M** |
-| v7: jump-target speculation (flat loop only, FLIPJUMP_NO_SPECULATION=1 to disable) | unchanged | unchanged | unchanged | **296M** (+16% no-PGO MSVC; +50-80% expected on GCC+PGO with prefetch) |
+| v7: slim specialized flat loop (cold-block layout, folded IO checks, per-width constants, strip-mined signal check) | unchanged | unchanged | unchanged | **352-430M** (+25-30% interleaved A/B) |
 
 - v2: the ip/jump page and the flip-target page alternated every op and thrashed the single
   cached entry, forcing a hash lookup per access.
@@ -73,12 +73,17 @@ The shipping engine (v6 below; sieve = sparse/paged path, loop = compact/flat pa
 - v6: profile-guided optimization is available for local builds
   (`--pgo-instrument`, train on both the flat and paged paths, `--pgo-use`);
   the prebuilt wheels ship without it.
-- v7: jump-target speculation in `run_flat_loop`: the last jump destination per
-  dw-aligned op is remembered in `spec_pred[word_address/2]`; on a hit the next
-  op's word load is prefetched (`FJ_PREFETCH` = `__builtin_prefetch` on GCC/Clang,
-  no-op on MSVC). Gates on `FLIPJUMP_NO_SPECULATION=1`; `Memory.speculation_active`
-  reflects whether it is on. A/B (same MSVC non-PGO build): +16% on the loop benchmark
-  (pure branch-prediction benefit; real prefetch adds more on GCC+PGO).
+- v7 (slim flat loop): the run-loop body is reshaped for the hot path - every rare
+  condition (unaligned ip, out-of-span words, garbage sentinels, IO hits, termination)
+  is a forward goto to a cold block, so the common op runs straight-line with all
+  conditional branches fall-through and one taken branch (the strip-mined back-edge);
+  the two IO range tests fold to one unsigned compare each; `run_flat_loop` dispatches
+  to a force-inlined body with literal width/ww per supported width, so shifts and
+  IO-range constants are immediates (the generic version reloaded ~10 spilled stack
+  slots per op). Measured by interleaved same-hour A/B against the pre-change commit,
+  both PGO: 352-430M vs 295-348M. The remaining bound is the memory-disambiguation
+  stall around flip-store -> jump-load (structural to FJ semantics - see the
+  speculation post-mortem below).
 
 Cycle accounting at ~4.6GHz: v1 was ~46 CPU-cycles per fj-op, v6-flat is ~16. The serial
 dependency floor (jump-word load -> address arithmetic -> next jump-word load, L1-resident)
@@ -167,6 +172,34 @@ words that never change after init; wflip-mutability concentrates in few dispatc
 cells. With a correctly-predicted op the next op's two loads start one serial-chain step
 early, so the expected gain is +50-80% on the flat path (~450-600M fj/s).
 **Verdict: GO - the speculation tier is worth building** (as future engine work).
+
+### The tier was then built and measured: **REJECTED** (the slim loop shipped instead)
+
+Three speculation variants were implemented in `run_flat_loop` and A/B-measured on the
+loop benchmark (same build, `FLIPJUMP_NO_SPECULATION=1` as the off-switch; asm listings
+inspected to confirm the intended codegen):
+
+1. **Predict-and-prefetch** (prefetch `flat[pred]` after the jump word arrives): no gain -
+   by the time the real jump word is in hand, the next loads issue anyway.
+2. **1-ahead value speculation** (`ip = pred` on a verified hit, so the next iteration's
+   address comes from the predictor load instead of the jump-word load): no gain, then a
+   **-22% loss** once the loop was slimmed. The flaw in the study's premise: the predictor
+   load (`spec_pred[word_address/2]`) has the same L1 latency as the jump-word load it
+   replaces, so the serial chain does not get shorter - and the bookkeeping (table load,
+   verify branch, miss store) costs real throughput in a lean loop.
+3. **Early jump-word loads** (read `flat[word_address+1]` before the flip store, fix up
+   the self-flip case from the register): **-40%**. The wflip dispatch idiom routinely
+   writes the *next* op's jump word right before it executes, so an early load races the
+   in-flight store and triggers memory-order machine clears. The engine's post-flip read
+   order is load-bearing.
+
+What the experiments exposed instead: the loop was throughput-bound (~59 instructions,
+~6 taken branches, ~10 stack reloads per op in the MSVC codegen), not latency-bound -
+fixing that is the v7 slim loop above. The remaining ~9-11 cycles/op carry the
+flip-store -> jump-load disambiguation stall, which is structural to FlipJump semantics
+(the flip may modify the jump word; both escapes from the stall are the rejected
+variants 2 and 3). Decision: **no speculation tier**; the predictor infrastructure was
+removed, the measuring mode (`FLIPJUMP_MEASURE_SPECULATION=1`) stays as a study tool.
 
 
 ## OQ-A1 — decoded-op cache: measured, and rejected

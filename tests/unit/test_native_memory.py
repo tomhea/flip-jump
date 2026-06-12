@@ -31,7 +31,6 @@ def clean_flat_mode_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv('FLIPJUMP_NO_FLAT', raising=False)
     monkeypatch.delenv('FLIPJUMP_FLAT_MAX_WORDS', raising=False)
     monkeypatch.delenv('FLIPJUMP_TEST_FLAT_ALLOC_FAIL', raising=False)
-    monkeypatch.delenv('FLIPJUMP_NO_SPECULATION', raising=False)
 
 
 def _unexpected_io(*args: object) -> bool:
@@ -209,16 +208,16 @@ def test_speculation_stats_counts_when_measuring(monkeypatch: pytest.MonkeyPatch
     assert stats['ops'] == op_count
 
 
-# ------------------------------------------- jump-target speculation (the flat run-loop)
+# ---------------------------------------- self-modifying ops (the flat run-loop's rare paths)
 
 
 def _self_modifying_memory(**kwargs: Any) -> Any:
-    """a w=32 program whose op A gets its jump word rewritten between two executions -
-    a guaranteed speculation miss. flow: entry -> A -> B (flips A's jump) -> A -> C (loops).
+    """a w=32 program whose op A gets its jump word rewritten between two executions.
+    flow: entry -> A -> B (flips A's jump) -> A -> C (loops).
     5 ops; afterwards A's jump word (word 5) is 320 and data word 16 reads 0b101.
 
     Ops are placed at ip=0/128/256/320 (word_address 0/4/8/10) to stay outside w=32's
-    input range (38, 102] (ip=64 falls inside it and would trigger unexpected read_bit calls).
+    input range (38, 102] (an ip there would trigger unexpected read_bit calls).
     B flips bit 6 of word 5 (A's jump word): 256 ^ 64 = 320 = C.
     """
     memory = _fjcore.Memory(32, **kwargs)
@@ -231,46 +230,13 @@ def _self_modifying_memory(**kwargs: Any) -> Any:
     return memory
 
 
-def _run_self_modifying(memory: Any) -> None:
+def test_a_rewritten_jump_word_dispatches_correctly() -> None:
+    # the flat loop reads each op's jump word after its flip - a jump word rewritten by an
+    # earlier op (the wflip dispatch idiom) must be honored on the next execution.
+    memory = _self_modifying_memory()
     cause, op_count, _, _, _ = memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
     assert cause == _fjcore.TERM_LOOPING
     assert op_count == 5  # entry, A, B, A, C
+    assert memory.storage_mode == 'flat'
     assert memory.get_word(5) == 320  # A's rewritten jump word (word_address 5 = ip 128+w)
     assert memory.get_word(16) == 0b101  # bits 512+514 once; 513 twice (A ran twice) = net 0
-
-
-def test_speculation_active_on_the_flat_path() -> None:
-    memory = _looping_memory()
-    _run_to_looping(memory)
-    assert memory.storage_mode == 'flat'
-    assert memory.speculation_active is True
-
-
-def test_no_speculation_env_var_disables_it(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv('FLIPJUMP_NO_SPECULATION', '1')
-    memory = _looping_memory()
-    _run_to_looping(memory)
-    assert memory.storage_mode == 'flat'
-    assert memory.speculation_active is False
-
-
-def test_speculation_inactive_on_the_paged_path() -> None:
-    memory = _looping_memory(flat_max_words=4)
-    _run_to_looping(memory)
-    assert memory.storage_mode == 'paged'
-    assert memory.speculation_active is False
-
-
-def test_self_modifying_jump_word_is_identical_with_and_without_speculation(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    # a genuine prediction miss (A's jump word changes between its two executions) must be
-    # behavior-invisible: same cause, op count, and final memory in both modes.
-    speculated = _self_modifying_memory()
-    _run_self_modifying(speculated)
-    assert speculated.speculation_active is True
-
-    monkeypatch.setenv('FLIPJUMP_NO_SPECULATION', '1')
-    plain = _self_modifying_memory()
-    _run_self_modifying(plain)
-    assert plain.speculation_active is False

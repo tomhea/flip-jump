@@ -23,11 +23,11 @@
 #include <string.h>
 #include <time.h>
 
-/* portable prefetch hint (no-op on MSVC: prefetch is a hint, not correctness) */
-#if defined(__GNUC__) || defined(__clang__)
-#  define FJ_PREFETCH(addr) __builtin_prefetch((addr), 0, 3)
+/* force-inline so run_flat_loop's literal width/ww arguments constant-fold per width */
+#if defined(_MSC_VER)
+#  define FJ_ALWAYS_INLINE __forceinline
 #else
-#  define FJ_PREFETCH(addr) ((void)(addr))
+#  define FJ_ALWAYS_INLINE inline __attribute__((always_inline))
 #endif
 
 #ifdef _WIN32
@@ -117,12 +117,6 @@ typedef struct {
     uint64_t flat_count;
     uint64_t flat_max_words; /* constructor override; 0 = use the env var / default */
     int storage_decided;
-
-    /* jump-target speculation (the flat loop only): the last jump target seen per
-       dw-aligned op, indexed by word_address/2; flat_count/2 + 1 entries (costs +50% of
-       the flat array's footprint). NULL = off (FLIPJUMP_NO_SPECULATION=1, paged mode,
-       or the allocation failed - the loop then just runs unspeculated). */
-    uint64_t* spec_pred;
 
     int mem_error;            /* set when garbage_stop fired */
     uint64_t error_bit_address;
@@ -540,8 +534,6 @@ static void mem_free_allocations(MemoryObject* self)
     }
     free(self->flat);
     self->flat = NULL;
-    free(self->spec_pred);
-    self->spec_pred = NULL;
     free(self->segments);
     self->segments = NULL;
 }
@@ -577,7 +569,6 @@ static int Memory_init(PyObject* op, PyObject* args, PyObject* kwds)
     self->flat_count = 0;
     self->flat_max_words = flat_max_words;
     self->storage_decided = 0;
-    self->spec_pred = NULL;
     self->mem_error = 0;
     self->error_bit_address = 0;
     self->spec_measured = 0;
@@ -916,149 +907,199 @@ done:
 
 /* the dedicated flat-storage run loop - the common fast case (no last-ops ring, flat
    memory): all paged-mode and ring branches are out of the per-op path.
+
+   shaped for the hot path:
+   - every rare condition (unaligned ip, out-of-span words, garbage sentinels, IO hits,
+     termination) is a forward goto to a cold block after the main body, so the common op
+     runs straight-line with all conditional branches fall-through;
+   - the two IO range tests fold to one unsigned compare each;
+   - the signal check is strip-mined into an outer loop (the inner do-while back-edge is
+     a fused dec-jnz), keeping the per-op signal cost at one decrement;
+   - width/ww arrive as literals from run_flat_loop's dispatch, so the shifts and the
+     IO-range constants are immediates - freeing enough registers that the loop's live
+     values stop spilling to the stack.
    returns the termination cause, or CAUSE_PYTHON_ERROR with the python error set. */
-static int run_flat_loop(MemoryObject* self, PyObject* read_bit, PyObject* write_bit, PyObject* eof_exception_type,
-                         uint64_t start_ip, uint64_t* ops_out, double* paused_seconds_out)
+static FJ_ALWAYS_INLINE int run_flat_loop_impl(MemoryObject* self, PyObject* read_bit, PyObject* write_bit,
+                                               PyObject* eof_exception_type, uint64_t start_ip, uint64_t* ops_out,
+                                               double* paused_seconds_out, const uint64_t width, const uint64_t ww)
 {
-    const uint64_t width = (uint64_t)self->w;
-    const uint64_t ww = (uint64_t)self->ww;
     const uint64_t bit_mask = width - 1;
     const uint64_t dw = 2 * width;
-    const uint64_t out1 = dw + 1;
     const uint64_t in_addr = 3 * width + ww + 1; /* 3w + #w */
     const uint64_t in_lo_exclusive = in_addr - dw;
     uint64_t* const flat = self->flat;
     const uint64_t flat_count = self->flat_count;
 
     uint64_t ip = start_ip, ops = 0;
+    uint64_t word_address, f, flip_word_address, flip_value, j;
+    uint64_t cold_word; /* out-param for the cold-path reads, so f/j stay in registers */
+    uint64_t inner_left;
     int cause = CAUSE_PYTHON_ERROR;
 
     self->mem_error = 0;
     for (;;) {
-        uint64_t word_address, f, flip_word_address, flip_value, j;
-
-        if ((ops & SIGNAL_CHECK_MASK) == SIGNAL_CHECK_MASK) {
-            self->last_run_op_count = ops;
-            if (PyErr_CheckSignals() < 0) {
-                goto done;
-            }
+        /* the signal check is strip-mined out of the per-op path: the inner do-while
+           runs SIGNAL_CHECK_MASK+1 ops on a fused dec-jnz back-edge, the outer loop
+           checks signals - same cadence as a per-op (ops & MASK) == MASK test. */
+        self->last_run_op_count = ops;
+        if (PyErr_CheckSignals() < 0) {
+            goto done;
         }
-
-        /* read flip word */
-        if (ip & bit_mask) {
-            if (mem_get_word_unaligned(self, ip, &f) < 0) {
-                goto memory_error;
+        inner_left = SIGNAL_CHECK_MASK + 1;
+        do {
+            /* read flip word */
+            if (ip & bit_mask) {
+                goto cold_unaligned_flip_word;
             }
-            word_address = (uint64_t)-2; /* the jump word is read the slow way below */
-        } else {
             word_address = ip >> ww;
             if (word_address + 1 >= flat_count) {
-                if (!flat_garbage(self, word_address)) {
-                    goto memory_error;
-                }
-                f = 0;
-            } else {
-                f = flat[word_address];
-                if (f & GARBAGE_SENTINEL) {
-                    if (!flat_garbage(self, word_address)) {
-                        goto memory_error;
-                    }
-                    f = 0;
-                }
+                goto cold_flip_word_out_of_span;
             }
-        }
+            f = flat[word_address];
+            if (f & GARBAGE_SENTINEL) {
+                goto cold_flip_word_out_of_span;
+            }
+        flip_word_ready:
 
-        /* handle output */
-        if (f <= out1 && f >= dw) {
-            PyObject* result = PyObject_CallFunctionObjArgs(write_bit, (f == out1) ? Py_True : Py_False, NULL);
-            if (!result) {
-                goto done;
+            /* IO - one unsigned compare each: output when f is dw or dw+1;
+               input when in_lo_exclusive < ip <= in_addr */
+            if (f - dw <= 1) {
+                goto cold_output;
             }
-            Py_DECREF(result);
-        }
+        after_output:
+            if (ip - in_lo_exclusive - 1 < dw) {
+                goto cold_input;
+            }
+        after_input:
 
-        /* handle input */
-        if (ip <= in_addr && ip > in_lo_exclusive) {
-            PyObject* result;
-            int bit_value;
-            double io_start = monotonic_seconds();
-            result = PyObject_CallNoArgs(read_bit);
-            *paused_seconds_out += monotonic_seconds() - io_start;
-            if (!result) {
-                if (PyErr_ExceptionMatches(eof_exception_type)) {
-                    PyErr_Clear();
-                    cause = TERM_EOF;
-                    goto done;
-                }
-                goto done;
+            /* FLIP! */
+            flip_word_address = f >> ww;
+            if (flip_word_address >= flat_count) {
+                goto cold_flip_out_of_span;
             }
-            bit_value = PyObject_IsTrue(result);
-            Py_DECREF(result);
-            if (bit_value < 0) {
-                goto done;
-            }
-            if (mem_write_bit(self, in_addr, bit_value) < 0) {
-                goto memory_error;
-            }
-        }
-
-        /* FLIP! */
-        flip_word_address = f >> ww;
-        if (flip_word_address >= flat_count) {
-            if (!flat_garbage(self, flip_word_address)) {
-                goto memory_error;
-            }
-        } else {
             flip_value = flat[flip_word_address];
             if (flip_value & GARBAGE_SENTINEL) {
-                if (!flat_garbage(self, flip_word_address)) {
-                    goto memory_error;
-                }
-                flip_value = 0;
+                goto cold_flip_garbage;
             }
+        flip_value_ready:
             flat[flip_word_address] = flip_value ^ (1ull << (f & bit_mask));
-        }
+        after_flip:
 
-        /* read jump word (after the flip - the flip may modify it) */
-        if (word_address + 1 < flat_count) {
+            /* read jump word (after the flip - the flip may modify it). word_address is
+               (uint64_t)-2 for unaligned ops, so they take the slow read too. */
+            if (word_address + 1 >= flat_count) {
+                goto cold_jump_word_slow;
+            }
             j = flat[word_address + 1];
             if (j & GARBAGE_SENTINEL) {
-                if (!flat_garbage(self, word_address + 1)) {
-                    goto memory_error;
-                }
-                j = 0;
+                goto cold_jump_word_garbage;
             }
-        } else if (mem_get_word_unaligned(self, ip + width, &j) < 0) {
+        jump_word_ready:
+            ops++;
+
+            /* check finish? */
+            if (j == ip) {
+                goto cold_maybe_looping;
+            }
+        not_looping:
+            if (j < dw) {
+                cause = TERM_NULL_IP;
+                goto done;
+            }
+
+            /* JUMP! */
+            ip = j;
+        } while (--inner_left);
+        continue;
+
+        /* ------- cold blocks: rare per-op work, off the straight-line path. they sit
+           outside the do-while and goto back into it (labels are function-scope) so the
+           hot path's only taken branch is the dec-jnz back-edge. */
+
+    cold_unaligned_flip_word:
+        if (mem_get_word_unaligned(self, ip, &cold_word) < 0) {
             goto memory_error;
         }
-        ops++;
+        f = cold_word;
+        word_address = (uint64_t)-2; /* the jump word is read the slow way below */
+        goto flip_word_ready;
 
-        /* speculation: on dw-aligned ops within the flat span only.
-           word_address is (uint64_t)-2 for unaligned ops - the +1 overflow guard excludes them. */
-        if (self->spec_pred && word_address + 1 < flat_count) {
-            uint64_t pred_index = word_address / 2;
-            if (self->spec_pred[pred_index] != j) {
-                self->spec_pred[pred_index] = j;
-            } else {
-                uint64_t next_word = j >> ww;
-                if (next_word < flat_count) {
-                    FJ_PREFETCH(&flat[next_word]);
-                }
+    cold_flip_word_out_of_span: /* also the flip-word garbage-sentinel case */
+        if (!flat_garbage(self, word_address)) {
+            goto memory_error;
+        }
+        f = 0;
+        goto flip_word_ready;
+
+    cold_output:
+    {
+        PyObject* result = PyObject_CallFunctionObjArgs(write_bit, (f == dw + 1) ? Py_True : Py_False, NULL);
+        if (!result) {
+            goto done;
+        }
+        Py_DECREF(result);
+        goto after_output;
+    }
+
+    cold_input:
+    {
+        PyObject* result;
+        int bit_value;
+        double io_start = monotonic_seconds();
+        result = PyObject_CallNoArgs(read_bit);
+        *paused_seconds_out += monotonic_seconds() - io_start;
+        if (!result) {
+            if (PyErr_ExceptionMatches(eof_exception_type)) {
+                PyErr_Clear();
+                cause = TERM_EOF;
+                goto done;
             }
-        }
-
-        /* check finish? */
-        if (j == ip && !(f >= ip && f - ip < dw)) {
-            cause = TERM_LOOPING;
             goto done;
         }
-        if (j < dw) {
-            cause = TERM_NULL_IP;
+        bit_value = PyObject_IsTrue(result);
+        Py_DECREF(result);
+        if (bit_value < 0) {
             goto done;
         }
+        if (mem_write_bit(self, in_addr, bit_value) < 0) {
+            goto memory_error;
+        }
+        goto after_input;
+    }
 
-        /* JUMP! */
-        ip = j;
+    cold_flip_out_of_span:
+        if (!flat_garbage(self, flip_word_address)) {
+            goto memory_error;
+        }
+        goto after_flip; /* out-of-span flips do not store */
+
+    cold_flip_garbage:
+        if (!flat_garbage(self, flip_word_address)) {
+            goto memory_error;
+        }
+        flip_value = 0;
+        goto flip_value_ready;
+
+    cold_jump_word_slow:
+        if (mem_get_word_unaligned(self, ip + width, &cold_word) < 0) {
+            goto memory_error;
+        }
+        j = cold_word;
+        goto jump_word_ready;
+
+    cold_jump_word_garbage:
+        if (!flat_garbage(self, word_address + 1)) {
+            goto memory_error;
+        }
+        j = 0;
+        goto jump_word_ready;
+
+    cold_maybe_looping:
+        if (f >= ip && f - ip < dw) {
+            goto not_looping; /* the op flips its own words - not a halt */
+        }
+        cause = TERM_LOOPING;
+        goto done;
     }
 
 memory_error:
@@ -1071,6 +1112,30 @@ done:
     self->last_run_paused_seconds = *paused_seconds_out;
     *ops_out = ops;
     return cause;
+}
+
+/* dispatch with literal width/ww (the supported power-of-two widths) so the
+   force-inlined body constant-folds; unusual widths keep the generic body. */
+static int run_flat_loop(MemoryObject* self, PyObject* read_bit, PyObject* write_bit, PyObject* eof_exception_type,
+                         uint64_t start_ip, uint64_t* ops_out, double* paused_seconds_out)
+{
+    switch (self->w) {
+        case 64:
+            return run_flat_loop_impl(self, read_bit, write_bit, eof_exception_type, start_ip, ops_out,
+                                      paused_seconds_out, 64, 6);
+        case 32:
+            return run_flat_loop_impl(self, read_bit, write_bit, eof_exception_type, start_ip, ops_out,
+                                      paused_seconds_out, 32, 5);
+        case 16:
+            return run_flat_loop_impl(self, read_bit, write_bit, eof_exception_type, start_ip, ops_out,
+                                      paused_seconds_out, 16, 4);
+        case 8:
+            return run_flat_loop_impl(self, read_bit, write_bit, eof_exception_type, start_ip, ops_out,
+                                      paused_seconds_out, 8, 3);
+        default:
+            return run_flat_loop_impl(self, read_bit, write_bit, eof_exception_type, start_ip, ops_out,
+                                      paused_seconds_out, (uint64_t)self->w, (uint64_t)self->ww);
+    }
 }
 
 /* build the (cause, op_count, error_bit_address_or_None, last_ops, paused_seconds) result tuple.
@@ -1165,17 +1230,7 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
         /* the common fast case gets the dedicated loop (no ring, no paged branches) */
         uint64_t fast_ops = 0;
         double fast_paused = 0.0;
-        int fast_cause;
-        if (!self->spec_pred) {
-            const char* no_speculation = getenv("FLIPJUMP_NO_SPECULATION");
-            if (!(no_speculation && no_speculation[0] == '1')) {
-                /* one predicted jump-target per dw-aligned op (word_address / 2).
-                   calloc-zeroed = no-prediction-yet (0 is never a valid jump target).
-                   on allocation failure the loop runs fine without speculation. */
-                self->spec_pred = (uint64_t*)calloc((size_t)(self->flat_count / 2 + 1), sizeof(uint64_t));
-            }
-        }
-        fast_cause =
+        int fast_cause =
             run_flat_loop(self, read_bit, write_bit, eof_exception_type, start_ip, &fast_ops, &fast_paused);
         if (fast_cause == CAUSE_PYTHON_ERROR) {
             return NULL;
@@ -1398,12 +1453,6 @@ static PyObject* Memory_get_speculation_stats(MemoryObject* self, void* closure)
                          self->spec_misses);
 }
 
-static PyObject* Memory_get_speculation_active(MemoryObject* self, void* closure)
-{
-    (void)closure;
-    return PyBool_FromLong(self->spec_pred != NULL);
-}
-
 static PyObject* Memory_get_allocated_bytes(MemoryObject* self, void* closure)
 {
     (void)closure;
@@ -1435,8 +1484,6 @@ static PyGetSetDef Memory_getset[] = {
      "'flat'/'paged' - the storage mode chosen at the first run (None before it)", NULL},
     {"speculation_stats", (getter)Memory_get_speculation_stats, NULL,
      "dict(ops, first_executions, misses) of the last FLIPJUMP_MEASURE_SPECULATION=1 run, else None", NULL},
-    {"speculation_active", (getter)Memory_get_speculation_active, NULL,
-     "True if jump-target speculation is active (flat mode only, off when FLIPJUMP_NO_SPECULATION=1)", NULL},
     {NULL, NULL, NULL, NULL, NULL},
 };
 
