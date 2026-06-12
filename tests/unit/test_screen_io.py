@@ -110,28 +110,62 @@ def test_init_set_palette_update_screen(tmp_path: Path) -> None:
     assert frame_hash == expected
 
 
-def test_update_rectangle_blits_into_frame(tmp_path: Path) -> None:
+def test_update_rectangle_reads_a_subregion_with_screen_stride(tmp_path: Path) -> None:
+    device, memory = make_screen(tmp_path)
+    init_4x2(device, memory)  # 4x2 screen, palette[0]=(10,20,30), palette[1]=(200,100,0)
+
+    # display starts all-0 (palette entry 0)
+    zero_address = 0x40000
+    store_pixels(memory, zero_address, [0] * 8)
+    write_byte(device, 3)
+    write_address(device, zero_address)
+
+    # a FULL-SCREEN framebuffer at SCREEN_ADDRESS (row-major, 4 wide): only the column
+    # x=2 is palette 1 - at strided indices 2 (row 0) and 2+4=6 (row 1).
+    store_pixels(memory, SCREEN_ADDRESS, [0, 0, 1, 0, 0, 0, 1, 0])
+
+    write_byte(device, 4)  # CMD update_rectangle - the address is the SCREEN base
+    write_u16(device, 2)  # x
+    write_u16(device, 0)  # y
+    write_u16(device, 1)  # rect w (a 1x2 column)
+    write_u16(device, 2)  # rect h
+    write_address(device, SCREEN_ADDRESS)
+
+    assert device.frame_count == 2
+    # the column (2,0) and (2,1) was read from the strided framebuffer offsets 2 and 6,
+    # so it's palette 1 (a contiguous read would have taken offsets 0,1 = palette 0).
+    assert device.last_frame_rgb[2] == (200, 100, 0)
+    assert device.last_frame_rgb[4 + 2] == (200, 100, 0)
+    # pixels outside the rectangle are untouched
+    assert device.last_frame_rgb[0] == (10, 20, 30)
+    assert device.last_frame_rgb[1] == (10, 20, 30)
+
+
+def test_update_rectangle_2x2_reads_both_rows_strided(tmp_path: Path) -> None:
     device, memory = make_screen(tmp_path)
     init_4x2(device, memory)
 
-    store_pixels(memory, SCREEN_ADDRESS, [0] * 8)
+    zero_address = 0x40000
+    store_pixels(memory, zero_address, [0] * 8)
     write_byte(device, 3)
+    write_address(device, zero_address)
+
+    # full-screen framebuffer: row0 = [9,0,1,9], row1 = [9,1,0,9] (col 0 and 3 are outside
+    # the 2x2 rect at x=1; using 0/1 inside). indices: 1->0,2->1 ; 5->1,6->0.
+    store_pixels(memory, SCREEN_ADDRESS, [0, 0, 1, 0, 0, 1, 0, 0])
+    write_byte(device, 4)
+    write_u16(device, 1)  # x
+    write_u16(device, 0)  # y
+    write_u16(device, 2)  # rect w
+    write_u16(device, 2)  # rect h
     write_address(device, SCREEN_ADDRESS)
 
-    rect_address = 0x30000
-    store_pixels(memory, rect_address, [1, 1])  # a 1x2 column
-    write_byte(device, 4)  # CMD update_rectangle
-    write_u16(device, 2)  # x
-    write_u16(device, 0)  # y
-    write_u16(device, 1)  # rect w
-    write_u16(device, 2)  # rect h
-    write_address(device, rect_address)
-
-    assert device.frame_count == 2
-    # pixel (2,0) and (2,1) are now palette entry 1
+    # rect maps each row from its strided offset: (1,0)=fb[1]=0, (2,0)=fb[2]=1,
+    #                                             (1,1)=fb[5]=1, (2,1)=fb[6]=0
+    assert device.last_frame_rgb[1] == (10, 20, 30)
     assert device.last_frame_rgb[2] == (200, 100, 0)
-    assert device.last_frame_rgb[4 + 2] == (200, 100, 0)
-    assert device.last_frame_rgb[0] == (10, 20, 30)
+    assert device.last_frame_rgb[4 + 1] == (200, 100, 0)
+    assert device.last_frame_rgb[4 + 2] == (10, 20, 30)
 
 
 def test_bpp4_masks_pixel_indices(tmp_path: Path) -> None:

@@ -10,7 +10,7 @@ i.e. memory_width/8 bytes):
   [0x01][width:2][height:2][bpp:1][palette_size:2]      init_screen
   [0x02][palette_fj_bit_address:w/8]                    set_palette
   [0x03][screen_fj_bit_address:w/8]                     update_screen (presents a frame)
-  [0x04][x:2][y:2][rect_w:2][rect_h:2][addr:w/8]        update_rectangle (presents a frame)
+  [0x04][x:2][y:2][rect_w:2][rect_h:2][screen_addr:w/8] update_rectangle (presents a frame)
   [0x05][width*height pixel bytes]                      update_screen_raw (presents a frame)
 
 the memory-hook commands (update_screen/update_rectangle) are the primary path - reading
@@ -21,8 +21,11 @@ attach_memory - at the cost of the program outputting every pixel byte each fram
 it requires a prior init_screen (the pixel count defines the command length).
 
 memory layout contracts (op-structured "packed bytes", one byte per fj-op, stride dw):
-  framebuffer: pixel k (row-major) is the packed byte at screen_address + k*dw, masked
-    to bpp bits (bpp is 4 or 8 - the palette-index width).
+  framebuffer: pixel (px, py) is the packed byte at screen_address + (px + py*width)*dw,
+    masked to bpp bits (bpp is 4 or 8 - the palette-index width).
+  update_rectangle reads the same full-screen framebuffer (the address is the screen base,
+    not the rectangle's): its source for row i is rect_width packed bytes starting at pixel
+    (x + (y+i)*width) - so it never reads pixels outside the [x, x+rect_w) x [y, y+rect_h) box.
   palette: entry k is 3 packed bytes R,G,B at palette_address + 3k*dw.
 
 the headless backend (default) keeps the expanded RGB frame (last_frame_rgb), writes one
@@ -203,17 +206,24 @@ class InMemoryScreen(IODevice):
         self.pixel_indices = [pixel & pixel_mask for pixel in pixels]
         self._present()
 
-    def _update_rectangle(self, x: int, y: int, rect_width: int, rect_height: int, rect_bit_address: int) -> None:
+    def _update_rectangle(self, x: int, y: int, rect_width: int, rect_height: int, screen_bit_address: int) -> None:
+        # the address is the full-screen framebuffer base (NOT the rectangle's): the source of
+        # the [x, x+rect_width) x [y, y+rect_height) sub-rectangle is read with the screen's
+        # stride, so row i is rect_width bytes starting at pixel (x + (y+i)*screen_width).
         self._require_initialized_screen()
+        if self.device_memory is None:
+            raise IODeviceException('the screen device is not attached to the interpreter memory')
         if x + rect_width > self.width or y + rect_height > self.height:
             raise IODeviceException(
                 f'update_rectangle [{x},{y}] {rect_width}x{rect_height} exceeds the {self.width}x{self.height} screen'
             )
         pixel_mask = (1 << self.bpp) - 1
-        raw = self._read_packed_bytes(rect_bit_address, rect_width * rect_height)
+        dw = 2 * self.device_memory.memory_width
         for row in range(rect_height):
+            line_first_pixel = (y + row) * self.width + x
+            line = self._read_packed_bytes(screen_bit_address + line_first_pixel * dw, rect_width)
             for col in range(rect_width):
-                self.pixel_indices[(y + row) * self.width + (x + col)] = raw[row * rect_width + col] & pixel_mask
+                self.pixel_indices[(y + row) * self.width + (x + col)] = line[col] & pixel_mask
         self._present()
 
     def _present(self) -> None:
