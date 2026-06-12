@@ -975,28 +975,17 @@ def _snapshot_parser_to_cache(parser: FJParser, cache_key: _StlCacheKey) -> None
     )
 
 
-def parse_macro_tree(
-    input_files: List[Tuple[str, Path]], memory_width: int, warning_as_errors: bool
-) -> Dict[MacroName, Macro]:
+def _parse_files_into_parser(
+    parser: FJParser, lexer: FJLexer, input_files: List[Tuple[str, Path]], memory_width: int, warning_as_errors: bool
+) -> None:
     """
-    parse the .fj files and create a macro-dictionary.
-    The files will be parsed as if they were concatenated.
-    @param input_files:[in]: a list of (short_file_name, fj_file_path). The files will to be parsed in that given order.
-    @param memory_width:[in]: the memory-width
-    @param warning_as_errors:[in]: treat warnings as errors (stop execution on warnings)
-    @return: the macro-dictionary.
+    lex+parse every input file into the parser, transparently using the stl-prefix cache:
+    restore the cached parser state for the leading stl files when available (skipping their
+    re-parse), and snapshot it after the first time the whole prefix is parsed. see the
+    module comment above for why the snapshot is safe.
     """
-    global curr_file, curr_file_short_name, error_occurred, all_errors
-    error_occurred = False
-    all_errors = ''
-
+    global curr_file, curr_file_short_name
     files_seen: Set[Union[str, Path]] = set()
-
-    if not input_files:
-        raise FlipJumpParsingException("The FlipJump parser got an empty files list.")
-
-    lexer = FJLexer()
-    parser = FJParser(memory_width, warning_as_errors, input_files[0])
 
     prefix_length = _stl_prefix_length(input_files)
     cache_key = _stl_cache_key(input_files, prefix_length, memory_width, warning_as_errors) if prefix_length else None
@@ -1004,6 +993,7 @@ def parse_macro_tree(
     first_uncached_index = 0
     if cache_key is not None and cache_key in _stl_prefix_cache:
         _restore_parser_from_cache(parser, _stl_prefix_cache[cache_key])
+        # the skipped prefix files still need their name/path-uniqueness validated
         for curr_file_short_name, curr_file in input_files[:prefix_length]:
             validate_current_file(files_seen)
         first_uncached_index = prefix_length
@@ -1015,6 +1005,30 @@ def parse_macro_tree(
         lex_parse_curr_file(lexer, parser)
         if cache_key is not None and file_index == prefix_length - 1:
             _snapshot_parser_to_cache(parser, cache_key)
+
+
+def parse_macro_tree(
+    input_files: List[Tuple[str, Path]], memory_width: int, warning_as_errors: bool
+) -> Dict[MacroName, Macro]:
+    """
+    parse the .fj files and create a macro-dictionary.
+    The files will be parsed as if they were concatenated.
+    @param input_files:[in]: a list of (short_file_name, fj_file_path). The files will to be parsed in that given order.
+    @param memory_width:[in]: the memory-width
+    @param warning_as_errors:[in]: treat warnings as errors (stop execution on warnings)
+    @return: the macro-dictionary.
+    """
+    global error_occurred, all_errors
+    error_occurred = False
+    all_errors = ''
+
+    if not input_files:
+        raise FlipJumpParsingException("The FlipJump parser got an empty files list.")
+
+    lexer = FJLexer()
+    parser = FJParser(memory_width, warning_as_errors, input_files[0])
+
+    _parse_files_into_parser(parser, lexer, input_files, memory_width, warning_as_errors)
 
     parser.validate_no_label_const_collisions()
     exit_if_errors()

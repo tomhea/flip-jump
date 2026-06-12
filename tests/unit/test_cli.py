@@ -114,3 +114,13 @@ def test_cli_invalid_flat_max_words_rejected(tmp_path: Path) -> None:
         assemble_run_according_to_cmd_line_args(
             cmd_line_args=['--run', '-s', '--no_output', '--flat-max-words', '0', str(fjm_path)]
         )
+
+
+def test_cli_pc_rejects_combining_with_di_do(tmp_path: Path) -> None:
+    # --pc is a shorthand for "--di keyboard --do screen"; passing it with --di/--do errors
+    # before any device is built (so this needs no pygame).
+    fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
+    with pytest.raises(SystemExit):
+        assemble_run_according_to_cmd_line_args(
+            cmd_line_args=['--run', '-s', '--pc', '--di', 'keyboard=events.txt', str(fjm_path)]
+        )
