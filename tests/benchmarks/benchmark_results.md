@@ -33,15 +33,15 @@ every int is a multi-digit CPython PyLong, and the small-int fast paths don't ap
 Segment-aware paged memory (lazily-allocated 128KB pages) + the run-loop in C; Python is
 called back only for IO. Build with `python build_fjcore.py`.
 
-The shipping engine (v6 below; sieve = sparse/paged path, loop = compact/flat path):
+The shipping engine (v9 below; sieve = sparse/paged path, loop = compact/flat path):
 
 | program            | width | ops           | speed             | vs baseline |
 |--------------------|-------|--------------:|------------------:|------------:|
-| sieve (n=5,000)    | w=32  |    16,580,560 |  ~122M fj/s       |        727x |
-| sieve (n=5,000)    | w=64  |    33,304,073 |  ~128M fj/s       |        864x |
-| sieve (n=200,000)  | w=64  | 1,332,300,215 |  ~132M fj/s       |        892x |
-| loop (compact)     | w=32  |   298,927,147 |  ~280M fj/s       |      1,664x |
-| loop (compact)     | w=64  |   351,500,749 |  ~370M fj/s       |      2,495x |
+| sieve (n=5,000)    | w=32  |    16,580,560 |  ~180M fj/s       |      1,069x |
+| sieve (n=5,000)    | w=64  |    33,304,073 |  ~180M fj/s       |      1,214x |
+| sieve (n=200,000)  | w=64  | 1,332,300,215 |  ~132M fj/s (v6)  |        892x |
+| loop (compact)     | w=32  |   298,927,147 |  ~410-440M fj/s   |      2,553x |
+| loop (compact)     | w=64  |   351,500,749 |  ~370-430M fj/s   |      2,899x |
 
 **The ≥10M fj/s acceptance is met with ~10x margin on every row.**
 
@@ -57,6 +57,7 @@ The shipping engine (v6 below; sieve = sparse/paged path, loop = compact/flat pa
 | v6: + MSVC PGO (`build_fjcore.py --pgo-*`, optional) | 122M | 128M | 132M | **280-286M** |
 | v7: slim specialized flat loop (cold-block layout, folded IO checks, per-width constants, strip-mined signal check) | unchanged | unchanged | unchanged | **352-430M** (+25-30% interleaved A/B) |
 | v8: flat storage opened to w=64 (magic gap sentinel + segment-routed API) | unchanged | unchanged | unchanged | loop w=64: 110M -> **358-382M** (3.4x) |
+| v9: slim paged loop (widened page cache, cold-block reshape, width+ring clones) | **~180M** (+50%) | **~180M** (+50%) | - | paged-forced w=64: 130M -> **221-239M** (+75-85%); flat unchanged |
 
 - v2: the ip/jump page and the flip-target page alternated every op and thrashed the single
   cached entry, forcing a hash lookup per access.
@@ -75,6 +76,19 @@ The shipping engine (v6 below; sieve = sparse/paged path, loop = compact/flat pa
 - v6: profile-guided optimization is available for local builds
   (`--pgo-instrument`, train on both the flat and paged paths, `--pgo-use`);
   the prebuilt wheels ship without it.
+- v9 (slim paged loop): the generic loop got the v7 treatment plus a cache widening.
+  the 16-way page cache now holds the page's words pointer and fast valid range next to
+  the key, so the hot path reads op words without chasing the Page* (one less chained
+  load on the serial ip path). the loop itself is the run_paged_loop_impl reshape: rare
+  conditions (unaligned/straddling ops, cache misses, outside-valid-range words, IO,
+  termination) are forward gotos to cold blocks, the IO range tests fold to one unsigned
+  compare each, the signal check is strip-mined, width/ww arrive as literals from a
+  dispatch, and the last-ops ring + the flat-with-ring debug lane are const-folded out of
+  the common (no-ring) clones. anything outside the fast path falls back to the original
+  helpers (mem_read_word / mem_flip_bit validate per word) - exact original semantics.
+  this is the floor for programs that cannot take flat storage (far/huge/sparse
+  segments, e.g. sieve): interleaved PGO A/B - paged-forced loop w=64 130M -> 221-239M
+  (+75-85%), sieve w=64 108-126M -> 174-186M (+50%); the flat paths are untouched.
 - v8 (w=64 flat): flat storage was limited to w<=32 because the garbage sentinel lived
   in-band at bit 63 - a w=64 value uses all 64 bits. gaps are now filled with a fixed
   magic constant instead (FLAT_GARBAGE_MAGIC, sqrt(3)'s fractional bits); a real word

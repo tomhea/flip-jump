@@ -114,6 +114,11 @@ typedef struct {
        the wandering flip-target pages coexist instead of evicting each other. */
     uint64_t page_cache_key_plus1[16];
     Page* page_cache_page[16];
+    /* parallel to the two above: the cached page's words pointer and fast valid range,
+       so the run loop's hot path skips the Page* indirection (one less chained load) */
+    uint64_t* page_cache_words[16];
+    uint64_t page_cache_valid_start[16];
+    uint64_t page_cache_valid_end[16];
 
     SegmentRange* segments; /* sorted, merged */
     Py_ssize_t segment_count;
@@ -219,6 +224,15 @@ static void page_compute_validity(MemoryObject* m, uint64_t page_index, Page* pa
     }
 }
 
+static inline void page_cache_fill(MemoryObject* m, uint64_t cache_slot, uint64_t key, Page* page)
+{
+    m->page_cache_key_plus1[cache_slot] = key;
+    m->page_cache_page[cache_slot] = page;
+    m->page_cache_words[cache_slot] = page->words;
+    m->page_cache_valid_start[cache_slot] = page->valid_start;
+    m->page_cache_valid_end[cache_slot] = page->valid_end;
+}
+
 static Page* mem_get_page(MemoryObject* m, uint64_t page_index)
 {
     uint64_t key = page_index + 1;
@@ -235,8 +249,7 @@ static Page* mem_get_page(MemoryObject* m, uint64_t page_index)
     h = (key * 0x9E3779B97F4A7C15ull) & (m->slot_count - 1);
     while (m->slots[h].key_plus1) {
         if (m->slots[h].key_plus1 == key) {
-            m->page_cache_key_plus1[cache_slot] = key;
-            m->page_cache_page[cache_slot] = m->slots[h].page;
+            page_cache_fill(m, cache_slot, key, m->slots[h].page);
             return m->slots[h].page;
         }
         h = (h + 1) & (m->slot_count - 1);
@@ -258,8 +271,7 @@ static Page* mem_get_page(MemoryObject* m, uint64_t page_index)
         m->slots[h].key_plus1 = key;
         m->slots[h].page = page;
         m->slots_used++;
-        m->page_cache_key_plus1[cache_slot] = key;
-        m->page_cache_page[cache_slot] = page;
+        page_cache_fill(m, cache_slot, key, page);
         return page;
     }
 }
@@ -597,6 +609,9 @@ static int Memory_init(PyObject* op, PyObject* args, PyObject* kwds)
     self->slots_used = 0;
     memset(self->page_cache_key_plus1, 0, sizeof(self->page_cache_key_plus1));
     memset(self->page_cache_page, 0, sizeof(self->page_cache_page));
+    memset(self->page_cache_words, 0, sizeof(self->page_cache_words));
+    memset(self->page_cache_valid_start, 0, sizeof(self->page_cache_valid_start));
+    memset(self->page_cache_valid_end, 0, sizeof(self->page_cache_valid_end));
     self->segments = NULL;
     self->segment_count = 0;
     self->segment_capacity = 0;
@@ -1177,6 +1192,313 @@ static int run_flat_loop(MemoryObject* self, PyObject* read_bit, PyObject* write
     }
 }
 
+/* the generic run loop - the paged path (plus the rare flat-with-last-ops-ring debug
+   mode), reshaped like run_flat_loop_impl: rare conditions are forward gotos to cold
+   blocks (the hot path is straight-line, all conditionals fall-through), the IO range
+   tests fold to one unsigned compare each, the signal check is strip-mined, and
+   width/ww arrive as literals from run_generic_loop's dispatch.
+
+   the hot lane is an aligned non-straddling op whose page sits in the 16-way cache with
+   the words inside the fast valid range - read via the widened cache (words pointer +
+   valid range cached next to the key), skipping the Page* indirection. the op's two
+   words share one cached slot; the flip inlines the same cache-hit fast path and falls
+   back to mem_flip_bit (cold) for everything else. ops outside a page's fast valid
+   range take the full helpers (mem_read_word validates per word) - exact original
+   semantics. with_ring is literal 0 on the common clones, folding away the ring write
+   and the flat sub-lane (flat storage reaches this loop only with a ring - the
+   debugger's last-ops mode).
+   returns the termination cause, or CAUSE_PYTHON_ERROR with the python error set. */
+static FJ_ALWAYS_INLINE int run_paged_loop_impl(MemoryObject* self, PyObject* read_bit, PyObject* write_bit,
+                                                PyObject* eof_exception_type, uint64_t start_ip, uint64_t* ops_out,
+                                                double* paused_seconds_out, uint64_t* last_ops_ring,
+                                                Py_ssize_t last_ops_length, uint64_t* ring_writes_out,
+                                                const uint64_t width, const uint64_t ww, const int with_ring)
+{
+    const uint64_t bit_mask = width - 1;
+    const uint64_t dw = 2 * width;
+    const uint64_t in_addr = 3 * width + ww + 1; /* 3w + #w */
+    const uint64_t in_lo_exclusive = in_addr - dw;
+    uint64_t* const flat = self->flat; /* non-NULL only in the with_ring clone */
+    const uint64_t flat_count = self->flat_count;
+
+    uint64_t ip = start_ip, ops = 0, ring_writes = 0;
+    uint64_t word_address, op_offset, op_slot, f, j;
+    uint64_t* op_words; /* the hot lane's cached words; NULL marks the slow lanes */
+    uint64_t* op_flat_jump = NULL;
+    uint64_t cold_word; /* out-param for the cold-path reads, so f/j stay in registers */
+    uint64_t inner_left;
+    int cause = CAUSE_PYTHON_ERROR;
+
+    self->mem_error = 0;
+    self->last_run_op_count = 0;
+    for (;;) {
+        self->last_run_op_count = ops;
+        if (PyErr_CheckSignals() < 0) {
+            goto loop_done; /* python error - cause stays CAUSE_PYTHON_ERROR */
+        }
+        inner_left = SIGNAL_CHECK_MASK + 1;
+        do {
+            if (with_ring) {
+                last_ops_ring[ring_writes % (uint64_t)last_ops_length] = ip;
+                ring_writes++;
+                op_flat_jump = NULL;
+                if (flat) {
+                    goto flat_lane;
+                }
+            }
+
+            /* read flip word - the op's two words share one cached page slot */
+            if (ip & bit_mask) {
+                goto cold_unaligned_flip_word;
+            }
+            word_address = ip >> ww;
+            op_offset = word_address & PAGE_MASK;
+            if (op_offset == PAGE_MASK) {
+                goto cold_straddling_op;
+            }
+            op_slot = (word_address >> PAGE_BITS) & 15;
+            if ((word_address >> PAGE_BITS) + 1 != self->page_cache_key_plus1[op_slot]) {
+                goto cold_op_page_miss;
+            }
+        op_page_cached:
+            if (op_offset < self->page_cache_valid_start[op_slot] ||
+                op_offset >= self->page_cache_valid_end[op_slot]) {
+                goto cold_op_slow;
+            }
+            op_words = self->page_cache_words[op_slot];
+            f = op_words[op_offset];
+        flip_word_ready:
+
+            /* IO - one unsigned compare each: output when f is dw or dw+1;
+               input when in_lo_exclusive < ip <= in_addr */
+            if (f - dw <= 1) {
+                goto cold_output;
+            }
+        after_output:
+            if (ip - in_lo_exclusive - 1 < dw) {
+                goto cold_input;
+            }
+        after_input:
+
+            /* FLIP - the cache-hit valid-range fast path inline; the rest falls back to
+               mem_flip_bit (page miss, outside the valid range, flat - all cold) */
+            if (with_ring) {
+                goto cold_flip_slow; /* the debug clone keeps the helper (handles flat) */
+            }
+            {
+                const uint64_t flip_word_address = f >> ww;
+                const uint64_t flip_offset = flip_word_address & PAGE_MASK;
+                const uint64_t flip_slot = (flip_word_address >> PAGE_BITS) & 15;
+                if ((flip_word_address >> PAGE_BITS) + 1 != self->page_cache_key_plus1[flip_slot]) {
+                    goto cold_flip_slow;
+                }
+                if (flip_offset < self->page_cache_valid_start[flip_slot] ||
+                    flip_offset >= self->page_cache_valid_end[flip_slot]) {
+                    goto cold_flip_slow;
+                }
+                self->page_cache_words[flip_slot][flip_offset] ^= 1ull << (f & bit_mask);
+            }
+        after_flip:
+
+            /* read jump word (after the flip - the flip may modify it, including this
+               word). the hot lane re-reads through the cached slot: op_offset >= the
+               valid start already held for f, so only the end bound needs checking. */
+            if (with_ring && op_flat_jump) {
+                j = *op_flat_jump;
+                if (flat_is_garbage(self, j) && flat_garbage_check(self, (uint64_t)(op_flat_jump - flat), &j) < 0) {
+                    goto memory_or_python_error;
+                }
+            } else if (op_words) {
+                if (op_offset + 1 >= self->page_cache_valid_end[op_slot]) {
+                    goto cold_jump_word_slow;
+                }
+                j = op_words[op_offset + 1];
+            } else if (ip & bit_mask) {
+                if (mem_get_word_unaligned(self, ip + width, &cold_word) < 0) {
+                    goto memory_or_python_error;
+                }
+                j = cold_word;
+            } else {
+                if (mem_read_word(self, (ip >> ww) + 1, &cold_word) < 0) {
+                    goto memory_or_python_error;
+                }
+                j = cold_word;
+            }
+        jump_word_ready:
+            ops++;
+
+            /* check finish? */
+            if (j == ip) {
+                goto cold_maybe_looping;
+            }
+        not_looping:
+            if (j < dw) {
+                cause = TERM_NULL_IP;
+                goto loop_done;
+            }
+
+            /* JUMP! */
+            ip = j;
+        } while (--inner_left);
+        continue;
+
+        /* ------- cold blocks: rare per-op work, off the straight-line path (they sit
+           outside the do-while and goto back into it - labels are function-scope) */
+
+    flat_lane: /* with_ring && flat: the debugger's last-ops mode on flat storage */
+        op_words = NULL;
+        if (ip & bit_mask) {
+            goto cold_unaligned_flip_word;
+        }
+        word_address = ip >> ww;
+        if (word_address + 1 >= flat_count) {
+            if (mem_read_word(self, word_address, &cold_word) < 0) {
+                goto memory_or_python_error;
+            }
+            f = cold_word;
+            goto flip_word_ready;
+        }
+        f = flat[word_address];
+        if (flat_is_garbage(self, f) && flat_garbage_check(self, word_address, &f) < 0) {
+            goto memory_or_python_error;
+        }
+        op_flat_jump = flat + word_address + 1;
+        goto flip_word_ready;
+
+    cold_unaligned_flip_word:
+        op_words = NULL;
+        if (mem_get_word_unaligned(self, ip, &cold_word) < 0) {
+            goto memory_or_python_error;
+        }
+        f = cold_word;
+        goto flip_word_ready;
+
+    cold_straddling_op: /* the op's words straddle a page boundary - per-word helpers */
+        op_words = NULL;
+        if (mem_read_word(self, word_address, &cold_word) < 0) {
+            goto memory_or_python_error;
+        }
+        f = cold_word;
+        goto flip_word_ready;
+
+    cold_op_page_miss:
+        if (!mem_get_page(self, word_address >> PAGE_BITS)) {
+            goto memory_or_python_error;
+        }
+        goto op_page_cached; /* mem_get_page filled slot op_slot */
+
+    cold_op_slow: /* in-page but outside the fast valid range - mem_read_word validates
+                     per word (and the slow jump read below does too) */
+        op_words = NULL;
+        if (mem_read_word(self, word_address, &cold_word) < 0) {
+            goto memory_or_python_error;
+        }
+        f = cold_word;
+        goto flip_word_ready;
+
+    cold_output:
+    {
+        PyObject* result = PyObject_CallFunctionObjArgs(write_bit, (f == dw + 1) ? Py_True : Py_False, NULL);
+        if (!result) {
+            goto loop_done;
+        }
+        Py_DECREF(result);
+        goto after_output;
+    }
+
+    cold_input:
+    {
+        PyObject* result;
+        int bit_value;
+        double io_start = monotonic_seconds();
+        result = PyObject_CallNoArgs(read_bit);
+        *paused_seconds_out += monotonic_seconds() - io_start;
+        if (!result) {
+            if (PyErr_ExceptionMatches(eof_exception_type)) {
+                PyErr_Clear();
+                cause = TERM_EOF;
+                goto loop_done;
+            }
+            goto loop_done;
+        }
+        bit_value = PyObject_IsTrue(result);
+        Py_DECREF(result);
+        if (bit_value < 0) {
+            goto loop_done;
+        }
+        if (mem_write_bit(self, in_addr, bit_value) < 0) {
+            goto memory_or_python_error;
+        }
+        goto after_input;
+    }
+
+    cold_flip_slow:
+        if (mem_flip_bit(self, f) < 0) {
+            goto memory_or_python_error;
+        }
+        goto after_flip;
+
+    cold_jump_word_slow: /* hot op whose jump word lies past the fast valid range */
+        if (mem_read_word(self, (ip >> ww) + 1, &cold_word) < 0) {
+            goto memory_or_python_error;
+        }
+        j = cold_word;
+        goto jump_word_ready;
+
+    cold_maybe_looping:
+        if (f >= ip && f - ip < dw) {
+            goto not_looping; /* the op flips its own words - not a halt */
+        }
+        cause = TERM_LOOPING;
+        goto loop_done;
+    }
+
+memory_or_python_error:
+    if (self->mem_error) {
+        self->mem_error = 0;
+        cause = TERM_MEMORY_ERROR;
+    }
+loop_done:
+    self->last_run_op_count = ops;
+    self->last_run_paused_seconds = *paused_seconds_out;
+    *ops_out = ops;
+    *ring_writes_out = ring_writes;
+    return cause;
+}
+
+/* dispatch with literal width/ww and the ring flag, mirroring run_flat_loop: the
+   no-ring clones fold away the ring write and the flat sub-lane. */
+static int run_generic_loop(MemoryObject* self, PyObject* read_bit, PyObject* write_bit,
+                            PyObject* eof_exception_type, uint64_t start_ip, uint64_t* ops_out,
+                            double* paused_seconds_out, uint64_t* last_ops_ring, Py_ssize_t last_ops_length,
+                            uint64_t* ring_writes_out)
+{
+    if (last_ops_ring) {
+        return run_paged_loop_impl(self, read_bit, write_bit, eof_exception_type, start_ip, ops_out,
+                                   paused_seconds_out, last_ops_ring, last_ops_length, ring_writes_out,
+                                   (uint64_t)self->w, (uint64_t)self->ww, 1);
+    }
+    switch (self->w) {
+        case 64:
+            return run_paged_loop_impl(self, read_bit, write_bit, eof_exception_type, start_ip, ops_out,
+                                       paused_seconds_out, NULL, 0, ring_writes_out, 64, 6, 0);
+        case 32:
+            return run_paged_loop_impl(self, read_bit, write_bit, eof_exception_type, start_ip, ops_out,
+                                       paused_seconds_out, NULL, 0, ring_writes_out, 32, 5, 0);
+        case 16:
+            return run_paged_loop_impl(self, read_bit, write_bit, eof_exception_type, start_ip, ops_out,
+                                       paused_seconds_out, NULL, 0, ring_writes_out, 16, 4, 0);
+        case 8:
+            return run_paged_loop_impl(self, read_bit, write_bit, eof_exception_type, start_ip, ops_out,
+                                       paused_seconds_out, NULL, 0, ring_writes_out, 8, 3, 0);
+        default:
+            return run_paged_loop_impl(self, read_bit, write_bit, eof_exception_type, start_ip, ops_out,
+                                       paused_seconds_out, NULL, 0, ring_writes_out, (uint64_t)self->w,
+                                       (uint64_t)self->ww, 0);
+    }
+}
+
+
 /* build the (cause, op_count, error_bit_address_or_None, last_ops, paused_seconds) result tuple.
    takes ownership of last_ops_ring (frees it). */
 static PyObject* build_run_result(MemoryObject* self, int cause, uint64_t ops, uint64_t* last_ops_ring,
@@ -1231,11 +1553,7 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
     Py_ssize_t last_ops_length = 0;
     unsigned long long start_ip = 0;
 
-    uint64_t ip, ops = 0;
     uint64_t* last_ops_ring = NULL;
-    uint64_t ring_writes = 0;
-    int cause = -1;
-    double paused_seconds = 0.0;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOO|nK", kwlist, &read_bit, &write_bit, &eof_exception_type,
                                      &last_ops_length, &start_ip)) {
@@ -1285,174 +1603,17 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
     }
 
     {
-        const uint64_t width = (uint64_t)self->w;
-        const uint64_t ww = (uint64_t)self->ww;
-        const uint64_t bit_mask = width - 1;
-        const uint64_t dw = 2 * width;
-        const uint64_t out1 = dw + 1;
-        const uint64_t in_addr = 3 * width + ww + 1; /* 3w + #w */
-        const uint64_t in_lo_exclusive = in_addr - dw;
-        uint64_t* const flat = self->flat;
-        const uint64_t flat_count = self->flat_count;
-
-        ip = start_ip;
-        self->mem_error = 0;
-        self->last_run_op_count = 0;
-
-        for (;;) {
-            uint64_t f, j, bit_offset;
-            Page* op_page = NULL; /* the page holding both op words (aligned, non-straddling ops) */
-            uint64_t op_offset = 0;
-            uint64_t* op_flat_jump = NULL; /* flat mode: where this op's jump word lives */
-
-            if ((ops & SIGNAL_CHECK_MASK) == SIGNAL_CHECK_MASK) {
-                self->last_run_op_count = ops;
-                if (PyErr_CheckSignals() < 0) {
-                    goto python_error;
-                }
-            }
-
-            if (last_ops_ring) {
-                last_ops_ring[ring_writes % (uint64_t)last_ops_length] = ip;
-                ring_writes++;
-            }
-
-            /* read flip word - flat mode reads it straight out of the dense array; paged
-               mode shares one page lookup for the op's two words (unless the op straddles
-               a page boundary, or the ip is unaligned) */
-            bit_offset = ip & bit_mask;
-            if (flat && !bit_offset) {
-                uint64_t word_address = ip >> ww;
-                if (word_address + 1 >= flat_count) {
-                    if (mem_read_word(self, word_address, &f) < 0) {
-                        goto memory_or_python_error;
-                    }
-                } else {
-                    f = flat[word_address];
-                    if (flat_is_garbage(self, f) && flat_garbage_check(self, word_address, &f) < 0) {
-                        goto memory_or_python_error;
-                    }
-                    op_flat_jump = flat + word_address + 1;
-                }
-            } else if (bit_offset) {
-                if (mem_get_word_unaligned(self, ip, &f) < 0) {
-                    goto memory_or_python_error;
-                }
-            } else {
-                uint64_t word_address = ip >> ww;
-                op_offset = word_address & PAGE_MASK;
-                if (op_offset != PAGE_MASK) {
-                    op_page = mem_get_page(self, word_address >> PAGE_BITS);
-                    if (!op_page) {
-                        goto memory_or_python_error;
-                    }
-                    if (!(op_offset >= op_page->valid_start && op_offset < op_page->valid_end)) {
-                        if (!access_check(self, op_page, word_address)) {
-                            goto memory_or_python_error;
-                        }
-                    }
-                    f = op_page->words[op_offset];
-                } else if (mem_read_word(self, word_address, &f) < 0) {
-                    goto memory_or_python_error;
-                }
-            }
-
-            /* handle output */
-            if (f <= out1 && f >= dw) {
-                PyObject* result = PyObject_CallFunctionObjArgs(write_bit, (f == out1) ? Py_True : Py_False, NULL);
-                if (!result) {
-                    goto python_error;
-                }
-                Py_DECREF(result);
-            }
-
-            /* handle input */
-            if (ip <= in_addr && ip > in_lo_exclusive) {
-                PyObject* result;
-                int bit_value;
-                double io_start = monotonic_seconds();
-                result = PyObject_CallNoArgs(read_bit);
-                paused_seconds += monotonic_seconds() - io_start;
-                if (!result) {
-                    if (PyErr_ExceptionMatches(eof_exception_type)) {
-                        PyErr_Clear();
-                        cause = TERM_EOF;
-                        break;
-                    }
-                    goto python_error;
-                }
-                bit_value = PyObject_IsTrue(result);
-                Py_DECREF(result);
-                if (bit_value < 0) {
-                    goto python_error;
-                }
-                if (mem_write_bit(self, in_addr, bit_value) < 0) {
-                    goto memory_or_python_error;
-                }
-            }
-
-            /* FLIP! */
-            if (mem_flip_bit(self, f) < 0) {
-                goto memory_or_python_error;
-            }
-
-            /* read jump word (after the flip - the flip may modify it, including this word) */
-            if (op_flat_jump) {
-                j = *op_flat_jump;
-                if (flat_is_garbage(self, j) && flat_garbage_check(self, (uint64_t)(op_flat_jump - flat), &j) < 0) {
-                    goto memory_or_python_error;
-                }
-            } else if (op_page) {
-                /* the jump word's validity is checked here, at read time (after the flip) -
-                   matching the reference loops' op order exactly */
-                if (!(op_offset + 1 >= op_page->valid_start && op_offset + 1 < op_page->valid_end)) {
-                    if (!access_check(self, op_page, (ip >> ww) + 1)) {
-                        goto memory_or_python_error;
-                    }
-                }
-                j = op_page->words[op_offset + 1];
-            } else if (bit_offset) {
-                if (mem_get_word_unaligned(self, ip + width, &j) < 0) {
-                    goto memory_or_python_error;
-                }
-            } else if (mem_read_word(self, (ip >> ww) + 1, &j) < 0) {
-                goto memory_or_python_error;
-            }
-            ops++;
-
-            /* check finish? (f >= ip && f - ip < dw  is the overflow-safe  ip <= f < ip+dw) */
-            if (j == ip && !(f >= ip && f - ip < dw)) {
-                cause = TERM_LOOPING;
-                break;
-            }
-            if (j < dw) {
-                cause = TERM_NULL_IP;
-                break;
-            }
-
-            /* JUMP! */
-            ip = j;
+        uint64_t loop_ops = 0, loop_ring_writes = 0;
+        double loop_paused = 0.0;
+        int loop_cause = run_generic_loop(self, read_bit, write_bit, eof_exception_type, start_ip, &loop_ops,
+                                          &loop_paused, last_ops_ring, last_ops_length, &loop_ring_writes);
+        if (loop_cause == CAUSE_PYTHON_ERROR) {
+            free(last_ops_ring);
+            return NULL;
         }
+        return build_run_result(self, loop_cause, loop_ops, last_ops_ring, last_ops_length, loop_ring_writes,
+                                loop_paused);
     }
-
-    self->last_run_op_count = ops;
-    self->last_run_paused_seconds = paused_seconds;
-    return build_run_result(self, cause, ops, last_ops_ring, last_ops_length, ring_writes, paused_seconds);
-
-memory_or_python_error:
-    if (self->mem_error) {
-        self->mem_error = 0;
-        self->last_run_op_count = ops;
-        self->last_run_paused_seconds = paused_seconds;
-        return build_run_result(self, TERM_MEMORY_ERROR, ops, last_ops_ring, last_ops_length, ring_writes,
-                                paused_seconds);
-    }
-    /* fallthrough: a python error during a memory callback */
-python_error:
-    self->last_run_op_count = ops;
-    self->last_run_paused_seconds = paused_seconds;
-    free(last_ops_ring);
-    return NULL;
 }
 
 static PyObject* Memory_get_op_count(MemoryObject* self, void* closure)
