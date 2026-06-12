@@ -2,8 +2,8 @@
 unit-tests for the IO devices (flipjump/interpreter/io_devices/).
 
 covers FixedIO's LSB-first bit ordering, output assembly, EOF and incomplete-output
-errors, BrokenIO raising on any access, and the --di/--do device registry/factory
-(the non-windowed paths - the windowed wiring is in test_screen_window.py).
+errors, BrokenIO raising on any access, and the --io mode selector (the non-windowed
+paths - the windowed `pc` device is in test_screen_window.py).
 """
 
 import pytest

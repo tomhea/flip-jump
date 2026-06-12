@@ -106,7 +106,7 @@ class InMemoryScreen(IODevice):
             self._handle_byte(byte)
 
     def read_bit(self) -> bool:
-        raise IOReadOnEOF('the screen device has no input - pair it with an input device (--di)')
+        raise IOReadOnEOF('the screen device has no input - use a device that also reads input (e.g. --io pc)')
 
     def get_output(self, *, allow_incomplete_output: bool = False) -> bytes:
         return b''

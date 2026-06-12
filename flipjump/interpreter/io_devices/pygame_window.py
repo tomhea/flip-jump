@@ -9,8 +9,10 @@ interactive screen draws to it and the keyboard reads keys from it, but neither 
 depends on the other. The CLI hands them a shared window when both are interactive (so it's
 one window: it shows the frames and captures the keys), and otherwise each gets its own.
 
-A live keyboard needs *a* focusable window for SDL to deliver key events. So a keyboard
-used without an interactive screen opens its own small input window (ensure_open_for_input).
+SDL only delivers key events to a focusable window, so capturing live keys needs one open.
+In `pc` the screen opens+sizes the window on the program's init-screen command; for a window
+with no screen to size it (e.g. standalone keyboard tests), ensure_open_for_input opens a
+small default window.
 
 keycodes delivered to the fj program (one byte): printable/control keys send their
 ascii-like SDL keycode (k < 0x80, e.g. 'a'=97, esc=27, enter=13, space=32); the
@@ -97,8 +99,8 @@ class PygameWindow:
         self._screen_surface = pg.display.set_mode((width, height), pg.SCALED | pg.RESIZABLE)
 
     def ensure_open_for_input(self) -> None:
-        """open a small window (if none is open yet) so SDL can deliver key events - used by
-        a live keyboard that has no interactive screen to open/size the window for it."""
+        """open a small window (if none is open yet) so SDL can deliver key events - for a
+        window with no screen to open/size it (e.g. standalone keyboard tests)."""
         if not self.is_open:
             self.ensure_open(*INPUT_WINDOW_SIZE)
 
