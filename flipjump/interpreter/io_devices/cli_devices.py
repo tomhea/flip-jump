@@ -132,7 +132,7 @@ def create_io_device(di_spec: Optional[str], do_spec: Optional[str]) -> IODevice
     """build the io-device from the --di/--do CLI specs (None means standard)."""
     di_spec, do_spec = di_spec or 'standard', do_spec or 'standard'
     if di_spec == 'standard' and do_spec == 'standard':
-        return StandardIO(True)
+        return StandardIO(True)  # pure shortcut: the registry path would build an identical SplitIO
 
     in_factory, in_arg = _lookup(INPUT_DEVICES, 'input', di_spec)
     out_factory, out_arg = _lookup(OUTPUT_DEVICES, 'output', do_spec)

@@ -177,6 +177,19 @@ def test_cli_screen_and_keyboard_share_one_window() -> None:
     assert isinstance(io_device.input_device, KeyboardIO)
     keyboard_window = io_device.input_device.event_source._window  # type: ignore[attr-defined]
     assert keyboard_window is io_device.output_device.window
+    # the screen opens/sizes the window on its init-screen command, so the composition root
+    # must NOT have pre-opened it for input here
+    assert not keyboard_window.is_open
+
+
+def test_cli_screen_alone_does_not_preopen_the_window() -> None:
+    # screen-alone: the window is created but opened lazily by the screen, not for input
+    from flipjump.interpreter.io_devices.cli_devices import create_io_device
+
+    io_device = create_io_device('standard', 'screen')
+    screen = io_device.output_device  # type: ignore[attr-defined]
+    assert isinstance(screen, InteractiveScreen)
+    assert not screen.window.is_open  # opens only on the program's init-screen command
 
 
 def test_cli_live_keyboard_with_console_output() -> None:
