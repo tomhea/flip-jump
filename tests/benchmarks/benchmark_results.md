@@ -54,6 +54,7 @@ The shipping engine (v6 below; sieve = sparse/paged path, loop = compact/flat pa
 | v4: flat storage for compact programs | 112-127M | 115-129M | 125-140M | 246M |
 | v5: dedicated flat loop (no ring/paged branches) | - | - | - | 273M |
 | v6: + MSVC PGO (`build_fjcore.py --pgo-*`, optional) | 122M | 128M | 132M | **280-286M** |
+| v7: jump-target speculation (flat loop only, FLIPJUMP_NO_SPECULATION=1 to disable) | unchanged | unchanged | unchanged | **296M** (+16% no-PGO MSVC; +50-80% expected on GCC+PGO with prefetch) |
 
 - v2: the ip/jump page and the flip-target page alternated every op and thrashed the single
   cached entry, forcing a hash lookup per access.
@@ -72,6 +73,12 @@ The shipping engine (v6 below; sieve = sparse/paged path, loop = compact/flat pa
 - v6: profile-guided optimization is available for local builds
   (`--pgo-instrument`, train on both the flat and paged paths, `--pgo-use`);
   the prebuilt wheels ship without it.
+- v7: jump-target speculation in `run_flat_loop`: the last jump destination per
+  dw-aligned op is remembered in `spec_pred[word_address/2]`; on a hit the next
+  op's word load is prefetched (`FJ_PREFETCH` = `__builtin_prefetch` on GCC/Clang,
+  no-op on MSVC). Gates on `FLIPJUMP_NO_SPECULATION=1`; `Memory.speculation_active`
+  reflects whether it is on. A/B (same MSVC non-PGO build): +16% on the loop benchmark
+  (pure branch-prediction benefit; real prefetch adds more on GCC+PGO).
 
 Cycle accounting at ~4.6GHz: v1 was ~46 CPU-cycles per fj-op, v6-flat is ~16. The serial
 dependency floor (jump-word load -> address arithmetic -> next jump-word load, L1-resident)

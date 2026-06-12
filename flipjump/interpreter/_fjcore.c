@@ -23,6 +23,13 @@
 #include <string.h>
 #include <time.h>
 
+/* portable prefetch hint (no-op on MSVC: prefetch is a hint, not correctness) */
+#if defined(__GNUC__) || defined(__clang__)
+#  define FJ_PREFETCH(addr) __builtin_prefetch((addr), 0, 3)
+#else
+#  define FJ_PREFETCH(addr) ((void)(addr))
+#endif
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -110,6 +117,12 @@ typedef struct {
     uint64_t flat_count;
     uint64_t flat_max_words; /* constructor override; 0 = use the env var / default */
     int storage_decided;
+
+    /* jump-target speculation (the flat loop only): the last jump target seen per
+       dw-aligned op, indexed by word_address/2; flat_count/2 + 1 entries (costs +50% of
+       the flat array's footprint). NULL = off (FLIPJUMP_NO_SPECULATION=1, paged mode,
+       or the allocation failed - the loop then just runs unspeculated). */
+    uint64_t* spec_pred;
 
     int mem_error;            /* set when garbage_stop fired */
     uint64_t error_bit_address;
@@ -527,6 +540,8 @@ static void mem_free_allocations(MemoryObject* self)
     }
     free(self->flat);
     self->flat = NULL;
+    free(self->spec_pred);
+    self->spec_pred = NULL;
     free(self->segments);
     self->segments = NULL;
 }
@@ -562,6 +577,7 @@ static int Memory_init(PyObject* op, PyObject* args, PyObject* kwds)
     self->flat_count = 0;
     self->flat_max_words = flat_max_words;
     self->storage_decided = 0;
+    self->spec_pred = NULL;
     self->mem_error = 0;
     self->error_bit_address = 0;
     self->spec_measured = 0;
@@ -1017,6 +1033,20 @@ static int run_flat_loop(MemoryObject* self, PyObject* read_bit, PyObject* write
         }
         ops++;
 
+        /* speculation: on dw-aligned ops within the flat span only.
+           word_address is (uint64_t)-2 for unaligned ops - the +1 overflow guard excludes them. */
+        if (self->spec_pred && word_address + 1 < flat_count) {
+            uint64_t pred_index = word_address / 2;
+            if (self->spec_pred[pred_index] != j) {
+                self->spec_pred[pred_index] = j;
+            } else {
+                uint64_t next_word = j >> ww;
+                if (next_word < flat_count) {
+                    FJ_PREFETCH(&flat[next_word]);
+                }
+            }
+        }
+
         /* check finish? */
         if (j == ip && !(f >= ip && f - ip < dw)) {
             cause = TERM_LOOPING;
@@ -1135,7 +1165,17 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
         /* the common fast case gets the dedicated loop (no ring, no paged branches) */
         uint64_t fast_ops = 0;
         double fast_paused = 0.0;
-        int fast_cause =
+        int fast_cause;
+        if (!self->spec_pred) {
+            const char* no_speculation = getenv("FLIPJUMP_NO_SPECULATION");
+            if (!(no_speculation && no_speculation[0] == '1')) {
+                /* one predicted jump-target per dw-aligned op (word_address / 2).
+                   calloc-zeroed = no-prediction-yet (0 is never a valid jump target).
+                   on allocation failure the loop runs fine without speculation. */
+                self->spec_pred = (uint64_t*)calloc((size_t)(self->flat_count / 2 + 1), sizeof(uint64_t));
+            }
+        }
+        fast_cause =
             run_flat_loop(self, read_bit, write_bit, eof_exception_type, start_ip, &fast_ops, &fast_paused);
         if (fast_cause == CAUSE_PYTHON_ERROR) {
             return NULL;
@@ -1358,6 +1398,12 @@ static PyObject* Memory_get_speculation_stats(MemoryObject* self, void* closure)
                          self->spec_misses);
 }
 
+static PyObject* Memory_get_speculation_active(MemoryObject* self, void* closure)
+{
+    (void)closure;
+    return PyBool_FromLong(self->spec_pred != NULL);
+}
+
 static PyObject* Memory_get_allocated_bytes(MemoryObject* self, void* closure)
 {
     (void)closure;
@@ -1389,6 +1435,8 @@ static PyGetSetDef Memory_getset[] = {
      "'flat'/'paged' - the storage mode chosen at the first run (None before it)", NULL},
     {"speculation_stats", (getter)Memory_get_speculation_stats, NULL,
      "dict(ops, first_executions, misses) of the last FLIPJUMP_MEASURE_SPECULATION=1 run, else None", NULL},
+    {"speculation_active", (getter)Memory_get_speculation_active, NULL,
+     "True if jump-target speculation is active (flat mode only, off when FLIPJUMP_NO_SPECULATION=1)", NULL},
     {NULL, NULL, NULL, NULL, NULL},
 };
 
