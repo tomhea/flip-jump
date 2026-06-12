@@ -201,6 +201,39 @@ flip-store -> jump-load disambiguation stall, which is structural to FlipJump se
 variants 2 and 3). Decision: **no speculation tier**; the predictor infrastructure was
 removed, the measuring mode (`FLIPJUMP_MEASURE_SPECULATION=1`) stays as a study tool.
 
+### Bottleneck decomposition (the oracle-replay study)
+
+Where do the slim loop's ~10.3 cycles/op go (loop w=32, 4.2GHz sustained - measured with
+a chained-add frequency probe)? Three instrumented experiments (scratch science builds,
+not committed; the methods are reproducible from this description):
+
+1. **Dispatch-aliasing frequency**: counting how close each op's loads are to recent flip
+   stores: **7.14% of ops flip the very next op's jump word** (the wflip dispatch idiom),
+   matching the speculation study's 7.58% miss rate - they are the same ops. f-words are
+   never recently written; j-words only by distance-1 (7.14%) and distance<=16 (10.5%).
+
+2. **Oracle replay**: record the 50M-op ip trace, then re-run the identical op sequence
+   with the next ip taken from the linear trace array instead of the loaded jump word -
+   i.e. a perfect, zero-miss, prefetch-friendly speculation oracle, on identical machine
+   code (runtime mode flag in one shared clone). Result: the oracle is *slower* (288M vs
+   377M fj/s) - removing the serial ip chain entirely buys nothing. Since no speculation
+   scheme can beat its own oracle, this closes speculation on this engine for good (any
+   correct scheme must still load the jump word to verify, which is the oracle's exact
+   work).
+
+3. **Iso-codegen ablations** (replay-driven, so control flow cannot diverge): per-op cost
+   of each component - IO range checks ~1.7 cycles, flip RMW ~3.8 (store ~1.7 + load
+   ~2.1), jump-word load + finish checks ~3.5, loop skeleton + flip-word load ~7.8 floor
+   (components overlap under OOO; the sum exceeds the total).
+
+**Conclusion: the engine is bound by its per-op memory work - 3 loads + 1 RMW store,
+with 7.14% of jump-word loads needing store-to-load forwarding of a just-written word -
+not by any dependency chain.** Interpreter-level tricks that only shorten the chain
+(prediction, prefetch hints) are oracle-bounded below current performance. The lever
+that remains is removing interpreter work per op: binary translation (each FJ op as
+2-3 host instructions; wflip-dispatch ops as per-site indirect jumps, which the BTB
+predicts at the measured 92-95%) - a post-1.5.0 engine direction.
+
 
 ## OQ-A1 — decoded-op cache: measured, and rejected
 
