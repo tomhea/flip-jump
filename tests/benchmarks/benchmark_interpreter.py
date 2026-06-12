@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 from time import time
 
-REPO_ROOT = Path(__file__).parent.parent
+REPO_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 from flipjump import assemble  # noqa: E402
@@ -27,7 +27,7 @@ from flipjump.utils.classes import TerminationCause  # noqa: E402
 
 PROGRAMS = {
     'sieve': REPO_ROOT / 'programs' / 'prime_sieve.fj',
-    'loop': REPO_ROOT / 'tests' / 'benchmark_loop.fj',
+    'loop': Path(__file__).parent / 'benchmark_loop.fj',
 }
 COMPILED_DIR = REPO_ROOT / 'tests' / 'compiled' / 'benchmark'
 

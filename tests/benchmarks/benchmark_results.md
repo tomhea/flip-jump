@@ -1,6 +1,6 @@
 # Interpreter benchmark results
 
-Benchmark: `python tests/benchmark_interpreter.py 2000` — `prime_sieve.fj`, sieve up to 2000,
+Benchmark: `python tests/benchmarks/benchmark_interpreter.py 2000` — `prime_sieve.fj`, sieve up to 2000,
 `FixedIO` input, statistics timer (IO-paused) as the denominator.
 
 ## Baseline — fj==1.4.0 interpreter (commit 4da18b7)
@@ -93,7 +93,7 @@ historical 96-140M band.
 
 ## Assembler speedup
 
-Benchmark: `python tests/benchmark_assembler.py` - three workload shapes: hello_world.fj
+Benchmark: `python tests/benchmarks/benchmark_assembler.py` - three workload shapes: hello_world.fj
 (the per-program fixed cost), prime_sieve.fj (macro-heavy), and a generated 64K-entry
 byte-LUT program (data-heavy, the mega-data-table shape). Acceptance: bit-identical .fjm
 outputs - verified by sha256 on 14 outputs (10 catalog programs across categories + the 3
@@ -136,9 +136,9 @@ compression (preset 6) is most of "create binary" and is part of the .fjm format
 The native engine is bounded (~16 cycles/op flat) by the serial chain: this op's jump-word
 load -> next op address -> next load. Jump-target speculation (remember the last jump target
 per op address, start the next op's loads early, verify) only pays if the jump word at a
-given ip rarely changes between executions. Measured with the exact counting mode
-(an exact counting mode that lived in `_fjcore` for the study and was removed once the
-measurements were done - see commit 282a0ea for the tool):
+given ip rarely changes between executions. Measured with the exact counting mode in
+`_fjcore` (`FLIPJUMP_MEASURE_SPECULATION=1`, off the normal hot path; reproduce with
+`python tests/benchmarks/measure_speculation.py`):
 
 | program | ops | first executions | misses | miss-rate | warm miss-rate |
 |---|---:|---:|---:|---:|---:|

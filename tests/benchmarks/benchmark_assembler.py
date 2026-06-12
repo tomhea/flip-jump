@@ -23,7 +23,7 @@ import tempfile
 from pathlib import Path
 from time import time
 
-REPO_ROOT = Path(__file__).parent.parent
+REPO_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 from flipjump import assemble  # noqa: E402

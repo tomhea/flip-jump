@@ -160,8 +160,8 @@ The interpreter has three engines:
 - **The featured loop** - used for `--trace`/breakpoints, or with `--profile` for the full
   per-op statistics (flips/jumps percentages).
 
-Benchmark them yourself with `python tests/benchmark_interpreter.py` (results and the
-w=32-vs-w=64 recommendation are recorded in [tests/benchmark_results.md](tests/benchmark_results.md)).
+Benchmark them yourself with `python tests/benchmarks/benchmark_interpreter.py` (results and the
+w=32-vs-w=64 recommendation are recorded in [tests/benchmarks/benchmark_results.md](tests/benchmarks/benchmark_results.md)).
 
 ### IO devices
 
