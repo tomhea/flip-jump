@@ -1,17 +1,16 @@
 """
 end-to-end tests for the io-devices: an .fj program drives the InMemoryScreen over the output
 stream (golden frame-hash + PNG output), a scripted keyboard replays deterministically into
-an .fj polling loop, and the --di/--do CLI plumbing runs a full program with both devices.
+an .fj polling loop, and the complete PcIO device (screen + keyboard together) runs a program.
 """
 
 import hashlib
 from pathlib import Path
 
-from flipjump import assemble_run_according_to_cmd_line_args
 from flipjump.interpreter import fjm_run
 from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO, ScriptedKeyEventSource
 from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
-from flipjump.interpreter.io_devices.cli_devices import SplitIO
+from flipjump.interpreter.io_devices.pygame_window import PcIO
 from flipjump.utils.classes import TerminationCause
 from tests.unit.unit_utils import assemble_to_path
 
@@ -175,31 +174,23 @@ def test_scripted_keyboard_replay_is_deterministic(tmp_path: Path, engine: str) 
         assert keyboard.get_output() == b'DH.UK..!'
 
 
-def test_split_io_combines_keyboard_and_screen(tmp_path: Path, engine: str) -> None:
+def test_pc_device_combines_keyboard_and_screen(tmp_path: Path, engine: str) -> None:
+    # the complete PcIO device built from explicit components: screen out + (empty) keyboard in
     fjm_path = assemble_to_path(SCREEN_PROGRAM, tmp_path, use_stl=True)
     screen = InMemoryScreen(frames_dir=tmp_path / 'frames')
     keyboard = KeyboardIO(ScriptedKeyEventSource.from_text(''))
-    statistics = fjm_run.run(fjm_path, io_device=SplitIO(keyboard, screen), print_time=False)
+    statistics = fjm_run.run(fjm_path, io_device=PcIO(screen, keyboard), print_time=False)
     assert statistics.termination_cause == TerminationCause.Looping
     assert screen.frame_count == 1
 
 
-def test_cli_di_do_plumbing(tmp_path: Path) -> None:
-    program_path = tmp_path / 'screen_prog.fj'
-    program_path.write_text(SCREEN_PROGRAM)
+def test_pc_headless_runs_a_program(tmp_path: Path) -> None:
+    # the headless 'pc' (#4): scripted keys in + PNG frames out, built programmatically
+    fjm_path = assemble_to_path(SCREEN_PROGRAM, tmp_path, use_stl=True)
     events_path = tmp_path / 'events.txt'
     events_path.write_text('0, down, 72\n')
-    frames_dir = tmp_path / 'cli_frames'
+    frames_dir = tmp_path / 'frames'
 
-    assemble_run_according_to_cmd_line_args(
-        cmd_line_args=[
-            str(program_path),
-            '--di',
-            f'keyboard={events_path}',
-            '--do',
-            f'screen={frames_dir}',
-            '-s',
-        ]
-    )
-
+    statistics = fjm_run.run(fjm_path, io_device=PcIO.headless(events_path, frames_dir), print_time=False)
+    assert statistics.termination_cause == TerminationCause.Looping
     assert (frames_dir / 'frame_000000.png').exists()

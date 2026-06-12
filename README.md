@@ -168,29 +168,24 @@ w=32-vs-w=64 recommendation are recorded in [tests/benchmarks/benchmark_results.
 <details>
 <summary><b>IO devices</b> — pluggable input/output, including an interactive screen window and a keyboard.</summary>
 
-The interpreter's IO is pluggable:
+The interpreter's IO is pluggable: `--io MODE` picks one complete IO device.
 
 ```bash
-fj --run program.fjm --di keyboard --do screen     # or just:  fj --run program.fjm --pc
+fj --run program.fjm --io pc
 ```
 
-- **`--do screen`** - an interactive **screen** window: frames are presented scaled-up, F11
-  toggles fullscreen, and closing the window stops the run (needs pygame:
-  `pip install flipjump[screen]`; works on Windows, Linux and macOS). Use `--do screen=FRAMES_DIR`
-  instead for a headless 256-color screen that just saves one PNG per frame plus a frame-hash log.
-- **`--di keyboard`** - a non-blocking **keyboard** fed by live key presses in an interactive
-  window (it shares the `--do screen` window when there is one, or opens its own small input
-  window). Use `--di keyboard=EVENTS_FILE` instead for a scripted, virtual-time keyboard that
-  replays `tic, down/up, keycode` lines (deterministic, no window).
-- **`--do console`** - plain text output to the terminal (the same as the standard output;
-  a clearly-named output to pair with a non-standard input, e.g. `--di keyboard --do console`
-  for live key capture with text output).
-- Devices can also read the program's memory through the `DeviceMemory` hook
-  (`IODevice.attach_memory`) - e.g. the screen reads pixel data straight from memory.
+- **`--io standard`** (the default) - input/output over the terminal.
+- **`--io pc`** - an interactive window: live keyboard input **and** a scaled 256-color screen,
+  in one window the device owns (F11 toggles fullscreen, closing it stops the run). Needs
+  pygame (`pip install flipjump[screen]`); works on Windows, Linux and macOS.
 
-`--pc` is shorthand for `--di keyboard --do screen` (an interactive window driven by live keys).
-The devices live in a small registry (`io_devices/cli_devices.py`); adding a new `--di`/`--do`
-device - windowed or not - is one registry entry.
+Each mode is one complete `IODevice` that owns its own channels (and window, if any) - there's
+no input/output splitting. Adding a new device (e.g. a windowed text console, or one that also
+drives speakers/printer) is one entry in `IO_MODES` (`io_devices/cli_devices.py`) plus its
+device class. Devices can also read the program's memory through the `DeviceMemory` hook
+(`IODevice.attach_memory`) - e.g. the screen reads pixel data straight from memory. Headless /
+scripted devices (a scripted keyboard + PNG frames, a plain `InMemoryScreen`, ...) are built
+programmatically and passed to `fjm_run.run(io_device=...)` - e.g. `PcIO.headless(events, dir)`.
 </details>
 
 ### How to Debug?

@@ -26,8 +26,10 @@ from collections import deque
 from pathlib import Path
 from typing import Any, Deque, List, Optional, Tuple
 
-from flipjump.interpreter.io_devices.KeyboardIO import KeyEventSource
+from flipjump.interpreter.io_devices.IODevice import IODevice
+from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO, KeyEventSource, ScriptedKeyEventSource
 from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
+from flipjump.interpreter.io_devices.device_memory import DeviceMemory
 from flipjump.utils.exceptions import IODeviceException
 
 # the >=0x80 keycodes (the SDL keycodes of these keys don't fit a byte)
@@ -173,3 +175,42 @@ class InteractiveScreen(InMemoryScreen):
         super()._present()
         self.window.draw(self.width, self.height, self.last_frame_rgb)
         self.window.pump_events()
+
+
+class PcIO(IODevice):
+    """the complete 'pc' io-device: live keyboard input + a 256-color screen, together.
+
+    a single device that owns both channels (no input/output splitting): read_bit comes from
+    the keyboard, write_bit drives the screen. interactive() wires both onto one real window
+    it owns (so it does the keys and the pixels - no window is shared between separate
+    devices). For a headless variant (e.g. scripted keys + PNG frames) build it from explicit
+    components, via __init__ or headless()."""
+
+    def __init__(self, screen: InMemoryScreen, keyboard: KeyboardIO):
+        self._screen = screen
+        self._keyboard = keyboard
+
+    @classmethod
+    def interactive(cls) -> 'PcIO':
+        """a real window: live key presses in, a scaled 256-color screen out (one window).
+        the screen opens+sizes the window on the program's init-screen command (so live keys
+        are captured from then on - a pc program initializes its screen up front)."""
+        window = PygameWindow()
+        return cls(InteractiveScreen(window=window), KeyboardIO(WindowKeyEventSource(window)))
+
+    @classmethod
+    def headless(cls, events_file: Path, frames_dir: Path) -> 'PcIO':
+        """no window: a scripted keyboard in, PNG frames out (deterministic replays / CI)."""
+        return cls(InMemoryScreen(frames_dir=frames_dir), KeyboardIO(ScriptedKeyEventSource.from_file(events_file)))
+
+    def attach_memory(self, device_memory: DeviceMemory) -> None:
+        self._screen.attach_memory(device_memory)  # the screen reads the framebuffer; the keyboard needs no memory
+
+    def read_bit(self) -> bool:
+        return self._keyboard.read_bit()
+
+    def write_bit(self, bit: bool) -> None:
+        self._screen.write_bit(bit)
+
+    def get_output(self, *, allow_incomplete_output: bool = False) -> bytes:
+        return self._screen.get_output(allow_incomplete_output=allow_incomplete_output)

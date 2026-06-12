@@ -20,6 +20,7 @@ from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO  # noqa: E402
 from flipjump.interpreter.io_devices.pygame_window import (  # noqa: E402
     KEYCODE_UP,
     InteractiveScreen,
+    PcIO,
     PygameWindow,
     WindowKeyEventSource,
 )
@@ -155,56 +156,55 @@ def test_fj_program_presents_into_the_window(tmp_path: Path) -> None:
     assert surface.get_at((1, 0))[:3] == (200, 100, 0)  # palette entry 1
 
 
-def test_cli_live_keyboard_alone_opens_its_own_window() -> None:
-    # a live keyboard with no --do screen no longer errors: it opens its own small input window
-    from flipjump.interpreter.io_devices.cli_devices import SplitIO, create_io_device
-
-    io_device = create_io_device('keyboard', 'standard')
-    assert isinstance(io_device, SplitIO)
-    assert isinstance(io_device.input_device, KeyboardIO)
-    window = io_device.input_device.event_source._window  # type: ignore[attr-defined]
-    assert isinstance(window, PygameWindow)
-    assert window.is_open  # opened for input, since there's no screen to size it
-
-
-def test_cli_screen_and_keyboard_share_one_window() -> None:
-    # the two interactive devices are wired onto the SAME window, with no device->device link
-    from flipjump.interpreter.io_devices.cli_devices import SplitIO, create_io_device
-
-    io_device = create_io_device('keyboard', 'screen')
-    assert isinstance(io_device, SplitIO)
-    assert isinstance(io_device.output_device, InteractiveScreen)
-    assert isinstance(io_device.input_device, KeyboardIO)
-    keyboard_window = io_device.input_device.event_source._window  # type: ignore[attr-defined]
-    assert keyboard_window is io_device.output_device.window
-    # the screen opens/sizes the window on its init-screen command, so the composition root
-    # must NOT have pre-opened it for input here
-    assert not keyboard_window.is_open
-
-
-def test_cli_screen_alone_does_not_preopen_the_window() -> None:
-    # screen-alone: the window is created but opened lazily by the screen, not for input
-    from flipjump.interpreter.io_devices.cli_devices import create_io_device
-
-    io_device = create_io_device('standard', 'screen')
-    screen = io_device.output_device  # type: ignore[attr-defined]
+def test_pc_interactive_owns_one_window_for_keys_and_screen() -> None:
+    # the complete `pc` device: keyboard + screen on ONE window it owns (no device sharing)
+    pc = PcIO.interactive()
+    screen, keyboard = pc._screen, pc._keyboard
     assert isinstance(screen, InteractiveScreen)
-    assert not screen.window.is_open  # opens only on the program's init-screen command
+    assert isinstance(keyboard, KeyboardIO)
+    assert keyboard.event_source._window is screen.window  # type: ignore[attr-defined]  # one shared window
+    assert not screen.window.is_open  # opens on the program's init-screen command, sized to it
 
 
-def test_cli_live_keyboard_with_console_output() -> None:
-    # the user's example: windowed live-key capture (its own input window) + plain console
-    # text output. the keyboard gets a window; the output device is a non-windowed StandardIO.
-    from flipjump.interpreter.io_devices.StandardIO import StandardIO
-    from flipjump.interpreter.io_devices.cli_devices import SplitIO, create_io_device
+def test_pc_interactive_delegates_keys_in_and_pixels_out() -> None:
+    pc = PcIO.interactive()
 
-    io_device = create_io_device('keyboard', 'console')
-    assert isinstance(io_device, SplitIO)
-    assert isinstance(io_device.input_device, KeyboardIO)
-    assert isinstance(io_device.output_device, StandardIO)  # console = terminal text output
-    window = io_device.input_device.event_source._window  # type: ignore[attr-defined]
-    assert isinstance(window, PygameWindow)
-    assert window.is_open  # the keyboard opened its own input window (no screen to size it)
+    # output: drive init + a raw 2x2 frame through PcIO.write_bit -> the screen presents
+    write_byte(pc, 1)  # init_screen
+    write_u16(pc, 2)
+    write_u16(pc, 2)
+    write_byte(pc, 8)  # bpp
+    write_u16(pc, 0)  # palette_size
+    write_byte(pc, 5)  # update_screen_raw
+    for pixel in (0, 0, 0, 0):
+        write_byte(pc, pixel)
+    assert pc._screen.frame_count == 1
+
+    # input: a key press read back through PcIO.read_bit
+    post_key(pygame.K_a)
+    assert sum(int(pc.read_bit()) << i for i in range(4)) == 0x9  # status: key-down
+    assert sum(int(pc.read_bit()) << i for i in range(8)) == ord('a')
+
+
+def test_pc_headless_uses_inmemory_screen_and_scripted_keys(tmp_path: Path) -> None:
+    from flipjump.interpreter.io_devices.KeyboardIO import ScriptedKeyEventSource
+    from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
+
+    events = tmp_path / 'events.txt'
+    events.write_text('0, down, 72\n')
+    pc = PcIO.headless(events, tmp_path / 'frames')
+    assert isinstance(pc._screen, InMemoryScreen)
+    assert not isinstance(pc._screen, InteractiveScreen)  # headless: a plain in-memory screen
+    assert isinstance(pc._keyboard.event_source, ScriptedKeyEventSource)
+
+
+def test_io_mode_pc_builds_an_interactive_pc() -> None:
+    from flipjump.interpreter.io_devices.cli_devices import make_io_device
+
+    pc = make_io_device('pc')
+    assert isinstance(pc, PcIO)
+    # interactive: the keyboard and the screen share the one window the device owns
+    assert pc._keyboard.event_source._window is pc._screen.window  # type: ignore[attr-defined]
 
 
 def test_closing_the_window_terminates_a_real_run(tmp_path: Path, engine: str) -> None:

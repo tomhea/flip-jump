@@ -14,6 +14,7 @@ from typing import Dict
 
 import pytest
 
+from flipjump.interpreter.io_devices.IODevice import IODevice
 from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
 from flipjump.interpreter.io_devices.device_memory import DeviceMemory
 from flipjump.utils.exceptions import IODeviceException
@@ -31,17 +32,17 @@ class FakeDeviceMemory(DeviceMemory):
         self.words[word_address] = value & ((1 << self.memory_width) - 1)
 
 
-def write_byte(device: InMemoryScreen, value: int) -> None:
+def write_byte(device: IODevice, value: int) -> None:
     for i in range(8):
         device.write_bit((value >> i) & 1 == 1)
 
 
-def write_u16(device: InMemoryScreen, value: int) -> None:
+def write_u16(device: IODevice, value: int) -> None:
     write_byte(device, value & 0xFF)
     write_byte(device, (value >> 8) & 0xFF)
 
 
-def write_address(device: InMemoryScreen, bit_address: int, memory_width: int = 64) -> None:
+def write_address(device: IODevice, bit_address: int, memory_width: int = 64) -> None:
     for i in range(memory_width // 8):
         write_byte(device, (bit_address >> (8 * i)) & 0xFF)
 
