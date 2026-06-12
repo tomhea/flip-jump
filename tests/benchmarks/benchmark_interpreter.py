@@ -77,7 +77,7 @@ def main() -> None:
         choices=sorted(PROGRAMS),
         default='sieve',
         help="the benchmark program: 'sieve' (sparse, half-address-space segment - the paged"
-        " path) or 'loop' (compact memory - the flat-storage path at w<=32)",
+        " path) or 'loop' (compact memory - the flat-storage path)",
     )
     args = parser.parse_args()
 

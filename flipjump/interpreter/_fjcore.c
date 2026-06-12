@@ -67,6 +67,14 @@ static double monotonic_seconds(void)
    the per-op cost is unaffected by the limit's value. */
 #define FLAT_MAX_WORDS_DEFAULT (1ull << 23) /* 8M words, 64MB */
 #define GARBAGE_SENTINEL (1ull << 63)
+/* the w=64 flat gap-fill sentinel. w<=32 keeps the in-band bit-63 sentinel (values are
+   masked below it, so it is exact), but w=64 values use all 64 bits - gaps are filled
+   with this fixed magic value instead, and a real word that happens to equal it is
+   disambiguated through the segment list on the cold path (gap words are never legally
+   written, so in-segment + magic == real data). the constant is sqrt(3)'s fractional
+   bits (the SHA-512 h1 constant) - any value works since collisions are handled; this
+   one is just recognizable in memory dumps. */
+#define FLAT_GARBAGE_MAGIC 0xBB67AE8584CAA73Bull
 
 /* termination causes (mapped to TerminationCause in fjm_run.py) */
 #define TERM_LOOPING 0
@@ -286,6 +294,40 @@ static inline int flat_garbage(MemoryObject* m, uint64_t word_address)
     return 0;
 }
 
+/* is this flat value the width's garbage sentinel? (w<=32: in-band bit 63, exact;
+   w=64: the magic fill value - may collide with real data, see flat_garbage_check) */
+static inline int flat_is_garbage(const MemoryObject* m, uint64_t value)
+{
+    return (m->w <= 32) ? ((value & GARBAGE_SENTINEL) != 0) : (value == FLAT_GARBAGE_MAGIC);
+}
+
+static inline int flat_seg_contains(const MemoryObject* m, uint64_t word_address)
+{
+    Py_ssize_t seg;
+    for (seg = 0; seg < m->segment_count; seg++) {
+        if (word_address >= m->segments[seg].start && word_address < m->segments[seg].end) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* a flat word whose value matched the width's sentinel: decide whether it is REAL
+   garbage (an out-of-segment touch - reported via flat_garbage, returns -1) or, at
+   w=64, an in-segment word that legitimately holds the magic value (kept, returns 0).
+   w<=32 has no collisions, so a sentinel match there is always real garbage. */
+static inline int flat_garbage_check(MemoryObject* m, uint64_t word_address, uint64_t* value)
+{
+    if (m->w > 32 && flat_seg_contains(m, word_address)) {
+        return 0; /* the word really holds the magic constant - real data */
+    }
+    if (!flat_garbage(m, word_address)) {
+        return -1;
+    }
+    *value = 0; /* continue-mode safety (flat requires garbage_stop, so unreachable) */
+    return 0;
+}
+
 /* read the w-bit word at the word-address. returns 0 on success, -1 on stop (mem_error or
    python error - distinguish via m->mem_error). */
 static inline int mem_read_word(MemoryObject* m, uint64_t word_address, uint64_t* out)
@@ -301,11 +343,8 @@ static inline int mem_read_word(MemoryObject* m, uint64_t word_address, uint64_t
             return 0;
         }
         value = m->flat[word_address];
-        if (value & GARBAGE_SENTINEL) {
-            if (!flat_garbage(m, word_address)) {
-                return -1;
-            }
-            value = 0;
+        if (flat_is_garbage(m, value) && flat_garbage_check(m, word_address, &value) < 0) {
+            return -1;
         }
         *out = value;
         return 0;
@@ -332,11 +371,8 @@ static inline int mem_flip_bit(MemoryObject* m, uint64_t bit_address)
             return flat_garbage(m, word_address) ? 0 : -1;
         }
         value = m->flat[word_address];
-        if (value & GARBAGE_SENTINEL) {
-            if (!flat_garbage(m, word_address)) {
-                return -1;
-            }
-            value = 0; /* continue-mode: the garbage word becomes a live 0 */
+        if (flat_is_garbage(m, value) && flat_garbage_check(m, word_address, &value) < 0) {
+            return -1;
         }
         m->flat[word_address] = value ^ (1ull << (bit_address & (uint64_t)(m->w - 1)));
         return 0;
@@ -364,11 +400,8 @@ static inline int mem_write_bit(MemoryObject* m, uint64_t bit_address, int bit_v
             return flat_garbage(m, word_address) ? 0 : -1;
         }
         value = m->flat[word_address];
-        if (value & GARBAGE_SENTINEL) {
-            if (!flat_garbage(m, word_address)) {
-                return -1;
-            }
-            value = 0;
+        if (flat_is_garbage(m, value) && flat_garbage_check(m, word_address, &value) < 0) {
+            return -1;
         }
         m->flat[word_address] = bit_value ? (value | bit) : (value & ~bit);
         return 0;
@@ -434,9 +467,11 @@ static uint64_t mem_flat_words_limit(MemoryObject* m)
 }
 
 /* decide the storage mode (once, at the first run): build the flat array when eligible -
-   w<=32 (bit 63 is free for the garbage sentinel), garbage-stop mode, and all segments
-   ending below the flat-words limit. copies the already-loaded page data in, then frees
-   the pages. a failed flat-array allocation falls back to paged mode (never an error). */
+   garbage-stop mode and all segments ending below the flat-words limit (any width: gaps
+   carry the in-band bit-63 sentinel at w<=32, the FLAT_GARBAGE_MAGIC fill at w=64).
+   programs reserving far/huge segments (e.g. a table at 1<<63) fail the limit check and
+   keep the paged path. copies the already-loaded page data in, then frees the pages.
+   a failed flat-array allocation falls back to paged mode (never an error). */
 static int mem_decide_storage(MemoryObject* m)
 {
     uint64_t max_end = 0, i;
@@ -446,7 +481,7 @@ static int mem_decide_storage(MemoryObject* m)
     }
     m->storage_decided = 1;
 
-    if (m->w > 32 || !m->garbage_stop || m->segment_count == 0) {
+    if (!m->garbage_stop || m->segment_count == 0) {
         return 0; /* paged */
     }
     {
@@ -480,14 +515,23 @@ static int mem_decide_storage(MemoryObject* m)
         return 0; /* paged fallback - the program still runs, just slower */
     }
     m->flat_count = max_end;
-    for (i = 0; i < max_end; i++) {
-        m->flat[i] = GARBAGE_SENTINEL;
+    {
+        const uint64_t garbage_fill = (m->w <= 32) ? GARBAGE_SENTINEL : FLAT_GARBAGE_MAGIC;
+        for (i = 0; i < max_end; i++) {
+            m->flat[i] = garbage_fill;
+        }
     }
     for (seg = 0; seg < m->segment_count; seg++) {
         memset(m->flat + m->segments[seg].start, 0,
                (size_t)(m->segments[seg].end - m->segments[seg].start) * sizeof(uint64_t));
     }
-    /* copy the loaded data: each allocated page, intersected with each segment */
+    /* copy the loaded in-segment data: each allocated page, intersected with each
+       segment. the pages themselves are KEPT: out-of-segment memory (gaps between
+       segments, addresses beyond the span) stays page-backed for the API/device
+       accessors (set_word/get_word route by segment membership), so flat mode is
+       device-transparent exactly like paged mode. the in-segment page copies go stale
+       (the run loop updates flat only) but are never read again - the routing is
+       strict. the program itself cannot touch out-of-segment words (garbage-stop). */
     if (m->slots) {
         for (i = 0; i < m->slot_count; i++) {
             uint64_t page_start, page_end;
@@ -504,15 +548,7 @@ static int mem_decide_storage(MemoryObject* m)
                            (size_t)(hi - lo) * sizeof(uint64_t));
                 }
             }
-            free(m->slots[i].page->words);
-            free(m->slots[i].page);
         }
-        free(m->slots);
-        m->slots = NULL;
-        m->slot_count = 0;
-        m->slots_used = 0;
-        memset(m->page_cache_key_plus1, 0, sizeof(m->page_cache_key_plus1));
-        memset(m->page_cache_page, 0, sizeof(m->page_cache_page));
     }
     return 0;
 }
@@ -634,14 +670,13 @@ static PyObject* Memory_set_word(MemoryObject* self, PyObject* args)
     if (!PyArg_ParseTuple(args, "KK", &word_address, &value)) {
         return NULL;
     }
-    if (self->flat) {
-        if (word_address >= self->flat_count) {
-            PyErr_SetString(PyExc_ValueError, "set_word address is beyond the flat-storage span");
-            return NULL;
-        }
+    if (self->flat && flat_seg_contains(self, word_address)) {
         self->flat[word_address] = value & self->word_mask;
         Py_RETURN_NONE;
     }
+    /* out-of-segment (or paged mode): page-backed - device/API memory beyond the declared
+       segments behaves exactly as in paged mode (the program itself cannot touch it under
+       garbage-stop, so the flat array and the pages never alias). */
     page = mem_get_page(self, word_address >> PAGE_BITS);
     if (!page) {
         return NULL;
@@ -657,10 +692,10 @@ static PyObject* Memory_get_word(MemoryObject* self, PyObject* args)
     if (!PyArg_ParseTuple(args, "K", &word_address)) {
         return NULL;
     }
-    if (self->flat) {
-        uint64_t value = (word_address < self->flat_count) ? self->flat[word_address] : 0;
-        return PyLong_FromUnsignedLongLong((value & GARBAGE_SENTINEL) ? 0 : value);
+    if (self->flat && flat_seg_contains(self, word_address)) {
+        return PyLong_FromUnsignedLongLong(self->flat[word_address]);
     }
+    /* out-of-segment (or paged mode): page-backed - see set_word */
     page = mem_get_page(self, word_address >> PAGE_BITS);
     if (!page) {
         return NULL;
@@ -956,8 +991,8 @@ static FJ_ALWAYS_INLINE int run_flat_loop_impl(MemoryObject* self, PyObject* rea
                 goto cold_flip_word_out_of_span;
             }
             f = flat[word_address];
-            if (f & GARBAGE_SENTINEL) {
-                goto cold_flip_word_out_of_span;
+            if (width <= 32 ? ((f & GARBAGE_SENTINEL) != 0) : (f == FLAT_GARBAGE_MAGIC)) {
+                goto cold_flip_word_garbage;
             }
         flip_word_ready:
 
@@ -978,7 +1013,7 @@ static FJ_ALWAYS_INLINE int run_flat_loop_impl(MemoryObject* self, PyObject* rea
                 goto cold_flip_out_of_span;
             }
             flip_value = flat[flip_word_address];
-            if (flip_value & GARBAGE_SENTINEL) {
+            if (width <= 32 ? ((flip_value & GARBAGE_SENTINEL) != 0) : (flip_value == FLAT_GARBAGE_MAGIC)) {
                 goto cold_flip_garbage;
             }
         flip_value_ready:
@@ -991,7 +1026,7 @@ static FJ_ALWAYS_INLINE int run_flat_loop_impl(MemoryObject* self, PyObject* rea
                 goto cold_jump_word_slow;
             }
             j = flat[word_address + 1];
-            if (j & GARBAGE_SENTINEL) {
+            if (width <= 32 ? ((j & GARBAGE_SENTINEL) != 0) : (j == FLAT_GARBAGE_MAGIC)) {
                 goto cold_jump_word_garbage;
             }
         jump_word_ready:
@@ -1024,11 +1059,17 @@ static FJ_ALWAYS_INLINE int run_flat_loop_impl(MemoryObject* self, PyObject* rea
         word_address = (uint64_t)-2; /* the jump word is read the slow way below */
         goto flip_word_ready;
 
-    cold_flip_word_out_of_span: /* also the flip-word garbage-sentinel case */
+    cold_flip_word_out_of_span:
         if (!flat_garbage(self, word_address)) {
             goto memory_error;
         }
         f = 0;
+        goto flip_word_ready;
+
+    cold_flip_word_garbage: /* w=64: possibly real data equal to the magic fill */
+        if (flat_garbage_check(self, word_address, &f) < 0) {
+            goto memory_error;
+        }
         goto flip_word_ready;
 
     cold_output:
@@ -1073,11 +1114,10 @@ static FJ_ALWAYS_INLINE int run_flat_loop_impl(MemoryObject* self, PyObject* rea
         }
         goto after_flip; /* out-of-span flips do not store */
 
-    cold_flip_garbage:
-        if (!flat_garbage(self, flip_word_address)) {
+    cold_flip_garbage: /* w=64: possibly real data equal to the magic fill */
+        if (flat_garbage_check(self, flip_word_address, &flip_value) < 0) {
             goto memory_error;
         }
-        flip_value = 0;
         goto flip_value_ready;
 
     cold_jump_word_slow:
@@ -1087,11 +1127,10 @@ static FJ_ALWAYS_INLINE int run_flat_loop_impl(MemoryObject* self, PyObject* rea
         j = cold_word;
         goto jump_word_ready;
 
-    cold_jump_word_garbage:
-        if (!flat_garbage(self, word_address + 1)) {
+    cold_jump_word_garbage: /* w=64: possibly real data equal to the magic fill */
+        if (flat_garbage_check(self, word_address + 1, &j) < 0) {
             goto memory_error;
         }
-        j = 0;
         goto jump_word_ready;
 
     cold_maybe_looping:
@@ -1290,11 +1329,8 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
                     }
                 } else {
                     f = flat[word_address];
-                    if (f & GARBAGE_SENTINEL) {
-                        if (!flat_garbage(self, word_address)) {
-                            goto memory_or_python_error;
-                        }
-                        f = 0;
+                    if (flat_is_garbage(self, f) && flat_garbage_check(self, word_address, &f) < 0) {
+                        goto memory_or_python_error;
                     }
                     op_flat_jump = flat + word_address + 1;
                 }
@@ -1363,11 +1399,8 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
             /* read jump word (after the flip - the flip may modify it, including this word) */
             if (op_flat_jump) {
                 j = *op_flat_jump;
-                if (j & GARBAGE_SENTINEL) {
-                    if (!flat_garbage(self, (uint64_t)(op_flat_jump - flat))) {
-                        goto memory_or_python_error;
-                    }
-                    j = 0;
+                if (flat_is_garbage(self, j) && flat_garbage_check(self, (uint64_t)(op_flat_jump - flat), &j) < 0) {
+                    goto memory_or_python_error;
                 }
             } else if (op_page) {
                 /* the jump word's validity is checked here, at read time (after the flip) -
@@ -1530,5 +1563,6 @@ PyMODINIT_FUNC PyInit__fjcore(void)
     PyModule_AddIntConstant(module, "TERM_EOF", TERM_EOF);
     PyModule_AddIntConstant(module, "TERM_NULL_IP", TERM_NULL_IP);
     PyModule_AddIntConstant(module, "TERM_MEMORY_ERROR", TERM_MEMORY_ERROR);
+    PyModule_AddObject(module, "FLAT_GARBAGE_MAGIC", PyLong_FromUnsignedLongLong(FLAT_GARBAGE_MAGIC));
     return module;
 }

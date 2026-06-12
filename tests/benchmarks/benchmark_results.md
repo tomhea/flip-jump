@@ -41,6 +41,7 @@ The shipping engine (v6 below; sieve = sparse/paged path, loop = compact/flat pa
 | sieve (n=5,000)    | w=64  |    33,304,073 |  ~128M fj/s       |        864x |
 | sieve (n=200,000)  | w=64  | 1,332,300,215 |  ~132M fj/s       |        892x |
 | loop (compact)     | w=32  |   298,927,147 |  ~280M fj/s       |      1,664x |
+| loop (compact)     | w=64  |   351,500,749 |  ~370M fj/s       |      2,495x |
 
 **The ≥10M fj/s acceptance is met with ~10x margin on every row.**
 
@@ -55,14 +56,15 @@ The shipping engine (v6 below; sieve = sparse/paged path, loop = compact/flat pa
 | v5: dedicated flat loop (no ring/paged branches) | - | - | - | 273M |
 | v6: + MSVC PGO (`build_fjcore.py --pgo-*`, optional) | 122M | 128M | 132M | **280-286M** |
 | v7: slim specialized flat loop (cold-block layout, folded IO checks, per-width constants, strip-mined signal check) | unchanged | unchanged | unchanged | **352-430M** (+25-30% interleaved A/B) |
+| v8: flat storage opened to w=64 (magic gap sentinel + segment-routed API) | unchanged | unchanged | unchanged | loop w=64: 110M -> **358-382M** (3.4x) |
 
 - v2: the ip/jump page and the flip-target page alternated every op and thrashed the single
   cached entry, forcing a hash lookup per access.
 - v3: an op's flip-word and jump-word are adjacent (word_address, word_address+1) - one page
   lookup serves both (~30%).
-- v4 (flat storage): programs whose segments all end below 8M words, at w<=32 with
-  garbage-stop, get one dense array instead of the page table; out-of-segment words carry a
-  bit-63 sentinel. This removes the page lookup from the serial jump-dependency chain
+- v4 (flat storage): programs whose segments all end below 8M words, with garbage-stop,
+  get one dense array instead of the page table; out-of-segment words carry a
+  bit-63 sentinel (w<=32 until v8 - see below). This removes the page lookup from the serial jump-dependency chain
   (jump-word load -> next op's address -> next load), which bounds the loop: ~2x on
   compact-memory programs. prime_sieve declares a half-address-space segment,
   so it stays on the paged path (rows unchanged, run-to-run variance shown).
@@ -73,6 +75,20 @@ The shipping engine (v6 below; sieve = sparse/paged path, loop = compact/flat pa
 - v6: profile-guided optimization is available for local builds
   (`--pgo-instrument`, train on both the flat and paged paths, `--pgo-use`);
   the prebuilt wheels ship without it.
+- v8 (w=64 flat): flat storage was limited to w<=32 because the garbage sentinel lived
+  in-band at bit 63 - a w=64 value uses all 64 bits. gaps are now filled with a fixed
+  magic constant instead (FLAT_GARBAGE_MAGIC, sqrt(3)'s fractional bits); a real word
+  that happens to equal it is disambiguated through the segment list on the cold path
+  (gap words are never legally written, so in-segment + magic == real data) - the hot
+  path stays one register compare, zero extra loads, and the w<=32 instantiations keep
+  the in-band sentinel with their codegen untouched. the API accessors (set_word /
+  get_word, i.e. the device-memory hook and the debugger) route by segment membership -
+  in-segment words live in the flat array, everything else stays page-backed (the pages
+  are kept at the flat build) - so flat mode is device-transparent exactly like paged
+  mode. programs reserving far/huge segments (a sieve table at 1<<63) still fail the
+  flat-limit check and keep the paged path. w=64 is the default width, so most compact
+  programs get this for free: interleaved PGO A/B, loop w=64: 110M -> 358-382M fj/s
+  (**3.4x**); loop w=32 and sieve (paged) unchanged.
 - v7 (slim flat loop): the run-loop body is reshaped for the hot path - every rare
   condition (unaligned ip, out-of-span words, garbage sentinels, IO hits, termination)
   is a forward goto to a cold block, so the common op runs straight-line with all

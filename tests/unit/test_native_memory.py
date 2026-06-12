@@ -240,3 +240,112 @@ def test_a_rewritten_jump_word_dispatches_correctly() -> None:
     assert memory.storage_mode == 'flat'
     assert memory.get_word(5) == 320  # A's rewritten jump word (word_address 5 = ip 128+w)
     assert memory.get_word(16) == 0b101  # bits 512+514 once; 513 twice (A ran twice) = net 0
+
+
+# --------------------------------------------------- w=64 flat storage (magic gap sentinel)
+
+
+def _looping_memory_w64(**kwargs: Any) -> Any:
+    """a w=64 memory holding one op at address 0: a harmless flip (word 4) + jump-to-self."""
+    memory = _fjcore.Memory(64, **kwargs)
+    memory.add_segment(0, 8)
+    memory.set_words(0, [256, 0])
+    return memory
+
+
+def _self_modifying_memory_w64(**kwargs: Any) -> Any:
+    """the w=64 mirror of _self_modifying_memory: entry -> A -> B (flips A's jump) -> A -> C.
+    ips 0/256/512/640 stay outside w=64's input range (71, 199]. B flips bit 7 of word 5
+    (A's jump word): 512 ^ 128 = 640 = C. afterwards word 5 is 640 and word 16 reads 0b101."""
+    memory = _fjcore.Memory(64, **kwargs)
+    memory.add_segment(0, 18)
+    #                     flip  jump
+    memory.set_words(0, [1024, 256])  # entry (ip=0):   flip data bit 1024, jump to A (256)
+    memory.set_words(4, [1025, 512])  # A     (ip=256): flip data bit 1025, jump to B (->640=C)
+    memory.set_words(8, [327, 256])  # B     (ip=512): flip bit 7 of word 5 (A's jump: 512->640)
+    memory.set_words(10, [1026, 640])  # C     (ip=640): flip data bit 1026, loop
+    return memory
+
+
+def _run_self_modifying_w64(memory: Any) -> None:
+    cause, op_count, _, _, _ = memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+    assert cause == _fjcore.TERM_LOOPING
+    assert op_count == 5  # entry, A, B, A, C
+    assert memory.get_word(5) == 640  # A's rewritten jump word
+    assert memory.get_word(16) == 0b101  # bits 1024+1026 once; 1025 twice (A ran twice) = net 0
+
+
+def test_w64_compact_program_runs_flat() -> None:
+    memory = _looping_memory_w64()
+    _run_to_looping(memory)
+    assert memory.storage_mode == 'flat'
+
+
+def test_w64_flat_matches_paged_behavior(monkeypatch: pytest.MonkeyPatch) -> None:
+    flat = _self_modifying_memory_w64()
+    _run_self_modifying_w64(flat)
+    assert flat.storage_mode == 'flat'
+
+    monkeypatch.setenv('FLIPJUMP_NO_FLAT', '1')
+    paged = _self_modifying_memory_w64()
+    _run_self_modifying_w64(paged)
+    assert paged.storage_mode == 'paged'
+
+
+def test_w64_flat_gap_touch_is_a_memory_error() -> None:
+    # words 8..15 lie between the two segments - flipping into them must report a memory
+    # error at the gap word's bit address, exactly like the paged path does.
+    memory = _fjcore.Memory(64)
+    memory.add_segment(0, 8)
+    memory.add_segment(16, 8)
+    memory.set_words(0, [9 * 64, 128])  # flip a bit of gap word 9
+    cause, _, error_address, _, _ = memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+    assert memory.storage_mode == 'flat'
+    assert cause == _fjcore.TERM_MEMORY_ERROR
+    assert error_address == 9 * 64
+
+
+def test_w64_word_holding_the_garbage_magic_is_real_data() -> None:
+    # the magic gap-fill value is a legal 64-bit program word; an in-segment word holding
+    # it must read back and flip like any other value (the segment list disambiguates).
+    magic = _fjcore.FLAT_GARBAGE_MAGIC
+    memory = _fjcore.Memory(64)
+    memory.add_segment(0, 16)
+    memory.set_words(0, [8 * 64, 0])  # flip bit 0 of word 8 (which holds the magic), loop
+    memory.set_word(8, magic)
+    cause, op_count, _, _, _ = memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+    assert memory.storage_mode == 'flat'
+    assert cause == _fjcore.TERM_LOOPING
+    assert op_count == 1
+    assert memory.get_word(8) == magic ^ 1
+
+
+def test_w64_untouched_in_segment_word_reads_zero() -> None:
+    memory = _looping_memory_w64()
+    _run_to_looping(memory)
+    assert memory.storage_mode == 'flat'
+    assert memory.get_word(6) == 0  # in-segment, never written
+
+
+def test_w64_far_segment_stays_paged() -> None:
+    # sieve-style programs reserve far/huge segments - they must keep the paged path
+    memory = _looping_memory_w64()
+    memory.add_segment(1 << 50, 8)
+    _run_to_looping(memory)
+    assert memory.storage_mode == 'paged'
+
+
+def test_w64_api_write_to_a_gap_survives_the_flat_build() -> None:
+    # device/debugger pokes outside the declared segments are page-backed in flat mode
+    # (set_word/get_word route by segment membership), so they behave exactly as in
+    # paged mode - including data written before the storage decision.
+    memory = _fjcore.Memory(64)
+    memory.add_segment(0, 8)
+    memory.add_segment(16, 8)
+    memory.set_words(0, [256, 0])  # a looping op
+    memory.set_word(9, 0x77)  # gap word, written pre-run (lands in a page)
+    _run_to_looping(memory)
+    assert memory.storage_mode == 'flat'
+    assert memory.get_word(9) == 0x77  # survived the flat build, page-backed
+    memory.set_word(9, 0x78)  # and still writable post-build
+    assert memory.get_word(9) == 0x78
