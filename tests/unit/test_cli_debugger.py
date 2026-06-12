@@ -1,7 +1,7 @@
 """
-unit-tests for the CLI debugger: the headless terminal prompts that replaced the
-easygui message-boxes, and an end-to-end breakpoint session (break -> read memory ->
-single step -> continue) driven through scripted stdin answers.
+unit-tests for the CLI debugger: the terminal command prompt (show_message / ask_for_command)
+and an end-to-end breakpoint session (break -> read memory -> step -> continue, and the
+exit/EOF -> keyboard-interrupt path) driven through scripted stdin lines.
 """
 
 from pathlib import Path
@@ -45,30 +45,17 @@ class TestPromptFunctions:
         assert 'The Title' in captured
         assert 'the body' in captured
 
-    def test_choices_by_number_and_by_name(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        feed_answers(monkeypatch, ['2'])
-        assert user_queries.ask_for_choice('b', 't', ['A', 'B', 'C'], 'C') == 'B'
+    def test_command_is_read_and_stripped(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        feed_answers(monkeypatch, ['  skip 0x10  '])
+        assert user_queries.ask_for_command('> ') == 'skip 0x10'
 
-        feed_answers(monkeypatch, ['single step'])
-        choices = ['Read Memory', 'Single Step', 'Continue All']
-        answer = user_queries.ask_for_choice('b', 't', choices, 'Continue All')
-        assert answer == 'Single Step'
-
-    def test_choices_default_on_eof_and_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_command_returns_none_on_eof(self, monkeypatch: pytest.MonkeyPatch) -> None:
         feed_answers(monkeypatch, [])
-        assert user_queries.ask_for_choice('b', 't', ['A', 'B'], 'B') == 'B'
-        feed_answers(monkeypatch, [''])
-        assert user_queries.ask_for_choice('b', 't', ['A', 'B'], 'B') == 'B'
+        assert user_queries.ask_for_command('> ') is None
 
-    def test_choices_reprompts_on_invalid(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        feed_answers(monkeypatch, ['nonsense', '1'])
-        assert user_queries.ask_for_choice('b', 't', ['A', 'B'], 'B') == 'A'
-
-    def test_text_answer_and_cancel(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        feed_answers(monkeypatch, ['  0x40  '])
-        assert user_queries.ask_for_text('b', 't') == '0x40'
+    def test_empty_command_is_empty_string(self, monkeypatch: pytest.MonkeyPatch) -> None:
         feed_answers(monkeypatch, [''])
-        assert user_queries.ask_for_text('b', 't') is None
+        assert user_queries.ask_for_command('> ') == ''
 
 
 class TestDebuggerEndToEnd:
@@ -86,26 +73,48 @@ class TestDebuggerEndToEnd:
         )
         return statistics, breakpoint_handler
 
-    def test_break_step_continue(
+    def test_break_step_continue_all(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        statistics, _ = self.run_with_breakpoint(tmp_path, monkeypatch, ['Single Step', 'Continue All'])
+        statistics, _ = self.run_with_breakpoint(tmp_path, monkeypatch, ['s', 'ca'])
         assert statistics.termination_cause == TerminationCause.Looping
         captured = capsys.readouterr().out
         assert 'program break' in captured
-        assert 'Single Step' in captured
+        assert 'step' in captured
 
     def test_break_read_memory_then_continue(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        statistics, _ = self.run_with_breakpoint(tmp_path, monkeypatch, ['Read Memory', '0', 'Continue All'])
+        # read takes its target on the same line now
+        statistics, _ = self.run_with_breakpoint(tmp_path, monkeypatch, ['read 0', 'continue all'])
         assert statistics.termination_cause == TerminationCause.Looping
-        captured = capsys.readouterr().out
-        assert 'memory[0x0]' in captured
+        assert 'memory[0x0]' in capsys.readouterr().out
 
-    def test_break_on_eof_continues_all(
+    def test_help_command_lists_the_commands(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        # no scripted answers at all: the default (Continue All) is chosen, the run finishes
-        statistics, _ = self.run_with_breakpoint(tmp_path, monkeypatch, [])
+        statistics, _ = self.run_with_breakpoint(tmp_path, monkeypatch, ['h', 'c*'])
         assert statistics.termination_cause == TerminationCause.Looping
+        captured = capsys.readouterr().out
+        assert 'continue all' in captured and 'read' in captured
+
+    def test_skip_hex_count(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # 'skip 0x2' arms next_break at op_counter + 2; the program loops to termination after
+        statistics, _ = self.run_with_breakpoint(tmp_path, monkeypatch, ['skip 0x2', 'ca'])
+        assert statistics.termination_cause == TerminationCause.Looping
+
+    def test_unknown_command_reprompts(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        statistics, _ = self.run_with_breakpoint(tmp_path, monkeypatch, ['nonsense', 'continue'])
+        assert statistics.termination_cause == TerminationCause.Looping
+        assert 'unknown command' in capsys.readouterr().out
+
+    def test_break_on_eof_is_a_keyboard_interrupt(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # no scripted answers: the prompt hits EOF -> exit -> keyboard-interrupt termination
+        statistics, _ = self.run_with_breakpoint(tmp_path, monkeypatch, [])
+        assert statistics.termination_cause == TerminationCause.KeyboardInterrupt
+
+    def test_explicit_exit_is_a_keyboard_interrupt(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        statistics, _ = self.run_with_breakpoint(tmp_path, monkeypatch, ['exit'])
+        assert statistics.termination_cause == TerminationCause.KeyboardInterrupt

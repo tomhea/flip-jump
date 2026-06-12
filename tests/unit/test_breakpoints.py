@@ -6,7 +6,7 @@ fj-variable-inspection helpers - all headless.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import pytest
 
@@ -77,28 +77,33 @@ class TestAddressFormatting:
 
 
 class TestDebugActions:
-    def test_single_step_and_skips_set_next_break(self) -> None:
+    def test_step_and_skip_set_next_break(self) -> None:
         handler = make_handler()
-        handler.apply_debug_action('Single Step', op_counter=100)
+        handler.apply_debug_action(('step', 0), op_counter=100)
         assert handler.next_break == 101
         assert handler.should_break(ip=0xFFFF, op_counter=101)
 
-        handler.apply_debug_action('Skip 10', op_counter=101)
+        handler.apply_debug_action(('skip', 10), op_counter=101)
         assert handler.next_break == 111
-        handler.apply_debug_action('Skip 100', op_counter=111)
+        handler.apply_debug_action(('skip', 100), op_counter=111)
         assert handler.next_break == 211
 
     def test_continue_clears_next_break(self) -> None:
         handler = make_handler(breakpoints={256: 'bp'})
-        handler.apply_debug_action('Single Step', op_counter=0)
-        handler.apply_debug_action('Continue', op_counter=1)
+        handler.apply_debug_action(('step', 0), op_counter=0)
+        handler.apply_debug_action(('continue', 0), op_counter=1)
         assert handler.next_break is None
         assert handler.should_break(ip=256, op_counter=2)  # real breakpoints still hit
 
     def test_continue_all_raises_unnecessary(self) -> None:
         handler = make_handler()
         with pytest.raises(BreakpointHandlerUnnecessary):
-            handler.apply_debug_action('Continue All', op_counter=0)
+            handler.apply_debug_action(('continue_all', 0), op_counter=0)
+
+    def test_exit_raises_keyboard_interrupt(self) -> None:
+        handler = make_handler()
+        with pytest.raises(KeyboardInterrupt):
+            handler.apply_debug_action(('exit', 0), op_counter=0)
 
 
 def build_reader_with_data(tmp_path: Path, data: 'list[int]', memory_width: int = 16) -> Reader:
@@ -180,101 +185,95 @@ class TestCalculateByteVariable:
 
 
 def run_read_memory(
-    handler: BreakpointHandler,
-    reader: Reader,
-    user_answer: Optional[str],
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: 'pytest.CaptureFixture[str]',
+    handler: BreakpointHandler, reader: Reader, target: str, capsys: 'pytest.CaptureFixture[str]'
 ) -> str:
-    """drive handler.handle_read_memory with a scripted answer; return what was printed."""
-    monkeypatch.setattr(breakpoints, 'ask_for_text', lambda body_message, title_message: user_answer)
-    handler.handle_read_memory(reader)
+    """drive handler.handle_read_memory with a read target; return what was printed."""
+    handler.handle_read_memory(target, reader)
     return capsys.readouterr().out
 
 
+def feed_commands(monkeypatch: pytest.MonkeyPatch, lines: List[str]) -> None:
+    """make breakpoints.ask_for_command yield the given lines (then None, as on EOF)."""
+    commands = iter(lines)
+    monkeypatch.setattr(breakpoints, 'ask_for_command', lambda prompt: next(commands, None))
+
+
 class TestHandleReadMemory:
-    def test_read_by_decimal_hex_and_label(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_read_by_decimal_hex_and_label(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         reader = build_reader_with_data(tmp_path, [0x1234, 0, 0, 0])
         handler = make_handler(labels={'my_label': 0})
 
-        assert 'memory[0x0] = 4660' in run_read_memory(handler, reader, '0', monkeypatch, capsys)
-        assert 'memory[0x0] = 4660' in run_read_memory(handler, reader, '0x0', monkeypatch, capsys)
-        assert 'memory[0x0] = 4660' in run_read_memory(handler, reader, 'my_label', monkeypatch, capsys)
+        assert 'memory[0x0] = 4660' in run_read_memory(handler, reader, '0', capsys)
+        assert 'memory[0x0] = 4660' in run_read_memory(handler, reader, '0x0', capsys)
+        assert 'memory[0x0] = 4660' in run_read_memory(handler, reader, 'my_label', capsys)
 
-    def test_read_hex_variable_with_prefix(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_read_hex_variable_with_prefix(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         # the same hex.vec 2 (value 0x4F) as TestVariableInspection
         reader = build_reader_with_data(tmp_path, [0, 0xF << 5, 0, 0x4 << 5, 0, 0, 0, 0])
-        handler = make_handler(labels={'var': 0})
-        out = run_read_memory(handler, reader, ':h2:var', monkeypatch, capsys)
+        out = run_read_memory(make_handler(labels={'var': 0}), reader, ':h2:var', capsys)
         assert '= 79' in out and '0x4f' in out
 
-    def test_cancelled_query_reads_nothing(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_unresolvable_label_shows_error(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         reader = build_reader_with_data(tmp_path, [0, 0, 0, 0])
-        assert run_read_memory(make_handler(), reader, None, monkeypatch, capsys) == ''
-
-    def test_unresolvable_label_shows_error(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-    ) -> None:
-        reader = build_reader_with_data(tmp_path, [0, 0, 0, 0])
-        out = run_read_memory(make_handler(), reader, 'no_such_label', monkeypatch, capsys)
+        out = run_read_memory(make_handler(), reader, 'no_such_label', capsys)
         assert "can't resolve the address/label" in out
 
-    def test_unaligned_address_shows_error(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_unaligned_address_shows_error(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         reader = build_reader_with_data(tmp_path, [0, 0, 0, 0])
-        out = run_read_memory(make_handler(), reader, '3', monkeypatch, capsys)
-        assert 'must be aligned' in out
+        assert 'must be aligned' in run_read_memory(make_handler(), reader, '3', capsys)
 
-    def test_out_of_memory_address_shows_error(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_out_of_memory_address_shows_error(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         reader = build_reader_with_data(tmp_path, [0, 0, 0, 0])
-        out = run_read_memory(make_handler(), reader, str(1 << 20), monkeypatch, capsys)
-        assert 'Bad memory address' in out
+        assert 'Bad memory address' in run_read_memory(make_handler(), reader, str(1 << 20), capsys)
 
     def test_uninitialized_memory_region_shows_read_failure(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         # address 0x1000 is aligned and in-range, but outside any segment (garbage-stop mode)
         reader = build_reader_with_data(tmp_path, [0, 0, 0, 0])
-        out = run_read_memory(make_handler(), reader, '0x1000', monkeypatch, capsys)
-        assert 'Read Memory Failure' in out
+        assert 'Read Memory Failure' in run_read_memory(make_handler(), reader, '0x1000', capsys)
 
 
 class TestQueryUserForDebugAction:
-    def test_breakpoint_title_and_read_memory_loop(
+    def test_read_loops_then_resumes(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
         reader = build_reader_with_data(tmp_path, [112, 64, 0, 0])
         handler = make_handler(breakpoints={0: 'bp'})
-
-        # first Read Memory (with a scripted read), then Continue
-        actions = iter(['Read Memory', 'Continue'])
-        monkeypatch.setattr(breakpoints, 'ask_for_choice', lambda body, title, choices, default: next(actions))
-        monkeypatch.setattr(breakpoints, 'ask_for_text', lambda body_message, title_message: '0')
-        action = handler.query_user_for_debug_action(0, reader, op_counter=5)
-        assert action == 'Continue'
+        feed_commands(monkeypatch, ['read 0', 'continue'])  # read once, then continue
+        assert handler.query_user_for_debug_action(0, reader, op_counter=5) == ('continue', 0)
         assert 'memory[0x0]' in capsys.readouterr().out
 
-    def test_debug_step_title_for_non_breakpoint_address(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_commands_map_to_actions(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         reader = build_reader_with_data(tmp_path, [112, 64, 0, 0])
-        seen_titles = []
+        for line, expected in [
+            ('s', ('step', 0)),
+            ('step', ('step', 0)),
+            ('skip 10', ('skip', 10)),
+            ('s 0x10', ('skip', 16)),
+            ('c', ('continue', 0)),
+            ('continue all', ('continue_all', 0)),
+            ('c*', ('continue_all', 0)),
+            ('ca', ('continue_all', 0)),
+            ('exit', ('exit', 0)),
+        ]:
+            feed_commands(monkeypatch, [line])
+            assert make_handler().query_user_for_debug_action(0, reader, op_counter=0) == expected
 
-        def fake_choice(body: str, title: str, choices: List[str], default: str) -> str:
-            seen_titles.append(title)
-            return 'Continue All'
+    def test_eof_is_exit(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        reader = build_reader_with_data(tmp_path, [112, 64, 0, 0])
+        feed_commands(monkeypatch, [])  # immediate EOF
+        assert make_handler().query_user_for_debug_action(0, reader, op_counter=0) == ('exit', 0)
 
-        monkeypatch.setattr(breakpoints, 'ask_for_choice', fake_choice)
+    def test_breakpoint_vs_debug_step_title(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        reader = build_reader_with_data(tmp_path, [112, 64, 0, 0])
+        feed_commands(monkeypatch, ['c', 'c'])
         make_handler(breakpoints={0: 'bp'}).query_user_for_debug_action(0, reader, op_counter=0)
         make_handler().query_user_for_debug_action(0, reader, op_counter=0)
-        assert seen_titles == ['Breakpoint', 'Debug Step']
+        out = capsys.readouterr().out
+        assert 'Breakpoint' in out and 'Debug Step' in out
 
 
 class TestHandleBreakpointFlow:
@@ -282,7 +281,7 @@ class TestHandleBreakpointFlow:
         reader = build_reader_with_data(tmp_path, [112, 64, 0, 0])
         handler = make_handler(breakpoints={0: 'bp'})
         statistics = RunStatistics(16, None)
-        monkeypatch.setattr(breakpoints, 'ask_for_choice', lambda body, title, choices, default: 'Continue All')
+        feed_commands(monkeypatch, ['continue all'])
         assert handle_breakpoint(handler, 0, reader, statistics) is None
 
     def test_single_step_keeps_the_handler_armed(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -290,17 +289,24 @@ class TestHandleBreakpointFlow:
         handler = make_handler(breakpoints={0: 'bp'})
         statistics = RunStatistics(16, None)
         statistics.op_counter = 41
-        monkeypatch.setattr(breakpoints, 'ask_for_choice', lambda body, title, choices, default: 'Single Step')
+        feed_commands(monkeypatch, ['step'])
         assert handle_breakpoint(handler, 0, reader, statistics) is handler
         assert handler.next_break == 42
 
+    def test_exit_raises_keyboard_interrupt(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        reader = build_reader_with_data(tmp_path, [112, 64, 0, 0])
+        statistics = RunStatistics(16, None)
+        feed_commands(monkeypatch, ['exit'])
+        with pytest.raises(KeyboardInterrupt):
+            handle_breakpoint(make_handler(breakpoints={0: 'bp'}), 0, reader, statistics)
+
 
 class TestDebuggerEndToEnd:
-    def test_breakpoint_hit_then_continue_all_terminates_normally(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    def test_breakpoint_hit_then_eof_is_keyboard_interrupt(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # a real assembled program: break on a label, EOF on the prompt (-> Continue All),
-        # and the run must still terminate by looping.
+        # a real assembled program: break on a label, then EOF on the prompt -> exit, which
+        # ends the run as a keyboard-interrupt.
         from flipjump import assemble_and_debug
         from flipjump.interpreter.io_devices.FixedIO import FixedIO
         from flipjump.utils.classes import TerminationCause
@@ -320,5 +326,26 @@ class TestDebuggerEndToEnd:
             print_time=False,
             print_termination=False,
         )
+        assert statistics.termination_cause == TerminationCause.KeyboardInterrupt
+
+    def test_breakpoint_then_continue_all_terminates_normally(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from flipjump import assemble_and_debug
+        from flipjump.interpreter.io_devices.FixedIO import FixedIO
+        from flipjump.utils.classes import TerminationCause
+        from tests.unit.unit_utils import HELLO_NO_STL
+
+        program = tmp_path / 'prog.fj'
+        program.write_text(HELLO_NO_STL.read_text())
+
+        lines = iter(['continue all'])
+        monkeypatch.setattr('builtins.input', lambda prompt='': next(lines))
+        statistics = assemble_and_debug(
+            [program],
+            breakpoints_contains={'code_start'},
+            io_device=FixedIO(b''),
+            print_time=False,
+            print_termination=False,
+        )
         assert statistics.termination_cause == TerminationCause.Looping
-        assert 'program break' in capsys.readouterr().out
