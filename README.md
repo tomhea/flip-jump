@@ -178,9 +178,10 @@ fj --run program.fjm --di keyboard --do screen     # or just:  fj --run program.
   toggles fullscreen, and closing the window stops the run (needs pygame:
   `pip install flipjump[screen]`; works on Windows, Linux and macOS). Use `--do screen=FRAMES_DIR`
   instead for a headless 256-color screen that just saves one PNG per frame plus a frame-hash log.
-- **`--di keyboard`** - a non-blocking **keyboard** fed by live key presses on the screen window
-  (combine with `--do screen`). Use `--di keyboard=EVENTS_FILE` instead for a scripted,
-  virtual-time keyboard that replays `tic, down/up, keycode` lines (deterministic, no window).
+- **`--di keyboard`** - a non-blocking **keyboard** fed by live key presses in an interactive
+  window (it shares the `--do screen` window when there is one, or opens its own small input
+  window). Use `--di keyboard=EVENTS_FILE` instead for a scripted, virtual-time keyboard that
+  replays `tic, down/up, keycode` lines (deterministic, no window).
 - Devices can also read the program's memory through the `DeviceMemory` hook
   (`IODevice.attach_memory`) - e.g. the screen reads pixel data straight from memory.
 

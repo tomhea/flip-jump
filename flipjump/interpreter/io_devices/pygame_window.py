@@ -1,12 +1,16 @@
 """
-the interactive screen backend: a real window (pygame/SDL) behind the same command
-stream as the headless InMemoryScreen, plus a live keyboard source.
+the pygame/SDL window host shared by the interactive io-devices, and the two devices that
+use it.
 
-InteractiveScreen presents every frame into a window (scaled up from the logical
-screen size; F11 toggles fullscreen), and exposes key_event_source - a KeyEventSource
-fed by the window's real key events - so a KeyboardIO over it receives whatever is
-pressed while the window is focused. Closing the window raises KeyboardInterrupt,
-which the interpreter turns into a clean keyboard-interrupt termination.
+PygameWindow owns the single SDL window and its event pump: it captures live key events
+(into a queue), presents frames, toggles fullscreen on F11, and raises KeyboardInterrupt
+when the window is closed (a clean run-termination). It is a *neutral* resource - the
+interactive screen draws to it and the keyboard reads keys from it, but neither device
+depends on the other. The CLI hands them a shared window when both are interactive (so it's
+one window: it shows the frames and captures the keys), and otherwise each gets its own.
+
+A live keyboard needs *a* focusable window for SDL to deliver key events. So a keyboard
+used without an interactive screen opens its own small input window (ensure_open_for_input).
 
 keycodes delivered to the fj program (one byte): printable/control keys send their
 ascii-like SDL keycode (k < 0x80, e.g. 'a'=97, esc=27, enter=13, space=32); the
@@ -35,21 +39,24 @@ KEYCODE_SHIFT = 0x84
 KEYCODE_CTRL = 0x85
 KEYCODE_ALT = 0x86
 
+# the size of the standalone window opened for a live keyboard that has no interactive screen
+INPUT_WINDOW_SIZE = (320, 240)
+
 
 def _import_pygame() -> Any:
     try:
         import pygame
     except ImportError as import_error:
         raise IODeviceException(
-            'the interactive screen window needs the pygame package, which is not installed. '
+            'the interactive window needs the pygame package, which is not installed. '
             'install it with `pip install pygame`, or `pip install flipjump[screen]` to pull it '
             'in as a flipjump extra.'
         ) from import_error
     return pygame
 
 
-class ScreenWindow:
-    """owns the window and the live key-event queue. opened on the first ensure_open."""
+class PygameWindow:
+    """owns the SDL window and the live key-event queue. opened on the first ensure_open*."""
 
     def __init__(self, *, title: str = 'FlipJump'):
         self._pygame = _import_pygame()
@@ -72,8 +79,12 @@ class ScreenWindow:
             pg.K_RALT: KEYCODE_ALT,
         }
 
+    @property
+    def is_open(self) -> bool:
+        return self._screen_surface is not None
+
     def ensure_open(self, width: int, height: int) -> None:
-        """open (or resize) the window for a width x height logical screen."""
+        """open (or resize) the window for a width x height logical surface."""
         if self._screen_surface is not None and self._screen_surface.get_size() == (width, height):
             return  # already open at this size - recreating the window would flicker
         pg = self._pygame
@@ -82,6 +93,12 @@ class ScreenWindow:
         # SCALED scales the small logical surface up to a window-sized one (and handles
         # fullscreen scaling); RESIZABLE lets the user drag-resize.
         self._screen_surface = pg.display.set_mode((width, height), pg.SCALED | pg.RESIZABLE)
+
+    def ensure_open_for_input(self) -> None:
+        """open a small window (if none is open yet) so SDL can deliver key events - used by
+        a live keyboard that has no interactive screen to open/size the window for it."""
+        if not self.is_open:
+            self.ensure_open(*INPUT_WINDOW_SIZE)
 
     def _byte_keycode(self, sdl_key: int) -> Optional[int]:
         if 0 < sdl_key < 0x80:
@@ -127,9 +144,9 @@ class ScreenWindow:
 
 
 class WindowKeyEventSource(KeyEventSource):
-    """the live key events of a ScreenWindow (pumps the window before every poll)."""
+    """live key events read from a PygameWindow (pumps the window before every poll)."""
 
-    def __init__(self, window: ScreenWindow):
+    def __init__(self, window: PygameWindow):
         self._window = window
 
     def next_due_event(self, tic: int) -> Optional[Tuple[bool, int]]:
@@ -140,13 +157,13 @@ class WindowKeyEventSource(KeyEventSource):
 class InteractiveScreen(InMemoryScreen):
     """the InMemoryScreen command stream, presented into a real window.
 
-    key_event_source delivers the window's live key events - wire a KeyboardIO over it
-    (the --di keyboard CLI spec does exactly that when --do screen is windowed)."""
+    takes a PygameWindow to draw to (creating its own when not given a shared one); it does
+    not deal with input - a live keyboard reads keys from the same window through its own
+    WindowKeyEventSource, so the two devices share only the window, not each other."""
 
-    def __init__(self, *, frames_dir: Optional[Path] = None, window_title: str = 'FlipJump'):
+    def __init__(self, *, frames_dir: Optional[Path] = None, window: Optional[PygameWindow] = None):
         super().__init__(frames_dir=frames_dir)
-        self.window = ScreenWindow(title=window_title)
-        self.key_event_source = WindowKeyEventSource(self.window)
+        self.window = window if window is not None else PygameWindow()
 
     def _init_screen(self, width: int, height: int, bpp: int, palette_size: int) -> None:
         super()._init_screen(width, height, bpp, palette_size)

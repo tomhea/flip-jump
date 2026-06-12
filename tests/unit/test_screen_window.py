@@ -1,10 +1,11 @@
 """
-unit-tests for the interactive screen window (ScreenWindow.py) - run headless with SDL's
+unit-tests for the interactive pygame window (pygame_window.py) - run headless with SDL's
 dummy video driver, so they work on Windows/Linux/macOS and in CI.
 
-pinned: the window opens from the init_screen command and presents real frames, live key
-events (incl. the special >=0x80 keycodes) flow into a KeyboardIO, F11 is captured for the
-fullscreen toggle and never delivered, and closing the window stops the run cleanly.
+pinned: the screen opens/draws the shared window; live key events (incl. the special
+>=0x80 keycodes) flow from the window into a KeyboardIO that does NOT depend on the screen;
+F11 toggles fullscreen and is never delivered; closing the window stops the run; and the CLI
+wires the two interactive devices onto one shared window (a lone live keyboard opens its own).
 """
 
 from pathlib import Path
@@ -16,12 +17,13 @@ pygame = pytest.importorskip('pygame')
 
 from flipjump.interpreter import fjm_run  # noqa: E402
 from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO  # noqa: E402
-from flipjump.interpreter.io_devices.ScreenWindow import (  # noqa: E402
+from flipjump.interpreter.io_devices.pygame_window import (  # noqa: E402
     KEYCODE_UP,
     InteractiveScreen,
+    PygameWindow,
+    WindowKeyEventSource,
 )
 from flipjump.utils.classes import TerminationCause  # noqa: E402
-from flipjump.utils.exceptions import IODeviceException  # noqa: E402
 from tests.unit.test_devices_e2e import EXPECTED_FRAME_HASH, RAW_SCREEN_PROGRAM  # noqa: E402
 from tests.unit.test_screen_io import write_byte, write_u16  # noqa: E402
 from tests.unit.unit_utils import assemble_to_path  # noqa: E402
@@ -47,6 +49,11 @@ def present_raw_2x2(device: InteractiveScreen) -> None:
     write_byte(device, 5)  # CMD update_screen_raw
     for pixel in (0, 0, 0, 0):
         write_byte(device, pixel)
+
+
+def keyboard_on(window: PygameWindow) -> KeyboardIO:
+    """a KeyboardIO reading live keys from the window - built without referencing any screen."""
+    return KeyboardIO(WindowKeyEventSource(window))
 
 
 def post_key(key: int, *, is_down: bool = True) -> None:
@@ -81,9 +88,9 @@ def test_present_draws_the_frame_pixels() -> None:
 
 
 def test_live_key_events_reach_a_keyboard_device() -> None:
-    device = InteractiveScreen()
-    init_2x2_screen(device)
-    keyboard = KeyboardIO(device.key_event_source)
+    window = PygameWindow()
+    window.ensure_open_for_input()
+    keyboard = keyboard_on(window)
 
     post_key(pygame.K_a)
     assert read_status_hex(keyboard) == 0x9  # key down
@@ -97,18 +104,18 @@ def test_live_key_events_reach_a_keyboard_device() -> None:
 
 
 def test_special_keys_use_the_byte_keycodes() -> None:
-    device = InteractiveScreen()
-    init_2x2_screen(device)
-    keyboard = KeyboardIO(device.key_event_source)
+    window = PygameWindow()
+    window.ensure_open_for_input()
+    keyboard = keyboard_on(window)
     post_key(pygame.K_UP)
     assert read_status_hex(keyboard) == 0x9
     assert read_byte(keyboard) == KEYCODE_UP
 
 
 def test_f11_toggles_fullscreen_and_is_not_delivered(monkeypatch: pytest.MonkeyPatch) -> None:
-    device = InteractiveScreen()
-    init_2x2_screen(device)
-    keyboard = KeyboardIO(device.key_event_source)
+    window = PygameWindow()
+    window.ensure_open_for_input()
+    keyboard = keyboard_on(window)
     toggle_calls = []
     monkeypatch.setattr(pygame.display, 'toggle_fullscreen', lambda: toggle_calls.append(True))
     post_key(pygame.K_F11)
@@ -119,9 +126,9 @@ def test_f11_toggles_fullscreen_and_is_not_delivered(monkeypatch: pytest.MonkeyP
 
 
 def test_unmapped_keys_are_ignored() -> None:
-    device = InteractiveScreen()
-    init_2x2_screen(device)
-    keyboard = KeyboardIO(device.key_event_source)
+    window = PygameWindow()
+    window.ensure_open_for_input()
+    keyboard = keyboard_on(window)
     post_key(pygame.K_F5)  # no byte keycode - ignored
     assert read_status_hex(keyboard) == 0x0
 
@@ -148,27 +155,34 @@ def test_fj_program_presents_into_the_window(tmp_path: Path) -> None:
     assert surface.get_at((1, 0))[:3] == (200, 100, 0)  # palette entry 1
 
 
-def test_cli_live_keyboard_requires_the_interactive_screen() -> None:
-    from flipjump.interpreter.io_devices.cli_devices import create_io_device
+def test_cli_live_keyboard_alone_opens_its_own_window() -> None:
+    # a live keyboard with no --do screen no longer errors: it opens its own small input window
+    from flipjump.interpreter.io_devices.cli_devices import SplitIO, create_io_device
 
-    with pytest.raises(IODeviceException):
-        create_io_device('keyboard', 'standard')
+    io_device = create_io_device('keyboard', 'standard')
+    assert isinstance(io_device, SplitIO)
+    assert isinstance(io_device.input_device, KeyboardIO)
+    window = io_device.input_device.event_source._window  # type: ignore[attr-defined]
+    assert isinstance(window, PygameWindow)
+    assert window.is_open  # opened for input, since there's no screen to size it
 
 
-def test_cli_screen_with_live_keyboard_wiring() -> None:
+def test_cli_screen_and_keyboard_share_one_window() -> None:
+    # the two interactive devices are wired onto the SAME window, with no device->device link
     from flipjump.interpreter.io_devices.cli_devices import SplitIO, create_io_device
 
     io_device = create_io_device('keyboard', 'screen')
     assert isinstance(io_device, SplitIO)
     assert isinstance(io_device.output_device, InteractiveScreen)
     assert isinstance(io_device.input_device, KeyboardIO)
-    assert io_device.input_device.event_source is io_device.output_device.key_event_source
+    keyboard_window = io_device.input_device.event_source._window  # type: ignore[attr-defined]
+    assert keyboard_window is io_device.output_device.window
 
 
 def test_closing_the_window_terminates_a_real_run(tmp_path: Path, engine: str) -> None:
     # QUIT is already pending when the program presents its first frame: the pump raises
     # KeyboardInterrupt inside the run, and the interpreter must turn it into a clean
-    # keyboard-interrupt termination (on both engines).
+    # keyboard-interrupt termination (on every engine).
     fjm_path = assemble_to_path(RAW_SCREEN_PROGRAM, tmp_path, use_stl=True)
     device = InteractiveScreen()
     device.window.ensure_open(4, 2)  # open early so the QUIT event can be posted

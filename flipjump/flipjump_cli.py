@@ -258,8 +258,8 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         metavar='DEVICE',
         default=None,
         help="the input device. the standard input by default; `keyboard` for live key "
-        "presses from the interactive screen window (use with `--do screen`); or "
-        "`keyboard=EVENTS_FILE` for a scripted, non-blocking keyboard replaying "
+        "presses in an interactive window (its own, or the `--do screen` one if present); "
+        "or `keyboard=EVENTS_FILE` for a scripted, non-blocking keyboard replaying "
         "'tic, down/up, keycode' lines",
     )
     run_arguments.add_argument(
