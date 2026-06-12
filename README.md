@@ -149,7 +149,8 @@ fj --run hello_world.fjm
 - The first line will assemble your code.
 - The second line will run your code.
 
-### Make it fast
+<details>
+<summary><b>Make it fast</b> — the three interpreter engines (native C is the default, ~100-300M fj-ops/s).</summary>
 
 The interpreter has three engines:
 - **The native engine** (~100-300M fj-ops/s) - a C-extension, prebuilt in the official wheels
@@ -162,34 +163,36 @@ The interpreter has three engines:
 
 Benchmark them yourself with `python tests/benchmarks/benchmark_interpreter.py` (results and the
 w=32-vs-w=64 recommendation are recorded in [tests/benchmarks/benchmark_results.md](tests/benchmarks/benchmark_results.md)).
+</details>
 
-### IO devices
+<details>
+<summary><b>IO devices</b> — pluggable input/output, including an interactive screen window and a keyboard.</summary>
 
 The interpreter's IO is pluggable:
 
 ```bash
-fj --run program.fjm --di keyboard=events.txt --do screen=frames_dir
+fj --run program.fjm --di keyboard --do screen     # or just:  fj --run program.fjm --pc
 ```
 
-- `--do screen=FRAMES_DIR` - a headless 256-color paletted **screen**: the program sends
-  draw commands over the output stream, and the device saves one PNG per frame plus a
-  frame-hash log.
-- `--do screen` - the same screen as an **interactive window** (needs pygame:
-  `pip install flipjump[screen]`): frames are presented scaled-up, F11 toggles fullscreen,
-  and closing the window stops the run. Works on Windows, Linux and macOS.
-- `--di keyboard=EVENTS_FILE` - a non-blocking, virtual-time **keyboard**: the program polls
-  one status hex per tic; events come from a scripted `tic, down/up, keycode` file
-  (deterministic replays).
-- `--di keyboard` - the same keyboard fed by **live key presses** on the interactive screen
-  window (combine with `--do screen`).
+- **`--do screen`** - an interactive **screen** window: frames are presented scaled-up, F11
+  toggles fullscreen, and closing the window stops the run (needs pygame:
+  `pip install flipjump[screen]`; works on Windows, Linux and macOS). Use `--do screen=FRAMES_DIR`
+  instead for a headless 256-color screen that just saves one PNG per frame plus a frame-hash log.
+- **`--di keyboard`** - a non-blocking **keyboard** fed by live key presses on the screen window
+  (combine with `--do screen`). Use `--di keyboard=EVENTS_FILE` instead for a scripted,
+  virtual-time keyboard that replays `tic, down/up, keycode` lines (deterministic, no window).
 - Devices can also read the program's memory through the `DeviceMemory` hook
   (`IODevice.attach_memory`) - e.g. the screen reads pixel data straight from memory.
 
+`--pc` is shorthand for `--di keyboard --do screen` (an interactive window driven by live keys).
+</details>
+
 ### How to Debug?
 
-Programs won't work on their first run. They just can't. The interpreter ships a CLI
-debugger (breakpoints, single-stepping, memory and flipjump-variable inspection) - take a
-look at the [debugging documentation](flipjump/interpreter/debugging/README.md).
+Programs won't work on their first run. They just can't.  
+The interpreter ships a CLI debugger (breakpoints, single-stepping, memory and
+flipjump-variable inspection) - take a look at the
+[debugging documentation](flipjump/interpreter/debugging/README.md).
 
 # Get Started with FlipJump
 - Install flipjump: `pip install flipjump`

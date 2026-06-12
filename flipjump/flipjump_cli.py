@@ -85,8 +85,14 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
     if debug_file:
         verify_file_exists(error_func, debug_file)
 
-    if args.di or args.do:
-        io_device = create_io_device(args.di, args.do)
+    di, do = args.di, args.do
+    if args.pc:
+        if di is not None or do is not None:
+            error_func('--pc is a shorthand for "--di keyboard --do screen"; do not also pass --di/--do.')
+        di, do = 'keyboard', 'screen'
+
+    if di or do:
+        io_device = create_io_device(di, do)
     else:
         io_device = StandardIO(not args.no_output)
 
@@ -251,18 +257,25 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         '--di',
         metavar='DEVICE',
         default=None,
-        help="the input device: standard (default); keyboard=EVENTS_FILE (a scripted, "
-        "non-blocking keyboard; 'tic, down/up, keycode' lines); or keyboard (live keys "
-        "from the interactive screen window - needs '--do screen')",
+        help="the input device. the standard input by default; `keyboard` for live key "
+        "presses from the interactive screen window (use with `--do screen`); or "
+        "`keyboard=EVENTS_FILE` for a scripted, non-blocking keyboard replaying "
+        "'tic, down/up, keycode' lines",
     )
     run_arguments.add_argument(
         '--do',
         metavar='DEVICE',
         default=None,
-        help="the output device: standard (default); screen=FRAMES_DIR (a headless "
-        "256-color screen - one PNG per frame + a frame-hash log); or screen (an "
-        "interactive window: scaled, F11 toggles fullscreen, closing it stops the run; "
-        "needs pygame - pip install flipjump[screen])",
+        help="the output device. the standard output by default; `screen` for an interactive "
+        "window (scaled, F11 toggles fullscreen, closing it stops the run; needs pygame - "
+        "`pip install flipjump[screen]`); or `screen=FRAMES_DIR` for a headless 256-color "
+        "screen writing one PNG per frame plus a frame-hash log",
+    )
+    run_arguments.add_argument(
+        '--pc',
+        action='store_true',
+        help="shorthand for `--di keyboard --do screen` - an interactive window driven by "
+        "live keyboard input. can't be combined with --di/--do",
     )
 
     run_arguments.add_argument(
