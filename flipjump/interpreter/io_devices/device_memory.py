@@ -55,6 +55,8 @@ class DeviceMemory(ABC):
         return self.memory_width.bit_length()
 
     def _jump_word_address(self, op_bit_address: int) -> int:
+        """the word-address of the op's jump word (the op's second word, where the packed
+        data-byte lives): bit_address / w gives the op's first (flip) word, + 1 the jump word."""
         return (op_bit_address >> (self.memory_width.bit_length() - 1)) + 1
 
 

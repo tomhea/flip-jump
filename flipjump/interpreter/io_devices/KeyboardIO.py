@@ -10,7 +10,8 @@ the status hex: 0x0 = no event; 0x8 = a key was released; 0x9 = a key was presse
 the input stream right after the status hex (read it with `hex.input`).
 
 the event source is pluggable: ScriptedKeyEventSource replays a `tic, down/up, keycode`
-event file (deterministic replays), and QueueKeyEventSource accepts live host events.
+event file (deterministic replays), and pygame_window's WindowKeyEventSource reads live
+key events from the interactive window.
 """
 
 from collections import deque
@@ -79,19 +80,6 @@ class ScriptedKeyEventSource(KeyEventSource):
             self._next_index += 1
             return event.is_down, event.keycode
         return None
-
-
-class QueueKeyEventSource(KeyEventSource):
-    """live host events: push (is_down, keycode) anytime; every pushed event is due immediately."""
-
-    def __init__(self) -> None:
-        self._queue: Deque[Tuple[bool, int]] = deque()
-
-    def push(self, is_down: bool, keycode: int) -> None:
-        self._queue.append((is_down, keycode))
-
-    def next_due_event(self, tic: int) -> Optional[Tuple[bool, int]]:
-        return self._queue.popleft() if self._queue else None
 
 
 class KeyboardIO(IODevice):

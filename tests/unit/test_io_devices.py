@@ -82,3 +82,21 @@ class TestIoModes:
             make_io_device('hologram')
         assert 'unknown --io mode' in str(error.value)
         assert 'standard' in str(error.value) and 'pc' in str(error.value)
+
+    def test_empty_mode_string_is_rejected(self) -> None:
+        with pytest.raises(IODeviceException) as error:
+            make_io_device('  ')
+        assert 'empty --io mode' in str(error.value)
+
+    def test_mode_string_is_split_into_name_and_parameters(self) -> None:
+        # the first whitespace-separated part is the mode name; current modes take no parameters
+        assert isinstance(make_io_device('  standard  '), StandardIO)
+        with pytest.raises(IODeviceException) as error:
+            make_io_device('standard loud')
+        assert 'no parameters' in str(error.value)
+
+    def test_pc_mode_rejects_parameters_before_importing_pygame(self) -> None:
+        # the parameter check precedes the lazy pygame import, so it works without pygame
+        with pytest.raises(IODeviceException) as error:
+            make_io_device('pc fullscreen')
+        assert 'no parameters' in str(error.value)

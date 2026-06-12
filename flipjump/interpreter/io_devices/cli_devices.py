@@ -1,10 +1,11 @@
 """
 the --io device selector.
 
-The CLI picks ONE complete IODevice (a "mode"); each device owns its own channels (and its
-window, if any) internally - there is no input/output splitting. Adding a new mode is one
-IO_MODES entry plus its device class, with no shared-window/coupling logic, because nothing
-is composed across devices.
+The CLI picks ONE complete IODevice (a "mode"); each device owns all of its channels (and
+its window, if any). Adding a new mode is one IO_MODES entry plus its device class.
+
+an --io mode string is the mode name, optionally followed by whitespace-separated parameters
+that are passed to the mode's factory (no current mode takes parameters).
 
 modes:
   standard - terminal input/output (the default).
@@ -15,34 +16,47 @@ built programmatically and passed straight to fjm_run.run(io_device=...) - e.g.
 PcIO.headless(events_file, frames_dir) - they are not --io modes.
 """
 
-from typing import Callable, Dict
+from typing import Callable, Dict, List
 
 from flipjump.interpreter.io_devices.IODevice import IODevice
 from flipjump.interpreter.io_devices.StandardIO import StandardIO
 from flipjump.utils.exceptions import IODeviceException
 
 
-def _make_standard() -> IODevice:
+def _require_no_parameters(mode_name: str, parameters: List[str]) -> None:
+    if parameters:
+        raise IODeviceException(f'the {mode_name!r} --io mode takes no parameters, got: {" ".join(parameters)!r}')
+
+
+def _make_standard(parameters: List[str]) -> IODevice:
+    _require_no_parameters('standard', parameters)
     return StandardIO(True)
 
 
-def _make_pc() -> IODevice:
-    # imported lazily: the interactive window needs pygame (the optional `screen` extra)
+def _make_pc(parameters: List[str]) -> IODevice:
+    _require_no_parameters('pc', parameters)
+    # imported lazily: the interactive window needs pygame (the optional `io` extra)
     from flipjump.interpreter.io_devices.pygame_window import PcIO
 
     return PcIO.interactive()
 
 
 # the --io modes - extend with one entry (+ its device class) to add a new complete device.
-IO_MODES: Dict[str, Callable[[], IODevice]] = {
+# each factory gets the mode's parameter list (the whitespace-split tail of the --io string).
+IO_MODES: Dict[str, Callable[[List[str]], IODevice]] = {
     'standard': _make_standard,
     'pc': _make_pc,
 }
 
 
 def make_io_device(io_mode: str) -> IODevice:
-    """build the complete io-device for the given --io mode."""
-    factory = IO_MODES.get(io_mode)
+    """build the complete io-device for the given --io mode string: the mode name,
+    optionally followed by whitespace-separated parameters for the mode's factory."""
+    parts = io_mode.split()
+    if not parts:
+        raise IODeviceException(f'empty --io mode. supported: {", ".join(IO_MODES)}')
+    mode_name, parameters = parts[0], parts[1:]
+    factory = IO_MODES.get(mode_name)
     if factory is None:
-        raise IODeviceException(f'unknown --io mode: {io_mode!r}. supported: {", ".join(IO_MODES)}')
-    return factory()
+        raise IODeviceException(f'unknown --io mode: {mode_name!r}. supported: {", ".join(IO_MODES)}')
+    return factory(parameters)

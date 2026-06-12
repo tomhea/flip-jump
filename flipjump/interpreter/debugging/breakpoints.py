@@ -28,7 +28,7 @@ DEBUGGER_HELP = (
     "  s / skip  N             execute N more ops, then stop (N decimal or 0x-hex)\n"
     "  c / cont / continue     run to the next breakpoint\n"
     "  c* / ca / continue all  run to the end, ignoring all breakpoints\n"
-    "  exit  (or Ctrl+C / EOF) stop the run (a keyboard-interrupt)\n"
+    "  q / quit / exit         stop the run (a keyboard-interrupt; Ctrl+C / EOF also work)\n"
     "\n"
     "the read TARGET can be:\n"
     "  - a decimal, or a 0x-hex, memory address\n"
@@ -303,7 +303,7 @@ class BreakpointHandler:
                 return ('continue', 0)
             elif command in ('c*', 'ca') or line.lower() == 'continue all':
                 return ('continue_all', 0)
-            elif command == 'exit':
+            elif command in ('q', 'quit', 'exit'):
                 return ('exit', 0)
             else:
                 show_message(f"unknown command {line!r}. type 'h' (or 'help') for the commands.", 'Debugger')

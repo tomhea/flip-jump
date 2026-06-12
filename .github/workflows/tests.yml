@@ -99,7 +99,7 @@ jobs:
           path: ./unit-test-results.xml
 
   # The interactive screen-window tests (pygame). pygame is an optional dependency
-  # (the `screen` extra), so it isn't in the main test deps - the window tests
+  # (the `io` extra), so it isn't in the main test deps - the window tests
   # importorskip it everywhere else. This job installs it (on a python with prebuilt
   # pygame wheels, which bundle SDL) and runs those tests headless (the tests force
   # SDL's dummy video driver), so the window backend keeps CI coverage.
@@ -114,7 +114,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[tests,screen]
+          pip install .[tests,io]
       - name: Test pytest
         run: pytest tests/unit/test_screen_window.py --unit-tests --junitxml=./screen-test-results.xml
       - name: Show tests results

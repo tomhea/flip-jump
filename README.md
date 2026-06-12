@@ -105,10 +105,11 @@ pip install flipjump
 And jump right into the neat [**FlipJump Docs**](https://fjdocs.tomhe.app) site!
 
 You can also install it with its extras:
+- `flipjump[io]`: the interactive IO devices (the `--io pc` keyboard+screen window; pygame).
 - `flipjump[stats]`: support for viewing macro usage in an interactive graph.
 - `flipjump[tests]`: all the testing libraries needed.
 ```shell
-pip install flipjump[stats,tests]
+pip install flipjump[io,stats,tests]
 ```
 
 
@@ -177,10 +178,10 @@ fj --run program.fjm --io pc
 - **`--io standard`** (the default) - input/output over the terminal.
 - **`--io pc`** - an interactive window: live keyboard input **and** a scaled 256-color screen,
   in one window the device owns (F11 toggles fullscreen, closing it stops the run). Needs
-  pygame (`pip install flipjump[screen]`); works on Windows, Linux and macOS.
+  pygame (`pip install flipjump[io]`); works on Windows, Linux and macOS.
 
-Each mode is one complete `IODevice` that owns its own channels (and window, if any) - there's
-no input/output splitting. Adding a new device (e.g. a windowed text console, or one that also
+Each mode is one complete `IODevice` that owns all of its channels (and window, if any).
+Adding a new device (e.g. a windowed text console, or one that also
 drives speakers/printer) is one entry in `IO_MODES` (`io_devices/cli_devices.py`) plus its
 device class. Devices can also read the program's memory through the `DeviceMemory` hook
 (`IODevice.attach_memory`) - e.g. the screen reads pixel data straight from memory. Headless /

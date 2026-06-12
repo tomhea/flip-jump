@@ -5,9 +5,9 @@ use it.
 PygameWindow owns the single SDL window and its event pump: it captures live key events
 (into a queue), presents frames, toggles fullscreen on F11, and raises KeyboardInterrupt
 when the window is closed (a clean run-termination). It is a *neutral* resource - the
-interactive screen draws to it and the keyboard reads keys from it, but neither device
-depends on the other. The CLI hands them a shared window when both are interactive (so it's
-one window: it shows the frames and captures the keys), and otherwise each gets its own.
+interactive screen draws to it and the keyboard reads keys from it, but neither depends
+on the other. PcIO.interactive() wires both onto the one window it creates, so it shows
+the frames and captures the keys.
 
 SDL only delivers key events to a focusable window, so capturing live keys needs one open.
 In `pc` the screen opens+sizes the window on the program's init-screen command; for a window
@@ -19,7 +19,7 @@ ascii-like SDL keycode (k < 0x80, e.g. 'a'=97, esc=27, enter=13, space=32); the
 arrows/shift/ctrl/alt send 0x80-0x86 (up,down,left,right,shift,ctrl,alt). other keys
 are ignored. F11 is captured for the fullscreen toggle and is never delivered.
 
-pygame is an optional dependency: `pip install flipjump[screen]`. the window must be
+pygame is an optional dependency: `pip install flipjump[io]`. the window must be
 driven from the main thread (a macOS/SDL requirement) - the interpreter already runs
 there. works on Windows, Linux and macOS; tests run headless with SDL's dummy driver.
 """
@@ -53,7 +53,7 @@ def _import_pygame() -> Any:
     except ImportError as import_error:
         raise IODeviceException(
             'the interactive window needs the pygame package, which is not installed. '
-            'install it with `pip install pygame`, or `pip install flipjump[screen]` to pull it '
+            'install it with `pip install pygame`, or `pip install flipjump[io]` to pull it '
             'in as a flipjump extra.'
         ) from import_error
     return pygame
@@ -182,11 +182,10 @@ class InteractiveScreen(InMemoryScreen):
 class PcIO(IODevice):
     """the complete 'pc' io-device: live keyboard input + a 256-color screen, together.
 
-    a single device that owns both channels (no input/output splitting): read_bit comes from
-    the keyboard, write_bit drives the screen. interactive() wires both onto one real window
-    it owns (so it does the keys and the pixels - no window is shared between separate
-    devices). For a headless variant (e.g. scripted keys + PNG frames) build it from explicit
-    components, via __init__ or headless()."""
+    a single device that owns both channels: read_bit comes from the keyboard, write_bit
+    drives the screen. interactive() wires both onto the one real window it owns (the keys
+    and the pixels). For a headless variant (e.g. scripted keys + PNG frames) build it from
+    explicit components, via __init__ or headless()."""
 
     def __init__(self, screen: InMemoryScreen, keyboard: KeyboardIO):
         self._screen = screen

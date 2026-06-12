@@ -256,6 +256,10 @@ class TestQueryUserForDebugAction:
             ('c*', ('continue_all', 0)),
             ('ca', ('continue_all', 0)),
             ('exit', ('exit', 0)),
+            ('q', ('exit', 0)),
+            ('quit', ('exit', 0)),
+            ('C', ('continue', 0)),  # commands are case-insensitive
+            ('QUIT', ('exit', 0)),
         ]:
             feed_commands(monkeypatch, [line])
             assert make_handler().query_user_for_debug_action(0, reader, op_counter=0) == expected

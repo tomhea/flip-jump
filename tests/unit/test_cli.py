@@ -34,12 +34,12 @@ def test_cli_assemble_only(tmp_path: Path) -> None:
 
 def test_cli_run_only(tmp_path: Path) -> None:
     fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
-    assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--no_output', str(fjm_path)])
+    assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', str(fjm_path)])
 
 
 def test_cli_assemble_and_run(tmp_path: Path) -> None:
     fj_path = _write_hello(tmp_path)
-    assemble_run_according_to_cmd_line_args(cmd_line_args=['--no_stl', '-s', '--no_output', str(fj_path)])
+    assemble_run_according_to_cmd_line_args(cmd_line_args=['--no_stl', '-s', str(fj_path)])
 
 
 from tests.unit.unit_utils import native_engine_required  # noqa: E402
@@ -48,16 +48,14 @@ from tests.unit.unit_utils import native_engine_required  # noqa: E402
 @native_engine_required
 def test_cli_flat_max_words_flag_forces_paged(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path, memory_width=32)
-    assemble_run_according_to_cmd_line_args(
-        cmd_line_args=['--run', '--no_output', '--flat-max-words', '4', str(fjm_path)]
-    )
+    assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '--flat-max-words', '4', str(fjm_path)])
     assert 'paged memory' in capsys.readouterr().out
 
 
 @native_engine_required
 def test_cli_non_silent_run_reports_flat_memory(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path, memory_width=32)
-    assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '--no_output', str(fjm_path)])
+    assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', str(fjm_path)])
     assert 'flat memory' in capsys.readouterr().out
 
 
@@ -111,13 +109,25 @@ def test_get_version_invalid_calls_error() -> None:
 def test_cli_invalid_flat_max_words_rejected(tmp_path: Path) -> None:
     fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
     with pytest.raises(SystemExit):
-        assemble_run_according_to_cmd_line_args(
-            cmd_line_args=['--run', '-s', '--no_output', '--flat-max-words', '0', str(fjm_path)]
-        )
+        assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--flat-max-words', '0', str(fjm_path)])
 
 
 def test_cli_invalid_io_mode_rejected(tmp_path: Path) -> None:
-    # --io only accepts the registered modes; argparse rejects anything else (no pygame needed)
+    # --io only accepts the registered mode names; rejected at parse time (no pygame needed)
     fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
     with pytest.raises(SystemExit):
         assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--io', 'hologram', str(fjm_path)])
+
+
+def test_cli_io_mode_parameters_rejected(tmp_path: Path) -> None:
+    # mode parameters (whitespace-separated after the name) parse, but no current mode takes any
+    fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
+    with pytest.raises(SystemExit):
+        assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--io', 'standard loud', str(fjm_path)])
+
+
+def test_cli_no_output_flag_is_gone(tmp_path: Path) -> None:
+    # --no_output was dropped: the standard device is built only by make_io_device()
+    fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
+    with pytest.raises(SystemExit):
+        assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--no_output', str(fjm_path)])

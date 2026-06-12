@@ -15,10 +15,9 @@ from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
 from flipjump.fjm.fjm_consts import FJMVersion, SUPPORTED_VERSIONS_NAMES
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.interpreter.io_devices.IODevice import IODevice
-from flipjump.interpreter.io_devices.StandardIO import StandardIO
 from flipjump.interpreter.io_devices.cli_devices import IO_MODES, make_io_device
 from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, DEFAULT_MAX_MACRO_RECURSION_DEPTH
+from flipjump.utils.exceptions import IODeviceException
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
 
 ErrorFunc = Callable[[str], None]
@@ -86,11 +85,11 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
     if debug_file:
         verify_file_exists(error_func, debug_file)
 
-    io_device: IODevice
-    if args.io == 'standard':
-        io_device = StandardIO(not args.no_output)  # --no_output only affects the terminal device
-    else:
+    try:
         io_device = make_io_device(args.io)
+    except IODeviceException as io_device_error:
+        error_func(str(io_device_error))
+        raise  # error_func exits; re-raise in case a custom error_func returns
 
     flipjump_quickstart.debug(
         in_fjm_path,
@@ -233,7 +232,6 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     run_arguments.add_argument('-t', '--trace', help="output every running opcode", action='store_true')
-    run_arguments.add_argument('--no_output', help="don't print the program's output", action='store_true')
     run_arguments.add_argument(
         '--profile',
         help="collect the full per-op statistics (flips/jumps percentages). uses the slower featured run-loop",
@@ -249,15 +247,25 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         "time and memory (8 bytes per word of span), never per-op speed. the "
         "FLIPJUMP_FLAT_MAX_WORDS environment variable sets the same limit",
     )
+
+    def _io_mode(value: str) -> str:
+        # the mode name (the first whitespace-separated part) must be registered; any
+        # parameters after it are validated by the mode's factory at run time.
+        parts = value.split()
+        mode_name = parts[0] if parts else ''
+        if mode_name not in IO_MODES:
+            raise argparse.ArgumentTypeError(f"unknown --io mode {mode_name!r}. supported: {', '.join(IO_MODES)}")
+        return value
+
     run_arguments.add_argument(
         '--io',
         metavar='MODE',
         default='standard',
-        choices=sorted(IO_MODES),
+        type=_io_mode,
         help="the IO device. `standard` (the default) - input/output over the terminal. "
         "`pc` - an interactive window: live keyboard input + a scaled 256-color screen "
         "(F11 toggles fullscreen, closing it stops the run; needs pygame - "
-        "`pip install flipjump[screen]`)",
+        "`pip install flipjump[io]`)",
     )
 
     run_arguments.add_argument(
