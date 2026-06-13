@@ -40,14 +40,16 @@ paged; loop = compact/flat path):
 |--------------------|-------|--------------:|------------------:|------------:|
 | sieve (n=5,000)    | w=32  |    16,580,560 |  ~244-276M fj/s   |      1,565x |
 | sieve (n=5,000)    | w=64  |    33,304,073 |  ~272-278M fj/s   |      1,855x |
-| sieve (n=200,000)  | w=64  | 1,332,300,215 |  ~126M fj/s       |        850x |
+| sieve (n=200,000)  | w=64  | 1,332,300,215 |  ~170M fj/s       |      1,148x |
 | loop (compact)     | w=32  |   298,927,147 |  ~410-440M fj/s   |      2,553x |
 | loop (compact)     | w=64  |   351,500,749 |  ~410-443M fj/s   |      2,985x |
 
-(the sustained 1.3B-op sieve is far below the short-run number because it is
-memory-latency-bound on the far data-table flips - those stay paged in both flat and
-hybrid; hybrid accelerates the code fetch, so the win shrinks from ~+55% short to +13%
-sustained as the workload shifts from interpreter-overhead-bound to DRAM-bound.)
+(the sustained 1.3B-op sieve is slower than the short run because its far data-table
+working set spills L2, adding cache-miss latency to the far flips in both modes - but the
+hybrid advantage holds across sizes: short ~+72%, sustained ~+56%, since hybrid keeps the
+hot code fetch on the flat array either way. an earlier "+13% sustained / DRAM-bound"
+note here was a mis-measurement taken while the machine was building worktrees in
+parallel - re-measured in isolation at a stable 4.35GHz it is +56%.)
 
 **The ≥10M fj/s acceptance is met with ~10x margin on every row.**
 
@@ -64,7 +66,7 @@ sustained as the workload shifts from interpreter-overhead-bound to DRAM-bound.)
 | v7: slim specialized flat loop (cold-block layout, folded IO checks, per-width constants, strip-mined signal check) | unchanged | unchanged | unchanged | **352-430M** (+25-30% interleaved A/B) |
 | v8: flat storage opened to w=64 (magic gap sentinel + segment-routed API) | unchanged | unchanged | unchanged | loop w=64: 110M -> **358-382M** (3.4x) |
 | v9: slim paged loop (widened page cache, cold-block reshape, width+ring clones) | **~180M** (+50%) | **~180M** (+50%) | - | paged-forced w=64: 130M -> **221-239M** (+75-85%); flat unchanged |
-| v10: hybrid storage (low flat window + paged far data) | **244-276M** | **272-278M** | 126M | flat unchanged (~416M/443M) |
+| v10: hybrid storage (low flat window + paged far data) | **269M** | **279M** | **170M** | flat unchanged (~410M/435M) |
 
 - v2: the ip/jump page and the flip-target page alternated every op and thrashed the single
   cached entry, forcing a hash lookup per access.
@@ -96,10 +98,11 @@ sustained as the workload shifts from interpreter-overhead-bound to DRAM-bound.)
   to mark garbage, and that cold edge now falls into the paged helpers (mem_read_word /
   mem_flip_bit) instead of erroring - exact paged semantics above the cut, including
   out-of-segment errors and device pokes (set_word/get_word route in-segment+below-cut to
-  flat, everything else to pages). interleaved PGO A/B vs the slim-paged baseline, sieve:
-  w=32 171-180M -> 244-276M (~+55%), w=64 161-178M -> 272-278M (~+60%); the sustained
-  1.3B-op run, which is DRAM-bound on the far flips, gains +13% (112M -> 126M); the flat
-  paths are untouched (loop 416M/443M). a program with no segment below the window
+  flat, everything else to pages). isolated freq-locked A/B (FLIPJUMP_NO_FLAT off vs on),
+  sieve median fj/s: w=32 hybrid 269M, w=64 hybrid 279M vs paged 162M (+72%); the
+  sustained 1.3B-op run is hybrid 170M vs paged 109M (+56%) - the advantage holds at both
+  sizes (hybrid keeps the hot code fetch flat regardless of the data working set). the
+  flat paths are untouched (loop 410M/435M). a program with no segment below the window
   (purely far) degenerates to plain paged, unchanged.
 - v9 (slim paged loop): the generic loop got the v7 treatment plus a cache widening.
   the 16-way page cache now holds the page's words pointer and fast valid range next to
