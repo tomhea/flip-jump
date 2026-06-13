@@ -19,10 +19,10 @@ that ordinary tests miss:
 
   3. SPEED, cpu-normalized - fj/s is NOT portable across the 8 targets (clock + IPC differ),
      so this does NOT gate on hitting any particular fj/s. It prints fj/s next to the C
-     `cpu_calibrate()` yardstick (a fixed-work prime sieve compiled by the SAME toolchain),
-     and fails only under a deliberately conservative ABSOLUTE floor and a cpu-normalized
-     fj/C-ratio floor - both set to catch a hidden python-fallback or a catastrophic
-     regression, never a merely-slow runner.
+     `cpu_calibrate()` yardstick (an L1-resident throughput micro-bench compiled by the SAME
+     toolchain and sharing the engine's bottleneck), and fails only under a deliberately
+     conservative ABSOLUTE floor and a cpu-normalized fj/C-ratio floor - both set to catch a
+     hidden python-fallback or a catastrophic regression, never a merely-slow runner.
 
 Usage:  python tests/wheel_smoke.py
 Exit code is non-zero on any hard-check failure; the speed table is always printed.
@@ -58,23 +58,28 @@ GOLDEN_OP_COUNTS = {
     ('sieve', 64): 33_304_073,
 }
 
+# the cpu_calibrate L1 micro-bench shares the engine's bottleneck, so its checksum is fixed for a
+# fixed iteration count - same on every arch (pure uint64 arithmetic, endianness-independent). a
+# mismatch means the calibration itself miscompiled; pin it.
+CALIB_ITERATIONS = 200_000_000
+GOLDEN_CALIB_CHECKSUM = 0xF1A951E3CDD861C3
+
 # CONSERVATIVE catastrophe floors - NOT a perf target. the pure-python fallback tops out at
-# ~3.9M fj/s, so 8M absolute already separates a hidden fallback from any real native run; the
-# fj/C ratio (both compiled by the same toolchain, both memory+branch bound) is cpu-independent
-# and craters ~200x under a fallback, so 0.008 catches it on any cpu while clearing the slowest
-# real case (sieve w=64, ~0.04 on reference hardware) by 5x.
+# ~3.9M fj/s, so 8M absolute already separates a hidden fallback from any real native run; and
+# the fj/C ratio craters ~200x under a fallback (fj/s collapses while the C yardstick holds), so
+# 0.01 catches it on any cpu with large margin while clearing the slowest real case by several x.
 MIN_FJ_PER_SEC = 8_000_000
-MIN_FJ_TO_C_RATIO = 0.008
+MIN_FJ_TO_C_RATIO = 0.01
 
 
 def measure_cpu_ops_per_sec() -> float:
-    """fixed-work C prime sieve (same toolchain as the engine); self-scales rounds to the cpu."""
-    probe = _fjcore.cpu_calibrate(2_000_000, 1)
-    per_round = max(probe['seconds'], 1e-6)
-    rounds = max(1, int(0.2 / per_round))
-    result = _fjcore.cpu_calibrate(2_000_000, rounds)
-    assert result['prime_count'] == 148_933, f"cpu_calibrate sieve wrong: {result['prime_count']} primes"
-    return float(result['mark_ops']) / float(result['seconds'])
+    """L1 throughput micro-bench (same toolchain + bottleneck as the engine); fixed iterations so
+    the checksum is pinnable across arches, while the elapsed time encodes this cpu's speed."""
+    result = _fjcore.cpu_calibrate(CALIB_ITERATIONS)
+    assert (
+        result['checksum'] == GOLDEN_CALIB_CHECKSUM
+    ), f"cpu_calibrate checksum 0x{result['checksum']:016X} != golden (calibration miscompiled?)"
+    return float(result['ops']) / float(result['seconds'])
 
 
 def run_program(name: str, width: int, tmp_dir: Path) -> Tuple[int, float]:
@@ -111,7 +116,7 @@ def main() -> int:
     print('OK: native engine active')
 
     cpu_ops_per_sec = measure_cpu_ops_per_sec()
-    print(f'C cpu yardstick: {cpu_ops_per_sec:,.0f} mark-ops/sec\n')
+    print(f'C cpu yardstick (L1 micro-bench): {cpu_ops_per_sec:,.0f} ops/sec\n')
 
     # --- hard checks 2 & 3: correctness + cpu-normalized speed, per program/width ---------
     failures: List[str] = []
