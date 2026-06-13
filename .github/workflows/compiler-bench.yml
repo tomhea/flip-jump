@@ -9,6 +9,9 @@ name: Compiler benchmark (Linux gcc vs clang)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - experiment/linux-wheel-clang  # this is an experiment branch; run the A/B on each push
 
 permissions:
   contents: read
