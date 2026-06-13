@@ -1,0 +1,56 @@
+# Same-runner Linux compiler A/B for the native engine: builds _fjcore with gcc and clang (at -O2
+# and -O3) on ONE runner each, so the only variable is the toolchain (the cloud runners are
+# thermally stable, unlike a laptop). Measures best-of-N fj/s for the flat (loop) and paged
+# (sieve) paths. Decision input for: should the Linux wheels switch from gcc to clang?
+# NOTE: this uses the HOST ubuntu toolchain, not the manylinux container the wheels actually ship
+# from - it's the fast compiler-relative signal; confirm a win in the real container before flipping.
+
+name: Compiler benchmark (Linux gcc vs clang)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    name: bench on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest      # x86_64
+          - ubuntu-24.04-arm   # aarch64
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: '3.12'
+      - name: Install toolchains and deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang
+          python -m pip install --upgrade pip
+          python -m pip install "sly>=0.5,<0.6" setuptools wheel
+      - name: Benchmark each compiler x opt-level (same runner)
+        run: |
+          set -euo pipefail
+          echo "host gcc:   $(gcc --version | head -1)"
+          echo "host clang: $(clang --version | head -1)"
+          echo "label,program,width,fjps" > results.csv
+          for spec in "gcc:-O2" "gcc:-O3" "clang:-O2" "clang:-O3"; do
+            cc="${spec%%:*}"; opt="${spec##*:}"
+            echo "::group::building ${cc} ${opt}"
+            rm -f flipjump/interpreter/_fjcore*.so
+            CC="$cc" CFLAGS="$opt" python build_fjcore.py
+            echo "::endgroup::"
+            python tests/benchmarks/measure_fjps.py --runs 9 --label "${cc}${opt}" >> results.csv
+          done
+          echo "===================== ORDERED RESULTS (fastest first per program) ====================="
+          { head -1 results.csv; tail -n +2 results.csv | sort -t, -k2,2 -k3,3 -k4,4nr; } | column -t -s,
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: compiler-bench-${{ matrix.os }}
+          path: results.csv
