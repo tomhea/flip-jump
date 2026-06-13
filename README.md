@@ -151,10 +151,10 @@ fj --run hello_world.fjm
 - The second line will run your code.
 
 <details>
-<summary><b>Make it fast</b> — the three interpreter engines (native C is the default, ~100-300M fj-ops/s).</summary>
+<summary><b>Make it fast</b> — the three interpreter engines (native C is the default, ~300M fj-ops/s).</summary>
 
 The interpreter has three engines:
-- **The native engine** (~100-300M fj-ops/s) - a C-extension, prebuilt in the official wheels
+- **The native engine** (~300M fj-ops/s) - a C-extension, prebuilt in the official wheels
   (Linux glibc/musl, macOS, Windows; every CPython >= 3.10), so a plain `pip install flipjump`
   already has it. Elsewhere, build it once with `python build_fjcore.py`; it is used
   automatically whenever present (`FLIPJUMP_NO_NATIVE=1` disables it).

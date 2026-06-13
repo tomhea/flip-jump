@@ -157,3 +157,11 @@ def test_assert_first_op_assembled_requires_a_segment_at_address_zero(tmp_path: 
     at_zero = Writer(tmp_path / 'b.fjm', 16, FJMVersion.NormalVersion)
     at_zero.add_simple_segment_with_data(0, [10, 20])  # a segment holds the first op
     assert_first_op_assembled(at_zero)  # no raise
+
+
+def test_assemble_rejects_program_not_starting_at_address_zero(tmp_path: Path) -> None:
+    # a program with real ops but whose first segment is at a non-zero address has no first
+    # op at 0 - the assembler must reject it (memory starts at another segment)
+    source = 'segment 0x100\n;0\n'
+    with pytest.raises(FlipJumpAssemblerException, match='no first op at address 0'):
+        assemble_to_path(source, tmp_path, use_stl=False)
