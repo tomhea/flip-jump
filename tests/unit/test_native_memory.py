@@ -131,12 +131,15 @@ def test_flat_max_words_parameter_overrides_env_var(monkeypatch: pytest.MonkeyPa
     assert memory.storage_mode == 'flat'
 
 
-def test_flat_allocation_failure_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    # a failed flat allocation raises (no silent paged fallback); FLIPJUMP_NO_FLAT=1 opts into paged
+def test_flat_allocation_failure_falls_back_to_paged(
+    monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    # a failed flat allocation warns to stderr and falls back to paged (the run still succeeds)
     monkeypatch.setenv('FLIPJUMP_TEST_FLAT_ALLOC_FAIL', '1')
     memory = _looping_memory()
-    with pytest.raises(MemoryError):
-        memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+    _run_to_looping(memory)
+    assert memory.storage_mode == 'paged'
+    assert 'FLIPJUMP_NO_FLAT' in capfd.readouterr().err  # the actionable warning was printed
 
 
 def test_reinitializing_a_memory_does_not_crash() -> None:
@@ -179,14 +182,14 @@ def test_set_words_near_the_address_space_top_raises() -> None:
         memory.set_words((1 << 64) - 2, [1, 2, 3])
 
 
-def test_huge_flat_limit_overflow_raises() -> None:
-    # a raised limit whose byte-size overflows size_t must raise (not silently page or crash)
+def test_huge_flat_limit_overflow_falls_back_to_paged() -> None:
+    # a raised limit whose byte-size overflows size_t warns + falls back to paged (not a crash)
     memory = _fjcore.Memory(32, flat_max_words=1 << 62)
     memory.add_segment(0, 8)
     memory.set_words(0, [128, 0])
     memory.add_segment(1 << 61, 8)
-    with pytest.raises(MemoryError):
-        memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+    _run_to_looping(memory)
+    assert memory.storage_mode == 'paged'
 
 
 def test_run_with_no_segments_raises() -> None:

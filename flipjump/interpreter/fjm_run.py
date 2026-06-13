@@ -216,10 +216,6 @@ def run(
         )
     except FlipJumpException as fj_exception:
         raise fj_exception
-    except MemoryError as storage_error:
-        # flat-storage allocation/overflow failures carry an actionable message (incl.
-        # FLIPJUMP_NO_FLAT=1 / --flat-max-words) - surface it, don't reframe as a bug
-        raise FlipJumpRuntimeException(str(storage_error)) from storage_error
     except KeyboardInterrupt:
         return TerminationStatistics(statistics, TerminationCause.KeyboardInterrupt)
     except Exception as unknown_exception:

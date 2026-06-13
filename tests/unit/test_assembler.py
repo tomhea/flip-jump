@@ -141,3 +141,19 @@ def test_address_beyond_memory_width_raises(tmp_path: Path) -> None:
     source = _program('segment 0x1000\n;0\n')
     with pytest.raises(FlipJumpAssemblerException):
         assemble_to_path(source, tmp_path, memory_width=8)
+
+
+def test_assert_first_op_assembled_requires_a_segment_at_address_zero(tmp_path: Path) -> None:
+    # the assembler must reject a program whose first op is not at address 0
+    from flipjump.assembler.assembler import assert_first_op_assembled
+    from flipjump.fjm.fjm_consts import FJMVersion
+    from flipjump.fjm.fjm_writer import Writer
+
+    not_at_zero = Writer(tmp_path / 'a.fjm', 16, FJMVersion.NormalVersion)
+    not_at_zero.add_simple_segment_with_data(2, [10, 20])  # first op at word 2, not 0
+    with pytest.raises(FlipJumpAssemblerException):
+        assert_first_op_assembled(not_at_zero)
+
+    at_zero = Writer(tmp_path / 'b.fjm', 16, FJMVersion.NormalVersion)
+    at_zero.add_simple_segment_with_data(0, [10, 20])  # a segment holds the first op
+    assert_first_op_assembled(at_zero)  # no raise

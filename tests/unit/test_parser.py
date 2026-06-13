@@ -164,7 +164,7 @@ def test_label_shadowing_a_constant_is_rejected(source: Union[str, List[str]], t
 @pytest.mark.parametrize(
     'source',
     [
-        'myz = 5\nmyc:\n',  # a label whose name differs from every constant
+        'myz = 5\nmyc:\n;0\n',  # a label whose name differs from every constant (+ an op at 0)
         'myc = 5\nns foo {\n myc:\n ;0\n}\n',  # foo.myc label is NOT shadowed by top-level const myc
     ],
 )

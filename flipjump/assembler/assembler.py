@@ -229,6 +229,18 @@ def labels_resolve(ops: Deque[LastPhaseOp], labels: Dict[str, int], memory_width
     binary_data.close_and_add_segment(fjm_writer)
 
 
+def assert_first_op_assembled(fjm_writer: Writer) -> None:
+    """
+    A FlipJump program starts executing at address 0, so the assembled .fjm must hold its
+    first op there: a segment covering bits 0..2w-1 (words 0 and 1). Raise otherwise.
+    """
+    if not any(start == 0 and length >= 2 for start, length, _, _ in fjm_writer.segments):
+        raise FlipJumpAssemblerException(
+            "the assembled program has no first op at address 0: no segment holds bits 0..2w-1 "
+            "(words 0 and 1). a FlipJump program must start executing at address 0."
+        )
+
+
 def assemble(
     input_files: List[Tuple[str, Path]],
     memory_width: int,
@@ -263,6 +275,8 @@ def assemble(
 
         with PrintTimer('  labels resolve:  ', print_time=print_time):
             labels_resolve(ops, labels, memory_width, fjm_writer)
+
+        assert_first_op_assembled(fjm_writer)
 
         with PrintTimer('  create binary:   ', print_time=print_time):
             fjm_writer.write_to_file()
