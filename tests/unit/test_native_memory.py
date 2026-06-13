@@ -131,11 +131,12 @@ def test_flat_max_words_parameter_overrides_env_var(monkeypatch: pytest.MonkeyPa
     assert memory.storage_mode == 'flat'
 
 
-def test_flat_allocation_failure_falls_back_to_paged(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_flat_allocation_failure_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    # a failed flat allocation raises (no silent paged fallback); FLIPJUMP_NO_FLAT=1 opts into paged
     monkeypatch.setenv('FLIPJUMP_TEST_FLAT_ALLOC_FAIL', '1')
     memory = _looping_memory()
-    _run_to_looping(memory)  # the run must still succeed, just paged
-    assert memory.storage_mode == 'paged'
+    with pytest.raises(MemoryError):
+        memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
 
 
 def test_reinitializing_a_memory_does_not_crash() -> None:
@@ -178,14 +179,30 @@ def test_set_words_near_the_address_space_top_raises() -> None:
         memory.set_words((1 << 64) - 2, [1, 2, 3])
 
 
-def test_huge_flat_limit_does_not_overflow_the_allocation_size() -> None:
-    # a raised limit whose byte-size overflows size_t must fall back to paged (not crash)
+def test_huge_flat_limit_overflow_raises() -> None:
+    # a raised limit whose byte-size overflows size_t must raise (not silently page or crash)
     memory = _fjcore.Memory(32, flat_max_words=1 << 62)
     memory.add_segment(0, 8)
     memory.set_words(0, [128, 0])
     memory.add_segment(1 << 61, 8)
-    _run_to_looping(memory)
-    assert memory.storage_mode == 'paged'
+    with pytest.raises(MemoryError):
+        memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+
+
+def test_run_with_no_segments_raises() -> None:
+    # no segments -> no first op at address 0 -> error, not a silent paged run
+    memory = _fjcore.Memory(32)
+    with pytest.raises(ValueError):
+        memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+
+
+def test_run_with_only_a_far_segment_raises() -> None:
+    # a garbage-stop program whose only segment is above the flat window has no first op at
+    # address 0 - impossible for a valid program, so it raises (not a silent paged run)
+    memory = _fjcore.Memory(32, flat_max_words=4)
+    memory.add_segment(100, 8)
+    with pytest.raises(ValueError):
+        memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
 
 
 def test_speculation_stats_is_none_without_the_env_flag() -> None:

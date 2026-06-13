@@ -263,3 +263,15 @@ class Reader:
         Uninitialized addresses will return zero.
         """
         return defaultdict(lambda: 0, self.memory)
+
+    def assert_runnable(self) -> None:
+        """
+        A FlipJump program starts executing at address 0, so a segment must hold its first op
+        (bits 0..2w-1, i.e. words 0 and 1). A loaded .fjm without it is not a runnable program.
+        Raise FlipJumpReadFjmException if no segment covers the first op.
+        """
+        if not any(seg.segment_start == 0 and seg.segment_length >= 2 for seg in self.memory_segments):
+            raise FlipJumpReadFjmException(
+                "the program has no first op at address 0: no segment holds bits 0..2w-1 "
+                "(words 0 and 1), but execution starts at address 0."
+            )

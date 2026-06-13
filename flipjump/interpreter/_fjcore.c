@@ -475,8 +475,9 @@ static uint64_t mem_flat_words_limit(MemoryObject* m)
    'hybrid' - the run loop reads sub-window words from the array and falls back to the
    paged helpers above it (FJ code lives low, so the hot op fetches stay flat even for
    sieve-style programs whose data tables sit at 1<<63). copies the already-loaded
-   sub-window page data in; the pages are kept (see below). a failed flat-array
-   allocation falls back to paged mode (never an error). */
+   sub-window page data in; the pages are kept (see below). a failed/oversized flat
+   allocation RAISES (set FLIPJUMP_NO_FLAT=1 for paged mode); no segments, or no segment in
+   the low window (the first op at address 0), also raise. */
 static int mem_decide_storage(MemoryObject* m)
 {
     uint64_t max_end = 0, low_max_end = 0, limit, i;
@@ -486,8 +487,14 @@ static int mem_decide_storage(MemoryObject* m)
     }
     m->storage_decided = 1;
 
-    if (!m->garbage_stop || m->segment_count == 0) {
-        return 0; /* paged */
+    if (m->segment_count == 0) {
+        PyErr_SetString(PyExc_ValueError,
+                        "the program has no memory segments - a FlipJump program must define its "
+                        "first op at address 0");
+        return -1;
+    }
+    if (!m->garbage_stop) {
+        return 0; /* continue-mode: paged (the flat sentinel scheme needs garbage-stop) */
     }
     {
         const char* no_flat = getenv("FLIPJUMP_NO_FLAT");
@@ -509,23 +516,37 @@ static int mem_decide_storage(MemoryObject* m)
         }
     }
     if (low_max_end == 0) {
-        return 0; /* no segment data below the window - paged */
+        /* every segment lies at or above the flat window - impossible for a valid program,
+           whose first op occupies words 0..1 (a segment at address 0, far below the window) */
+        PyErr_SetString(PyExc_ValueError,
+                        "the program has no segment in the low address window - the first op at "
+                        "address 0 is missing");
+        return -1;
     }
     if (low_max_end > SIZE_MAX / sizeof(uint64_t)) {
-        return 0; /* paged - the flat byte-size would overflow size_t (a raised limit) */
+        PyErr_SetString(PyExc_MemoryError,
+                        "the flat-storage window is too large - its byte size overflows; lower "
+                        "--flat-max-words / FLIPJUMP_FLAT_MAX_WORDS, or set FLIPJUMP_NO_FLAT=1 for paged mode");
+        return -1;
     }
 
     {
-        /* deterministic allocation-failure injection for the fallback-path tests
+        /* deterministic allocation-failure injection for the error-path test
            (a real flat-array OOM is not safely reproducible across platforms) */
         const char* simulate_alloc_fail = getenv("FLIPJUMP_TEST_FLAT_ALLOC_FAIL");
         if (simulate_alloc_fail && simulate_alloc_fail[0] == '1') {
-            return 0; /* paged */
+            PyErr_SetString(PyExc_MemoryError,
+                            "flat-storage allocation failed (test injection); "
+                            "set FLIPJUMP_NO_FLAT=1 for paged mode");
+            return -1;
         }
     }
     m->flat = (uint64_t*)malloc((size_t)low_max_end * sizeof(uint64_t));
     if (!m->flat) {
-        return 0; /* paged fallback - the program still runs, just slower */
+        PyErr_SetString(PyExc_MemoryError,
+                        "flat-storage allocation failed; lower --flat-max-words / FLIPJUMP_FLAT_MAX_WORDS, "
+                        "or set FLIPJUMP_NO_FLAT=1 for paged mode");
+        return -1;
     }
     m->flat_count = low_max_end;
     m->flat_covers_all = (max_end <= low_max_end);

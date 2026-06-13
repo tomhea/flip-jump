@@ -194,6 +194,7 @@ def run(
     """
     with PrintTimer('  loading memory:  ', print_time=print_time):
         mem = fjm_reader.Reader(fjm_path)
+    mem.assert_runnable()  # a program must hold its first op at address 0 (both engines)
 
     if io_device is None:
         io_device = BrokenIO()
@@ -215,6 +216,10 @@ def run(
         )
     except FlipJumpException as fj_exception:
         raise fj_exception
+    except MemoryError as storage_error:
+        # flat-storage allocation/overflow failures carry an actionable message (incl.
+        # FLIPJUMP_NO_FLAT=1 / --flat-max-words) - surface it, don't reframe as a bug
+        raise FlipJumpRuntimeException(str(storage_error)) from storage_error
     except KeyboardInterrupt:
         return TerminationStatistics(statistics, TerminationCause.KeyboardInterrupt)
     except Exception as unknown_exception:
