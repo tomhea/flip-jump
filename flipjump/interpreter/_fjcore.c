@@ -1692,6 +1692,80 @@ static PyObject* Memory_get_allocated_bytes(MemoryObject* self, void* closure)
                                        self->slot_count * sizeof(Slot));
 }
 
+/* ---- CPU calibration: a fixed-work prime sieve, same compiler/flags as the engine ----
+ * runs a sieve of Eratosthenes up to n, `rounds` times, counting every composite-marking
+ * store. returns the C marking-ops/sec yardstick for this platform, so an fj/s figure can be
+ * normalized against the runner's actual CPU speed: a slow runner (or a throttled one) lowers
+ * BOTH the C ops/sec and the fj ops/sec proportionally, while a genuine per-arch engine
+ * regression lowers only the fj/C ratio. the sieve (heap array + data-dependent branches)
+ * mirrors the engine's memory-bound per-op work far better than a pure-ALU counter, and the
+ * returned prime_count keeps the whole computation from being optimized away. */
+static PyObject* fjcore_cpu_calibrate(PyObject* module, PyObject* args)
+{
+    (void)module;
+    unsigned long long n = 0;
+    unsigned long long rounds = 1;
+    if (!PyArg_ParseTuple(args, "K|K", &n, &rounds)) {
+        return NULL;
+    }
+    if (n < 2) {
+        PyErr_SetString(PyExc_ValueError, "cpu_calibrate: n must be >= 2");
+        return NULL;
+    }
+    if (rounds < 1) {
+        PyErr_SetString(PyExc_ValueError, "cpu_calibrate: rounds must be >= 1");
+        return NULL;
+    }
+
+    unsigned char* sieve = (unsigned char*)malloc((size_t)n);
+    if (!sieve) {
+        return PyErr_NoMemory();
+    }
+
+    uint64_t mark_ops = 0;
+    uint64_t prime_count = 0;
+    double seconds = 0.0;
+
+    Py_BEGIN_ALLOW_THREADS
+    double t0 = monotonic_seconds();
+    for (unsigned long long r = 0; r < rounds; r++) {
+        memset(sieve, 0, (size_t)n);
+        for (unsigned long long i = 2; i * i < n; i++) {
+            if (!sieve[i]) {
+                for (unsigned long long j = i * i; j < n; j += i) {
+                    sieve[j] = 1;
+                    mark_ops++;
+                }
+            }
+        }
+    }
+    seconds = monotonic_seconds() - t0;
+    /* count primes from the final round so the marking work escapes the optimizer */
+    for (unsigned long long i = 2; i < n; i++) {
+        if (!sieve[i]) {
+            prime_count++;
+        }
+    }
+    Py_END_ALLOW_THREADS
+
+    free(sieve);
+
+    return Py_BuildValue("{s:K,s:K,s:K,s:K,s:d}",
+                         "n", (unsigned long long)n,
+                         "rounds", (unsigned long long)rounds,
+                         "mark_ops", (unsigned long long)mark_ops,
+                         "prime_count", (unsigned long long)prime_count,
+                         "seconds", seconds);
+}
+
+static PyMethodDef module_methods[] = {
+    {"cpu_calibrate", (PyCFunction)fjcore_cpu_calibrate, METH_VARARGS,
+     "cpu_calibrate(n, rounds=1) -> dict(n, rounds, mark_ops, prime_count, seconds)\n"
+     "a fixed-work prime sieve compiled with the same toolchain as the engine; its\n"
+     "mark_ops/seconds is the platform's C-ops/sec yardstick for normalizing fj/s."},
+    {NULL, NULL, 0, NULL},
+};
+
 static PyMethodDef Memory_methods[] = {
     {"add_segment", (PyCFunction)Memory_add_segment, METH_VARARGS,
      "add_segment(start_word_address, length_words) - declare a valid memory segment"},
@@ -1737,7 +1811,7 @@ static PyType_Spec Memory_type_spec = {
 };
 
 static PyModuleDef fjcore_module = {
-    PyModuleDef_HEAD_INIT, "_fjcore", "native FlipJump interpreter engine", -1, NULL, NULL, NULL, NULL, NULL,
+    PyModuleDef_HEAD_INIT, "_fjcore", "native FlipJump interpreter engine", -1, module_methods, NULL, NULL, NULL, NULL,
 };
 
 PyMODINIT_FUNC PyInit__fjcore(void)
