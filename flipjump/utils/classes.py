@@ -92,7 +92,7 @@ class RunStatistics:
         self.jump_counter = 0
         # False when the run-loop skips the flip/jump counters (the fast loop).
         self.detailed_statistics = True
-        # 'flat'/'paged' when the native engine ran (which memory storage it chose); None otherwise.
+        # 'flat'/'hybrid'/'paged' when the native engine ran (which memory storage it chose); None otherwise.
         self.storage_mode: Optional[str] = None
         # dict(ops, first_executions, misses) when the native engine measured jump-target
         # speculation (FLIPJUMP_MEASURE_SPECULATION=1); None otherwise.

@@ -92,12 +92,12 @@ def test_native_run_reports_flat_storage_mode(tmp_path: Path, monkeypatch: pytes
 
 
 @native_engine_required
-def test_run_flat_max_words_forces_paged(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_run_flat_max_words_limits_the_flat_window(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv('FLIPJUMP_NO_NATIVE', raising=False)
     fjm_path = assemble_to_path(INFINITE_LOOP_PROGRAM, tmp_path, memory_width=32)
     statistics = fjm_run.run(fjm_path, io_device=FixedIO(b''), print_time=False, flat_max_words=4)
     assert statistics.termination_cause == TerminationCause.Looping
-    assert statistics.storage_mode == 'paged'
+    assert statistics.storage_mode == 'hybrid'  # words 0..3 flat, the rest page-backed
 
 
 def test_python_run_storage_mode_is_none(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

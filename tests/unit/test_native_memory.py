@@ -101,10 +101,10 @@ def test_storage_mode_flat_for_a_compact_program() -> None:
     assert memory.storage_mode == 'flat'
 
 
-def test_flat_max_words_parameter_forces_paged() -> None:
+def test_flat_max_words_parameter_limits_the_flat_window() -> None:
     memory = _looping_memory(flat_max_words=4)  # the segment ends at word 8, above the limit
     _run_to_looping(memory)
-    assert memory.storage_mode == 'paged'
+    assert memory.storage_mode == 'hybrid'  # words 0..3 flat, the rest page-backed
 
 
 def test_flat_max_words_parameter_can_raise_the_limit() -> None:
@@ -117,11 +117,11 @@ def test_flat_max_words_parameter_can_raise_the_limit() -> None:
     assert memory.storage_mode == 'flat'
 
 
-def test_flat_max_words_env_var_forces_paged(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_flat_max_words_env_var_limits_the_flat_window(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv('FLIPJUMP_FLAT_MAX_WORDS', '4')
     memory = _looping_memory()
     _run_to_looping(memory)
-    assert memory.storage_mode == 'paged'
+    assert memory.storage_mode == 'hybrid'
 
 
 def test_flat_max_words_parameter_overrides_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -327,12 +327,13 @@ def test_w64_untouched_in_segment_word_reads_zero() -> None:
     assert memory.get_word(6) == 0  # in-segment, never written
 
 
-def test_w64_far_segment_stays_paged() -> None:
-    # sieve-style programs reserve far/huge segments - they must keep the paged path
+def test_w64_far_segment_makes_hybrid() -> None:
+    # sieve-style programs reserve far/huge segments - the low window still runs flat
     memory = _looping_memory_w64()
     memory.add_segment(1 << 50, 8)
     _run_to_looping(memory)
-    assert memory.storage_mode == 'paged'
+    assert memory.storage_mode == 'hybrid'
+    assert memory.get_word(6) == 0  # low in-segment untouched word, via the flat window
 
 
 def test_w64_api_write_to_a_gap_survives_the_flat_build() -> None:
@@ -349,3 +350,98 @@ def test_w64_api_write_to_a_gap_survives_the_flat_build() -> None:
     assert memory.get_word(9) == 0x77  # survived the flat build, page-backed
     memory.set_word(9, 0x78)  # and still writable post-build
     assert memory.get_word(9) == 0x78
+
+
+# ------------------------------------------ hybrid storage (low flat window + paged far)
+
+FAR = 1 << 26  # a word address far above the default 2^23-word flat window (w=32: < 2^27)
+
+
+def test_hybrid_low_code_flips_far_data() -> None:
+    # the sieve shape: compact code low, a data table far away. the code runs through the
+    # flat window; the flip lands in the far segment through the paged machinery.
+    memory = _fjcore.Memory(32)
+    memory.add_segment(0, 8)
+    memory.add_segment(FAR, 8)
+    #                    flip      jump
+    # ip=128 (not 64): aligned ips inside w=32's input range (38, 102] would trigger IO
+    memory.set_words(0, [FAR * 32, 128])  # ip=0:   flip bit 0 of the far word, jump on
+    memory.set_words(4, [224, 128])  # ip=128: flip bit 0 of word 7, loop
+    cause, op_count, _, _, _ = memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+    assert cause == _fjcore.TERM_LOOPING
+    assert op_count == 2
+    assert memory.storage_mode == 'hybrid'
+    assert memory.get_word(FAR) == 1
+    assert memory.get_word(7) == 1
+
+
+def test_hybrid_far_gap_touch_is_a_memory_error() -> None:
+    # touching out-of-segment memory above the flat window errors through the paged
+    # access checks, exactly like a pure-paged run.
+    memory = _fjcore.Memory(32)
+    memory.add_segment(0, 8)
+    memory.add_segment(FAR, 8)
+    memory.set_words(0, [(FAR + 100) * 32, 128])
+    memory.set_words(4, [224, 128])
+    cause, _, error_address, _, _ = memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+    assert memory.storage_mode == 'hybrid'
+    assert cause == _fjcore.TERM_MEMORY_ERROR
+    assert error_address == (FAR + 100) * 32
+
+
+def test_hybrid_segment_straddling_the_cut() -> None:
+    # one segment crossing the flat window: its low part lives in flat, its high part is
+    # page-backed - flips and reads must agree on both sides.
+    memory = _fjcore.Memory(32, flat_max_words=4)
+    memory.add_segment(0, 8)
+    memory.set_words(0, [192, 0])  # flip bit 0 of word 6 (above the cut, in-segment), loop
+    cause, op_count, _, _, _ = memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+    assert cause == _fjcore.TERM_LOOPING
+    assert op_count == 1
+    assert memory.storage_mode == 'hybrid'
+    assert memory.get_word(6) == 1
+
+
+def test_hybrid_op_at_the_cut_boundary() -> None:
+    # an op whose two words straddle the cut (flip word below, jump word above) takes the
+    # slow per-word lanes and must execute exactly like anywhere else.
+    memory = _fjcore.Memory(32, flat_max_words=5)
+    memory.add_segment(0, 8)
+    memory.set_words(0, [224, 128])  # ip=0:   flip bit 0 of word 7, jump to ip 128
+    memory.set_words(4, [193, 128])  # ip=128: words 4|5 straddle the cut; flip word 6 bit 1, loop
+    cause, op_count, _, _, _ = memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+    assert cause == _fjcore.TERM_LOOPING
+    assert op_count == 2
+    assert memory.storage_mode == 'hybrid'
+    assert memory.get_word(7) == 1
+    assert memory.get_word(6) == 2
+
+
+def test_hybrid_far_code_executes() -> None:
+    # code above the cut runs through the slow lanes - correct, just not fast
+    memory = _fjcore.Memory(32)
+    memory.add_segment(0, 8)
+    memory.add_segment(FAR, 8)
+    memory.set_words(0, [224, FAR * 32])  # ip=0: flip bit 0 of word 7, jump to the far op
+    memory.set_words(FAR, [225, FAR * 32])  # far op: flip bit 1 of word 7, loop
+    cause, op_count, _, _, _ = memory.run(_unexpected_io, _unexpected_io, IOReadOnEOF)
+    assert cause == _fjcore.TERM_LOOPING
+    assert op_count == 2
+    assert memory.storage_mode == 'hybrid'
+    assert memory.get_word(7) == 0b11
+
+
+def test_hybrid_device_pokes_route_correctly() -> None:
+    memory = _fjcore.Memory(32)
+    memory.add_segment(0, 8)
+    memory.add_segment(16, 8)
+    memory.add_segment(FAR, 8)
+    memory.set_words(0, [128, 0])
+    _run_to_looping(memory)
+    assert memory.storage_mode == 'hybrid'
+    memory.set_word(3, 7)  # below the cut, in-segment -> the flat window
+    memory.set_word(9, 5)  # below the cut, gap -> page-backed (device-only memory)
+    memory.set_word(FAR + 2, 9)  # above the cut -> page-backed
+    assert memory.get_word(3) == 7
+    assert memory.get_word(9) == 5
+    assert memory.get_word(FAR + 2) == 9

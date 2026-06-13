@@ -130,6 +130,8 @@ typedef struct {
     uint64_t flat_count;
     uint64_t flat_max_words; /* constructor override; 0 = use the env var / default */
     int storage_decided;
+    int flat_covers_all; /* 1: every segment fits in the flat window ('flat'); 0 with a
+                            non-NULL flat: low window flat, the rest paged ('hybrid') */
 
     int mem_error;            /* set when garbage_stop fired */
     uint64_t error_bit_address;
@@ -345,22 +347,15 @@ static inline int flat_garbage_check(MemoryObject* m, uint64_t word_address, uin
 static inline int mem_read_word(MemoryObject* m, uint64_t word_address, uint64_t* out)
 {
     Page* page;
-    if (m->flat) {
-        uint64_t value;
-        if (word_address >= m->flat_count) {
-            if (!flat_garbage(m, word_address)) {
-                return -1;
-            }
-            *out = 0;
-            return 0;
-        }
-        value = m->flat[word_address];
+    if (m->flat && word_address < m->flat_count) {
+        uint64_t value = m->flat[word_address];
         if (flat_is_garbage(m, value) && flat_garbage_check(m, word_address, &value) < 0) {
             return -1;
         }
         *out = value;
         return 0;
     }
+    /* paged, or a hybrid access above the flat window (validated by access_check) */
     page = mem_get_page(m, word_address >> PAGE_BITS);
     if (!page) {
         return -1;
@@ -377,18 +372,15 @@ static inline int mem_flip_bit(MemoryObject* m, uint64_t bit_address)
 {
     uint64_t word_address = bit_address >> m->ww;
     Page* page;
-    if (m->flat) {
-        uint64_t value;
-        if (word_address >= m->flat_count) {
-            return flat_garbage(m, word_address) ? 0 : -1;
-        }
-        value = m->flat[word_address];
+    if (m->flat && word_address < m->flat_count) {
+        uint64_t value = m->flat[word_address];
         if (flat_is_garbage(m, value) && flat_garbage_check(m, word_address, &value) < 0) {
             return -1;
         }
         m->flat[word_address] = value ^ (1ull << (bit_address & (uint64_t)(m->w - 1)));
         return 0;
     }
+    /* paged, or a hybrid access above the flat window (validated by access_check) */
     page = mem_get_page(m, word_address >> PAGE_BITS);
     if (!page) {
         return -1;
@@ -406,18 +398,15 @@ static inline int mem_write_bit(MemoryObject* m, uint64_t bit_address, int bit_v
     uint64_t word_address = bit_address >> m->ww;
     uint64_t bit = 1ull << (bit_address & (uint64_t)(m->w - 1));
     Page* page;
-    if (m->flat) {
-        uint64_t value;
-        if (word_address >= m->flat_count) {
-            return flat_garbage(m, word_address) ? 0 : -1;
-        }
-        value = m->flat[word_address];
+    if (m->flat && word_address < m->flat_count) {
+        uint64_t value = m->flat[word_address];
         if (flat_is_garbage(m, value) && flat_garbage_check(m, word_address, &value) < 0) {
             return -1;
         }
         m->flat[word_address] = bit_value ? (value | bit) : (value & ~bit);
         return 0;
     }
+    /* paged, or a hybrid access above the flat window (validated by access_check) */
     page = mem_get_page(m, word_address >> PAGE_BITS);
     if (!page) {
         return -1;
@@ -478,15 +467,19 @@ static uint64_t mem_flat_words_limit(MemoryObject* m)
     return FLAT_MAX_WORDS_DEFAULT;
 }
 
-/* decide the storage mode (once, at the first run): build the flat array when eligible -
-   garbage-stop mode and all segments ending below the flat-words limit (any width: gaps
+/* decide the storage mode (once, at the first run): in garbage-stop mode, the LOW WINDOW
+   of memory - segment data below the flat-words limit - gets a dense flat array (gaps
    carry the in-band bit-63 sentinel at w<=32, the FLAT_GARBAGE_MAGIC fill at w=64).
-   programs reserving far/huge segments (e.g. a table at 1<<63) fail the limit check and
-   keep the paged path. copies the already-loaded page data in, then frees the pages.
-   a failed flat-array allocation falls back to paged mode (never an error). */
+   when every segment fits inside the window the mode is 'flat' (exactly the historic
+   behavior); segments continuing or living above it stay page-backed and the mode is
+   'hybrid' - the run loop reads sub-window words from the array and falls back to the
+   paged helpers above it (FJ code lives low, so the hot op fetches stay flat even for
+   sieve-style programs whose data tables sit at 1<<63). copies the already-loaded
+   sub-window page data in; the pages are kept (see below). a failed flat-array
+   allocation falls back to paged mode (never an error). */
 static int mem_decide_storage(MemoryObject* m)
 {
-    uint64_t max_end = 0, i;
+    uint64_t max_end = 0, low_max_end = 0, limit, i;
     Py_ssize_t seg;
     if (m->storage_decided) {
         return 0;
@@ -502,15 +495,23 @@ static int mem_decide_storage(MemoryObject* m)
             return 0; /* paged (forced - for A/B benchmarking and debugging) */
         }
     }
+    limit = mem_flat_words_limit(m);
     for (seg = 0; seg < m->segment_count; seg++) {
-        if (m->segments[seg].end > max_end) {
-            max_end = m->segments[seg].end;
+        const uint64_t start = m->segments[seg].start, end = m->segments[seg].end;
+        if (end > max_end) {
+            max_end = end;
+        }
+        if (start < limit) {
+            const uint64_t clamped_end = (end < limit) ? end : limit;
+            if (clamped_end > low_max_end) {
+                low_max_end = clamped_end;
+            }
         }
     }
-    if (max_end > mem_flat_words_limit(m)) {
-        return 0; /* paged */
+    if (low_max_end == 0) {
+        return 0; /* no segment data below the window - paged */
     }
-    if (max_end > SIZE_MAX / sizeof(uint64_t)) {
+    if (low_max_end > SIZE_MAX / sizeof(uint64_t)) {
         return 0; /* paged - the flat byte-size would overflow size_t (a raised limit) */
     }
 
@@ -522,20 +523,25 @@ static int mem_decide_storage(MemoryObject* m)
             return 0; /* paged */
         }
     }
-    m->flat = (uint64_t*)malloc((size_t)max_end * sizeof(uint64_t));
+    m->flat = (uint64_t*)malloc((size_t)low_max_end * sizeof(uint64_t));
     if (!m->flat) {
         return 0; /* paged fallback - the program still runs, just slower */
     }
-    m->flat_count = max_end;
+    m->flat_count = low_max_end;
+    m->flat_covers_all = (max_end <= low_max_end);
     {
         const uint64_t garbage_fill = (m->w <= 32) ? GARBAGE_SENTINEL : FLAT_GARBAGE_MAGIC;
-        for (i = 0; i < max_end; i++) {
+        for (i = 0; i < low_max_end; i++) {
             m->flat[i] = garbage_fill;
         }
     }
     for (seg = 0; seg < m->segment_count; seg++) {
-        memset(m->flat + m->segments[seg].start, 0,
-               (size_t)(m->segments[seg].end - m->segments[seg].start) * sizeof(uint64_t));
+        const uint64_t start = m->segments[seg].start;
+        const uint64_t end_clamped =
+            (m->segments[seg].end < low_max_end) ? m->segments[seg].end : low_max_end;
+        if (start < end_clamped) {
+            memset(m->flat + start, 0, (size_t)(end_clamped - start) * sizeof(uint64_t));
+        }
     }
     /* copy the loaded in-segment data: each allocated page, intersected with each
        segment. the pages themselves are KEPT: out-of-segment memory (gaps between
@@ -555,6 +561,9 @@ static int mem_decide_storage(MemoryObject* m)
             for (seg = 0; seg < m->segment_count; seg++) {
                 uint64_t lo = (m->segments[seg].start > page_start) ? m->segments[seg].start : page_start;
                 uint64_t hi = (m->segments[seg].end < page_end) ? m->segments[seg].end : page_end;
+                if (hi > low_max_end) {
+                    hi = low_max_end; /* the part above the window stays page-backed */
+                }
                 if (lo < hi) {
                     memcpy(m->flat + lo, m->slots[i].page->words + (lo - page_start),
                            (size_t)(hi - lo) * sizeof(uint64_t));
@@ -620,6 +629,7 @@ static int Memory_init(PyObject* op, PyObject* args, PyObject* kwds)
     self->flat_count = 0;
     self->flat_max_words = flat_max_words;
     self->storage_decided = 0;
+    self->flat_covers_all = 0;
     self->mem_error = 0;
     self->error_bit_address = 0;
     self->spec_measured = 0;
@@ -685,7 +695,7 @@ static PyObject* Memory_set_word(MemoryObject* self, PyObject* args)
     if (!PyArg_ParseTuple(args, "KK", &word_address, &value)) {
         return NULL;
     }
-    if (self->flat && flat_seg_contains(self, word_address)) {
+    if (self->flat && word_address < self->flat_count && flat_seg_contains(self, word_address)) {
         self->flat[word_address] = value & self->word_mask;
         Py_RETURN_NONE;
     }
@@ -707,7 +717,7 @@ static PyObject* Memory_get_word(MemoryObject* self, PyObject* args)
     if (!PyArg_ParseTuple(args, "K", &word_address)) {
         return NULL;
     }
-    if (self->flat && flat_seg_contains(self, word_address)) {
+    if (self->flat && word_address < self->flat_count && flat_seg_contains(self, word_address)) {
         return PyLong_FromUnsignedLongLong(self->flat[word_address]);
     }
     /* out-of-segment (or paged mode): page-backed - see set_word */
@@ -1075,10 +1085,13 @@ static FJ_ALWAYS_INLINE int run_flat_loop_impl(MemoryObject* self, PyObject* rea
         goto flip_word_ready;
 
     cold_flip_word_out_of_span:
-        if (!flat_garbage(self, word_address)) {
+        /* the op's words reach past the flat window: read per word through the routing
+           helper (hybrid: page-backed far code; pure flat: the paged access checks
+           report the out-of-segment error) */
+        if (mem_read_word(self, word_address, &cold_word) < 0) {
             goto memory_error;
         }
-        f = 0;
+        f = cold_word;
         goto flip_word_ready;
 
     cold_flip_word_garbage: /* w=64: possibly real data equal to the magic fill */
@@ -1124,10 +1137,12 @@ static FJ_ALWAYS_INLINE int run_flat_loop_impl(MemoryObject* self, PyObject* rea
     }
 
     cold_flip_out_of_span:
-        if (!flat_garbage(self, flip_word_address)) {
+        /* a flip above the flat window: the routing helper flips page-backed far data
+           (hybrid - e.g. sieve's table) or reports the out-of-segment error */
+        if (mem_flip_bit(self, f) < 0) {
             goto memory_error;
         }
-        goto after_flip; /* out-of-span flips do not store */
+        goto after_flip;
 
     cold_flip_garbage: /* w=64: possibly real data equal to the magic fill */
         if (flat_garbage_check(self, flip_word_address, &flip_value) < 0) {
@@ -1634,7 +1649,7 @@ static PyObject* Memory_get_storage_mode(MemoryObject* self, void* closure)
     if (!self->storage_decided) {
         Py_RETURN_NONE;
     }
-    return PyUnicode_FromString(self->flat ? "flat" : "paged");
+    return PyUnicode_FromString(self->flat ? (self->flat_covers_all ? "flat" : "hybrid") : "paged");
 }
 
 static PyObject* Memory_get_speculation_stats(MemoryObject* self, void* closure)
@@ -1675,7 +1690,7 @@ static PyGetSetDef Memory_getset[] = {
     {"allocated_bytes", (getter)Memory_get_allocated_bytes, NULL,
      "bytes allocated for memory pages (footprint scales with touched memory, not segment sizes)", NULL},
     {"storage_mode", (getter)Memory_get_storage_mode, NULL,
-     "'flat'/'paged' - the storage mode chosen at the first run (None before it)", NULL},
+     "'flat'/'hybrid'/'paged' - the storage mode chosen at the first run (None before it)", NULL},
     {"speculation_stats", (getter)Memory_get_speculation_stats, NULL,
      "dict(ops, first_executions, misses) of the last FLIPJUMP_MEASURE_SPECULATION=1 run, else None", NULL},
     {NULL, NULL, NULL, NULL, NULL},

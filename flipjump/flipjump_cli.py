@@ -242,10 +242,10 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         metavar='N',
         type=_check_int_positive,
         default=None,
-        help="the native engine's flat-storage span limit, in words (2^23 by default; programs "
-        "whose memory span exceeds it run in the slower paged mode). raising it costs startup "
-        "time and memory (8 bytes per word of span), never per-op speed. the "
-        "FLIPJUMP_FLAT_MAX_WORDS environment variable sets the same limit",
+        help="the native engine's flat-storage window, in words (2^23 by default). memory below "
+        "the window runs in the fast flat array; segments reaching above it keep the slower paged "
+        "mode for that part (hybrid). raising it costs startup time and memory (8 bytes per word of "
+        "window), never per-op speed. the FLIPJUMP_FLAT_MAX_WORDS environment variable sets the same limit",
     )
 
     def _io_mode(value: str) -> str:

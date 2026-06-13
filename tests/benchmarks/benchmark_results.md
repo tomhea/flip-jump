@@ -33,15 +33,21 @@ every int is a multi-digit CPython PyLong, and the small-int fast paths don't ap
 Segment-aware paged memory (lazily-allocated 128KB pages) + the run-loop in C; Python is
 called back only for IO. Build with `python build_fjcore.py`.
 
-The shipping engine (v9 below; sieve = sparse/paged path, loop = compact/flat path):
+The shipping engine (v10 below; sieve = hybrid path - low code flat, far data table
+paged; loop = compact/flat path):
 
 | program            | width | ops           | speed             | vs baseline |
 |--------------------|-------|--------------:|------------------:|------------:|
-| sieve (n=5,000)    | w=32  |    16,580,560 |  ~180M fj/s       |      1,069x |
-| sieve (n=5,000)    | w=64  |    33,304,073 |  ~180M fj/s       |      1,214x |
-| sieve (n=200,000)  | w=64  | 1,332,300,215 |  ~132M fj/s (v6)  |        892x |
+| sieve (n=5,000)    | w=32  |    16,580,560 |  ~244-276M fj/s   |      1,565x |
+| sieve (n=5,000)    | w=64  |    33,304,073 |  ~272-278M fj/s   |      1,855x |
+| sieve (n=200,000)  | w=64  | 1,332,300,215 |  ~126M fj/s       |        850x |
 | loop (compact)     | w=32  |   298,927,147 |  ~410-440M fj/s   |      2,553x |
-| loop (compact)     | w=64  |   351,500,749 |  ~370-430M fj/s   |      2,899x |
+| loop (compact)     | w=64  |   351,500,749 |  ~410-443M fj/s   |      2,985x |
+
+(the sustained 1.3B-op sieve is far below the short-run number because it is
+memory-latency-bound on the far data-table flips - those stay paged in both flat and
+hybrid; hybrid accelerates the code fetch, so the win shrinks from ~+55% short to +13%
+sustained as the workload shifts from interpreter-overhead-bound to DRAM-bound.)
 
 **The ≥10M fj/s acceptance is met with ~10x margin on every row.**
 
@@ -58,6 +64,7 @@ The shipping engine (v9 below; sieve = sparse/paged path, loop = compact/flat pa
 | v7: slim specialized flat loop (cold-block layout, folded IO checks, per-width constants, strip-mined signal check) | unchanged | unchanged | unchanged | **352-430M** (+25-30% interleaved A/B) |
 | v8: flat storage opened to w=64 (magic gap sentinel + segment-routed API) | unchanged | unchanged | unchanged | loop w=64: 110M -> **358-382M** (3.4x) |
 | v9: slim paged loop (widened page cache, cold-block reshape, width+ring clones) | **~180M** (+50%) | **~180M** (+50%) | - | paged-forced w=64: 130M -> **221-239M** (+75-85%); flat unchanged |
+| v10: hybrid storage (low flat window + paged far data) | **244-276M** | **272-278M** | 126M | flat unchanged (~416M/443M) |
 
 - v2: the ip/jump page and the flip-target page alternated every op and thrashed the single
   cached entry, forcing a hash lookup per access.
@@ -67,15 +74,33 @@ The shipping engine (v9 below; sieve = sparse/paged path, loop = compact/flat pa
   get one dense array instead of the page table; out-of-segment words carry a
   bit-63 sentinel (w<=32 until v8 - see below). This removes the page lookup from the serial jump-dependency chain
   (jump-word load -> next op's address -> next load), which bounds the loop: ~2x on
-  compact-memory programs. prime_sieve declares a half-address-space segment,
-  so it stays on the paged path (rows unchanged, run-to-run variance shown).
-  `FLIPJUMP_NO_FLAT=1` forces the paged path (for A/B measurement).
+  compact-memory programs. prime_sieve declares a half-address-space segment, so before
+  v10 it stayed wholly on the paged path; v10's hybrid mode runs its low code flat while
+  the far table stays paged. `FLIPJUMP_NO_FLAT=1` forces the fully-paged path (for A/B
+  measurement).
 
 - v5: when the memory is flat and no last-ops ring is requested (the shipping default),
   a dedicated loop runs with zero paged-mode/ring branches in the per-op path.
 - v6: profile-guided optimization is available for local builds
   (`--pgo-instrument`, train on both the flat and paged paths, `--pgo-use`);
   the prebuilt wheels ship without it.
+- v10 (hybrid storage): the dichotomy is dissolved - in garbage-stop mode the LOW WINDOW
+  (segment data below the flat-words limit) always gets a dense flat array, and anything
+  above stays page-backed. when every segment fits the window the mode is `flat` (the
+  historic behavior, codegen untouched); otherwise it is `hybrid`. FJ code is laid out
+  low and far segments hold data (sieve's table at 1<<63, framebuffers), so the per-op
+  f/j fetches - the serial chain that dictates speed - run on the flat array even for
+  sieve, while the occasional flip into the far table (a store, off the critical chain)
+  takes the paged machinery through the now-widened page cache. the boundary check costs
+  nothing on the hot path: the flat loop already tested `word_address + 1 >= flat_count`
+  to mark garbage, and that cold edge now falls into the paged helpers (mem_read_word /
+  mem_flip_bit) instead of erroring - exact paged semantics above the cut, including
+  out-of-segment errors and device pokes (set_word/get_word route in-segment+below-cut to
+  flat, everything else to pages). interleaved PGO A/B vs the slim-paged baseline, sieve:
+  w=32 171-180M -> 244-276M (~+55%), w=64 161-178M -> 272-278M (~+60%); the sustained
+  1.3B-op run, which is DRAM-bound on the far flips, gains +13% (112M -> 126M); the flat
+  paths are untouched (loop 416M/443M). a program with no segment below the window
+  (purely far) degenerates to plain paged, unchanged.
 - v9 (slim paged loop): the generic loop got the v7 treatment plus a cache widening.
   the 16-way page cache now holds the page's words pointer and fast valid range next to
   the key, so the hot path reads op words without chasing the Page* (one less chained

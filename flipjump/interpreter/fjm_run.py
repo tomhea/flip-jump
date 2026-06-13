@@ -186,10 +186,10 @@ def run(
     @param last_ops_debugging_list_length: The length of the last-ops list
     @param profile: if true use the featured loop and collect the full per-op statistics
     (flip/jump counters). by default the fast loop is used (which skips them).
-    @param flat_max_words: the native engine's flat-storage span limit, in words (default 2^23,
-    also settable with the FLIPJUMP_FLAT_MAX_WORDS environment variable). programs whose memory
-    span exceeds it run in paged mode. raising it costs startup time + footprint
-    (8 bytes x span), never per-op speed.
+    @param flat_max_words: the native engine's flat-storage window, in words (default 2^23,
+    also settable with the FLIPJUMP_FLAT_MAX_WORDS environment variable). memory below the window
+    runs flat; segments reaching above it keep the paged path for that part (hybrid). raising it
+    costs startup time + footprint (8 bytes x window), never per-op speed.
     @return: the run's termination-statistics
     """
     with PrintTimer('  loading memory:  ', print_time=print_time):

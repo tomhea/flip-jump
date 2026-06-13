@@ -46,10 +46,10 @@ from tests.unit.unit_utils import native_engine_required  # noqa: E402
 
 
 @native_engine_required
-def test_cli_flat_max_words_flag_forces_paged(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_flat_max_words_flag_limits_the_flat_window(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path, memory_width=32)
     assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '--flat-max-words', '4', str(fjm_path)])
-    assert 'paged memory' in capsys.readouterr().out
+    assert 'hybrid memory' in capsys.readouterr().out  # words 0..3 flat, the rest page-backed
 
 
 @native_engine_required
