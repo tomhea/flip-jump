@@ -40,16 +40,20 @@ paged; loop = compact/flat path):
 |--------------------|-------|--------------:|------------------:|------------:|
 | sieve (n=5,000)    | w=32  |    16,580,560 |  ~244-276M fj/s   |      1,565x |
 | sieve (n=5,000)    | w=64  |    33,304,073 |  ~272-278M fj/s   |      1,855x |
-| sieve (n=200,000)  | w=64  | 1,332,300,215 |  ~170M fj/s       |      1,148x |
+| sieve (n=200,000)  | w=64  | 1,332,300,215 |  ~315M fj/s       |      2,124x |
 | loop (compact)     | w=32  |   298,927,147 |  ~410-440M fj/s   |      2,553x |
 | loop (compact)     | w=64  |   351,500,749 |  ~410-443M fj/s   |      2,985x |
 
-(the sustained 1.3B-op sieve is slower than the short run because its far data-table
-working set spills L2, adding cache-miss latency to the far flips in both modes - but the
-hybrid advantage holds across sizes: short ~+72%, sustained ~+56%, since hybrid keeps the
-hot code fetch on the flat array either way. an earlier "+13% sustained / DRAM-bound"
-note here was a mis-measurement taken while the machine was building worktrees in
-parallel - re-measured in isolation at a stable 4.35GHz it is +56%.)
+(the sieve hot marking loop runs at ~315-320M; SMALLER n is slower - the fixed startup
+cost (stl init, hex-table build, reading n) is a large fraction of a short run, and larger
+n amortizes it. measured sweep, isolated/cool: n=5k 272M, 10k 291M, 20k 309M, 40k 318M,
+then a ~315M plateau through 200k. so the sustained 1.3B-op run is at the ceiling and is
+FASTER than the short n=5k run, not slower.
+
+THERMAL CAVEAT (this laptop): a multi-second run on a pre-heated core throttles to ~half
+clock - an earlier "170M / +13% / DRAM-bound" note here was that artifact (the same 1.33B
+ops took 7.96s hot vs 4.2s cool). measure long runs isolated, with the machine settled;
+trust wall-time over the post-run freq-probe, which only catches the recovered boost clock.)
 
 **The ≥10M fj/s acceptance is met with ~10x margin on every row.**
 
@@ -66,7 +70,7 @@ parallel - re-measured in isolation at a stable 4.35GHz it is +56%.)
 | v7: slim specialized flat loop (cold-block layout, folded IO checks, per-width constants, strip-mined signal check) | unchanged | unchanged | unchanged | **352-430M** (+25-30% interleaved A/B) |
 | v8: flat storage opened to w=64 (magic gap sentinel + segment-routed API) | unchanged | unchanged | unchanged | loop w=64: 110M -> **358-382M** (3.4x) |
 | v9: slim paged loop (widened page cache, cold-block reshape, width+ring clones) | **~180M** (+50%) | **~180M** (+50%) | - | paged-forced w=64: 130M -> **221-239M** (+75-85%); flat unchanged |
-| v10: hybrid storage (low flat window + paged far data) | **269M** | **279M** | **170M** | flat unchanged (~410M/435M) |
+| v10: hybrid storage (low flat window + paged far data) | **269M** | **279M** | **315M** | flat unchanged (~410M/435M) |
 
 - v2: the ip/jump page and the flip-target page alternated every op and thrashed the single
   cached entry, forcing a hash lookup per access.
@@ -100,8 +104,8 @@ parallel - re-measured in isolation at a stable 4.35GHz it is +56%.)
   out-of-segment errors and device pokes (set_word/get_word route in-segment+below-cut to
   flat, everything else to pages). isolated freq-locked A/B (FLIPJUMP_NO_FLAT off vs on),
   sieve median fj/s: w=32 hybrid 269M, w=64 hybrid 279M vs paged 162M (+72%); the
-  sustained 1.3B-op run is hybrid 170M vs paged 109M (+56%) - the advantage holds at both
-  sizes (hybrid keeps the hot code fetch flat regardless of the data working set). the
+  sustained 1.3B-op run (isolated/cool) is hybrid ~315M vs paged ~180M (+75%) - and is
+  faster than the short n=5k run, which is startup-cost-limited, not slower. the
   flat paths are untouched (loop 410M/435M). a program with no segment below the window
   (purely far) degenerates to plain paged, unchanged.
 - v9 (slim paged loop): the generic loop got the v7 treatment plus a cache widening.
