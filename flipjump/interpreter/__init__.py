@@ -4,7 +4,7 @@ runs (and debugs) compiled .fjm programs, and exposes the run() entry point and 
 TerminationStatistics result class.
 """
 
-from flipjump.interpretter.fjm_run import TerminationStatistics, run
+from flipjump.interpreter.fjm_run import TerminationStatistics, run
 
 __all__ = [
     'TerminationStatistics',

@@ -16,14 +16,14 @@ from flipjump.flipjump_quickstart import (
     assemble_and_run_test_output,
 )
 from flipjump.fjm.fjm_consts import FJMVersion, FJ_MAGIC
-from flipjump.interpretter.fjm_run import TerminationStatistics
+from flipjump.interpreter.fjm_run import TerminationStatistics
 from flipjump.utils.classes import TerminationCause
 from flipjump.utils.functions import get_stl_paths
 from flipjump.utils.exceptions import IODeviceException, FlipJumpException
-from flipjump.interpretter.io_devices.IODevice import IODevice
-from flipjump.interpretter.io_devices.FixedIO import FixedIO
-from flipjump.interpretter.io_devices.StandardIO import StandardIO
-from flipjump.interpretter.io_devices.BrokenIO import BrokenIO
+from flipjump.interpreter.io_devices.IODevice import IODevice
+from flipjump.interpreter.io_devices.FixedIO import FixedIO
+from flipjump.interpreter.io_devices.StandardIO import StandardIO
+from flipjump.interpreter.io_devices.BrokenIO import BrokenIO
 
 __all__ = [
     'assemble_run_according_to_cmd_line_args',

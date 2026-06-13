@@ -209,3 +209,12 @@ def test_read_segment_data_out_of_bounds_raises(tmp_path: Path) -> None:
     bad.write_bytes(_v1_header(segment_num=1) + segment)
     with pytest.raises(FlipJumpReadFjmException):
         Reader(bad)
+
+
+def test_assert_runnable_requires_first_op_at_address_zero(tmp_path: Path) -> None:
+    # a .fjm whose only segment is not at address 0 is a valid FILE but not a runnable program
+    not_runnable = Reader(_write(tmp_path, 16, FJMVersion.NormalVersion, 2, [10, 20]))
+    with pytest.raises(FlipJumpReadFjmException):
+        not_runnable.assert_runnable()
+    # a normal program (a segment holding the first op at address 0) passes
+    Reader(_write(tmp_path, 16, FJMVersion.NormalVersion, 0, [10, 20])).assert_runnable()

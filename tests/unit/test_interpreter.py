@@ -1,5 +1,5 @@
 """
-unit-tests for the interpreter run-loop (flipjump/interpretter/fjm_run.py).
+unit-tests for the interpreter run-loop (flipjump/interpreter/fjm_run.py).
 
 covers a real output program, each termination cause (Looping / NullIP / RuntimeMemoryError
 / EOF), the input path (via a hand-built .fjm and via the stl cat program), and the
@@ -8,10 +8,12 @@ last-ops debugging deque.
 
 from pathlib import Path
 
+import pytest
+
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.interpretter import fjm_run
-from flipjump.interpretter.io_devices.FixedIO import FixedIO
+from flipjump.interpreter import fjm_run
+from flipjump.interpreter.io_devices.FixedIO import FixedIO
 from flipjump.utils.classes import TerminationCause
 from flipjump import assemble_and_run
 from tests.unit.unit_utils import (
@@ -23,6 +25,8 @@ from tests.unit.unit_utils import (
     assemble_to_path,
     run_source,
 )
+
+from tests.unit.unit_utils import native_engine_required
 
 
 def test_hello_world_output(tmp_path: Path) -> None:
@@ -77,3 +81,26 @@ def test_last_ops_addresses_deque(tmp_path: Path) -> None:
 
     statistics_none = fjm_run.run(fjm_path, io_device=FixedIO(b''), print_time=False)
     assert statistics_none.last_ops_addresses is None
+
+
+@native_engine_required
+def test_native_run_reports_flat_storage_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv('FLIPJUMP_NO_NATIVE', raising=False)
+    monkeypatch.delenv('FLIPJUMP_NO_FLAT', raising=False)
+    statistics, _ = run_source(INFINITE_LOOP_PROGRAM, tmp_path, memory_width=32)
+    assert statistics.storage_mode == 'flat'
+
+
+@native_engine_required
+def test_run_flat_max_words_limits_the_flat_window(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv('FLIPJUMP_NO_NATIVE', raising=False)
+    fjm_path = assemble_to_path(INFINITE_LOOP_PROGRAM, tmp_path, memory_width=32)
+    statistics = fjm_run.run(fjm_path, io_device=FixedIO(b''), print_time=False, flat_max_words=4)
+    assert statistics.termination_cause == TerminationCause.Looping
+    assert statistics.storage_mode == 'hybrid'  # words 0..3 flat, the rest page-backed
+
+
+def test_python_run_storage_mode_is_none(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv('FLIPJUMP_NO_NATIVE', '1')
+    statistics, _ = run_source(INFINITE_LOOP_PROGRAM, tmp_path, memory_width=32)
+    assert statistics.storage_mode is None

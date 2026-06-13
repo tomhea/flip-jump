@@ -89,7 +89,7 @@ class Writer:
         writes the .fjm headers, segments and (might be compressed) data into the output_file.
         @note call this after finished adding data and segments and editing the Writer.
         """
-        write_tag = '<' + {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
+        word_format = {8: 'B', 16: 'H', 32: 'L', 64: 'Q'}[self.word_size]
 
         with open(self.output_file, 'wb') as f:
             f.write(pack(_header_base_format, FJ_MAGIC, self.word_size, self.version.value, len(self.segments)))
@@ -99,7 +99,7 @@ class Writer:
             for segment in self.segments:
                 f.write(pack(_segment_format, *segment))
 
-            fjm_data = b''.join(pack(write_tag, word) for word in self.data)
+            fjm_data = pack(f'<{len(self.data)}{word_format}', *self.data)
             if FJMVersion.CompressedVersion == self.version:
                 fjm_data = self._compress_data(fjm_data)
 
@@ -178,7 +178,9 @@ class Writer:
         @param data_start: the index of the data's start in the inner data array
         @param data_length: the number of words in the segment's data
         """
-        segment_addresses_str = f'seg[{self.segments}]={self.get_segment_addresses_repr(segment_start, segment_length)}'
+        segment_addresses_str = (
+            f'seg[{len(self.segments)}]={self.get_segment_addresses_repr(segment_start, segment_length)}'
+        )
 
         if segment_length <= 0:
             raise FlipJumpWriteFjmException(f"segment-length must be positive (in {segment_addresses_str}).")

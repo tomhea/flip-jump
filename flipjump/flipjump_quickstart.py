@@ -10,13 +10,13 @@ from tempfile import TemporaryDirectory
 from typing import List, Optional, Set
 
 from flipjump.assembler import assembler
-from flipjump.interpretter.debugging.breakpoints import get_breakpoint_handler
+from flipjump.interpreter.debugging.breakpoints import get_breakpoint_handler
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.interpretter import fjm_run
-from flipjump.interpretter.io_devices.FixedIO import FixedIO
-from flipjump.interpretter.io_devices.IODevice import IODevice
-from flipjump.interpretter.io_devices.StandardIO import StandardIO
+from flipjump.interpreter import fjm_run
+from flipjump.interpreter.io_devices.FixedIO import FixedIO
+from flipjump.interpreter.io_devices.IODevice import IODevice
+from flipjump.interpreter.io_devices.StandardIO import StandardIO
 from flipjump.utils.classes import TerminationCause
 from flipjump.utils.constants import (
     LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
@@ -24,7 +24,7 @@ from flipjump.utils.constants import (
     DEFAULT_MAX_MACRO_RECURSION_DEPTH,
 )
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
-from flipjump.interpretter.fjm_run import TerminationStatistics
+from flipjump.interpreter.fjm_run import TerminationStatistics
 
 
 def assemble(
@@ -79,6 +79,8 @@ def run(
     print_time: bool = True,
     print_termination: bool = True,
     last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
+    profile: bool = False,
+    flat_max_words: Optional[int] = None,
 ) -> TerminationStatistics:
     """
     runs a .fjm file (with the FlipJump interpreter)
@@ -89,6 +91,10 @@ def run(
     @param print_time: if true print running times
     @param print_termination: if true print the termination statistics
     @param last_ops_debugging_list_length: The length of the last-ops list
+    @param profile: if true collect the full per-op statistics (uses the slower featured run-loop)
+    @param flat_max_words: the native engine's flat-storage span limit, in words (2^23 by default).
+    only affects native-engine runs - ignored when a pure-python loop runs (e.g. when
+    breakpoints/tracing/profiling force the featured loop)
     @return: the run's termination-statistics
 
     :note: This is a wrapper function to the fjm_run.run() function.
@@ -104,6 +110,8 @@ def run(
         print_time=print_time,
         print_termination=print_termination,
         last_ops_debugging_list_length=last_ops_debugging_list_length,
+        profile=profile,
+        flat_max_words=flat_max_words,
     )
 
 
@@ -119,6 +127,8 @@ def debug(
     print_time: bool = True,
     print_termination: bool = True,
     last_ops_debugging_list_length: Optional[int] = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH,
+    profile: bool = False,
+    flat_max_words: Optional[int] = None,
 ) -> TerminationStatistics:
     """
     debugs a .fjm file (with the FlipJump interpreter+debugger)
@@ -134,6 +144,10 @@ def debug(
     @param print_time: if true print running times
     @param print_termination: if true print the termination statistics
     @param last_ops_debugging_list_length: The length of the last-ops list
+    @param profile: if true collect the full per-op statistics (uses the slower featured run-loop)
+    @param flat_max_words: the native engine's flat-storage span limit, in words (2^23 by default).
+    only affects native-engine runs - ignored when a pure-python loop runs (e.g. when
+    breakpoints/tracing/profiling force the featured loop)
     @return: the run's termination-statistics
 
     :note: This is a wrapper function to the fjm_run.run() function.
@@ -151,6 +165,8 @@ def debug(
         print_time=print_time,
         breakpoint_handler=breakpoint_handler if breakpoint_handler.breakpoints else None,
         last_ops_debugging_list_length=last_ops_debugging_list_length,
+        profile=profile,
+        flat_max_words=flat_max_words,
     )
     if print_termination:
         termination_statistics.print(

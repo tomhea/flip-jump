@@ -148,7 +148,7 @@ class Reader:
         self.memory = {}
         self.zeros_boundaries = []
 
-        self.memory_segments = []
+        self.memory_segments: List[MemorySegment] = []
         for segment_start, segment_length, data_start, data_length in segments:
             # data is laid out as (flip-word, jump-word) op-pairs, so its length must be even
             #  (the relative-jump reconstruction below relies on this).
@@ -161,12 +161,7 @@ class Reader:
                     f"Bad .fjm file: segment data range [{data_start}, {data_start + data_length})"
                     f" exceeds data pool length {len(data)}."
                 )
-            self.memory_segments.append(
-                MemorySegment(
-                    segment_start << (self.memory_width.bit_length() - 1),
-                    segment_length << (self.memory_width.bit_length() - 1),
-                )
-            )
+            self.memory_segments.append(MemorySegment(segment_start, segment_length))
             if self.version in (FJMVersion.RelativeJumpVersion, FJMVersion.CompressedVersion):
                 word = (1 << self.memory_width) - 1
                 for i in range(0, data_length, 2):
@@ -268,3 +263,15 @@ class Reader:
         Uninitialized addresses will return zero.
         """
         return defaultdict(lambda: 0, self.memory)
+
+    def assert_runnable(self) -> None:
+        """
+        A FlipJump program starts executing at address 0, so a segment must hold its first op
+        (bits 0..2w-1, i.e. words 0 and 1). A loaded .fjm without it is not a runnable program.
+        Raise FlipJumpReadFjmException if no segment covers the first op.
+        """
+        if not any(seg.segment_start == 0 and seg.segment_length >= 2 for seg in self.memory_segments):
+            raise FlipJumpReadFjmException(
+                "the program has no first op at address 0: no segment holds bits 0..2w-1 "
+                "(words 0 and 1), but execution starts at address 0."
+            )

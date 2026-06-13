@@ -76,7 +76,7 @@ ns stl {
 
 
     // Complexity: 1
-    //   macro for 1 flip-jump op
+    //   macro for 1 flipjump op
     def fj f, j {
         f;j
     }
@@ -132,7 +132,7 @@ ns stl {
     // Complexity: 1
 
 
-    // skip the next flip-jump op
+    // skip the next flipjump op
     def skip {
         ;$ + dw
     }

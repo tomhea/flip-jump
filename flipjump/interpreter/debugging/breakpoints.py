@@ -9,11 +9,7 @@ from pathlib import Path
 from typing import Optional, Dict, Set, Tuple
 
 from flipjump.fjm import fjm_reader
-from flipjump.interpretter.debugging.message_boxes import (
-    display_message_box,
-    display_message_box_and_get_text_answer,
-    display_message_box_with_choices_and_get_answer,
-)
+from flipjump.interpreter.debugging.user_queries import ask_for_command, show_message
 from flipjump.utils.classes import RunStatistics
 from flipjump.utils.constants import MACRO_SEPARATOR_STRING
 from flipjump.utils.exceptions import FlipJumpException
@@ -22,6 +18,29 @@ from flipjump.utils.functions import load_debugging_labels
 
 class BreakpointHandlerUnnecessary(Exception):
     pass
+
+
+DEBUGGER_HELP = (
+    "commands (one per line):\n"
+    "  h / help / ?            show this help\n"
+    "  r / read  TARGET        read a memory-word / flipjump-variable (formats below)\n"
+    "  s / step                execute one op\n"
+    "  s / skip  N             execute N more ops, then stop (N decimal or 0x-hex)\n"
+    "  c / cont / continue     run to the next breakpoint\n"
+    "  c* / ca / continue all  run to the end, ignoring all breakpoints\n"
+    "  q / quit / exit         stop the run (a keyboard-interrupt; Ctrl+C / EOF also work)\n"
+    "\n"
+    "the read TARGET can be:\n"
+    "  - a decimal, or a 0x-hex, memory address\n"
+    "  - a full label name (its address)\n"
+    "  - a flipjump variable, with a ':type:' prefix on a label/address:\n"
+    "      :bN:  a bit  vector  (e.g. :b32:integer_label)\n"
+    "      :hN:  a hex  vector  (e.g. :h8:integer_label  - an 8-hex / 32-bit value)\n"
+    "      :BN:  a byte vector  (e.g. :B4:integer_label  - 4 packed bytes)\n"
+    "  - index into an array of those: :B4:7:array_label reads the 7th 4-byte cell\n"
+    "  - :f:N:label / :j:N:label  read the flip / jump word N ops past the label\n"
+    "      (and :f/j:n:label:N  to step n*N ops forward)"
+)
 
 
 def calculate_variable_value(
@@ -103,7 +122,7 @@ def show_memory_address(
     w = mem.memory_width
 
     if address % w != 0 or address < 0 or address >= (1 << w):
-        display_message_box(
+        show_message(
             body_message=f"Failed while trying to read {user_query}:\n"
             f" The requested memory address ({address}) must be aligned"
             f" (must be divisible by {w}),\n"
@@ -117,7 +136,7 @@ def show_memory_address(
 
         if variable_prefix is None:
             memory_word_value = mem.get_word(address)
-            display_message_box(
+            show_message(
                 body_message=f'Reading {user_query}:\n'
                 f'memory[{hex(address)}] = {memory_word_value}  (or {hex(memory_word_value)}).'
                 f'{label_name}',
@@ -126,7 +145,7 @@ def show_memory_address(
             return
 
         value, first_address, last_address = calculate_variable_value(variable_prefix, address, mem)
-        display_message_box(
+        show_message(
             body_message=f'Reading the variable {user_query}:\n'
             f'memory[{hex(first_address)}, {hex(last_address)})'
             f' = {value}  (or {hex(value)}).'
@@ -135,7 +154,7 @@ def show_memory_address(
         )
 
     except FlipJumpException as fje:
-        display_message_box(
+        show_message(
             body_message=f"Failed while trying to read {user_query}:\n"
             f"Failed to read address {address}, with the error: {fje}.\n"
             f"Maybe this memory region isn't initialized in the currently running .fjm?",
@@ -192,7 +211,7 @@ class BreakpointHandler:
             except ValueError:
                 return f'{hex(address)}'
 
-    def get_message_box_body(self, ip: int, mem: fjm_reader.Reader, op_counter: int) -> str:
+    def get_breakpoint_message_body(self, ip: int, mem: fjm_reader.Reader, op_counter: int) -> str:
         """
         @return the message box body for the debug-action query, for the current ip.
         """
@@ -201,62 +220,39 @@ class BreakpointHandler:
         jump = self.get_address_str(mem.get_word(ip + mem.memory_width))
         return f'Address {address}.\n\n{op_counter} ops executed.\n\nflip {flip}.\n\njump {jump}.'
 
-    def handle_read_memory(self, mem: fjm_reader.Reader) -> None:
+    def handle_read_memory(self, target: str, mem: fjm_reader.Reader) -> None:
         """
-        This function queries the user for reading a memory-word (by its address or a label).
-        It then shows the value of the requested word, and more useful information about it.
-        The function also support reading flipjump variables (saved in label+dbit+i*dw) with the ':' prefix
-         (for example ':b32:integer_label').
+        Reads the memory-word / flipjump-variable named by 'target' (an address, a label, or a
+        ':'-prefixed flipjump-variable - see DEBUGGER_HELP), and shows its value and the most
+        useful information we know about it.
 
+        @param target: the read target the user typed after the read command.
         @param mem: the fjm_reader.Reader for the current running fj. Used for reading the actual memory values
          of the given address (or addresses if the user asked for a variable).
         """
-        result = display_message_box_and_get_text_answer(
-            body_message="What memory-word would you like to read?\n"
-            "Use any of these options:\n"
-            "- Decimal number\n"
-            "- Hexadecimal number with the '0x' prefix\n"
-            "- A full label name\n\n"
-            'You can read the jump-words of a label by using the  ":j:"  prefix.\n\n'
-            "You can also read flipjump variables (like bit.vec, hex.vec, ..),\n"
-            " with the following prefixes to the address:\n"
-            '- :bN: read bit variable (like ":b32:integer_label")\n'
-            '- :hN: read hex variable (like ":h8:integer_label")\n'
-            '- :BN: read byte variable (holds 8 bits after the dbit)'
-            ' (like ":B4:integer_label")\n\n'
-            "Also, you can index a variable in an array, by using the ':*:N:* prefix':\n"
-            '- (like ":B4:7:integer_array_label" - this will access the 7th integer\n'
-            '   in the array, so starting from byte 28 of the array\'s variables)\n'
-            '- (you can also use the ":f/j:N:label" to skip N ops forward,\n'
-            '   and also ":f/j:n:label:N" to skip n*N ops forward)\n',
-            title_message='Debug: read memory address',
-        )
-        if result is None:
-            return
-
         variable_prefix = None
-        query = result
-        match = re.match(r':([bhBfj])(\d*):(\d+:)?([^:]*)', result)
+        query = target
+        match = re.match(r':([bhBfj])(\d*):(\d+:)?([^:]*)', target)
         if match:
-            variable_type, variable_length, index_string, result = match.groups()
+            variable_type, variable_length, index_string, target = match.groups()
             if variable_length == '':
                 variable_length = '1'
             index = int(index_string[:-1]) if index_string else 0
             variable_prefix = (variable_type, int(variable_length), index)
 
-        if result in self.label_to_address:
-            show_memory_address(variable_prefix, query, self.label_to_address[result], mem, None)
+        if target in self.label_to_address:
+            show_memory_address(variable_prefix, query, self.label_to_address[target], mem, None)
             return
 
         try:
-            address = int(result)
+            address = int(target)
             show_memory_address(variable_prefix, query, address, mem, self.get_address_str(address))
         except ValueError:
             try:
-                address = int(result, 16)
+                address = int(target, 16)
                 show_memory_address(variable_prefix, query, address, mem, self.get_address_str(address))
             except ValueError:
-                display_message_box(
+                show_message(
                     body_message=f"Failed, can't resolve the address/label \"{query}\".\n"
                     f"You entered an invalid memory-address, "
                     f"or the label you entered wasn't in its full form "
@@ -264,37 +260,72 @@ class BreakpointHandler:
                     title_message='Invalid memory address.',
                 )
 
-    def query_user_for_debug_action(self, ip: int, mem: fjm_reader.Reader, op_counter: int) -> str:
+    def query_user_for_debug_action(self, ip: int, mem: fjm_reader.Reader, op_counter: int) -> Tuple[str, int]:
         """
-        query the user for the next debug-action to make, while debugging (single-step, continue, ...)
-        @return: The chosen debug-action string.
+        Run the debugger prompt at the current breakpoint, handling read/help inline and looping
+        until the user picks an action that resumes the run.
+        @return: (command, argument) - command is one of 'step' / 'skip' / 'continue' /
+         'continue_all' / 'exit'; argument is the skip-count for 'skip' (else 0).
         """
         title = "Breakpoint" if ip in self.breakpoints else "Debug Step"
-        body = self.get_message_box_body(ip, mem, op_counter)
-        actions = ['Read Memory', 'Single Step', 'Skip 10', 'Skip 100', 'Continue', 'Continue All']
+        show_message(self.get_breakpoint_message_body(ip, mem, op_counter), title)
 
-        action = display_message_box_with_choices_and_get_answer(body, title, actions, 'Continue All')
-        while action == 'Read Memory':
-            self.handle_read_memory(mem)
-            action = display_message_box_with_choices_and_get_answer(body, title, actions, 'Continue All')
+        while True:
+            line = ask_for_command('(debug, "h" for help) > ')
+            if line is None:  # EOF / Ctrl+D
+                return ('exit', 0)
+            if not line:  # empty line - just re-prompt
+                continue
 
-        return action
+            tokens = line.split()
+            command, argument = tokens[0].lower(), (tokens[1] if len(tokens) > 1 else None)
 
-    def apply_debug_action(self, action: str, op_counter: int) -> None:
+            if command in ('h', 'help', '?'):
+                show_message(DEBUGGER_HELP, 'Debugger commands')
+            elif command in ('r', 'read'):
+                if argument is None:
+                    show_message("usage: read <address/label/:variable:>  ('help' lists the formats).", 'Debugger')
+                else:
+                    self.handle_read_memory(' '.join(tokens[1:]), mem)
+            elif command in ('s', 'step') and argument is None:
+                return ('step', 0)
+            elif command in ('s', 'skip') and argument is not None:
+                try:
+                    count = int(argument, 0)  # accepts decimal and 0x-hex
+                except ValueError:
+                    show_message(f"skip needs a number (decimal or 0x-hex), got {argument!r}.", 'Debugger')
+                    continue
+                if count <= 0:
+                    show_message(f"skip needs a positive count, got {count}.", 'Debugger')
+                    continue
+                return ('skip', count)
+            elif command in ('c', 'cont', 'continue') and argument is None:
+                return ('continue', 0)
+            elif command in ('c*', 'ca') or line.lower() == 'continue all':
+                return ('continue_all', 0)
+            elif command in ('q', 'quit', 'exit'):
+                return ('exit', 0)
+            else:
+                show_message(f"unknown command {line!r}. type 'h' (or 'help') for the commands.", 'Debugger')
+
+    def apply_debug_action(self, action: Tuple[str, int], op_counter: int) -> None:
         """
-        @raise BreakpointHandlerUnnecessary for the "Continue All" action
+        @param action: the (command, argument) returned by query_user_for_debug_action.
+        @raise BreakpointHandlerUnnecessary for 'continue_all' (the handler is no longer needed).
+        @raise KeyboardInterrupt for 'exit' (stops the run as a keyboard-interrupt).
         """
-        if action == 'Single Step':
+        command, argument = action
+        if command == 'step':
             self.next_break = op_counter + 1
-        elif action == 'Skip 10':
-            self.next_break = op_counter + 10
-        elif action == 'Skip 100':
-            self.next_break = op_counter + 100
-        elif action == 'Continue':
+        elif command == 'skip':
+            self.next_break = op_counter + argument
+        elif command == 'continue':
             self.next_break = None
-        elif action == 'Continue All':
+        elif command == 'continue_all':
             self.next_break = None
             raise BreakpointHandlerUnnecessary()
+        elif command == 'exit':
+            raise KeyboardInterrupt()
 
 
 def handle_breakpoint(
@@ -311,7 +342,7 @@ def handle_breakpoint(
     print('  program break', end="", flush=True)
     with statistics.pause_timer:
         action = breakpoint_handler.query_user_for_debug_action(ip, mem, statistics.op_counter)
-    print(f': {action}')
+    print(f': {action[0]}')
 
     try:
         breakpoint_handler.apply_debug_action(action, statistics.op_counter)

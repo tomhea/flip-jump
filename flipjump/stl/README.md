@@ -50,12 +50,14 @@ Offers macros for manipulating hexadecimal variables and vectors (i.e. numbers):
 - [input.fj](hex/input.fj) - input bits into hex, input ascii as hex, input decimal (signed & unsigned)
 - [output.fj](hex/output.fj) - output hex as bits/bytes; print as hex-number (in ascii)
 - [shifts.fj](hex/shifts.fj) - shift left/right by 1 bit/hex
-- [math_basic.fj](hex/math_basic.fj) - inc/dec, neg, count_bits, sign_extend
+- [math_basic.fj](hex/math_basic.fj) - inc/dec, neg, abs, count_bits, sign_extend
 - [math.fj](hex/math.fj) - add/sub, {add/sub}_shifted, {add/sub}_constant
 - [mul.fj](hex/mul.fj) - add_mul, mul (works for signed & unsigned), mul10
 - [div.fj](hex/div.fj) - div, idiv (signed)
+- [strings.fj](hex/strings.fj) - the byte-buffer block helpers: input_ptr_line, print_ptr_text/line, fill_bytes, copy_bytes
 - [tables_init.fj](hex/tables_init.fj) - initializes the "results-tables" for the next hex macros: or,and, add,sub, cmp, mul
 - [pointers/](hex/pointers) - hex-vec pointers subdirectory: [flip](hex/pointers/xor_to_pointer.fj), [jump](hex/pointers/basic_pointers.fj), [xor_to](hex/pointers/xor_to_pointer.fj), [xor_from](hex/pointers/xor_from_pointer.fj); [stack](hex/pointers/stack.fj)/[pointers](hex/pointers/basic_pointers.fj) init. [pointer arithmetics](hex/pointers/pointer_arithmetics.fj), [stack arithmetics + push/pop](hex/pointers/stack.fj).
+
 
 ### [casting.fj](casting.fj)
 Offers casting between bits and hexes.
@@ -132,7 +134,7 @@ The FlipJump stl should be minimalistic, efficient in both space and time, and o
 The generic stl macro should look like `macro_name n dst src` for an n-bit/hex variable, with dst being the destination-variable, and src being the source-variable.
 - e.g. the [hex/math.fj](hex/math.fj) / `hex.add n, dst, src`. 
 
-For more information about contributions, see [I-Want-To-Contribute Thread](https://github.com/tomhea/flip-jump/discussions/148) and [CONTRIBUTING.md](../../CONTRIBUTING.md).
+For more information about contributions, see [I-Want-To-Contribute Thread](https://github.com/tomhea/flipjump/discussions/148) and [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 
 # Read More

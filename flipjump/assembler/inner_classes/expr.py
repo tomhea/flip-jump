@@ -80,28 +80,43 @@ class Expr:
 
     def eval_new(self, params_dict: Dict[str, Expr]) -> Expr:
         """
-        creates a new Expr, as minimal as possible.
-        replaces every string it can with its dictionary value, and evaluates any op it can.
+        returns a minimal Expr: replaces every string it can with its dictionary value, and
+        evaluates any op it can.
+        Expr objects are immutable, so unchanged (sub)expressions are returned as-is and may
+        be shared between trees - the dominant assemble-time cost used to be cloning them.
         @param params_dict: the label->ExprValue dictionary to be used
         @raise FlipJumpExprException if math op failed
-        @return: the new Expr
+        @return: this Expr if nothing was substituted, else a new minimal Expr
         """
-        if isinstance(self.value, int):
-            return Expr(self.value)
+        value = self.value
+        if isinstance(value, int):
+            return self
 
-        if isinstance(self.value, str):
-            if self.value in params_dict:
-                return params_dict[self.value].eval_new({})
-            return Expr(self.value)
+        if isinstance(value, str):
+            replacement = params_dict.get(value)
+            # params_dict values are already minimal - substituting is a node swap, not a clone
+            return replacement if replacement is not None else self
 
-        op, args = self.value
-        evaluated_args: Tuple[Expr, ...] = tuple(e.eval_new(params_dict) for e in args)
-        if all(isinstance(e.value, int) for e in evaluated_args):
+        op, args = value
+        # one pass: evaluate the args while tracking "all ints" (foldable) and "unchanged"
+        all_ints = True
+        unchanged = True
+        evaluated_args = []
+        for arg in args:
+            evaluated_arg = arg.eval_new(params_dict)
+            evaluated_args.append(evaluated_arg)
+            if evaluated_arg is not arg:
+                unchanged = False
+            if not isinstance(evaluated_arg.value, int):
+                all_ints = False
+        if all_ints:
             try:
                 return Expr(op_string_to_function[op](*(arg.value for arg in evaluated_args)))  # type: ignore[arg-type]
             except Exception as e:
                 raise FlipJumpExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
-        return Expr((op, evaluated_args))
+        if unchanged:
+            return self  # nothing was substituted
+        return Expr((op, tuple(evaluated_args)))
 
     def exact_eval(self, labels: Dict[str, int]) -> int:
         """
@@ -110,18 +125,21 @@ class Expr:
         @raise FlipJumpExprException if it can't evaluate
         @return: the integer-value of the expression
         """
-        if isinstance(self.value, int):
-            return self.value
+        value = self.value
+        if isinstance(value, int):
+            return value
 
-        if isinstance(self.value, str):
-            if self.value in labels:
-                return labels[self.value]
-            raise FlipJumpExprException(f"Can't evaluate label {self.value} in expression {self}")
+        if isinstance(value, str):
+            label_value = labels.get(value)
+            if label_value is None:
+                raise FlipJumpExprException(f"Can't evaluate label {value} in expression {self}")
+            return label_value
 
-        op, args = self.value
-        evaluated_args: Tuple[int, ...] = tuple(e.exact_eval(labels) for e in args)
+        op, args = value
         try:
-            return op_string_to_function[op](*evaluated_args)
+            return op_string_to_function[op](*(e.exact_eval(labels) for e in args))
+        except FlipJumpExprException:
+            raise
         except Exception as e:
             raise FlipJumpExprException(f'{repr(e)}. bad math operation ({op}): {str(self)}.')
 

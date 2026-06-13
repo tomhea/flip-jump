@@ -15,8 +15,9 @@ from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
 from flipjump.fjm.fjm_consts import FJMVersion, SUPPORTED_VERSIONS_NAMES
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.interpretter.io_devices.StandardIO import StandardIO
+from flipjump.interpreter.io_devices.cli_devices import IO_MODES, make_io_device, split_io_mode
 from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH, DEFAULT_MAX_MACRO_RECURSION_DEPTH
+from flipjump.utils.exceptions import IODeviceException
 from flipjump.utils.functions import get_file_tuples, get_temp_directory_suffix
 
 ErrorFunc = Callable[[str], None]
@@ -84,17 +85,25 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
     if debug_file:
         verify_file_exists(error_func, debug_file)
 
+    try:
+        io_device = make_io_device(args.io)
+    except IODeviceException as io_device_error:
+        error_func(str(io_device_error))
+        raise  # error_func exits; re-raise in case a custom error_func returns
+
     flipjump_quickstart.debug(
         in_fjm_path,
         debug_file,
         breakpoints_addresses=set(),
         breakpoints=set(args.breakpoint),
         breakpoints_contains=set(args.breakpoint_contains),
-        io_device=StandardIO(not args.no_output),
+        io_device=io_device,
         show_trace=args.trace,
         print_time=not args.silent,
         print_termination=not args.silent,
         last_ops_debugging_list_length=args.debug_ops_list,
+        profile=args.profile,
+        flat_max_words=args.flat_max_words,
     )
 
 
@@ -223,7 +232,40 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     run_arguments.add_argument('-t', '--trace', help="output every running opcode", action='store_true')
-    run_arguments.add_argument('--no_output', help="don't print the program's output", action='store_true')
+    run_arguments.add_argument(
+        '--profile',
+        help="collect the full per-op statistics (flips/jumps percentages). uses the slower featured run-loop",
+        action='store_true',
+    )
+    run_arguments.add_argument(
+        '--flat-max-words',
+        metavar='N',
+        type=_check_int_positive,
+        default=None,
+        help="the native engine's flat-storage window, in words (2^23 by default). memory below "
+        "the window runs in the fast flat array; segments reaching above it keep the slower paged "
+        "mode for that part (hybrid). raising it costs startup time and memory (8 bytes per word of "
+        "window), never per-op speed. the FLIPJUMP_FLAT_MAX_WORDS environment variable sets the same limit",
+    )
+
+    def _io_mode(value: str) -> str:
+        # the mode name (the first whitespace-separated part) must be registered; any
+        # parameters after it are validated by the mode's factory at run time.
+        mode_name, _ = split_io_mode(value)
+        if mode_name not in IO_MODES:
+            raise argparse.ArgumentTypeError(f"unknown --io mode {mode_name!r}. supported: {', '.join(IO_MODES)}")
+        return value
+
+    run_arguments.add_argument(
+        '--io',
+        metavar='MODE',
+        default='standard',
+        type=_io_mode,
+        help="the IO device. `standard` (the default) - input/output over the terminal. "
+        "`pc` - an interactive window: live keyboard input + a scaled 256-color screen "
+        "(F11 toggles fullscreen, closing it stops the run; needs pygame - "
+        "`pip install flipjump[io]`)",
+    )
 
     run_arguments.add_argument(
         '-b', '--breakpoint', metavar='NAME', default=[], nargs="+", help="pause when reaching this label"

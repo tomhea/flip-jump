@@ -12,7 +12,7 @@ import pytest
 from flipjump import assemble_run_according_to_cmd_line_args
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_reader import Reader
-from flipjump.flipjump_cli import get_version
+from flipjump.flipjump_cli import get_version, parse_arguments
 from tests.unit.unit_utils import HELLO_NO_STL, assemble_to_path
 
 
@@ -34,12 +34,29 @@ def test_cli_assemble_only(tmp_path: Path) -> None:
 
 def test_cli_run_only(tmp_path: Path) -> None:
     fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
-    assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--no_output', str(fjm_path)])
+    assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', str(fjm_path)])
 
 
 def test_cli_assemble_and_run(tmp_path: Path) -> None:
     fj_path = _write_hello(tmp_path)
-    assemble_run_according_to_cmd_line_args(cmd_line_args=['--no_stl', '-s', '--no_output', str(fj_path)])
+    assemble_run_according_to_cmd_line_args(cmd_line_args=['--no_stl', '-s', str(fj_path)])
+
+
+from tests.unit.unit_utils import native_engine_required  # noqa: E402
+
+
+@native_engine_required
+def test_cli_flat_max_words_flag_limits_the_flat_window(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path, memory_width=32)
+    assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '--flat-max-words', '4', str(fjm_path)])
+    assert 'hybrid memory' in capsys.readouterr().out  # words 0..3 flat, the rest page-backed
+
+
+@native_engine_required
+def test_cli_non_silent_run_reports_flat_memory(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path, memory_width=32)
+    assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', str(fjm_path)])
+    assert 'flat memory' in capsys.readouterr().out
 
 
 def test_cli_mutually_exclusive_asm_run(tmp_path: Path) -> None:
@@ -87,3 +104,37 @@ def test_get_version_invalid_calls_error() -> None:
 
     with pytest.raises(SystemExit):
         get_version(99, False, raise_error)
+
+
+def test_cli_invalid_flat_max_words_rejected(tmp_path: Path) -> None:
+    fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
+    with pytest.raises(SystemExit):
+        assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--flat-max-words', '0', str(fjm_path)])
+
+
+def test_cli_invalid_io_mode_rejected(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    # --io only accepts the registered mode names; rejected at parse time (no pygame needed)
+    fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
+    with pytest.raises(SystemExit):
+        assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--io', 'hologram', str(fjm_path)])
+    assert 'argument --io' in capsys.readouterr().err  # argparse rejected it, before any assemble/run
+
+
+def test_cli_io_mode_parameters_rejected(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    # mode parameters (whitespace-separated after the name) parse, but no current mode takes any
+    fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
+    with pytest.raises(SystemExit):
+        assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--io', 'standard loud', str(fjm_path)])
+    assert 'no parameters' in capsys.readouterr().err  # the factory's message reaches the user
+
+
+def test_cli_io_default_is_standard() -> None:
+    args, _ = parse_arguments(cmd_line_args=['prog.fjm'])
+    assert args.io == 'standard'
+
+
+def test_cli_no_output_flag_is_gone(tmp_path: Path) -> None:
+    # --no_output was dropped: the standard device is built only by make_io_device()
+    fjm_path = assemble_to_path(HELLO_NO_STL.read_text(), tmp_path)
+    with pytest.raises(SystemExit):
+        assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--no_output', str(fjm_path)])

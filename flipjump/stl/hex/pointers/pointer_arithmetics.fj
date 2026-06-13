@@ -36,8 +36,9 @@ ns hex {
         hex.sub_constant w/4, ptr, value * dw
     }
 
-    //  Time Complexity:  w(2.25@+5.25)    // for w=64
-    // Space Complexity:  w(2.25@+40)      // for w=64
+    //  Time Complexity:  w(2.25@+5.25)
+    // Space Complexity:  w(2.25@+40)
+    // @note: The complexity is calculated for w=64. For w=32/16, add 0.25@/0.5@ in both complexities.
     //   dst[:w/4] = ptr + index*2w     (the address of the index-th dw-aligned op past *ptr)
     // dst, ptr are hex[:w/4]; index is a signed hex[:w/4]. Works for negative index too.
     // @requires hex.add.init (or hex.init)
