@@ -5,8 +5,8 @@ exposes the program as a word-addressable memory dictionary for the interpreter.
 """
 
 import dataclasses
-import os
 import lzma
+import os
 import struct
 from collections import defaultdict
 from enum import IntEnum
@@ -116,9 +116,11 @@ class Reader:
         # program, which on a slow filesystem (WSL's /mnt/c: ~10 ms each) took 6-31 s, where this takes 0.1.
         # (at most the rest of the file is read, so a damaged segment_num can't ask for more memory than that)
         table_size = self.segment_num * _segment_size
-        position = fjm_file.tell()
-        file_size = os.fstat(fjm_file.fileno()).st_size
-        table = fjm_file.read(min(table_size, max(0, file_size - position)))
+        try:
+            remaining = max(0, os.fstat(fjm_file.fileno()).st_size - fjm_file.tell())
+        except (OSError, ValueError):  # not a regular file (a pipe, an in-memory buffer): read what is asked
+            remaining = table_size
+        table = fjm_file.read(min(table_size, remaining))
         if len(table) != table_size:
             raise struct.error(f'the segment table needs {table_size} bytes, the file has {len(table)} left')
         return list(struct.iter_unpack(_segment_format, table))

@@ -45,8 +45,10 @@ def clean_flat_mode_env(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(var, raising=False)
 
 
-def _write_simple(path: Path, version: FJMVersion = FJMVersion.NormalVersion, **flags: int) -> Path:
-    writer = Writer(path, 16, version, **flags)
+def _write_simple(
+    path: Path, version: FJMVersion = FJMVersion.NormalVersion, *, run_flags: int = 0, io_mode: int = 0
+) -> Path:
+    writer = Writer(path, 16, version, run_flags=run_flags, io_mode=io_mode)
     writer.add_simple_segment_with_data(0, [0, 0])
     writer.write_to_file()
     return path
@@ -75,9 +77,9 @@ def test_the_flags_default_to_zero(tmp_path: Path) -> None:
 def test_a_base_version_file_has_no_flags(tmp_path: Path) -> None:
     header = read_fjm_header(_write_simple(tmp_path / 'x.fjm', FJMVersion.BaseVersion))
     assert (header.run_flags, header.io_mode) == (0, 0)
-    for flags in ({'run_flags': 1}, {'io_mode': 1}):
+    for run_flags, io_mode in ((1, 0), (0, 1)):
         with pytest.raises(FlipJumpWriteFjmException):
-            Writer(tmp_path / 'y.fjm', 16, FJMVersion.BaseVersion, **flags)
+            Writer(tmp_path / 'y.fjm', 16, FJMVersion.BaseVersion, run_flags=run_flags, io_mode=io_mode)
 
 
 @pytest.mark.parametrize('flags', [{'run_flags': 2}, {'run_flags': 3}, {'run_flags': 1 << 31}, {'io_mode': 2}])
@@ -647,11 +649,12 @@ def test_the_segment_table_is_read_in_one_read(tmp_path: Path) -> None:
 
     class CountingFile:
         def __init__(self, handle: Any) -> None:
-            self.handle, self.reads = handle, []
+            self.handle = handle
+            self.reads: List[int] = []
 
         def read(self, size: int = -1) -> bytes:
             self.reads.append(size)
-            return self.handle.read(size)
+            return bytes(self.handle.read(size))
 
         def __getattr__(self, name: str) -> Any:
             return getattr(self.handle, name)
@@ -663,7 +666,7 @@ def test_the_segment_table_is_read_in_one_read(tmp_path: Path) -> None:
     assert counting.reads.count(500 * 32) == 1 and len(counting.reads) <= 3  # base header, extension, the table
 
 
-@pytest.mark.parametrize('missing', [1, 32, 33])
+@pytest.mark.parametrize('missing', [1, 31, 32])
 def test_a_truncated_segment_table_is_rejected(tmp_path: Path, missing: int) -> None:
     path = _write_simple(tmp_path / 'x.fjm')
     raw = path.read_bytes()
