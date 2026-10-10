@@ -790,6 +790,12 @@ def macro_resolve_error(
     raise FlipJumpPreprocessorException(error_str) from orig_exception
 
 
+# a macro-expansion's progress slice thinner than this is not tracked any deeper (see PreprocessorData)
+_PROGRESS_MIN_SLICE = 1e-5
+# ...and progress is reported only when it moved at least this much (one call per macro call is too many)
+_PROGRESS_MIN_STEP = 1e-4
+
+
 class PreprocessorData:
     """
     maintains the preprocessor "global" data structures, throughout its recursion.
@@ -900,11 +906,34 @@ class PreprocessorData:
         self._reloc_stack: List[Tuple[int, Deque[LastPhaseOp]]] = []
         self._pool_segment: Optional[NewSegment] = None
 
+        # PROGRESS (off unless on_progress is given): each macro expansion owns a slice [lo, hi) of
+        # the [0, 1) progress line, split evenly among its ops; a macro call / rep iteration takes its
+        # op's sub-slice. Only CALLS look at it -- a plain op pays nothing -- and a slice thinner than
+        # _PROGRESS_MIN_SLICE is not tracked (None) below it, so the bookkeeping stays tiny.
+        self.on_progress: Optional[Callable[[float], None]] = None
+        self.progress_slice: Optional[Tuple[float, float]] = None
+        self._progress_reported = -1.0
+
         self.max_recursion_depth = max_recursion_depth
         # set python's recursion-limit so the preprocessor's own depth-check (at max_recursion_depth)
         #  triggers before python's RecursionError. Set it unconditionally - whether it's higher or lower than the
         #  current limit - so that raising max_recursion_depth actually allows deeper macro-recursion.
         sys.setrecursionlimit(max_recursion_depth + GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH)
+
+    def enter_progress_slice(
+        self, macro_slice: Tuple[float, float], op_index: int, ops_count: int, part: int, parts: int
+    ) -> None:
+        """a call at op `op_index` of a macro owning `macro_slice` (its `part`-th of `parts` rep
+        iterations): report where it starts, and make its sub-slice the callee's"""
+        lo, hi = macro_slice
+        op_width = (hi - lo) / ops_count
+        width = op_width / parts
+        start = lo + op_width * op_index + width * part
+        if start - self._progress_reported >= _PROGRESS_MIN_STEP:
+            self._progress_reported = start
+            assert self.on_progress is not None
+            self.on_progress(start)
+        self.progress_slice = (start, start + width) if width >= _PROGRESS_MIN_SLICE else None
 
     def patch_last_wflip_address(self) -> None:
         self.last_new_segment.wflip_start_address = self.curr_address
@@ -1327,8 +1356,13 @@ def resolve_macro_aux(
             next_macro_path = (
                 f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else ""
             ) + f"{op.code_position.short_str()}:{op.macro_name}"
+            progress_slice = preprocessor_data.progress_slice
+            if progress_slice is not None:
+                preprocessor_data.enter_progress_slice(progress_slice, op_index, len(current_macro.ops), 0, 1)
             with preprocessor_data.prepare_macro_call(op):
                 resolve_macro_aux(preprocessor_data, op.macro_name, op.arguments, next_macro_path)
+            if progress_slice is not None:
+                preprocessor_data.progress_slice = progress_slice
 
         elif isinstance(op, RepCall):
             # Make the rep iterator hygienic: rename it (and its references in the rep's arguments)
@@ -1346,12 +1380,19 @@ def resolve_macro_aux(
             next_macro_path = (
                 f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else ""
             ) + f"{op.code_position.short_str()}:rep{{}}:{op.macro_name}"
+            progress_slice = preprocessor_data.progress_slice
             with preprocessor_data.prepare_macro_call(op):
                 for i in range(rep_times):
                     op.current_index = i
+                    if progress_slice is not None:
+                        preprocessor_data.enter_progress_slice(
+                            progress_slice, op_index, len(current_macro.ops), i, rep_times
+                        )
                     resolve_macro_aux(
                         preprocessor_data, op.macro_name, op.calculate_arguments(i), next_macro_path.format(i)
                     )
+            if progress_slice is not None:
+                preprocessor_data.progress_slice = progress_slice
 
         elif isinstance(op, Segment):
             op = op.eval_new(params_dict)
@@ -1380,6 +1421,7 @@ def resolve_macros(
     max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
     save_debug_labels: bool = True,
     table_pool: Optional[TablePool] = None,
+    on_progress: Optional[Callable[[float], None]] = None,
 ) -> Tuple[OpsQueue, LabelsDict]:
     """
     unwind the macro tree to a serialized-queue of ops,
@@ -1395,11 +1437,16 @@ def resolve_macros(
     @param save_debug_labels: record the per-expansion `...---:start:` macro-start labels. They are
     unreachable from fj source (see PreprocessorData.insert_macro_start_label), so a caller that is
     not writing a debugging file can pass False. It cannot change the emitted .fjm.
+    @param on_progress: if given, called with the expansion's progress, a fraction in [0, 1) - by how
+    far into the main macro (and the calls in it) the expansion is. It cannot change the emitted .fjm.
     @return: tuple of the queue of ops, and the labels' dictionary
     """
     preprocessor_data = PreprocessorData(
         memory_width, macros, max_recursion_depth, save_debug_labels=save_debug_labels, table_pool=table_pool
     )
+    if on_progress is not None:
+        preprocessor_data.on_progress = on_progress
+        preprocessor_data.progress_slice = (0.0, 1.0)
     resolve_macro_aux(preprocessor_data, INITIAL_MACRO_NAME, INITIAL_ARGS, INITIAL_LABELS_PREFIX)
 
     preprocessor_data.finish(show_statistics)

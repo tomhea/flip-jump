@@ -173,12 +173,31 @@ The interpreter's IO is pluggable: `--io MODE` picks one complete IO device.
 fj --run program.fjm --io pc
 ```
 
-- **`--io standard`** (the default) - input/output over the terminal.
+- **`--io standard`** - input/output over the terminal.
 - **`--io pc`** - an interactive window: live keyboard input **and** a scaled 256-color screen,
   in one window the device owns (F11 toggles fullscreen, closing it stops the run). Needs
   pygame-ce (`pip install flipjump[io]`); works on Windows, Linux and macOS. ⚠ pygame-ce, NOT
   upstream pygame: they share a module name, so the wrong one is silent -- the window code
   requires `pygame.IS_CE` and refuses otherwise.
+
+A program can carry its own defaults, compiled into the `.fjm` header, so `fj --run program.fjm` is
+all it takes to run it:
+
+```bash
+fj --asm game.fj -o game.fjm --io-mode 1 --run-flags 1   # io mode 1 = pc; run flag 1 = flat memory
+fj --run game.fjm                                        # runs with the pc window, in flat memory
+```
+
+- **`--io-mode NUMBER`** (assembling): the default io device - `0` standard (the default), `1` pc.
+  `--io MODE` still overrides it at run time.
+- **`--run-flags NUMBER`** (32 bits, all off by default): bit 0 (the value `1`) = **flat memory**, as
+  if `--flat-memory` were given - the whole program in the native engine's flat array, sized to its
+  highest segment (fastest; costs memory for the whole span). When assembling, the flags are
+  compiled in; when running, `--run-flags` overrides the compiled ones. If the program asks for flat
+  memory and the allocation fails, the run stops and says so - `--run-flags 0` runs it in the
+  default (slower) memory.
+
+Any other value of either is a bad-flags error, both when assembling and when reading a `.fjm`.
 
 Each mode is one complete `IODevice` that owns all of its channels (and window, if any).
 Adding a new device (e.g. a windowed text console, or one that also

@@ -7,15 +7,17 @@ and checks get_version's defaulting/validation logic.
 
 import re
 from pathlib import Path
+from typing import Any, List, Optional, Tuple
 
 import pytest
 
 from flipjump import assemble_run_according_to_cmd_line_args
 from flipjump.utils.exceptions import FlipJumpParsingException
 from flipjump.fjm.fjm_consts import FJMVersion
-from flipjump.fjm.fjm_reader import Reader
-from flipjump.flipjump_cli import get_version, parse_arguments
-from tests.unit.unit_utils import HELLO_NO_STL, assemble_to_path
+from flipjump.fjm.fjm_reader import Reader, read_fjm_header
+from flipjump.interpreter import fjm_run
+from flipjump.flipjump_cli import FLAT_MEMORY_AUTO_MAX_WORDS, get_version, parse_arguments
+from tests.unit.unit_utils import HELLO_NO_STL, MINIMAL_STARTUP, assemble_to_path
 
 
 def _write_hello(tmp_path: Path) -> Path:
@@ -307,9 +309,10 @@ def test_cli_io_mode_parameters_rejected(tmp_path: Path, capsys: pytest.CaptureF
     assert 'no parameters' in capsys.readouterr().err  # the factory's message reaches the user
 
 
-def test_cli_io_default_is_standard() -> None:
+def test_cli_io_default_is_the_programs_io_mode() -> None:
+    # no --io: the io mode compiled into the .fjm decides (standard unless it was assembled with --io-mode)
     args, _ = parse_arguments(cmd_line_args=['prog.fjm'])
-    assert args.io == 'standard'
+    assert args.io is None
 
 
 def test_cli_no_output_flag_is_gone(tmp_path: Path) -> None:
@@ -328,3 +331,67 @@ def test_cli_flipjump_version_flag(flag: str, capsys: pytest.CaptureFixture[str]
         parse_arguments(cmd_line_args=[flag])
     assert exc_info.value.code == 0
     assert capsys.readouterr().out.strip() == f'flipjump {__version__}'
+
+
+# w=32 looping programs whose small reserved segment ends 4 words past `top`: the span decides the
+# flat window (the native engine's default window is 2^23 words; the CLI's automatic limit is 2^24)
+def _high_segment_program(top: int) -> str:
+    return MINIMAL_STARTUP + f'''
+startup
+loop: ;loop
+
+segment {top} * w
+reserve 4 * w
+'''
+
+
+_SMALL_TOP, _BIG_TOP = 1 << 23, FLAT_MEMORY_AUTO_MAX_WORDS
+
+
+def test_the_header_span_is_the_highest_segment_end(tmp_path: Path) -> None:
+    fjm_path = assemble_to_path(_high_segment_program(_SMALL_TOP), tmp_path, memory_width=32)
+    expected = max(seg.segment_start + seg.segment_length for seg in Reader(fjm_path).memory_segments)
+    assert read_fjm_header(fjm_path).span_words == expected == _SMALL_TOP + 4
+
+
+def test_cli_flat_memory_flag_parses_and_excludes_flat_max_words() -> None:
+    args, _ = parse_arguments(cmd_line_args=['--run', '--flat-memory', 'x.fjm'])
+    assert args.flat_memory and args.flat_max_words is None
+    with pytest.raises(SystemExit):
+        parse_arguments(cmd_line_args=['--run', '--flat-memory', '--flat-max-words', '4', 'x.fjm'])
+
+
+def _run_modes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, top: int, *runs: List[str]
+) -> List[Tuple[Optional[int], Optional[str]]]:
+    """run the program (span top + 4) once per extra-argument list; -> [(flat_max_words passed, storage mode)]"""
+    for var in ('FLIPJUMP_NO_NATIVE', 'FLIPJUMP_NO_FLAT', 'FLIPJUMP_FLAT_MAX_WORDS'):
+        monkeypatch.delenv(var, raising=False)
+    fjm_path = assemble_to_path(_high_segment_program(top), tmp_path, memory_width=32)
+    seen: List[Tuple[Optional[int], Optional[str]]] = []
+    real_run = fjm_run.run
+
+    def spy(*a: Any, **kw: Any) -> Any:
+        stats = real_run(*a, **kw)
+        seen.append((kw.get('flat_max_words'), stats.storage_mode))
+        return stats
+
+    monkeypatch.setattr(fjm_run, 'run', spy)
+    for extra in runs:
+        assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', *extra, str(fjm_path)])
+    return seen
+
+
+@native_engine_required
+def test_cli_small_span_runs_flat_without_flags(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # span 2^23 + 4 <= 2^24: automatic --flat-memory (the engine default alone would be 'hybrid');
+    # an explicit --flat-max-words still wins
+    seen = _run_modes(tmp_path, monkeypatch, _SMALL_TOP, [], ['--flat-max-words', '4'])
+    assert seen == [(_SMALL_TOP + 4, 'flat'), (4, 'hybrid')]
+
+
+@native_engine_required
+def test_cli_big_span_needs_the_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # span 2^24 + 4 > 2^24: no automatic window (the engine default -> 'hybrid'); --flat-memory -> 'flat'
+    seen = _run_modes(tmp_path, monkeypatch, _BIG_TOP, [], ['--flat-memory'])
+    assert seen == [(None, 'hybrid'), (_BIG_TOP + 4, 'flat')]

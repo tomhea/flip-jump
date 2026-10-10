@@ -7,7 +7,7 @@ LZMA compression settings used by the compressed version.
 
 import lzma
 from enum import Enum
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 """
 struct {
@@ -16,7 +16,8 @@ struct {
     u64 version;
     u64 segment_num;
     { // for versions > 0
-        u64 flags;
+        u32 run_flags;  // how to run it by default (RUN_FLAG_*); `fj --run-flags` overrides
+        u32 io_mode;    // the default io device (IO_MODE_*); `fj --io` overrides
         u32 reserved;   // 0
     }
     struct segment {
@@ -38,8 +39,42 @@ _reserved_dict_threshold = 1000
 _header_base_format = '<HHQQ'
 _header_base_size = 2 + 2 + 8 + 8
 
-_header_extension_format = '<QL'
-_header_extension_size = 8 + 4
+_header_extension_format = '<LLL'
+_header_extension_size = 4 + 4 + 4
+
+# the header's io_mode: the io device a program runs with when `fj --run` is not given --io.
+# (these were once the low/high halves of a u64 `flags` that nothing read. fj wrote 0 there unless
+# given `-f N`, so old files read unchanged: the standard io and no run flags. a file written with a
+# nonzero -f now reads as bad flags.)
+IO_MODE_STANDARD = 0
+IO_MODE_PC = 1
+IO_MODE_NAMES: Dict[int, str] = {IO_MODE_STANDARD: 'standard', IO_MODE_PC: 'pc'}
+
+# the header's run_flags: 32 bits, all off by default.
+# bit 0 - flat memory: run with the whole program in the native engine's flat array (`--flat-memory`).
+RUN_FLAG_FLAT_MEMORY = 1 << 0
+VALID_RUN_FLAGS = RUN_FLAG_FLAT_MEMORY
+
+
+def bad_run_flags_message(run_flags: int) -> Optional[str]:
+    """@return: why these run flags are invalid, or None when they are valid"""
+    if not 0 <= run_flags < (1 << 32):
+        return f'bad run flags {run_flags}: must be a 32-bit unsigned number'
+    if run_flags & ~VALID_RUN_FLAGS:
+        return (
+            f'bad run flags {run_flags:#x}: only bit 0 (flat memory, {RUN_FLAG_FLAT_MEMORY}) is defined, '
+            f'so the value must be 0 or {RUN_FLAG_FLAT_MEMORY}'
+        )
+    return None
+
+
+def bad_io_mode_message(io_mode: int) -> Optional[str]:
+    """@return: why this io mode is invalid, or None when it is valid"""
+    if io_mode not in IO_MODE_NAMES:
+        supported = ', '.join(f'{number} ({name})' for number, name in IO_MODE_NAMES.items())
+        return f'bad io mode {io_mode}: supported io modes are {supported}'
+    return None
+
 
 _segment_format = '<QQQQ'
 _segment_size = 8 + 8 + 8 + 8
@@ -47,7 +82,7 @@ _segment_size = 8 + 8 + 8 + 8
 
 class FJMVersion(Enum):
     BaseVersion = 0  # initial version, minimal structure
-    NormalVersion = 1  # added flags and reserved
+    NormalVersion = 1  # added run flags, io mode and reserved
     RelativeJumpVersion = 2  # compress-friendly: jumps in data are saved relative to their address
     CompressedVersion = 3  # version 2 but data is lzma2-compressed
 

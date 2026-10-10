@@ -4,10 +4,11 @@ built on the sly library, it tokenizes and parses .fj source files into the macr
 macro definitions and the operations (flips, jumps, labels, etc.) that make up each macro.
 """
 
+import os
 import re
 from os import path
 from pathlib import Path
-from typing import Set, List, Tuple, Dict, Optional, Union
+from typing import Callable, Iterator, Set, List, Tuple, Dict, Optional, Union
 
 import sly
 
@@ -17,6 +18,7 @@ from sly.lex import Token
 # noinspection PyProtectedMember
 from sly.yacc import YaccProduction as ParsedRule
 
+from flipjump.utils.progress import clear_progress_line
 from flipjump.utils.exceptions import FlipJumpExprException, FlipJumpParsingException
 from flipjump.assembler.inner_classes.expr import Expr, get_minimized_expr
 from flipjump.assembler.inner_classes.ops import (
@@ -63,6 +65,8 @@ def syntax_error_at(code_position: CodePosition, msg: str = '') -> None:
         error_string = f"Syntax Error in {code_position}"
     all_errors += f"{error_string}\n"
 
+    clear_progress_line()
+
     print(error_string)
 
 
@@ -78,6 +82,7 @@ def syntax_warning(line: int, is_error: bool, msg: str = '') -> None:
         error_occurred = True
         all_errors += f"{error_string}\n"
 
+    clear_progress_line()
     print(error_string)
 
 
@@ -261,6 +266,7 @@ class FJLexer(sly.Lexer):
 
         error_string = f"Lexing Error in {get_position(self.lineno)}: {t.value[0]}"
         all_errors += f"{error_string}\n"
+        clear_progress_line()
         print(error_string)
 
         self.index += 1
@@ -541,6 +547,7 @@ class FJParser(sly.Parser):
             error_string = f'Syntax Error in {get_position(token.lineno)}, token=("{token.type}", {token.value})'
 
         all_errors += f"{error_string}\n"
+        clear_progress_line()
         print(error_string)
 
     # Parsing Rules:
@@ -939,12 +946,26 @@ def validate_current_file(files_seen: Set[Union[str, Path]]) -> None:
     files_seen.add(abs_path)
 
 
-def lex_parse_curr_file(lexer: FJLexer, parser: FJParser) -> None:
+# report the parsing progress once per this many tokens
+_PROGRESS_TOKENS = 4096
+
+
+def _tokens_reporting_progress(tokens: Iterator[Token], on_position: Callable[[int], None]) -> Iterator[Token]:
+    """pass the lexer's tokens through, calling on_position(the token's offset in the file) now and then"""
+    for count, token in enumerate(tokens):
+        if count % _PROGRESS_TOKENS == 0:
+            on_position(token.index)
+        yield token
+
+
+def lex_parse_curr_file(lexer: FJLexer, parser: FJParser, on_position: Optional[Callable[[int], None]] = None) -> None:
     global curr_text, curr_namespace
     curr_text = curr_file.open('r', encoding='utf-8').read()
     curr_namespace = []
 
     lex_res = lexer.tokenize(curr_text)
+    if on_position is not None:
+        lex_res = _tokens_reporting_progress(lex_res, on_position)
     exit_if_errors()
 
     parser.parse(lex_res)
@@ -1021,7 +1042,12 @@ def _snapshot_parser_to_cache(parser: FJParser, cache_key: _StlCacheKey) -> None
 
 
 def _parse_files_into_parser(
-    parser: FJParser, lexer: FJLexer, input_files: List[Tuple[str, Path]], memory_width: int, warning_as_errors: bool
+    parser: FJParser,
+    lexer: FJLexer,
+    input_files: List[Tuple[str, Path]],
+    memory_width: int,
+    warning_as_errors: bool,
+    on_progress: Optional[Callable[[float], None]] = None,
 ) -> None:
     """
     lex+parse every input file into the parser, transparently using the stl-prefix cache:
@@ -1043,11 +1069,24 @@ def _parse_files_into_parser(
             validate_current_file(files_seen)
         first_uncached_index = prefix_length
 
+    # the progress is measured in bytes of source, the files to parse in order (a cached prefix counts as done)
+    sizes = [os.path.getsize(path) if on_progress is not None else 0 for _, path in input_files]
+    total_size = max(1, sum(sizes))
     for file_index, (curr_file_short_name, curr_file) in enumerate(input_files):
         if file_index < first_uncached_index:
             continue
         validate_current_file(files_seen)
-        lex_parse_curr_file(lexer, parser)
+        on_position = None
+        if on_progress is not None:
+            done_before = sum(sizes[:file_index])
+
+            def on_position(position: int, done_before: int = done_before, file_size: int = sizes[file_index]) -> None:
+                # the token offset counts characters of the read text; the sizes count bytes of the files
+                assert on_progress is not None
+                file_part = position * file_size / max(1, len(curr_text))
+                on_progress(min(1.0, (done_before + file_part) / total_size))
+
+        lex_parse_curr_file(lexer, parser, on_position)
         if cache_key is not None and file_index == prefix_length - 1:
             _snapshot_parser_to_cache(parser, cache_key)
 
@@ -1057,6 +1096,7 @@ def parse_macro_tree(
     memory_width: int,
     warning_as_errors: bool,
     defines_file: Optional[Path] = None,
+    on_progress: Optional[Callable[[float], None]] = None,
 ) -> Dict[MacroName, Macro]:
     """
     parse the .fj files and create a macro-dictionary.
@@ -1066,6 +1106,7 @@ def parse_macro_tree(
     @param warning_as_errors:[in]: treat warnings as errors (stop execution on warnings)
     @param defines_file:[in]: the -D file among input_files, if any. Constants declared in it
     OVERRIDE the declaration elsewhere instead of adding one - see FJParser.statement.
+    @param on_progress:[in]: if given, called now and then with the fraction of the source parsed so far.
     @return: the macro-dictionary.
     """
     global error_occurred, all_errors, curr_file, curr_file_short_name
@@ -1078,7 +1119,7 @@ def parse_macro_tree(
     lexer = FJLexer()
     parser = FJParser(memory_width, warning_as_errors, input_files[0], defines_file)
 
-    _parse_files_into_parser(parser, lexer, input_files, memory_width, warning_as_errors)
+    _parse_files_into_parser(parser, lexer, input_files, memory_width, warning_as_errors, on_progress)
 
     # -D may only OVERRIDE: a define that never met a declaration is a typo, and silently
     # accepting it is how a misspelled -D looks exactly like a working one.

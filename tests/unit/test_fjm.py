@@ -125,7 +125,7 @@ def test_writer_bad_memory_width_raises(tmp_path: Path) -> None:
 
 def test_writer_base_version_with_flags_raises(tmp_path: Path) -> None:
     with pytest.raises(FlipJumpWriteFjmException):
-        Writer(tmp_path / 'x.fjm', 16, FJMVersion.BaseVersion, flags=1)
+        Writer(tmp_path / 'x.fjm', 16, FJMVersion.BaseVersion, run_flags=1)
 
 
 def test_writer_compressed_bad_lzma_preset_raises(tmp_path: Path) -> None:
