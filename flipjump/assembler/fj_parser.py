@@ -18,6 +18,7 @@ from sly.lex import Token
 # noinspection PyProtectedMember
 from sly.yacc import YaccProduction as ParsedRule
 
+from flipjump.utils.progress import clear_progress_line
 from flipjump.utils.exceptions import FlipJumpExprException, FlipJumpParsingException
 from flipjump.assembler.inner_classes.expr import Expr, get_minimized_expr
 from flipjump.assembler.inner_classes.ops import (
@@ -79,6 +80,7 @@ def syntax_warning(line: int, is_error: bool, msg: str = '') -> None:
         error_occurred = True
         all_errors += f"{error_string}\n"
 
+    clear_progress_line()
     print(error_string)
 
 
@@ -1074,9 +1076,11 @@ def _parse_files_into_parser(
         if on_progress is not None:
             done_before = sum(sizes[:file_index])
 
-            def on_position(position: int, done_before: int = done_before) -> None:
+            def on_position(position: int, done_before: int = done_before, file_size: int = sizes[file_index]) -> None:
+                # the token offset counts characters of the read text; the sizes count bytes of the files
                 assert on_progress is not None
-                on_progress(min(1.0, (done_before + position) / total_size))
+                file_part = position * file_size / max(1, len(curr_text))
+                on_progress(min(1.0, (done_before + file_part) / total_size))
 
         lex_parse_curr_file(lexer, parser, on_position)
         if cache_key is not None and file_index == prefix_length - 1:

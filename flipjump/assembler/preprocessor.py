@@ -792,6 +792,8 @@ def macro_resolve_error(
 
 # a macro-expansion's progress slice thinner than this is not tracked any deeper (see PreprocessorData)
 _PROGRESS_MIN_SLICE = 1e-5
+# ...and progress is reported only when it moved at least this much (one call per macro call is too many)
+_PROGRESS_MIN_STEP = 1e-4
 
 
 class PreprocessorData:
@@ -910,6 +912,7 @@ class PreprocessorData:
         # _PROGRESS_MIN_SLICE is not tracked (None) below it, so the bookkeeping stays tiny.
         self.on_progress: Optional[Callable[[float], None]] = None
         self.progress_slice: Optional[Tuple[float, float]] = None
+        self._progress_reported = -1.0
 
         self.max_recursion_depth = max_recursion_depth
         # set python's recursion-limit so the preprocessor's own depth-check (at max_recursion_depth)
@@ -926,8 +929,10 @@ class PreprocessorData:
         op_width = (hi - lo) / ops_count
         width = op_width / parts
         start = lo + op_width * op_index + width * part
-        assert self.on_progress is not None
-        self.on_progress(start)
+        if start - self._progress_reported >= _PROGRESS_MIN_STEP:
+            self._progress_reported = start
+            assert self.on_progress is not None
+            self.on_progress(start)
         self.progress_slice = (start, start + width) if width >= _PROGRESS_MIN_SLICE else None
 
     def patch_last_wflip_address(self) -> None:
@@ -1356,7 +1361,8 @@ def resolve_macro_aux(
                 preprocessor_data.enter_progress_slice(progress_slice, op_index, len(current_macro.ops), 0, 1)
             with preprocessor_data.prepare_macro_call(op):
                 resolve_macro_aux(preprocessor_data, op.macro_name, op.arguments, next_macro_path)
-            preprocessor_data.progress_slice = progress_slice
+            if progress_slice is not None:
+                preprocessor_data.progress_slice = progress_slice
 
         elif isinstance(op, RepCall):
             # Make the rep iterator hygienic: rename it (and its references in the rep's arguments)
@@ -1385,7 +1391,8 @@ def resolve_macro_aux(
                     resolve_macro_aux(
                         preprocessor_data, op.macro_name, op.calculate_arguments(i), next_macro_path.format(i)
                     )
-            preprocessor_data.progress_slice = progress_slice
+            if progress_slice is not None:
+                preprocessor_data.progress_slice = progress_slice
 
         elif isinstance(op, Segment):
             op = op.eval_new(params_dict)

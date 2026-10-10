@@ -43,8 +43,9 @@ _header_extension_format = '<LLL'
 _header_extension_size = 4 + 4 + 4
 
 # the header's io_mode: the io device a program runs with when `fj --run` is not given --io.
-# (these were once the low/high halves of a u64 `flags` that nothing read; every file written then
-# has 0 there, which is the standard io and no run flags, so old files read unchanged.)
+# (these were once the low/high halves of a u64 `flags` that nothing read. fj wrote 0 there unless
+# given `-f N`, so old files read unchanged: the standard io and no run flags. a file written with a
+# nonzero -f now reads as bad flags.)
 IO_MODE_STANDARD = 0
 IO_MODE_PC = 1
 IO_MODE_NAMES: Dict[int, str] = {IO_MODE_STANDARD: 'standard', IO_MODE_PC: 'pc'}
@@ -81,7 +82,7 @@ _segment_size = 8 + 8 + 8 + 8
 
 class FJMVersion(Enum):
     BaseVersion = 0  # initial version, minimal structure
-    NormalVersion = 1  # added flags and reserved
+    NormalVersion = 1  # added run flags, io mode and reserved
     RelativeJumpVersion = 2  # compress-friendly: jumps in data are saved relative to their address
     CompressedVersion = 3  # version 2 but data is lzma2-compressed
 

@@ -105,6 +105,11 @@ class Reader:
                 _header_extension_format, fjm_file.read(_header_extension_size)
             )
 
+    @property
+    def flags(self) -> int:
+        """the header's run flags and io mode as the one u64 they replaced (run_flags low, io_mode high)"""
+        return self.run_flags | (self.io_mode << 32)
+
     def _init_segments(self, fjm_file: BinaryIO) -> List[Tuple[int, int, int, int]]:
         return [unpack(_segment_format, fjm_file.read(_segment_size)) for _ in range(self.segment_num)]
 
@@ -152,6 +157,7 @@ class Reader:
         return data
 
     def _init_memory(self, segments: List[Tuple[int, int, int, int]], data: List[int]) -> None:
+        validate_segments(segments, len(data))
         self.memory = {}
         self.zeros_boundaries = []
 
@@ -167,6 +173,10 @@ class Reader:
                 raise FlipJumpReadFjmException(
                     f"Bad .fjm file: segment data range [{data_start}, {data_start + data_length})"
                     f" exceeds data pool length {len(data)}."
+                )
+            if data_length > segment_length:
+                raise FlipJumpReadFjmException(
+                    f"Bad .fjm file: segment data-length {data_length} exceeds its segment-length {segment_length}."
                 )
             self.memory_segments.append(MemorySegment(segment_start, segment_length))
             if self.version in (FJMVersion.RelativeJumpVersion, FJMVersion.CompressedVersion):
@@ -354,16 +364,74 @@ def read_fjm_raw(input_file: Path, on_progress: Optional[Callable[[float], None]
     with open(input_file, 'rb') as fjm_file:
         header = _read_header(fjm_file, input_file)
         file_data = fjm_file.read()
-    if FJMVersion.CompressedVersion != header.version:
-        return header, file_data
+    if FJMVersion.CompressedVersion == header.version:
+        file_data = _decompress_in_chunks(file_data, on_progress)
+    word_bytes = header.memory_width // 8
+    if len(file_data) % word_bytes != 0:
+        raise FlipJumpReadFjmException(
+            f"Bad file {input_file}, can't unpack: its data is {len(file_data)} bytes, "
+            f"not a whole number of {header.memory_width}-bit words."
+        )
+    validate_segments(header.segments, len(file_data) // word_bytes)
+    return header, file_data
 
-    decompressor = lzma.LZMADecompressor(format=_LZMA_FORMAT, filters=_LZMA_DECOMPRESSION_FILTERS)
+
+def _decompress_in_chunks(file_data: bytes, on_progress: Optional[Callable[[float], None]]) -> bytes:
+    """
+    exactly lzma.decompress(file_data, format=_LZMA_FORMAT, filters=...), fed in chunks so its progress
+    can be reported: the data must end with a complete stream; further streams after it are decoded
+    too, and junk after the last stream is ignored - as lzma.decompress does.
+    """
+    damaged = 'Error: The compressed data is damaged; Unable to decompress.'
     parts = []
-    try:
-        for offset in range(0, len(file_data), _DECOMPRESS_CHUNK):
-            parts.append(decompressor.decompress(file_data[offset : offset + _DECOMPRESS_CHUNK]))  # noqa: E203
-            if on_progress is not None:
-                on_progress(min(1.0, (offset + _DECOMPRESS_CHUNK) / len(file_data)))
-    except lzma.LZMAError as e:
-        raise FlipJumpReadFjmException('Error: The compressed data is damaged; Unable to decompress.') from e
-    return header, b''.join(parts)
+    remaining = file_data
+    first_stream = True
+    while True:
+        decompressor = lzma.LZMADecompressor(format=_LZMA_FORMAT, filters=_LZMA_DECOMPRESSION_FILTERS)
+        position = 0
+        try:
+            while position < len(remaining) and not decompressor.eof:
+                chunk = remaining[position : position + _DECOMPRESS_CHUNK]  # noqa: E203
+                position += len(chunk)
+                parts.append(decompressor.decompress(chunk))
+                if on_progress is not None:
+                    on_progress(min(1.0, (len(file_data) - len(remaining) + position) / len(file_data)))
+        except lzma.LZMAError as e:
+            if first_stream:
+                raise FlipJumpReadFjmException(damaged) from e
+            break  # junk after the last stream (lzma.decompress ignores it too)
+        if not decompressor.eof:
+            raise FlipJumpReadFjmException(damaged)
+        remaining = decompressor.unused_data + remaining[position:]
+        if not remaining:
+            break
+        first_stream = False
+    return b''.join(parts)
+
+
+def validate_segments(segments: List[Tuple[int, int, int, int]], data_words: int) -> None:
+    """
+    the checks every segment of a .fjm must pass before it is loaded: an even data length within the data
+    pool, data that fits its segment, and segments that don't overlap (the writer guarantees all of these;
+    a file that breaks them is damaged).
+    """
+    for segment_start, segment_length, data_start, data_length in segments:
+        if data_length % 2 != 0:
+            raise FlipJumpReadFjmException(
+                f"Bad .fjm file: segment data-length must be even (an integer number of ops), got {data_length}."
+            )
+        if data_start + data_length > data_words:
+            raise FlipJumpReadFjmException(
+                f"Bad .fjm file: segment data range [{data_start}, {data_start + data_length})"
+                f" exceeds data pool length {data_words}."
+            )
+        if data_length > segment_length:
+            raise FlipJumpReadFjmException(
+                f"Bad .fjm file: segment data-length {data_length} exceeds its segment-length {segment_length}."
+            )
+    ordered = sorted((start, start + length) for start, length, _, _ in segments)
+    for (start, end), (next_start, _next_end) in zip(ordered, ordered[1:]):
+        if next_start < end:
+            raise FlipJumpReadFjmException(
+                f"Bad .fjm file: segments [{hex(start)}, {hex(end)}) and [{hex(next_start)}, ...) overlap (in words)."
+            )

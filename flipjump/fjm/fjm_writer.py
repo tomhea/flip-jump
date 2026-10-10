@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
 # the data is compressed in chunks of this many bytes, so the compression's progress can be shown.
 # the LZMA2 encoder's output does not depend on how its input is fed: chunked and one-shot
-# compression give the same bytes (tests/unit/test_fjm.py checks it).
+# compression give the same bytes (tests/unit/test_run_flags.py::test_chunked_compression_equals_one_shot).
 _COMPRESS_CHUNK = 1 << 20
 
 # PERF (doom-flipjump, 2026-08-20): the word array's typecode per memory-width.
@@ -181,9 +181,13 @@ class Writer:
             for segment in self.segments:
                 f.write(pack(_segment_format, *segment))
 
+            if progress is not None:
+                progress.update(0, stage='packing')
             fjm_data = _pack_words_little_endian(self.data, self.word_size)
             if FJMVersion.CompressedVersion == self.version:
                 fjm_data = self._compress_data(fjm_data, progress)
+            if progress is not None:
+                progress.update(1.0, stage='writing')
 
             f.write(fjm_data)
 

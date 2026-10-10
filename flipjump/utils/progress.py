@@ -7,22 +7,25 @@ terminal does the line come alive while the stage runs:
 
       loading memory:  ███████████████▋░░░░░░░░░░░░░░  52%  0:01 · 0:01 left  decompressing
 
-The bar is drawn on one line (carriage return, no scrolling) and redrawn at most ~12 times a
-second, so a caller may report progress from a hot loop as long as it does so every few thousand
-items (`active` tells it whether to bother at all). `FLIPJUMP_PROGRESS=0` turns the bars off;
-`NO_COLOR` keeps them but drops the color.
+The bar is drawn on one line (carriage return, no scrolling), fitted to the terminal's width, and
+redrawn at most ~12 times a second, so a caller may report progress from a hot loop as long as it
+does so every few thousand items (`active` tells it whether to bother at all). Anything else that
+prints while a bar is up should call `clear_progress_line()` first. `FLIPJUMP_PROGRESS=0` turns the
+bars off; a non-empty `NO_COLOR` keeps them but drops the color.
 """
 
 from __future__ import annotations
 
+import atexit
 import os
 import shutil
 import sys
 from time import monotonic, time
-from typing import Any, Optional, TextIO
+from typing import Any, Dict, Optional, TextIO, Tuple
 
 _REDRAW_SECONDS = 0.08
-_BAR_WIDTH = 30
+_BAR_WIDTH = 30  # cells, at most; a narrow terminal gets a shorter bar
+_MIN_BAR_WIDTH = 8
 _PARTIALS = ' ▏▎▍▌▋▊▉'  # eighths of a cell, for a smooth leading edge
 _FULL, _EMPTY = '█', '░'
 _ASCII_FULL, _ASCII_EMPTY = '#', '-'
@@ -33,10 +36,26 @@ _COLOR_BAR = '\x1b[36m'  # cyan
 _COLOR_DIM = '\x1b[2m'
 _COLOR_RESET = '\x1b[0m'
 
+# the bar currently on screen, if any (see clear_progress_line)
+_shown_bar: Optional['ProgressBar'] = None
+# the console modes changed to show color, restored at exit: {handle: original mode}
+_changed_console_modes: Dict[int, int] = {}
+
+
+def _restore_console_modes() -> None:
+    try:
+        import ctypes
+
+        kernel32 = getattr(ctypes, 'windll').kernel32
+        for handle, mode in _changed_console_modes.items():
+            kernel32.SetConsoleMode(handle, mode)
+    except Exception:  # noqa: BLE001 - best effort, at exit
+        return
+
 
 def _enable_windows_vt(stream: TextIO) -> bool:
-    """turn on ANSI escape processing in a Windows console (off by default in the classic one).
-    @return: whether escapes will render"""
+    """turn on ANSI escape processing in a Windows console (off by default in the classic one); the
+    original mode is restored at exit. @return: whether escapes will render"""
     if os.name != 'nt':
         return True
     try:
@@ -52,7 +71,12 @@ def _enable_windows_vt(stream: TextIO) -> bool:
         enable_virtual_terminal_processing = 0x0004
         if mode.value & enable_virtual_terminal_processing:
             return True
-        return bool(kernel32.SetConsoleMode(handle, mode.value | enable_virtual_terminal_processing))
+        if not kernel32.SetConsoleMode(handle, mode.value | enable_virtual_terminal_processing):
+            return False
+        if not _changed_console_modes:
+            atexit.register(_restore_console_modes)
+        _changed_console_modes.setdefault(handle, mode.value)
+        return True
     except Exception:  # noqa: BLE001 - any failure just means no color
         return False
 
@@ -63,6 +87,13 @@ def _can_encode(stream: TextIO, text: str) -> bool:
         return True
     except (UnicodeEncodeError, LookupError):
         return False
+
+
+def _terminal_columns(stream: TextIO) -> int:
+    try:
+        return os.get_terminal_size(stream.fileno()).columns
+    except (AttributeError, ValueError, OSError):
+        return shutil.get_terminal_size((100, 24)).columns
 
 
 def _format_seconds(seconds: float) -> str:
@@ -81,6 +112,14 @@ def progress_enabled(stream: Optional[TextIO] = None) -> bool:
         return stream.isatty()
     except (AttributeError, ValueError):
         return False
+
+
+def clear_progress_line() -> None:
+    """erase the progress bar on screen (if one is), so that other output starts on a clean line; the
+    bar is drawn again below it at its next update"""
+    bar = _shown_bar
+    if bar is not None:
+        bar.clear()
 
 
 class ProgressBar:
@@ -119,23 +158,30 @@ class ProgressBar:
         self._drawn_width = 0
         self._spin = 0
         self._unicode = self.active and _can_encode(self.stream, _FULL + _EMPTY + _PARTIALS + _SPINNER + '·')
-        self._color = self.active and 'NO_COLOR' not in os.environ and _enable_windows_vt(self.stream)
+        self._color = self.active and not os.environ.get('NO_COLOR') and _enable_windows_vt(self.stream)
 
     def __enter__(self) -> 'ProgressBar':
+        global _shown_bar
         self._start_wall = time()
         self._start = monotonic()
         if self.print_time:
             if self.active:
+                _shown_bar = self
                 self._draw(force=True)
             else:
                 print(self.init_message, end='', flush=True, file=self.stream)
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        global _shown_bar
         if not self.print_time:
             return
         elapsed = f'{time() - self._start_wall:.3f}s'
+        if exc_type is not None:
+            elapsed = f'stopped after {elapsed}'
         if self.active:
+            if _shown_bar is self:
+                _shown_bar = None
             line = self.init_message + elapsed
             padding = ' ' * max(0, self._drawn_width - len(line))
             print('\r' + line + padding, file=self.stream, flush=True)
@@ -143,8 +189,9 @@ class ProgressBar:
             print(elapsed, file=self.stream, flush=True)
 
     def set_total(self, total: Optional[float]) -> None:
+        """change the total (None: a spinner, for a part whose size is unknown)"""
         self.total = total
-        self._draw()
+        self._draw(force=True)
 
     def update(self, done: float, *, stage: Optional[str] = None) -> None:
         """report the absolute progress (in units of `total`), and optionally the current sub-stage"""
@@ -155,18 +202,55 @@ class ProgressBar:
             return
         self._draw()
 
-    def _bar(self, fraction: float) -> str:
+    def clear(self) -> None:
+        """erase the bar's line (it is drawn again at the next update)"""
+        if self.active and self._drawn_width:
+            self.stream.write('\r' + ' ' * self._drawn_width + '\r')
+            self.stream.flush()
+            self._drawn_width = 0
+
+    def _bar(self, fraction: float, width: int) -> str:
         if self._unicode:
-            eighths = int(fraction * _BAR_WIDTH * 8)
+            eighths = int(fraction * width * 8)
             full, partial = divmod(eighths, 8)
-            filled = _FULL * full + (_PARTIALS[partial] if full < _BAR_WIDTH and partial else '')
-            empty = _EMPTY * (_BAR_WIDTH - len(filled))
+            filled = _FULL * full + (_PARTIALS[partial] if full < width and partial else '')
+            empty = _EMPTY * (width - len(filled))
         else:
-            full = int(fraction * _BAR_WIDTH)
-            filled, empty = _ASCII_FULL * full, _ASCII_EMPTY * (_BAR_WIDTH - full)
+            full = int(fraction * width)
+            filled, empty = _ASCII_FULL * full, _ASCII_EMPTY * (width - full)
         if self._color:
             return f'{_COLOR_BAR}{filled}{_COLOR_DIM}{empty}{_COLOR_RESET}'
         return filled + empty
+
+    def _line(self, elapsed: float, columns: int) -> Tuple[str, int]:
+        """the bar's part of the line, and its visible width: the whole line stays under `columns`, so
+        it never wraps (a wrapped line would leave a stale copy at every redraw)"""
+        room = columns - 1 - len(self.init_message)
+        dot = '·' if self._unicode else '-'
+        if self.total:
+            fraction = min(1.0, max(0.0, self.done / self.total))
+            percent = f' {int(fraction * 100):3d}%'
+            timing = f'  {_format_seconds(elapsed)}'
+            if fraction >= 0.02 and elapsed >= 1:
+                timing += f' {dot} {_format_seconds(elapsed * (1 - fraction) / fraction)} left'
+            if room - len(percent) - len(timing) < _MIN_BAR_WIDTH:
+                timing = ''  # a narrow terminal: drop the times before the bar
+            bar_width = min(_BAR_WIDTH, room - len(percent) - len(timing))
+            if bar_width < _MIN_BAR_WIDTH:
+                plain = percent.strip()[: max(0, room)]
+                return plain, len(plain)
+            plain_body = '#' * bar_width + percent + timing
+            body = self._bar(fraction, bar_width) + percent + timing
+        else:
+            spinner = _SPINNER if self._unicode else _ASCII_SPINNER
+            self._spin = (self._spin + 1) % len(spinner)
+            plain_body = body = f'{spinner[self._spin]} {_format_seconds(elapsed)}'[: max(0, room)]
+        stage = f'  {self.stage}' if self.stage else ''
+        stage = stage[: max(0, room - len(plain_body))]
+        visible = len(plain_body) + len(stage)
+        if self._color and stage:
+            stage = f'{_COLOR_DIM}{stage}{_COLOR_RESET}'
+        return body + stage, visible
 
     def _draw(self, *, force: bool = False) -> None:
         if not self.active or not self.print_time:
@@ -175,28 +259,12 @@ class ProgressBar:
         if not force and now - self._last_draw < _REDRAW_SECONDS:
             return
         self._last_draw = now
-        elapsed = now - self._start
-        dot = '·' if self._unicode else '-'
-        if self.total:
-            fraction = min(1.0, max(0.0, self.done / self.total))
-            timing = _format_seconds(elapsed)
-            if fraction >= 0.02 and elapsed >= 1:
-                timing += f' {dot} {_format_seconds(elapsed * (1 - fraction) / fraction)} left'
-            body = f'{self._bar(fraction)} {int(fraction * 100):3d}%  {timing}'
-            visible = _BAR_WIDTH + 6 + len(timing)
-        else:
-            spinner = _SPINNER if self._unicode else _ASCII_SPINNER
-            self._spin = (self._spin + 1) % len(spinner)
-            body = f'{spinner[self._spin]} {_format_seconds(elapsed)}'
-            visible = len(body)
-        line_width = shutil.get_terminal_size((100, 24)).columns - 1
-        stage = f'  {self.stage}' if self.stage else ''
-        room = line_width - len(self.init_message) - visible
-        stage = stage[: max(0, room)]
-        width = len(self.init_message) + visible + len(stage)
-        if self._color and stage:
-            stage = f'{_COLOR_DIM}{stage}{_COLOR_RESET}'
+        columns = _terminal_columns(self.stream)
+        if columns - 1 <= len(self.init_message):
+            return  # no room for a bar at all; the stage's time is still printed at the end
+        body, visible = self._line(now - self._start, columns)
+        width = len(self.init_message) + visible
         padding = ' ' * max(0, self._drawn_width - width)
         self._drawn_width = width
-        self.stream.write('\r' + self.init_message + body + stage + padding)
+        self.stream.write('\r' + self.init_message + body + padding)
         self.stream.flush()

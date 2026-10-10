@@ -15,6 +15,7 @@ import pytest
 
 from flipjump import flipjump_quickstart
 from flipjump.fjm.fjm_consts import FJMVersion
+from flipjump.fjm.fjm_reader import read_fjm_header
 from flipjump.interpreter import fjm_run
 from flipjump.utils import progress as progress_module
 from flipjump.utils.progress import ProgressBar
@@ -155,7 +156,7 @@ def test_the_loading_bar_moves_forward(tmp_path: Path) -> None:
             real_update(done, **kwargs)
 
         bar.update = update  # type: ignore[method-assign]
-        fjm_run._load_native(fjm_path, None, False, bar)
+        fjm_run._load_native(fjm_path, read_fjm_header(fjm_path), None, False, bar)
     _assert_moves_forward_within_0_1(recorder.values)
     assert recorder.values[-1] == 1.0
 
@@ -176,3 +177,43 @@ def test_labels_resolve_reports_its_share_of_ops_resolved(tmp_path: Path, monkey
     flipjump_quickstart.assemble([CAT_PROGRAM], tmp_path / 'cat.fjm', print_time=False)
     _assert_moves_forward_within_0_1(recorder.values)
     assert len(recorder.values) > 10 and recorder.values[0] < 0.5 and recorder.values[-1] == 1.0
+
+
+def _screen_row(output: str) -> str:
+    """what a one-row terminal shows after `output`: '\r' returns to column 0, characters overwrite"""
+    row: List[str] = []
+    column = 0
+    for char in output.rstrip('\n'):
+        if char == '\r':
+            column = 0
+            continue
+        if column < len(row):
+            row[column] = char
+        else:
+            row.append(char)
+        column += 1
+    return ''.join(row)
+
+
+@pytest.mark.parametrize('stage', ['', 'compressing'])
+@pytest.mark.parametrize('columns', [200, 100, 60, 40, 24])
+def test_the_finished_line_leaves_nothing_of_the_bar_on_screen(
+    monkeypatch: pytest.MonkeyPatch, stage: str, columns: int
+) -> None:
+    monkeypatch.setattr(progress_module, '_terminal_columns', lambda stream: columns)
+    stream = _Terminal()
+    with ProgressBar('  labels resolve:  ', stream=stream, total=1.0) as bar:
+        bar._start -= 75  # long enough to show the time left
+        bar.update(0.6, stage=stage)
+    frames = stream.getvalue().split('\r')
+    assert all(len(frame) < columns for frame in frames[:-1])  # a drawn bar never wraps (the last line is PrintTimer's)
+    shown = _screen_row(stream.getvalue())
+    assert shown.rstrip() == frames[-1].rstrip() and shown.rstrip().endswith('s')
+
+
+def test_clear_progress_line_erases_the_bar_before_other_output() -> None:
+    stream = _Terminal()
+    with ProgressBar('  parsing:  ', stream=stream, total=1.0) as bar:
+        bar.update(0.5, stage='half')
+        progress_module.clear_progress_line()
+        assert _screen_row(stream.getvalue()).strip() == ''

@@ -682,7 +682,21 @@ static uint64_t mem_flat_words_limit(MemoryObject* m)
    WARNS to stderr and falls back to paged (set FLIPJUMP_NO_FLAT=1 to opt into paged silently);
    but no segments, or no segment in the low window (the first op at address 0), RAISE - those
    are malformed programs, not resource limits. */
+static int mem_decide_storage_once(MemoryObject* m);
+
+/* a failed decision (a malformed program, or a flat window that must but cannot be allocated) leaves the
+   storage UNdecided, so a later decide_storage()/run() reports the same error instead of running paged */
 static int mem_decide_storage(MemoryObject* m)
+{
+    const int was_decided = m->storage_decided;
+    const int result = mem_decide_storage_once(m);
+    if (result < 0 && !was_decided) {
+        m->storage_decided = 0;
+    }
+    return result;
+}
+
+static int mem_decide_storage_once(MemoryObject* m)
 {
     uint64_t max_end = 0, low_max_end = 0, limit, i;
     Py_ssize_t seg;
@@ -1089,6 +1103,10 @@ static PyObject* Memory_set_words_bytes(MemoryObject* self, PyObject* args)
     Page* page = NULL;
     uint64_t page_index = 0, i;
     if (!PyArg_ParseTuple(args, "KSKK|p", &start_word, &data, &data_word_offset, &count, &relative_jumps)) {
+        return NULL;
+    }
+    if (word_bytes == 0) {
+        PyErr_SetString(PyExc_RuntimeError, "set_words_bytes on a Memory that was never initialized");
         return NULL;
     }
     if (PyBytes_AsStringAndSize(data, &buffer, &buffer_length) < 0) {

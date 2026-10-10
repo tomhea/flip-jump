@@ -541,7 +541,8 @@ def assemble(
         with ProgressBar('  create binary:   ', print_time=print_time, total=1.0) as progress:
             fjm_writer.write_to_file(progress if progress.active else None)
             if debugging_file_path is not None:
-                progress.update(1.0, stage='debugging file')
+                progress.set_total(None)  # a spinner: the labels are written in one go
+                progress.update(0, stage='debugging file')
             save_debugging_labels(debugging_file_path, labels)
 
     except FlipJumpException as fj_exception:
