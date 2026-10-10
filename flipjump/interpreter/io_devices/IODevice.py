@@ -30,6 +30,9 @@ class IODevice(ABC):
         the default implementation ignores it.
         """
 
+    def close(self) -> None:
+        """release what the device holds (e.g. its window). the default holds nothing."""
+
     @abstractmethod
     def read_bit(self) -> bool:
         return False

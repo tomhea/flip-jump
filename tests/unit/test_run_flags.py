@@ -27,7 +27,7 @@ from flipjump.fjm.fjm_consts import (
 )
 from flipjump.fjm.fjm_reader import Reader, read_fjm_header
 from flipjump.fjm.fjm_writer import Writer
-from flipjump.interpreter import fjm_run
+from flipjump.interpreter import fjm_run, run_defaults
 from flipjump.interpreter.io_devices.StandardIO import StandardIO
 from flipjump.utils.exceptions import FlipJumpReadFjmException, FlipJumpWriteFjmException
 from flipjump.utils.progress import ProgressBar
@@ -170,7 +170,7 @@ def _high_segment_program(top: int) -> str:
     return MINIMAL_STARTUP + f'\nstartup\nloop: ;loop\n\nsegment {top} * w\nreserve 4 * w\n'
 
 
-_BIG_TOP = flipjump_cli.FLAT_MEMORY_AUTO_MAX_WORDS
+_BIG_TOP = run_defaults.FLAT_MEMORY_AUTO_MAX_WORDS
 
 
 def _set_run_flags(fjm_path: Path, run_flags: int) -> None:
