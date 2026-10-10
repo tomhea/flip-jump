@@ -15,6 +15,7 @@ from typing import Tuple, List, Callable, Optional
 from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
 from flipjump.fjm.fjm_consts import FJMVersion, SUPPORTED_VERSIONS_NAMES
+from flipjump.fjm.fjm_reader import read_memory_span_words
 from flipjump.fjm.fjm_writer import Writer
 from flipjump.interpreter.io_devices.cli_devices import IO_MODES, make_io_device, split_io_mode
 from flipjump.utils.constants import (
@@ -108,8 +109,27 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
         print_termination=not args.silent,
         last_ops_debugging_list_length=args.debug_ops_list,
         profile=args.profile,
-        flat_max_words=args.flat_max_words,
+        flat_max_words=_flat_window_words(args, in_fjm_path),
     )
+
+
+# with neither --flat-memory nor --flat-max-words, a program whose span is at most this many words runs
+# fully flat on its own (at most 8 bytes per word: up to 128MB); a larger span keeps the engine's default
+FLAT_MEMORY_AUTO_MAX_WORDS = 1 << 24
+
+
+def _flat_window_words(args: argparse.Namespace, in_fjm_path: Path) -> Optional[int]:
+    """
+    the native engine's flat window, in words. --flat-memory sizes it to the program's highest segment
+    end; --flat-max-words sets it explicitly; with neither, the program's span is used when it is at most
+    FLAT_MEMORY_AUTO_MAX_WORDS, else None (the engine's default window).
+    """
+    if args.flat_max_words is not None:
+        return int(args.flat_max_words)
+    span = max(1, read_memory_span_words(in_fjm_path))
+    if getattr(args, 'flat_memory', False) or span <= FLAT_MEMORY_AUTO_MAX_WORDS:
+        return span
+    return None
 
 
 def get_version(version: Optional[int], is_outfile_specified: bool, error_func: ErrorFunc) -> FJMVersion:
@@ -259,7 +279,16 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         help="collect the full per-op statistics (flips/jumps percentages). uses the slower featured run-loop",
         action='store_true',
     )
-    run_arguments.add_argument(
+    flat_window = run_arguments.add_mutually_exclusive_group()
+    flat_window.add_argument(
+        '--flat-memory',
+        help="put the whole program in the native engine's fast flat array: the window is sized to the "
+        "end of the .fjm's highest segment (read from its header). costs memory for that whole span "
+        "(up to 8 bytes per word, gaps included); an allocation that fails falls back to paged mode. "
+        "without this flag or --flat-max-words, programs spanning up to 2^24 words get this automatically",
+        action='store_true',
+    )
+    flat_window.add_argument(
         '--flat-max-words',
         metavar='N',
         type=_check_int_positive,

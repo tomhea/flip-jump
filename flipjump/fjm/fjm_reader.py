@@ -275,3 +275,22 @@ class Reader:
                 "the program has no first op at address 0: no segment holds bits 0..2w-1 "
                 "(words 0 and 1), but execution starts at address 0."
             )
+
+
+def read_memory_span_words(input_file: Path) -> int:
+    """
+    the end of the program's highest segment, in words: the flat-storage window that holds every
+    segment (what `fj --run --flat-memory` passes as flat_max_words). reads only the header and
+    the segment table - the memory itself is not decompressed.
+    @param input_file: the path to the .fjm file
+    @return: max(segment_start + segment_length) over the segments, or 0 when there are none
+    """
+    reader = Reader.__new__(Reader)
+    try:
+        with open(input_file, 'rb') as fjm_file:
+            reader._init_header_fields(fjm_file)
+            reader._validate_header()
+            segments = reader._init_segments(fjm_file)
+    except struct.error as se:
+        raise FlipJumpReadFjmException(f"Bad file {input_file}, can't unpack. Maybe it's not a .fjm file?") from se
+    return max((start + length for start, length, _data_start, _data_length in segments), default=0)
