@@ -548,13 +548,38 @@ def test_a_damaged_later_stream_contributes_nothing() -> None:
         assert bytes(_decompress_in_chunks(data, None, expected_size)) == expected
 
 
-@pytest.mark.parametrize('data_start', [1 << 60, 1 << 37, 1 << 28])
-def test_a_huge_data_offset_is_rejected_without_allocating_it(tmp_path: Path, data_start: int) -> None:
-    # the decompression buffer is sized from the (not yet validated) segment table - a damaged one must
-    # still be rejected like the Reader rejects it, not crash or allocate gigabytes
-    stream = lzma.compress(bytes(16), format=_LZMA_FORMAT, filters=_lzma_compression_filters(128, 6))
+def _random_letters(size: int) -> bytes:
+    import random
+
+    generator = random.Random(11)  # nosec B311 - deterministic test data, not security
+    return bytes(generator.choice(b'ABCD') for _ in range(size))
+
+
+@pytest.mark.parametrize('data_start_words', [1 << 60, 1 << 37, 1 << 28, 2_000_000_000])
+def test_a_huge_data_offset_is_rejected_without_allocating_it(tmp_path: Path, data_start_words: int) -> None:
+    # the decompression buffer may only grow with the decoded data, never to what a damaged segment table
+    # claims: a ~1.5 MB stream (2,000,000,000 words = 16 GB claimed, inside an "8192x the compressed size"
+    # bound) must be rejected like the Reader rejects it, with the buffer's peak bounded by the real data
+    import tracemalloc
+
+    from flipjump.fjm.fjm_reader import _DECOMPRESS_CHUNK, read_fjm_raw
+
+    data = _random_letters(6_000_000)
+    stream = lzma.compress(data, format=_LZMA_FORMAT, filters=_lzma_compression_filters(128, 0))
+    assert len(stream) > _DECOMPRESS_CHUNK
     path = tmp_path / 'x.fjm'
-    path.write_bytes(_raw_fjm(64, [(0, 2, 0, 2), (100, 2, data_start, 2)], stream, version=3))
+    path.write_bytes(_raw_fjm(64, [(0, 2, 0, 2), (100, 2, data_start_words, 2)], stream, version=3))
+    tracemalloc.start()
+    try:
+        with pytest.raises(FlipJumpReadFjmException, match='exceeds data pool length'):
+            read_fjm_raw(path)
+        _current, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    # the buffer starts at 16x the compressed size and then grows with the data: tens of MB here, where
+    # trusting the claimed offset would be gigabytes
+    limit = 16 * len(stream) + 4 * len(data) + 3 * len(stream)
+    assert peak < limit, f'{peak:,} bytes allocated for {len(data):,} bytes of data'
     _both_readers_reject(path, 'exceeds data pool length')
 
 

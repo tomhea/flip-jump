@@ -335,8 +335,9 @@ def read_fjm_header(input_file: Path) -> FjmHeader:
         return _read_header(fjm_file, input_file)
 
 
-# an upper bound on how much LZMA2 data can expand (measured ~6,861x on 256 MB of zeros)
-_LZMA_MAX_EXPANSION = 8192
+# the decompression buffer starts at this many times the compressed size (doom-flipjump's 51M-word
+# program expands ~9.4x, so it is allocated once); it grows by doubling, up to the size the segments imply
+_INITIAL_EXPANSION = 16
 # the decompression is fed in chunks of this many compressed bytes, so its progress can be shown
 _DECOMPRESS_CHUNK = 1 << 20
 
@@ -381,19 +382,20 @@ def _decompress_in_chunks(
     that size up front and filled in place (growing it piece by piece re-copies it on every resize)
     """
     damaged = 'Error: The compressed data is damaged; Unable to decompress.'
-    # the size comes from the (not yet validated) segment table: trust it only as far as LZMA2 can expand
-    # (~6,900x at most), so a damaged header cannot make this allocate gigabytes before it is rejected
-    output = bytearray(expected_size if 0 <= expected_size <= _LZMA_MAX_EXPANSION * len(file_data) else 0)
+    # the size comes from the (not yet validated) segment table, so it is only a CAP on how big the buffer
+    # may grow ahead of the data: the buffer starts at what the compressed size makes plausible and doubles
+    # as decoded bytes arrive - a damaged table costs at most ~2x the real data, never its own claim
+    expected_size = max(0, expected_size)
+    output = bytearray(min(expected_size, _INITIAL_EXPANSION * len(file_data)))
     size = 0
 
     def put(piece: bytes) -> None:
         nonlocal size
         end = size + len(piece)
-        if end <= len(output):
-            output[size:end] = piece
-        else:
-            del output[size:]
-            output.extend(piece)
+        if end > len(output):
+            grown = max(end, min(expected_size, 2 * len(output)))
+            output.extend(bytes(grown - len(output)))
+        output[size:end] = piece
         size = end
 
     remaining = file_data
