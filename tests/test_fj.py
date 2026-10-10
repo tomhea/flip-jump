@@ -40,7 +40,7 @@ class CompileTestArgs:
         fjm_out_path: str,
         word_size__str: str,
         version__str: str,
-        flags__str: str,
+        run_flags__str: str,
         use_stl__str: str,
         warning_as_errors__str: str,
     ):
@@ -69,7 +69,7 @@ class CompileTestArgs:
 
         self.word_size = int(word_size__str)
         self.version = int(version__str)
-        self.flags = int(flags__str)
+        self.run_flags = int(run_flags__str)
 
     def __repr__(self) -> str:
         return self.test_name
@@ -93,7 +93,10 @@ def test_compile(compile_args: CompileTestArgs) -> None:
     create_parent_directories(compile_args.fjm_out_path)
 
     fjm_writer = Writer(
-        compile_args.fjm_out_path, compile_args.word_size, FJMVersion(compile_args.version), flags=compile_args.flags
+        compile_args.fjm_out_path,
+        compile_args.word_size,
+        FJMVersion(compile_args.version),
+        run_flags=compile_args.run_flags,
     )
 
     assembler.assemble(

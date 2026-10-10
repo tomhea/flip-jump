@@ -1,7 +1,7 @@
 """
 the .fjm file writer.
 writes a compiled flipjump program to an .fjm binary - emitting the header, the data
-and segments, and the metadata (flags) - with support for the different fjm versions
+and segments, and the metadata (the run flags and io mode) - with support for the different fjm versions
 and optional LZMA compression.
 """
 
@@ -11,7 +11,7 @@ import lzma
 import sys
 from pathlib import Path
 from struct import pack
-from typing import Dict, Iterable, List, Sequence, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING
 
 from flipjump.fjm.fjm_consts import (
     FJ_MAGIC,
@@ -23,8 +23,18 @@ from flipjump.fjm.fjm_consts import (
     _LZMA_FORMAT,
     _lzma_compression_filters,
     FJMVersion,
+    bad_io_mode_message,
+    bad_run_flags_message,
 )
 from flipjump.utils.exceptions import FlipJumpWriteFjmException
+
+if TYPE_CHECKING:
+    from flipjump.utils.progress import ProgressBar
+
+# the data is compressed in chunks of this many bytes, so the compression's progress can be shown.
+# the LZMA2 encoder's output does not depend on how its input is fed: chunked and one-shot
+# compression give the same bytes (tests/unit/test_fjm.py checks it).
+_COMPRESS_CHUNK = 1 << 20
 
 # PERF (doom-flipjump, 2026-08-20): the word array's typecode per memory-width.
 # `array` typecodes are platform-sized, so the itemsize is CHECKED at runtime before use and the
@@ -81,7 +91,8 @@ class Writer:
         memory_width: int,
         version: FJMVersion,
         *,
-        flags: int = 0,
+        run_flags: int = 0,
+        io_mode: int = 0,
         lzma_preset: int = lzma.PRESET_DEFAULT,
         lzma_fast: bool = False,
     ):
@@ -90,7 +101,8 @@ class Writer:
         @param output_file: [in,out]: the path to the .fjm file
         @param memory_width: the memory-width
         @param version: the file's version
-        @param flags: the file's flags
+        @param run_flags: how the program runs by default (fjm_consts.RUN_FLAG_*; `fj --run-flags` overrides it)
+        @param io_mode: the io device it runs with by default (fjm_consts.IO_MODE_*; `fj --io` overrides it)
         @param lzma_preset: the preset to be used when compressing the .fjm data
         @param lzma_fast: compress with the fast match finder (encoder-only; same dict_size, so any
         reader still reads it). Much faster, ~33% larger.
@@ -101,10 +113,11 @@ class Writer:
             raise FlipJumpWriteFjmException(
                 f'Error: unsupported version ({version}, this program supports {str(SUPPORTED_VERSIONS_NAMES)}).'
             )
-        if flags < 0 or flags >= (1 << 64):
-            raise FlipJumpWriteFjmException(f"flags must be a 64bit positive number, not {flags}")
-        if FJMVersion.BaseVersion == version and flags != 0:
-            raise FlipJumpWriteFjmException("version 0 does not support the flags option")
+        for bad_flags in (bad_run_flags_message(run_flags), bad_io_mode_message(io_mode)):
+            if bad_flags is not None:
+                raise FlipJumpWriteFjmException(bad_flags)
+        if FJMVersion.BaseVersion == version and (run_flags != 0 or io_mode != 0):
+            raise FlipJumpWriteFjmException("version 0 does not support the run flags and io mode options")
         if FJMVersion.CompressedVersion == version:
             if lzma_preset not in range(10):
                 raise FlipJumpWriteFjmException("version 3 requires an LZMA preset (0-9, faster->smaller).")
@@ -115,7 +128,8 @@ class Writer:
         self.output_file = output_file
         self.word_size = memory_width
         self.version = version
-        self.flags = flags
+        self.run_flags = run_flags
+        self.io_mode = io_mode
         self.reserved: int = 0
 
         self.segments: List[Tuple[int, int, int, int]] = []
@@ -136,32 +150,40 @@ class Writer:
             array.array(typecode) if array.array(typecode).itemsize * 8 == memory_width else []
         )
 
-    def _compress_data(self, data: bytes) -> bytes:
+    def _compress_data(self, data: bytes, progress: Optional['ProgressBar'] = None) -> bytes:
+        """lzma-compress the data, in chunks (reporting a [0, 1] fraction to `progress`, if given)"""
         try:
-            return lzma.compress(
-                data,
+            compressor = lzma.LZMACompressor(
                 format=_LZMA_FORMAT,
                 filters=_lzma_compression_filters(2 * self.word_size, self.lzma_preset, fast=self.lzma_fast),
             )
+            parts = []
+            for offset in range(0, len(data), _COMPRESS_CHUNK):
+                parts.append(compressor.compress(data[offset : offset + _COMPRESS_CHUNK]))  # noqa: E203
+                if progress is not None:
+                    progress.update(min(1.0, (offset + _COMPRESS_CHUNK) / len(data)), stage='compressing')
+            parts.append(compressor.flush())
+            return b''.join(parts)
         except lzma.LZMAError as e:
             raise FlipJumpWriteFjmException('Error: Unable to compress the data.') from e
 
-    def write_to_file(self) -> None:
+    def write_to_file(self, progress: Optional['ProgressBar'] = None) -> None:
         """
         writes the .fjm headers, segments and (might be compressed) data into the output_file.
+        @param progress: if given, the compression reports its progress to it (a [0, 1] fraction)
         @note call this after finished adding data and segments and editing the Writer.
         """
         with open(self.output_file, 'wb') as f:
             f.write(pack(_header_base_format, FJ_MAGIC, self.word_size, self.version.value, len(self.segments)))
             if FJMVersion.BaseVersion != self.version:
-                f.write(pack(_header_extension_format, self.flags, self.reserved))
+                f.write(pack(_header_extension_format, self.run_flags, self.io_mode, self.reserved))
 
             for segment in self.segments:
                 f.write(pack(_segment_format, *segment))
 
             fjm_data = _pack_words_little_endian(self.data, self.word_size)
             if FJMVersion.CompressedVersion == self.version:
-                fjm_data = self._compress_data(fjm_data)
+                fjm_data = self._compress_data(fjm_data, progress)
 
             f.write(fjm_data)
 

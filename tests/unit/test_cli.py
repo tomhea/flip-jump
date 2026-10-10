@@ -14,7 +14,7 @@ import pytest
 from flipjump import assemble_run_according_to_cmd_line_args
 from flipjump.utils.exceptions import FlipJumpParsingException
 from flipjump.fjm.fjm_consts import FJMVersion
-from flipjump.fjm.fjm_reader import Reader, read_memory_span_words
+from flipjump.fjm.fjm_reader import Reader, read_fjm_header
 from flipjump.interpreter import fjm_run
 from flipjump.flipjump_cli import FLAT_MEMORY_AUTO_MAX_WORDS, get_version, parse_arguments
 from tests.unit.unit_utils import HELLO_NO_STL, MINIMAL_STARTUP, assemble_to_path
@@ -309,9 +309,10 @@ def test_cli_io_mode_parameters_rejected(tmp_path: Path, capsys: pytest.CaptureF
     assert 'no parameters' in capsys.readouterr().err  # the factory's message reaches the user
 
 
-def test_cli_io_default_is_standard() -> None:
+def test_cli_io_default_is_the_programs_io_mode() -> None:
+    # no --io: the io mode compiled into the .fjm decides (standard unless it was assembled with --io-mode)
     args, _ = parse_arguments(cmd_line_args=['prog.fjm'])
-    assert args.io == 'standard'
+    assert args.io is None
 
 
 def test_cli_no_output_flag_is_gone(tmp_path: Path) -> None:
@@ -347,10 +348,10 @@ reserve 4 * w
 _SMALL_TOP, _BIG_TOP = 1 << 23, FLAT_MEMORY_AUTO_MAX_WORDS
 
 
-def test_read_memory_span_words_is_the_highest_segment_end(tmp_path: Path) -> None:
+def test_the_header_span_is_the_highest_segment_end(tmp_path: Path) -> None:
     fjm_path = assemble_to_path(_high_segment_program(_SMALL_TOP), tmp_path, memory_width=32)
     expected = max(seg.segment_start + seg.segment_length for seg in Reader(fjm_path).memory_segments)
-    assert read_memory_span_words(fjm_path) == expected == _SMALL_TOP + 4
+    assert read_fjm_header(fjm_path).span_words == expected == _SMALL_TOP + 4
 
 
 def test_cli_flat_memory_flag_parses_and_excludes_flat_max_words() -> None:

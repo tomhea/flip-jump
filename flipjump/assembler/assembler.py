@@ -13,7 +13,7 @@ from typing import Any, Callable, Deque, List, Dict, MutableSequence, Tuple, Opt
 from flipjump.fjm.fjm_writer import Writer, new_word_buffer
 from flipjump.utils.constants import WFLIP_LABEL_PREFIX, DEFAULT_MAX_MACRO_RECURSION_DEPTH
 from flipjump.utils.functions import save_debugging_labels
-from flipjump.utils.classes import PrintTimer
+from flipjump.utils.progress import ProgressBar
 from flipjump.assembler.fj_parser import parse_macro_tree
 from flipjump.utils.exceptions import (
     FlipJumpAssemblerException,
@@ -308,6 +308,10 @@ def resolve_pinned(
     return pinned, len(conflicts)
 
 
+# labels_resolve reports its progress once per this many ops
+_PROGRESS_CHUNK = 1 << 16
+
+
 def labels_resolve(
     ops: Deque[LastPhaseOp],
     labels: Dict[str, int],
@@ -316,6 +320,7 @@ def labels_resolve(
     *,
     save_wflip_labels: bool = True,
     pinned: Optional[Dict[int, int]] = None,
+    on_progress: Optional[Callable[[float], None]] = None,
 ) -> None:
     """
     resolve the labels and expressions to get the list of fj ops, and add all the data and segments into the fjm_writer.
@@ -326,7 +331,9 @@ def labels_resolve(
     @param save_wflip_labels: record a `:wflips:N` debugging label per generated wflip-chain op.
     Only the debugging-file reads them (see BinaryData._insert_wflip_label), so a caller that is not
     writing one can pass False and skip the work. It cannot change the emitted .fjm.
+    @param on_progress: if given, called every _PROGRESS_CHUNK ops with the fraction of ops resolved
     """
+    total_ops = max(1, len(ops))
     first_segment = ops.popleft()
     if not isinstance(first_segment, NewSegment):
         raise FlipJumpAssemblerException(f"The first op must be of type NewSegment (and not {first_segment}).")
@@ -358,68 +365,74 @@ def labels_resolve(
     # did, via the popleft() of the first segment above -- and `assemble()` discards it right after.
     popleft = ops.popleft
     while ops:
-        # dispatched on the exact class below; typed Any because mypy cannot narrow on `__class__ is`
-        # and an isinstance or a cast per op is a call per op in the loop that runs once per op
-        op: Any = popleft()
-        op_class = op.__class__
+        # in chunks, so the progress is reported once per chunk rather than checked once per op
+        for _ in range(min(_PROGRESS_CHUNK, len(ops))):
+            # dispatched on the exact class below; typed Any because mypy cannot narrow on `__class__ is`
+            # and an isinstance or a cast per op is a call per op in the loop that runs once per op
+            op: Any = popleft()
+            op_class = op.__class__
 
-        if op_class is FlipJump:
-            try:
-                flip = op.flip.value
-                jump = op.jump.value
-                insert_fj_op(
-                    flip if flip.__class__ is int else op.flip.exact_eval(labels),
-                    jump if jump.__class__ is int else op.jump.exact_eval(labels),
-                )
-            except FlipJumpException as e:
-                raise FlipJumpAssemblerException(f"{e} in op {op}.")
+            if op_class is FlipJump:
+                try:
+                    flip = op.flip.value
+                    jump = op.jump.value
+                    insert_fj_op(
+                        flip if flip.__class__ is int else op.flip.exact_eval(labels),
+                        jump if jump.__class__ is int else op.jump.exact_eval(labels),
+                    )
+                except FlipJumpException as e:
+                    raise FlipJumpAssemblerException(f"{e} in op {op}.")
 
-        elif op_class is WordFlip:
-            try:
-                word_address = op.word_address.value
-                flip_value = op.flip_value.value
-                return_address = op.return_address.value
-                insert_wflip_ops(
-                    word_address if word_address.__class__ is int else op.word_address.exact_eval(labels),
-                    flip_value if flip_value.__class__ is int else op.flip_value.exact_eval(labels),
-                    return_address if return_address.__class__ is int else op.return_address.exact_eval(labels),
-                )
-            except FlipJumpException as e:
-                raise FlipJumpAssemblerException(f"{e} in op {op}.")
+            elif op_class is WordFlip:
+                try:
+                    word_address = op.word_address.value
+                    flip_value = op.flip_value.value
+                    return_address = op.return_address.value
+                    insert_wflip_ops(
+                        word_address if word_address.__class__ is int else op.word_address.exact_eval(labels),
+                        flip_value if flip_value.__class__ is int else op.flip_value.exact_eval(labels),
+                        return_address if return_address.__class__ is int else op.return_address.exact_eval(labels),
+                    )
+                except FlipJumpException as e:
+                    raise FlipJumpAssemblerException(f"{e} in op {op}.")
 
-        elif op_class is Padding:
-            binary_data.insert_padding(op.ops_count)
+            elif op_class is Padding:
+                binary_data.insert_padding(op.ops_count)
 
-        elif op_class is NewSegment:
-            binary_data.insert_new_segment(fjm_writer, op.start_address, op.wflip_start_address)
+            elif op_class is NewSegment:
+                binary_data.insert_new_segment(fjm_writer, op.start_address, op.wflip_start_address)
 
-        elif op_class is ReserveBits:
-            binary_data.insert_reserve_bits(fjm_writer, op.first_address_after_reserved)
+            elif op_class is ReserveBits:
+                binary_data.insert_reserve_bits(fjm_writer, op.first_address_after_reserved)
 
-        # the exact-type tests above are the fast path; these keep any subclass working.
-        elif isinstance(op, FlipJump):
-            try:
-                insert_fj_op(op.get_flip(labels), op.get_jump(labels))
-            except FlipJumpException as e:
-                raise FlipJumpAssemblerException(f"{e} in op {op}.")
+            # the exact-type tests above are the fast path; these keep any subclass working.
+            elif isinstance(op, FlipJump):
+                try:
+                    insert_fj_op(op.get_flip(labels), op.get_jump(labels))
+                except FlipJumpException as e:
+                    raise FlipJumpAssemblerException(f"{e} in op {op}.")
 
-        elif isinstance(op, WordFlip):
-            try:
-                insert_wflip_ops(op.get_word_address(labels), op.get_flip_value(labels), op.get_return_address(labels))
-            except FlipJumpException as e:
-                raise FlipJumpAssemblerException(f"{e} in op {op}.")
+            elif isinstance(op, WordFlip):
+                try:
+                    insert_wflip_ops(
+                        op.get_word_address(labels), op.get_flip_value(labels), op.get_return_address(labels)
+                    )
+                except FlipJumpException as e:
+                    raise FlipJumpAssemblerException(f"{e} in op {op}.")
 
-        elif isinstance(op, Padding):
-            binary_data.insert_padding(op.ops_count)
+            elif isinstance(op, Padding):
+                binary_data.insert_padding(op.ops_count)
 
-        elif isinstance(op, NewSegment):
-            binary_data.insert_new_segment(fjm_writer, op.start_address, op.wflip_start_address)
+            elif isinstance(op, NewSegment):
+                binary_data.insert_new_segment(fjm_writer, op.start_address, op.wflip_start_address)
 
-        elif isinstance(op, ReserveBits):
-            binary_data.insert_reserve_bits(fjm_writer, op.first_address_after_reserved)
+            elif isinstance(op, ReserveBits):
+                binary_data.insert_reserve_bits(fjm_writer, op.first_address_after_reserved)
 
-        else:
-            raise FlipJumpAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
+            else:
+                raise FlipJumpAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
+        if on_progress is not None:
+            on_progress(1 - len(ops) / total_ops)
 
     binary_data.close_and_add_segment(fjm_writer)
 
@@ -474,10 +487,12 @@ def assemble(
     gc_was_enabled = gc.isenabled()
     gc.disable()
     try:
-        with PrintTimer('  parsing:         ', print_time=print_time):
-            macros = parse_macro_tree(input_files, memory_width, warning_as_errors, defines_file)
+        with ProgressBar('  parsing:         ', print_time=print_time, total=1.0) as progress:
+            macros = parse_macro_tree(
+                input_files, memory_width, warning_as_errors, defines_file, progress.update if progress.active else None
+            )
 
-        with PrintTimer('  macro resolve:   ', print_time=print_time):
+        with ProgressBar('  macro resolve:   ', print_time=print_time, total=1.0) as progress:
             # the `...---:start:` macro-start labels are debugging-file-only and unreachable from
             # fj source, same as `:wflips:N` below -- don't build 1.7M of them for nobody.
             ops, labels = resolve_macros(
@@ -487,6 +502,7 @@ def assemble(
                 show_statistics=show_statistics,
                 max_recursion_depth=max_recursion_depth,
                 save_debug_labels=debugging_file_path is not None,
+                on_progress=progress.update if progress.active else None,
             )
 
         # BlockPool pins each source word to its block base. The base was chosen during macro
@@ -507,17 +523,25 @@ def assemble(
             if not pinned:
                 pinned = None
 
-        with PrintTimer('  labels resolve:  ', print_time=print_time):
+        with ProgressBar('  labels resolve:  ', print_time=print_time, total=1.0) as progress:
             # the `:wflips:N` labels are debugging-file-only and unreachable from fj source; don't
             # build 16M of them for a caller that is not writing a debugging file.
             labels_resolve(
-                ops, labels, memory_width, fjm_writer, save_wflip_labels=debugging_file_path is not None, pinned=pinned
+                ops,
+                labels,
+                memory_width,
+                fjm_writer,
+                save_wflip_labels=debugging_file_path is not None,
+                pinned=pinned,
+                on_progress=progress.update if progress.active else None,
             )
 
         assert_first_op_assembled(fjm_writer)
 
-        with PrintTimer('  create binary:   ', print_time=print_time):
-            fjm_writer.write_to_file()
+        with ProgressBar('  create binary:   ', print_time=print_time, total=1.0) as progress:
+            fjm_writer.write_to_file(progress if progress.active else None)
+            if debugging_file_path is not None:
+                progress.update(1.0, stage='debugging file')
             save_debugging_labels(debugging_file_path, labels)
 
     except FlipJumpException as fj_exception:

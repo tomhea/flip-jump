@@ -12,7 +12,7 @@ from enum import IntEnum
 from pathlib import Path
 from struct import unpack
 from time import sleep
-from typing import BinaryIO, List, Tuple, Dict
+from typing import BinaryIO, Callable, List, Tuple, Dict, Optional
 
 from flipjump.fjm.fjm_consts import (
     FJ_MAGIC,
@@ -29,6 +29,8 @@ from flipjump.fjm.fjm_consts import (
     _LZMA_DECOMPRESSION_FILTERS,
     _new_garbage_val,
     FJMVersion,
+    bad_io_mode_message,
+    bad_run_flags_message,
 )
 from flipjump.utils.exceptions import FlipJumpReadFjmException, FlipJumpRuntimeMemoryException
 
@@ -97,9 +99,11 @@ class Reader:
                 f'Error: unsupported version ({version}, this program supports {str(SUPPORTED_VERSIONS_NAMES)}).'
             ) from None
         if FJMVersion.BaseVersion == self.version:
-            self.flags, self.reserved = 0, 0
+            self.run_flags, self.io_mode, self.reserved = 0, 0, 0
         else:
-            self.flags, self.reserved = unpack(_header_extension_format, fjm_file.read(_header_extension_size))
+            self.run_flags, self.io_mode, self.reserved = unpack(
+                _header_extension_format, fjm_file.read(_header_extension_size)
+            )
 
     def _init_segments(self, fjm_file: BinaryIO) -> List[Tuple[int, int, int, int]]:
         return [unpack(_segment_format, fjm_file.read(_segment_size)) for _ in range(self.segment_num)]
@@ -118,6 +122,9 @@ class Reader:
             )
         if self.reserved != 0:
             raise FlipJumpReadFjmException(f'Error: bad reserved value ({self.reserved}, should be 0).')
+        for bad_flags in (bad_run_flags_message(self.run_flags), bad_io_mode_message(self.io_mode)):
+            if bad_flags is not None:
+                raise FlipJumpReadFjmException(f'Error: bad flags in the .fjm header - {bad_flags}.')
 
     @staticmethod
     def _decompress_data(compressed_data: bytes) -> bytes:
@@ -277,20 +284,86 @@ class Reader:
             )
 
 
-def read_memory_span_words(input_file: Path) -> int:
+@dataclasses.dataclass
+class FjmHeader:
     """
-    the end of the program's highest segment, in words: the flat-storage window that holds every
-    segment (what `fj --run --flat-memory` passes as flat_max_words). reads only the header and
-    the segment table - the memory itself is not decompressed.
-    @param input_file: the path to the .fjm file
-    @return: max(segment_start + segment_length) over the segments, or 0 when there are none
+    what the .fjm's header and segment table say - read without touching the data (see read_fjm_header).
+    segments are (segment_start, segment_length, data_start, data_length), in words.
     """
+
+    memory_width: int
+    version: FJMVersion
+    run_flags: int
+    io_mode: int
+    segments: List[Tuple[int, int, int, int]]
+
+    @property
+    def span_words(self) -> int:
+        """the end of the highest segment, in words: the flat-storage window that holds every segment
+        (what `fj --run --flat-memory` uses). 0 when there are no segments"""
+        return max((start + length for start, length, _data_start, _data_length in self.segments), default=0)
+
+    @property
+    def relative_jumps(self) -> bool:
+        """are the jump words stored relative to their address? (versions 2 and 3)"""
+        return self.version in (FJMVersion.RelativeJumpVersion, FJMVersion.CompressedVersion)
+
+    def assert_runnable(self) -> None:
+        """execution starts at address 0, so a segment must hold the first op (words 0 and 1)"""
+        if not any(start == 0 and length >= 2 for start, length, _, _ in self.segments):
+            raise FlipJumpReadFjmException(
+                "the program has no first op at address 0: no segment holds bits 0..2w-1 "
+                "(words 0 and 1), but execution starts at address 0."
+            )
+
+
+def _read_header(fjm_file: BinaryIO, input_file: Path) -> FjmHeader:
     reader = Reader.__new__(Reader)
     try:
-        with open(input_file, 'rb') as fjm_file:
-            reader._init_header_fields(fjm_file)
-            reader._validate_header()
-            segments = reader._init_segments(fjm_file)
+        reader._init_header_fields(fjm_file)
+        reader._validate_header()
+        segments = reader._init_segments(fjm_file)
     except struct.error as se:
         raise FlipJumpReadFjmException(f"Bad file {input_file}, can't unpack. Maybe it's not a .fjm file?") from se
-    return max((start + length for start, length, _data_start, _data_length in segments), default=0)
+    return FjmHeader(reader.memory_width, reader.version, reader.run_flags, reader.io_mode, segments)
+
+
+def read_fjm_header(input_file: Path) -> FjmHeader:
+    """
+    read the .fjm's header and segment table only - the memory itself is not read or decompressed,
+    so this is cheap even for a huge program.
+    @param input_file: the path to the .fjm file
+    """
+    with open(input_file, 'rb') as fjm_file:
+        return _read_header(fjm_file, input_file)
+
+
+# the decompression is fed in chunks of this many compressed bytes, so its progress can be shown
+_DECOMPRESS_CHUNK = 1 << 20
+
+
+def read_fjm_raw(input_file: Path, on_progress: Optional[Callable[[float], None]] = None) -> Tuple[FjmHeader, bytes]:
+    """
+    read the .fjm's header, segments and its raw data: the (decompressed) data pool as bytes of
+    little-endian w-bit words, exactly as the segments index it (jump words still relative in
+    versions 2-3, see FjmHeader.relative_jumps). This is the lean load: no python object per word.
+    @param input_file: the path to the .fjm file
+    @param on_progress: if given, called with the decompression's progress, a fraction in [0, 1]
+    @return: the header, and the data bytes
+    """
+    with open(input_file, 'rb') as fjm_file:
+        header = _read_header(fjm_file, input_file)
+        file_data = fjm_file.read()
+    if FJMVersion.CompressedVersion != header.version:
+        return header, file_data
+
+    decompressor = lzma.LZMADecompressor(format=_LZMA_FORMAT, filters=_LZMA_DECOMPRESSION_FILTERS)
+    parts = []
+    try:
+        for offset in range(0, len(file_data), _DECOMPRESS_CHUNK):
+            parts.append(decompressor.decompress(file_data[offset : offset + _DECOMPRESS_CHUNK]))  # noqa: E203
+            if on_progress is not None:
+                on_progress(min(1.0, (offset + _DECOMPRESS_CHUNK) / len(file_data)))
+    except lzma.LZMAError as e:
+        raise FlipJumpReadFjmException('Error: The compressed data is damaged; Unable to decompress.') from e
+    return header, b''.join(parts)

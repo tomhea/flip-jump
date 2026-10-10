@@ -42,6 +42,8 @@ def assemble(
     lzma_fast: bool = False,
     defines_file: Optional[Path] = None,
     table_pool: Optional[TablePool] = None,
+    run_flags: int = 0,
+    io_mode: int = 0,
 ) -> None:
     """
     runs the assembly pipeline. assembles the input files to a .fjm.
@@ -63,6 +65,8 @@ def assemble(
 
     :param table_pool: if given, relocate lookup tables to low-popcount addresses.
     See assembler.preprocessor.TablePool.
+    :param run_flags: written into the .fjm: how it runs by default (fjm_consts.RUN_FLAG_*)
+    :param io_mode: written into the .fjm: the io device it runs with by default (fjm_consts.IO_MODE_*)
 
     :note: This is a wrapper function to the assembler.assemble() function.
     """
@@ -72,7 +76,9 @@ def assemble(
         # USED, at parse time, so an override read after the stl is too late for anything the
         # stl computes from it. Without this line the parameter is accepted and ignored.
         file_tuples.insert(0, ('d1', defines_file))
-    fjm_writer = Writer(output_fjm_path, memory_width, fjm_version, lzma_fast=lzma_fast)
+    fjm_writer = Writer(
+        output_fjm_path, memory_width, fjm_version, lzma_fast=lzma_fast, run_flags=run_flags, io_mode=io_mode
+    )
     assembler.assemble(
         file_tuples,
         memory_width,
@@ -98,6 +104,7 @@ def run(
     last_ops_debugging_list_length: Optional[int] = None,
     profile: bool = False,
     flat_max_words: Optional[int] = None,
+    flat_required: bool = False,
 ) -> TerminationStatistics:
     """
     runs a .fjm file (with the FlipJump interpreter)
@@ -112,6 +119,8 @@ def run(
     @param flat_max_words: the native engine's flat-storage span limit, in words (2^23 by default).
     only affects native-engine runs - ignored when a pure-python loop runs (e.g. when
     breakpoints/tracing/profiling force the featured loop)
+    @param flat_required: the flat window must be allocated: if it cannot be, raise
+    FlipJumpFlatMemoryException instead of falling back to the slower paged memory
     @return: the run's termination-statistics
 
     :note: This is a wrapper function to the fjm_run.run() function.
@@ -129,6 +138,7 @@ def run(
         last_ops_debugging_list_length=last_ops_debugging_list_length,
         profile=profile,
         flat_max_words=flat_max_words,
+        flat_required=flat_required,
     )
 
 
@@ -146,6 +156,7 @@ def debug(
     last_ops_debugging_list_length: Optional[int] = None,
     profile: bool = False,
     flat_max_words: Optional[int] = None,
+    flat_required: bool = False,
 ) -> TerminationStatistics:
     """
     debugs a .fjm file (with the FlipJump interpreter+debugger)
@@ -165,6 +176,8 @@ def debug(
     @param flat_max_words: the native engine's flat-storage span limit, in words (2^23 by default).
     only affects native-engine runs - ignored when a pure-python loop runs (e.g. when
     breakpoints/tracing/profiling force the featured loop)
+    @param flat_required: the flat window must be allocated: if it cannot be, raise
+    FlipJumpFlatMemoryException instead of falling back to the slower paged memory
     @return: the run's termination-statistics
 
     :note: This is a wrapper function to the fjm_run.run() function.
@@ -184,6 +197,7 @@ def debug(
         last_ops_debugging_list_length=last_ops_debugging_list_length,
         profile=profile,
         flat_max_words=flat_max_words,
+        flat_required=flat_required,
     )
     if print_termination:
         # devices that echo output live (e.g. verbose StandardIO) already showed it during the

@@ -16,19 +16,22 @@ three run-loops (engines) are implemented:
 
 from os import environ
 from pathlib import Path
-from typing import List, Optional, Deque
+from typing import Any, Optional, Deque, Tuple
 
 from flipjump.fjm import fjm_reader
-from flipjump.fjm.fjm_reader import GarbageHandling
+from flipjump.fjm.fjm_reader import FjmHeader, GarbageHandling
 
 try:
     from flipjump.interpreter import _fjcore  # type: ignore[attr-defined]
 except ImportError:  # the native engine is optional - fall back to the pure-python loops
     _fjcore = None
 from flipjump.interpreter.debugging.breakpoints import BreakpointHandler, handle_breakpoint
-from flipjump.utils.classes import TerminationCause, PrintTimer, RunStatistics
+from flipjump.utils.classes import TerminationCause, RunStatistics
 from flipjump.utils.constants import LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
+from flipjump.utils.progress import ProgressBar
 from flipjump.utils.exceptions import (
+    FlipJumpFlatMemoryException,
+    FlipJumpReadFjmException,
     FlipJumpRuntimeMemoryException,
     IOReadOnEOF,
     FlipJumpException,
@@ -180,6 +183,7 @@ def run(
     last_ops_debugging_list_length: Optional[int] = None,
     profile: bool = False,
     flat_max_words: Optional[int] = None,
+    flat_required: bool = False,
 ) -> TerminationStatistics:
     """
     run / debug a .fjm file (a FlipJump interpreter)
@@ -195,12 +199,10 @@ def run(
     also settable with the FLIPJUMP_FLAT_MAX_WORDS environment variable). memory below the window
     runs flat; segments reaching above it keep the paged path for that part (hybrid). raising it
     costs startup time + footprint (8 bytes x window), never per-op speed.
+    @param flat_required: the flat window must be allocated: if it cannot be, raise
+    FlipJumpFlatMemoryException instead of falling back to the slower paged memory (native engine only)
     @return: the run's termination-statistics
     """
-    with PrintTimer('  loading memory:  ', print_time=print_time):
-        mem = fjm_reader.Reader(fjm_path)
-    mem.assert_runnable()  # a program must hold its first op at address 0 (both engines)
-
     if io_device is None:
         io_device = BrokenIO()
 
@@ -209,14 +211,33 @@ def run(
     if last_ops_debugging_list_length is None and use_featured_loop:
         last_ops_debugging_list_length = LAST_OPS_DEBUGGING_LIST_DEFAULT_LENGTH
 
+    if not use_featured_loop and is_native_engine_active():
+        # the lean load: the .fjm's words go straight from its (decompressed) bytes into the engine -
+        # no python object per word (the Reader's dict of a 51M-word program is ~7 GB and a minute)
+        with ProgressBar('  loading memory:  ', print_time=print_time, total=1.0) as progress:
+            core, memory_width = _load_native(fjm_path, flat_max_words, flat_required, progress)
+        statistics = RunStatistics(memory_width, last_ops_debugging_list_length)
+        try:
+            return _run_native(core, memory_width, io_device, statistics)
+        except FlipJumpException as fj_exception:
+            raise fj_exception
+        except KeyboardInterrupt:
+            return TerminationStatistics(statistics, TerminationCause.KeyboardInterrupt)
+        except Exception as unknown_exception:
+            raise FlipJumpRuntimeException(
+                "Unknown exception during running an .fjm file, please report this bug"
+            ) from unknown_exception
+
+    with ProgressBar('  loading memory:  ', print_time=print_time):
+        mem = fjm_reader.Reader(fjm_path)
+    mem.assert_runnable()  # a program must hold its first op at address 0 (both engines)
+
     statistics = RunStatistics(mem.memory_width, last_ops_debugging_list_length)
 
     try:
-        if profile or show_trace or breakpoint_handler is not None:
+        if use_featured_loop:
             io_device.attach_memory(ReaderDeviceMemory(mem))
             return _run_featured(mem, io_device, statistics, breakpoint_handler, show_trace)
-        if _is_native_engine_usable(mem):
-            return _run_native(mem, io_device, statistics, flat_max_words)
         io_device.attach_memory(ReaderDeviceMemory(mem))
         return _run_fast(mem, io_device, statistics)
 
@@ -256,36 +277,81 @@ def _is_native_engine_usable(mem: fjm_reader.Reader) -> bool:
     return is_native_engine_active() and mem.garbage_handling == GarbageHandling.Stop
 
 
-def _run_native(
-    mem: fjm_reader.Reader,
-    io_device: IODevice,
-    statistics: RunStatistics,
-    flat_max_words: Optional[int] = None,
-) -> TerminationStatistics:
+# the share of the loading bar that decompression takes; loading the words into the engine is the rest.
+# MEASURED on the 51.3M-word doom-flipjump program: 1.1 s decompressing, about as long loading.
+_DECOMPRESS_SHARE = 0.5
+# report the loading progress every this many segments
+_LOAD_PROGRESS_SEGMENTS = 4096
+
+
+def _validate_segments_data(header: FjmHeader, data_words: int) -> None:
+    """the checks fjm_reader.Reader makes on each segment's data range, for the lean load"""
+    for _start, _length, data_start, data_length in header.segments:
+        if data_length % 2 != 0:
+            raise FlipJumpReadFjmException(
+                f"Bad .fjm file: segment data-length must be even (an integer number of ops), got {data_length}."
+            )
+        if data_start + data_length > data_words:
+            raise FlipJumpReadFjmException(
+                f"Bad .fjm file: segment data range [{data_start}, {data_start + data_length})"
+                f" exceeds data pool length {data_words}."
+            )
+
+
+def _load_native(
+    fjm_path: Path, flat_max_words: Optional[int], flat_required: bool, progress: ProgressBar
+) -> Tuple[Any, int]:
     """
-    run with the native (C) engine: load the parsed program into a _fjcore.Memory and
-    execute the run-loop in C. behaves exactly like the python fast loop.
+    load the .fjm straight into a native _fjcore.Memory: its segments, then its storage decided (so the
+    words go directly into the flat image), then the words from the raw data bytes.
+    @return: the loaded core, and the memory width
     """
     assert _fjcore is not None
-    core = _fjcore.Memory(mem.memory_width, flat_max_words=flat_max_words if flat_max_words else 0)
-    for memory_segment in mem.memory_segments:
-        core.add_segment(memory_segment.segment_start, memory_segment.segment_length)
+    header = fjm_reader.read_fjm_header(fjm_path)
+    header.assert_runnable()  # a program must hold its first op at address 0 (both engines)
 
-    # bulk-load the parsed memory words, grouped into contiguous runs
-    run_start: Optional[int] = None
-    next_address = 0
-    run_values: List[int] = []
-    for address in sorted(mem.memory):
-        if run_start is None or address != next_address:
-            if run_start is not None:
-                core.set_words(run_start, run_values)
-            run_start, run_values = address, []
-        run_values.append(mem.memory[address])
-        next_address = address + 1
-    if run_start is not None:
-        core.set_words(run_start, run_values)
+    core = _fjcore.Memory(
+        header.memory_width, flat_max_words=flat_max_words if flat_max_words else 0, flat_required=flat_required
+    )
+    for segment_start, segment_length, _data_start, _data_length in header.segments:
+        core.add_segment(segment_start, segment_length)
+    try:
+        core.decide_storage()
+    except MemoryError as memory_error:
+        raise FlipJumpFlatMemoryException(str(memory_error), header.span_words) from memory_error
 
-    io_device.attach_memory(NativeDeviceMemory(core, mem.memory_width))
+    def on_decompress_progress(fraction: float) -> None:
+        progress.update(fraction * _DECOMPRESS_SHARE, stage='decompressing')
+
+    progress.update(0, stage='reading')
+    header, data = fjm_reader.read_fjm_raw(fjm_path, on_decompress_progress if progress.active else None)
+    word_bytes = header.memory_width // 8
+    _validate_segments_data(header, len(data) // word_bytes)
+
+    progress.update(_DECOMPRESS_SHARE, stage='loading')
+    relative_jumps = header.relative_jumps
+    segments_count = max(1, len(header.segments))
+    for index, (segment_start, _segment_length, data_start, data_length) in enumerate(header.segments):
+        if data_length:
+            core.set_words_bytes(segment_start, data, data_start, data_length, relative_jumps)
+        if progress.active and index % _LOAD_PROGRESS_SEGMENTS == 0:
+            progress.update(_DECOMPRESS_SHARE + (1 - _DECOMPRESS_SHARE) * index / segments_count)
+    progress.update(1.0)
+    return core, header.memory_width
+
+
+def _run_native(
+    core: Any,
+    memory_width: int,
+    io_device: IODevice,
+    statistics: RunStatistics,
+) -> TerminationStatistics:
+    """
+    run with the native (C) engine: execute the run-loop in C over a loaded _fjcore.Memory (see
+    _load_native). behaves exactly like the python fast loop.
+    """
+    assert _fjcore is not None
+    io_device.attach_memory(NativeDeviceMemory(core, memory_width))
 
     last_ops = statistics.last_ops_addresses
     statistics.detailed_statistics = False

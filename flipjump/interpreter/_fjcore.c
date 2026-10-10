@@ -272,6 +272,8 @@ typedef struct {
                              with it, not with free(). See fj_alloc_flat. */
     uint64_t flat_count;
     uint64_t flat_max_words; /* constructor override; 0 = use the env var / default */
+    int flat_required;       /* constructor flag: a flat window that cannot be allocated RAISES
+                                MemoryError instead of falling back to paged (`--flat-memory`) */
     int storage_decided;
     int flat_covers_all; /* 1: every segment fits in the flat window ('flat'); 0 with a
                             non-NULL flat: low window flat, the rest paged ('hybrid') */
@@ -745,6 +747,11 @@ static int mem_decide_storage(MemoryObject* m)
         return -1;
     }
     if (low_max_end > SIZE_MAX / 8u) {
+        if (m->flat_required) {
+            PyErr_Format(PyExc_MemoryError, "the flat-storage window of %llu words is too large to allocate",
+                         (unsigned long long)low_max_end);
+            return -1;
+        }
         fprintf(stderr, "flipjump: flat-storage window is too large (byte size overflows); running paged (slower). lower --flat-max-words / "
                 "FLIPJUMP_FLAT_MAX_WORDS, or set FLIPJUMP_NO_FLAT=1 to silence this.\n");
         fflush(stderr);
@@ -756,6 +763,12 @@ static int mem_decide_storage(MemoryObject* m)
            (a real flat-array OOM is not safely reproducible across platforms) */
         const char* simulate_alloc_fail = getenv("FLIPJUMP_TEST_FLAT_ALLOC_FAIL");
         if (simulate_alloc_fail && simulate_alloc_fail[0] == '1') {
+            if (m->flat_required) {
+                PyErr_Format(PyExc_MemoryError,
+                             "allocating the flat-storage window of %llu words failed (test injection)",
+                             (unsigned long long)low_max_end);
+                return -1;
+            }
             fprintf(stderr, "flipjump: flat-storage allocation failed (test injection); running paged (slower). lower --flat-max-words / "
                 "FLIPJUMP_FLAT_MAX_WORDS, or set FLIPJUMP_NO_FLAT=1 to silence this.\n");
             fflush(stderr);
@@ -770,6 +783,12 @@ static int mem_decide_storage(MemoryObject* m)
         m->cell_bytes = (force64 && force64[0] == '1') ? 8 : 4;
     }
     m->flat = fj_alloc_flat((size_t)low_max_end * (size_t)m->cell_bytes, &m->flat_large);
+    if (!m->flat && m->flat_required) {
+        PyErr_Format(PyExc_MemoryError, "allocating the flat-storage window of %llu words (%llu bytes) failed",
+                     (unsigned long long)low_max_end,
+                     (unsigned long long)low_max_end * (unsigned long long)m->cell_bytes);
+        return -1;
+    }
     if (!m->flat) {
         fprintf(stderr, "flipjump: flat-storage allocation failed; running paged (slower). lower --flat-max-words / "
                 "FLIPJUMP_FLAT_MAX_WORDS, or set FLIPJUMP_NO_FLAT=1 to silence this.\n");
@@ -865,10 +884,11 @@ static void mem_free_allocations(MemoryObject* self)
 static int Memory_init(PyObject* op, PyObject* args, PyObject* kwds)
 {
     MemoryObject* self = (MemoryObject*)op;
-    static char* kwlist[] = {"memory_width", "garbage_stop", "flat_max_words", NULL};
-    int w, garbage_stop = 1;
+    static char* kwlist[] = {"memory_width", "garbage_stop", "flat_max_words", "flat_required", NULL};
+    int w, garbage_stop = 1, flat_required = 0;
     unsigned long long flat_max_words = 0; /* 0: use FLIPJUMP_FLAT_MAX_WORDS / the default */
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "i|pK", kwlist, &w, &garbage_stop, &flat_max_words)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "i|pKp", kwlist, &w, &garbage_stop, &flat_max_words,
+                                     &flat_required)) {
         return -1;
     }
     if (w != 8 && w != 16 && w != 32 && w != 64) {
@@ -898,6 +918,7 @@ static int Memory_init(PyObject* op, PyObject* args, PyObject* kwds)
     self->cell_bytes = 8;
     self->flat_count = 0;
     self->flat_max_words = flat_max_words;
+    self->flat_required = flat_required;
     self->storage_decided = 0;
     self->flat_covers_all = 0;
     self->pristine = NULL;
@@ -1045,6 +1066,68 @@ static PyObject* Memory_set_words(MemoryObject* self, PyObject* args)
         page->words[(start_word + i) & PAGE_MASK] = value & self->word_mask;
     }
     Py_DECREF(values);
+    Py_RETURN_NONE;
+}
+
+/* bulk-load from the .fjm's raw data: set_words_bytes(start_word_address, data, data_word_offset,
+   count, relative_jumps=False). `data` is a bytes object of little-endian w-bit words (the .fjm data
+   pool, decompressed); words [data_word_offset, data_word_offset + count) of it are stored at
+   start_word_address onward. relative_jumps: the .fjm v2/v3 encoding, where every odd word of a
+   segment (a jump word) is stored minus its own bit address -- added back here.
+   THE LEAN LOAD PATH: set_words takes a python sequence, so the loader had to build one int object
+   per word first -- on a 51M-word program that dict of ints is ~7 GB and most of a minute; this reads
+   the bytes in place. */
+static PyObject* Memory_set_words_bytes(MemoryObject* self, PyObject* args)
+{
+    unsigned long long start_word, data_word_offset, count;
+    int relative_jumps = 0;
+    PyObject* data;
+    char* buffer;
+    Py_ssize_t buffer_length;
+    const int word_bytes = self->w / 8;
+    const uint64_t w = (uint64_t)self->w;
+    Page* page = NULL;
+    uint64_t page_index = 0, i;
+    if (!PyArg_ParseTuple(args, "KSKK|p", &start_word, &data, &data_word_offset, &count, &relative_jumps)) {
+        return NULL;
+    }
+    if (PyBytes_AsStringAndSize(data, &buffer, &buffer_length) < 0) {
+        return NULL;
+    }
+    if (data_word_offset + count < data_word_offset ||
+        (data_word_offset + count) > (uint64_t)buffer_length / (uint64_t)word_bytes) {
+        PyErr_SetString(PyExc_ValueError, "set_words_bytes range is beyond the data");
+        return NULL;
+    }
+    if (start_word + count < start_word) {
+        PyErr_SetString(PyExc_ValueError, "set_words_bytes range overflows the 64-bit word-address space");
+        return NULL;
+    }
+    for (i = 0; i < count; i++) {
+        const unsigned char* src = (const unsigned char*)buffer + (size_t)(data_word_offset + i) * (size_t)word_bytes;
+        const uint64_t address = start_word + i;
+        uint64_t value = 0;
+        int b;
+        for (b = word_bytes - 1; b >= 0; b--) {
+            value = (value << 8) | src[b];
+        }
+        if (relative_jumps && (i & 1)) {
+            value += address * w;
+        }
+        value &= self->word_mask;
+        if (self->flat && address < self->flat_count) {
+            flat_store(self, address, value); /* loaded after decide_storage(): straight into the image */
+            continue;
+        }
+        if (!page || (address >> PAGE_BITS) != page_index) {
+            page_index = address >> PAGE_BITS;
+            page = mem_get_page(self, page_index);
+            if (!page) {
+                return NULL;
+            }
+        }
+        page->words[address & PAGE_MASK] = value;
+    }
     Py_RETURN_NONE;
 }
 
@@ -1690,6 +1773,17 @@ static PyObject* build_run_result(MemoryObject* self, int cause, uint64_t ops, u
    Canonical use (doom-flipjump's per-frame walker): add_segment -> set_words -> freeze() ->
    then per frame reset() + run(). Pure-flat programs only: a hybrid/paged snapshot would
    also need the page tables, and the walker's programs are all 'flat'. */
+/* decide_storage(): choose the storage mode now instead of at the first run, so a bulk load that
+   follows (set_words_bytes) writes straight into the flat image -- no staging pages, no copy -- and a
+   flat window that cannot be allocated fails BEFORE the load rather than after it. */
+static PyObject* Memory_decide_storage(MemoryObject* self, PyObject* Py_UNUSED(ignored))
+{
+    if (mem_decide_storage(self) < 0) {
+        return NULL;
+    }
+    Py_RETURN_NONE;
+}
+
 static PyObject* Memory_freeze(MemoryObject* self, PyObject* Py_UNUSED(ignored))
 {
     if (mem_decide_storage(self) < 0) {
@@ -1933,6 +2027,13 @@ static PyMethodDef Memory_methods[] = {
     {"set_word", (PyCFunction)Memory_set_word, METH_VARARGS, "set_word(word_address, value)"},
     {"get_word", (PyCFunction)Memory_get_word, METH_VARARGS, "get_word(word_address) -> value"},
     {"set_words", (PyCFunction)Memory_set_words, METH_VARARGS, "set_words(start_word_address, values)"},
+    {"set_words_bytes", (PyCFunction)Memory_set_words_bytes, METH_VARARGS,
+     "set_words_bytes(start_word_address, data, data_word_offset, count, relative_jumps=False)\n"
+     "store `count` little-endian w-bit words of the bytes `data`, from word `data_word_offset` of it.\n"
+     "relative_jumps: add (start_word_address + i) * w to every odd word i (the .fjm v2/v3 jumps)."},
+    {"decide_storage", (PyCFunction)Memory_decide_storage, METH_NOARGS,
+     "decide_storage() - choose flat/hybrid/paged now (normally done at the first run), so a bulk\n"
+     "load after it (set_words_bytes) goes straight into the flat image; segments must all be added"},
     {"freeze", (PyCFunction)Memory_freeze, METH_NOARGS,
      "freeze() - decide storage (building the flat image) and snapshot it as the pristine copy"},
     {"reset", (PyCFunction)Memory_reset, METH_NOARGS,
