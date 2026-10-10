@@ -634,3 +634,39 @@ def test_the_decompression_buffer_grows_with_highly_compressible_data() -> None:
         tracemalloc.stop()
     assert decoded == data
     assert peak < 3 * len(data), f'{peak:,} bytes allocated for {len(data):,} bytes of data'
+
+
+def test_the_segment_table_is_read_in_one_read(tmp_path: Path) -> None:
+    # a read per segment is thousands of small reads for a big program - seconds on a slow filesystem
+    from flipjump.fjm.fjm_reader import _read_header
+
+    writer = Writer(tmp_path / 'x.fjm', 16, FJMVersion.NormalVersion)
+    for start in range(0, 2000, 4):
+        writer.add_simple_segment_with_data(start, [0, 0])
+    writer.write_to_file()
+
+    class CountingFile:
+        def __init__(self, handle: Any) -> None:
+            self.handle, self.reads = handle, []
+
+        def read(self, size: int = -1) -> bytes:
+            self.reads.append(size)
+            return self.handle.read(size)
+
+        def __getattr__(self, name: str) -> Any:
+            return getattr(self.handle, name)
+
+    with open(tmp_path / 'x.fjm', 'rb') as handle:
+        counting = CountingFile(handle)
+        header = _read_header(counting, tmp_path / 'x.fjm')  # type: ignore[arg-type]
+    assert len(header.segments) == 500
+    assert counting.reads.count(500 * 32) == 1 and len(counting.reads) <= 3  # base header, extension, the table
+
+
+@pytest.mark.parametrize('missing', [1, 32, 33])
+def test_a_truncated_segment_table_is_rejected(tmp_path: Path, missing: int) -> None:
+    path = _write_simple(tmp_path / 'x.fjm')
+    raw = path.read_bytes()
+    table_end = _header_base_size + 12 + 32
+    path.write_bytes(raw[: table_end - missing])
+    _both_readers_reject(path, "can't unpack")

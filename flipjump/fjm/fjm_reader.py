@@ -5,6 +5,7 @@ exposes the program as a word-addressable memory dictionary for the interpreter.
 """
 
 import dataclasses
+import os
 import lzma
 import struct
 from collections import defaultdict
@@ -111,7 +112,16 @@ class Reader:
         return self.run_flags | (self.io_mode << 32)
 
     def _init_segments(self, fjm_file: BinaryIO) -> List[Tuple[int, int, int, int]]:
-        return [unpack(_segment_format, fjm_file.read(_segment_size)) for _ in range(self.segment_num)]
+        # ONE read for the whole table: a read per 32-byte segment is ~2,000 small reads for a 555K-segment
+        # program, which on a slow filesystem (WSL's /mnt/c: ~10 ms each) took 6-31 s, where this takes 0.1.
+        # (at most the rest of the file is read, so a damaged segment_num can't ask for more memory than that)
+        table_size = self.segment_num * _segment_size
+        position = fjm_file.tell()
+        file_size = os.fstat(fjm_file.fileno()).st_size
+        table = fjm_file.read(min(table_size, max(0, file_size - position)))
+        if len(table) != table_size:
+            raise struct.error(f'the segment table needs {table_size} bytes, the file has {len(table)} left')
+        return list(struct.iter_unpack(_segment_format, table))
 
     def _validate_header(self) -> None:
         if self.magic != FJ_MAGIC:
