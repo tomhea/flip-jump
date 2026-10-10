@@ -11,7 +11,7 @@ import os
 import re
 from typing import NamedTuple, Optional
 
-from flipjump.fjm.fjm_consts import IO_MODE_NAMES, RUN_FLAG_FLAT_MEMORY
+from flipjump.fjm.fjm_consts import IO_MODE_NAMES, RUN_FLAG_FLAT_MEMORY, bad_run_flags_message
 from flipjump.fjm.fjm_reader import FjmHeader
 from flipjump.utils.exceptions import FlipJumpFlatMemoryException
 
@@ -62,6 +62,10 @@ def flat_window(
       otherwise                              - the span if it is at most FLAT_MEMORY_AUTO_MAX_WORDS, else the
                                                engine's default window.
     """
+    if run_flags is not None:
+        bad = bad_run_flags_message(run_flags)
+        if bad is not None:
+            raise ValueError(bad)  # the CLI and the writer reject these values too
     flags = header.run_flags if run_flags is None else run_flags
     run_flag = ''
     if flags & RUN_FLAG_FLAT_MEMORY:
@@ -96,8 +100,8 @@ def flat_memory_failure_message(flat_error: FlipJumpFlatMemoryException, window:
     if window.run_flag:
         fixes.append('with --run-flags 0')
     cause = ', and '.join(causes) or 'flat memory was asked for'
-    fix = f"Running it {' and '.join(fixes)} might fix that, at a cost of speed." if fixes else ''
+    fix = f"\nRunning it {' and '.join(fixes)} might fix that, at a cost of speed." if fixes else ''
     return (
         f"flipjump: {cause}: the whole program in one array of {flat_error.window_words:,} words, "
-        f"and allocating it failed ({flat_error}).\n{fix}"
+        f"and allocating it failed ({flat_error}).{fix}"
     )

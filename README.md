@@ -198,6 +198,8 @@ fj --run game.fjm                                        # runs with the pc wind
   default (slower) memory.
 
 Any other value of either is a bad-flags error, both when assembling and when reading a `.fjm`.
+From python, `flipjump.assemble(..., io_mode=, run_flags=)` compiles them in and `flipjump.run` /
+`flipjump.debug` follow them the same way (`run_flags=` / `flat_memory=` / an `io_device` override them).
 
 Each mode is one complete `IODevice` that owns all of its channels (and window, if any).
 Adding a new device (e.g. a windowed text console, or one that also

@@ -336,6 +336,11 @@ class PcIO(IODevice):
         """no window: a scripted keyboard in, PNG frames out (deterministic replays / CI)."""
         return cls(InMemoryScreen(frames_dir=frames_dir), KeyboardIO(ScriptedKeyEventSource.from_file(events_file)))
 
+    def close(self) -> None:
+        window = getattr(self._screen, 'window', None)
+        if window is not None:
+            window.close()
+
     def attach_memory(self, device_memory: DeviceMemory) -> None:
         self._screen.attach_memory(device_memory)  # the screen reads the framebuffer; the keyboard needs no memory
 

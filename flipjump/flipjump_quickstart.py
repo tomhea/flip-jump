@@ -17,7 +17,7 @@ from flipjump.fjm.fjm_writer import Writer
 from flipjump.interpreter import fjm_run
 from flipjump.interpreter.io_devices.FixedIO import FixedIO
 from flipjump.interpreter.io_devices.IODevice import IODevice
-from flipjump.fjm.fjm_reader import read_fjm_header
+from flipjump.fjm.fjm_reader import FjmHeader, read_fjm_header
 from flipjump.interpreter.io_devices.cli_devices import make_io_device
 from flipjump.interpreter.run_defaults import flat_memory_failure_message, flat_window, io_mode_name
 from flipjump.utils.classes import TerminationCause
@@ -122,7 +122,7 @@ def run(
     @param print_termination: if true print the termination statistics
     @param last_ops_debugging_list_length: The length of the last-ops list
     @param profile: if true collect the full per-op statistics (uses the slower featured run-loop)
-    @param flat_max_words: the native engine's flat-storage span limit, in words (2^23 by default).
+    @param flat_max_words: the native engine's flat-storage window, in words (None: see run_flags below).
     only affects native-engine runs - ignored when a pure-python loop runs (e.g. when
     breakpoints/tracing/profiling force the featured loop)
     @param flat_required: the flat window must be allocated: if it cannot be, raise
@@ -188,7 +188,7 @@ def debug(
     @param print_termination: if true print the termination statistics
     @param last_ops_debugging_list_length: The length of the last-ops list
     @param profile: if true collect the full per-op statistics (uses the slower featured run-loop)
-    @param flat_max_words: the native engine's flat-storage span limit, in words (2^23 by default).
+    @param flat_max_words: the native engine's flat-storage window, in words (None: see run_flags below).
     only affects native-engine runs - ignored when a pure-python loop runs (e.g. when
     breakpoints/tracing/profiling force the featured loop)
     @param flat_required: the flat window must be allocated: if it cannot be, raise
@@ -202,8 +202,52 @@ def debug(
     :note: This is a wrapper function to the fjm_run.run() function.
     """
     header = read_fjm_header(fjm_path)
+    created_device = io_device is None
     if io_device is None:
         io_device = make_io_device(io_mode_name(header))
+    try:
+        return _debug(
+            fjm_path,
+            debugging_file,
+            header,
+            io_device,
+            breakpoints_addresses,
+            breakpoints,
+            breakpoints_contains,
+            show_trace,
+            print_time,
+            print_termination,
+            last_ops_debugging_list_length,
+            profile,
+            flat_max_words,
+            flat_required,
+            flat_memory,
+            run_flags,
+        )
+    finally:
+        if created_device:
+            io_device.close()  # a device the caller never saw (e.g. the pc window) is released here
+
+
+def _debug(  # noqa: C901
+    fjm_path: Path,
+    debugging_file: Optional[Path],
+    header: FjmHeader,
+    io_device: IODevice,
+    breakpoints_addresses: Optional[Set[int]],
+    breakpoints: Optional[Set[str]],
+    breakpoints_contains: Optional[Set[str]],
+    show_trace: bool,
+    print_time: bool,
+    print_termination: bool,
+    last_ops_debugging_list_length: Optional[int],
+    profile: bool,
+    flat_max_words: Optional[int],
+    flat_required: bool,
+    flat_memory: bool,
+    run_flags: Optional[int],
+) -> TerminationStatistics:
+    """debug()'s body, once the device is decided (debug() closes a device it created itself)"""
     window = flat_window(header, flat_max_words=flat_max_words, flat_memory=flat_memory, run_flags=run_flags)
 
     breakpoint_handler = get_breakpoint_handler(
@@ -246,6 +290,9 @@ def run_test_output(
     print_time: bool = True,
     print_termination: bool = True,
     last_ops_debugging_list_length: Optional[int] = None,
+    flat_max_words: Optional[int] = None,
+    flat_memory: bool = False,
+    run_flags: Optional[int] = None,
 ) -> bool:
     """
     runs a .fjm file (with the FlipJump interpreter) with the given input, and checks that it finished successfuly and
@@ -262,6 +309,7 @@ def run_test_output(
     @param print_time: if true print running times
     @param print_termination: if true print the termination statistics
     @param last_ops_debugging_list_length: The length of the last-ops list
+    @param flat_max_words, flat_memory, run_flags: the flat-memory window, as in run()
     @return: True if the run finished successfully, and with the expected output.
     @raises AssertionError: if should_raise_assertion_error, and the run finished unexpectedly or with an
     unexpected output.
@@ -283,6 +331,9 @@ def run_test_output(
         print_time=print_time,
         print_termination=print_termination,
         last_ops_debugging_list_length=last_ops_debugging_list_length,
+        flat_max_words=flat_max_words,
+        flat_memory=flat_memory,
+        run_flags=run_flags,
     )
 
     try:
