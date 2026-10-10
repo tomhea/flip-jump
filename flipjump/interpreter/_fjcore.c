@@ -1102,14 +1102,18 @@ static PyObject* Memory_set_words_bytes(MemoryObject* self, PyObject* args)
     const uint64_t w = (uint64_t)self->w;
     Page* page = NULL;
     uint64_t page_index = 0, i;
-    if (!PyArg_ParseTuple(args, "KSKK|p", &start_word, &data, &data_word_offset, &count, &relative_jumps)) {
+    if (!PyArg_ParseTuple(args, "KOKK|p", &start_word, &data, &data_word_offset, &count, &relative_jumps)) {
         return NULL;
     }
     if (word_bytes == 0) {
         PyErr_SetString(PyExc_RuntimeError, "set_words_bytes on a Memory that was never initialized");
         return NULL;
     }
-    if (PyBytes_AsStringAndSize(data, &buffer, &buffer_length) < 0) {
+    /* bytes, or a bytearray (the loader builds the decompressed data in one, to hold a single copy) */
+    if (PyByteArray_Check(data)) {
+        buffer = PyByteArray_AsString(data);
+        buffer_length = PyByteArray_Size(data);
+    } else if (PyBytes_AsStringAndSize(data, &buffer, &buffer_length) < 0) {
         return NULL;
     }
     if (data_word_offset + count < data_word_offset ||

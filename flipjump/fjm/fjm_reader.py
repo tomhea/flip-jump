@@ -12,7 +12,7 @@ from enum import IntEnum
 from pathlib import Path
 from struct import unpack
 from time import sleep
-from typing import BinaryIO, Callable, List, Tuple, Dict, Optional
+from typing import BinaryIO, Callable, List, Tuple, Dict, Optional, Union
 
 from flipjump.fjm.fjm_consts import (
     FJ_MAGIC,
@@ -165,19 +165,6 @@ class Reader:
         for segment_start, segment_length, data_start, data_length in segments:
             # data is laid out as (flip-word, jump-word) op-pairs, so its length must be even
             #  (the relative-jump reconstruction below relies on this).
-            if data_length % 2 != 0:
-                raise FlipJumpReadFjmException(
-                    f"Bad .fjm file: segment data-length must be even (an integer number of ops), got {data_length}."
-                )
-            if data_start + data_length > len(data):
-                raise FlipJumpReadFjmException(
-                    f"Bad .fjm file: segment data range [{data_start}, {data_start + data_length})"
-                    f" exceeds data pool length {len(data)}."
-                )
-            if data_length > segment_length:
-                raise FlipJumpReadFjmException(
-                    f"Bad .fjm file: segment data-length {data_length} exceeds its segment-length {segment_length}."
-                )
             self.memory_segments.append(MemorySegment(segment_start, segment_length))
             if self.version in (FJMVersion.RelativeJumpVersion, FJMVersion.CompressedVersion):
                 word = (1 << self.memory_width) - 1
@@ -352,20 +339,25 @@ def read_fjm_header(input_file: Path) -> FjmHeader:
 _DECOMPRESS_CHUNK = 1 << 20
 
 
-def read_fjm_raw(input_file: Path, on_progress: Optional[Callable[[float], None]] = None) -> Tuple[FjmHeader, bytes]:
+def read_fjm_raw(
+    input_file: Path, on_progress: Optional[Callable[[float], None]] = None
+) -> Tuple[FjmHeader, Union[bytes, bytearray]]:
     """
     read the .fjm's header, segments and its raw data: the (decompressed) data pool as bytes of
     little-endian w-bit words, exactly as the segments index it (jump words still relative in
     versions 2-3, see FjmHeader.relative_jumps). This is the lean load: no python object per word.
     @param input_file: the path to the .fjm file
     @param on_progress: if given, called with the decompression's progress, a fraction in [0, 1]
-    @return: the header, and the data bytes
+    @return: the header, and the data (a bytearray when it was decompressed)
     """
     with open(input_file, 'rb') as fjm_file:
         header = _read_header(fjm_file, input_file)
-        file_data = fjm_file.read()
+        stored_data = fjm_file.read()
+    file_data: Union[bytes, bytearray] = stored_data
     if FJMVersion.CompressedVersion == header.version:
-        file_data = _decompress_in_chunks(file_data, on_progress)
+        data_words = max((start + length for _, _, start, length in header.segments), default=0)
+        file_data = _decompress_in_chunks(stored_data, on_progress, data_words * header.memory_width // 8)
+        del stored_data
     word_bytes = header.memory_width // 8
     if len(file_data) % word_bytes != 0:
         raise FlipJumpReadFjmException(
@@ -376,37 +368,56 @@ def read_fjm_raw(input_file: Path, on_progress: Optional[Callable[[float], None]
     return header, file_data
 
 
-def _decompress_in_chunks(file_data: bytes, on_progress: Optional[Callable[[float], None]]) -> bytes:
+def _decompress_in_chunks(
+    file_data: bytes, on_progress: Optional[Callable[[float], None]], expected_size: int = 0
+) -> bytearray:
     """
     exactly lzma.decompress(file_data, format=_LZMA_FORMAT, filters=...), fed in chunks so its progress
     can be reported: the data must end with a complete stream; further streams after it are decoded
     too, and junk after the last stream is ignored - as lzma.decompress does.
+    @param expected_size: the decompressed size the segments imply - the output buffer is allocated at
+    that size up front and filled in place (growing it piece by piece re-copies it on every resize)
     """
     damaged = 'Error: The compressed data is damaged; Unable to decompress.'
-    parts = []
+    output = bytearray(expected_size)
+    size = 0
+
+    def put(piece: bytes) -> None:
+        nonlocal size
+        end = size + len(piece)
+        if end <= len(output):
+            output[size:end] = piece
+        else:
+            del output[size:]
+            output.extend(piece)
+        size = end
+
     remaining = file_data
     first_stream = True
     while True:
         decompressor = lzma.LZMADecompressor(format=_LZMA_FORMAT, filters=_LZMA_DECOMPRESSION_FILTERS)
         position = 0
+        stream_start = size
         try:
             while position < len(remaining) and not decompressor.eof:
                 chunk = remaining[position : position + _DECOMPRESS_CHUNK]  # noqa: E203
                 position += len(chunk)
-                parts.append(decompressor.decompress(chunk))
+                put(decompressor.decompress(chunk))
                 if on_progress is not None:
                     on_progress(min(1.0, (len(file_data) - len(remaining) + position) / len(file_data)))
         except lzma.LZMAError as e:
             if first_stream:
                 raise FlipJumpReadFjmException(damaged) from e
-            break  # junk after the last stream (lzma.decompress ignores it too)
+            size = stream_start  # junk after the last stream: ignored, as lzma.decompress does
+            break
         if not decompressor.eof:
             raise FlipJumpReadFjmException(damaged)
         remaining = decompressor.unused_data + remaining[position:]
         if not remaining:
             break
         first_stream = False
-    return b''.join(parts)
+    del output[size:]
+    return output
 
 
 def validate_segments(segments: List[Tuple[int, int, int, int]], data_words: int) -> None:

@@ -8,6 +8,7 @@ the bars on changes nothing in what is assembled.
 """
 
 import io
+import re
 from pathlib import Path
 from typing import Any, List
 
@@ -33,8 +34,11 @@ class _Terminal(io.StringIO):
 
 @pytest.fixture(autouse=True)
 def progress_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    for var in ('FLIPJUMP_PROGRESS', 'NO_COLOR', 'TERM', 'FLIPJUMP_NO_NATIVE'):
+    for var in ('FLIPJUMP_PROGRESS', 'TERM', 'FLIPJUMP_NO_NATIVE'):
         monkeypatch.delenv(var, raising=False)
+    # no color, on every platform: the screen tests count characters, and escape codes have no width.
+    # (on POSIX a fake terminal gets color, on Windows it can't - test_color_* cover the color itself)
+    monkeypatch.setenv('NO_COLOR', '1')
 
 
 def test_off_a_terminal_it_prints_what_print_timer_printed() -> None:
@@ -217,3 +221,31 @@ def test_clear_progress_line_erases_the_bar_before_other_output() -> None:
         bar.update(0.5, stage='half')
         progress_module.clear_progress_line()
         assert _screen_row(stream.getvalue()).strip() == ''
+
+
+_ESCAPE = re.compile(r'\x1b\[[0-9;]*m')
+
+
+def test_color_is_drawn_and_has_no_width(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv('NO_COLOR')
+    monkeypatch.setattr(progress_module, '_enable_windows_vt', lambda stream: True)
+    monkeypatch.setattr(progress_module, '_terminal_columns', lambda stream: 70)
+    stream = _Terminal()
+    with ProgressBar('  stage:  ', stream=stream, total=1.0) as bar:
+        bar.update(0.5, stage='half')
+    frames = stream.getvalue().split('\r')
+    assert any(_ESCAPE.search(frame) for frame in frames)
+    assert all(len(_ESCAPE.sub('', frame)) < 70 for frame in frames[:-1])
+    assert _screen_row(_ESCAPE.sub('', stream.getvalue())).rstrip() == frames[-1].rstrip()
+
+
+@pytest.mark.parametrize('no_color, colored', [('1', False), ('', True)])
+def test_no_color_turns_the_color_off_only_when_set(
+    monkeypatch: pytest.MonkeyPatch, no_color: str, colored: bool
+) -> None:
+    monkeypatch.setenv('NO_COLOR', no_color)
+    monkeypatch.setattr(progress_module, '_enable_windows_vt', lambda stream: True)
+    stream = _Terminal()
+    with ProgressBar('  stage:  ', stream=stream, total=1.0) as bar:
+        bar.update(0.5)
+    assert bool(_ESCAPE.search(stream.getvalue())) == colored

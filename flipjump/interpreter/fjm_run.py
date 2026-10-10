@@ -233,8 +233,14 @@ def run(
                 "Unknown exception during running an .fjm file, please report this bug"
             ) from unknown_exception
 
-    with ProgressBar('  loading memory:  ', print_time=print_time):
-        mem = fjm_reader.Reader(fjm_path)
+    try:
+        with ProgressBar('  loading memory:  ', print_time=print_time):
+            mem = fjm_reader.Reader(fjm_path)
+    except KeyboardInterrupt:
+        header = fjm_reader.read_fjm_header(fjm_path)
+        return TerminationStatistics(
+            RunStatistics(header.memory_width, last_ops_debugging_list_length), TerminationCause.KeyboardInterrupt
+        )
     mem.assert_runnable()  # a program must hold its first op at address 0 (both engines)
 
     statistics = RunStatistics(mem.memory_width, last_ops_debugging_list_length)
@@ -301,6 +307,7 @@ def _load_native(
     except ValueError as bad_segment:
         raise FlipJumpReadFjmException(f"Bad .fjm file {fjm_path}: {bad_segment}") from bad_segment
     try:
+        progress.clear()  # the engine may warn on stderr (a flat allocation that fell back to paged)
         core.decide_storage()
     except MemoryError as memory_error:
         window = min(header.span_words, flat_max_words) if flat_max_words else header.span_words

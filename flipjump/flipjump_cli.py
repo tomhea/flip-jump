@@ -149,6 +149,17 @@ class FlatWindow(NamedTuple):
     run_flag: str  # who turned the flat-memory run flag on: 'compiled', '--run-flags', or '' (off)
 
 
+def _env_flat_max_words() -> int:
+    """FLIPJUMP_FLAT_MAX_WORDS as the engine reads it (strtoull's leading number, any base prefix);
+    0 when unset or not a positive number - the engine then ignores it too"""
+    match = re.match(r'\s*(0[xX][0-9a-fA-F]+|0[0-7]*|[1-9][0-9]*)', os.environ.get('FLIPJUMP_FLAT_MAX_WORDS', ''))
+    return (
+        int(match.group(1), 0 if match.group(1)[:2].lower() == '0x' else (8 if match.group(1).startswith('0') else 10))
+        if match
+        else 0
+    )
+
+
 def flat_window_for(args: argparse.Namespace, header: FjmHeader) -> FlatWindow:
     """
     the native engine's flat window, in words. In this order of precedence:
@@ -171,7 +182,7 @@ def flat_window_for(args: argparse.Namespace, header: FjmHeader) -> FlatWindow:
     span = max(1, header.span_words)
     if getattr(args, 'flat_memory', False):
         return FlatWindow(span, True, '--flat-memory', run_flag)
-    if os.environ.get('FLIPJUMP_FLAT_MAX_WORDS'):
+    if _env_flat_max_words():
         return FlatWindow(None, False, 'env', run_flag)
     if run_flag:
         return FlatWindow(span, True, 'run flag', run_flag)
@@ -368,7 +379,8 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         metavar='N',
         type=_check_int_positive,
         default=None,
-        help="the native engine's flat-storage window, in words (2^23 by default). memory below "
+        help="the native engine's flat-storage window, in words (by default: the program's span when it "
+        "is at most 2^24 words, else 2^23). memory below "
         "the window runs in the fast flat array; segments reaching above it keep the slower paged "
         "mode for that part (hybrid). raising it costs startup time and memory (8 bytes per word of "
         "window), never per-op speed. the FLIPJUMP_FLAT_MAX_WORDS environment variable sets the same limit",
@@ -492,6 +504,10 @@ def _parse_number(value: str) -> int:
     """an int in python syntax (decimal, 0x.., 0b..), or argparse's error naming what is wrong"""
     try:
         return int(value, 0)
+    except ValueError:
+        pass
+    try:
+        return int(value, 10)  # e.g. '01', which int(x, 0) refuses
     except ValueError:
         raise argparse.ArgumentTypeError(f'{value!r} is not a number') from None
 

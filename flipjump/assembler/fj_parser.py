@@ -65,6 +65,8 @@ def syntax_error_at(code_position: CodePosition, msg: str = '') -> None:
         error_string = f"Syntax Error in {code_position}"
     all_errors += f"{error_string}\n"
 
+    clear_progress_line()
+
     print(error_string)
 
 
@@ -264,6 +266,7 @@ class FJLexer(sly.Lexer):
 
         error_string = f"Lexing Error in {get_position(self.lineno)}: {t.value[0]}"
         all_errors += f"{error_string}\n"
+        clear_progress_line()
         print(error_string)
 
         self.index += 1
@@ -544,6 +547,7 @@ class FJParser(sly.Parser):
             error_string = f'Syntax Error in {get_position(token.lineno)}, token=("{token.type}", {token.value})'
 
         all_errors += f"{error_string}\n"
+        clear_progress_line()
         print(error_string)
 
     # Parsing Rules:

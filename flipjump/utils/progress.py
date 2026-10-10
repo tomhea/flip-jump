@@ -2,7 +2,8 @@
 the live progress bar of a long stage (assembling, loading a program).
 
 `ProgressBar` is a drop-in for `PrintTimer`: it prints the same `  stage:  1.234s` line when the
-stage ends, so a log, a pipe or a test sees exactly what it always saw. Only on an interactive
+stage ends, so a log, a pipe or a test sees exactly what it always saw (a stage that raises ends with
+`stopped after 1.234s` instead). Only on an interactive
 terminal does the line come alive while the stage runs:
 
       loading memory:  ███████████████▋░░░░░░░░░░░░░░  52%  0:01 · 0:01 left  decompressing
@@ -21,7 +22,7 @@ import os
 import shutil
 import sys
 from time import monotonic, time
-from typing import Any, Dict, Optional, TextIO, Tuple
+from typing import Any, Dict, List, Optional, TextIO, Tuple
 
 _REDRAW_SECONDS = 0.08
 _BAR_WIDTH = 30  # cells, at most; a narrow terminal gets a shorter bar
@@ -38,8 +39,10 @@ _COLOR_RESET = '\x1b[0m'
 
 # the bar currently on screen, if any (see clear_progress_line)
 _shown_bar: Optional['ProgressBar'] = None
-# the console modes changed to show color, restored at exit: {handle: original mode}
+# the console modes changed to show color: {handle: original mode}. Restored when the bar ends (and at
+# exit, in case it never does), so the program's own output is never interpreted as escapes.
 _changed_console_modes: Dict[int, int] = {}
+_atexit_registered: List[bool] = []
 
 
 def _restore_console_modes() -> None:
@@ -49,13 +52,15 @@ def _restore_console_modes() -> None:
         kernel32 = getattr(ctypes, 'windll').kernel32
         for handle, mode in _changed_console_modes.items():
             kernel32.SetConsoleMode(handle, mode)
-    except Exception:  # noqa: BLE001 - best effort, at exit
+    except Exception:  # noqa: BLE001 - best effort
         return
+    finally:
+        _changed_console_modes.clear()
 
 
 def _enable_windows_vt(stream: TextIO) -> bool:
-    """turn on ANSI escape processing in a Windows console (off by default in the classic one); the
-    original mode is restored at exit. @return: whether escapes will render"""
+    """turn on ANSI escape processing in a Windows console (off by default in the classic one); see
+    _changed_console_modes. @return: whether escapes will render"""
     if os.name != 'nt':
         return True
     try:
@@ -73,7 +78,8 @@ def _enable_windows_vt(stream: TextIO) -> bool:
             return True
         if not kernel32.SetConsoleMode(handle, mode.value | enable_virtual_terminal_processing):
             return False
-        if not _changed_console_modes:
+        if not _atexit_registered:
+            _atexit_registered.append(True)
             atexit.register(_restore_console_modes)
         _changed_console_modes.setdefault(handle, mode.value)
         return True
@@ -185,6 +191,8 @@ class ProgressBar:
             line = self.init_message + elapsed
             padding = ' ' * max(0, self._drawn_width - len(line))
             print('\r' + line + padding, file=self.stream, flush=True)
+            if self._color:
+                _restore_console_modes()
         else:
             print(elapsed, file=self.stream, flush=True)
 

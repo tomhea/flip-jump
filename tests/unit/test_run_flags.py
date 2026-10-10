@@ -524,3 +524,49 @@ def test_a_non_number_flag_value_says_so(capsys: pytest.CaptureFixture[str]) -> 
     with pytest.raises(SystemExit):
         flipjump_cli.parse_arguments(cmd_line_args=['--asm', '-o', 'o.fjm', '--io-mode', 'pc', 'a.fj'])
     assert "'pc' is not a number" in capsys.readouterr().err
+
+
+def test_a_damaged_later_stream_contributes_nothing() -> None:
+    # lzma.decompress drops a later stream that fails mid-way - even one longer than a chunk
+    from flipjump.fjm.fjm_reader import _decompress_in_chunks
+
+    filters = _lzma_compression_filters(64, 0)
+    first = lzma.compress(b'first' * 30, format=_LZMA_FORMAT, filters=filters)
+    second = bytearray(lzma.compress(bytes(range(256)) * 12_000, format=_LZMA_FORMAT, filters=filters))
+    second[len(second) * 2 // 3] ^= 0xFF
+    data = first + bytes(second)
+    expected = lzma.decompress(data, format=_LZMA_FORMAT, filters=[{"id": lzma.FILTER_LZMA2}])
+    assert bytes(_decompress_in_chunks(data, None)) == expected == b'first' * 30
+
+
+@native_engine_required
+def test_a_file_that_changes_during_the_load_is_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from flipjump.fjm import fjm_reader
+
+    fjm_path = assemble_to_path(_TWO_SEGMENTS, tmp_path, memory_width=32)
+    real_read_raw = fjm_reader.read_fjm_raw
+
+    def read_raw_of_another_file(path: Path, on_progress: Any = None) -> Any:
+        header, data = real_read_raw(path, on_progress)
+        header.segments = header.segments[:1]
+        return header, data
+
+    monkeypatch.setattr(fjm_reader, 'read_fjm_raw', read_raw_of_another_file)
+    with pytest.raises(FlipJumpReadFjmException, match='changed while'):
+        _lean_load(fjm_path)
+
+
+@native_engine_required
+@pytest.mark.parametrize('value', ['0', 'many'])
+def test_an_env_window_the_engine_ignores_does_not_cancel_the_run_flag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    fjm_path = assemble_to_path(_high_segment_program(_BIG_TOP), tmp_path, memory_width=32)
+    _set_run_flags(fjm_path, RUN_FLAG_FLAT_MEMORY)
+    monkeypatch.setenv('FLIPJUMP_FLAT_MAX_WORDS', value)
+    assert _run_and_spy(fjm_path, monkeypatch, []) == (_BIG_TOP + 4, True, 'flat')
+
+
+def test_flag_values_with_leading_zeros_are_numbers() -> None:
+    args, _ = flipjump_cli.parse_arguments(cmd_line_args=['--asm', '-o', 'o.fjm', '--run-flags', '01', 'a.fj'])
+    assert args.run_flags == 1
