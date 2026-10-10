@@ -335,6 +335,8 @@ def read_fjm_header(input_file: Path) -> FjmHeader:
         return _read_header(fjm_file, input_file)
 
 
+# an upper bound on how much LZMA2 data can expand (measured ~6,861x on 256 MB of zeros)
+_LZMA_MAX_EXPANSION = 8192
 # the decompression is fed in chunks of this many compressed bytes, so its progress can be shown
 _DECOMPRESS_CHUNK = 1 << 20
 
@@ -379,7 +381,9 @@ def _decompress_in_chunks(
     that size up front and filled in place (growing it piece by piece re-copies it on every resize)
     """
     damaged = 'Error: The compressed data is damaged; Unable to decompress.'
-    output = bytearray(expected_size)
+    # the size comes from the (not yet validated) segment table: trust it only as far as LZMA2 can expand
+    # (~6,900x at most), so a damaged header cannot make this allocate gigabytes before it is rejected
+    output = bytearray(expected_size if 0 <= expected_size <= _LZMA_MAX_EXPANSION * len(file_data) else 0)
     size = 0
 
     def put(piece: bytes) -> None:

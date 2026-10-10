@@ -150,9 +150,9 @@ class FlatWindow(NamedTuple):
 
 
 def _env_flat_max_words() -> int:
-    """FLIPJUMP_FLAT_MAX_WORDS as the engine reads it (strtoull's leading number, any base prefix);
-    0 when unset or not a positive number - the engine then ignores it too"""
-    match = re.match(r'\s*(0[xX][0-9a-fA-F]+|0[0-7]*|[1-9][0-9]*)', os.environ.get('FLIPJUMP_FLAT_MAX_WORDS', ''))
+    """FLIPJUMP_FLAT_MAX_WORDS as far as the engine reads it (strtoull's leading number, any base prefix,
+    an optional sign): nonzero exactly when the engine honours it; 0 when unset or not a number"""
+    match = re.match(r'\s*[+-]?(0[xX][0-9a-fA-F]+|0[0-7]*|[1-9][0-9]*)', os.environ.get('FLIPJUMP_FLAT_MAX_WORDS', ''))
     return (
         int(match.group(1), 0 if match.group(1)[:2].lower() == '0x' else (8 if match.group(1).startswith('0') else 10))
         if match

@@ -237,9 +237,9 @@ def run(
         with ProgressBar('  loading memory:  ', print_time=print_time):
             mem = fjm_reader.Reader(fjm_path)
     except KeyboardInterrupt:
-        header = fjm_reader.read_fjm_header(fjm_path)
+        # (the width only labels the empty statistics; the 64 default spares re-reading the file)
         return TerminationStatistics(
-            RunStatistics(header.memory_width, last_ops_debugging_list_length), TerminationCause.KeyboardInterrupt
+            RunStatistics(64, last_ops_debugging_list_length), TerminationCause.KeyboardInterrupt
         )
     mem.assert_runnable()  # a program must hold its first op at address 0 (both engines)
 

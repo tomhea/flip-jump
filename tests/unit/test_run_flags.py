@@ -527,16 +527,35 @@ def test_a_non_number_flag_value_says_so(capsys: pytest.CaptureFixture[str]) -> 
 
 
 def test_a_damaged_later_stream_contributes_nothing() -> None:
-    # lzma.decompress drops a later stream that fails mid-way - even one longer than a chunk
-    from flipjump.fjm.fjm_reader import _decompress_in_chunks
+    # lzma.decompress drops a later stream that fails mid-way. The second stream must be LONGER THAN A
+    # CHUNK compressed, so the damage is met after part of it was already decoded - else nothing tests it.
+    import random
+
+    from flipjump.fjm.fjm_reader import _DECOMPRESS_CHUNK, _decompress_in_chunks
 
     filters = _lzma_compression_filters(64, 0)
     first = lzma.compress(b'first' * 30, format=_LZMA_FORMAT, filters=filters)
-    second = bytearray(lzma.compress(bytes(range(256)) * 12_000, format=_LZMA_FORMAT, filters=filters))
-    second[len(second) * 2 // 3] ^= 0xFF
+    generator = random.Random(7)  # nosec B311 - deterministic test data, not security
+    second = bytearray(
+        lzma.compress(bytes(generator.choice(b'ABCD') for _ in range(6_000_000)), format=_LZMA_FORMAT, filters=filters)
+    )
+    assert len(second) > _DECOMPRESS_CHUNK
+    second[len(second) * 9 // 10] ^= 0xFF
     data = first + bytes(second)
     expected = lzma.decompress(data, format=_LZMA_FORMAT, filters=[{"id": lzma.FILTER_LZMA2}])
-    assert bytes(_decompress_in_chunks(data, None)) == expected == b'first' * 30
+    assert expected == b'first' * 30
+    for expected_size in (0, len(expected), 10_000_000):
+        assert bytes(_decompress_in_chunks(data, None, expected_size)) == expected
+
+
+@pytest.mark.parametrize('data_start', [1 << 60, 1 << 37, 1 << 28])
+def test_a_huge_data_offset_is_rejected_without_allocating_it(tmp_path: Path, data_start: int) -> None:
+    # the decompression buffer is sized from the (not yet validated) segment table - a damaged one must
+    # still be rejected like the Reader rejects it, not crash or allocate gigabytes
+    stream = lzma.compress(bytes(16), format=_LZMA_FORMAT, filters=_lzma_compression_filters(128, 6))
+    path = tmp_path / 'x.fjm'
+    path.write_bytes(_raw_fjm(64, [(0, 2, 0, 2), (100, 2, data_start, 2)], stream, version=3))
+    _both_readers_reject(path, 'exceeds data pool length')
 
 
 @native_engine_required
