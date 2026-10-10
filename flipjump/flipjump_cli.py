@@ -11,7 +11,7 @@ import re
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Tuple, List, Callable, NamedTuple, Optional
+from typing import Tuple, List, Callable, Optional
 
 from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
@@ -19,11 +19,11 @@ from flipjump.fjm.fjm_consts import (
     FJMVersion,
     SUPPORTED_VERSIONS_NAMES,
     IO_MODE_NAMES,
-    RUN_FLAG_FLAT_MEMORY,
     bad_io_mode_message,
     bad_run_flags_message,
 )
-from flipjump.fjm.fjm_reader import FjmHeader, read_fjm_header
+from flipjump.fjm.fjm_reader import read_fjm_header
+from flipjump.interpreter.run_defaults import io_mode_name
 from flipjump.fjm.fjm_writer import Writer
 from flipjump.interpreter.io_devices.cli_devices import IO_MODES, make_io_device, split_io_mode
 from flipjump.utils.constants import (
@@ -106,14 +106,13 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
         raise  # error_func exits; re-raise in case a custom error_func returns
 
     # --io overrides the io mode compiled into the program (--io-mode when it was assembled)
-    io_mode = args.io if args.io is not None else IO_MODE_NAMES[header.io_mode]
+    io_mode = args.io if args.io is not None else io_mode_name(header)
     try:
         io_device = make_io_device(io_mode)
     except IODeviceException as io_device_error:
         error_func(str(io_device_error))
         raise  # error_func exits; re-raise in case a custom error_func returns
 
-    flat_window = flat_window_for(args, header)
     try:
         flipjump_quickstart.debug(
             in_fjm_path,
@@ -127,90 +126,13 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
             print_termination=not args.silent,
             last_ops_debugging_list_length=args.debug_ops_list,
             profile=args.profile,
-            flat_max_words=flat_window.words,
-            flat_required=flat_window.required,
+            # the window: --flat-max-words, --flat-memory, --run-flags, else the program's own (run_defaults)
+            flat_max_words=args.flat_max_words,
+            flat_memory=getattr(args, 'flat_memory', False),
+            run_flags=args.run_flags,
         )
     except FlipJumpFlatMemoryException as flat_error:
-        sys.exit(flat_memory_failure_message(flat_error, flat_window))
-
-
-# with neither --flat-memory nor --flat-max-words (nor the flat-memory run flag), a program whose span is
-# at most this many words runs fully flat on its own (at most 8 bytes per word: up to 128MB); a larger
-# span keeps the engine's default window
-FLAT_MEMORY_AUTO_MAX_WORDS = 1 << 24
-
-
-class FlatWindow(NamedTuple):
-    """the native engine's flat window for a run, and what chose it"""
-
-    words: Optional[int]  # None: the engine's own default (FLIPJUMP_FLAT_MAX_WORDS, else 2^23)
-    required: bool  # flat memory was asked for: failing to allocate it is an error, not a slow fallback
-    source: str  # '--flat-max-words', '--flat-memory', 'env', 'run flag', 'auto', 'default'
-    run_flag: str  # who turned the flat-memory run flag on: 'compiled', '--run-flags', or '' (off)
-
-
-def _env_flat_max_words() -> int:
-    """FLIPJUMP_FLAT_MAX_WORDS as far as the engine reads it (strtoull's leading number, any base prefix,
-    an optional sign): nonzero exactly when the engine honours it; 0 when unset or not a number"""
-    match = re.match(r'\s*[+-]?(0[xX][0-9a-fA-F]+|0[0-7]*|[1-9][0-9]*)', os.environ.get('FLIPJUMP_FLAT_MAX_WORDS', ''))
-    return (
-        int(match.group(1), 0 if match.group(1)[:2].lower() == '0x' else (8 if match.group(1).startswith('0') else 10))
-        if match
-        else 0
-    )
-
-
-def flat_window_for(args: argparse.Namespace, header: FjmHeader) -> FlatWindow:
-    """
-    the native engine's flat window, in words. In this order of precedence:
-      --flat-max-words N           - that window;
-      --flat-memory                - the program's span (its highest segment end), required;
-      FLIPJUMP_FLAT_MAX_WORDS      - the engine reads it (a window set by the environment);
-      the flat-memory run flag     - the span, required. The flag is the one compiled into the .fjm
-                                     (--run-flags when it was assembled), or `--run-flags` given now;
-      otherwise                    - the span if it is at most FLAT_MEMORY_AUTO_MAX_WORDS, else the
-                                     engine's default window.
-    """
-    run_flags_override = getattr(args, 'run_flags', None)
-    run_flags = header.run_flags if run_flags_override is None else run_flags_override
-    run_flag = ''
-    if run_flags & RUN_FLAG_FLAT_MEMORY:
-        run_flag = 'compiled' if run_flags_override is None else '--run-flags'
-
-    if args.flat_max_words is not None:
-        return FlatWindow(int(args.flat_max_words), False, '--flat-max-words', run_flag)
-    span = max(1, header.span_words)
-    if getattr(args, 'flat_memory', False):
-        return FlatWindow(span, True, '--flat-memory', run_flag)
-    if _env_flat_max_words():
-        return FlatWindow(None, False, 'env', run_flag)
-    if run_flag:
-        return FlatWindow(span, True, 'run flag', run_flag)
-    if span <= FLAT_MEMORY_AUTO_MAX_WORDS:
-        return FlatWindow(span, False, 'auto', run_flag)
-    return FlatWindow(None, False, 'default', run_flag)
-
-
-def flat_memory_failure_message(flat_error: FlipJumpFlatMemoryException, flat_window: FlatWindow) -> str:
-    """what to tell the user when the flat memory a run asked for could not be allocated"""
-    causes = []
-    if flat_window.source == '--flat-memory':
-        causes.append('--flat-memory was given')
-    if flat_window.run_flag == 'compiled':
-        causes.append("this program's run flags (compiled into the .fjm) turn on flat memory")
-    elif flat_window.run_flag == '--run-flags':
-        causes.append('--run-flags turns on flat memory')
-    fixes = []
-    if flat_window.source == '--flat-memory':
-        fixes.append('without --flat-memory')
-    if flat_window.run_flag:
-        fixes.append('with --run-flags 0')
-    cause = ', and '.join(causes) or 'flat memory was asked for'
-    fix = f"Running it {' and '.join(fixes)} might fix that, at a cost of speed." if fixes else ''
-    return (
-        f"flipjump: {cause}: the whole program in one array of {flat_error.window_words:,} words, "
-        f"and allocating it failed ({flat_error}).\n{fix}"
-    )
+        sys.exit(str(flat_error))  # what failed, and how to run it anyway (run_defaults.flat_memory_failure_message)
 
 
 def get_version(version: Optional[int], is_outfile_specified: bool, error_func: ErrorFunc) -> FJMVersion:

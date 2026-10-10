@@ -16,7 +16,8 @@ from flipjump.utils.exceptions import FlipJumpParsingException
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_reader import Reader, read_fjm_header
 from flipjump.interpreter import fjm_run
-from flipjump.flipjump_cli import FLAT_MEMORY_AUTO_MAX_WORDS, get_version, parse_arguments
+from flipjump.flipjump_cli import get_version, parse_arguments
+from flipjump.interpreter.run_defaults import FLAT_MEMORY_AUTO_MAX_WORDS
 from tests.unit.unit_utils import HELLO_NO_STL, MINIMAL_STARTUP, assemble_to_path
 
 
