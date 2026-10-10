@@ -555,10 +555,10 @@ def _random_letters(size: int) -> bytes:
     return bytes(generator.choice(b'ABCD') for _ in range(size))
 
 
-@pytest.mark.parametrize('data_start_words', [1 << 60, 1 << 37, 1 << 28, 2_000_000_000])
+@pytest.mark.parametrize('data_start_words', [1 << 60, 1 << 37, 1 << 28, 1_500_000_000])
 def test_a_huge_data_offset_is_rejected_without_allocating_it(tmp_path: Path, data_start_words: int) -> None:
     # the decompression buffer may only grow with the decoded data, never to what a damaged segment table
-    # claims: a ~1.5 MB stream (2,000,000,000 words = 16 GB claimed, inside an "8192x the compressed size"
+    # claims: a ~1.9 MB stream (1,500,000,000 words = 12 GB claimed, inside an "8192x the compressed size"
     # bound) must be rejected like the Reader rejects it, with the buffer's peak bounded by the real data
     import tracemalloc
 
@@ -614,3 +614,23 @@ def test_an_env_window_the_engine_ignores_does_not_cancel_the_run_flag(
 def test_flag_values_with_leading_zeros_are_numbers() -> None:
     args, _ = flipjump_cli.parse_arguments(cmd_line_args=['--asm', '-o', 'o.fjm', '--run-flags', '01', 'a.fj'])
     assert args.run_flags == 1
+
+
+def test_the_decompression_buffer_grows_with_highly_compressible_data() -> None:
+    # 50 MB of zeros compress ~7000x - far past the buffer's 16x start - under a huge claim: the buffer
+    # must grow to exactly the data, and its peak stay near the data, not the claim
+    import tracemalloc
+
+    from flipjump.fjm.fjm_reader import _decompress_in_chunks
+
+    data = bytes(50_000_000)
+    stream = lzma.compress(data, format=_LZMA_FORMAT, filters=_lzma_compression_filters(64, 6))
+    assert len(stream) * 16 < len(data)
+    tracemalloc.start()
+    try:
+        decoded = _decompress_in_chunks(stream, None, 1 << 40)
+        _current, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert decoded == data
+    assert peak < 3 * len(data), f'{peak:,} bytes allocated for {len(data):,} bytes of data'

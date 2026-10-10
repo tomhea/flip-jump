@@ -378,13 +378,14 @@ def _decompress_in_chunks(
     exactly lzma.decompress(file_data, format=_LZMA_FORMAT, filters=...), fed in chunks so its progress
     can be reported: the data must end with a complete stream; further streams after it are decoded
     too, and junk after the last stream is ignored - as lzma.decompress does.
-    @param expected_size: the decompressed size the segments imply - the output buffer is allocated at
-    that size up front and filled in place (growing it piece by piece re-copies it on every resize)
+    @param expected_size: the decompressed size the segments imply. The buffer is allocated at that size,
+    capped at _INITIAL_EXPANSION x the compressed size, and filled in place; beyond it, it grows with the
+    decoded data. A legitimate program is allocated once; a damaged claim costs about 2x the real data.
     """
     damaged = 'Error: The compressed data is damaged; Unable to decompress.'
-    # the size comes from the (not yet validated) segment table, so it is only a CAP on how big the buffer
-    # may grow ahead of the data: the buffer starts at what the compressed size makes plausible and doubles
-    # as decoded bytes arrive - a damaged table costs at most ~2x the real data, never its own claim
+    # the size comes from the (not yet validated) segment table, so it is trusted only as far as the
+    # compressed size makes plausible; past that the buffer grows as decoded bytes arrive - a damaged table
+    # costs about 2x the real data (or 16x the compressed size), never its own claim
     expected_size = max(0, expected_size)
     output = bytearray(min(expected_size, _INITIAL_EXPANSION * len(file_data)))
     size = 0
@@ -393,9 +394,11 @@ def _decompress_in_chunks(
         nonlocal size
         end = size + len(piece)
         if end > len(output):
-            grown = max(end, min(expected_size, 2 * len(output)))
-            output.extend(bytes(grown - len(output)))
-        output[size:end] = piece
+            del output[size:]
+            output.extend(piece)  # bytearray's own amortized growth, no zero-filled temporary
+        else:
+            with memoryview(output) as view:
+                view[size:end] = piece  # (a slice assignment to the bytearray would copy the piece first)
         size = end
 
     remaining = file_data
