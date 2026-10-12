@@ -7,9 +7,11 @@ macro, and produces the flat op-list that the assembler then resolves into addre
 from __future__ import annotations
 
 import collections
+import dataclasses
 import re
 import sys
 from typing import (
+    Any,
     Dict,
     Tuple,
     Iterable,
@@ -84,6 +86,86 @@ def heat_key(path: str) -> str:
     names sites and groups this way, so a site keeps its heat when lines above it move; sites that
     then share a key are told apart by the order the program reaches them (BlockPool's `heat`)."""
     return _SITE_COORDINATES.sub('', path)
+
+
+# Why BlockPool declined a table (BlockPool.declines_by_group). A STALE cause would not have
+# happened had the pool been given the counts of the very program it placed (BlockPool.census):
+#   'new_group'      - the counts do not name the table's group, so it has no block
+#   'width_overflow' - the table is wider than the counts said its group's (or width's) tables are
+#   'overflow'       - the group has more tables (of this width) than the counts said
+# An INHERENT one happens whatever the counts:
+#   'no_block'       - the group is counted, but the pool had no room for its block (or evicted it)
+#   'too_wide'       - the table is wider than any slot `max_slot_ops` allows
+DECLINE_STALE = ('new_group', 'width_overflow', 'overflow')
+DECLINE_INHERENT = ('no_block', 'too_wide')
+
+
+@dataclasses.dataclass
+class BlockCensus:
+    """What a placing BlockPool must be told before it can size and place blocks, in the shape it
+    takes them: `BlockPool(w, base, **census.pool_kwargs(), ...)`.
+
+    `counts` (tables per group), `widths` (each group's widest table, in ops), `width_hist` (each
+    group's {width: tables}) and `alias` ({group: canonical group}), all keyed by the group
+    EXPRESSION string BlockPool keys groups by. A counting pass produces one (BlockPool.census on a
+    counting pool), and so does a PLACING pass - for the program it actually placed, so a build can
+    cache it as the next build's counts instead of running a counting expansion first.
+    """
+
+    counts: Dict[str, int]
+    widths: Dict[str, int]
+    width_hist: Dict[str, Dict[int, int]]
+    alias: Dict[str, str]
+
+    def pool_kwargs(self) -> Dict[str, Any]:
+        """BlockPool's `counts`, `widths`, `width_hist` and `alias` arguments (copies)"""
+        return {
+            'counts': dict(self.counts),
+            'widths': dict(self.widths),
+            'width_hist': {group: dict(hist) for group, hist in self.width_hist.items()},
+            'alias': dict(self.alias),
+        }
+
+    def to_json(self) -> Dict[str, Any]:
+        """a JSON-safe form (a histogram's widths become strings); from_json reverses it"""
+        return {
+            'counts': dict(self.counts),
+            'widths': dict(self.widths),
+            'width_hist': {group: {str(w): n for w, n in hist.items()} for group, hist in self.width_hist.items()},
+            'alias': dict(self.alias),
+        }
+
+    @classmethod
+    def from_json(cls, blob: Mapping[str, Any]) -> BlockCensus:
+        return cls(
+            counts={group: int(n) for group, n in blob['counts'].items()},
+            widths={group: int(w) for group, w in blob['widths'].items()},
+            width_hist={group: {int(w): int(n) for w, n in hist.items()} for group, hist in blob['width_hist'].items()},
+            alias={group: str(canonical) for group, canonical in (blob.get('alias') or {}).items()},
+        )
+
+
+def merge_aliased_groups(
+    counts: Mapping[str, int],
+    widths: Mapping[str, int],
+    width_hist: Mapping[str, Mapping[int, int]],
+    alias: Mapping[str, str],
+) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, Dict[int, int]]]:
+    """(counts, widths, width_hist) with every aliased group folded into its canonical group: the
+    counts add, the widths take the max, the histograms add. A pool given an `alias` keys its blocks
+    by the canonical group, so these are the counts it needs (see BlockPool.canonical_alias)."""
+    merged_counts: Dict[str, int] = {}
+    merged_widths: Dict[str, int] = {}
+    for group, count in counts.items():
+        canonical = alias.get(group, group)
+        merged_counts[canonical] = merged_counts.get(canonical, 0) + count
+        merged_widths[canonical] = max(merged_widths.get(canonical, 0), widths.get(group, 16))
+    merged_hist: Dict[str, Dict[int, int]] = {}
+    for group, hist in width_hist.items():
+        into = merged_hist.setdefault(alias.get(group, group), {})
+        for width, count in hist.items():
+            into[width] = into.get(width, 0) + count
+    return merged_counts, merged_widths, merged_hist
 
 
 class TablePool:
@@ -260,6 +342,10 @@ class TablePool:
         """{source-word Expr: block base} to bake into the program; a plain pool pins nothing"""
         return {}
 
+    def labels_resolved(self, labels: LabelsDict) -> None:
+        """assemble() calls this once every label of the program is known, before the labels are
+        resolved into the binary. A plain pool has no use for them."""
+
 
 class BlockPool(TablePool):
     """Give every table dispatched through ONE jump word a block, so the arm flips an INDEX.
@@ -295,6 +381,21 @@ class BlockPool(TablePool):
 
     Blocks are power-of-two sized and aligned to their own size, so the base has no bits where the
     index goes and the arming XOR adds rather than subtracts.
+
+    THE COUNTS OF THE LAST BUILD ARE GOOD ENOUGH. A placing pool records every table it is offered,
+    placed or declined, exactly as a counting pool would (`recording`, a counting pool fed the same
+    reservations), so after its assembly `census()` is what a counting expansion of THIS program
+    reports - in the shape the next placing pool takes (BlockCensus). A build can therefore cache it
+    and place straight from the previous build's counts:
+
+        placing = BlockPool(w, base, **cached.pool_kwargs())    # the last build's census
+        assemble(..., table_pool=placing)
+        fresh = placing.census()                                # cache it for the next build
+
+    Stale counts cost speed, never correctness: a table they have no room for is DECLINED and stays
+    inline, where it still dispatches correctly (see broken_groups), and `declines_by_group` says
+    which and why (DECLINE_STALE / DECLINE_INHERENT). When `fresh == cached` the counts were this
+    program's own, and the binary is the one the two-pass build makes.
 
     PIN PROTECTION (`heat`, opt-in). Two things re-roll a hot word's cost when the program changes:
     its group can lose its block (and so its pin), and indices follow ENCOUNTER order, so the
@@ -347,10 +448,29 @@ class BlockPool(TablePool):
         # with canonical_alias, once the labels are known.
         self.alias = alias or {}
         self.exprs: Dict[str, Expr] = {}
+        # what a placing pass actually met (see the class docstring): a counting pool, keyed by the
+        # RAW group like any counting pool, fed every reservation this pool is offered
+        self._recording: Optional[BlockPool] = (
+            None
+            if self.counting
+            else BlockPool(
+                memory_width,
+                pool_base,
+                span_bits=span_bits,
+                max_slot_ops=max_slot_ops,
+                spread=spread,
+                spread_min_count=spread_min_count,
+                wants=wants,
+            )
+        )
+        # the alias the labels of this pool's own assembly imply (labels_resolved), for census()
+        self.seen_alias: Optional[Dict[str, str]] = None
         # why a table was declined, by cause
-        self.declined_no_block = 0  # its group got no block at all (pool exhausted)
-        self.declined_too_wide = 0  # wider than max_slot_ops, so it cannot share a uniform slot
+        self.declined_no_block = 0  # its group got no block at all: pool exhausted, or a group the counts lack
+        self.declined_too_wide = 0  # wider than its slot: than max_slot_ops allows, or than the counts said
         self.declined_overflow = 0  # more tables in the group than the counting pass saw
+        # ...and by group: {group: {cause: tables}}, the causes of DECLINE_STALE and DECLINE_INHERENT
+        self.declines_by_group: Dict[str, Dict[str, int]] = {}
         # opt-in: when the pool cannot hold every block, drop the least valuable groups (tables per
         # bit) before allocating, instead of whichever groups the biggest-first cursor reaches last
         self.evict_by_value = evict_by_value
@@ -411,6 +531,56 @@ class BlockPool(TablePool):
             if first != group:
                 alias[group] = first
         return alias
+
+    @property
+    def recording(self) -> BlockPool:
+        """the counting pool of what this pool was offered: itself when counting, and for a placing
+        pool the shadow counting pool fed every reservation it got - placed or declined, ungrouped
+        ones included - before anything could decline it"""
+        return self if self._recording is None else self._recording
+
+    def labels_resolved(self, labels: LabelsDict) -> None:
+        """record the alias this assembly's labels imply among the groups it met (census reads it).
+        Only a dict of aliases is kept, never the labels."""
+        self.seen_alias = self.recording.canonical_alias(labels)
+
+    def census(self, merge_aliases: bool = False) -> BlockCensus:
+        """The counts, widths, width histogram and alias of every table this pool was offered: what a
+        counting expansion of the program just assembled reports, in the shape a placing pool takes
+        (see the class docstring). Cache it as the next build's counts.
+
+        @param merge_aliases: fold the groups whose words this assembly's labels resolved to one
+        address into their canonical group (canonical_alias), as a placing pool given that `alias`
+        needs them. Needs the labels, so it is only available after assemble().
+        """
+        alias: Dict[str, str] = {}
+        if merge_aliases:
+            if self.seen_alias is None:
+                raise FlipJumpPreprocessorException(
+                    'census(merge_aliases=True) needs the assembly\'s labels: call it after assemble() '
+                    '(which hands them to the pool), or merge with an alias of your own'
+                )
+            alias = dict(self.seen_alias)
+        recording = self.recording
+        counts, widths, width_hist = merge_aliased_groups(
+            recording.counts, recording.widths, recording.width_hist, alias
+        )
+        return BlockCensus(counts, widths, width_hist, alias)
+
+    def decline_report(self) -> Dict[str, int]:
+        """{cause: tables declined} over every group (DECLINE_STALE + DECLINE_INHERENT)"""
+        report = {cause: 0 for cause in DECLINE_STALE + DECLINE_INHERENT}
+        for causes in self.declines_by_group.values():
+            for cause, count in causes.items():
+                report[cause] += count
+        return report
+
+    @property
+    def stale_declines(self) -> int:
+        """tables declined only because the counts were not this program's own (DECLINE_STALE).
+        Zero means fresh counts would have placed exactly the same tables."""
+        report = self.decline_report()
+        return sum(report[cause] for cause in DECLINE_STALE)
 
     def _cheapest_order(self, slots: int) -> List[int]:
         """every index of a block of `slots`, lowest popcount first (cached and shared: read only)"""
@@ -630,17 +800,31 @@ class BlockPool(TablePool):
             )
 
     def _decline(self, group: str, cause: str) -> None:
-        """a table the pass cannot place. Except for a group that got no block at all, this breaks
-        the group: see broken_groups."""
+        """a table the pass cannot place, for `cause` (DECLINE_STALE / DECLINE_INHERENT). Except for
+        a group that got no block at all, this breaks the group: see broken_groups."""
         self.declined += 1
-        if cause == 'no_block':
+        causes = self.declines_by_group.setdefault(group, {})
+        causes[cause] = causes.get(cause, 0) + 1
+        if cause in ('no_block', 'new_group'):
             self.declined_no_block += 1
-        elif cause == 'too_wide':
+        elif cause in ('too_wide', 'width_overflow'):
             self.declined_too_wide += 1
             self.broken_groups.add(group)
-        else:
+        elif cause == 'overflow':
             self.declined_overflow += 1
             self.broken_groups.add(group)
+        else:
+            raise ValueError(f'unknown decline cause {cause!r}')
+
+    def _width_cause(self, width: int) -> str:
+        """why a table of `width` ops did not fit its slot: 'too_wide' when no counts could give it
+        one (it is wider than max_slot_ops allows), else 'width_overflow' (the counts said its
+        group's tables are narrower). A uniform slot is the group's width capped at max_slot_ops and
+        rounded up to a power of two; a width bucket holds at most max_slot_ops."""
+        widest = max(self.max_slot_ops, 1)
+        if not self.width_buckets:
+            widest = 1 << (widest - 1).bit_length()
+        return 'too_wide' if width > widest else 'width_overflow'
 
     def reserve(
         self,
@@ -650,6 +834,9 @@ class BlockPool(TablePool):
         group_expr: Optional[Expr] = None,
         labels_prefix: str = '',
     ) -> Optional[Tuple[int, bool, int]]:
+        if self._recording is not None:
+            # first, so a table is recorded whatever happens to it below (census)
+            self._recording.reserve(ops_alignment, table_ops, group, group_expr, labels_prefix)
         if group is None:
             self.ungrouped += 1  # no disarm wflip found: cannot be blocked
             return None
@@ -665,13 +852,15 @@ class BlockPool(TablePool):
             return None  # the counting pass must not change the layout
         hot_site = self._hot_site(group, labels_prefix) if group in self.hot_sites else None
         if group not in self.groups:
-            self._decline(group, 'no_block')  # no block was reserved for it (see _preallocate)
+            # no block was reserved for it (see _preallocate): the pool had no room, or the counts
+            # do not have the group at all
+            self._decline(group, 'no_block' if group in self.counts else 'new_group')
             return None
         if self.width_buckets:
             return self._reserve_bucketed(ops_alignment, table_ops, group, group_expr, hot_site)
         slots, slot_bits = self._uniform_shape(group)
         if table_ops * self.op_bits > slot_bits or ops_alignment * self.op_bits > slot_bits:
-            self._decline(group, 'too_wide')  # wider than the counting pass saw
+            self._decline(group, self._width_cause(max(table_ops, ops_alignment)))  # wider than its slot
             return None
         if hot_site is not None:
             hot = self._hot_index(group, 0, slots, hot_site)
@@ -723,7 +912,7 @@ class BlockPool(TablePool):
         layout, _ = self._bucket_layout(group)
         entry = layout.get(slot_ops)
         if entry is None:  # a width the counting pass never saw for this group
-            self._decline(group, 'too_wide')
+            self._decline(group, 'width_overflow')
             return None
         offset, slots, bucket_count = entry
         key = (group, slot_ops)

@@ -510,6 +510,8 @@ def assemble(
         # so it is resolved here, now that every label is known.
         pinned = None
         if table_pool is not None:
+            # a BlockPool records the alias these labels imply, for its census (a dict, not the labels)
+            table_pool.labels_resolved(labels)
             if table_pool.pinned_words() and table_pool.reads_words_raw and table_pool.pin_exclude is None:
                 raise FlipJumpAssemblerException(
                     "the program reads cells through hex.pointers, and a word the BlockPool pinned cannot be "

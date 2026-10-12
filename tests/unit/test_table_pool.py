@@ -6,11 +6,15 @@ aligned block, so the arming wflip writes an index instead of an address), the t
 
 the property pinned throughout: a relocated or blocked program produces the SAME output as the
 inline one, in fewer ops - a table is reached only by jump, so its address is free to choose.
+
+a placing BlockPool's census (what it met, in the shape the next placing pool takes) must equal a
+counting pass's report on the same program, and stale counts may cost ops but never correctness.
 """
 
+import json
 from itertools import islice
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import pytest
 
@@ -19,11 +23,15 @@ from flipjump.assembler.assembler import resolve_pinned
 from flipjump.assembler.inner_classes.expr import Expr
 from flipjump.assembler.inner_classes.ops import CodePosition, FlipJump, Label, MacroName, Op, Pad, WordFlip
 from flipjump.assembler.preprocessor import (
+    DECLINE_INHERENT,
+    DECLINE_STALE,
     RESERVED_BELOW,
+    BlockCensus,
     BlockPool,
     PreprocessorData,
     TablePool,
     heat_key,
+    merge_aliased_groups,
     relocatable_table_end,
 )
 from flipjump.fjm.fjm_reader import Reader
@@ -879,3 +887,253 @@ def test_a_blocked_program_with_declined_tables_is_still_correct(tmp_path: Path)
     pinned = set(placing.pinned_words())
     for group, (_, expr) in placing.groups.items():
         assert (expr in pinned) == (expr is not None and group not in placing.broken_groups)
+
+
+# --- the census: a placing pass records what it met, so the next build needs no counting pass ---
+
+# `b` and `b+0` name one word through two expressions, so its groups come in aliased pairs
+ALIAS_PROGRAM = """
+stl.startup_and_init_all
+    hex.set 4, a, 0x1234
+    hex.set 4, b, 0x5678
+    hex.xor 4, a, b
+    hex.xor 4, a, b+0
+    hex.print_uint 4, a, 1, 1
+    stl.loop
+a: hex.vec 4
+b: hex.vec 4
+"""
+
+CENSUS_PROGRAMS = {'hex.xor': XOR_PROGRAM, 'hex.cmp/shift/mul': CMP_PROGRAM, 'aliased words': ALIAS_PROGRAM}
+STALE_KINDS = ('fresh', 'too_few', 'too_narrow', 'missing_groups', 'too_many', 'other_program')
+
+
+@pytest.fixture(scope='module')
+def counted_programs(tmp_path_factory: pytest.TempPathFactory) -> Dict[str, Tuple[bytes, BlockPool]]:
+    """{program: (its inline output, the counting pool that counted it)}, built once per module"""
+    tmp_path = tmp_path_factory.mktemp('counted')
+    counted = {}
+    for index, source in enumerate(CENSUS_PROGRAMS.values()):
+        reference, _, _ = build_and_run(source, tmp_path, None, name=f'inline{index}')
+        counting = BlockPool(W, POOL_BASE)
+        build_and_run(source, tmp_path, counting, name=f'counting{index}')
+        counted[source] = (reference, counting)
+    return counted
+
+
+def _stale(kind: str, census: BlockCensus, other: BlockCensus) -> Dict[str, Any]:
+    """placing-pool arguments made from `census` the way a cached census goes stale"""
+    kwargs = census.pool_kwargs()
+    if kind == 'too_few':  # every group lost tables since: the extra ones overflow
+        kwargs['counts'] = {group: max(1, count // 2) for group, count in census.counts.items()}
+    elif kind == 'too_narrow':  # every table grew: none fits its slot
+        kwargs['widths'] = {group: 1 for group in census.widths}
+        kwargs['width_hist'] = {group: {1: count} for group, count in census.counts.items()}
+    elif kind == 'missing_groups':  # half the groups are new since
+        kept = sorted(census.counts)[::2]
+        kwargs = BlockCensus(
+            {g: census.counts[g] for g in kept},
+            {g: census.widths[g] for g in kept},
+            {g: census.width_hist[g] for g in kept},
+            {g: c for g, c in census.alias.items() if c in kept},
+        ).pool_kwargs()
+    elif kind == 'too_many':  # every group shrank since: room to spare, nothing declines
+        kwargs['counts'] = {group: 2 * count for group, count in census.counts.items()}
+    elif kind == 'other_program':  # a cache of a different program altogether
+        kwargs = other.pool_kwargs()
+    else:
+        assert kind == 'fresh'
+    return kwargs
+
+
+def assert_recorded_as_counted(placing: BlockPool, counting: BlockPool) -> None:
+    """the placing pass's recording is what the counting pass reported: every field a census
+    carries (raw and alias-merged), the group expressions, and the tables that had no group"""
+    recording = placing.recording
+    assert recording is not placing and recording.counting
+    assert recording.counts == counting.counts
+    assert recording.widths == counting.widths
+    assert recording.width_hist == counting.width_hist
+    assert {g: str(e) for g, e in recording.exprs.items()} == {g: str(e) for g, e in counting.exprs.items()}
+    assert recording.ungrouped == counting.ungrouped
+    assert placing.census() == counting.census()
+    assert placing.census(merge_aliases=True) == counting.census(merge_aliases=True)
+
+
+@pytest.mark.parametrize('pin_broken', [False, True], ids=['unpin-broken', 'pin-broken'])
+@pytest.mark.parametrize('kind', STALE_KINDS)
+@pytest.mark.parametrize('program', list(CENSUS_PROGRAMS), ids=list(CENSUS_PROGRAMS))
+def test_a_placing_pass_records_what_a_counting_pass_reports_and_stays_correct(
+    tmp_path: Path,
+    counted_programs: Dict[str, Tuple[bytes, BlockPool]],
+    program: str,
+    kind: str,
+    pin_broken: bool,
+) -> None:
+    source = CENSUS_PROGRAMS[program]
+    reference, counting = counted_programs[source]
+    other_source = CMP_PROGRAM if source is XOR_PROGRAM else XOR_PROGRAM
+    other = counted_programs[other_source][1].census(merge_aliases=True)
+    given = _stale(kind, counting.census(merge_aliases=True), other)
+    placing = BlockPool(W, POOL_BASE, pin_broken=pin_broken, **given)
+    output, _, _ = build_and_run(source, tmp_path, placing)
+
+    assert output == reference  # stale counts cost ops, never correctness
+    assert_recorded_as_counted(placing, counting)
+    report = placing.decline_report()
+    assert (
+        sum(report.values())
+        == placing.declined
+        == sum(n for causes in placing.declines_by_group.values() for n in causes.values())
+    )
+    assert placing.stale_declines == placing.declined  # these programs have no inherent decline
+    expected_cause = {'too_few': 'overflow', 'too_narrow': 'width_overflow', 'missing_groups': 'new_group'}.get(kind)
+    if kind in ('fresh', 'too_many'):  # the program's own counts, or more room than it needs
+        assert placing.declined == 0 and not placing.broken_groups
+    elif expected_cause is None:  # another program's: shares some groups (`a`, `b`), not their counts
+        assert placing.stale_declines > 0
+    else:
+        assert report[expected_cause] > 0
+    # the census of what it placed is the program's own whatever it was given, so comparing the two
+    # tells a build whether its cache was stale
+    fresh = placing.census(merge_aliases=True)
+    assert fresh == counting.census(merge_aliases=True)
+    assert (fresh.pool_kwargs() == given) == (kind == 'fresh')
+
+
+@pytest.mark.parametrize('program', list(CENSUS_PROGRAMS), ids=list(CENSUS_PROGRAMS))
+def test_a_cached_census_rebuilds_the_two_pass_binary(
+    tmp_path: Path, counted_programs: Dict[str, Tuple[bytes, BlockPool]], program: str
+) -> None:
+    """build 1 places from a STALE cache (a different program's) and caches its census; build 2
+    places from that census and is the two-pass build's binary, byte for byte"""
+    source = CENSUS_PROGRAMS[program]
+    reference, counting = counted_programs[source]
+    _, two_pass_ops, two_pass_fjm = build_and_run(
+        source, tmp_path, BlockPool(W, POOL_BASE, **counting.census(merge_aliases=True).pool_kwargs()), name='two'
+    )
+    other_source = CMP_PROGRAM if source is XOR_PROGRAM else XOR_PROGRAM
+    stale = counted_programs[other_source][1].census(merge_aliases=True)
+    first = BlockPool(W, POOL_BASE, **json_round_trip(stale).pool_kwargs())
+    output, _, _ = build_and_run(source, tmp_path, first, name='first')
+    assert output == reference and first.stale_declines > 0
+    cached = json_round_trip(first.census(merge_aliases=True))
+    assert cached != stale
+
+    second = BlockPool(W, POOL_BASE, **cached.pool_kwargs())
+    output, ops, fjm_path = build_and_run(source, tmp_path, second, name='second')
+    assert output == reference and ops == two_pass_ops
+    assert fjm_path.read_bytes() == two_pass_fjm.read_bytes()
+    assert second.declined == 0 and second.stale_declines == 0
+    assert second.census(merge_aliases=True) == cached  # a fixed point: the next build changes nothing
+
+
+def json_round_trip(census: BlockCensus) -> BlockCensus:
+    """through the JSON a build caches it as"""
+    return BlockCensus.from_json(json.loads(json.dumps(census.to_json())))
+
+
+def test_the_census_survives_json_and_rebuilds_its_pool() -> None:
+    census = BlockCensus({'g': 3, 'h': 1}, {'g': 31, 'h': 16}, {'g': {16: 2, 31: 1}, 'h': {16: 1}}, {'h2': 'h'})
+    assert json_round_trip(census) == census
+    pool = BlockPool(W, POOL_BASE, **json_round_trip(census).pool_kwargs())
+    assert pool.counts == census.counts and pool.width_hist == census.width_hist and pool.alias == census.alias
+
+
+def test_merging_aliases_adds_counts_and_histograms_and_keeps_the_widest() -> None:
+    merged = merge_aliased_groups(
+        {'x': 2, 'y': 3, 'z': 1},
+        {'x': 16, 'y': 31, 'z': 16},
+        {'x': {16: 2}, 'y': {16: 2, 31: 1}, 'z': {16: 1}},
+        {'y': 'x'},
+    )
+    assert merged == ({'x': 5, 'z': 1}, {'x': 31, 'z': 16}, {'x': {16: 4, 31: 1}, 'z': {16: 1}})
+
+
+def test_a_census_merges_the_aliases_its_own_labels_imply() -> None:
+    placing = BlockPool(W, POOL_BASE, counts={'(x + 32)': 1}, widths={'(x + 32)': 16})
+    placing.reserve(16, 16, group='(x + 32)', group_expr=_sum('x', 32))
+    placing.reserve(16, 16, group='(x + w)', group_expr=_sum('x', 'w'))  # the same word: 'new_group'
+    with pytest.raises(FlipJumpPreprocessorException, match='after assemble'):
+        placing.census(merge_aliases=True)  # no labels yet
+    assert placing.census() == BlockCensus(
+        {'(x + 32)': 1, '(x + w)': 1}, {'(x + 32)': 16, '(x + w)': 16}, {'(x + 32)': {16: 1}, '(x + w)': {16: 1}}, {}
+    )
+    placing.labels_resolved({'x': 4096, 'w': 32})
+    assert placing.census(merge_aliases=True) == BlockCensus(
+        {'(x + 32)': 2}, {'(x + 32)': 16}, {'(x + 32)': {16: 2}}, {'(x + w)': '(x + 32)'}
+    )
+
+
+def test_declines_are_told_apart_per_group_by_cause() -> None:
+    word = Expr('g')
+    # uniform slots: g's tables are counted 16 ops wide, max_slot_ops is 32
+    pool = BlockPool(W, POOL_BASE, counts={'g': 2, 'big': 1 << 20}, widths={'g': 16, 'big': 16}, span_bits=1 << 20)
+    assert pool.reserve(16, 16, group='g', group_expr=word) is not None
+    assert pool.reserve(16, 24, group='g', group_expr=word) is None  # fits a 32-op slot, not g's 16
+    assert pool.reserve(16, 40, group='g', group_expr=word) is None  # fits no slot max_slot_ops allows
+    assert pool.reserve(16, 16, group='g', group_expr=word) is not None
+    assert pool.reserve(16, 16, group='g', group_expr=word) is None  # a third table: g counted 2
+    assert pool.reserve(16, 16, group='new', group_expr=Expr('new')) is None
+    assert pool.reserve(16, 16, group='big', group_expr=Expr('big')) is None  # counted, no room
+    assert pool.declines_by_group == {
+        'g': {'width_overflow': 1, 'too_wide': 1, 'overflow': 1},
+        'new': {'new_group': 1},
+        'big': {'no_block': 1},
+    }
+    assert pool.decline_report() == {
+        'new_group': 1,
+        'width_overflow': 1,
+        'overflow': 1,
+        'no_block': 1,
+        'too_wide': 1,
+    }
+    assert pool.stale_declines == 3 and set(DECLINE_STALE) | set(DECLINE_INHERENT) == set(pool.decline_report())
+    # the aggregate counters keep their meaning: no block (new or not), too wide (either way), overflow
+    assert (pool.declined_no_block, pool.declined_too_wide, pool.declined_overflow) == (2, 2, 1)
+    assert pool.broken_groups == {'g', 'big'}  # `big` broke when it got no block (_preallocate)
+
+    # width buckets: a width the counts lack for the group is stale, one over max_slot_ops is not
+    bucketed = BlockPool(
+        W, POOL_BASE, counts={'g': 2}, widths={'g': 16}, width_hist={'g': {16: 2}}, width_buckets=True, max_slot_ops=64
+    )
+    assert bucketed.reserve(16, 40, group='g', group_expr=word) is None
+    assert bucketed.reserve(16, 65, group='g', group_expr=word) is None
+    assert bucketed.declines_by_group == {'g': {'width_overflow': 1, 'too_wide': 1}}
+
+
+def test_a_recording_that_misses_a_table_is_caught(
+    tmp_path: Path, counted_programs: Dict[str, Tuple[bytes, BlockPool]], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """THE NEGATIVE CONTROL of the census tests: a recorder that drops one table, or keeps one too
+    narrow, must fail assert_recorded_as_counted - else that check proves nothing"""
+    reference, counting = counted_programs[XOR_PROGRAM]
+    real_reserve = BlockPool.reserve
+
+    for mutant in ('drop_last', 'narrow_one'):
+        seen = {'calls': 0}
+
+        def mutated(
+            self: BlockPool,
+            ops_alignment: int,
+            table_ops: int,
+            group: Optional[str] = None,
+            group_expr: Optional[Expr] = None,
+            labels_prefix: str = '',
+            _mutant: str = mutant,
+        ) -> Optional[Tuple[int, bool, int]]:
+            if self.counting and group is not None:  # the RECORDING's reserve, not the placing one
+                seen['calls'] += 1
+                if seen['calls'] == sum(counting.counts.values()) and _mutant == 'drop_last':
+                    return None
+                if seen['calls'] == 1 and _mutant == 'narrow_one':
+                    table_ops = ops_alignment = 1
+            return real_reserve(self, ops_alignment, table_ops, group, group_expr, labels_prefix)
+
+        monkeypatch.setattr(BlockPool, 'reserve', mutated)
+        placing = BlockPool(W, POOL_BASE, **counting.census().pool_kwargs())
+        output, _, _ = build_and_run(XOR_PROGRAM, tmp_path, placing, name=mutant)
+        monkeypatch.setattr(BlockPool, 'reserve', real_reserve)
+        assert output == reference  # the program is fine; only the recording is wrong
+        with pytest.raises(AssertionError):
+            assert_recorded_as_counted(placing, counting)
