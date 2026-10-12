@@ -34,11 +34,14 @@ from flipjump.assembler.preprocessor import (
     merge_aliased_groups,
     relocatable_table_end,
 )
+from flipjump.assembler.fj_parser import parse_macro_tree
+from flipjump.assembler.preprocessor import resolve_macros
 from flipjump.fjm.fjm_reader import Reader
 from flipjump.interpreter import fjm_run
 from flipjump.interpreter.io_devices.FixedIO import FixedIO
 from flipjump.utils.constants import DEFAULT_MAX_MACRO_RECURSION_DEPTH
 from flipjump.utils.exceptions import FlipJumpException, FlipJumpPreprocessorException
+from flipjump.utils.functions import get_file_tuples
 
 W = 32
 OP_BITS = 2 * W
@@ -1137,3 +1140,323 @@ def test_a_recording_that_misses_a_table_is_caught(
         assert output == reference  # the program is fine; only the recording is wrong
         with pytest.raises(AssertionError):
             assert_recorded_as_counted(placing, counting)
+
+
+# --- one pass: tables wait out of the op stream, and are placed once the expansion is done ---
+
+# a table whose entries flip `y+dbit + $ - $` (y's lowest value bit): `$` is computed while the macro
+# expands, so a one-pass pool cannot defer it. 5 -> the entry flips y 2 -> 3, and y ^= x is 6.
+NEXT_ADDRESS_PROGRAM = (
+    """
+def dollar_table x, y @ switch, end {
+    wflip x+w, switch, x
+    pad 16
+  switch:
+"""
+    + '    y+dbit+$-$;end\n' * 16
+    + """
+  end:
+    wflip x+w, switch
+}
+stl.startup_and_init_all
+    hex.set x, 5
+    hex.set y, 2
+    dollar_table x, y
+    hex.xor y, x
+    hex.print_as_digit y, 0
+    stl.loop
+x: hex.hex
+y: hex.hex
+"""
+)
+
+# a table label (an extern of its macro) named by a `rep` count, which is evaluated DURING the
+# expansion - one pass has no address for it yet
+EXPANSION_TIME_PROGRAM = (
+    """
+def ext_table x @ end > ext_switch {
+    wflip x+w, ext_switch, x
+    pad 16
+  ext_switch:
+"""
+    + '    ;end\n' * 16
+    + """
+  end:
+    wflip x+w, ext_switch
+}
+def nothing {
+    ;$
+}
+stl.startup_and_init_all
+    hex.set x, 5
+    ext_table x
+    rep(ext_switch - ext_switch + 1, i) nothing
+    hex.print_as_digit x, 0
+    stl.loop
+x: hex.hex
+"""
+)
+
+# XOR_PROGRAM with more code after its variables: unreachable, but its tables are expanded
+APPENDED_PROGRAM = XOR_PROGRAM + """
+    hex.xor 4, a, b
+    hex.xor 4, b, a
+    stl.loop
+"""
+
+
+def two_pass_build(
+    source: str, tmp_path: Path, merge_aliases: bool = False, memory_width: int = W, **kwargs: Any
+) -> Tuple[bytes, int, Path, BlockPool, BlockPool]:
+    """(output, ops, fjm, counting pool, placing pool) of the two-pass blocking build"""
+    counting = BlockPool(memory_width, POOL_BASE, **kwargs)
+    build_and_run(source, tmp_path, counting, name='counting', memory_width=memory_width)
+    census = counting.census(merge_aliases=merge_aliases).pool_kwargs()
+    placing = BlockPool(memory_width, POOL_BASE, **census, **kwargs)
+    output, ops, fjm_path = build_and_run(source, tmp_path, placing, name='two_pass', memory_width=memory_width)
+    return output, ops, fjm_path, counting, placing
+
+
+def expand_labels(source: str, tmp_path: Path, pool: Optional[TablePool], name: str = 'p') -> Dict[str, int]:
+    """the labels of `source` expanded with the stl and `pool` (macro expansion only)"""
+    fj_path = tmp_path / f'{name}.fj'
+    fj_path.write_text(source)
+    macros = parse_macro_tree(get_file_tuples([str(fj_path)]), W, True)
+    _, labels = resolve_macros(W, macros, table_pool=pool, save_debug_labels=False)
+    return labels
+
+
+ONE_PASS_CASES: Dict[str, Tuple[str, Dict[str, Any]]] = {
+    'hex.xor': (XOR_PROGRAM, {}),
+    'hex.cmp/shift/mul': (CMP_PROGRAM, {}),
+    'aliased words': (ALIAS_PROGRAM, {}),
+    'shifts': (SHIFT_PROGRAM, {'wants': lambda macro_name, labels_prefix: macro_name.name in SHIFT_MACROS}),
+}
+ONE_PASS_LAYOUTS: Dict[str, Dict[str, Any]] = {
+    'uniform': {},
+    'buckets': {'width_buckets': True, 'max_slot_ops': 512},
+    'spread': {'spread': 2, 'spread_min_count': 4},
+}
+
+
+@pytest.mark.parametrize('merge_aliases', [False, True], ids=['no-alias', 'merge-aliases'])
+@pytest.mark.parametrize('layout', list(ONE_PASS_LAYOUTS))
+@pytest.mark.parametrize('case', list(ONE_PASS_CASES))
+def test_one_pass_builds_the_two_pass_binary_byte_for_byte(
+    tmp_path: Path, case: str, layout: str, merge_aliases: bool
+) -> None:
+    source, case_kwargs = ONE_PASS_CASES[case]
+    kwargs = {**case_kwargs, **ONE_PASS_LAYOUTS[layout]}
+    reference, _, _ = build_and_run(source, tmp_path, None, name='inline')
+    two_output, two_ops, two_fjm, counting, placing = two_pass_build(source, tmp_path, merge_aliases, **kwargs)
+    assert placing.declined == 0  # the precondition for identical binaries
+
+    one = BlockPool(W, POOL_BASE, one_pass=True, merge_aliases=merge_aliases, **kwargs)
+    output, ops, fjm_path = build_and_run(source, tmp_path, one, name='one_pass')
+    assert output == two_output == reference
+    assert fjm_path.read_bytes() == two_fjm.read_bytes() and ops == two_ops
+    assert one.deferred == placing.allocated == one.allocated > 0
+    assert one.overflowed == one.declined == one.kept_inline == 0
+    assert one.census(merge_aliases=merge_aliases) == counting.census(merge_aliases=merge_aliases)
+    assert {g: base for g, (base, _) in one.groups.items()} == {g: base for g, (base, _) in placing.groups.items()}
+
+
+def test_one_pass_merges_its_census_by_a_given_alias(
+    tmp_path: Path, counted_programs: Dict[str, Tuple[bytes, BlockPool]]
+) -> None:
+    reference, counting = counted_programs[ALIAS_PROGRAM]
+    merged = counting.census(merge_aliases=True)
+    assert merged.alias  # the program does alias its words
+    _, _, two_fjm = build_and_run(ALIAS_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, **merged.pool_kwargs()), name='two')
+    one = BlockPool(W, POOL_BASE, one_pass=True, alias=merged.alias)  # sized from its census, merged by the alias
+    output, _, fjm_path = build_and_run(ALIAS_PROGRAM, tmp_path, one, name='one')
+    assert output == reference and fjm_path.read_bytes() == two_fjm.read_bytes()
+    assert one.counts == merged.counts
+
+
+@pytest.mark.parametrize('memory_width', [32, 64])
+def test_one_pass_reads_input_and_runs_at_both_widths(tmp_path: Path, memory_width: int) -> None:
+    reference, _, _ = build_and_run(
+        INPUT_PROGRAM, tmp_path, None, name='inline', fixed_input=b'A', memory_width=memory_width
+    )
+    counting = BlockPool(memory_width, POOL_BASE)
+    build_and_run(INPUT_PROGRAM, tmp_path, counting, name='counting', fixed_input=b'A', memory_width=memory_width)
+    placing = BlockPool(memory_width, POOL_BASE, **counting.census().pool_kwargs())
+    _, _, two_fjm = build_and_run(
+        INPUT_PROGRAM, tmp_path, placing, name='two', fixed_input=b'A', memory_width=memory_width
+    )
+    one = BlockPool(memory_width, POOL_BASE, one_pass=True)
+    output, _, fjm_path = build_and_run(
+        INPUT_PROGRAM, tmp_path, one, name='one', fixed_input=b'A', memory_width=memory_width
+    )
+    assert output == reference == b'0x41'
+    assert fjm_path.read_bytes() == two_fjm.read_bytes() and one.deferred > 0
+
+
+def test_one_pass_with_pin_protection_builds_the_two_pass_binary(tmp_path: Path) -> None:
+    counting = _SiteRecorder()
+    build_and_run(XOR_PROGRAM, tmp_path, counting, name='counting')
+    group = max(counting.counts, key=lambda g: (counting.counts[g], g))
+    last_site = heat_key([site for g, site in counting.sites if g == group][-1])
+    occurrence = sum(1 for g, site in counting.sites if g == group and heat_key(site) == last_site) - 1
+    heat = {heat_key(group): [(last_site, occurrence, 16)]}
+    placing = BlockPool(W, POOL_BASE, counts=counting.counts, widths=counting.widths, heat=heat)
+    two_output, _, two_fjm = build_and_run(XOR_PROGRAM, tmp_path, placing, name='two')
+    one = BlockPool(W, POOL_BASE, one_pass=True, heat=heat)
+    output, _, fjm_path = build_and_run(XOR_PROGRAM, tmp_path, one, name='one')
+    assert output == two_output
+    assert one.hot_sites_matched == placing.hot_sites_matched == 1
+    assert fjm_path.read_bytes() == two_fjm.read_bytes()
+
+
+def test_a_one_pass_placement_in_another_order_is_caught(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """THE NEGATIVE CONTROL of the byte-identity tests: placing the same tables in another order is
+    a correct program, and a DIFFERENT binary - which the byte comparison must see"""
+    reference, _, two_fjm, _, _ = two_pass_build(XOR_PROGRAM, tmp_path)
+    real_place = BlockPool.place_deferred
+
+    def reversed_order(self: BlockPool, tables: Any, labels: Dict[str, int]) -> List[Optional[int]]:
+        return real_place(self, tables[::-1], labels)[::-1]
+
+    monkeypatch.setattr(BlockPool, 'place_deferred', reversed_order)
+    output, _, fjm_path = build_and_run(XOR_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True), name='reversed')
+    assert output == reference
+    assert fjm_path.read_bytes() != two_fjm.read_bytes()
+
+
+@pytest.mark.parametrize('buckets', [False, True], ids=['uniform', 'buckets'])
+@pytest.mark.parametrize('pin_broken', [False, True], ids=['unpin-broken', 'pin-broken'])
+def test_one_pass_keeps_a_table_too_wide_for_any_slot_inline_like_two_pass(
+    tmp_path: Path, buckets: bool, pin_broken: bool
+) -> None:
+    """no counts can give hex.cmp's 31-op table a slot of max_slot_ops=16, so a placing pass
+    declines it at its pad; one pass decides it there too, and the binaries stay identical"""
+    kwargs: Dict[str, Any] = {'max_slot_ops': 16, 'pin_broken': pin_broken, 'width_buckets': buckets}
+    counting_kwargs = {k: v for k, v in kwargs.items() if k != 'pin_broken'}
+    counting = BlockPool(W, POOL_BASE, **counting_kwargs)
+    build_and_run(CMP_PROGRAM, tmp_path, counting, name='counting')
+    placing = BlockPool(W, POOL_BASE, **counting.census().pool_kwargs(), **kwargs)
+    two_output, _, two_fjm = build_and_run(CMP_PROGRAM, tmp_path, placing, name='two')
+    one = BlockPool(W, POOL_BASE, one_pass=True, **kwargs)
+    output, _, fjm_path = build_and_run(CMP_PROGRAM, tmp_path, one, name='one')
+    assert output == two_output
+    assert placing.decline_report()['too_wide'] == one.decline_report()['too_wide'] == one.declined > 0
+    assert one.overflowed == 0 and one.broken_groups == placing.broken_groups
+    assert fjm_path.read_bytes() == two_fjm.read_bytes()
+
+
+ONE_PASS_DECLINES: Dict[str, Tuple[Optional[Dict[str, Any]], str]] = {
+    'tiny span': ({'span_bits': 1 << 14}, 'no_block'),
+    'stale counts': (None, 'overflow'),  # half of the program's own counts, frozen
+    'empty counts': ({'counts': {}, 'widths': {}}, 'new_group'),
+}
+
+
+@pytest.mark.parametrize('pin_broken', [False, True], ids=['unpin-broken', 'pin-broken'])
+@pytest.mark.parametrize('scenario', list(ONE_PASS_DECLINES))
+def test_one_pass_sends_what_gets_no_block_to_the_overflow_region(
+    tmp_path: Path, counted_programs: Dict[str, Tuple[bytes, BlockPool]], scenario: str, pin_broken: bool
+) -> None:
+    reference, counting = counted_programs[CMP_PROGRAM]
+    kwargs, cause = ONE_PASS_DECLINES[scenario]
+    if kwargs is None:
+        census = counting.census()
+        kwargs = {**census.pool_kwargs(), 'counts': {g: max(1, n // 2) for g, n in census.counts.items()}}
+    one = BlockPool(W, POOL_BASE, one_pass=True, pin_broken=pin_broken, **kwargs)
+    output, _, fjm_path = build_and_run(CMP_PROGRAM, tmp_path, one)
+    assert output == reference
+    assert one.decline_report()[cause] > 0 and one.overflowed == one.declined
+    assert one.deferred == one.allocated + one.overflowed  # nothing went back inline
+    blocks_end = POOL_BASE + one._used
+    overflow = [s for s in Reader(fjm_path).memory_segments if s.segment_start * W >= blocks_end]
+    assert len(overflow) == one.overflowed  # one segment per overflow table, all above the blocks
+    assert all(s.segment_start * W % (4 * OP_BITS) == 0 for s in overflow)  # aligned like their `pad`
+
+
+def test_the_op_stream_does_not_depend_on_what_one_pass_decides(tmp_path: Path) -> None:
+    """every label outside the tables lands at the same address whatever the pool does with them -
+    while the two-pass build, which keeps a declined table inline, moves them"""
+
+    def outside_tables(labels: Dict[str, int]) -> Dict[str, int]:
+        return {label: address for label, address in labels.items() if address < POOL_BASE}
+
+    configs: List[Dict[str, Any]] = [{}, {'span_bits': 1 << 14}, {'span_bits': 1 << 16}, {'counts': {}, 'widths': {}}]
+    one_pass = [
+        outside_tables(expand_labels(CMP_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True, **config)))
+        for config in configs
+    ]
+    assert all(labels == one_pass[0] for labels in one_pass[1:])
+    counting = BlockPool(W, POOL_BASE)
+    expand_labels(CMP_PROGRAM, tmp_path, counting)
+    census = counting.census().pool_kwargs()
+    extras: List[Dict[str, Any]] = [{}, {'span_bits': 1 << 14}]
+    fresh, tiny = (
+        outside_tables(expand_labels(CMP_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, **census, **extra)))
+        for extra in extras
+    )
+    assert fresh == one_pass[0]  # with nothing declined, both modes lay the stream out alike
+    assert tiny != fresh  # the comparison can see a moved stream
+
+
+def test_one_pass_with_frozen_counts_keeps_the_layout_when_code_is_appended(tmp_path: Path) -> None:
+    """the doom-flipjump game tier assembles twice, the second time with code appended: given the
+    first assembly's census, the second lays out everything the first had at the same addresses"""
+    first = BlockPool(W, POOL_BASE, one_pass=True)
+    first_labels = expand_labels(XOR_PROGRAM, tmp_path, first, name='first')
+    census = first.census()
+    second = BlockPool(W, POOL_BASE, one_pass=True, **census.pool_kwargs())
+    second_labels = expand_labels(APPENDED_PROGRAM, tmp_path, second, name='second')
+    assert {label: second_labels[label] for label in first_labels} == first_labels
+    assert {g: b for g, (b, _) in second.groups.items()} == {g: b for g, (b, _) in first.groups.items()}
+    # each appended table took a spare slot of its group's power-of-two block, or - the block being
+    # full - went to the overflow region
+    appended = sum(second.census().counts.values()) - sum(census.counts.values())
+    assert appended > 0 and second.allocated - first.allocated + second.overflowed == appended
+    assert second.overflowed == second.stale_declines > 0
+    reference, _, _ = build_and_run(XOR_PROGRAM, tmp_path, None, name='inline')
+    output, _, _ = build_and_run(
+        APPENDED_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True, **census.pool_kwargs()), name='appended'
+    )
+    assert output == reference
+
+
+def test_the_overflow_region_can_be_placed_and_must_fit(
+    tmp_path: Path, counted_programs: Dict[str, Tuple[bytes, BlockPool]]
+) -> None:
+    reference, counting = counted_programs[XOR_PROGRAM]
+    base = POOL_BASE // 2  # between the program and the pool
+    pool = BlockPool(W, POOL_BASE, one_pass=True, counts={}, widths={}, overflow_base=base)
+    output, _, fjm_path = build_and_run(XOR_PROGRAM, tmp_path, pool, name='below')
+    assert output == reference and pool.overflowed > 0
+    starts = [s.segment_start * W for s in Reader(fjm_path).memory_segments]
+    assert sum(1 for start in starts if base <= start < POOL_BASE) == pool.overflowed
+    too_few = counting.census().pool_kwargs()
+    too_few['counts'] = {group: count // 2 for group, count in counting.counts.items()}  # some overflow
+    with pytest.raises(FlipJumpException, match='overlaps the blocks'):
+        build_and_run(XOR_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True, overflow_base=POOL_BASE, **too_few))
+    with pytest.raises(FlipJumpException, match='past the 32-bit memory'):
+        build_and_run(
+            XOR_PROGRAM,
+            tmp_path,
+            BlockPool(W, POOL_BASE, one_pass=True, counts={}, widths={}, overflow_base=(1 << W) - OP_BITS),
+        )
+
+
+def test_a_table_whose_entries_use_the_next_address_stays_inline(tmp_path: Path) -> None:
+    reference, _, _ = build_and_run(NEXT_ADDRESS_PROGRAM, tmp_path, None, name='inline')
+    assert reference == b'6'
+    one = BlockPool(W, POOL_BASE, one_pass=True)
+    output, _, _ = build_and_run(NEXT_ADDRESS_PROGRAM, tmp_path, one, name='one')
+    assert output == reference
+    assert one.kept_inline == 1 and one.deferred > 0  # hex.xor's tables still left the stream
+    counting = BlockPool(W, POOL_BASE)
+    build_and_run(NEXT_ADDRESS_PROGRAM, tmp_path, counting, name='counting')
+    assert one.census() == counting.census()  # it is counted all the same
+
+
+def test_a_table_label_evaluated_during_the_expansion_is_refused_by_one_pass(tmp_path: Path) -> None:
+    reference, _, _ = build_and_run(EXPANSION_TIME_PROGRAM, tmp_path, None, name='inline')
+    output, _, _ = two_pass_build(EXPANSION_TIME_PROGRAM, tmp_path)[:3]
+    assert output == reference == b'5'  # two passes know the address when the rep needs it
+    with pytest.raises(FlipJumpException, match='ext_switch, the label of a table that one-pass blocking places'):
+        build_and_run(EXPANSION_TIME_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True), name='one')
