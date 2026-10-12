@@ -292,8 +292,11 @@ def test_window_commands_may_precede_init_screen(tmp_path: Path) -> None:
     write_byte(device, 0x13)
     for byte in (1, 1, 3):
         write_byte(device, byte)
+    write_byte(device, 0x14)  # the max-fps cap too: a program sends it at boot, beside its title and icon
+    write_byte(device, 20)
     assert device.window_title == 'T'
     assert device.window_icon == (1, 1, [3])
+    assert device.max_fps == 20
 
 
 # --- the 0x14 max-fps cap ---
@@ -324,11 +327,13 @@ def test_headless_screen_never_waits_for_the_cap(tmp_path: Path, monkeypatch: py
     init_4x2(device, memory)
     write_byte(device, 0x14)
     write_byte(device, 1)  # one frame a second -- a windowed run would wait ~1s per present
+    started = time_module.perf_counter()
     for _ in range(3):
         write_byte(device, 0x05)  # CMD update_screen_raw: presents a frame
         for pixel in range(8):
             write_byte(device, pixel)
     assert device.frame_count == 3
+    assert time_module.perf_counter() - started < 1.0  # no busy-wait either: three capped frames would take 2 s
 
 
 def test_unknown_screen_command_raises(tmp_path: Path) -> None:

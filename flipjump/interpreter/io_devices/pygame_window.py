@@ -275,7 +275,9 @@ class InteractiveScreen(InMemoryScreen):
         super().__init__(frames_dir=frames_dir)
         self.window = window if window is not None else PygameWindow()
         self._palette_set = False
-        self._last_flush = 0.0  # time.perf_counter() of the previous present, for the max-fps cap
+        # time.perf_counter() of the previous present, for the max-fps cap; -inf: the first present never waits
+        # (perf_counter's starting point is undefined, so 0.0 would hold the first frame on a clock that starts there)
+        self._last_flush = float('-inf')
 
     def _init_screen(self, width: int, height: int, bpp: int, palette_size: int) -> None:
         super()._init_screen(width, height, bpp, palette_size)

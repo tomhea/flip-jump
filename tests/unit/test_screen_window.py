@@ -4,10 +4,13 @@ dummy video driver, so they work on Windows/Linux/macOS and in CI.
 
 pinned: the screen opens/draws the shared window; live key events (incl. the special
 >=0x80 keycodes) flow from the window into a KeyboardIO that does NOT depend on the screen;
-F11 toggles fullscreen and is never delivered; closing the window stops the run; and the CLI
-wires the two interactive devices onto one shared window (a lone live keyboard opens its own).
+F11 toggles fullscreen and is never delivered; closing the window stops the run; the CLI
+wires the two interactive devices onto one shared window (a lone live keyboard opens its own);
+and the 0x14 max-fps cap holds a fast present until its slot -- pumping the window while it
+waits, and only then drawing.
 """
 
+import time
 from pathlib import Path
 from typing import Iterator, List
 
@@ -289,11 +292,13 @@ def test_window_icon_waits_for_the_palette(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 class FakeClock:
-    """time.perf_counter / time.sleep for the window module: sleeping advances the clock"""
+    """time.perf_counter / time.sleep: sleeping advances the clock. It starts at 0.0 -- perf_counter's starting
+    point is undefined, and the first present must not wait whatever it is."""
 
-    def __init__(self, start: float = 1000.0) -> None:
+    def __init__(self, start: float = 0.0) -> None:
         self.now = start
         self.slept: List[float] = []
+        self.on_sleep: List[object] = []  # callables run on each sleep (a test's hook into the wait)
 
     def perf_counter(self) -> float:
         return self.now
@@ -301,6 +306,18 @@ class FakeClock:
     def sleep(self, seconds: float) -> None:
         self.slept.append(seconds)
         self.now += seconds
+        for hook in self.on_sleep:
+            hook()  # type: ignore[operator]
+
+
+@pytest.fixture
+def fake_clock(monkeypatch: pytest.MonkeyPatch) -> FakeClock:
+    """the `time` module's perf_counter and sleep, faked -- the window module calls them as time.perf_counter /
+    time.sleep, so patching the module object reaches it"""
+    clock = FakeClock()
+    monkeypatch.setattr(time, 'perf_counter', clock.perf_counter)
+    monkeypatch.setattr(time, 'sleep', clock.sleep)
+    return clock
 
 
 def send_max_fps(device: InteractiveScreen, max_fps: int) -> None:
@@ -309,12 +326,8 @@ def send_max_fps(device: InteractiveScreen, max_fps: int) -> None:
 
 
 @pytest.mark.parametrize('max_fps', [20, 25])
-def test_max_fps_holds_a_fast_present_until_its_slot(monkeypatch: pytest.MonkeyPatch, max_fps: int) -> None:
-    from flipjump.interpreter.io_devices import pygame_window as window_module
-
-    clock = FakeClock()
-    monkeypatch.setattr(window_module.time, 'perf_counter', clock.perf_counter)
-    monkeypatch.setattr(window_module.time, 'sleep', clock.sleep)
+def test_max_fps_holds_a_fast_present_until_its_slot(fake_clock: FakeClock, max_fps: int) -> None:
+    clock = fake_clock
     device = InteractiveScreen()
     init_2x2_screen(device)
     send_max_fps(device, max_fps)
@@ -327,12 +340,8 @@ def test_max_fps_holds_a_fast_present_until_its_slot(monkeypatch: pytest.MonkeyP
     assert max(clock.slept) <= 0.005  # in short slices, pumping the window between them
 
 
-def test_max_fps_does_not_delay_a_slow_frame(monkeypatch: pytest.MonkeyPatch) -> None:
-    from flipjump.interpreter.io_devices import pygame_window as window_module
-
-    clock = FakeClock()
-    monkeypatch.setattr(window_module.time, 'perf_counter', clock.perf_counter)
-    monkeypatch.setattr(window_module.time, 'sleep', clock.sleep)
+def test_max_fps_does_not_delay_a_slow_frame(fake_clock: FakeClock) -> None:
+    clock = fake_clock
     device = InteractiveScreen()
     init_2x2_screen(device)
     send_max_fps(device, 20)
@@ -342,12 +351,8 @@ def test_max_fps_does_not_delay_a_slow_frame(monkeypatch: pytest.MonkeyPatch) ->
     assert clock.slept == []
 
 
-def test_max_fps_zero_is_no_cap(monkeypatch: pytest.MonkeyPatch) -> None:
-    from flipjump.interpreter.io_devices import pygame_window as window_module
-
-    clock = FakeClock()
-    monkeypatch.setattr(window_module.time, 'perf_counter', clock.perf_counter)
-    monkeypatch.setattr(window_module.time, 'sleep', clock.sleep)
+def test_max_fps_zero_is_no_cap(fake_clock: FakeClock) -> None:
+    clock = fake_clock
     device = InteractiveScreen()
     init_2x2_screen(device)
     send_max_fps(device, 20)
@@ -355,3 +360,46 @@ def test_max_fps_zero_is_no_cap(monkeypatch: pytest.MonkeyPatch) -> None:
     for _ in range(3):
         present_raw_2x2(device)
     assert clock.slept == []
+
+
+def test_max_fps_draws_only_after_the_wait(fake_clock: FakeClock) -> None:
+    """the cap holds the frame, then shows it: the second draw lands at its slot, not before the wait"""
+    clock = fake_clock
+    device = InteractiveScreen()
+    init_2x2_screen(device)
+    drawn_at: List[float] = []
+    real_draw = device.window.draw_indexed
+
+    def draw_and_stamp(*args, **kwargs):  # type: ignore[no-untyped-def]
+        drawn_at.append(clock.now)
+        return real_draw(*args, **kwargs)
+
+    device.window.draw_indexed = draw_and_stamp  # type: ignore[method-assign]
+    send_max_fps(device, 20)
+    present_raw_2x2(device)
+    clock.now += 0.001
+    present_raw_2x2(device)
+    assert drawn_at[1] - drawn_at[0] == pytest.approx(1.0 / 20)
+
+
+def test_max_fps_keeps_pumping_the_window_while_it_waits(fake_clock: FakeClock) -> None:
+    """closing the window during a long wait (a 1 fps cap) ends the run at once -- the wait pumps the window between
+    its slices -- and the held frame is never drawn"""
+    clock = fake_clock
+    device = InteractiveScreen()
+    init_2x2_screen(device)
+    send_max_fps(device, 1)
+    present_raw_2x2(device)
+    draws: List[int] = []
+    real_draw = device.window.draw_indexed
+
+    def counting_draw(*args, **kwargs):  # type: ignore[no-untyped-def]
+        draws.append(1)
+        return real_draw(*args, **kwargs)
+
+    device.window.draw_indexed = counting_draw  # type: ignore[method-assign]
+    clock.on_sleep.append(lambda: pygame.event.post(pygame.event.Event(pygame.QUIT)))
+    with pytest.raises(KeyboardInterrupt):
+        present_raw_2x2(device)
+    assert clock.now < 0.1  # well inside the 1 s slot: the first slice's pump saw the close
+    assert draws == []

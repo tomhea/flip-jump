@@ -14,15 +14,9 @@ i.e. memory_width/8 bytes):
   [0x05][width*height pixel bytes]                      update_screen_raw (presents a frame)
   [0x06][screen_fj_bit_address:w/8]                     update_screen_reg (presents a frame; fj 1.5.1)
   [0x0B] then column run-lists                          begin_frame_collines (presents a frame; fj 1.5.1)
+  [0x12][utf-8 bytes][0x00]                             set_window_title (fj 1.5.1; NUL-terminated, in-stream)
+  [0x13][w:1][h:1][w*h palette indices]                 set_window_icon (fj 1.5.1; in-stream)
   [0x14][max_fps:1]                                     set_max_fps (fj 1.5.1; 0 = no cap)
-
-set_max_fps (0x14) caps the frame rate: with max_fps = X > 0, every present waits until at least
-1/X seconds have passed since the previous one, then shows the frame; X = 0 (the default) removes
-the cap. A program whose frames cost very different amounts of work -- a cheap one facing a wall,
-an expensive one in an open room -- otherwise runs its whole world faster whenever a frame is
-cheap, because nothing but the frame paces it. Only the INTERACTIVE window (pygame_window) waits:
-the headless backend records the value (`max_fps`) and never sleeps, so replays and tests run at
-full speed.
 
 begin_frame_collines (0x0B) is the third kind: no framebuffer at all. the program streams the
 finished picture as COLUMN RUN-LISTS and the device holds nothing but a fill cursor -
@@ -53,6 +47,14 @@ update_screen_raw is the no-memory-hook alternative: the full frame's pixel byte
 in-stream (row-major, one byte each, masked to bpp bits), so it works without
 attach_memory - at the cost of the program outputting every pixel byte each frame.
 it requires a prior init_screen (the pixel count defines the command length).
+
+set_max_fps (0x14) caps the frame rate: with max_fps = X > 0, every present waits until at least
+1/X seconds have passed since the previous one, then shows the frame; X = 0 (the default) removes
+the cap. A program whose frames cost very different amounts of work -- a cheap one facing a wall,
+an expensive one in an open room -- otherwise runs its whole world faster whenever a frame is
+cheap, because nothing but the frame paces it. Only the INTERACTIVE window (pygame_window) waits:
+the headless backend records the value (`max_fps`) and never sleeps, so replays and tests run at
+full speed.
 
 memory layout contracts (op-structured "packed bytes", one byte per fj-op, stride dw):
   framebuffer: pixel (px, py) is the packed byte at screen_address + (px + py*width)*dw,
