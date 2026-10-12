@@ -31,6 +31,7 @@ which only pygame-ce defines, and names the fix if it is missing.
 """
 
 import os
+import time
 import warnings
 from collections import deque
 from pathlib import Path
@@ -274,6 +275,9 @@ class InteractiveScreen(InMemoryScreen):
         super().__init__(frames_dir=frames_dir)
         self.window = window if window is not None else PygameWindow()
         self._palette_set = False
+        # time.perf_counter() of the previous present, for the max-fps cap; -inf: the first present never waits
+        # (perf_counter's starting point is undefined, so 0.0 would hold the first frame on a clock that starts there)
+        self._last_flush = float('-inf')
 
     def _init_screen(self, width: int, height: int, bpp: int, palette_size: int) -> None:
         super()._init_screen(width, height, bpp, palette_size)
@@ -299,10 +303,24 @@ class InteractiveScreen(InMemoryScreen):
 
     def _present(self) -> None:
         super()._present()
+        self._wait_for_frame_slot()
         # the INDEXED path: hand SDL the palette indices and let it expand them. `last_frame_rgb`
         # is lazy (see InMemoryScreen), so a windowed run never builds the per-pixel RGB list.
         self.window.draw_indexed(self.width, self.height, bytes(self.pixel_indices), list(self.palette))
         self.window.pump_events()
+
+    def _wait_for_frame_slot(self) -> None:
+        """the 0x14 max-fps cap: hold this present until 1/max_fps s have passed since the previous one.
+        The wait sleeps in short slices and keeps pumping the window, so keys still queue and closing
+        the window still ends the run while a fast frame waits."""
+        if self.max_fps:
+            due = self._last_flush + 1.0 / self.max_fps
+            remaining = due - time.perf_counter()
+            while remaining > 0:
+                time.sleep(min(remaining, 0.005))
+                self.window.pump_events()
+                remaining = due - time.perf_counter()
+        self._last_flush = time.perf_counter()
 
 
 class PcIO(IODevice):

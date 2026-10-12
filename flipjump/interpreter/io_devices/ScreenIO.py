@@ -14,6 +14,9 @@ i.e. memory_width/8 bytes):
   [0x05][width*height pixel bytes]                      update_screen_raw (presents a frame)
   [0x06][screen_fj_bit_address:w/8]                     update_screen_reg (presents a frame; fj 1.5.1)
   [0x0B] then column run-lists                          begin_frame_collines (presents a frame; fj 1.5.1)
+  [0x12][utf-8 bytes][0x00]                             set_window_title (fj 1.5.1; NUL-terminated, in-stream)
+  [0x13][w:1][h:1][w*h palette indices]                 set_window_icon (fj 1.5.1; in-stream)
+  [0x14][max_fps:1]                                     set_max_fps (fj 1.5.1; 0 = no cap)
 
 begin_frame_collines (0x0B) is the third kind: no framebuffer at all. the program streams the
 finished picture as COLUMN RUN-LISTS and the device holds nothing but a fill cursor -
@@ -44,6 +47,14 @@ update_screen_raw is the no-memory-hook alternative: the full frame's pixel byte
 in-stream (row-major, one byte each, masked to bpp bits), so it works without
 attach_memory - at the cost of the program outputting every pixel byte each frame.
 it requires a prior init_screen (the pixel count defines the command length).
+
+set_max_fps (0x14) caps the frame rate: with max_fps = X > 0, every present waits until at least
+1/X seconds have passed since the previous one, then shows the frame; X = 0 (the default) removes
+the cap. A program whose frames cost very different amounts of work -- a cheap one facing a wall,
+an expensive one in an open room -- otherwise runs its whole world faster whenever a frame is
+cheap, because nothing but the frame paces it. Only the INTERACTIVE window (pygame_window) waits:
+the headless backend records the value (`max_fps`) and never sleeps, so replays and tests run at
+full speed.
 
 memory layout contracts (op-structured "packed bytes", one byte per fj-op, stride dw):
   framebuffer: pixel (px, py) is the packed byte at screen_address + (px + py*width)*dw,
@@ -87,6 +98,7 @@ CMD_BEGIN_FRAME_COLLINES = 0x0B  # fj 1.5.1: the column-run-list frame - no fram
 # fj 1.5.1 window controls. 0x10/0x11 are taken by doom-flipjump's own wire format, so these start at 0x12.
 CMD_SET_WINDOW_TITLE = 0x12  # [0x12] <utf-8 bytes> 0x00 - NUL-terminated, in-stream
 CMD_SET_WINDOW_ICON = 0x13  # [0x13][w][h] then w*h palette indices, in-stream
+CMD_SET_MAX_FPS = 0x14  # [0x14][max_fps] - each present waits until 1/max_fps s passed; 0 = no cap
 ICON_TRANSPARENT_INDEX = 0  # the palette entry drawn as transparent in the window icon
 
 COLLINES_END = 0xFF  # ends the frame (at tag position) or the current column (inside a list)
@@ -140,6 +152,8 @@ class InMemoryScreen(IODevice):
         # the 0x12/0x13 window controls, as the program sent them: (title), (w, h, palette indices)
         self.window_title: Optional[str] = None
         self.window_icon: Optional[Tuple[int, int, List[int]]] = None
+        # the 0x14 frame-rate cap, as the program sent it (0 = none); only the interactive window enforces it
+        self.max_fps = 0
         # 0x0B column-run-list state. _collines_column is None both when the mode is off and
         # when it is on but between columns (expecting a tag), which _in_collines separates.
         self._in_collines = False
@@ -185,6 +199,8 @@ class InMemoryScreen(IODevice):
             return 1 + self.width * self.height
         if command == CMD_BEGIN_FRAME_COLLINES:
             return 1  # bare command; the run-lists that follow are not part of it
+        if command == CMD_SET_MAX_FPS:
+            return 1 + 1
         if command == CMD_SET_WINDOW_TITLE:
             # NUL-terminated, so the length is not known up front: `_command_length` is consulted
             # after every byte, so asking for "one more than I have" keeps the buffer filling and
@@ -245,6 +261,8 @@ class InMemoryScreen(IODevice):
             self._set_window_icon(payload[0], payload[1], list(payload[2:]))
         elif command == CMD_BEGIN_FRAME_COLLINES:
             self._begin_frame_collines()
+        elif command == CMD_SET_MAX_FPS:
+            self._set_max_fps(payload[0])
 
     # ---------------------------------------------------------------- screen functions
 
@@ -266,6 +284,10 @@ class InMemoryScreen(IODevice):
     def _set_window_title(self, text: str) -> None:
         """Headless: record it, so a test can assert what the program asked for."""
         self.window_title = text
+
+    def _set_max_fps(self, max_fps: int) -> None:
+        """0x14: record the cap. The headless screen never waits -- see the module docstring."""
+        self.max_fps = max_fps
 
     def _set_window_icon(self, width: int, height: int, indices: List[int]) -> None:
         """Headless: record the icon as (w, h, palette indices). The indices are resolved against
