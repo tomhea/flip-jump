@@ -9,7 +9,7 @@ wires the two interactive devices onto one shared window (a lone live keyboard o
 """
 
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, List
 
 import pytest
 
@@ -283,3 +283,75 @@ def test_window_icon_waits_for_the_palette(monkeypatch: pytest.MonkeyPatch) -> N
     assert calls == [(1, 1, [1], [(10, 20, 30), (200, 100, 0)], 0)]
     send_icon_1x1(device, 0)  # with a palette in place the icon is applied at once
     assert calls[-1] == (1, 1, [0], [(10, 20, 30), (200, 100, 0)], 0)
+
+
+# --- the 0x14 max-fps cap: only the window waits ---
+
+
+class FakeClock:
+    """time.perf_counter / time.sleep for the window module: sleeping advances the clock"""
+
+    def __init__(self, start: float = 1000.0) -> None:
+        self.now = start
+        self.slept: List[float] = []
+
+    def perf_counter(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.slept.append(seconds)
+        self.now += seconds
+
+
+def send_max_fps(device: InteractiveScreen, max_fps: int) -> None:
+    write_byte(device, 0x14)  # CMD set_max_fps
+    write_byte(device, max_fps)
+
+
+@pytest.mark.parametrize('max_fps', [20, 25])
+def test_max_fps_holds_a_fast_present_until_its_slot(monkeypatch: pytest.MonkeyPatch, max_fps: int) -> None:
+    from flipjump.interpreter.io_devices import pygame_window as window_module
+
+    clock = FakeClock()
+    monkeypatch.setattr(window_module.time, 'perf_counter', clock.perf_counter)
+    monkeypatch.setattr(window_module.time, 'sleep', clock.sleep)
+    device = InteractiveScreen()
+    init_2x2_screen(device)
+    send_max_fps(device, max_fps)
+    present_raw_2x2(device)  # the first present has no predecessor to wait for
+    assert clock.slept == []
+    first = clock.now
+    clock.now += 0.001  # the next frame was cheap: 1 ms of work
+    present_raw_2x2(device)
+    assert clock.now - first == pytest.approx(1.0 / max_fps)  # it waited out the rest of its slot
+    assert max(clock.slept) <= 0.005  # in short slices, pumping the window between them
+
+
+def test_max_fps_does_not_delay_a_slow_frame(monkeypatch: pytest.MonkeyPatch) -> None:
+    from flipjump.interpreter.io_devices import pygame_window as window_module
+
+    clock = FakeClock()
+    monkeypatch.setattr(window_module.time, 'perf_counter', clock.perf_counter)
+    monkeypatch.setattr(window_module.time, 'sleep', clock.sleep)
+    device = InteractiveScreen()
+    init_2x2_screen(device)
+    send_max_fps(device, 20)
+    present_raw_2x2(device)
+    clock.now += 0.2  # a heavy frame: slower than the cap already
+    present_raw_2x2(device)
+    assert clock.slept == []
+
+
+def test_max_fps_zero_is_no_cap(monkeypatch: pytest.MonkeyPatch) -> None:
+    from flipjump.interpreter.io_devices import pygame_window as window_module
+
+    clock = FakeClock()
+    monkeypatch.setattr(window_module.time, 'perf_counter', clock.perf_counter)
+    monkeypatch.setattr(window_module.time, 'sleep', clock.sleep)
+    device = InteractiveScreen()
+    init_2x2_screen(device)
+    send_max_fps(device, 20)
+    send_max_fps(device, 0)  # the program removed the cap
+    for _ in range(3):
+        present_raw_2x2(device)
+    assert clock.slept == []
