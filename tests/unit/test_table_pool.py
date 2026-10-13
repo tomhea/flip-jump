@@ -38,6 +38,7 @@ from flipjump.assembler.inner_classes.ops import (
 from flipjump.assembler.preprocessor import (
     DECLINE_OTHER,
     DECLINE_STALE,
+    DEFER_OUT,
     RESERVED_BELOW,
     BlockCensus,
     BlockPool,
@@ -1506,7 +1507,8 @@ def _one_pass_sized(counts: Dict[str, int], **kwargs: Any) -> BlockPool:
 
 def test_one_pass_leaves_out_the_groups_that_free_the_most_room_per_table() -> None:
     """leaving a group out frees only its block's padding: 17 tables in a 32-slot block free 15 slots,
-    a full block or a 1-table group frees nothing - so those are never left out"""
+    a full block frees nothing - nor does the 1-table group's, whose table fills its one slot - so
+    those are never left out"""
     slot = 16 * OP_BITS
     counts = {'padded': 17, 'full': 16, 'single': 1, 'pair': 2}
     blocks = 32 + 16 + 1 + 2  # slots
@@ -1535,15 +1537,269 @@ def test_one_pass_leaves_about_as_many_tables_without_a_block_as_two_pass() -> N
 
 
 def test_a_pool_short_for_its_hot_blocks_and_overflow_says_so() -> None:
-    """a hot group is never left out, so a pool with no room for its block and the others' overflow
-    names the overflow shortfall - not a missing hot block"""
+    """a hot group is never left out, so a pool with room for its block but not for the others'
+    overflow names the overflow shortfall; and one with no room for the hot block itself says so at
+    once - the hot blocks are laid out first, so no group left out could make room for it"""
     slot = 16 * OP_BITS
     counts = {'hot': 16, 'other': 20}  # blocks of 16 and 32 slots; 'other' overflows into 20
     heat: Dict[str, Sequence[Tuple[str, int, int]]] = {'hot': []}
-    with pytest.raises(FlipJumpPreprocessorException, match='cannot hold the overflow region .* short by'):
-        _one_pass_sized(counts, span_bits=32 * slot, heat=heat)
-    with pytest.raises(FlipJumpPreprocessorException, match="cannot hold its hot groups' blocks and the overflow"):
-        _one_pass_sized(counts, span_bits=8 * slot, heat=heat)
+    with pytest.raises(FlipJumpPreprocessorException, match='cannot hold the overflow region .* short by 0x1000 bits'):
+        _one_pass_sized(counts, span_bits=32 * slot, heat=heat)  # 'other' overflows 4 slots past the span
+    with pytest.raises(
+        FlipJumpPreprocessorException,
+        match="cannot hold its hot groups' blocks and the overflow region .* short by 0x2000 bits for the hot blocks",
+    ):
+        _one_pass_sized(counts, span_bits=8 * slot, heat=heat)  # the 16-slot hot block alone is 8 slots over
+
+
+def _queued(pool: BlockPool, spec: Sequence[Tuple[str, int, int]]) -> DeferredTables:
+    """`spec` - (group, ops_alignment, table_ops) per table, in encounter order - offered to a one-pass
+    pool as the preprocessor offers its tables: defer() at each table's pad, then queued"""
+    tables = DeferredTables(pool.keeps_site_paths)
+    exprs = {group: Expr(group) for group, _, _ in spec}
+    for group, align, ops in spec:
+        verdict = pool.defer(align, ops, group, exprs[group], '')
+        out = verdict == DEFER_OUT
+        tables.add(
+            group,
+            exprs[group],
+            align,
+            ops,
+            pool.kept_site(''),
+            NewSegment(0) if out else None,
+            None if out else verdict,
+        )
+    return tables
+
+
+def _one_pass_placed(
+    spec: Sequence[Tuple[str, int, int]], pool_base: int = POOL_BASE, **kwargs: Any
+) -> Tuple[BlockPool, List[int], DeferredTables]:
+    """a one-pass pool sized from the census of `spec`'s tables, every table's address (0: it stayed
+    inline) and the queue it placed"""
+    pool = BlockPool(W, pool_base, one_pass=True, **kwargs)
+    tables = _queued(pool, spec)
+    return pool, list(pool.place_deferred(tables, {})), tables
+
+
+def test_one_pass_does_not_refuse_a_pool_its_estimate_calls_short() -> None:
+    """THE CR-3 B1 REPRODUCER. H is hot, so its block is laid out first and A's 16-slot block sits
+    behind a 240-op alignment hole that no estimate of A's room counts; C's block does not fit. The
+    first layout is 184 ops short and leaving A out frees 112 by the estimate - which used to refuse
+    the pool - but 352 in fact: the next layout fits"""
+    spec = [('H', 16, 16)] + [('A', 16, 16)] * 9 + [('C', 16, 16)] * 17
+    pool, addresses, _ = _one_pass_placed(spec, span_bits=600 * OP_BITS, heat={'H': []})
+    assert pool.unblocked == ['A', 'C'] and set(pool.groups) == {'H'}  # A left out; C fits nowhere anyway
+    assert pool.overflow_rounds == 2 and pool.overflowed == 26 and all(addresses)
+    assert max(address for address, _ in pool.overflow_tables) + 16 * OP_BITS == POOL_BASE + 432 * OP_BITS
+
+
+# the B1 reproducer as a program: the hot (h + 32) word's block is laid out first, a's behind its hole
+B1_PROGRAM = """
+stl.startup_and_init_all
+    hex.xor x, h
+    rep(9, i) hex.xor x, a
+    rep(17, i) hex.xor x, c
+    hex.print_as_digit x, 0
+    stl.loop
+x: hex.hex 1
+h: hex.hex 2
+a: hex.hex 3
+c: hex.hex 4
+"""
+
+
+def test_a_program_one_pass_refused_on_its_estimate_builds_and_runs(tmp_path: Path) -> None:
+    """at 512 ops of span (to 656) the chooser of e4340ee refused this program - 'short by 0x2800 bits'
+    - and leaving a's group out builds it: it now does, and the program prints what the inline one
+    prints"""
+    counting = BlockPool(W, POOL_BASE)
+    expand_labels(B1_PROGRAM, tmp_path, counting, name='counting')
+    assert counting.counts == {'(h + 32)': 1, '(a + 32)': 9, '(c + 32)': 17}
+    reference, _, _ = build_and_run(B1_PROGRAM, tmp_path, None, name='inline')
+    one = BlockPool(W, POOL_BASE, one_pass=True, span_bits=512 * OP_BITS, heat={heat_key('(h + 32)'): []})
+    output, _, _ = build_and_run(B1_PROGRAM, tmp_path, one, name='one')
+    assert output == reference == b'4'
+    assert one.unblocked == ['(a + 32)', '(c + 32)'] and set(one.groups) == {'(h + 32)'}
+
+
+def test_one_pass_leaves_out_the_group_whose_block_frees_the_most_room_not_the_least_full_one() -> None:
+    """X's seven 32-op tables take 7 of its 8 slots and Y's nine 16-op tables 9 of 16: alike blocks of
+    256 ops, but leaving X out frees 32 ops and Y 112. W's block fits nowhere, its tables overflow and
+    the pool is 100 ops short: Y alone makes room. By the room a block frees per table GROSS of its
+    tables, X would go first and Y after it - 16 tables without a block for 9"""
+    spec = [('W', 16, 16)] * 70 + [('X', 32, 32)] * 7 + [('Y', 16, 16)] * 9
+    pool, addresses, _ = _one_pass_placed(spec, span_bits=1532 * OP_BITS)
+    assert pool.unblocked == ['Y', 'W'] and set(pool.groups) == {'X'}  # W is named too: it does not fit
+    assert pool.overflowed == 70 + 9 and all(addresses)
+
+
+def test_one_pass_stops_leaving_groups_out_once_the_estimate_covers_the_shortfall() -> None:
+    """V's 64-slot block fits nowhere and its 33 tables overflow: the pool is 7 slots short, exactly
+    the padding A's block frees (9 tables in 16 slots). Leaving A out covers it - so B, which frees
+    as much, keeps its block, and the region fills the span to its last op"""
+    spec = [('V', 16, 16)] * 33 + [('A', 16, 16)] * 9 + [('B', 16, 16)] * 9
+    pool, addresses, _ = _one_pass_placed(spec, span_bits=58 * 16 * OP_BITS)
+    assert pool.unblocked == ['A', 'V'] and set(pool.groups) == {'B'} and all(addresses)
+    assert max(address for address, _ in pool.overflow_tables) + 16 * OP_BITS == POOL_BASE + 58 * 16 * OP_BITS
+
+
+def test_one_pass_plans_the_overflow_region_at_each_tables_pad() -> None:
+    """P's four 1-op tables sit behind `pad 16`, so in the overflow region each starts 16 ops after the
+    last: 49 ops, not 4. P's block does not fit beside B's, and its region would end 17 ops past the
+    span - so B is left out instead, and P gets its block"""
+    spec = [('B', 16, 16)] * 9 + [('P', 16, 1)] * 4
+    pool, addresses, _ = _one_pass_placed(spec, span_bits=288 * OP_BITS)
+    assert pool.unblocked == ['B'] and set(pool.groups) == {'P'} and all(addresses)
+
+
+def test_the_overflow_region_keeps_encounter_order_across_the_groups_left_out() -> None:
+    """A's and B's tables alternate, and the span has room for neither block beside the other's
+    overflow: both are left out, and their tables fill the region in the order the expansion reached
+    them - not group by group - so code appended later never moves one"""
+    spec = [('A', 16, 16), ('B', 16, 16)] * 9
+    pool, addresses, _ = _one_pass_placed(spec, span_bits=300 * OP_BITS)
+    assert pool.unblocked == ['A', 'B'] and not pool.groups
+    assert addresses == [POOL_BASE + index * 16 * OP_BITS for index in range(len(spec))]
+
+
+def test_a_table_kept_inline_takes_no_room_in_the_overflow_region() -> None:
+    """T's 32-op table is too wide for any slot (max_slot_ops=16) and stays inline, so leaving T out
+    sends only its three 16-op tables to the region - which then fills the span to its last op (an
+    exact fit is a fit)"""
+    spec = [('T', 16, 16)] * 3 + [('T', 32, 32)] + [('V', 16, 16)] * 20
+    pool, addresses, tables = _one_pass_placed(spec, span_bits=368 * OP_BITS, max_slot_ops=16)
+    assert pool.unblocked == ['T', 'V'] and not pool.groups  # V's 32-slot block fits nowhere
+    assert list(tables.inline) == [3] and addresses[3] == 0 and all(addresses[:3] + addresses[4:])
+    assert max(address for address, _ in pool.overflow_tables) + 16 * OP_BITS == POOL_BASE + 368 * OP_BITS
+
+
+class _Unread(List[str]):
+    """a queue's group list that refuses to be read"""
+
+    def __iter__(self) -> Iterator[str]:
+        raise AssertionError('the queued tables were read')
+
+
+def test_choosing_the_groups_left_out_builds_nothing_per_table() -> None:
+    """the CR-3 F3 measurement: the chooser walks the queue's own arrays (it built a tuple per table,
+    ~158 bytes each, even when nothing was short) - and when every block fits it reads no table"""
+    counts = {f'g{i}': 1000 for i in range(20)}  # 20,000 tables, 1000 in each 1024-slot block
+
+    def sized(span_bits: int) -> BlockPool:
+        pool = BlockPool(W, POOL_BASE, one_pass=True, span_bits=span_bits)
+        pool.counts, pool.widths = dict(counts), {group: 16 for group in counts}
+        pool.width_hist = {group: {16: count} for group, count in counts.items()}
+        return pool
+
+    tables = _synthetic_tables(counts)
+    every_block = 20 * 1024 * 16 * OP_BITS
+    short = sized(every_block * 99 // 100)
+    tracemalloc.start()
+    before = tracemalloc.get_traced_memory()[0]
+    unblocked = short._choose_unblocked(tables)
+    peak = tracemalloc.get_traced_memory()[1] - before
+    tracemalloc.stop()
+    assert len(unblocked) == 9  # the fewest that make room: each frees 24 slots
+    assert peak / len(tables) < 4, f'{peak / len(tables):.1f} bytes per queued table'
+    tables.groups = _Unread(tables.groups)
+    assert sized(every_block)._choose_unblocked(tables) == []
+
+
+def test_code_appended_after_a_short_first_assembly_needs_room_for_its_overflow() -> None:
+    """the first assembly leaves A and B out and plans its region to end 12 ops before the end of its
+    span: two appended tables of a new group overflow it, as documented - unless the first assembly
+    kept room for them (a span_bits smaller than the second's), or both have an overflow_base"""
+    first_spec = [('A', 16, 16), ('B', 16, 16)] * 9
+    appended = first_spec + [('N', 16, 16)] * 2
+    span = 300 * OP_BITS
+    first, addresses, _ = _one_pass_placed(first_spec, span_bits=span)
+    assert first.unblocked == ['A', 'B']
+    sizing = json_round_trip(first.sizing()).pool_kwargs()
+    with pytest.raises(FlipJumpPreprocessorException, match='ends past the end of the pool'):
+        _one_pass_placed(appended, span_bits=span, **sizing)
+    _, appended_addresses, _ = _one_pass_placed(appended, span_bits=span + 32 * OP_BITS, **sizing)
+    assert appended_addresses[: len(addresses)] == addresses and all(appended_addresses)
+    base = POOL_BASE + (1 << 20)  # above the blocks, outside the span
+    first, addresses, _ = _one_pass_placed(first_spec, span_bits=span, overflow_base=base)
+    sizing = json_round_trip(first.sizing()).pool_kwargs()
+    _, appended_addresses, _ = _one_pass_placed(appended, span_bits=span, overflow_base=base, **sizing)
+    assert appended_addresses[: len(addresses)] == addresses and all(appended_addresses)
+
+
+# table shapes (ops_alignment, table_ops) of the random pools: hex.xor's, hex.cmp's (31 ops behind
+# `pad 4`), and odd ones whose room in the overflow region depends on their neighbours
+PROPERTY_SHAPES = [(16, 16), (16, 16), (16, 16), (4, 31), (32, 32), (8, 8), (16, 1), (16, 8), (64, 40), (1, 3)]
+
+
+def test_one_pass_layouts_of_random_pools_keep_their_promises() -> None:
+    """seeded random pools - groups of mixed table shapes, spans from 30% to 115% of what every block
+    needs, aligned and unaligned pool bases, spread, width buckets, evict_by_value, hot groups and an
+    alias - placed by a one-pass pool sized from its own census: it places every table, or refuses
+    in the chooser (never in the overflow region it planned); the groups without a block are exactly
+    `unblocked`; no two tables overlap and all stay inside the span; the overflow region lies past
+    the blocks, each table at its pad, in encounter order; a pool given its sizing() lays out alike,
+    and so does one with tables appended and a span with room for them; and with nothing left out
+    and nothing overflowing, the layout is the two-pass build's"""
+    rng = random.Random(3690)
+    outcomes = {'placed': 0, 'left_out': 0, 'refused': 0, 'two_pass': 0}
+    for _ in range(300):
+        groups = [f'g{i}' for i in range(rng.randint(1, 30))]
+        spec: List[Tuple[str, int, int]] = []
+        for group in groups:
+            shapes = rng.sample(PROPERTY_SHAPES, rng.randint(1, 2))
+            count = min(400, max(1, int(rng.paretovariate(1.2) * rng.choice([1, 2, 4]))))
+            spec += [(group, *rng.choice(shapes)) for _ in range(count)]
+        rng.shuffle(spec)
+        base = rng.choice([POOL_BASE, POOL_BASE + 3 * 16 * OP_BITS])  # aligned, or 48 ops past it
+        options: Dict[str, Any] = {
+            'spread': rng.choice([1, 2]),
+            'spread_min_count': rng.choice([4, 256]),
+            'width_buckets': rng.random() < 0.5,
+            'max_slot_ops': rng.choice([16, 32, 64]),
+            'evict_by_value': rng.random() < 0.3,
+        }
+        if len(groups) > 2 and rng.random() < 0.3:
+            options['alias'] = {groups[1]: groups[0]}
+        if rng.random() < 0.3:
+            hot = rng.choice(groups[1:] if 'alias' in options else groups)  # a canonical group
+            options['heat'] = {
+                hot: [('', occurrence, rng.choice([8, 16, 32])) for occurrence in range(rng.randint(0, 2))]
+            }
+        every_block = _one_pass_placed(spec, base, **options)[0]._used
+        span = max(1, int(every_block * rng.uniform(0.3, 1.15)) // OP_BITS) * OP_BITS
+        try:
+            pool, addresses, tables = _one_pass_placed(spec, base, span_bits=span, **options)
+        except FlipJumpPreprocessorException as refusal:
+            assert 'cannot hold' in str(refusal)  # the chooser's; the region it planned always fits
+            outcomes['refused'] += 1
+            continue
+        outcomes['left_out' if pool.unblocked else 'placed'] += 1
+        assert set(pool.groups) == set(pool.counts) - set(pool.unblocked)
+        blocks_end, limit = base + pool._used, base + span
+        taken = sorted(
+            (address, address + ops * OP_BITS)
+            for index, ((_, _, ops), address) in enumerate(zip(spec, addresses))
+            if index not in tables.inline
+        )
+        assert all(address == 0 for index, address in enumerate(addresses) if index in tables.inline)
+        assert all(base <= start and end <= limit for start, end in taken)
+        assert all(end <= start for (_, end), (start, _) in zip(taken, taken[1:]))
+        region = [address for address, _ in pool.overflow_tables]
+        assert region == sorted(region) and all(address >= blocks_end for address in region)
+        assert all(address % (align * OP_BITS) == 0 for address, align in pool.overflow_tables)
+        sizing = json_round_trip(pool.sizing()).pool_kwargs()
+        assert _one_pass_placed(spec, base, **{**options, 'span_bits': span, **sizing})[1] == addresses
+        extra = [(rng.choice(groups + ['new']), *rng.choice(PROPERTY_SHAPES)) for _ in range(rng.randint(1, 6))]
+        room = sum(-(-ops // align) * align + align for _, align, ops in extra) * OP_BITS
+        _, appended, _ = _one_pass_placed(spec + extra, base, **{**options, 'span_bits': span + room, **sizing})
+        assert appended[: len(spec)] == addresses
+        if not pool.unblocked and not pool.overflowed:
+            placing = BlockPool(W, base, **{**options, 'span_bits': span, **pool.sizing().pool_kwargs()})
+            two_pass = [placing.reserve(align, ops, group, Expr(group), '') for group, align, ops in spec]
+            assert [0 if reserved is None else reserved[0] for reserved in two_pass] == addresses
+            outcomes['two_pass'] += 1
+    assert min(outcomes.values()) >= 20, outcomes  # every outcome is exercised
 
 
 def test_the_op_stream_does_not_depend_on_what_one_pass_decides(tmp_path: Path) -> None:

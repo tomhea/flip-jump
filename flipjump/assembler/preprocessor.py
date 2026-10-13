@@ -548,9 +548,12 @@ class BlockPool(TablePool):
     Given the same counts, one pass decides every table exactly as the placing pass of the two-pass
     build, and the binaries are identical - EXCEPT where (a) the pool lacks room for a block: the
     two-pass build keeps the groups that do not fit inline, while one pass needs room in the span
-    for their tables, so it also leaves without a block the groups whose blocks free the most room
-    per table (their power-of-two or spread padding; never a group whose tables need as much room
-    as its block: _choose_unblocked) - more tables than the two-pass build leaves inline; (b) an
+    for their tables, so a pool sized from its own census (with no overflow_base) also leaves
+    without a block the groups whose blocks free the most room per table, net of their tables' room
+    in the overflow region (their power-of-two or spread padding: _choose_unblocked) - which can be
+    more tables than the two-pass build leaves inline or, where spread pads the blocks, fewer - and
+    lays out exactly that plan (so `evict_by_value` drops nothing more), while a pool given counts,
+    or an overflow_base, drops what the two-pass build drops, to the overflow region; (b) an
     entry uses `$`: the two-pass build places that table; (c) with merge_aliases, a group's word
     names a deferred table's label: that alias is unknown when the blocks are sized
     (`alias_unresolved`); or (d) the counts given were stale: every table they decline stays
@@ -562,9 +565,15 @@ class BlockPool(TablePool):
     the same program twice, or a program and the same program with code appended - share the
     census the first was sized with: `BlockPool(..., one_pass=True, **first.sizing().pool_kwargs())`
     (its `unblocked` groups stay without a block, so the blocks and the overflow region come out the
-    same). A table's labels have no address until the expansion ends, so an expression evaluated
-    DURING it (a `rep` count, a `pad`, a `segment`, a `reserve`) cannot name one: that is refused,
-    saying so.
+    same). Appended code's tables that find no slot (their group's block is full, or the group is
+    new) go to the overflow region after the first assembly's, so that region needs ROOM: a first
+    assembly that had to leave groups out planned its region to end near the end of its span, and
+    a second with the same span refuses appended tables that do not fit in what is left ('ends past
+    the end of the pool'). Give both an `overflow_base` with room, or give the first a span_bits
+    smaller than the second's by the room to keep: the second lays out the same blocks and region,
+    then the appended tables, up to its own span. A table's labels have no address until the
+    expansion ends, so an expression evaluated DURING it (a `rep` count, a `pad`, a `segment`, a
+    `reserve`) cannot name one: that is refused, saying so.
 
     A subclass sees every table in `defer`, at its pad, with its site path. `reserve` is called at
     placement, in encounter order, for the tables that left the stream or stayed inline as too wide
@@ -823,7 +832,9 @@ class BlockPool(TablePool):
         pool sized from its own census, once placed - the census it computed, with the groups it left
         without a block (`unblocked`). A second assembly that must lay out the same tables alike
         takes this: `BlockPool(..., one_pass=True, **sizing().pool_kwargs())` - one pass, since a
-        placing pool would keep the unblocked groups' tables inline and so move the op stream."""
+        placing pool would keep the unblocked groups' tables inline and so move the op stream. Code
+        appended to the second needs room for its tables in the overflow region: see the class
+        docstring."""
         if self.counting or (self.sizes_from_census and not self._placed):
             raise FlipJumpPreprocessorException('sizing(): this pool has not sized its blocks')
         return BlockCensus(
@@ -1342,43 +1353,61 @@ class BlockPool(TablePool):
     def _choose_unblocked(self, tables: DeferredTables) -> List[str]:
         """The groups to leave without a block so that the blocks AND the overflow region - every
         table of a group with no block, packed as _place_overflow packs them - fit in the pool's span
-        (one pass, sized from its own census).
+        (one pass, sized from its own census, with no overflow_base).
 
-        Leaving a group out frees its block but costs its tables' room in the overflow region, so on
-        balance it frees only the block's padding (power-of-two or spread). Groups are left out by
-        that NET room per table, most first; a group whose tables need as much room as its block (a
-        full block, a 1-table group) frees nothing and is never left out, nor is a hot group. Each
-        round's layout is the exact one - the blocks as _preallocate lays them out, the region as
-        _place_overflow fills it, with the groups that do not fit anyway (the ones the two-pass
-        build keeps inline) overflowing too - so only what an estimate missed costs another round
-        (`overflow_rounds`; each round leaves at least one more group out).
+        When every block fits, nothing overflows and nothing is left out: the tables are not even
+        read. Otherwise each ROUND lays out the blocks exactly as _preallocate lays them out and the
+        region exactly as _place_overflow fills it, the groups that do not fit (the ones the two-pass
+        build keeps inline) overflowing too; and while that layout is short, more groups are left out.
+        Leaving a group out frees its block but costs its tables' room in the region, so on balance
+        it frees only the block's padding (power-of-two or spread): groups are left out by that NET
+        room per table, most first, until it covers the shortfall - and the next round's exact layout
+        says whether it did (`overflow_rounds` counts the layouts; each round leaves at least one more
+        group out). A hot group is never left out, nor is a group whose tables need all of its block
+        by the estimate (every slot holds a table as wide as the slot).
+
+        The net room is an ESTIMATE - a table counts at its size rounded up to its `pad` - and the
+        choice is greedy: it never puts a group back. In the region a table packs against its
+        neighbours' pads in encounter order, so leaving a group out can free more room than the
+        estimate says (a 1-op table behind `pad 16` that ends the region takes 1 op, not 16) or less
+        (a table that leaves an alignment hole before the next), and another set of groups may fit
+        where this choice falls short. So it refuses only on the EXACT layout - short, with no group
+        left that the estimate says frees room - and says by how much. A hot group that does not
+        fit is refused at once: the hot blocks are laid out first, so no group left out makes room.
         """
-        bits = {g: self._block_bits(g) for g in self.counts}
-        need: Dict[str, int] = {}  # a group's room in the overflow region, its tables packed back to back
-        count: Dict[str, int] = {}
-        stream: List[Tuple[str, int, int]] = []  # (canonical group, alignment bits, size bits), encounter order
-        for _, group, _, ops_alignment, table_ops, _, inline_cause in tables:
-            if inline_cause is not None:
-                continue
-            canonical = self.alias.get(group, group)
-            align, size = ops_alignment * self.op_bits, table_ops * self.op_bits
-            need[canonical] = need.get(canonical, 0) + -(-size // align) * align
-            count[canonical] = count.get(canonical, 0) + 1
-            stream.append((canonical, align, size))
+        bits = {group: self._block_bits(group) for group in self.counts}
         limit = self._pool_limit()
+        order = self._layout_order(self.counts, bits)  # a subset's layout order is this one, filtered
+        self.overflow_rounds += 1
+        bases, unfit, end = self._layout(order, bits, limit)
+        if not unfit:
+            return []  # every block fits, so nothing overflows: the plain layout
+        if any(group in self.hot_sites for group in unfit):
+            hot_end = self.pool_base  # where the hot blocks alone end, with no limit
+            for group in self.hot_sites:
+                hot_end = -(-hot_end // bits[group]) * bits[group] + bits[group]
+            raise FlipJumpPreprocessorException(
+                f"one-pass blocking: the pool [{hex(self.pool_base)}, {hex(limit)}) cannot hold its hot groups' "
+                f'blocks and the overflow region of the groups it has no block for - short by {hex(hot_end - limit)} '
+                f'bits for the hot blocks alone, which end at {hex(hot_end)}: a hot group always gets a block and '
+                f'the hot blocks are laid out first, so no group left without a block makes room for them. Raise '
+                f'span_bits.'
+            )
+        canonical = {raw: self.alias.get(raw, raw) for raw in tables.exprs}  # every raw group queued
+        need: Dict[str, int] = {}  # a group's room in the overflow region, by the estimate
+        count: Dict[str, int] = {}
+        for index, raw in enumerate(tables.groups):  # the arrays themselves: nothing is built per table
+            if index not in tables.inline:
+                group = canonical[raw]
+                align = tables.aligns[index] * self.op_bits
+                need[group] = need.get(group, 0) + -(-tables.sizes[index] * self.op_bits // align) * align
+                count[group] = count.get(group, 0) + 1
         unblocked: List[str] = []
         left_out: Set[str] = set()
         while True:
-            self.overflow_rounds += 1
-            keep = [g for g in self.counts if g not in left_out]
-            bases, unfit, end = self._layout(self._layout_order(keep, bits), bits, limit)
-            without = left_out.union(unfit)
-            for canonical, align, size in stream:
-                if canonical in without:
-                    end = -(-end // align) * align + size
-            unfit_hot = sum(bits[g] for g in unfit if g in self.hot_sites)  # a hot group must get its block
-            short = max(0, end - limit) + unfit_hot
-            if not short:
+            end = self._overflow_end(tables, canonical, left_out.union(unfit), end)
+            short = end - limit
+            if short <= 0:
                 # with the groups that do not fit named too, _preallocate lays out exactly this
                 # layout whatever else it does (evict_by_value), and so does a pool given sizing()
                 return unblocked + unfit
@@ -1386,6 +1415,14 @@ class BlockPool(TablePool):
                 (g for g in bases if g not in self.hot_sites and bits[g] > need.get(g, 0)),
                 key=lambda g: (count.get(g, 0) / (bits[g] - need.get(g, 0)), g),
             )
+            if not candidates:
+                raise FlipJumpPreprocessorException(
+                    f'one-pass blocking: the pool [{hex(self.pool_base)}, {hex(limit)}) cannot hold the overflow '
+                    f'region of the groups it has no block for - short by {hex(short)} bits with every group whose '
+                    f'block frees room by the estimate left without a block ({len(unblocked)} left out; the '
+                    f'estimate counts a table at its padded size, so another choice may fit). Raise span_bits, or '
+                    f'pass an overflow_base outside it.'
+                )
             freed = 0
             for group in candidates:
                 if freed >= short:
@@ -1393,14 +1430,25 @@ class BlockPool(TablePool):
                 left_out.add(group)
                 unblocked.append(group)
                 freed += bits[group] - need.get(group, 0)
-            if freed < short:
-                what = "its hot groups' blocks and " if unfit_hot else ''
-                raise FlipJumpPreprocessorException(
-                    f'one-pass blocking: the pool [{hex(self.pool_base)}, {hex(limit)}) cannot hold {what}the '
-                    f'overflow region of the groups it has no block for - short by {hex(short - freed)} bits with '
-                    f'every group that frees room left without a block. Raise span_bits, or pass an overflow_base '
-                    f'outside it.'
-                )
+            self.overflow_rounds += 1
+            bases, unfit, end = self._layout([g for g in order if g not in left_out], bits, limit)
+
+    def _overflow_end(
+        self, tables: DeferredTables, canonical: Mapping[str, str], without: Collection[str], start: int
+    ) -> int:
+        """where the overflow region ends if it starts at `start` and holds every queued table of the
+        groups `without` (`canonical` maps each raw group to its group), in encounter order, each
+        aligned as its `pad` asks - as _place_overflow fills it. A table that stayed inline takes no
+        room there."""
+        raws = {raw for raw, group in canonical.items() if group in without}
+        end = start
+        if raws:
+            aligns, sizes, inline, op_bits = tables.aligns, tables.sizes, tables.inline, self.op_bits
+            for index, raw in enumerate(tables.groups):
+                if raw in raws and index not in inline:
+                    align = aligns[index] * op_bits
+                    end = -(-end // align) * align + sizes[index] * op_bits
+        return end
 
     def _place_overflow(self, overflow: Sequence[Tuple[int, int, int]]) -> List[Tuple[int, int]]:
         """[(index, address)] for the tables that got no block, in the overflow region: in the order
