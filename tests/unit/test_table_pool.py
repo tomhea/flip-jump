@@ -12,10 +12,11 @@ counting pass's report on the same program, and stale counts may cost ops but ne
 """
 
 import json
+import random
 import tracemalloc
 from itertools import islice
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 import pytest
 
@@ -1052,10 +1053,14 @@ def json_round_trip(census: BlockCensus) -> BlockCensus:
 
 
 def test_the_census_survives_json_and_rebuilds_its_pool() -> None:
-    census = BlockCensus({'g': 3, 'h': 1}, {'g': 31, 'h': 16}, {'g': {16: 2, 31: 1}, 'h': {16: 1}}, {'h2': 'h'})
+    census = BlockCensus(
+        {'g': 3, 'h': 1}, {'g': 31, 'h': 16}, {'g': {16: 2, 31: 1}, 'h': {16: 1}}, {'h2': 'h'}, unblocked=['h']
+    )
     assert json_round_trip(census) == census
     pool = BlockPool(W, POOL_BASE, **json_round_trip(census).pool_kwargs())
     assert pool.counts == census.counts and pool.width_hist == census.width_hist and pool.alias == census.alias
+    assert set(pool.groups) == {'g'} and 'h' in pool.broken_groups  # an unblocked group gets no block
+    assert BlockCensus.from_json({'counts': {}, 'widths': {}, 'width_hist': {}}).unblocked == []  # an older cache
 
 
 def test_merging_aliases_adds_counts_and_histograms_and_keeps_the_widest() -> None:
@@ -1383,7 +1388,8 @@ def test_one_pass_keeps_a_table_too_wide_for_any_slot_inline_like_two_pass(
     assert fjm_path.read_bytes() == two_fjm.read_bytes()
 
 
-# a span that holds 6 of hex.cmp's 30 blocks once room is kept for the rest's overflow
+# a span too small for hex.cmp's 30 blocks: one pass leaves 5 groups without a block, and room for
+# their 31 tables in the overflow region
 NO_ROOM_SPAN = 0x30000
 ONE_PASS_DECLINES: Dict[str, Tuple[Optional[Dict[str, Any]], str]] = {
     'no room': ({'span_bits': NO_ROOM_SPAN}, 'no_block'),
@@ -1430,6 +1436,114 @@ def test_a_pool_too_small_for_its_overflow_is_refused(
     frozen = BlockPool(W, POOL_BASE, one_pass=True, span_bits=blocks_only, **too_few)
     with pytest.raises(FlipJumpException, match='short by'):
         build_and_run(XOR_PROGRAM, tmp_path, frozen, name='frozen')
+
+
+@pytest.mark.parametrize('evict_by_value', [False, True], ids=['plain', 'evict-by-value'])
+def test_a_second_assembly_given_the_firsts_sizing_lays_out_alike(
+    tmp_path: Path, counted_programs: Dict[str, Tuple[bytes, BlockPool]], evict_by_value: bool
+) -> None:
+    """the same program, on a pool too small for every block: the first assembly leaves groups out
+    and overflows their tables; given its sizing() the second makes the same binary (and evicting by
+    value cannot undo the layout the room for the overflow was planned on)"""
+    reference, _ = counted_programs[CMP_PROGRAM]
+    first = BlockPool(W, POOL_BASE, one_pass=True, span_bits=NO_ROOM_SPAN, evict_by_value=evict_by_value)
+    output, _, first_fjm = build_and_run(CMP_PROGRAM, tmp_path, first, name='first')
+    assert output == reference
+    sizing = json_round_trip(first.sizing())
+    assert sizing.unblocked == first.unblocked and first.unblocked and first.overflowed
+    second = BlockPool(
+        W, POOL_BASE, one_pass=True, span_bits=NO_ROOM_SPAN, evict_by_value=evict_by_value, **sizing.pool_kwargs()
+    )
+    _, _, second_fjm = build_and_run(CMP_PROGRAM, tmp_path, second, name='second')
+    assert second.overflow_tables == first.overflow_tables and second_fjm.read_bytes() == first_fjm.read_bytes()
+
+
+WIDER_TAIL = '    rep(2, i) hex.shl_bit 4, a\n    hex.shr_hex 4, a\n    stl.loop\n'  # 32-op tables after 16-op ones
+
+
+@pytest.mark.parametrize('given', ['no counts', 'a group short'])
+def test_appended_code_never_moves_the_first_assemblys_overflow_tables(
+    tmp_path: Path, counted_programs: Dict[str, Tuple[bytes, BlockPool]], given: str
+) -> None:
+    """the overflow region fills in encounter order, so a second assembly with wider tables appended
+    puts them after the first's - whose labels all stay where they were"""
+    if given == 'no counts':
+        kwargs: Dict[str, Any] = {'counts': {}, 'widths': {}}
+    else:  # the program's own census, less one group: that group's tables overflow
+        kwargs = counted_programs[XOR_PROGRAM][1].census().pool_kwargs()
+        dropped = sorted(kwargs['counts'])[0]
+        for key in ('counts', 'widths', 'width_hist'):
+            kwargs[key].pop(dropped)
+    first = BlockPool(W, POOL_BASE, one_pass=True, **kwargs)
+    first_labels = expand_labels(XOR_PROGRAM, tmp_path, first, name='first')
+    second = BlockPool(W, POOL_BASE, one_pass=True, **kwargs)
+    second_labels = expand_labels(XOR_PROGRAM + WIDER_TAIL, tmp_path, second, name='second')
+    assert 0 < first.overflowed < second.overflowed
+    assert {label: second_labels[label] for label in first_labels} == first_labels
+    assert second.overflow_tables[: first.overflowed] == first.overflow_tables
+
+
+def _synthetic_tables(counts: Dict[str, int]) -> DeferredTables:
+    """the deferred tables of groups of 16-op, `pad 16` tables, as a one-pass pool would queue them"""
+    tables = DeferredTables(False)
+    for group, count in counts.items():
+        for _ in range(count):
+            tables.add(group, Expr(group), 16, 16, '', NewSegment(0))
+    return tables
+
+
+def _one_pass_sized(counts: Dict[str, int], **kwargs: Any) -> BlockPool:
+    """a one-pass pool with `counts` as its census, its unblocked groups chosen and its blocks laid out"""
+    pool = BlockPool(W, POOL_BASE, one_pass=True, **kwargs)
+    pool.counts, pool.widths = dict(counts), {group: 16 for group in counts}
+    pool.width_hist = {group: {16: count} for group, count in counts.items()}
+    if pool._heat:
+        pool._resolve_heat(pool._heat)
+    pool.unblocked = pool._choose_unblocked(_synthetic_tables(counts))
+    pool._preallocate(pool.unblocked)
+    return pool
+
+
+def test_one_pass_leaves_out_the_groups_that_free_the_most_room_per_table() -> None:
+    """leaving a group out frees only its block's padding: 17 tables in a 32-slot block free 15 slots,
+    a full block or a 1-table group frees nothing - so those are never left out"""
+    slot = 16 * OP_BITS
+    counts = {'padded': 17, 'full': 16, 'single': 1, 'pair': 2}
+    blocks = 32 + 16 + 1 + 2  # slots
+    pool = _one_pass_sized(counts, span_bits=(blocks - 10) * slot)
+    assert pool.unblocked == ['padded'] and set(pool.groups) == {'full', 'single', 'pair'}
+    assert pool.overflow_rounds == 2  # the first layout fell short; leaving 'padded' out fit
+
+
+def test_one_pass_leaves_about_as_many_tables_without_a_block_as_two_pass() -> None:
+    """on a pool a little short of room, the tables one pass leaves without a block - the groups that
+    do not fit, as in the two-pass build, plus those it leaves out to make room for their overflow -
+    are not many more than the two-pass build leaves inline"""
+    rng = random.Random(369)
+    counts = {f'g{i}': max(1, int(rng.paretovariate(1.3) * 4)) for i in range(3000)}
+    total = sum(counts.values())
+    full = BlockPool(W, POOL_BASE, counts=counts, widths={g: 16 for g in counts})._used
+    span = full * 97 // 100
+    two = BlockPool(W, POOL_BASE, counts=counts, widths={g: 16 for g in counts}, span_bits=span)
+    one = _one_pass_sized(counts, span_bits=span)
+    two_out = total - sum(counts[g] for g in two.groups)
+    one_out = total - sum(counts[g] for g in one.groups)
+    assert 0 < one_out <= 1.3 * two_out
+    # and the groups without a block are exactly the ones it names - so a pool given its sizing() lays them
+    # out alike, whatever else (evict_by_value) its _preallocate would do
+    assert set(one.groups) == set(counts) - set(one.unblocked)
+
+
+def test_a_pool_short_for_its_hot_blocks_and_overflow_says_so() -> None:
+    """a hot group is never left out, so a pool with no room for its block and the others' overflow
+    names the overflow shortfall - not a missing hot block"""
+    slot = 16 * OP_BITS
+    counts = {'hot': 16, 'other': 20}  # blocks of 16 and 32 slots; 'other' overflows into 20
+    heat: Dict[str, Sequence[Tuple[str, int, int]]] = {'hot': []}
+    with pytest.raises(FlipJumpPreprocessorException, match='cannot hold the overflow region .* short by'):
+        _one_pass_sized(counts, span_bits=32 * slot, heat=heat)
+    with pytest.raises(FlipJumpPreprocessorException, match="cannot hold its hot groups' blocks and the overflow"):
+        _one_pass_sized(counts, span_bits=8 * slot, heat=heat)
 
 
 def test_the_op_stream_does_not_depend_on_what_one_pass_decides(tmp_path: Path) -> None:
@@ -1528,13 +1642,13 @@ def test_a_table_whose_entries_use_the_next_address_stays_inline_and_is_declined
     assert one._hot_seen == placing._hot_seen  # counted among its group's sites, in its turn
     assert one.census() == counting.census()  # and in the census
 
-    # NEGATIVE CONTROL: with the `$` check off, one pass defers the table and miscompiles it
+    # NEGATIVE CONTROL: with the `$` check off, one pass defers the table and miscompiles it - every
+    # entry flips `y+dbit - switch` (its `$` counted from the table's start), a negative address no
+    # memory word can hold
     monkeypatch.setattr(preprocessor, 'table_names_next_address', lambda ops, pad_index, end_index: False)
-    try:
-        mutant, _, _ = build_and_run(NEXT_ADDRESS_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True), name='m')
-    except FlipJumpException:
-        return
-    assert mutant != reference
+    with pytest.raises(FlipJumpException) as miscompiled:
+        build_and_run(NEXT_ADDRESS_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True), name='mutant')
+    assert isinstance(miscompiled.value.__cause__, OverflowError) and 'negative' in str(miscompiled.value.__cause__)
 
 
 @pytest.mark.parametrize('case', list(EXPANSION_TIME_CASES))
@@ -1559,6 +1673,10 @@ def test_options_that_need_one_pass_or_contradict_each_other_are_refused() -> No
         BlockPool(W, POOL_BASE, one_pass=True, merge_aliases=True, alias={'a': 'b'})
     with pytest.raises(ValueError, match='overflow_base'):
         BlockPool(W, POOL_BASE, counts={'g': 1}, widths={'g': 16}, overflow_base=POOL_BASE // 2)
+    with pytest.raises(ValueError, match='above it'):  # 0 is where the program starts
+        BlockPool(W, POOL_BASE, one_pass=True, overflow_base=0)
+    with pytest.raises(ValueError, match='unblocked'):
+        BlockPool(W, POOL_BASE, unblocked=['g'])  # a counting pool has no blocks to leave out
 
 
 class _PlacementRecorder(BlockPool):
