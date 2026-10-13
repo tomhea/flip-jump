@@ -12,30 +12,42 @@ counting pass's report on the same program, and stale counts may cost ops but ne
 """
 
 import json
+import tracemalloc
 from itertools import islice
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import pytest
 
+import flipjump.assembler.preprocessor as preprocessor
 from flipjump import assemble
 from flipjump.assembler.assembler import resolve_pinned
+from flipjump.assembler.fj_parser import parse_macro_tree
 from flipjump.assembler.inner_classes.expr import Expr
-from flipjump.assembler.inner_classes.ops import CodePosition, FlipJump, Label, MacroName, Op, Pad, WordFlip
+from flipjump.assembler.inner_classes.ops import (
+    CodePosition,
+    FlipJump,
+    Label,
+    MacroName,
+    NewSegment,
+    Op,
+    Pad,
+    WordFlip,
+)
 from flipjump.assembler.preprocessor import (
-    DECLINE_INHERENT,
+    DECLINE_OTHER,
     DECLINE_STALE,
     RESERVED_BELOW,
     BlockCensus,
     BlockPool,
+    DeferredTables,
     PreprocessorData,
     TablePool,
     heat_key,
     merge_aliased_groups,
     relocatable_table_end,
+    resolve_macros,
 )
-from flipjump.assembler.fj_parser import parse_macro_tree
-from flipjump.assembler.preprocessor import resolve_macros
 from flipjump.fjm.fjm_reader import Reader
 from flipjump.interpreter import fjm_run
 from flipjump.interpreter.io_devices.FixedIO import FixedIO
@@ -984,12 +996,15 @@ def test_a_placing_pass_records_what_a_counting_pass_reports_and_stays_correct(
     assert output == reference  # stale counts cost ops, never correctness
     assert_recorded_as_counted(placing, counting)
     report = placing.decline_report()
+    # the per-cause report against the counters kept apart from it, decline by decline
+    aggregates = (placing.declined_no_block, placing.declined_too_wide, placing.declined_overflow)
+    assert sum(report.values()) == placing.declined == sum(aggregates)
     assert (
-        sum(report.values())
-        == placing.declined
-        == sum(n for causes in placing.declines_by_group.values() for n in causes.values())
-    )
-    assert placing.stale_declines == placing.declined  # these programs have no inherent decline
+        report['no_block'] + report['new_group'],
+        report['too_wide'] + report['width_overflow'],
+        report['overflow'],
+    ) == (aggregates)
+    assert placing.stale_declines == placing.declined  # nothing else declines in these programs
     expected_cause = {'too_few': 'overflow', 'too_narrow': 'width_overflow', 'missing_groups': 'new_group'}.get(kind)
     if kind in ('fresh', 'too_many'):  # the program's own counts, or more room than it needs
         assert placing.declined == 0 and not placing.broken_groups
@@ -1090,8 +1105,10 @@ def test_declines_are_told_apart_per_group_by_cause() -> None:
         'overflow': 1,
         'no_block': 1,
         'too_wide': 1,
+        'next_address': 0,
     }
-    assert pool.stale_declines == 3 and set(DECLINE_STALE) | set(DECLINE_INHERENT) == set(pool.decline_report())
+    assert pool.stale_declines == 3  # new_group, width_overflow and overflow
+    assert not set(DECLINE_STALE) & set(DECLINE_OTHER)
     # the aggregate counters keep their meaning: no block (new or not), too wide (either way), overflow
     assert (pool.declined_no_block, pool.declined_too_wide, pool.declined_overflow) == (2, 2, 1)
     assert pool.broken_groups == {'g', 'big'}  # `big` broke when it got no block (_preallocate)
@@ -1144,8 +1161,10 @@ def test_a_recording_that_misses_a_table_is_caught(
 
 # --- one pass: tables wait out of the op stream, and are placed once the expansion is done ---
 
-# a table whose entries flip `y+dbit + $ - $` (y's lowest value bit): `$` is computed while the macro
-# expands, so a one-pass pool cannot defer it. 5 -> the entry flips y 2 -> 3, and y ^= x is 6.
+# a table whose entry k flips `y+dbit + $ - switch - (k+1)*dw`: y's lowest value bit where the
+# table really sits, since `$` is the address after the entry - and an address far below y if `$`
+# were counted from the table's start, as it is while a one-pass pool defers a table. So a pool that
+# deferred it would miscompile it; one pass keeps it inline. x=5 -> entry 5 flips y 2 -> 3; y^x = 6.
 NEXT_ADDRESS_PROGRAM = (
     """
 def dollar_table x, y @ switch, end {
@@ -1153,7 +1172,7 @@ def dollar_table x, y @ switch, end {
     pad 16
   switch:
 """
-    + '    y+dbit+$-$;end\n' * 16
+    + ''.join(f'    y+dbit+$-switch-{k + 1}*dw;end\n' for k in range(16))
     + """
   end:
     wflip x+w, switch
@@ -1170,9 +1189,9 @@ y: hex.hex
 """
 )
 
-# a table label (an extern of its macro) named by a `rep` count, which is evaluated DURING the
-# expansion - one pass has no address for it yet
-EXPANSION_TIME_PROGRAM = (
+# table labels (externs of their macros) named by an expression evaluated DURING the expansion -
+# one pass has no address for them yet. {CODE} goes after the tables, {DATA} after the variables.
+EXPANSION_TIME_TEMPLATE = (
     """
 def ext_table x @ end > ext_switch {
     wflip x+w, ext_switch, x
@@ -1184,18 +1203,37 @@ def ext_table x @ end > ext_switch {
   end:
     wflip x+w, ext_switch
 }
-def nothing {
-    ;$
+def ext_table2 x @ end > ext2_switch {
+    wflip x+w, ext2_switch, x
+    pad 16
+  ext2_switch:
+"""
+    + '    ;end\n' * 16
+    + """
+  end:
+    wflip x+w, ext2_switch
+}
+def nothing a {
+    ;$ + (a - a)
 }
 stl.startup_and_init_all
     hex.set x, 5
     ext_table x
-    rep(ext_switch - ext_switch + 1, i) nothing
+    ext_table2 x
+{CODE}
     hex.print_as_digit x, 0
     stl.loop
 x: hex.hex
+{DATA}
 """
 )
+EXPANSION_TIME_CASES = {
+    # the count names ext_switch; the argument names ext2_switch, which is never evaluated here
+    'rep': ('    rep(ext_switch - ext_switch + 1, i) nothing ext2_switch', ''),
+    'pad': ('    ;pad_end\n    pad ext_switch - ext_switch + 4\n  pad_end:', ''),  # jumped over, never run
+    'segment': ('', 'segment ext_switch - ext_switch + (1 << 20)\ny: hex.hex'),
+    'reserve': ('', 'reserve ext_switch - ext_switch + 64'),
+}
 
 # XOR_PROGRAM with more code after its variables: unreachable, but its tables are expanded
 APPENDED_PROGRAM = XOR_PROGRAM + """
@@ -1313,12 +1351,12 @@ def test_a_one_pass_placement_in_another_order_is_caught(tmp_path: Path, monkeyp
     """THE NEGATIVE CONTROL of the byte-identity tests: placing the same tables in another order is
     a correct program, and a DIFFERENT binary - which the byte comparison must see"""
     reference, _, two_fjm, _, _ = two_pass_build(XOR_PROGRAM, tmp_path)
-    real_place = BlockPool.place_deferred
+    real_iter = DeferredTables.__iter__
 
-    def reversed_order(self: BlockPool, tables: Any, labels: Dict[str, int]) -> List[Optional[int]]:
-        return real_place(self, tables[::-1], labels)[::-1]
+    def reversed_order(self: DeferredTables) -> Iterator[Any]:
+        return iter(list(real_iter(self))[::-1])
 
-    monkeypatch.setattr(BlockPool, 'place_deferred', reversed_order)
+    monkeypatch.setattr(DeferredTables, '__iter__', reversed_order)
     output, _, fjm_path = build_and_run(XOR_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True), name='reversed')
     assert output == reference
     assert fjm_path.read_bytes() != two_fjm.read_bytes()
@@ -1345,8 +1383,10 @@ def test_one_pass_keeps_a_table_too_wide_for_any_slot_inline_like_two_pass(
     assert fjm_path.read_bytes() == two_fjm.read_bytes()
 
 
+# a span that holds 6 of hex.cmp's 30 blocks once room is kept for the rest's overflow
+NO_ROOM_SPAN = 0x30000
 ONE_PASS_DECLINES: Dict[str, Tuple[Optional[Dict[str, Any]], str]] = {
-    'tiny span': ({'span_bits': 1 << 14}, 'no_block'),
+    'no room': ({'span_bits': NO_ROOM_SPAN}, 'no_block'),
     'stale counts': (None, 'overflow'),  # half of the program's own counts, frozen
     'empty counts': ({'counts': {}, 'widths': {}}, 'new_group'),
 }
@@ -1365,12 +1405,31 @@ def test_one_pass_sends_what_gets_no_block_to_the_overflow_region(
     one = BlockPool(W, POOL_BASE, one_pass=True, pin_broken=pin_broken, **kwargs)
     output, _, fjm_path = build_and_run(CMP_PROGRAM, tmp_path, one)
     assert output == reference
-    assert one.decline_report()[cause] > 0 and one.overflowed == one.declined
+    assert one.decline_report()[cause] > 0 and one.overflowed == one.declined == len(one.overflow_tables)
     assert one.deferred == one.allocated + one.overflowed  # nothing went back inline
     blocks_end = POOL_BASE + one._used
-    overflow = [s for s in Reader(fjm_path).memory_segments if s.segment_start * W >= blocks_end]
-    assert len(overflow) == one.overflowed  # one segment per overflow table, all above the blocks
-    assert all(s.segment_start * W % (4 * OP_BITS) == 0 for s in overflow)  # aligned like their `pad`
+    segments = {s.segment_start * W: (s.segment_start + s.segment_length) * W for s in Reader(fjm_path).memory_segments}
+    for address, ops_alignment in one.overflow_tables:
+        assert address >= blocks_end and address in segments  # a segment of its own, above the blocks
+        assert address % (ops_alignment * OP_BITS) == 0  # aligned as its pad asks
+    limit = POOL_BASE + kwargs['span_bits'] if 'span_bits' in kwargs else 1 << W
+    assert max(segments[address] for address, _ in one.overflow_tables) <= limit  # inside the pool
+
+
+def test_a_pool_too_small_for_its_overflow_is_refused(
+    tmp_path: Path, counted_programs: Dict[str, Tuple[bytes, BlockPool]]
+) -> None:
+    """the overflow region stays inside the pool's span: a one-pass pool sized from its census keeps
+    room for it, and says so when even that cannot fit; a frozen one says by how much it fell short"""
+    with pytest.raises(FlipJumpException, match='cannot hold the overflow region'):
+        build_and_run(CMP_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True, span_bits=1 << 14), name='tiny')
+    _, counting = counted_programs[XOR_PROGRAM]
+    too_few = counting.census().pool_kwargs()
+    too_few['counts'] = {group: count // 2 for group, count in counting.counts.items()}
+    blocks_only = BlockPool(W, POOL_BASE, **too_few)._used  # a span its blocks fill to the last bit
+    frozen = BlockPool(W, POOL_BASE, one_pass=True, span_bits=blocks_only, **too_few)
+    with pytest.raises(FlipJumpException, match='short by'):
+        build_and_run(XOR_PROGRAM, tmp_path, frozen, name='frozen')
 
 
 def test_the_op_stream_does_not_depend_on_what_one_pass_decides(tmp_path: Path) -> None:
@@ -1380,7 +1439,12 @@ def test_the_op_stream_does_not_depend_on_what_one_pass_decides(tmp_path: Path) 
     def outside_tables(labels: Dict[str, int]) -> Dict[str, int]:
         return {label: address for label, address in labels.items() if address < POOL_BASE}
 
-    configs: List[Dict[str, Any]] = [{}, {'span_bits': 1 << 14}, {'span_bits': 1 << 16}, {'counts': {}, 'widths': {}}]
+    configs: List[Dict[str, Any]] = [
+        {},
+        {'span_bits': NO_ROOM_SPAN},
+        {'span_bits': NO_ROOM_SPAN + 0x8000},
+        {'counts': {}, 'widths': {}},
+    ]
     one_pass = [
         outside_tables(expand_labels(CMP_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True, **config)))
         for config in configs
@@ -1404,7 +1468,8 @@ def test_one_pass_with_frozen_counts_keeps_the_layout_when_code_is_appended(tmp_
     first = BlockPool(W, POOL_BASE, one_pass=True)
     first_labels = expand_labels(XOR_PROGRAM, tmp_path, first, name='first')
     census = first.census()
-    second = BlockPool(W, POOL_BASE, one_pass=True, **census.pool_kwargs())
+    assert first.sizing() == census  # what it was sized with, ready for the second assembly
+    second = BlockPool(W, POOL_BASE, one_pass=True, **first.sizing().pool_kwargs())
     second_labels = expand_labels(APPENDED_PROGRAM, tmp_path, second, name='second')
     assert {label: second_labels[label] for label in first_labels} == first_labels
     assert {g: b for g, (b, _) in second.groups.items()} == {g: b for g, (b, _) in first.groups.items()}
@@ -1434,7 +1499,7 @@ def test_the_overflow_region_can_be_placed_and_must_fit(
     too_few['counts'] = {group: count // 2 for group, count in counting.counts.items()}  # some overflow
     with pytest.raises(FlipJumpException, match='overlaps the blocks'):
         build_and_run(XOR_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True, overflow_base=POOL_BASE, **too_few))
-    with pytest.raises(FlipJumpException, match='past the 32-bit memory'):
+    with pytest.raises(FlipJumpException, match='the end of memory'):
         build_and_run(
             XOR_PROGRAM,
             tmp_path,
@@ -1442,21 +1507,177 @@ def test_the_overflow_region_can_be_placed_and_must_fit(
         )
 
 
-def test_a_table_whose_entries_use_the_next_address_stays_inline(tmp_path: Path) -> None:
+def test_a_table_whose_entries_use_the_next_address_stays_inline_and_is_declined(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     reference, _, _ = build_and_run(NEXT_ADDRESS_PROGRAM, tmp_path, None, name='inline')
     assert reference == b'6'
-    one = BlockPool(W, POOL_BASE, one_pass=True)
-    output, _, _ = build_and_run(NEXT_ADDRESS_PROGRAM, tmp_path, one, name='one')
-    assert output == reference
-    assert one.kept_inline == 1 and one.deferred > 0  # hex.xor's tables still left the stream
-    counting = BlockPool(W, POOL_BASE)
+    counting = _SiteRecorder()
     build_and_run(NEXT_ADDRESS_PROGRAM, tmp_path, counting, name='counting')
-    assert one.census() == counting.census()  # it is counted all the same
+    dollar_group, _ = next((g, site) for g, site in counting.sites if 'dollar_table' in site)
+    other_site = next(site for g, site in counting.sites if g == dollar_group and 'dollar_table' not in site)
+    heat = {heat_key(dollar_group): [(heat_key(other_site), 0, 16)]}  # pin protection on its group
+    placing = BlockPool(W, POOL_BASE, **counting.census().pool_kwargs(), heat=heat)
+    two_output, _, _ = build_and_run(NEXT_ADDRESS_PROGRAM, tmp_path, placing, name='two')
+    one = BlockPool(W, POOL_BASE, one_pass=True, heat=heat)
+    output, _, _ = build_and_run(NEXT_ADDRESS_PROGRAM, tmp_path, one, name='one')
+    assert output == two_output == reference
+    assert one.kept_inline == one.declined_next_address == one.decline_report()['next_address'] == 1
+    assert dollar_group in one.broken_groups  # a member of the group is not in its block
+    assert one.allocated == placing.allocated - 1  # the two-pass build places it; one pass cannot
+    assert one._hot_seen == placing._hot_seen  # counted among its group's sites, in its turn
+    assert one.census() == counting.census()  # and in the census
+
+    # NEGATIVE CONTROL: with the `$` check off, one pass defers the table and miscompiles it
+    monkeypatch.setattr(preprocessor, 'table_names_next_address', lambda ops, pad_index, end_index: False)
+    try:
+        mutant, _, _ = build_and_run(NEXT_ADDRESS_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True), name='m')
+    except FlipJumpException:
+        return
+    assert mutant != reference
 
 
-def test_a_table_label_evaluated_during_the_expansion_is_refused_by_one_pass(tmp_path: Path) -> None:
-    reference, _, _ = build_and_run(EXPANSION_TIME_PROGRAM, tmp_path, None, name='inline')
-    output, _, _ = two_pass_build(EXPANSION_TIME_PROGRAM, tmp_path)[:3]
-    assert output == reference == b'5'  # two passes know the address when the rep needs it
-    with pytest.raises(FlipJumpException, match='ext_switch, the label of a table that one-pass blocking places'):
-        build_and_run(EXPANSION_TIME_PROGRAM, tmp_path, BlockPool(W, POOL_BASE, one_pass=True), name='one')
+@pytest.mark.parametrize('case', list(EXPANSION_TIME_CASES))
+def test_a_table_label_evaluated_during_the_expansion_is_refused_by_one_pass(tmp_path: Path, case: str) -> None:
+    code, data = EXPANSION_TIME_CASES[case]
+    source = EXPANSION_TIME_TEMPLATE.replace('{CODE}', code).replace('{DATA}', data)
+    reference, _, _ = build_and_run(source, tmp_path, None, name='inline')
+    output, _, _ = two_pass_build(source, tmp_path)[:3]
+    assert output == reference == b'5'  # two passes know the address when it is needed
+    with pytest.raises(FlipJumpException) as refused:
+        build_and_run(source, tmp_path, BlockPool(W, POOL_BASE, one_pass=True), name='one')
+    # only the expression evaluated is blamed: a rep's argument names ext2_switch, its count does not
+    assert 'It names ext_switch, the label of a table that one-pass blocking places' in str(refused.value)
+
+
+def test_options_that_need_one_pass_or_contradict_each_other_are_refused() -> None:
+    with pytest.raises(ValueError, match='merge_aliases'):
+        BlockPool(W, POOL_BASE, merge_aliases=True)  # a counting pool
+    with pytest.raises(ValueError, match='merge_aliases'):
+        BlockPool(W, POOL_BASE, one_pass=True, counts={'g': 1}, widths={'g': 16}, merge_aliases=True)
+    with pytest.raises(ValueError, match='not both'):
+        BlockPool(W, POOL_BASE, one_pass=True, merge_aliases=True, alias={'a': 'b'})
+    with pytest.raises(ValueError, match='overflow_base'):
+        BlockPool(W, POOL_BASE, counts={'g': 1}, widths={'g': 16}, overflow_base=POOL_BASE // 2)
+
+
+class _PlacementRecorder(BlockPool):
+    """a one-pass pool that records the tables its reserve() is asked to place, with their sites"""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(W, POOL_BASE, **kwargs)
+        self.sites: List[Tuple[str, str]] = []
+
+    def reserve(
+        self,
+        ops_alignment: int,
+        table_ops: int,
+        group: Optional[str] = None,
+        group_expr: Optional[Expr] = None,
+        labels_prefix: str = '',
+    ) -> Optional[Tuple[int, bool, int]]:
+        if group is not None:
+            self.sites.append((group, labels_prefix))
+        return super().reserve(ops_alignment, table_ops, group, group_expr, labels_prefix)
+
+
+def test_a_one_pass_subclass_reserve_sees_every_table_with_its_site(tmp_path: Path) -> None:
+    counting = _SiteRecorder()
+    build_and_run(XOR_PROGRAM, tmp_path, counting, name='counting')
+    one = _PlacementRecorder(one_pass=True)
+    assert one.keeps_site_paths and not BlockPool(W, POOL_BASE, one_pass=True).keeps_site_paths
+    build_and_run(XOR_PROGRAM, tmp_path, one, name='one')
+    assert one.sites == counting.sites and one.sites
+
+
+def test_the_census_of_a_counting_pool_given_an_alias_keeps_it() -> None:
+    alias = {'(x + w)': '(x + 32)'}
+    counting = BlockPool(W, POOL_BASE, alias=alias)
+    counting.reserve(16, 16, group='(x + 32)', group_expr=_sum('x', 32))
+    counting.reserve(16, 16, group='(x + w)', group_expr=_sum('x', 'w'))
+    census = counting.census()
+    assert census == BlockCensus({'(x + 32)': 2}, {'(x + 32)': 16}, {'(x + 32)': {16: 2}}, alias)
+    placing = BlockPool(W, POOL_BASE, **census.pool_kwargs())
+    assert placing.reserve(16, 16, group='(x + w)', group_expr=_sum('x', 'w')) is not None  # not a 'new_group'
+    # a third name for the word, merged by the labels: one lookup still reaches the final group
+    counting.reserve(16, 16, group='((x + 0) + 32)', group_expr=Expr(('+', (_sum('x', 0), Expr(32)))))
+    counting.labels_resolved({'x': 4096, 'w': 32})
+    merged = counting.census(merge_aliases=True)
+    assert merged.counts == {'((x + 0) + 32)': 3}
+    assert merged.alias == {'(x + w)': '((x + 0) + 32)', '(x + 32)': '((x + 0) + 32)'}
+
+
+# a dispatch word inside a deferred table, named two ways: its alias needs the table's address
+ALIAS_DEFERRED_PROGRAM = (
+    """
+def ext_table x @ end > ext_switch {
+    wflip x+w, ext_switch, x
+    pad 16
+  ext_switch:
+"""
+    + '    ;end\n' * 16
+    + """
+  end:
+    wflip x+w, ext_switch
+}
+def disp word @ switch, end {
+    wflip word, switch, end
+    pad 16
+  switch:
+"""
+    + '    ;end\n' * 16
+    + """
+  end:
+    wflip word, switch
+}
+stl.startup_and_init_all
+    hex.set x, 5
+    ext_table x
+    hex.print_as_digit x, 0
+    stl.loop
+    disp ext_switch+0+32
+    disp ext_switch+32
+x: hex.hex
+"""
+)
+
+
+def test_one_pass_counts_the_aliases_it_cannot_resolve_and_reports_what_it_was_sized_with(tmp_path: Path) -> None:
+    reference, _, _ = build_and_run(ALIAS_DEFERRED_PROGRAM, tmp_path, None, name='inline')
+    counting = BlockPool(W, POOL_BASE)
+    build_and_run(ALIAS_DEFERRED_PROGRAM, tmp_path, counting, name='counting')
+    assert counting.census(merge_aliases=True).alias == {'(ext_switch + 32)': '((ext_switch + 0) + 32)'}
+    one = BlockPool(W, POOL_BASE, one_pass=True, merge_aliases=True)
+    output, _, _ = build_and_run(ALIAS_DEFERRED_PROGRAM, tmp_path, one, name='one')
+    assert output == reference
+    assert one.alias_unresolved == 2 and one.alias == {}  # both words name ext_switch, unplaced then
+    assert one.census(merge_aliases=True) == one.sizing()  # not what the final labels would merge
+
+
+def test_a_deferred_table_costs_tens_of_bytes() -> None:
+    """what one pass keeps per queued table, beyond what a placing pass holds too (the op pointers,
+    the NewSegment, the label strings, the site path string): see DeferredTables"""
+    count = 20000
+    groups = [f'((f13:l2210:sim.pass(3)---hp + {128 * (i % 50)}) + 32)' for i in range(count)]
+    exprs = {group: Expr(group) for group in groups}
+    segments = [NewSegment(0) for _ in range(count)]
+    names = [f'f13:l2210:sim.pass(3)---s2:l40:rep{i}:hex.exact_xor(5)---switch' for i in range(count)]
+    sites = [name.rpartition('---')[0] for name in names]
+
+    def per_table(labels_per_table: int, keep_sites: bool) -> float:
+        tracemalloc.start()
+        before = tracemalloc.get_traced_memory()[0]
+        tables = DeferredTables(keep_sites)
+        for i in range(count):
+            tables.add(groups[i], exprs[groups[i]], 16, 16, sites[i], segments[i])
+            for label in range(labels_per_table):
+                tables.add_label(names[i], label * 448)
+        cost = (tracemalloc.get_traced_memory()[0] - before) / count
+        tracemalloc.stop()
+        assert len(tables) == count
+        return cost
+
+    one_label, two_labels, with_site = per_table(1, False), per_table(2, False), per_table(1, True)
+    extra_label, site = two_labels - one_label, with_site - one_label
+    print(f'deferred table: {one_label:.1f} B, a 2nd label +{extra_label:.1f} B, a site +{site:.1f} B')
+    assert one_label < 64 and extra_label < 24 and site < 16

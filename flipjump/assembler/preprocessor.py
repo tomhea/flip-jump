@@ -10,6 +10,7 @@ import collections
 import dataclasses
 import re
 import sys
+from array import array
 from typing import (
     Any,
     Dict,
@@ -89,16 +90,20 @@ def heat_key(path: str) -> str:
     return _SITE_COORDINATES.sub('', path)
 
 
-# Why BlockPool declined a table (BlockPool.declines_by_group). A STALE cause would not have
-# happened had the pool been given the counts of the very program it placed (BlockPool.census):
+# Why BlockPool declined a table (BlockPool.declines_by_group).
+# DECLINE_STALE - only counts that are not the program's own produce these:
 #   'new_group'      - the counts do not name the table's group, so it has no block
 #   'width_overflow' - the table is wider than the counts said its group's (or width's) tables are
 #   'overflow'       - the group has more tables (of this width) than the counts said
-# An INHERENT one happens whatever the counts:
-#   'no_block'       - the group is counted, but the pool had no room for its block (or evicted it)
+# DECLINE_OTHER - these happen with the program's own counts too:
+#   'no_block'       - the group is counted, but the pool had no room for its block (or evicted it).
+#                      Counts that are too BIG cause it as well: they inflate the blocks.
 #   'too_wide'       - the table is wider than any slot `max_slot_ops` allows
+#   'next_address'   - (one pass) an entry computes an address from `$`, so the table stays inline
+# Neither list tells whether the counts were stale - counts with room to spare decline nothing and
+# still size the blocks differently. That test is `pool.census() == the census it was given`.
 DECLINE_STALE = ('new_group', 'width_overflow', 'overflow')
-DECLINE_INHERENT = ('no_block', 'too_wide')
+DECLINE_OTHER = ('no_block', 'too_wide', 'next_address')
 
 
 @dataclasses.dataclass
@@ -172,33 +177,106 @@ def merge_aliased_groups(
 # BlockPool.defer's verdicts on a table the expansion reached (one pass)
 DEFER_OUT = 'out'  # it leaves the op stream, and is placed once the expansion is done
 DEFER_TOO_WIDE = 'too_wide'  # it stays inline - no slot can hold it - and is declined in its turn
-DEFER_INLINE = 'inline'  # it stays inline and is never reserved: no group, or an entry names `$`
+DEFER_NEXT_ADDRESS = 'next_address'  # it stays inline - an entry uses `$` - and is declined in its turn
+DEFER_INLINE = 'inline'  # it stays inline and is never offered again: it has no group
 
 
-class DeferredTable:
-    """A table a one-pass BlockPool took out of the op stream, to be placed once the expansion is
-    done: its ops (already expanded) and its labels, as bit offsets from the table's start. A table
-    too wide for any slot stays inline (`inline`), and is only declined in its turn."""
+class DeferredTables:
+    """Every table a one-pass BlockPool queued, in the order the expansion reached them.
 
-    __slots__ = ('group', 'group_expr', 'ops_alignment', 'table_ops', 'labels_prefix', 'inline', 'ops', 'labels')
+    A table that LEFT the op stream has its ops in the preprocessor's pool stream already, behind a
+    NewSegment whose address is filled in once it is placed (`segments`); its labels wait here as
+    bit offsets from its start. A table that stayed inline (too wide for any slot, or an entry uses
+    `$`) is queued only so the pool can decline it in its turn (`inline`: index -> cause).
 
-    def __init__(
+    Kept as parallel arrays, not an object per table: a big program queues hundreds of thousands of
+    tables (doom-flipjump ~622K), and the per-table cost is what one pass adds over a placing pass.
+    MEASURED (tests/unit/test_table_pool.py::test_a_deferred_table_costs_tens_of_bytes, 20,000
+    tables): 43 bytes per table with one label and no site path, +13 per further label, +9 for a
+    kept site path - plus the path string it keeps alive: pin protection keeps the interned heat
+    key (shared by every site with that key), a subclass that overrides reserve() the full path.
+    That is on top of what a placing pass holds too: the op pointers, the NewSegment, the label
+    strings. (An object per table, with its own op list and (label, offset) tuples, cost ~540.)
+    """
+
+    __slots__ = (
+        'groups',
+        'exprs',
+        'aligns',
+        'sizes',
+        'segments',
+        'sites',
+        'keeps_sites',
+        'inline',
+        'label_names',
+        'label_offsets',
+        'label_ends',
+    )
+
+    def __init__(self, keeps_sites: bool):
+        self.groups: List[str] = []  # each table's (raw) group; one string object per group
+        self.exprs: Dict[str, Optional[Expr]] = {}  # group -> its source-word Expr, shared by its tables
+        self.aligns = array('I')  # ops_alignment
+        self.sizes = array('I')  # table_ops
+        self.segments: List[Optional[NewSegment]] = []  # None for a table that stayed inline
+        self.sites: List[str] = []  # kept only when `keeps_sites` (see BlockPool.keeps_site_paths)
+        self.keeps_sites = keeps_sites
+        self.inline: Dict[int, str] = {}  # index -> DEFER_TOO_WIDE / DEFER_NEXT_ADDRESS
+        self.label_names: List[str] = []  # the deferred labels, table after table
+        self.label_offsets = array('I')  # ...each one's bit offset inside its table
+        self.label_ends = array('I')  # table i's labels are label_names[label_ends[i-1]:label_ends[i]]
+
+    def __len__(self) -> int:
+        return len(self.groups)
+
+    def add(
         self,
         group: str,
         group_expr: Optional[Expr],
         ops_alignment: int,
         table_ops: int,
-        labels_prefix: str,
-        inline: bool = False,
-    ):
-        self.group = group
-        self.group_expr = group_expr
-        self.ops_alignment = ops_alignment
-        self.table_ops = table_ops
-        self.labels_prefix = labels_prefix  # only kept for pin protection (`heat`), else ''
-        self.inline = inline
-        self.ops: List[LastPhaseOp] = []
-        self.labels: List[Tuple[str, int]] = []  # (label, bit offset inside the table)
+        site: str,
+        segment: Optional[NewSegment],
+        inline_cause: Optional[str] = None,
+    ) -> None:
+        group = sys.intern(group)  # one string object per group, however many tables it has
+        if group not in self.exprs:
+            self.exprs[group] = group_expr  # its tables' Exprs print alike, so they resolve alike
+        self.groups.append(group)
+        self.aligns.append(ops_alignment)
+        self.sizes.append(table_ops)
+        self.segments.append(segment)
+        if self.keeps_sites:
+            self.sites.append(site)
+        if inline_cause is not None:
+            self.inline[len(self.groups) - 1] = inline_cause
+        self.label_ends.append(len(self.label_names))
+
+    def add_label(self, label: str, offset: int) -> None:
+        """a label of the table added last, `offset` bits from its start"""
+        self.label_names.append(label)
+        self.label_offsets.append(offset)
+        self.label_ends[-1] = len(self.label_names)
+
+    def __iter__(self) -> Iterator[Tuple[int, str, Optional[Expr], int, int, str, Optional[str]]]:
+        """(index, group, group Expr, ops_alignment, table_ops, site path, inline cause or None)"""
+        sites = self.sites if self.keeps_sites else None
+        for index, group in enumerate(self.groups):
+            yield (
+                index,
+                group,
+                self.exprs[group],
+                self.aligns[index],
+                self.sizes[index],
+                sites[index] if sites is not None else '',
+                self.inline.get(index),
+            )
+
+    def labels_of(self, index: int) -> Iterator[Tuple[str, int]]:
+        """(label, bit offset) of table `index`"""
+        start = self.label_ends[index - 1] if index else 0
+        for at in range(start, self.label_ends[index]):
+            yield self.label_names[at], self.label_offsets[at]
 
 
 def table_names_next_address(ops: Sequence[Op], pad_index: int, end_index: int) -> bool:
@@ -438,28 +516,45 @@ class BlockPool(TablePool):
 
     Stale counts cost speed, never correctness: a table they have no room for is DECLINED and stays
     inline, where it still dispatches correctly (see broken_groups), and `declines_by_group` says
-    which and why (DECLINE_STALE / DECLINE_INHERENT). When `fresh == cached` the counts were this
-    program's own, and the binary is the one the two-pass build makes.
+    which and why (DECLINE_STALE / DECLINE_OTHER). Whether the counts WERE stale is `fresh ==
+    cached`, not the declines: counts with room to spare decline nothing, yet size the blocks
+    differently. When `fresh == cached` the binary is the one the two-pass build makes.
 
     ONE PASS (`one_pass=True`, opt-in). Nothing during an expansion needs a table's address: the
-    arm and disarm name its head label, which resolves only after the expansion, and a table's own
-    entries may not use `$`. So the preprocessor can take every table this pool would take out of
-    the op stream as it reaches it (`defer`), expand on, and place them all when it is done
-    (`place_deferred`) - sizing the blocks from that very expansion's census:
+    arm and disarm name its head label, which resolves only after the expansion. So the
+    preprocessor can take every table this pool would take out of the op stream as it reaches it
+    (`defer`), expand on, and place them all when it is done (`place_deferred`) - sizing the blocks
+    from that very expansion's census:
 
         pool = BlockPool(w, base, one_pass=True)       # counts=None: sized from its own census
         resolve_macros(..., table_pool=pool)
 
-    The op stream then never depends on placement: a table that gets no block (the pool ran out of
-    room, or given counts were stale) goes to an OVERFLOW region after the blocks (`overflow_base`)
-    rather than inline. A table too wide for any slot is declined whatever the counts, so that one
-    is decided at its pad and stays inline, as in the two-pass build. Given the same counts, one
-    pass decides every table exactly as the placing pass of the two-pass build, so unless that
-    build lacks room for a block the two binaries are identical. Given `counts`, a one-pass pool
-    sizes from them instead - so assemblies that must lay out alike can share one census.
-    A table's labels have no address until the expansion ends, so an expression evaluated DURING
-    it (a `rep` count, a `pad`, a `segment`) cannot name one; and a table whose entries compute an
-    address from `$` stays inline (`kept_inline`).
+    The op stream then never depends on placement: a table that gets no block goes to an OVERFLOW
+    region right after the blocks and inside the pool's span (`overflow_base` moves it), never
+    inline - and a pool sized from its own census keeps room there for every group it leaves
+    without a block. Two kinds of table stay inline, decided at their pad and declined in their
+    turn: one too wide for any slot (as in the two-pass build), and one whose entries compute an
+    address from `$`, which is unknown while they expand ('next_address'; no stl table does this).
+
+    Given the same counts, one pass decides every table exactly as the placing pass of the two-pass
+    build, and the binaries are identical - EXCEPT where (a) the pool lacks room for a block: the
+    two-pass build keeps that group's tables inline, one pass puts them in the overflow region and
+    keeps room for them there, which can cost another group its block; (b) an entry uses `$`: the
+    two-pass build places that table; (c) with merge_aliases, a group's word names a deferred
+    table's label: that alias is unknown when the blocks are sized (`alias_unresolved`); or (d) the
+    counts given were stale: every table they decline stays inline in the two-pass build and
+    overflows here. The debugging file lists a deferred table's labels after the others; the label
+    addresses, and the debugger's address -> label choice, are the same.
+
+    Given `counts`, a one-pass pool sizes from them instead, so assemblies that must lay out alike
+    can share one census (`sizing()` returns what a pool was sized with). A table's labels have no
+    address until the expansion ends, so an expression evaluated DURING it (a `rep` count, a `pad`,
+    a `segment`, a `reserve`) cannot name one: that is refused, saying so.
+
+    A subclass sees every table in `defer`, at its pad, with its site path. `reserve` is called at
+    placement, in encounter order, for the tables that left the stream or stayed inline as too wide
+    (not for ungrouped or `$` ones): with the full site path when the subclass overrides `reserve`,
+    with just its heat key when only pin protection reads it, else with '' (see kept_site).
 
     PIN PROTECTION (`heat`, opt-in). Two things re-roll a hot word's cost when the program changes:
     its group can lose its block (and so its pin), and indices follow ENCOUNTER order, so the
@@ -503,11 +598,21 @@ class BlockPool(TablePool):
         unchanged.
         @param merge_aliases: one_pass with counts=None only - merge the groups whose words the
         expansion's labels resolve to one address (canonical_alias), as `alias` does for a placing
-        pool; without it the census is merged by the `alias` given, if any. With counts given, pass
+        pool. Otherwise the census is merged by the `alias` given, if any; with counts given, pass
         the `alias` that goes with them.
         @param overflow_base: one_pass only - where the overflow region starts (None: right after
-        the last block). It must not overlap the blocks, the main stream or its wflip area.
+        the last block, bounded by the pool's span). It must not overlap the blocks, the main stream
+        or its wflip area.
         """
+        if merge_aliases and not (one_pass and counts is None):
+            raise ValueError(
+                'merge_aliases: only a one-pass pool sized from its own census (counts=None) merges aliases; '
+                'give a placing pool the `alias` of the census its counts come from'
+            )
+        if merge_aliases and alias:
+            raise ValueError('merge_aliases computes the alias: pass it or `alias`, not both')
+        if overflow_base is not None and not one_pass:
+            raise ValueError('overflow_base: only a one-pass pool has an overflow region')
         super().__init__(memory_width, pool_base, run_ops=16, span_bits=span_bits, wants=wants)
         self.counts = {} if counts is None else dict(counts)
         # a slot must hold the BIGGEST table of its group (`hex.cmp`'s is 31 ops behind a `pad 4`),
@@ -529,14 +634,18 @@ class BlockPool(TablePool):
         self.sizes_from_census = one_pass and counts is None
         self.merge_aliases = merge_aliases
         self.overflow_base = overflow_base
-        self._overflow_cursor: Optional[int] = None
         self._placed = False
         self._heat = heat
-        # a deferred table keeps its site path only for pin protection, which ranks sites by it
-        self.keeps_site_paths = bool(heat)
+        # a deferred table keeps its site path only when something reads it at placement: a
+        # subclass's own reserve() (a site recorder) gets the full path, pin protection - which
+        # only compares heat keys - the heat key, interned, so the sites that share one share it
+        self._full_site_paths = type(self).reserve is not BlockPool.reserve
+        self.keeps_site_paths = bool(heat) or self._full_site_paths
         self.deferred = 0  # tables taken out of the op stream (one_pass)
         self.overflowed = 0  # ...placed in the overflow region, having got no block
+        self.overflow_tables: List[Tuple[int, int]] = []  # ...each one's (address, ops_alignment)
         self.kept_inline = 0  # ...left inline: an entry computes an address from `$`
+        self.alias_unresolved = 0  # one pass, merge_aliases: group words unknown when it was sized
         self.counting = counts is None and not one_pass
         # {group key: canonical group key}. Groups are keyed by the source word's EXPRESSION, and
         # two expressions can name one word (`(x + 32)` and `(x + w)` at w=32); without merging
@@ -565,7 +674,8 @@ class BlockPool(TablePool):
         self.declined_no_block = 0  # its group got no block at all: pool exhausted, or a group the counts lack
         self.declined_too_wide = 0  # wider than its slot: than max_slot_ops allows, or than the counts said
         self.declined_overflow = 0  # more tables in the group than the counting pass saw
-        # ...and by group: {group: {cause: tables}}, the causes of DECLINE_STALE and DECLINE_INHERENT
+        self.declined_next_address = 0  # (one pass) an entry uses `$`: it stays inline
+        # ...and by group: {group: {cause: tables}}, the causes of DECLINE_STALE and DECLINE_OTHER
         self.declines_by_group: Dict[str, Dict[str, int]] = {}
         # opt-in: when the pool cannot hold every block, drop the least valuable groups (tables per
         # bit) before allocating, instead of whichever groups the biggest-first cursor reaches last
@@ -616,17 +726,23 @@ class BlockPool(TablePool):
         Run it on a COUNTING pool once its assembly's labels are known, and pass the result as the
         placing pool's `alias`; without it every alias pair loses both its pins.
         """
+        return self._alias_and_unresolved(labels)[0]
+
+    def _alias_and_unresolved(self, labels: LabelsDict) -> Tuple[Dict[str, str], int]:
+        """(canonical_alias, how many groups' words these labels cannot resolve)"""
         by_address: Dict[int, str] = {}
         alias: Dict[str, str] = {}
+        unresolved = 0
         for group in sorted(self.exprs):
             try:
                 address = self.exprs[group].exact_eval(labels)
             except FlipJumpExprException:
+                unresolved += 1
                 continue
             first = by_address.setdefault(address, group)
             if first != group:
                 alias[group] = first
-        return alias
+        return alias, unresolved
 
     @property
     def recording(self) -> BlockPool:
@@ -637,35 +753,60 @@ class BlockPool(TablePool):
 
     def labels_resolved(self, labels: LabelsDict) -> None:
         """record the alias this assembly's labels imply among the groups it met (census reads it).
-        Only a dict of aliases is kept, never the labels."""
-        self.seen_alias = self.recording.canonical_alias(labels)
+        Only a dict of aliases is kept, never the labels. A one-pass pool that merged its own census
+        keeps the alias it was SIZED with instead (see census)."""
+        if not (self.sizes_from_census and self.merge_aliases and self._placed):
+            self.seen_alias = self.recording.canonical_alias(labels)
 
     def census(self, merge_aliases: bool = False) -> BlockCensus:
         """The counts, widths, width histogram and alias of every table this pool was offered: what a
         counting expansion of the program just assembled reports, in the shape a placing pool takes
         (see the class docstring). Cache it as the next build's counts.
 
-        @param merge_aliases: fold the groups whose words this assembly's labels resolved to one
-        address into their canonical group (canonical_alias), as a placing pool given that `alias`
-        needs them. Needs the labels, so it is only available after assemble().
+        The groups are keyed as a counting pool keys them, with the `alias` a counting pool was
+        given folded in (it counted canonical groups).
+
+        @param merge_aliases: also fold the groups whose words resolved to one address into their
+        canonical group (canonical_alias), as a placing pool given that `alias` needs them: by the
+        labels of this assembly (so only after assemble(), which hands them over) - or, for a
+        one-pass pool that merged its own census, by exactly the alias its blocks were sized with,
+        so a second assembly given this census lays out alike (see alias_unresolved).
         """
-        alias: Dict[str, str] = {}
+        recording = self.recording
+        given = dict(recording.alias)  # a counting pool given an alias counted canonical groups
+        seen: Dict[str, str] = {}
         if merge_aliases:
             if self.seen_alias is None:
                 raise FlipJumpPreprocessorException(
                     'census(merge_aliases=True) needs the assembly\'s labels: call it after assemble() '
                     '(which hands them to the pool), or merge with an alias of your own'
                 )
-            alias = dict(self.seen_alias)
-        recording = self.recording
+            seen = self.seen_alias
         counts, widths, width_hist = merge_aliased_groups(
-            recording.counts, recording.widths, recording.width_hist, alias
+            recording.counts, recording.widths, recording.width_hist, seen
         )
+        # one lookup reaches the final group: a raw group the given alias named goes on to where
+        # `seen` sends its canonical group
+        alias = {group: seen.get(canonical, canonical) for group, canonical in given.items()}
+        alias.update(seen)
         return BlockCensus(counts, widths, width_hist, alias)
 
+    def sizing(self) -> BlockCensus:
+        """the census this pool's blocks were sized from: the counts it was given, or - a one-pass
+        pool sized from its own census, once placed - the census it computed. A second assembly
+        that must lay out the same tables alike takes this (`BlockPool(..., **sizing().pool_kwargs())`)."""
+        if self.counting or (self.sizes_from_census and not self._placed):
+            raise FlipJumpPreprocessorException('sizing(): this pool has not sized its blocks')
+        return BlockCensus(
+            dict(self.counts),
+            dict(self.widths),
+            {group: dict(hist) for group, hist in self.width_hist.items()},
+            dict(self.alias),
+        )
+
     def decline_report(self) -> Dict[str, int]:
-        """{cause: tables declined} over every group (DECLINE_STALE + DECLINE_INHERENT)"""
-        report = {cause: 0 for cause in DECLINE_STALE + DECLINE_INHERENT}
+        """{cause: tables declined} over every group (DECLINE_STALE + DECLINE_OTHER)"""
+        report = {cause: 0 for cause in DECLINE_STALE + DECLINE_OTHER}
         for causes in self.declines_by_group.values():
             for cause, count in causes.items():
                 report[cause] += count
@@ -673,8 +814,10 @@ class BlockPool(TablePool):
 
     @property
     def stale_declines(self) -> int:
-        """tables declined only because the counts were not this program's own (DECLINE_STALE).
-        Zero means fresh counts would have placed exactly the same tables."""
+        """tables declined for a DECLINE_STALE cause - one only counts that are not this program's
+        own produce. Zero does NOT mean the counts were fresh: counts with room to spare decline
+        nothing (and stale counts that are too big can cause a 'no_block'). The test for stale
+        counts is `census() == the census the pool was given`."""
         report = self.decline_report()
         return sum(report[cause] for cause in DECLINE_STALE)
 
@@ -823,7 +966,13 @@ class BlockPool(TablePool):
             slots *= 2
         return slots, slot_ops * self.op_bits
 
-    def _preallocate(self) -> None:
+    def _pool_limit(self) -> int:
+        """the first address past the pool: pool_base + span_bits, and never past the memory"""
+        if self.span_bits is None:
+            return 1 << self.memory_width
+        return min(1 << self.memory_width, self.pool_base + self.span_bits)
+
+    def _preallocate(self, limit_reserve: int = 0) -> None:
         """Assign every block a base up front: the hot groups first, in heat order, then the rest
         BIGGEST FIRST.
 
@@ -834,14 +983,13 @@ class BlockPool(TablePool):
         biggest block after them, and `evict_by_value` counts them. Doing it here rather than
         during expansion also makes allocation independent of the order macros are reached, which
         two assemblies of the same program need in order to agree.
+
+        `limit_reserve` bits at the top of the pool are kept free (one pass: for the overflow
+        region, see _preallocate_with_overflow_room).
         """
         bits = {g: self._block_bits(g) for g in self.counts}
         cursor = self.pool_base
-        limit = (
-            (1 << self.memory_width)
-            if self.span_bits is None
-            else min(1 << self.memory_width, self.pool_base + self.span_bits)
-        )
+        limit = self._pool_limit() - limit_reserve
 
         keep = set(self.counts)
         if self.evict_by_value:
@@ -896,8 +1044,8 @@ class BlockPool(TablePool):
             )
 
     def _decline(self, group: str, cause: str) -> None:
-        """a table the pass cannot place, for `cause` (DECLINE_STALE / DECLINE_INHERENT). Except for
-        a group that got no block at all, this breaks the group: see broken_groups."""
+        """a table the pass cannot place, for `cause` (DECLINE_STALE / DECLINE_OTHER). Except for a
+        group that got no block at all, this breaks the group: see broken_groups."""
         self.declined += 1
         causes = self.declines_by_group.setdefault(group, {})
         causes[cause] = causes.get(cause, 0) + 1
@@ -908,6 +1056,9 @@ class BlockPool(TablePool):
             self.broken_groups.add(group)
         elif cause == 'overflow':
             self.declined_overflow += 1
+            self.broken_groups.add(group)
+        elif cause == 'next_address':
+            self.declined_next_address += 1
             self.broken_groups.add(group)
         else:
             raise ValueError(f'unknown decline cause {cause!r}')
@@ -1051,15 +1202,16 @@ class BlockPool(TablePool):
         *,
         can_defer: bool = True,
     ) -> str:
-        """one_pass: what becomes of a table the expansion reached (DEFER_OUT / DEFER_TOO_WIDE /
-        DEFER_INLINE). It is recorded (census) exactly as a counting pass counts it, first.
+        """one_pass: what becomes of a table the expansion reached, at its pad (DEFER_OUT,
+        DEFER_TOO_WIDE, DEFER_NEXT_ADDRESS or DEFER_INLINE). It is recorded first (census), exactly
+        as a counting pass counts it. This is the hook a subclass overrides to see every table at
+        its pad, in order, with its site path.
 
-        A table with no group cannot be blocked and stays inline, as in the two-pass mode, and so
-        does one the caller cannot defer (`can_defer`: an entry computes an address from `$`).
-        A table wider than any slot max_slot_ops allows is declined whatever the counts, so it is
-        decided HERE, as a placing pass decides it at its pad: it stays inline (DEFER_TOO_WIDE),
-        and place_deferred still declines it in its turn, so the decline - and pin protection's
-        count of a hot group's tables - happen in the two-pass build's order.
+        A table with no group cannot be blocked and stays inline, as in the two-pass mode. Two more
+        stay inline but are queued, so place_deferred declines them in their turn (pin protection
+        counts a hot group's tables in that order): one wider than any slot max_slot_ops allows -
+        declined whatever the counts, exactly as a placing pass declines it at its pad - and one
+        the caller cannot defer (`can_defer`: an entry computes an address from `$`).
         """
         self.recording.reserve(ops_alignment, table_ops, group, group_expr, labels_prefix)
         if group is None:
@@ -1067,21 +1219,31 @@ class BlockPool(TablePool):
             return DEFER_INLINE
         if not can_defer:
             self.kept_inline += 1
-            return DEFER_INLINE
+            return DEFER_NEXT_ADDRESS
         if self._width_cause(max(table_ops, ops_alignment, 1)) == 'too_wide':
             return DEFER_TOO_WIDE
         self.deferred += 1
         return DEFER_OUT
 
-    def place_deferred(self, tables: Sequence[DeferredTable], labels: LabelsDict) -> List[Optional[int]]:
-        """one_pass: the address of every deferred table (None for one that stayed inline), in the
-        order the expansion reached them.
+    def kept_site(self, labels_prefix: str) -> str:
+        """the site path a queued table keeps for its reserve() at placement (keeps_site_paths)"""
+        if self._full_site_paths:
+            return labels_prefix
+        if self._heat:
+            return sys.intern(heat_key(labels_prefix))  # _hot_site compares nothing else
+        return ''
 
-        Sizes the blocks - from this expansion's own census when the pool was given no counts (with
-        the alias `labels` imply among its groups, if merge_aliases), else from the counts it was
-        given - and then decides every table exactly as a placing pass decides it at its `pad`, in
-        the same order. A table that gets no block goes to the overflow region instead of inline,
-        so nothing in the op stream ever depends on these decisions.
+    def place_deferred(self, tables: DeferredTables, labels: LabelsDict) -> Sequence[int]:
+        """one_pass: the address of every queued table (0 for one that stayed inline: no table can
+        sit at 0, the program's start), in the order the expansion reached them.
+
+        Sizes the blocks - from this expansion's own census when the pool was given no counts (merged
+        by the alias `labels` imply among its groups, if merge_aliases; a group word that names a
+        deferred table's label cannot be resolved yet and is counted in `alias_unresolved`), else
+        from the counts it was given - and then decides every table exactly as a placing pass
+        decides it at its pad, in the same order. A table that gets no block goes to the overflow
+        region (_place_overflow) instead of inline, so nothing in the op stream depends on these
+        decisions.
         """
         if self._placed:
             raise FlipJumpPreprocessorException('one-pass blocking: a pool places its tables once')
@@ -1089,58 +1251,123 @@ class BlockPool(TablePool):
         if self.sizes_from_census:
             recording = self.recording
             if self.merge_aliases:  # else the `alias` it was given, if any
-                self.alias = recording.canonical_alias(labels)
+                self.alias, self.alias_unresolved = recording._alias_and_unresolved(labels)
+                self.seen_alias = dict(self.alias)  # census(merge_aliases=True) reports what it was sized with
             self.counts, self.widths, self.width_hist = merge_aliased_groups(
                 recording.counts, recording.widths, recording.width_hist, self.alias
             )
             self._layout_cache.clear()
         if self._heat:
             self._resolve_heat(self._heat)
-        self._preallocate()
-        addresses: List[Optional[int]] = []
-        for table in tables:
-            reserved = self.reserve(
-                table.ops_alignment, table.table_ops, table.group, table.group_expr, table.labels_prefix
-            )
-            if table.inline:
+        if self.sizes_from_census and self.overflow_base is None:
+            self._preallocate_with_overflow_room(tables)
+        else:
+            self._preallocate()
+        addresses = array('Q', bytes(8 * len(tables)))  # 0: it stayed inline
+        overflow: List[Tuple[int, int, int]] = []  # (index, ops_alignment, table_ops)
+        for index, group, group_expr, ops_alignment, table_ops, site, inline_cause in tables:
+            if inline_cause == DEFER_NEXT_ADDRESS:
+                self._decline_next_address(group, site)
+                continue
+            reserved = self.reserve(ops_alignment, table_ops, group, group_expr, site)
+            if inline_cause is not None:  # too wide: reserve() declines it, exactly as at its pad
                 if reserved is not None:  # defer() and reserve() disagree on what is too wide
                     raise FlipJumpPreprocessorException(
-                        f'one-pass blocking: a table kept inline as too wide got a slot ({table.group})'
+                        f'one-pass blocking: a table kept inline as too wide got a slot ({group})'
                     )
-                addresses.append(None)
             elif reserved is None:
-                addresses.append(self._overflow_address(table.ops_alignment, table.table_ops))
+                overflow.append((index, ops_alignment, table_ops))
             else:
-                addresses.append(reserved[0])
+                addresses[index] = reserved[0]
+        for index, address in self._place_overflow(overflow):
+            addresses[index] = address
         return addresses
 
-    def _overflow_address(self, ops_alignment: int, table_ops: int) -> int:
-        """the next spot in the overflow region for a table that got no block, aligned like its `pad`.
+    def _decline_next_address(self, group: str, site: str) -> None:
+        """a table whose entries use `$` stayed inline: decline it in its turn, as reserve() declines
+        a table at its pad - a hot group counts it among its sites first (see _hot_site)"""
+        group = self.alias.get(group, group)
+        if group in self.hot_sites:
+            self._hot_site(group, site)
+        self._decline(group, 'next_address')
 
-        The region starts right after the last block unless `overflow_base` says otherwise; it can
-        never sit right after the main stream, whose wflip area is laid out only once labels resolve.
-        A declined table dispatches from here exactly as it would inline: an un-pinned word is armed
-        with its full address, a pinned one with `address ^ base` (see pinned_words).
+    def _overflow_slot_bits(self, ops_alignment: int, table_ops: int) -> int:
+        """the aligned slot an overflow table takes: its width rounded up to a power of two, so a
+        group's overflow never needs more room than its block would have taken"""
+        return (1 << max(0, (max(table_ops, ops_alignment, 1) - 1).bit_length())) * self.op_bits
+
+    def _preallocate_with_overflow_room(self, tables: DeferredTables) -> None:
+        """_preallocate, keeping room in the pool's span for the overflow region: every group left
+        without a block (no room, or evicted) puts its tables there, so its slots are reserved at the
+        top of the span and the blocks laid out again until they fit. A group's overflow slots never
+        take more room than its block would, so the reserve only grows and this ends."""
+        need: Dict[str, int] = {}
+        biggest = 0
+        for _, group, _, ops_alignment, table_ops, _, inline_cause in tables:
+            if inline_cause is None:
+                slot_bits = self._overflow_slot_bits(ops_alignment, table_ops)
+                canonical = self.alias.get(group, group)
+                need[canonical] = need.get(canonical, 0) + slot_bits
+                biggest = max(biggest, slot_bits)
+        limit = self._pool_limit()
+        span = limit - self.pool_base
+        reserve = 0
+        while True:
+            self.groups, self._next_index, self.broken_groups = {}, {}, set()
+            self.evicted_low_value = 0
+            self._preallocate(limit_reserve=reserve)
+            overflow = sum(bits for group, bits in need.items() if group not in self.groups)
+            demand = overflow + biggest if overflow else 0  # + the region's first alignment
+            if self.pool_base + self._used + demand <= limit:
+                return
+            if reserve >= span:  # no group had a block, and still the overflow does not fit
+                raise FlipJumpPreprocessorException(
+                    f'one-pass blocking: the pool [{hex(self.pool_base)}, {hex(limit)}) cannot hold the overflow '
+                    f'region of the groups it has no block for ({hex(demand)} bits, short by '
+                    f'{hex(self.pool_base + demand - limit)}). Raise span_bits, or pass an overflow_base outside it.'
+                )
+            reserve = min(max(reserve + self.op_bits, demand), span)
+
+    def _place_overflow(self, overflow: Sequence[Tuple[int, int, int]]) -> List[Tuple[int, int]]:
+        """[(index, address)] for the tables that got no block, in the overflow region: biggest slot
+        first, so each lands aligned to its slot (and so to its `pad`) with no hole in front of it.
+
+        The region starts right after the last block, inside the pool's span, unless `overflow_base`
+        says otherwise (then it may reach the top of memory, and must not overlap the blocks). It
+        can never sit right after the main stream, whose wflip area is laid out only once labels
+        resolve. A declined table dispatches from here exactly as it would inline: an un-pinned word
+        is armed with its full address, a pinned one with `address ^ base` (see pinned_words).
         """
-        if self._overflow_cursor is None:
-            self._overflow_cursor = self.pool_base + self._used if self.overflow_base is None else self.overflow_base
-        align_bits = max(ops_alignment, 1) * self.op_bits
-        address = -(-self._overflow_cursor // align_bits) * align_bits
-        end = address + max(table_ops, 1) * self.op_bits
-        if end > 1 << self.memory_width:
-            raise FlipJumpPreprocessorException(
-                f'one-pass blocking: the overflow region reached {hex(end)}, past the {self.memory_width}-bit memory. '
-                f'Pass an overflow_base with room for it.'
-            )
+        if not overflow:
+            return []
+        slots = sorted(
+            ((self._overflow_slot_bits(align, ops), index, align, ops) for index, align, ops in overflow),
+            key=lambda entry: (-entry[0], entry[1]),
+        )
         blocks_end = self.pool_base + self._used
-        if address < blocks_end and end > self.pool_base:
+        start = blocks_end if self.overflow_base is None else self.overflow_base
+        limit = self._pool_limit() if self.overflow_base is None else 1 << self.memory_width
+        cursor = -(-start // slots[0][0]) * slots[0][0]
+        placed: List[Tuple[int, int]] = []
+        for slot_bits, index, align, ops in slots:
+            address = -(-cursor // slot_bits) * slot_bits
+            cursor = address + ops * self.op_bits
+            placed.append((index, address))
+            self.overflow_tables.append((address, align))
+        if cursor > limit:
+            bound = 'the end of the pool' if self.overflow_base is None else 'the end of memory'
             raise FlipJumpPreprocessorException(
-                f'one-pass blocking: an overflow table at {hex(address)} overlaps the blocks '
+                f'one-pass blocking: the overflow region [{hex(start)}, {hex(cursor)}) for {len(slots)} table(s) '
+                f'ends past {bound} at {hex(limit)} - short by {hex(cursor - limit)} bits. Raise span_bits, '
+                f'or pass an overflow_base with room.'
+            )
+        if self.overflow_base is not None and start < blocks_end and cursor > self.pool_base:
+            raise FlipJumpPreprocessorException(
+                f'one-pass blocking: the overflow region [{hex(start)}, {hex(cursor)}) overlaps the blocks '
                 f'[{hex(self.pool_base)}, {hex(blocks_end)}). Move overflow_base.'
             )
-        self._overflow_cursor = end
-        self.overflowed += 1
-        return address
+        self.overflowed += len(placed)
+        return placed
 
     def pinned_words(self) -> Dict[Expr, int]:
         """{source-word Expr: block base} - the caller resolves the Expr once labels are known.
@@ -1293,14 +1520,15 @@ class PreprocessorData:
         self._pool_segment: Optional[NewSegment] = None
 
         # ONE-PASS BLOCKING (off unless the pool is a BlockPool(one_pass=True)): a table the pool
-        # takes waits here, out of every op stream, until finish() has the pool place them all
+        # takes is emitted into the pool's stream behind a NewSegment with no address yet, and waits
+        # in `_deferred` until finish() has the pool place them all
         self._one_pass: Optional[BlockPool] = (
             table_pool if isinstance(table_pool, BlockPool) and table_pool.one_pass else None
         )
-        self._deferred: List[DeferredTable] = []
-        self._deferring: Optional[DeferredTable] = None
-        self._deferred_label_names: Set[str] = set()
-        self._group_exprs: Dict[str, Tuple[str, Optional[Expr]]] = {}  # group -> its shared (name, Expr)
+        self._deferred: Optional[DeferredTables] = (
+            None if self._one_pass is None else DeferredTables(self._one_pass.keeps_site_paths)
+        )
+        self._deferring = False  # emitting a deferred table's ops
         self._next_address_cache: Dict[Tuple[int, int], bool] = {}
 
         # PROGRESS (off unless on_progress is given): each macro expansion owns a slice [lo, hi) of
@@ -1417,11 +1645,12 @@ class PreprocessorData:
         group_expr: Optional[Expr],
         table_source: Optional[Tuple[Macro, int, int]],
     ) -> bool:
-        """one pass: take the table out of the op stream (see BlockPool's ONE PASS). Its ops are
-        emitted into the DeferredTable and its labels recorded as offsets from its start, so
-        curr_address counts from 0 inside it; nothing in the table can read that number, since an
-        entry that uses `$` keeps its table inline. A table too wide for any slot stays inline too,
-        but is queued (as `inline`) so the pool declines it in its turn."""
+        """one pass: take the table out of the op stream (see BlockPool's ONE PASS). Its ops go into
+        the pool's stream behind a NewSegment whose address is set once it is placed, and its labels
+        are recorded as offsets from its start, so curr_address counts from 0 inside it - nothing in
+        the table can read that number, since an entry that uses `$` keeps its table inline. A table
+        that stays inline (too wide for any slot, or using `$`) is still queued, so the pool declines
+        it in its turn."""
         verdict = pool.defer(
             ops_alignment,
             table_ops,
@@ -1432,41 +1661,39 @@ class PreprocessorData:
         )
         if verdict == DEFER_INLINE:
             return False
-        assert group is not None  # defer() keeps an ungrouped table inline
-        # every table of a group shares one name string and one Expr (they print alike, so they
-        # resolve alike): a big program defers hundreds of thousands of tables
-        group, group_expr = self._group_exprs.setdefault(group, (group, group_expr))
-        site = labels_prefix if pool.keeps_site_paths else ''
-        table = DeferredTable(group, group_expr, ops_alignment, table_ops, site, inline=verdict == DEFER_TOO_WIDE)
-        self._deferred.append(table)
-        if table.inline:
+        assert group is not None and self._deferred is not None  # defer() keeps an ungrouped table inline
+        site = pool.kept_site(labels_prefix)
+        if verdict != DEFER_OUT:
+            self._deferred.add(group, group_expr, ops_alignment, table_ops, site, None, verdict)
             return False  # aligned and emitted in place, exactly as a placing pass declines it
-        self._deferring = table
+        segment = NewSegment(0)  # its address is decided once the expansion is done
+        self.pool_ops.append(segment)
+        self._deferred.add(group, group_expr, ops_alignment, table_ops, site, segment)
+        self._deferring = True
         self._reloc_stack.append((self.curr_address, self.emit_target))
-        self.emit_target = table.ops
+        self.emit_target = self.pool_ops
         self.curr_address = 0
         return True
 
     def _place_deferred_tables(self, pool: BlockPool) -> None:
-        """one pass, after the expansion: have the pool place every deferred table, then give each
-        its labels and a segment of its own in the pool's stream (flush_table_pool sorts them)"""
+        """one pass, after the expansion: have the pool place every queued table, then give each
+        that left the stream its labels and its segment's address (flush_table_pool sorts them)"""
+        tables = self._deferred
+        assert tables is not None
         op_bits = 2 * self.memory_width
-        addresses = pool.place_deferred(self._deferred, self.labels)
-        for table, address in zip(self._deferred, addresses):
-            if address is None:
-                continue  # it stayed inline (too wide for any slot): its labels are in place already
-            for label, offset in table.labels:
+        addresses = pool.place_deferred(tables, self.labels)
+        for index, address in enumerate(addresses):
+            if not address:
+                continue  # it stayed inline: its labels are in place already
+            for label, offset in tables.labels_of(index):
                 self.labels[label] = address + offset
                 if self.save_debug_labels:
                     self.addresses_with_labels.add(address + offset)
-            segment = NewSegment(address)
-            segment.wflip_start_address = address + table.table_ops * op_bits  # a table has no wflips
-            self.pool_ops.append(segment)
-            self.pool_ops.extend(table.ops)
-            table.ops = []
-        self._deferred = []
-        self._deferred_label_names.clear()
-        self._group_exprs.clear()
+            segment = tables.segments[index]
+            assert segment is not None
+            segment.start_address = address
+            segment.wflip_start_address = address + tables.sizes[index] * op_bits  # a table has no wflips
+        self._deferred = DeferredTables(pool.keeps_site_paths)  # release them
 
     def end_relocation(self) -> None:
         """close the table and resume the interrupted stream where it left off.
@@ -1475,12 +1702,14 @@ class PreprocessorData:
         moved forward here rather than guessed: a relocated table contains no wflips, so that
         address is simply the segment's end.
         """
-        if self._deferring is not None:
-            table, self._deferring = self._deferring, None
-            if self.curr_address != table.table_ops * 2 * self.memory_width:
+        if self._deferring:
+            self._deferring = False
+            assert self._deferred is not None
+            promised = self._deferred.sizes[-1]
+            if self.curr_address != promised * 2 * self.memory_width:
                 raise FlipJumpPreprocessorException(
                     f'one-pass blocking: a deferred table holds {self.curr_address // (2 * self.memory_width)} '
-                    f'ops where its pad promised {table.table_ops}'
+                    f'ops where its pad promised {promised}'
                 )
             self.curr_address, self.emit_target = self._reloc_stack.pop()
             return
@@ -1558,16 +1787,17 @@ class PreprocessorData:
         if address is None:
             address = self.curr_address
 
-        if label in self.labels or (self._deferred_label_names and label in self._deferred_label_names):
+        # (one pass: a deferred table's label is in labels_code_positions before it is in labels)
+        if label in self.labels or (self._one_pass is not None and label in self.labels_code_positions):
             other_position = self.labels_code_positions[label]
             macro_resolve_error(
                 self.curr_tree, f'label declared twice - "{label}" on ' f'{code_position} and {other_position}'
             )
         self.labels_code_positions[label] = code_position
-        if self._deferring is not None:
+        if self._deferring:
             # a deferred table's label: an offset now, an address once the table is placed
-            self._deferring.labels.append((label, address))
-            self._deferred_label_names.add(label)
+            assert self._deferred is not None
+            self._deferred.add_label(label, address)
             return
         self.labels[label] = address
         if self.save_debug_labels:
@@ -1616,10 +1846,24 @@ class PreprocessorData:
 
     def deferred_labels_note(self, op: Union[RepCall, Pad, Segment, Reserve]) -> str:
         """why an expression evaluated during the expansion may have failed: it names the label of a
-        table a one-pass BlockPool placed only after it ('' when it names none)"""
-        if not self._deferred_label_names:
+        table a one-pass BlockPool places only after it ('' when it names none). Only the expression
+        that is evaluated is searched - a rep's count, not its arguments."""
+        if self._one_pass is None:
             return ''
-        named = sorted(op.all_unknown_labels() & self._deferred_label_names)
+        if isinstance(op, RepCall):
+            expr = op.repeat_times
+        elif isinstance(op, Pad):
+            expr = op.ops_alignment
+        elif isinstance(op, Segment):
+            expr = op.start_address
+        else:
+            expr = op.reserved_bit_size
+        # a deferred label is declared (it has a code position) but has no address yet
+        named = sorted(
+            label
+            for label in expr.all_unknown_labels()
+            if label in self.labels_code_positions and label not in self.labels
+        )
         if not named:
             return ''
         return (
