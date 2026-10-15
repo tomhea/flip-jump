@@ -368,5 +368,8 @@ class PcIO(IODevice):
     def write_bit(self, bit: bool) -> None:
         self._screen.write_bit(bit)
 
+    def write_byte(self, byte: int) -> None:
+        self._screen.write_byte(byte)
+
     def get_output(self, *, allow_incomplete_output: bool = False) -> bytes:
         return self._screen.get_output(allow_incomplete_output=allow_incomplete_output)

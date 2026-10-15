@@ -354,6 +354,7 @@ def _run_native(
             io_device.write_bit,
             IOReadOnEOF,
             last_ops_length=last_ops.maxlen if last_ops is not None and last_ops.maxlen else 0,
+            write_byte=getattr(io_device, 'write_byte', None),
         )
     finally:
         # keep op_counter, the IO-paused time and the storage mode valid on the exception

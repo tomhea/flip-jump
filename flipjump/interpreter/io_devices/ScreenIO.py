@@ -174,6 +174,12 @@ class InMemoryScreen(IODevice):
             byte, self._current_byte, self._bits_count = self._current_byte, 0, 0
             self._handle_byte(byte)
 
+    def write_byte(self, byte: int) -> None:
+        if self._bits_count:  # never from the engine (it gathers bytes from a byte boundary only)
+            super().write_byte(byte)
+            return
+        self._handle_byte(byte)
+
     def read_bit(self) -> bool:
         raise IOReadOnEOF('the screen device has no input - use a device that also reads input (e.g. --io pc)')
 
