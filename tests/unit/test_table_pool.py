@@ -1521,7 +1521,7 @@ def test_one_pass_leaves_about_as_many_tables_without_a_block_as_two_pass() -> N
     """on a pool a little short of room, the tables one pass leaves without a block - the groups that
     do not fit, as in the two-pass build, plus those it leaves out to make room for their overflow -
     are not many more than the two-pass build leaves inline"""
-    rng = random.Random(369)
+    rng = random.Random(369)  # nosec B311 -- a seeded test fixture, not security
     counts = {f'g{i}': max(1, int(rng.paretovariate(1.3) * 4)) for i in range(3000)}
     total = sum(counts.values())
     full = BlockPool(W, POOL_BASE, counts=counts, widths={g: 16 for g in counts})._used
@@ -1741,8 +1741,8 @@ def test_one_pass_layouts_of_random_pools_keep_their_promises() -> None:
     the blocks, each table at its pad, in encounter order; a pool given its sizing() lays out alike,
     and so does one with tables appended and a span with room for them; and with nothing left out
     and nothing overflowing, the layout is the two-pass build's"""
-    rng = random.Random(3690)
-    outcomes = {'placed': 0, 'left_out': 0, 'refused': 0, 'two_pass': 0}
+    rng = random.Random(3690)  # nosec B311 -- a seeded test fixture, not security
+    outcomes = {'placed': 0, 'left_out': 0, 'refused': 0, 'two_pass': 0}  # nosec B105 -- counters
     for _ in range(300):
         groups = [f'g{i}' for i in range(rng.randint(1, 30))]
         spec: List[Tuple[str, int, int]] = []
