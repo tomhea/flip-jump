@@ -41,6 +41,15 @@ class IODevice(ABC):
     def write_bit(self, bit: bool) -> None:
         pass
 
+    def write_byte(self, byte: int) -> None:
+        """
+        write 8 output bits at once, lsb first: exactly write_bit of each. the native engine calls this once a
+        byte (only from a byte boundary of the output stream), instead of write_bit once a bit; a device whose
+        output is bytes overrides it to skip the 8 calls.
+        """
+        for i in range(8):
+            self.write_bit(bool((byte >> i) & 1))
+
     @abstractmethod
     def get_output(self, *, allow_incomplete_output: bool = False) -> bytes:
         pass
