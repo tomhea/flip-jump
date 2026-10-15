@@ -173,6 +173,12 @@ def _trace_flip(ip: int, flip_address: int, show_trace: bool) -> None:
         print(hex(flip_address)[2:], end='; ', flush=True)
 
 
+def _overrides_write_byte(io_device: IODevice) -> bool:
+    """does the device handle a whole output byte itself (not IODevice's per-bit default)?"""
+    own = getattr(type(io_device), 'write_byte', None)
+    return own is not None and own is not IODevice.write_byte
+
+
 def run(
     fjm_path: Path,
     *,
@@ -354,7 +360,9 @@ def _run_native(
             io_device.write_bit,
             IOReadOnEOF,
             last_ops_length=last_ops.maxlen if last_ops is not None and last_ops.maxlen else 0,
-            write_byte=getattr(io_device, 'write_byte', None),
+            # only a device that handles whole bytes itself: the default write_byte is 8 write_bits anyway,
+            # and gathering would only delay each bit (and a device error) to its byte's end
+            write_byte=io_device.write_byte if _overrides_write_byte(io_device) else None,
         )
     finally:
         # keep op_counter, the IO-paused time and the storage mode valid on the exception

@@ -1922,6 +1922,9 @@ static PyObject* Memory_reset(MemoryObject* self, PyObject* Py_UNUSED(ignored))
     memset(self->page_cache_key_plus1, 0, sizeof(self->page_cache_key_plus1));
     self->mem_error = 0;
     self->error_bit_address = 0;
+    /* a reset run starts a fresh output stream (a fresh device, in the per-frame walker's use), so the
+       device's bit phase starts at a byte boundary again */
+    self->out_phase = 0;
     Py_RETURN_NONE;
 }
 
@@ -1962,6 +1965,7 @@ static PyObject* Memory_run(MemoryObject* self, PyObject* args, PyObject* kwds)
                 Py_CLEAR(run_result);
             }
         }
+        self->last_run_paused_seconds += flush_paused; /* the result tuple already holds the loop's */
         if (et) {
             PyErr_Restore(et, ev, tb);
         }

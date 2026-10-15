@@ -124,3 +124,91 @@ def test_control_a_wrong_write_byte_is_caught(tmp_path: Path, monkeypatch: pytes
     reference = run_recorded(fjm_path, b'ab', native=False, monkeypatch=monkeypatch)
     wrong = run_recorded(fjm_path, b'ab', native=True, monkeypatch=monkeypatch, lsb_first=False)
     assert wrong.get_output(allow_incomplete_output=True) != reference.get_output(allow_incomplete_output=True)
+
+
+# 11 bits out: one whole byte and 3 bits left pending at the end of the run
+ELEVEN_BITS_PROGRAM = '''
+    stl.startup
+    stl.output_char 0x41
+    stl.output_bit 1
+    stl.output_bit 0
+    stl.output_bit 1
+    stl.loop
+'''
+
+
+@native_engine_required
+def test_the_paged_loop_delivers_the_bit_by_bit_stream(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """a last-ops ring routes the native run through the generic (paged) loop, which gathers the same way"""
+    fjm_path = assemble_to_path(UNALIGNED_PROGRAM, tmp_path, use_stl=True)
+    reference = run_recorded(fjm_path, b'\x01\x00', native=False, monkeypatch=monkeypatch)
+    io = RecordingIO(b'\x01\x00')
+    monkeypatch.delenv('FLIPJUMP_NO_NATIVE', raising=False)
+    fjm_run.run(fjm_path, io_device=io, print_time=False, last_ops_debugging_list_length=16)
+    assert as_bits(io.events) == reference.events
+    assert any(kind == 'byte' for kind, _ in io.events)
+
+
+class RaisingIO(RecordingIO):
+    """fails as its second output byte completes -- in write_byte, or in the write_bit that ends it"""
+
+    def write_bit(self, bit: bool) -> None:
+        super().write_bit(bit)
+        if sum(kind == 'bit' for kind, _ in self.events) == 16:
+            raise ValueError('device failure')
+
+    def write_byte(self, byte: int) -> None:
+        super().write_byte(byte)
+        if sum(kind == 'byte' for kind, _ in self.events) == 2:
+            raise ValueError('device failure')
+
+
+@native_engine_required
+def test_a_device_error_mid_run_stops_the_run_at_the_same_bit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fjm_path = assemble_to_path(CAT_PROGRAM.read_text(), tmp_path, use_stl=True)
+    streams = []
+    for native in (False, True):
+        io = RaisingIO(b'abcd')
+        with monkeypatch.context() as m:
+            if native:
+                m.delenv('FLIPJUMP_NO_NATIVE', raising=False)
+            else:
+                m.setattr(fjm_run, '_fjcore', None)
+            # the engines report the device's error differently (the native run wraps it), but both stop on it
+            with pytest.raises(Exception) as failure:
+                fjm_run.run(fjm_path, io_device=io, print_time=False)
+            assert 'device failure' in repr(failure.value) + repr(failure.value.__cause__)
+        streams.append(as_bits(io.events))
+    assert streams[0] == streams[1]
+
+
+def test_only_a_device_with_its_own_write_byte_gets_bytes() -> None:
+    """IODevice's default write_byte is 8 write_bits: gathering for it would only delay each bit to its byte's end"""
+    from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
+
+    assert not fjm_run._overrides_write_byte(FixedIO(b''))
+    assert fjm_run._overrides_write_byte(RecordingIO(b''))
+    assert fjm_run._overrides_write_byte(InMemoryScreen())
+
+
+@native_engine_required
+def test_reset_starts_the_device_stream_on_a_byte_boundary(tmp_path: Path) -> None:
+    """a run that ends mid-byte leaves the device's phase at 3; reset() (a fresh stream: the per-frame walker's
+    fresh device) must gather the next run's first byte again"""
+    from flipjump.fjm import fjm_reader
+    from flipjump.utils.exceptions import IOReadOnEOF
+    from flipjump.utils.progress import ProgressBar
+
+    fjm_path = assemble_to_path(ELEVEN_BITS_PROGRAM, tmp_path, use_stl=True)
+    header = fjm_reader.read_fjm_header(fjm_path)
+    with ProgressBar('', print_time=False, total=1.0) as progress:
+        core = fjm_run._load_native(fjm_path, header, None, False, progress)
+    core.freeze()
+    kinds = []
+    for _ in range(2):
+        core.reset()
+        io = RecordingIO(b'')
+        core.run(io.read_bit, io.write_bit, IOReadOnEOF, write_byte=io.write_byte)
+        kinds.append([kind for kind, _ in io.events])
+    assert kinds[0] == ['byte'] + ['bit'] * 3
+    assert kinds[1] == kinds[0]
