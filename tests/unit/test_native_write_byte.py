@@ -14,6 +14,7 @@ import pytest
 
 from flipjump.interpreter import fjm_run
 from flipjump.interpreter.io_devices.FixedIO import FixedIO
+from flipjump.interpreter.io_devices.IODevice import IODevice
 from tests.unit.unit_utils import CAT_PROGRAM, assemble_to_path, native_engine_required
 
 Event = Tuple[str, int]
@@ -40,7 +41,11 @@ b:
 
 
 class RecordingIO(FixedIO):
-    """a FixedIO that logs every device call: ('bit', b), ('byte', B) and ('read', b)."""
+    """a FixedIO that logs every device call: ('bit', b), ('byte', B) and ('read', b). Its INPUT stays bit by bit
+    (IODevice's read_byte: not an override), so the whole interleaving can be compared with the python loop's --
+    the byte input is test_native_read_byte's."""
+
+    read_byte = IODevice.read_byte
 
     def __init__(self, fixed_input: bytes, *, lsb_first: bool = True) -> None:
         super().__init__(fixed_input)
@@ -186,7 +191,18 @@ def test_only_a_device_with_its_own_write_byte_gets_bytes() -> None:
     """IODevice's default write_byte is 8 write_bits: gathering for it would only delay each bit to its byte's end"""
     from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
 
-    assert not fjm_run._overrides_write_byte(FixedIO(b''))
+    class BitIO(IODevice):
+        def read_bit(self) -> bool:
+            return False
+
+        def write_bit(self, bit: bool) -> None:
+            pass
+
+        def get_output(self, *, allow_incomplete_output: bool = False) -> bytes:
+            return b''
+
+    assert not fjm_run._overrides_write_byte(BitIO())
+    assert fjm_run._overrides_write_byte(FixedIO(b''))
     assert fjm_run._overrides_write_byte(RecordingIO(b''))
     assert fjm_run._overrides_write_byte(InMemoryScreen())
 

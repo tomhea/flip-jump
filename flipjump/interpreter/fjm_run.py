@@ -179,6 +179,13 @@ def _overrides_write_byte(io_device: IODevice) -> bool:
     return own is not None and own is not IODevice.write_byte
 
 
+def _overrides_read_byte(io_device: IODevice) -> bool:
+    """does the device hand over a whole input byte itself (not IODevice's per-bit default)? a device that answers
+    bit by bit (the keyboard) does not, and the engine asks it bit by bit"""
+    own = getattr(type(io_device), 'read_byte', None)
+    return own is not None and own is not IODevice.read_byte
+
+
 def run(
     fjm_path: Path,
     *,
@@ -363,6 +370,7 @@ def _run_native(
             # only a device that handles whole bytes itself: the default write_byte is 8 write_bits anyway,
             # and gathering would only delay each bit (and a device error) to its byte's end
             write_byte=io_device.write_byte if _overrides_write_byte(io_device) else None,
+            read_byte=io_device.read_byte if _overrides_read_byte(io_device) else None,
         )
     finally:
         # keep op_counter, the IO-paused time and the storage mode valid on the exception
