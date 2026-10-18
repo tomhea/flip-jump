@@ -376,6 +376,7 @@ def _labels_resolve_stream(
     op_index = 1
     FJ, FJ_POS, WFLIP, PAD = op_stream.FJ, op_stream.FJ_POS, op_stream.WFLIP, op_stream.PAD
     TAG_LABEL = op_stream.TAG_LABEL
+    FJ_PACKED, PACKED_JUMP_MASK = op_stream.FJ_PACKED, op_stream.PACKED_JUMP_MASK
     # operands: an int slot, then the value (labels.get's Optional is checked right after)
     flip: Any
     jump: Any
@@ -385,7 +386,10 @@ def _labels_resolve_stream(
     while op_index < len(kinds):
         chunk_end = min(op_index + _PROGRESS_CHUNK, len(kinds))
         for kind in kinds[op_index:chunk_end]:
-            if kind == FJ:
+            if kind == FJ_PACKED:
+                packed = next_slot()
+                insert_fj_op(packed >> 32, packed & PACKED_JUMP_MASK)
+            elif kind == FJ:
                 insert_fj_op(next_slot(), next_slot())
             elif kind == FJ_POS:
                 try:

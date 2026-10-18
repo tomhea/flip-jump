@@ -55,6 +55,11 @@ FJ_POS = 1  # flip, jump (operands; at least one deferred), position-ref
 WFLIP = 2  # word_address, flip_value, return_address (operands), position-ref
 PAD = 3  # ops_count
 OBJ = 4  # ref to a NewSegment / ReserveBits (mutable: NewSegment's wflip address is patched later)
+FJ_PACKED = 5  # flip << 32 | jump - both literal, flip < 2**31 and jump < 2**32 (the common op: one slot, not two)
+
+PACKED_FLIP_MAX = (1 << 31) - 1
+PACKED_JUMP_MAX = (1 << 32) - 1
+PACKED_JUMP_MASK = PACKED_JUMP_MAX
 
 TAG_LABEL = 0
 TAG_LABEL_PLUS = 1
@@ -279,6 +284,18 @@ class OpStream:
             self.vals.append(len(self.refs))
             self.refs.append(code_position)
         else:
+            self._literal_flip_jump()
+
+    def _literal_flip_jump(self) -> None:
+        """the op's two literal slots were just appended: one FJ_PACKED slot instead, where they fit"""
+        vals = self.vals
+        jump = vals[-1]
+        flip = vals[-2]
+        if flip <= PACKED_FLIP_MAX and jump <= PACKED_JUMP_MAX:
+            vals.pop()
+            vals[-1] = flip << 32 | jump
+            self.kinds.append(FJ_PACKED)
+        else:
             self.kinds.append(FJ)
 
     def add_word_flip_in(
@@ -301,9 +318,9 @@ class OpStream:
         f: Any = flip.value
         j: Any = jump.value
         if f.__class__ is int and j.__class__ is int and 0 <= f <= LITERAL_MAX and 0 <= j <= LITERAL_MAX:
-            self.kinds.append(FJ)
             self.vals.append(f)
             self.vals.append(j)
+            self._literal_flip_jump()
             return
         deferred = self._operand(flip)
         deferred = self._operand(jump) or deferred
@@ -312,7 +329,7 @@ class OpStream:
             self.vals.append(len(self.refs))
             self.refs.append(code_position)
         else:
-            self.kinds.append(FJ)
+            self._literal_flip_jump()
 
     def add_word_flip(
         self, word_address: Expr, flip_value: Expr, return_address: Expr, code_position: CodePosition
@@ -394,8 +411,11 @@ class OpStream:
         slots = iter(self.vals)
         refs = self.refs
         for index, kind in enumerate(self.kinds):
-            if kind == FJ:
-                op: Any = FlipJump(Expr(next(slots)), Expr(next(slots)), None)  # type: ignore[arg-type]
+            if kind == FJ_PACKED:
+                packed = next(slots)
+                op: Any = FlipJump(Expr(packed >> 32), Expr(packed & PACKED_JUMP_MASK), None)  # type: ignore[arg-type]
+            elif kind == FJ:
+                op = FlipJump(Expr(next(slots)), Expr(next(slots)), None)  # type: ignore[arg-type]
             elif kind == FJ_POS:
                 flip = self.rebuild_operand(slots)
                 jump = self.rebuild_operand(slots)
