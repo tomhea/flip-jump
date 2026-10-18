@@ -54,7 +54,7 @@ def new_word_buffer(word_size: int) -> 'array.array[int] | List[int]':
     return array.array(typecode) if array.array(typecode).itemsize * 8 == word_size else []
 
 
-def _pack_words_little_endian(words: 'array.array[int] | List[int]', word_size: int) -> bytes:
+def _pack_words_little_endian(words: 'array.array[int] | List[int]', word_size: int) -> 'bytes | memoryview':
     """Pack `words` as little-endian unsigned integers of `word_size` bits.
 
     Byte-for-byte identical to struct.pack(f'<{len(words)}{fmt}', *words), which is what this
@@ -72,7 +72,9 @@ def _pack_words_little_endian(words: 'array.array[int] | List[int]', word_size: 
     if sys.byteorder != 'little':
         buffer = buffer[:]
         buffer.byteswap()
-    return buffer.tobytes()
+    # MEMORY: a view of the words' own bytes, not a copy of them (tobytes() was a second copy of the
+    # whole binary, ~340 MB for a doom level). Every consumer - lzma, file.write - takes a buffer.
+    return memoryview(buffer).cast('B')
 
 
 class Writer:
@@ -150,7 +152,7 @@ class Writer:
             array.array(typecode) if array.array(typecode).itemsize * 8 == memory_width else []
         )
 
-    def _compress_data(self, data: bytes, progress: Optional['ProgressBar'] = None) -> bytes:
+    def _compress_data(self, data: 'bytes | memoryview', progress: Optional['ProgressBar'] = None) -> bytes:
         """lzma-compress the data, in chunks (reporting a [0, 1] fraction to `progress`, if given)"""
         try:
             compressor = lzma.LZMACompressor(
@@ -326,13 +328,25 @@ class Writer:
             self._segment_index_by_data_start[data_start] = len(self.segments)
         self.segments.append((segment_start, segment_length, data_start, data_length))
 
-    def add_data(self, data: Iterable[int]) -> int:
+    def add_data(self, data: Iterable[int], *, take: bool = False) -> int:
         """
         append the data to the current data
         @param data: [in]: a list of words
+        @param take: the caller hands `data` over and will not touch it again. MEMORY: if no data was
+        added yet and `data` is a word array of this writer's type, it BECOMES the writer's data instead
+        of being copied - the first segment is the program's main stream, most of the binary.
         @return: the data start index
         """
         data_start = len(self.data)
+        if (
+            take
+            and data_start == 0
+            and isinstance(data, array.array)
+            and isinstance(self.data, array.array)
+            and data.typecode == self.data.typecode
+        ):
+            self.data = data
+            return 0
         # `+=` on an array only accepts another array; extend() takes any iterable of ints.
         self.data.extend(data)
         return data_start

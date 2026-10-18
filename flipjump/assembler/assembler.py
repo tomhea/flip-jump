@@ -50,10 +50,14 @@ def add_segment_to_fjm(
     last_address: int,
     fj_words: MutableSequence[int],
     wflip_words: MutableSequence[int],
+    *,
+    take: bool = False,
 ) -> None:
     """
     The new segment will be placed in [first_address, last_address),
     And will include the next data: fj_words + wflip_words.
+    @param take: the caller hands fj_words over (the writer may keep it as its data rather than copy it)
+    and will use new buffers from now on; neither list is cleared then.
     """
     validate_addresses(memory_width, first_address, last_address)
     if first_address == last_address:
@@ -63,9 +67,9 @@ def add_segment_to_fjm(
     # That concatenation built a THIRD list holding every word of the segment -- 78.6M of them on
     # the doom-flipjump program, 22.9 s of pure copying -- purely to pass them as one argument.
     # add_data appends, so two calls land contiguously and `data_start` is still the first one's.
-    data_start = fjm_writer.add_data(fj_words)
+    data_length = len(fj_words) + len(wflip_words)  # (before add_data: a writer that takes fj_words grows it)
+    data_start = fjm_writer.add_data(fj_words, take=take)
     fjm_writer.add_data(wflip_words)
-    data_length = len(fj_words) + len(wflip_words)
 
     segment_start_address = first_address // memory_width
     segment_length = (last_address - first_address) // memory_width
@@ -79,6 +83,8 @@ def add_segment_to_fjm(
         )
         raise FlipJumpAssemblerException(exception_message) from e
 
+    if take:
+        return
     # `del x[:]` not `.clear()`: array.array has no clear() (verified -- it is not registered as
     # a MutableSequence), while `del x[:]` empties BOTH an array and a list.
     del fj_words[:]
@@ -176,8 +182,21 @@ class BinaryData:
             return
 
         add_segment_to_fjm(
-            self.memory_width, fjm_writer, self.first_address, self.next_wflip_address, self.fj_words, self.wflip_words
+            self.memory_width,
+            fjm_writer,
+            self.first_address,
+            self.next_wflip_address,
+            self.fj_words,
+            self.wflip_words,
+            take=True,
         )
+        self._new_buffers()
+
+    def _new_buffers(self) -> None:
+        """fresh word buffers: the writer took the old ones (MEMORY: it keeps the first segment's words as
+        its data instead of copying them - see Writer.add_data)"""
+        self.fj_words = new_word_buffer(self.memory_width)
+        self.wflip_words = new_word_buffer(self.memory_width)
 
     def _insert_wflip_label(self, address: int) -> None:
         """Record the debugging label for a generated wflip-chain op.
@@ -267,7 +286,12 @@ class BinaryData:
         self.padding_ops_indices.clear()
 
     def insert_reserve_bits(self, fjm_writer: Writer, new_first_address: int) -> None:
-        add_segment_to_fjm(self.memory_width, fjm_writer, self.first_address, new_first_address, self.fj_words, [])
+        add_segment_to_fjm(
+            self.memory_width, fjm_writer, self.first_address, new_first_address, self.fj_words, [], take=True
+        )
+        # only the ops' buffer was handed over: the wflip ops gathered so far belong to the segment's
+        # wflip area, after the reserved region, and are written when the segment closes
+        self.fj_words = new_word_buffer(self.memory_width)
 
         self.first_address = new_first_address
 
