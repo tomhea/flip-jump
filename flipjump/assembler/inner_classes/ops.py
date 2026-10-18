@@ -85,6 +85,22 @@ class MacroName:
         return str(self)
 
 
+# MEMORY (doom-flipjump, 2026-10-19): one MacroName per (name, parameter count), shared by every call.
+# A MacroCall used to build its own - with its own copy of the name string - and the macro tree holds
+# millions of calls (a doom level's top-level code is mostly one-line macro calls). MacroName is
+# immutable in practice (nothing rebinds .name / .parameter_num), so sharing it changes nothing else.
+_macro_names: Dict[Tuple[str, int], MacroName] = {}
+
+
+def shared_macro_name(name: str, parameter_num: int) -> MacroName:
+    """the shared MacroName for (name, parameter_num)"""
+    key = (name, parameter_num)
+    shared = _macro_names.get(key)
+    if shared is None:
+        shared = _macro_names[key] = MacroName(name, parameter_num)
+    return shared
+
+
 # The macro that holds the ops that are outside any macro.
 INITIAL_MACRO_NAME = MacroName('')
 INITIAL_ARGS: List[Expr] = []
@@ -324,7 +340,7 @@ class MacroCall:
     )
 
     def __init__(self, macro_name: str, arguments: List[Expr], code_position: CodePosition):
-        self.macro_name = MacroName(macro_name, len(arguments))
+        self.macro_name = shared_macro_name(macro_name, len(arguments))
         self.arguments = arguments
         self.code_position = code_position
 
@@ -376,7 +392,7 @@ class RepCall:
         self.iterator_name = iterator_name
         # the user-visible iterator name, kept for error traces even after a hygienic rename
         self.source_iterator_name = iterator_name
-        self.macro_name = MacroName(macro_name, len(arguments))
+        self.macro_name = shared_macro_name(macro_name, len(arguments))
         self.arguments = arguments
         self.code_position = code_position
 
