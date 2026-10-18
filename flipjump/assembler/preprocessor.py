@@ -1622,7 +1622,12 @@ class PreprocessorData:
         self.curr_tree: CurrTree = collections.deque()
 
         self.curr_segment_index: int = 0
-        self.labels_code_positions: Dict[str, CodePosition] = {}
+        # where each label is declared - read only to word a "declared twice" error. MEMORY: a list
+        # aligned with the labels dict's insertion order (labels are never removed), 8 bytes a label,
+        # not a second dict of millions of string keys; a one-pass deferred table's labels, which reach
+        # the labels dict only when the expansion ends, wait in their own small dict until then.
+        self._label_positions: List[Optional[CodePosition]] = []
+        self._deferred_label_positions: Dict[str, CodePosition] = {}
 
         self.labels: Dict[str, int] = {}
         # the emitted ops, compactly: see OpStream (as objects they cost ~250 bytes an op, and a
@@ -1826,6 +1831,7 @@ class PreprocessorData:
                 continue  # it stayed inline: its labels are in place already
             for label, offset in tables.labels_of(index):
                 self.labels[label] = address + offset
+                self._label_positions.append(self._deferred_label_positions.get(label))
                 if self.save_debug_labels:
                     self.addresses_with_labels.add(address + offset)
             segment = tables.segments[index]
@@ -1917,6 +1923,7 @@ class PreprocessorData:
 
     def insert_segment(self, next_segment_start: int) -> None:
         self.labels[f'{wflip_start_label}{self.curr_segment_index}'] = self.curr_address
+        self._label_positions.append(None)
         self.curr_segment_index += 1
 
         self.patch_last_wflip_address()
@@ -1935,22 +1942,33 @@ class PreprocessorData:
         if address is None:
             address = self.curr_address
 
-        # (one pass: a deferred table's label is in labels_code_positions before it is in labels)
-        if label in self.labels or (self._one_pass is not None and label in self.labels_code_positions):
-            other_position = self.labels_code_positions[label]
+        # (one pass: a deferred table's label is in _deferred_label_positions before it is in labels)
+        if label in self.labels or (self._one_pass is not None and label in self._deferred_label_positions):
+            other_position = self.label_position(label)
             macro_resolve_error(
                 self.curr_tree, f'label declared twice - "{label}" on ' f'{code_position} and {other_position}'
             )
-        self.labels_code_positions[label] = code_position
         if self._deferring:
             # a deferred table's label: an offset now, an address once the table is placed
             assert self._deferred is not None
+            self._deferred_label_positions[label] = code_position
             self._deferred.add_label(label, address)
             return
         self.labels[label] = address
+        self._label_positions.append(code_position)
         if self.save_debug_labels:
             # only insert_macro_start_labels_if_their_address_not_used reads this set
             self.addresses_with_labels.add(address)
+
+    def label_position(self, label: str) -> Optional[CodePosition]:
+        """where `label` was declared (None if it was not declared by insert_label). Slow: it walks
+        the labels in insertion order - only an error message asks."""
+        if label in self._deferred_label_positions:
+            return self._deferred_label_positions[label]
+        for index, name in enumerate(self.labels):
+            if name == label:
+                return self._label_positions[index] if index < len(self._label_positions) else None
+        return None
 
     def insert_macro_start_label(self, labels_prefix: str, code_position: CodePosition) -> None:
         """Record that a macro expansion starts here, so a `<path>---:start:` label can name it.
@@ -2010,7 +2028,7 @@ class PreprocessorData:
         named = sorted(
             label
             for label in expr.all_unknown_labels()
-            if label in self.labels_code_positions and label not in self.labels
+            if label in self._deferred_label_positions and label not in self.labels
         )
         if not named:
             return ''
