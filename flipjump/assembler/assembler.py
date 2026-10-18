@@ -6,6 +6,7 @@ and resolving labels into addresses while writing the result with the fjm Writer
 """
 
 import gc
+from array import array
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Callable, Deque, List, Dict, MutableSequence, Tuple, Optional, NamedTuple, Union
@@ -160,12 +161,14 @@ class BinaryData:
         self.fj_words = new_word_buffer(memory_width)
         self.wflip_words = new_word_buffer(memory_width)
 
-        self.padding_ops_indices: List[int] = []  # indices in self.fj_words
+        # indices in self.fj_words. MEMORY: a typed array (8 bytes an index), not a list of int objects
+        # (40): a program's alignment padding can be millions of ops waiting for a wflip op to fill them
+        self.padding_ops_indices = array('q')
 
-        # return_address -> { (f3, f2, f1, f0) -> start_flip_address }
+        # return_address -> { a chain tail (its addresses, as one int: see insert_wflip_ops) -> start_flip_address }
         # PERF: defaultdict(dict) not defaultdict(lambda: {}) -- the C constructor, not a python
         # call, on every previously-unseen return address.
-        self.wflips_dict: Dict[int, Dict[Tuple[int, ...], int]] = defaultdict(dict)
+        self.wflips_dict: Dict[int, Dict[int, int]] = defaultdict(dict)
 
     def get_wflip_spot(self) -> WFlipSpot:
         if self.padding_ops_indices:
@@ -240,18 +243,27 @@ class BinaryData:
 
             return_dict = self.wflips_dict[return_address]
 
-            # this is the order of flip_addresses (tested with many other orders) that produces the best
-            #  found-statistic for searching flip_bit[:i] with different i's in return_dict.
-            # PERF (doom-flipjump, 2026-08-20): counted DOWN rather than built-then-`[::-1]`-copied.
-            # Same list, one allocation instead of two, on every wflip in the program.
-            flip_addresses = [word_address + i for i in range(self.memory_width - 1, -1, -1) if flip_value >> i & 1]
+            # The chain flips the word's set bits from the LOWEST address up (this is the order
+            # (tested with many other orders) that produces the best found-statistic for searching a
+            # chain's tail in return_dict), and every tail is shared through return_dict: a tail is
+            # the SET of addresses still to flip.
+            # MEMORY (doom-flipjump, 2026-10-19): a tail is keyed by one int, not by the tuple of its
+            # addresses. The set is {a + i : bit i of m}, with a its lowest address and bit 0 of m set;
+            # (a, m) determines the set and the set determines (a, m), and m < 2**w, so `a << w | m`
+            # is equal for two tails exactly when their address tuples are. A tuple of up to w address
+            # ints per chain op (and the O(k^2) re-tupling) was the bulk of this dict.
+            width = self.memory_width
+            remaining = flip_value
 
             # insert the first op
-            self.insert_fj_op(flip_addresses.pop(), 0)
+            lowest = (remaining & -remaining).bit_length() - 1
+            remaining &= remaining - 1
+            self.insert_fj_op(word_address + lowest, 0)
             last_return_address_index: Tuple[MutableSequence[int], int] = self.fj_words, len(self.fj_words) - 1
 
-            while flip_addresses:
-                flips_key = tuple(flip_addresses)
+            while remaining:
+                lowest = (remaining & -remaining).bit_length() - 1
+                flips_key = (word_address + lowest) << width | remaining >> lowest
                 ops_list, last_address_index = last_return_address_index
 
                 if flips_key in return_dict:
@@ -266,7 +278,8 @@ class BinaryData:
                     ops_list[last_address_index] = wflip_spot.address
                     return_dict[flips_key] = wflip_spot.address
 
-                    wflip_spot.list[wflip_spot.word_index] = flip_addresses.pop()
+                    wflip_spot.list[wflip_spot.word_index] = word_address + lowest
+                    remaining &= remaining - 1
                     last_return_address_index = wflip_spot.list, wflip_spot.word_index + 1
 
             ops_list, last_address_index = last_return_address_index
@@ -283,7 +296,7 @@ class BinaryData:
         self.first_address = first_address
         self.next_wflip_address = wflip_first_address
 
-        self.padding_ops_indices.clear()
+        del self.padding_ops_indices[:]  # (an array has no clear())
 
     def insert_reserve_bits(self, fjm_writer: Writer, new_first_address: int) -> None:
         add_segment_to_fjm(
@@ -295,7 +308,7 @@ class BinaryData:
 
         self.first_address = new_first_address
 
-        self.padding_ops_indices.clear()
+        del self.padding_ops_indices[:]
 
 
 def resolve_pinned(
