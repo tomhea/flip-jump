@@ -8,7 +8,7 @@ and resolving labels into addresses while writing the result with the fjm Writer
 import gc
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Callable, Deque, List, Dict, MutableSequence, Tuple, Optional, NamedTuple
+from typing import Any, Callable, Deque, List, Dict, MutableSequence, Tuple, Optional, NamedTuple, Union
 
 from flipjump.fjm.fjm_writer import Writer, new_word_buffer
 from flipjump.utils.constants import WFLIP_LABEL_PREFIX, DEFAULT_MAX_MACRO_RECURSION_DEPTH
@@ -23,6 +23,8 @@ from flipjump.utils.exceptions import (
 )
 from flipjump.assembler.inner_classes.ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits, Padding
 from flipjump.assembler.inner_classes.expr import Expr
+from flipjump.assembler.inner_classes import op_stream
+from flipjump.assembler.inner_classes.op_stream import OpStream
 from flipjump.assembler.preprocessor import resolve_macros, TablePool, RESERVED_BELOW
 
 
@@ -312,8 +314,129 @@ def resolve_pinned(
 _PROGRESS_CHUNK = 1 << 16
 
 
+def _deferred_value(stream: OpStream, encoded: int, next_slot: Callable[[], int], labels: Dict[str, int]) -> int:
+    """the value of a deferred operand (its slot is ~encoded; see OpStream). Raises what the Expr would."""
+    ref = stream.refs[encoded >> 2]
+    tag = encoded & 3
+    if tag == op_stream.TAG_LABEL:
+        value = labels.get(ref)
+        if value is None:
+            return Expr(ref).exact_eval(labels)  # raises the Expr's own "Can't evaluate label"
+        return value
+    if tag == op_stream.TAG_LABEL_PLUS:
+        const = next_slot()
+        value = labels.get(ref)
+        if value is None:
+            return Expr(ref).exact_eval(labels) + const  # raises, as above
+        return value + const
+    return ref.exact_eval(labels)  # type: ignore[no-any-return]
+
+
+def _labels_resolve_stream(
+    stream: OpStream,
+    binary_data: BinaryData,
+    labels: Dict[str, int],
+    fjm_writer: Writer,
+    on_progress: Optional[Callable[[float], None]],
+) -> None:
+    """labels_resolve over a compact OpStream (the preprocessor's output): the same BinaryData calls,
+    in the same order, with the same values, as the op objects it replaces would make."""
+    insert_fj_op = binary_data.insert_fj_op
+    insert_wflip_ops = binary_data.insert_wflip_ops
+    kinds = stream.kinds
+    refs = stream.refs
+    slots = iter(stream.vals)
+    next_slot = slots.__next__
+    next(slots)  # the first op (the first NewSegment) was taken by the caller
+    total_ops = max(1, len(kinds))
+    op_index = 1
+    FJ, FJ_POS, WFLIP, PAD = op_stream.FJ, op_stream.FJ_POS, op_stream.WFLIP, op_stream.PAD
+    TAG_LABEL = op_stream.TAG_LABEL
+    # operands: an int slot, then the value (labels.get's Optional is checked right after)
+    flip: Any
+    jump: Any
+    word_address: Any
+    flip_value: Any
+    return_address: Any
+    while op_index < len(kinds):
+        chunk_end = min(op_index + _PROGRESS_CHUNK, len(kinds))
+        for kind in kinds[op_index:chunk_end]:
+            if kind == FJ:
+                insert_fj_op(next_slot(), next_slot())
+            elif kind == FJ_POS:
+                try:
+                    flip = next_slot()
+                    if flip < 0:
+                        encoded = ~flip
+                        if encoded & 3 == TAG_LABEL:
+                            flip = labels.get(refs[encoded >> 2])
+                            if flip is None:
+                                flip = _deferred_value(stream, encoded, next_slot, labels)
+                        else:
+                            flip = _deferred_value(stream, encoded, next_slot, labels)
+                    jump = next_slot()
+                    if jump < 0:
+                        encoded = ~jump
+                        if encoded & 3 == TAG_LABEL:
+                            jump = labels.get(refs[encoded >> 2])
+                            if jump is None:
+                                jump = _deferred_value(stream, encoded, next_slot, labels)
+                        else:
+                            jump = _deferred_value(stream, encoded, next_slot, labels)
+                    next_slot()  # the position
+                    insert_fj_op(flip, jump)
+                except FlipJumpException as e:
+                    raise FlipJumpAssemblerException(f"{e} in op {stream.op_at(op_index)}.")
+            elif kind == WFLIP:
+                try:
+                    word_address = next_slot()
+                    if word_address < 0:
+                        encoded = ~word_address
+                        if encoded & 3 == TAG_LABEL:
+                            word_address = labels.get(refs[encoded >> 2])
+                            if word_address is None:
+                                word_address = _deferred_value(stream, encoded, next_slot, labels)
+                        else:
+                            word_address = _deferred_value(stream, encoded, next_slot, labels)
+                    flip_value = next_slot()
+                    if flip_value < 0:
+                        encoded = ~flip_value
+                        if encoded & 3 == TAG_LABEL:
+                            flip_value = labels.get(refs[encoded >> 2])
+                            if flip_value is None:
+                                flip_value = _deferred_value(stream, encoded, next_slot, labels)
+                        else:
+                            flip_value = _deferred_value(stream, encoded, next_slot, labels)
+                    return_address = next_slot()
+                    if return_address < 0:
+                        encoded = ~return_address
+                        if encoded & 3 == TAG_LABEL:
+                            return_address = labels.get(refs[encoded >> 2])
+                            if return_address is None:
+                                return_address = _deferred_value(stream, encoded, next_slot, labels)
+                        else:
+                            return_address = _deferred_value(stream, encoded, next_slot, labels)
+                    next_slot()  # the position
+                    insert_wflip_ops(word_address, flip_value, return_address)
+                except FlipJumpException as e:
+                    raise FlipJumpAssemblerException(f"{e} in op {stream.op_at(op_index)}.")
+            elif kind == PAD:
+                binary_data.insert_padding(next_slot())
+            else:
+                op = refs[next_slot()]
+                if isinstance(op, NewSegment):
+                    binary_data.insert_new_segment(fjm_writer, op.start_address, op.wflip_start_address)
+                elif isinstance(op, ReserveBits):
+                    binary_data.insert_reserve_bits(fjm_writer, op.first_address_after_reserved)
+                else:
+                    raise FlipJumpAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
+            op_index += 1
+        if on_progress is not None:
+            on_progress(1 - (len(kinds) - op_index) / total_ops)
+
+
 def labels_resolve(
-    ops: Deque[LastPhaseOp],
+    ops: Union[OpStream, Deque[LastPhaseOp]],
     labels: Dict[str, int],
     memory_width: int,
     fjm_writer: Writer,
@@ -333,6 +456,16 @@ def labels_resolve(
     writing one can pass False and skip the work. It cannot change the emitted .fjm.
     @param on_progress: if given, called every _PROGRESS_CHUNK ops with the fraction of ops resolved
     """
+    if isinstance(ops, OpStream):
+        first_object = ops.first_object()
+        if not isinstance(first_object, NewSegment):
+            first_op = ops.op_at(0) if ops else None
+            raise FlipJumpAssemblerException(f"The first op must be of type NewSegment (and not {first_op}).")
+        binary_data = BinaryData(memory_width, first_object, labels, save_wflip_labels=save_wflip_labels, pinned=pinned)
+        _labels_resolve_stream(ops, binary_data, labels, fjm_writer, on_progress)
+        binary_data.close_and_add_segment(fjm_writer)
+        return
+
     total_ops = max(1, len(ops))
     first_segment = ops.popleft()
     if not isinstance(first_segment, NewSegment):
@@ -503,7 +636,11 @@ def assemble(
                 max_recursion_depth=max_recursion_depth,
                 save_debug_labels=debugging_file_path is not None,
                 on_progress=progress.update if progress.active else None,
+                consume_main=True,  # the tree is ours, and dropped right below
             )
+        # MEMORY: the macro tree is not read again - free it before labels-resolve builds the binary.
+        # (The op stream keeps what it still needs of it: label names, positions, the odd Expr.)
+        del macros
 
         # BlockPool pins each source word to its block base. The base was chosen during macro
         # expansion but the WORD is an expression (variables are usually declared after the code),
@@ -537,6 +674,9 @@ def assemble(
                 pinned=pinned,
                 on_progress=progress.update if progress.active else None,
             )
+        # MEMORY: every op is in the writer now; the stream (which labels-resolve reads, not consumes)
+        # would otherwise live on through the binary's packing and compression
+        del ops
 
         assert_first_op_assembled(fjm_writer)
 

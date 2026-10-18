@@ -26,7 +26,6 @@ from typing import (
     Callable,
     Collection,
     Mapping,
-    MutableSequence,
     Sequence,
 )
 
@@ -60,9 +59,10 @@ from flipjump.assembler.inner_classes.ops import (
     INITIAL_ARGS,
     INITIAL_LABELS_PREFIX,
 )
+from flipjump.assembler.inner_classes.op_stream import OpStream
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
-OpsQueue = Deque[LastPhaseOp]
+OpsQueue = OpStream  # the preprocessor's output (it was a Deque[LastPhaseOp])
 LabelsDict = Dict[str, int]
 
 wflip_start_label = '_.wflip_area_start_'
@@ -1523,6 +1523,8 @@ def macro_resolve_error(
     raise FlipJumpPreprocessorException(error_str) from orig_exception
 
 
+_NOT_CACHED: Any = object()
+
 # a macro-expansion's progress slice thinner than this is not tracked any deeper (see PreprocessorData)
 _PROGRESS_MIN_SLICE = 1e-5
 # ...and progress is reported only when it moved at least this much (one call per macro call is too many)
@@ -1611,6 +1613,7 @@ class PreprocessorData:
         self.memory_width = memory_width
         self.macros = macros
         self.save_debug_labels = save_debug_labels
+        self.consume_main = False  # see resolve_macros
 
         self.curr_address: int = 0
 
@@ -1621,8 +1624,11 @@ class PreprocessorData:
         self.curr_segment_index: int = 0
         self.labels_code_positions: Dict[str, CodePosition] = {}
 
-        self.result_ops: Deque[LastPhaseOp] = collections.deque()
         self.labels: Dict[str, int] = {}
+        # the emitted ops, compactly: see OpStream (as objects they cost ~250 bytes an op, and a
+        # doom level emits 40-70M of them). Every stream of this preprocessor shares one refs list.
+        self._op_refs: List[Any] = []
+        self.result_ops: OpStream = OpStream(self._op_refs, self.labels)
         self.addresses_with_labels: Set[int] = set()
         self.macro_start_labels: List[Tuple[int, str, CodePosition]] = []  # (address, label, code_position)
 
@@ -1634,9 +1640,9 @@ class PreprocessorData:
         # SEPARATE stream and flushed after the main one in finish(), so the main stream stays a
         # single ascending segment and the pool's runs become segments of their own.
         self.table_pool = table_pool
-        self.pool_ops: Deque[LastPhaseOp] = collections.deque()
-        self.emit_target: MutableSequence[LastPhaseOp] = self.result_ops
-        self._reloc_stack: List[Tuple[int, MutableSequence[LastPhaseOp]]] = []
+        self.pool_ops: OpStream = OpStream(self._op_refs, self.labels)
+        self.emit_target: OpStream = self.result_ops
+        self._reloc_stack: List[Tuple[int, OpStream]] = []
         self._pool_segment: Optional[NewSegment] = None
 
         # ONE-PASS BLOCKING (off unless the pool is a BlockPool(one_pass=True)): a table the pool
@@ -1650,6 +1656,7 @@ class PreprocessorData:
         )
         self._deferring = False  # emitting a deferred table's ops
         self._next_address_cache: Dict[Tuple[int, int], bool] = {}
+        self._table_end_cache: Dict[Tuple[int, int], Optional[Tuple[int, int, Optional[Expr]]]] = {}
 
         # PROGRESS (off unless on_progress is given): each macro expansion owns a slice [lo, hi) of
         # the [0, 1) progress line, split evenly among its ops; a macro call / rep iteration takes its
@@ -1741,6 +1748,18 @@ class PreprocessorData:
             return word.exact_eval(self.labels) < RESERVED_BELOW
         except FlipJumpExprException:
             return False
+
+    def table_end(self, macro: Macro, pad_index: int) -> Optional[Tuple[int, int, Optional[Expr]]]:
+        """relocatable_table_end(macro.ops, pad_index), cached per macro and pad: it walks the table
+        (building a label set per op), and a macro's ops never change while it expands. (The main
+        macro is not cached: each of its pads is reached once, and consume_main drops its ops.)"""
+        if macro is self.macros.get(INITIAL_MACRO_NAME):
+            return relocatable_table_end(macro.ops, pad_index)
+        key = (id(macro), pad_index)  # a macro lives as long as the expansion: its id is stable
+        found = self._table_end_cache.get(key, _NOT_CACHED)
+        if found is _NOT_CACHED:
+            found = self._table_end_cache[key] = relocatable_table_end(macro.ops, pad_index)
+        return found  # type: ignore[no-any-return]
 
     def _names_next_address(self, table_source: Optional[Tuple[Macro, int, int]]) -> bool:
         """does the table use `$` (table_names_next_address)? Cached per macro and pad. A caller that
@@ -1849,19 +1868,28 @@ class PreprocessorData:
         been patched, and the pool sits above it by construction (pool_base), so they cannot
         collide.
         """
-        if not self.pool_ops:
+        pool = self.pool_ops
+        if not pool:
             return
-        runs: List[Tuple[NewSegment, List[LastPhaseOp]]] = []
-        for op in self.pool_ops:
-            if isinstance(op, NewSegment):
-                runs.append((op, [op]))
-            elif runs:
-                runs[-1][1].append(op)
+        # a run is a NewSegment and the ops up to the next one (ops before the first are dropped);
+        # the stream records where each OBJ op is, so the runs are cut without decoding it
+        marks = pool.marks
+        starts = [mark_index for mark_index, mark in enumerate(marks) if isinstance(mark[2], NewSegment)]
+        runs: List[Tuple[NewSegment, int, int, int, int, int, int]] = []
+        for i, mark_index in enumerate(starts):
+            op_index, val_index, segment = marks[mark_index]
+            if i + 1 < len(starts):
+                mark_end = starts[i + 1]
+                op_end, val_end = marks[mark_end][0], marks[mark_end][1]
+            else:
+                mark_end = len(marks)
+                op_end, val_end = len(pool.kinds), len(pool.vals)
+            runs.append((segment, op_index, op_end, val_index, val_end, mark_index, mark_end))
         runs.sort(key=lambda run: run[0].start_address)
-        for segment, run_ops in runs:
+        for segment, op_start, op_end, val_start, val_end, mark_start, mark_end in runs:
             self.last_new_segment = segment
-            self.result_ops.extend(run_ops)
-        self.pool_ops.clear()
+            self.result_ops.extend_slice(pool, op_start, op_end, val_start, val_end, mark_start, mark_end)
+        pool.clear()
 
     def finish(self, show_statistics: bool) -> None:
         self.patch_last_wflip_address()
@@ -2121,7 +2149,10 @@ def relocatable_table_end(ops: List[Op], pad_index: int) -> Optional[Tuple[int, 
     last_flipjump = None
     count = 0
     source_word: Optional[Expr] = None
-    for offset, op in enumerate(ops[pad_index + 1 :], start=pad_index + 1):  # noqa: E203
+    # (indexed, not `enumerate(ops[pad_index + 1:])`: that copied the rest of the list - the whole
+    # remaining top level, millions of ops, for every top-level pad)
+    for offset in range(pad_index + 1, len(ops)):
+        op = ops[offset]
         if isinstance(op, FlipJump):
             if _falls_through(op):
                 return None
@@ -2163,7 +2194,8 @@ def _falls_through(op: Op) -> bool:
 def _reached_only_by_jump(ops: List[Op], pad_index: int) -> bool:
     """is the pad at `ops[pad_index]` preceded by an op that jumps away? labels in between do not
     count, and a pad that opens the macro body is reached from whatever came before the call"""
-    for op in reversed(ops[:pad_index]):
+    for index in range(pad_index - 1, -1, -1):  # (not `reversed(ops[:pad_index])`, which copied the prefix)
+        op = ops[index]
         if isinstance(op, Label):
             continue
         return not _falls_through(op) and isinstance(op, (FlipJump, WordFlip))
@@ -2194,7 +2226,23 @@ def resolve_macro_aux(
 
     preprocessor_data.insert_macro_start_label(labels_prefix, current_macro.code_position)
 
-    for op_index, op in enumerate(current_macro.ops):
+    # MEMORY: when the caller gave the tree away (consume_main), the top level's ops are dropped as the
+    # expansion passes them - a doom level's top level is millions of statements, kept only to be
+    # expanded once. What is kept: the last non-label op already expanded and everything after it, which
+    # is all a `pad` looks back at (_reached_only_by_jump) or forward to (relocatable_table_end).
+    ops = current_macro.ops
+    consume = preprocessor_data.consume_main and macro_name is INITIAL_MACRO_NAME
+    released_up_to = 0  # ops[:released_up_to] are None
+    last_non_label = 0
+
+    for op_index, op in enumerate(ops):
+        if consume:
+            if last_non_label > released_up_to:
+                for index in range(released_up_to, last_non_label):
+                    ops[index] = None  # type: ignore[call-overload]
+                released_up_to = last_non_label
+            if not isinstance(op, Label):
+                last_non_label = op_index
         # a relocated table ends at its last `a;b` op (see relocatable_table_end); everything after
         # it - `exact_xor`'s `end:` label and its disarm wflip - belongs to the inline stream
         if relocated and op_index > table_end:
@@ -2207,7 +2255,15 @@ def resolve_macro_aux(
         elif isinstance(op, FlipJump) or isinstance(op, WordFlip):
             preprocessor_data.curr_address += 2 * preprocessor_data.memory_width
             params_dict['$'] = Expr(preprocessor_data.curr_address)
-            preprocessor_data.emit(op.eval_new(params_dict))
+            # MEMORY: straight into the compact stream - no FlipJump/WordFlip object is built for it
+            if op.__class__ is FlipJump:
+                preprocessor_data.emit_target.add_flip_jump_in(op.flip, op.jump, params_dict, op.code_position)
+            elif op.__class__ is WordFlip:
+                preprocessor_data.emit_target.add_word_flip_in(
+                    op.word_address, op.flip_value, op.return_address, params_dict, op.code_position
+                )
+            else:
+                preprocessor_data.emit(op.eval_new(params_dict))
             del params_dict['$']
 
         elif isinstance(op, Pad):
@@ -2215,7 +2271,7 @@ def resolve_macro_aux(
             ops_alignment = get_pad_ops_alignment(op, preprocessor_data)
             # a `pad` marks a lookup table: reached only by jump, so instead of aligning here it may
             # be emitted at a pool address, and the interrupted stream resumes after it (TablePool)
-            found = relocatable_table_end(current_macro.ops, op_index)
+            found = preprocessor_data.table_end(current_macro, op_index)
             group = None
             group_expr: Optional[Expr] = None
             if found is not None and found[2] is not None:
@@ -2312,6 +2368,7 @@ def resolve_macros(
     save_debug_labels: bool = True,
     table_pool: Optional[TablePool] = None,
     on_progress: Optional[Callable[[float], None]] = None,
+    consume_main: bool = False,
 ) -> Tuple[OpsQueue, LabelsDict]:
     """
     unwind the macro tree to a serialized-queue of ops,
@@ -2329,11 +2386,15 @@ def resolve_macros(
     not writing a debugging file can pass False. It cannot change the emitted .fjm.
     @param on_progress: if given, called with the expansion's progress, a fraction in [0, 1) - by how
     far into the main macro (and the calls in it) the expansion is. It cannot change the emitted .fjm.
+    @param consume_main: the caller will not use `macros` again: the top level's ops are dropped (set to
+    None in the main macro's op list) as the expansion passes them. Off by default - the two-pass
+    BlockPool expands one tree twice. It cannot change the emitted .fjm.
     @return: tuple of the queue of ops, and the labels' dictionary
     """
     preprocessor_data = PreprocessorData(
         memory_width, macros, max_recursion_depth, save_debug_labels=save_debug_labels, table_pool=table_pool
     )
+    preprocessor_data.consume_main = consume_main
     if on_progress is not None:
         preprocessor_data.on_progress = on_progress
         preprocessor_data.progress_slice = (0.0, 1.0)
