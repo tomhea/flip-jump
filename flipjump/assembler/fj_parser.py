@@ -8,7 +8,7 @@ import os
 import re
 from os import path
 from pathlib import Path
-from typing import Callable, Iterator, Set, List, Tuple, Dict, Optional, Union
+from typing import Any, Callable, Iterator, Set, List, Tuple, Dict, Optional, Union
 
 import sly
 
@@ -20,7 +20,7 @@ from sly.yacc import YaccProduction as ParsedRule
 
 from flipjump.utils.progress import clear_progress_line
 from flipjump.utils.exceptions import FlipJumpExprException, FlipJumpParsingException
-from flipjump.assembler.inner_classes.expr import Expr, get_minimized_expr
+from flipjump.assembler.inner_classes.expr import Expr, get_minimized_expr as _get_minimized_expr
 from flipjump.assembler.inner_classes.ops import (
     get_used_labels,
     get_declared_labels,
@@ -47,8 +47,61 @@ all_errors: str
 error_occurred: bool
 
 
+# MEMORY (doom-flipjump, 2026-10-19). The macro tree holds every parsed statement until the expansion
+# reaches it, and a doom level is ~3M top-level lines (mostly `;0x0 * dw` data), so what one line costs
+# is multiplied by millions. Three things it used to pay for that it does not need:
+#   * its own copy of the file's path string in its CodePosition (`str(curr_file)`, ~140 bytes) - one
+#     string per file is shared now, and a label and the statement on its line share one position;
+#   * a fresh Expr for every number, name and `$` it mentions, and for every constant a fold
+#     (`0x0 * dw`) produces - Exprs are immutable (nothing assigns .value after __init__, and eval_new
+#     builds new ones), so equal leaves share one object within a parse (`_leaf`);
+#   * its own MacroName per macro call (see ops.macro_name).
+_position_file: Optional[Path] = None
+_position_file_str = ''
+_last_position: Optional[CodePosition] = None
+_leaf_exprs: Dict[Union[int, str], Expr] = {}
+
+
 def get_position(lineno: int) -> CodePosition:
-    return CodePosition(str(curr_file), curr_file_short_name, lineno)
+    global _position_file, _position_file_str, _last_position
+    if curr_file is not _position_file:
+        _position_file = curr_file
+        _position_file_str = str(curr_file)
+        _last_position = None
+    last = _last_position
+    if (
+        last is not None
+        and last.line == lineno
+        and last.file_short_name is curr_file_short_name
+        and last.file is _position_file_str
+    ):
+        return last
+    _last_position = CodePosition(_position_file_str, curr_file_short_name, lineno)
+    return _last_position
+
+
+def _leaf(value: Union[int, str]) -> Expr:
+    """the parse's shared Expr for the number / name `value` (see the MEMORY note above)"""
+    expr = _leaf_exprs.get(value)
+    if expr is None or expr.value.__class__ is not value.__class__:
+        expr = Expr(value)
+        _leaf_exprs[value] = expr
+    return expr
+
+
+def _reset_parse_sharing() -> None:
+    """forget the shared leaves and positions (the tree keeps the ones it uses)"""
+    global _position_file, _position_file_str, _last_position
+    _position_file, _position_file_str, _last_position = None, '', None
+    _leaf_exprs.clear()
+
+
+def get_minimized_expr(op: str, params: Tuple[Expr, ...]) -> Expr:
+    """expr.get_minimized_expr, with a folded constant shared like any other number leaf"""
+    expr = _get_minimized_expr(op, params)
+    if expr.value.__class__ is int:
+        return _leaf(expr.value)
+    return expr
 
 
 def syntax_error(lineno: int, msg: str = '') -> None:
@@ -273,7 +326,7 @@ class FJLexer(sly.Lexer):
 
 
 def next_address() -> Expr:
-    return Expr('$')
+    return _leaf('$')
 
 
 def _get_main_macro_code_position(first_file: Tuple[str, Path]) -> CodePosition:
@@ -282,6 +335,27 @@ def _get_main_macro_code_position(first_file: Tuple[str, Path]) -> CodePosition:
 
 
 # noinspection PyUnusedLocal,PyUnresolvedReferences,PyPep8Naming
+_ID_OF_NONE = id(None)
+
+
+class _NoneOnlyPositions(Dict[int, Any]):
+    """sly's per-production position record, keeping only the entry FJParser reads.
+
+    MEMORY (doom-flipjump, 2026-10-19): with track_positions on (sly's default, and the symbols' line
+    numbers - which name every macro-expansion label - depend on it), sly.Parser.parse records
+    `_line_positions[id(value)] = lineno` and `_index_positions[id(value)] = (index, end)` for EVERY
+    reduction, in dicts that live as long as the parser: one entry per expression node and statement of
+    every file, never removed. MEASURED on 600K lines of a doom level: the parse's traced peak was 1,011 MB
+    for a 211 MB tree, so for a whole level it was several GB, freed only when the parse ended. The only
+    reader is FJParser.error's `line_position(None)` (the last None-valued production's line, for an
+    error at end of file), so that one key is all that is kept.
+    """
+
+    def __setitem__(self, key: int, value: Any) -> None:
+        if key == _ID_OF_NONE:
+            super().__setitem__(key, value)
+
+
 class FJParser(sly.Parser):
     tokens = FJLexer.tokens
     # 'UMINUS', 'UNOT' and 'LEADING_ID' are fictitious precedence tokens (not real
@@ -324,6 +398,9 @@ class FJParser(sly.Parser):
         # -D overrides. The defines file is a real .fj file, so a define keeps the whole expression
         # language (`w + 33`, an earlier define, an stl constant); what makes it an OVERRIDE rather
         # than a declaration is that its constants land here instead of in self.consts.
+        # see _NoneOnlyPositions: sly.Parser.parse uses these instead of creating its own ever-growing dicts
+        self._line_positions = _NoneOnlyPositions()
+        self._index_positions = _NoneOnlyPositions()
         self.defines_file: Optional[Path] = defines_file.resolve() if defines_file else None
         self.defines: Dict[str, int] = {}
         self.defines_lineno: Dict[str, int] = {}
@@ -693,11 +770,11 @@ class FJParser(sly.Parser):
 
     @_('SC expr')
     def statement(self, p: ParsedRule) -> FlipJump:
-        return FlipJump(Expr(0), p.expr, get_position(p.lineno))
+        return FlipJump(_leaf(0), p.expr, get_position(p.lineno))
 
     @_('SC')
     def statement(self, p: ParsedRule) -> FlipJump:
-        return FlipJump(Expr(0), next_address(), get_position(p.lineno))
+        return FlipJump(_leaf(0), next_address(), get_position(p.lineno))
 
     @_('ID')
     def id(self, p: ParsedRule) -> Tuple[str, int]:
@@ -818,7 +895,7 @@ class FJParser(sly.Parser):
     @_('"-" expr_ %prec UMINUS')
     def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
         # unary minus: reuse subtraction as (0 - expr).
-        return get_minimized_expr('-', (Expr(0), p.expr_[0])), p.lineno
+        return get_minimized_expr('-', (_leaf(0), p.expr_[0])), p.lineno
 
     @_('"~" expr_ %prec UNOT')
     def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
@@ -906,11 +983,11 @@ class FJParser(sly.Parser):
 
     @_('NUMBER')
     def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
-        return Expr(p.NUMBER), p.lineno
+        return _leaf(p.NUMBER), p.lineno
 
     @_('STRING')
     def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
-        return Expr(p.STRING), p.lineno
+        return _leaf(p.STRING), p.lineno
 
     @_('"$"')
     def expr_(self, p: ParsedRule) -> Tuple[Expr, int]:
@@ -921,7 +998,7 @@ class FJParser(sly.Parser):
         id_str, lineno = p.id
         if id_str in self.consts:
             return self.consts[id_str], lineno
-        return Expr(id_str), lineno
+        return _leaf(id_str), lineno
 
 
 def exit_if_errors() -> None:
@@ -1119,7 +1196,10 @@ def parse_macro_tree(
     lexer = FJLexer()
     parser = FJParser(memory_width, warning_as_errors, input_files[0], defines_file)
 
-    _parse_files_into_parser(parser, lexer, input_files, memory_width, warning_as_errors, on_progress)
+    try:
+        _parse_files_into_parser(parser, lexer, input_files, memory_width, warning_as_errors, on_progress)
+    finally:
+        _reset_parse_sharing()
 
     # -D may only OVERRIDE: a define that never met a declaration is a typo, and silently
     # accepting it is how a misspelled -D looks exactly like a working one.

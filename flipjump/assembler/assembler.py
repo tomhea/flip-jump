@@ -6,9 +6,10 @@ and resolving labels into addresses while writing the result with the fjm Writer
 """
 
 import gc
+from array import array
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Callable, Deque, List, Dict, MutableSequence, Tuple, Optional, NamedTuple
+from typing import Any, Callable, Deque, List, Dict, MutableSequence, Tuple, Optional, NamedTuple, Union
 
 from flipjump.fjm.fjm_writer import Writer, new_word_buffer
 from flipjump.utils.constants import WFLIP_LABEL_PREFIX, DEFAULT_MAX_MACRO_RECURSION_DEPTH
@@ -23,6 +24,8 @@ from flipjump.utils.exceptions import (
 )
 from flipjump.assembler.inner_classes.ops import FlipJump, WordFlip, LastPhaseOp, NewSegment, ReserveBits, Padding
 from flipjump.assembler.inner_classes.expr import Expr
+from flipjump.assembler.inner_classes import op_stream
+from flipjump.assembler.inner_classes.op_stream import OpStream
 from flipjump.assembler.preprocessor import resolve_macros, TablePool, RESERVED_BELOW
 
 
@@ -48,10 +51,14 @@ def add_segment_to_fjm(
     last_address: int,
     fj_words: MutableSequence[int],
     wflip_words: MutableSequence[int],
+    *,
+    take: bool = False,
 ) -> None:
     """
     The new segment will be placed in [first_address, last_address),
     And will include the next data: fj_words + wflip_words.
+    @param take: the caller hands fj_words over (the writer may keep it as its data rather than copy it)
+    and will use new buffers from now on; neither list is cleared then.
     """
     validate_addresses(memory_width, first_address, last_address)
     if first_address == last_address:
@@ -61,9 +68,9 @@ def add_segment_to_fjm(
     # That concatenation built a THIRD list holding every word of the segment -- 78.6M of them on
     # the doom-flipjump program, 22.9 s of pure copying -- purely to pass them as one argument.
     # add_data appends, so two calls land contiguously and `data_start` is still the first one's.
-    data_start = fjm_writer.add_data(fj_words)
+    data_length = len(fj_words) + len(wflip_words)  # (before add_data: a writer that takes fj_words grows it)
+    data_start = fjm_writer.add_data(fj_words, take=take)
     fjm_writer.add_data(wflip_words)
-    data_length = len(fj_words) + len(wflip_words)
 
     segment_start_address = first_address // memory_width
     segment_length = (last_address - first_address) // memory_width
@@ -77,6 +84,8 @@ def add_segment_to_fjm(
         )
         raise FlipJumpAssemblerException(exception_message) from e
 
+    if take:
+        return
     # `del x[:]` not `.clear()`: array.array has no clear() (verified -- it is not registered as
     # a MutableSequence), while `del x[:]` empties BOTH an array and a list.
     del fj_words[:]
@@ -152,12 +161,14 @@ class BinaryData:
         self.fj_words = new_word_buffer(memory_width)
         self.wflip_words = new_word_buffer(memory_width)
 
-        self.padding_ops_indices: List[int] = []  # indices in self.fj_words
+        # indices in self.fj_words. MEMORY: a typed array (8 bytes an index), not a list of int objects
+        # (40): a program's alignment padding can be millions of ops waiting for a wflip op to fill them
+        self.padding_ops_indices = array('q')
 
-        # return_address -> { (f3, f2, f1, f0) -> start_flip_address }
+        # return_address -> { a chain tail (its addresses, as one int: see insert_wflip_ops) -> start_flip_address }
         # PERF: defaultdict(dict) not defaultdict(lambda: {}) -- the C constructor, not a python
         # call, on every previously-unseen return address.
-        self.wflips_dict: Dict[int, Dict[Tuple[int, ...], int]] = defaultdict(dict)
+        self.wflips_dict: Dict[int, Dict[int, int]] = defaultdict(dict)
 
     def get_wflip_spot(self) -> WFlipSpot:
         if self.padding_ops_indices:
@@ -174,8 +185,21 @@ class BinaryData:
             return
 
         add_segment_to_fjm(
-            self.memory_width, fjm_writer, self.first_address, self.next_wflip_address, self.fj_words, self.wflip_words
+            self.memory_width,
+            fjm_writer,
+            self.first_address,
+            self.next_wflip_address,
+            self.fj_words,
+            self.wflip_words,
+            take=True,
         )
+        self._new_buffers()
+
+    def _new_buffers(self) -> None:
+        """fresh word buffers: the writer took the old ones (MEMORY: it keeps the first segment's words as
+        its data instead of copying them - see Writer.add_data)"""
+        self.fj_words = new_word_buffer(self.memory_width)
+        self.wflip_words = new_word_buffer(self.memory_width)
 
     def _insert_wflip_label(self, address: int) -> None:
         """Record the debugging label for a generated wflip-chain op.
@@ -219,18 +243,27 @@ class BinaryData:
 
             return_dict = self.wflips_dict[return_address]
 
-            # this is the order of flip_addresses (tested with many other orders) that produces the best
-            #  found-statistic for searching flip_bit[:i] with different i's in return_dict.
-            # PERF (doom-flipjump, 2026-08-20): counted DOWN rather than built-then-`[::-1]`-copied.
-            # Same list, one allocation instead of two, on every wflip in the program.
-            flip_addresses = [word_address + i for i in range(self.memory_width - 1, -1, -1) if flip_value >> i & 1]
+            # The chain flips the word's set bits from the LOWEST address up (this is the order
+            # (tested with many other orders) that produces the best found-statistic for searching a
+            # chain's tail in return_dict), and every tail is shared through return_dict: a tail is
+            # the SET of addresses still to flip.
+            # MEMORY (doom-flipjump, 2026-10-19): a tail is keyed by one int, not by the tuple of its
+            # addresses. The set is {a + i : bit i of m}, with a its lowest address and bit 0 of m set;
+            # (a, m) determines the set and the set determines (a, m), and m < 2**w, so `a << w | m`
+            # is equal for two tails exactly when their address tuples are. A tuple of up to w address
+            # ints per chain op (and the O(k^2) re-tupling) was the bulk of this dict.
+            width = self.memory_width
+            remaining = flip_value
 
             # insert the first op
-            self.insert_fj_op(flip_addresses.pop(), 0)
+            lowest = (remaining & -remaining).bit_length() - 1
+            remaining &= remaining - 1
+            self.insert_fj_op(word_address + lowest, 0)
             last_return_address_index: Tuple[MutableSequence[int], int] = self.fj_words, len(self.fj_words) - 1
 
-            while flip_addresses:
-                flips_key = tuple(flip_addresses)
+            while remaining:
+                lowest = (remaining & -remaining).bit_length() - 1
+                flips_key = (word_address + lowest) << width | remaining >> lowest
                 ops_list, last_address_index = last_return_address_index
 
                 if flips_key in return_dict:
@@ -245,7 +278,8 @@ class BinaryData:
                     ops_list[last_address_index] = wflip_spot.address
                     return_dict[flips_key] = wflip_spot.address
 
-                    wflip_spot.list[wflip_spot.word_index] = flip_addresses.pop()
+                    wflip_spot.list[wflip_spot.word_index] = word_address + lowest
+                    remaining &= remaining - 1
                     last_return_address_index = wflip_spot.list, wflip_spot.word_index + 1
 
             ops_list, last_address_index = last_return_address_index
@@ -262,14 +296,19 @@ class BinaryData:
         self.first_address = first_address
         self.next_wflip_address = wflip_first_address
 
-        self.padding_ops_indices.clear()
+        del self.padding_ops_indices[:]  # (an array has no clear())
 
     def insert_reserve_bits(self, fjm_writer: Writer, new_first_address: int) -> None:
-        add_segment_to_fjm(self.memory_width, fjm_writer, self.first_address, new_first_address, self.fj_words, [])
+        add_segment_to_fjm(
+            self.memory_width, fjm_writer, self.first_address, new_first_address, self.fj_words, [], take=True
+        )
+        # only the ops' buffer was handed over: the wflip ops gathered so far belong to the segment's
+        # wflip area, after the reserved region, and are written when the segment closes
+        self.fj_words = new_word_buffer(self.memory_width)
 
         self.first_address = new_first_address
 
-        self.padding_ops_indices.clear()
+        del self.padding_ops_indices[:]
 
 
 def resolve_pinned(
@@ -312,8 +351,133 @@ def resolve_pinned(
 _PROGRESS_CHUNK = 1 << 16
 
 
+def _deferred_value(stream: OpStream, encoded: int, next_slot: Callable[[], int], labels: Dict[str, int]) -> int:
+    """the value of a deferred operand (its slot is ~encoded; see OpStream). Raises what the Expr would."""
+    ref = stream.refs[encoded >> 2]
+    tag = encoded & 3
+    if tag == op_stream.TAG_LABEL:
+        value = labels.get(ref)
+        if value is None:
+            return Expr(ref).exact_eval(labels)  # raises the Expr's own "Can't evaluate label"
+        return value
+    if tag == op_stream.TAG_LABEL_PLUS:
+        const = next_slot()
+        value = labels.get(ref)
+        if value is None:
+            return Expr(ref).exact_eval(labels) + const  # raises, as above
+        return value + const
+    return ref.exact_eval(labels)  # type: ignore[no-any-return]
+
+
+def _labels_resolve_stream(
+    stream: OpStream,
+    binary_data: BinaryData,
+    labels: Dict[str, int],
+    fjm_writer: Writer,
+    on_progress: Optional[Callable[[float], None]],
+) -> None:
+    """labels_resolve over a compact OpStream (the preprocessor's output): the same BinaryData calls,
+    in the same order, with the same values, as the op objects it replaces would make."""
+    insert_fj_op = binary_data.insert_fj_op
+    insert_wflip_ops = binary_data.insert_wflip_ops
+    kinds = stream.kinds
+    refs = stream.refs
+    slots = iter(stream.vals)
+    next_slot = slots.__next__
+    next(slots)  # the first op (the first NewSegment) was taken by the caller
+    total_ops = max(1, len(kinds))
+    op_index = 1
+    FJ, FJ_POS, WFLIP, PAD = op_stream.FJ, op_stream.FJ_POS, op_stream.WFLIP, op_stream.PAD
+    TAG_LABEL = op_stream.TAG_LABEL
+    FJ_PACKED, PACKED_JUMP_MASK = op_stream.FJ_PACKED, op_stream.PACKED_JUMP_MASK
+    # operands: an int slot, then the value (labels.get's Optional is checked right after)
+    flip: Any
+    jump: Any
+    word_address: Any
+    flip_value: Any
+    return_address: Any
+    while op_index < len(kinds):
+        chunk_end = min(op_index + _PROGRESS_CHUNK, len(kinds))
+        for kind in kinds[op_index:chunk_end]:
+            if kind == FJ_PACKED:
+                packed = next_slot()
+                insert_fj_op(packed >> 32, packed & PACKED_JUMP_MASK)
+            elif kind == FJ:
+                insert_fj_op(next_slot(), next_slot())
+            elif kind == FJ_POS:
+                try:
+                    flip = next_slot()
+                    if flip < 0:
+                        encoded = ~flip
+                        if encoded & 3 == TAG_LABEL:
+                            flip = labels.get(refs[encoded >> 2])
+                            if flip is None:
+                                flip = _deferred_value(stream, encoded, next_slot, labels)
+                        else:
+                            flip = _deferred_value(stream, encoded, next_slot, labels)
+                    jump = next_slot()
+                    if jump < 0:
+                        encoded = ~jump
+                        if encoded & 3 == TAG_LABEL:
+                            jump = labels.get(refs[encoded >> 2])
+                            if jump is None:
+                                jump = _deferred_value(stream, encoded, next_slot, labels)
+                        else:
+                            jump = _deferred_value(stream, encoded, next_slot, labels)
+                    next_slot()  # the position
+                    insert_fj_op(flip, jump)
+                except FlipJumpException as e:
+                    raise FlipJumpAssemblerException(f"{e} in op {stream.op_at(op_index)}.")
+            elif kind == WFLIP:
+                try:
+                    word_address = next_slot()
+                    if word_address < 0:
+                        encoded = ~word_address
+                        if encoded & 3 == TAG_LABEL:
+                            word_address = labels.get(refs[encoded >> 2])
+                            if word_address is None:
+                                word_address = _deferred_value(stream, encoded, next_slot, labels)
+                        else:
+                            word_address = _deferred_value(stream, encoded, next_slot, labels)
+                    flip_value = next_slot()
+                    if flip_value < 0:
+                        encoded = ~flip_value
+                        if encoded & 3 == TAG_LABEL:
+                            flip_value = labels.get(refs[encoded >> 2])
+                            if flip_value is None:
+                                flip_value = _deferred_value(stream, encoded, next_slot, labels)
+                        else:
+                            flip_value = _deferred_value(stream, encoded, next_slot, labels)
+                    return_address = next_slot()
+                    if return_address < 0:
+                        encoded = ~return_address
+                        if encoded & 3 == TAG_LABEL:
+                            return_address = labels.get(refs[encoded >> 2])
+                            if return_address is None:
+                                return_address = _deferred_value(stream, encoded, next_slot, labels)
+                        else:
+                            return_address = _deferred_value(stream, encoded, next_slot, labels)
+                    next_slot()  # the position
+                    insert_wflip_ops(word_address, flip_value, return_address)
+                except FlipJumpException as e:
+                    raise FlipJumpAssemblerException(f"{e} in op {stream.op_at(op_index)}.")
+            elif kind == PAD:
+                binary_data.insert_padding(next_slot())
+            else:
+                op = refs[next_slot()]
+                if isinstance(op, NewSegment):
+                    binary_data.insert_new_segment(fjm_writer, op.start_address, op.wflip_start_address)
+                elif isinstance(op, ReserveBits):
+                    binary_data.insert_reserve_bits(fjm_writer, op.first_address_after_reserved)
+                else:
+                    raise FlipJumpAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
+            op_index += 1
+        if on_progress is not None:
+            on_progress(1 - (len(kinds) - op_index) / total_ops)
+
+
 def labels_resolve(
-    ops: Deque[LastPhaseOp],
+    ops: Union[OpStream, Deque[LastPhaseOp]],
     labels: Dict[str, int],
     memory_width: int,
     fjm_writer: Writer,
@@ -333,6 +497,16 @@ def labels_resolve(
     writing one can pass False and skip the work. It cannot change the emitted .fjm.
     @param on_progress: if given, called every _PROGRESS_CHUNK ops with the fraction of ops resolved
     """
+    if isinstance(ops, OpStream):
+        first_object = ops.first_object()
+        if not isinstance(first_object, NewSegment):
+            first_op = ops.op_at(0) if ops else None
+            raise FlipJumpAssemblerException(f"The first op must be of type NewSegment (and not {first_op}).")
+        binary_data = BinaryData(memory_width, first_object, labels, save_wflip_labels=save_wflip_labels, pinned=pinned)
+        _labels_resolve_stream(ops, binary_data, labels, fjm_writer, on_progress)
+        binary_data.close_and_add_segment(fjm_writer)
+        return
+
     total_ops = max(1, len(ops))
     first_segment = ops.popleft()
     if not isinstance(first_segment, NewSegment):
@@ -503,7 +677,11 @@ def assemble(
                 max_recursion_depth=max_recursion_depth,
                 save_debug_labels=debugging_file_path is not None,
                 on_progress=progress.update if progress.active else None,
+                consume_main=True,  # the tree is ours, and dropped right below
             )
+        # MEMORY: the macro tree is not read again - free it before labels-resolve builds the binary.
+        # (The op stream keeps what it still needs of it: label names, positions, the odd Expr.)
+        del macros
 
         # BlockPool pins each source word to its block base. The base was chosen during macro
         # expansion but the WORD is an expression (variables are usually declared after the code),
@@ -537,6 +715,9 @@ def assemble(
                 pinned=pinned,
                 on_progress=progress.update if progress.active else None,
             )
+        # MEMORY: every op is in the writer now; the stream (which labels-resolve reads, not consumes)
+        # would otherwise live on through the binary's packing and compression
+        del ops
 
         assert_first_op_assembled(fjm_writer)
 
