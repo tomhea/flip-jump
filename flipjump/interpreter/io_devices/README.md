@@ -143,7 +143,7 @@ resolved what is in front, so the device only fills.
 | Field | Width | Top values are tokens | Limit |
 |---|---|---|---|
 | row (`y2`, `y`) | `R` = the smallest of 4, 8, 12, 16 with `h < 2^R − 4` | the top **4** | `h ≤ 11 / 251 / 4,091 / 65,531` |
-| column (`x`, `src`) | `C` = the smallest of 4, 8, 12, 16 with `w < 2^C − 1` | the top **2** | `w ≤ 14 / 254 / 4,094 / 65,534` |
+| column (`x`) | `C` = the smallest of 4, 8, 12, 16 with `w < 2^C − 1` | the top **2** | `w ≤ 14 / 254 / 4,094 / 65,534` |
 
 **Grammar:**
 
@@ -151,8 +151,8 @@ resolved what is in front, so the device only fills.
 draw_collines := 0x11  ( column )*  END_CMD
 column        := x  item*                       x = the column to draw (any order; repeats allowed)
 item          := y2 colour                      fill rows [cursor, y2) with colour; cursor = y2
-               | KEEP y                         leave rows [cursor, y) as they are; cursor = y
-               | COPY src y                     copy rows [cursor, y) from column src; cursor = y
+               | KEEP y                         rows [cursor, y) keep what the screen shows there; cursor = y
+               | COPY y                         rows [cursor, y) copy the column to the left (x − 1); cursor = y
                | END                            the column is done (rows below the cursor are left as they are)
 ```
 
@@ -175,7 +175,10 @@ item          := y2 colour                      fill rows [cursor, y2) with colo
 - Each column's cursor starts at row 0. Every fill, KEEP and COPY must move it forward: `cursor < y2 ≤ h`.
 - A column also ends by itself when the cursor reaches `h` (so full columns need no END).
 - KEEP and COPY act on rows `[cursor, y)` only — from where the column is now, not from row 0.
-- COPY reads the picture as it is at that moment, including what this command already drew.
+- **KEEP** keeps the pixels the last presented frame had in those rows — unless this frame already drew them,
+  in which case it keeps the new ones.
+- **COPY** copies the same rows of the column to the left (`x − 1`), as that column is at that moment: its new
+  pixels if this frame already drew it, otherwise the last frame's. COPY in column 0 is an error.
 - Columns can come in any order, be skipped, or be drawn again (e.g. an overlay: `KEEP` down to it, then fill).
 
 ### Example
@@ -187,8 +190,8 @@ Here `R = 4` and `C = 4` (both fields are nibbles); the first field of each byte
 01  04 00  03 00  08      init_screen  w=4 h=3 format=8
 11                        draw_collines
 30 05                       x=0, y2=3 | colour 0x05            (column 0: rows 0-2 = 5, ends at h)
-D1 30                       x=1, COPY | src=0, y=3            (column 1: rows 0-2 copied)
-0F                          END_CMD (x=0xF), then 4 zero bits of padding
+D1                          x=1, COPY                         (column 1: copied from column 0 ...)
+F3                          y=3 | END_CMD (x=0xF)             (... rows 0-2; the command ends on a byte boundary)
 1F                        present
 ```
 
@@ -197,7 +200,7 @@ D1 30                       x=1, COPY | src=0, y=3            (column 1: rows 0-
 The device raises (`IODeviceException`) on: an unknown or reserved opcode; a reserved token (the row
 field's `2^R − 4`, the column field's `2^C − 2`); any command before
 `init_screen`; a field out of range (a colour `≥ 2^B`, a row past `h`, a column past `w`, a cursor that does
-not move forward, COPY's `src` out of range); a palette command in RGB format; a format of 17–23 or 0.
+not move forward, a COPY in column 0); a palette command in RGB format; a format of 17–23 or 0.
 
 ### Backends
 
@@ -218,7 +221,7 @@ not move forward, COPY's `src` out of range); a palette command in RGB format; a
 | `0x02 set_palette [address]` (read from memory) | `0x02 define_palette` (in the stream) + `0x06 select_palette` |
 | `0x03` / `0x04` / `0x06` framebuffer presents (read from memory) | removed: draw with `0x10` / `0x11` |
 | `0x05 update_screen_raw` | `0x10 draw_raw` + `0x1F present` (bit-packed at the format's width) |
-| `0x0B begin_frame_collines` (`[x]…0xFF`, `0xFE` / `0xFD` / `0xFC`) | `0x11 draw_collines` + `0x1F present` (tokens at the top of nibble-sized fields; `COPY` names its source) |
+| `0x0B begin_frame_collines` (`[x]…0xFF`, `0xFE` / `0xFD` / `0xFC`) | `0x11 draw_collines` + `0x1F present` (tokens at the top of nibble-sized fields; COPY copies column x − 1, as today) |
 | `0x12` / `0x13` / `0x14` title / icon / max fps | `0x04` / `0x05` / `0x03` |
 
 The screen never reads program memory, so it needs no device-memory hook.
