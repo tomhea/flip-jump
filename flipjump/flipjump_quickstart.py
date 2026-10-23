@@ -11,7 +11,7 @@ from tempfile import TemporaryDirectory
 from typing import List, Optional, Set
 
 from flipjump.assembler import assembler
-from flipjump.assembler.preprocessor import TablePool
+from flipjump.assembler.table_pool import TablePool
 from flipjump.interpreter.debugging.breakpoints import get_breakpoint_handler
 from flipjump.fjm.fjm_consts import FJMVersion
 from flipjump.fjm.fjm_writer import Writer

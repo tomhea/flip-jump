@@ -27,7 +27,8 @@ from flipjump.assembler.inner_classes.ops import FlipJump, WordFlip, LastPhaseOp
 from flipjump.assembler.inner_classes.expr import Expr
 from flipjump.assembler.inner_classes import op_stream
 from flipjump.assembler.inner_classes.op_stream import OpStream
-from flipjump.assembler.preprocessor import resolve_macros, TablePool, RESERVED_BELOW
+from flipjump.assembler.preprocessor import resolve_macros
+from flipjump.assembler.table_pool import TablePool, RESERVED_BELOW
 
 
 def assert_address_in_memory(memory_width: int, address: int) -> None:
@@ -506,7 +507,7 @@ def assemble(
     :param print_time: if true prints the times of each assemble-stage
     :param max_recursion_depth: The compiler supports macros that recursively uses other macros,
     up to the specified recursion depth.
-    :param table_pool: if given, relocate lookup tables to low-popcount addresses (see TablePool).
+    :param table_pool: if given, move the lookup tables to addresses that are cheap to arm (see table_pool.py).
     """
     # the pipeline allocates a large acyclic graph: the cyclic gc only re-walks it (restored in finally)
     gc_was_enabled = gc.isenabled()
