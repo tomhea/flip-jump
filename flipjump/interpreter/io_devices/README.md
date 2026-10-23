@@ -78,7 +78,8 @@ Scripted input (tests, replays): a text file of `tic, down/up, keycode` lines (`
    (the order FlipJump already outputs bits in). A 4-bit pixel costs 4 bits; 8 pixels of 3 bits take 3 bytes.
 3. The command ends with **zero bits up to the next byte boundary**.
 4. Multi-byte numbers (`w`, `h`, ...) are little-endian.
-5. Nothing reaches the screen until **`present`** (`0x1F`).
+5. Nothing reaches the screen until **`present`** (`0x1F`) — except that `init_screen` shows a black screen
+   at once (see [The screen's life cycle](#the-screens-life-cycle)).
 
 ### Opcodes
 
@@ -132,6 +133,16 @@ A colour value `≥ 2^B` is an error. The picture starts as colour 0 everywhere.
 | `2` | EGA-16 |
 | `3` | xterm-256 |
 | `4` | the RGB cube of `B` bits |
+
+### The screen's life cycle
+
+| Moment | What happens |
+|---|---|
+| `init_screen` | The window shows a **black** screen of `w×h` at once. The picture is colour 0 everywhere, every palette slot holds the format's default, and slot 0 is selected. |
+| before the first `present` | The window stays black. The headless backend records no frame. |
+| `present` | Shows the picture through the selected palette, and counts as a frame. |
+| `present` with nothing drawn since the last one | Shows the same picture again. It still counts as a frame: the `set_max_fps` wait applies, and the headless backend records it. |
+| another `init_screen` | Starts over exactly like the first: the window shows a black screen at the new `w×h` at once; the format, the field widths, the palettes and the selected slot (0) all reset, and the picture is colour 0 again. The window's title, icon and max fps stay; the frame count keeps counting. |
 
 ### `draw_collines` — the picture as column runs
 
