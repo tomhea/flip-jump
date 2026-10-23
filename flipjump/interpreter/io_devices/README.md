@@ -143,7 +143,7 @@ resolved what is in front, so the device only fills.
 | Field | Width | Top values are tokens | Limit |
 |---|---|---|---|
 | row (`y2`, `y`) | `R` = the smallest of 4, 8, 12, 16 with `h < 2^R − 4` | the top **4** | `h ≤ 11 / 251 / 4,091 / 65,531` |
-| column (`x`, `src`) | `C` = the smallest of 4, 8, 12, 16 with `w < 2^C` | the top **1** | `w ≤ 15 / 255 / 4,095 / 65,535` |
+| column (`x`, `src`) | `C` = the smallest of 4, 8, 12, 16 with `w < 2^C − 1` | the top **2** | `w ≤ 14 / 254 / 4,094 / 65,534` |
 
 **Grammar:**
 
@@ -164,10 +164,11 @@ item          := y2 colour                      fill rows [cursor, y2) with colo
 | `2^R − 4` | reserved | `0xFC` |
 | `0 … h` | a row | `0x00`–`0xFB` |
 
-| Column-field value | Meaning |
-|---|---|
-| `2^C − 1` | END_CMD: the command is over |
-| `0 … w−1` | a column |
+| Column-field value | Token | At `C = 8` |
+|---|---|---|
+| `2^C − 1` | END_CMD: the command is over | `0xFF` |
+| `2^C − 2` | reserved | `0xFE` |
+| `0 … w−1` | a column | `0x00`–`0xFD` |
 
 **Rules:**
 
@@ -193,7 +194,8 @@ D1 30                       x=1, COPY | src=0, y=3            (column 1: rows 0-
 
 ### Errors
 
-The device raises (`IODeviceException`) on: an unknown or reserved opcode; any command before
+The device raises (`IODeviceException`) on: an unknown or reserved opcode; a reserved token (the row
+field's `2^R − 4`, the column field's `2^C − 2`); any command before
 `init_screen`; a field out of range (a colour `≥ 2^B`, a row past `h`, a column past `w`, a cursor that does
 not move forward, COPY's `src` out of range); a palette command in RGB format; a format of 17–23 or 0.
 
