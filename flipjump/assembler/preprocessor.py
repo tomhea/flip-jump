@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import collections
 import sys
-from typing import Any, Dict, Tuple, Iterable, Union, Deque, Set, List, Optional, NoReturn, Callable, Sequence
+from typing import Any, Dict, Tuple, Iterable, Union, Deque, Set, List, Optional, NoReturn, Callable
 
 from flipjump.interpreter.debugging.macro_usage_graph import show_macro_usage_pie_graph
 from flipjump.utils.constants import (
@@ -47,7 +47,6 @@ from flipjump.assembler.table_pool import (  # noqa: F401 - the pool is importab
     DECLINE_OTHER,
     DECLINE_STALE,
     DEFER_INLINE,
-    DEFER_NEXT_ADDRESS,
     DEFER_OUT,
     DEFER_TOO_WIDE,
     DeferredTables,
@@ -65,15 +64,8 @@ LabelsDict = Dict[str, int]
 wflip_start_label = '_.wflip_area_start_'
 
 
-def table_names_next_address(ops: Sequence[Op], pad_index: int, end_index: int) -> bool:
-    """does an entry of the table after `ops[pad_index]` (through `ops[end_index]`) use `$`, the
-    address of the op after it? Its value is computed while the macro expands, so such a table must
-    have its address by then. (A jump to `$` already keeps relocatable_table_end from accepting it;
-    this is about a FLIP of an address computed from `$`.)"""
-    return any(
-        isinstance(op, FlipJump) and '$' in op.flip.all_unknown_labels()
-        for op in ops[pad_index + 1 : end_index + 1]  # noqa: E203
-    )
+# a macro whose innermost namespace is this declares a table a pool may move: see relocatable_call
+RELOCATABLE_NAMESPACE = '__relocatable__'
 
 
 def macro_resolve_error(
@@ -92,8 +84,6 @@ def macro_resolve_error(
             error_str += f'  {i}) {op.trace_str()}\n'
     raise FlipJumpPreprocessorException(error_str) from orig_exception
 
-
-_NOT_CACHED: Any = object()
 
 # a macro-expansion's progress slice thinner than this is not tracked any deeper (see PreprocessorData)
 _PROGRESS_MIN_SLICE = 1e-5
@@ -166,7 +156,7 @@ class PreprocessorData:
         up to the specified recursion depth.
         @param save_debug_labels: whether to record the per-expansion `...---:start:` macro-start
         labels. See insert_macro_start_label for why they can be skipped.
-        @param table_pool: if given, relocate the lookup tables it wants (see TablePool)
+        @param table_pool: if given, relocate the declared tables (see relocatable_call, TablePool)
         """
         self.memory_width = memory_width
         self.macros = macros
@@ -217,8 +207,6 @@ class PreprocessorData:
             None if self._one_pass is None else DeferredTables(self._one_pass.keeps_site_paths)
         )
         self._deferring = False  # emitting a deferred table's ops
-        self._next_address_cache: Dict[Tuple[int, int], bool] = {}
-        self._table_end_cache: Dict[Tuple[int, int], Optional[Tuple[int, int, Optional[Expr]]]] = {}
 
         # PROGRESS (off unless on_progress is given): each macro expansion owns a slice [lo, hi) of
         # the [0, 1) progress line, split evenly among its ops; a macro call / rep iteration takes its
@@ -258,33 +246,26 @@ class PreprocessorData:
 
     def begin_relocation(
         self,
-        macro_name: MacroName,
         ops_alignment: int,
         table_ops: int,
         labels_prefix: str = '',
         group: Optional[str] = None,
         group_expr: Optional[Expr] = None,
-        table_source: Optional[Tuple[Macro, int, int]] = None,
     ) -> bool:
         """Move emission to a pool address instead of aligning in place.
 
-        A table is reached only by jump, so relocating it changes nothing but its address -- and
-        the address is what the arming wflip pays for. Returns False when there is no pool, the
-        pool does not want this macro, or the pool is full; the caller then pads normally.
-
-        `table_source` is (the macro, the pad's index, the table's last op index): a one-pass pool
-        needs it to see whether an entry uses `$` (see _begin_deferral).
+        A declared table (see relocatable_call) is reached only by jump, so relocating it changes
+        nothing but its address -- and the address is what the arming wflip pays for. Returns False
+        when there is no pool, or the pool is full; the caller then pads normally.
         """
         pool = self.table_pool
-        if pool is None or not pool.wants(macro_name, labels_prefix):
+        if pool is None or not pool.has_room():
             return False
         if group_expr is not None and self._is_runtime_word(group_expr):
             pool.reserved_words += 1
             return False
         if self._one_pass is not None:
-            return self._begin_deferral(
-                self._one_pass, ops_alignment, table_ops, labels_prefix, group, group_expr, table_source
-            )
+            return self._begin_deferral(self._one_pass, ops_alignment, table_ops, labels_prefix, group, group_expr)
         reserved = pool.reserve(ops_alignment, table_ops, group, group_expr, labels_prefix)
         if reserved is None:
             return False
@@ -311,31 +292,6 @@ class PreprocessorData:
         except FlipJumpExprException:
             return False
 
-    def table_end(self, macro: Macro, pad_index: int) -> Optional[Tuple[int, int, Optional[Expr]]]:
-        """relocatable_table_end(macro.ops, pad_index), cached per macro and pad: it walks the table
-        (building a label set per op), and a macro's ops never change while it expands. (The main
-        macro is not cached: each of its pads is reached once, and consume_main drops its ops.)"""
-        if macro is self.macros.get(INITIAL_MACRO_NAME):
-            return relocatable_table_end(macro.ops, pad_index)
-        key = (id(macro), pad_index)  # a macro lives as long as the expansion: its id is stable
-        found = self._table_end_cache.get(key, _NOT_CACHED)
-        if found is _NOT_CACHED:
-            found = self._table_end_cache[key] = relocatable_table_end(macro.ops, pad_index)
-        return found  # type: ignore[no-any-return]
-
-    def _names_next_address(self, table_source: Optional[Tuple[Macro, int, int]]) -> bool:
-        """does the table use `$` (table_names_next_address)? Cached per macro and pad. A caller that
-        gives no source is assumed to (and its table stays inline)."""
-        if table_source is None:
-            return True
-        macro, pad_index, end_index = table_source
-        key = (id(macro), pad_index)  # a macro lives as long as the expansion: its id is stable
-        names = self._next_address_cache.get(key)
-        if names is None:
-            names = table_names_next_address(macro.ops, pad_index, end_index)
-            self._next_address_cache[key] = names
-        return names
-
     def _begin_deferral(
         self,
         pool: BlockPool,
@@ -344,22 +300,13 @@ class PreprocessorData:
         labels_prefix: str,
         group: Optional[str],
         group_expr: Optional[Expr],
-        table_source: Optional[Tuple[Macro, int, int]],
     ) -> bool:
         """one pass: take the table out of the op stream (see BlockPool's ONE PASS). Its ops go into
         the pool's stream behind a NewSegment whose address is set once it is placed, and its labels
         are recorded as offsets from its start, so curr_address counts from 0 inside it - nothing in
-        the table can read that number, since an entry that uses `$` keeps its table inline. A table
-        that stays inline (too wide for any slot, or using `$`) is still queued, so the pool declines
-        it in its turn."""
-        verdict = pool.defer(
-            ops_alignment,
-            table_ops,
-            group,
-            group_expr,
-            labels_prefix,
-            can_defer=not self._names_next_address(table_source),
-        )
+        the table can read that number, since a declared table may not use `$`. A table that stays
+        inline (too wide for any slot) is still queued, so the pool declines it in its turn."""
+        verdict = pool.defer(ops_alignment, table_ops, group, group_expr, labels_prefix)
         if verdict == DEFER_INLINE:
             return False
         assert group is not None and self._deferred is not None  # defer() keeps an ungrouped table inline
@@ -534,7 +481,7 @@ class PreprocessorData:
         @note must be called at the start of the expansion.
         @note takes the PREFIX, not the finished label: when labels are off the string is never built.
         """
-        if self.save_debug_labels:
+        if self.save_debug_labels and not self._deferring:
             label = f'{labels_prefix}{MACRO_SEPARATOR_STRING}{STARTING_LABEL_IN_MACROS_STRING}'
             self.macro_start_labels.append((self.curr_address, label, code_position))
 
@@ -681,91 +628,84 @@ def get_params_dictionary(
     return params_dict
 
 
-def relocatable_table_end(ops: List[Op], pad_index: int) -> Optional[Tuple[int, int, Optional[Expr]]]:
-    """(index of the table's last op, number of ops in it, the source-word Expr) after
-    `ops[pad_index]`, or None if the run must not be moved.
+def is_relocatable(macro_name: MacroName) -> bool:
+    """does the macro declare a relocatable table: is its innermost namespace RELOCATABLE_NAMESPACE?"""
+    return macro_name.name.rpartition('.')[0].rpartition('.')[2] == RELOCATABLE_NAMESPACE
 
-    THE TABLE is the maximal run of plain `a;b` ops after the `pad`, INCLUDING labels interleaved
-    among them, but with TRAILING labels trimmed off. Both halves of that rule are load-bearing,
-    and stl contains a counter-example to each:
 
-      * `hex.exact_xor` ends `... d3;switch+7*dw` / `end:` / `wflip src+w, switch`. `end:` names
-        the DISARM, which stays inline, so a trailing label must NOT be relocated -- otherwise
-        every table entry jumps into empty pool space.
+def relocatable_call(
+    preprocessor_data: PreprocessorData, ops: List[Op], pad_index: int, params_dict: Dict[str, Expr]
+) -> Optional[Tuple[int, int, Optional[str], Optional[Expr]]]:
+    """(the call's index, the table's ops, its group, the group's source-word Expr) if the op after the
+    `pad` at `ops[pad_index]` (labels aside) calls a relocatable table, else None. A table pool is on.
 
-      * `hex.cmp` ends `__lt: ;lt` / `__eq: jumper+dbit ;eq` / `__gt: jumper+dbit+1 ;gt`. Those
-        three are ONE table selected by flipping address bits of the jumper, so an interior label
-        MUST be relocated with it -- splitting them apart breaks the compare.
+    THE TABLE is one expansion of a macro whose innermost namespace is `__relocatable__`: its whole
+    expansion, which the pool may place anywhere (the pad gives its alignment). Its first argument is
+    the label of its start, which the arm and the dispatch use. A table breaking a rule the pool relies
+    on is a compilation error: its start label must be declared before its first op, it may hold only
+    labels and `a;b` ops, and nothing in it may use `$` (the next address - also a fall-through `dst;`),
+    as the op after a moved table is not the next address.
 
-    The run is refused when
-      * an entry has an EMPTY jump target (`dst;`, continue to the next address): `bit.exact_xor`
-        is that shape, and in the pool the next address is another table's slot;
-      * the pad is reached by falling into it rather than by a jump (the op before it is a `dst;`
-        or a `wflip` with no return address), since the pool is not the next address;
-      * the run ends at a `wflip` that is not the DISARM of the run's head label. A dispatch table
-        is armed and disarmed through one word (`wflip src+w, switch, src` ... `wflip src+w,
-        switch`); a `wflip` that installs anything else is an ENTRY of a multi-op table
-        (`hex.input_hex`'s `flip3: wflip stl.IO+w, flip3, end`, `hex.pointers.xor_hex_to_flip_ptr`'s
-        `after_flip_bit2: wflip to_flip, ..., cleanup`), and moving the plain ops before it away
-        from it breaks the table.
+    The group (see BlockPool) is the word the table is dispatched through: the word of the `wflip`
+    right after the call, labels aside, that disarms the table's start label.
     """
-    if not _reached_only_by_jump(ops, pad_index):
-        return None
-    head: Optional[str] = None
-    last_flipjump = None
-    count = 0
-    source_word: Optional[Expr] = None
-    # (indexed, not `enumerate(ops[pad_index + 1:])`: that copied the rest of the list - the whole
-    # remaining top level, millions of ops, for every top-level pad)
-    for offset in range(pad_index + 1, len(ops)):
-        op = ops[offset]
-        if isinstance(op, FlipJump):
-            if _falls_through(op):
-                return None
-            last_flipjump = offset
-            count += 1
-        elif isinstance(op, Label):
-            if count == 0 and head is None:
-                head = op.name
-        else:
-            if isinstance(op, WordFlip):
-                # the disarm names the head label; its word is the jump word the table is
-                # dispatched through, and that word's EXPRESSION (the address is unknown this
-                # early) groups the tables that share a word (see BlockPool)
-                if head is None or not _same_local_label(op.flip_value, head):
-                    return None
-                source_word = op.word_address
-            break
-    if last_flipjump is None:
-        return None
-    return last_flipjump, count, source_word
-
-
-def _same_local_label(value: Expr, label: str) -> bool:
-    """does `value` name `label`? a macro body's labels are parsed namespaced (`hex.switch`) while
-    a reference to one is the bare local name (`switch`), so the local part is what is compared"""
-    return isinstance(value.value, str) and value.value.rpartition('.')[2] == label.rpartition('.')[2]
-
-
-def _falls_through(op: Op) -> bool:
-    """does control leave `op` by falling to the next address? (`dst;`, or a `wflip` with no
-    return address)"""
-    if isinstance(op, FlipJump):
-        return '$' in op.jump.all_unknown_labels()
-    if isinstance(op, WordFlip):
-        return '$' in op.return_address.all_unknown_labels()
-    return False
-
-
-def _reached_only_by_jump(ops: List[Op], pad_index: int) -> bool:
-    """is the pad at `ops[pad_index]` preceded by an op that jumps away? labels in between do not
-    count, and a pad that opens the macro body is reached from whatever came before the call"""
-    for index in range(pad_index - 1, -1, -1):  # (not `reversed(ops[:pad_index])`, which copied the prefix)
+    for index in range(pad_index + 1, len(ops)):
         op = ops[index]
         if isinstance(op, Label):
             continue
-        return not _falls_through(op) and isinstance(op, (FlipJump, WordFlip))
-    return False
+        if not isinstance(op, MacroCall) or not is_relocatable(op.macro_name):
+            return None
+        break
+    else:
+        return None
+    call = op.eval_new(params_dict)
+    macro = preprocessor_data.macros.get(call.macro_name)
+    if macro is None:
+        return None  # the expansion says so
+    table_ops = _relocatable_table_ops(preprocessor_data, macro, call)
+    group: Optional[str] = None
+    group_expr: Optional[Expr] = None
+    for after in range(index + 1, len(ops)):
+        disarm = ops[after]
+        if isinstance(disarm, Label):
+            continue
+        if isinstance(disarm, WordFlip) and disarm.flip_value.eval_new(params_dict).value == call.arguments[0].value:
+            # bind the macro's parameters (`src + w` names the caller's variable); unknown labels
+            # stay as names, so two sites on the same variable compare equal
+            group_expr = disarm.word_address.eval_new(params_dict)
+            group = str(group_expr)
+        break
+    return index, table_ops, group, group_expr
+
+
+def _relocatable_table_ops(preprocessor_data: PreprocessorData, macro: Macro, call: MacroCall) -> int:
+    """the number of ops the relocatable `call` expands, or a compilation error (see relocatable_call)"""
+
+    def refuse(message: str) -> NoReturn:
+        macro_resolve_error(
+            preprocessor_data.curr_tree,
+            f'the relocatable table {call.macro_name} (called at {call.code_position}) {message}',
+        )
+
+    if not macro.params or not call.arguments or not isinstance(call.arguments[0].value, str):
+        refuse("needs its start label as its first argument")
+    start = macro.params[0]
+    started = False
+    table_ops = 0
+    for op in macro.ops:
+        if isinstance(op, Label):
+            started = started or op.name.rpartition('.')[2] == start
+        elif isinstance(op, FlipJump):
+            if not started:
+                refuse(f'must declare its start label ({start}, its first parameter) before its first op')
+            if '$' in op.flip.all_unknown_labels() or '$' in op.jump.all_unknown_labels():
+                refuse(f'uses `$` in {op} (a `dst;` falls through to `$`): a moved table has no next address')
+            table_ops += 1
+        else:
+            refuse(f'may hold only labels and `a;b` ops, not {op}')
+    if not table_ops:
+        refuse('holds no op')
+    return table_ops
 
 
 def resolve_macro_aux(
@@ -783,8 +723,8 @@ def resolve_macro_aux(
     @param labels_prefix: The prefix for all labels defined in this macro
     """
     init_curr_address = preprocessor_data.curr_address
-    relocated = False
-    table_end = -1
+    table_call = -1  # (a table pool is on) the relocatable call the last `pad` aligns
+    relocated_call = -1  # ...if its table is being moved
     current_macro = preprocessor_data.macros[macro_name]
     if preprocessor_data.table_pool is not None and macro_name.name in RAW_READERS:
         preprocessor_data.table_pool.reads_words_raw = True
@@ -794,7 +734,7 @@ def resolve_macro_aux(
 
     # when the caller gave the tree away (consume_main), the top level's ops are dropped as the expansion
     # passes them. What is kept: the last non-label op already expanded and everything after it, which
-    # is all a `pad` looks back at (_reached_only_by_jump) or forward to (relocatable_table_end).
+    # is all a `pad` looks forward to (relocatable_call).
     ops = current_macro.ops
     consume = preprocessor_data.consume_main and macro_name is INITIAL_MACRO_NAME
     released_up_to = 0  # ops[:released_up_to] are None
@@ -808,12 +748,6 @@ def resolve_macro_aux(
                 released_up_to = last_non_label
             if not isinstance(op, Label):
                 last_non_label = op_index
-        # a relocated table ends at its last `a;b` op (see relocatable_table_end); everything after
-        # it - `exact_xor`'s `end:` label and its disarm wflip - belongs to the inline stream
-        if relocated and op_index > table_end:
-            preprocessor_data.end_relocation()
-            relocated = False
-
         if isinstance(op, Label):
             preprocessor_data.insert_label(op.eval_name(params_dict), op.code_position)
 
@@ -834,35 +768,27 @@ def resolve_macro_aux(
         elif isinstance(op, Pad):
             op = op.eval_new(params_dict)
             ops_alignment = get_pad_ops_alignment(op, preprocessor_data)
-            # a `pad` marks a lookup table: reached only by jump, so instead of aligning here it may
-            # be emitted at a pool address, and the interrupted stream resumes after it (TablePool)
-            found = preprocessor_data.table_end(current_macro, op_index)
-            group = None
-            group_expr: Optional[Expr] = None
-            if found is not None and found[2] is not None:
-                # bind the macro's parameters (`src + w` names the caller's variable); unknown
-                # labels stay as names, so two sites on the same variable compare equal
-                group_expr = found[2].eval_new(params_dict)
-                group = str(group_expr)
-            if (
-                not relocated
-                and found is not None
-                and preprocessor_data.begin_relocation(
-                    macro_name,
-                    ops_alignment,
-                    found[1],
-                    labels_prefix,
-                    group,
-                    group_expr,
-                    table_source=(current_macro, op_index, found[0]),
-                )
+            # a `pad` right before a relocatable call aligns a declared table: with a table pool it may be
+            # emitted at a pool address instead, and the interrupted stream resumes after the call
+            table = None
+            if preprocessor_data.table_pool is not None:
+                table = relocatable_call(preprocessor_data, ops, op_index, params_dict)
+            if table is not None:
+                table_call = table[0]
+            if table is not None and preprocessor_data.begin_relocation(
+                ops_alignment, table[1], labels_prefix, table[2], table[3]
             ):
-                table_end = found[0]
-                relocated = True
+                relocated_call = table_call
             else:
                 preprocessor_data.align_current_address(ops_alignment)
 
         elif isinstance(op, MacroCall):
+            if preprocessor_data.table_pool is not None and op_index != table_call and is_relocatable(op.macro_name):
+                macro_resolve_error(
+                    preprocessor_data.curr_tree,
+                    f'the relocatable table {op.macro_name} (called at {op.code_position}) needs a `pad` right '
+                    f'before its call: the pool places it at that alignment',
+                )
             op = op.eval_new(params_dict)
             next_macro_path = (
                 f"{labels_prefix}{MACRO_SEPARATOR_STRING}" if labels_prefix else ""
@@ -874,8 +800,16 @@ def resolve_macro_aux(
                 resolve_macro_aux(preprocessor_data, op.macro_name, op.arguments, next_macro_path)
             if progress_slice is not None:
                 preprocessor_data.progress_slice = progress_slice
+            if op_index == relocated_call:
+                preprocessor_data.end_relocation()
 
         elif isinstance(op, RepCall):
+            if preprocessor_data.table_pool is not None and is_relocatable(op.macro_name):
+                macro_resolve_error(
+                    preprocessor_data.curr_tree,
+                    f'the relocatable table {op.macro_name} (called at {op.code_position}) is called by rep: '
+                    f'each table needs its own `pad` right before its call',
+                )
             # Make the rep iterator hygienic: rename it (and its references in the rep's arguments)
             # to a per-expansion-unique name BEFORE substituting params/@-labels, so a caller label
             # named like the iterator (e.g. `d`, `i`) can't be captured by it. The `:rep:` marker
@@ -918,9 +852,6 @@ def resolve_macro_aux(
         else:
             macro_resolve_error(preprocessor_data.curr_tree, f"Can't assemble this opcode - {str(op)}")
 
-    if relocated:
-        preprocessor_data.end_relocation()
-
     preprocessor_data.register_macro_code_size(labels_prefix, init_curr_address)
 
 
@@ -943,9 +874,9 @@ def resolve_macros(
     @param show_statistics: if True then prints the macro-usage statistics
     @param max_recursion_depth: The compiler supports macros that recursively uses other macros,
     up to the specified recursion depth.
-    @param table_pool: if given, relocate the lookup tables it wants to low-popcount addresses.
-    See TablePool -- a table is reached only by jump, so its address is free to choose, and that
-    address is what the arming wflip pays for on every call.
+    @param table_pool: if given, relocate the declared tables (see relocatable_call) to low-popcount
+    addresses. See TablePool -- a table is reached only by jump, so its address is free to choose, and
+    that address is what the arming wflip pays for on every call.
     @param save_debug_labels: record the per-expansion `...---:start:` macro-start labels. They are
     unreachable from fj source (see PreprocessorData.insert_macro_start_label), so a caller that is
     not writing a debugging file can pass False. It cannot change the emitted .fjm.

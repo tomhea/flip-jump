@@ -23,7 +23,7 @@ from typing import Any, Callable, Collection, Dict, Iterator, List, Mapping, Opt
 
 from flipjump.utils.exceptions import FlipJumpAssemblerException, FlipJumpExprException, FlipJumpPreprocessorException
 from flipjump.assembler.inner_classes.expr import Expr
-from flipjump.assembler.inner_classes.ops import MacroName, NewSegment
+from flipjump.assembler.inner_classes.ops import NewSegment
 
 LabelsDict = Dict[str, int]
 
@@ -60,11 +60,10 @@ def heat_key(path: str) -> str:
 #   'no_block'       - the group is counted, but the pool had no room for its block (or evicted it).
 #                      Counts that are too BIG cause it as well: they inflate the blocks.
 #   'too_wide'       - the table is wider than any slot `max_slot_ops` allows
-#   'next_address'   - (one pass) an entry computes an address from `$`, so the table stays inline
 # Neither list tells whether the counts were stale - counts with room to spare decline nothing and
 # still size the blocks differently. That test is `pool.census() == the census it was given`.
 DECLINE_STALE = ('new_group', 'width_overflow', 'overflow')
-DECLINE_OTHER = ('no_block', 'too_wide', 'next_address')
+DECLINE_OTHER = ('no_block', 'too_wide')
 
 
 @dataclasses.dataclass
@@ -146,7 +145,6 @@ def merge_aliased_groups(
 # BlockPool.defer's verdicts on a table the expansion reached (one pass)
 DEFER_OUT = 'out'  # it leaves the op stream, and is placed once the expansion is done
 DEFER_TOO_WIDE = 'too_wide'  # it stays inline - no slot can hold it - and is declined in its turn
-DEFER_NEXT_ADDRESS = 'next_address'  # it stays inline - an entry uses `$` - and is declined in its turn
 DEFER_INLINE = 'inline'  # it stays inline and is never offered again: it has no group
 
 
@@ -155,8 +153,8 @@ class DeferredTables:
 
     A table that LEFT the op stream has its ops in the preprocessor's pool stream already, behind a
     NewSegment whose address is filled in once it is placed (`segments`); its labels wait here as
-    bit offsets from its start. A table that stayed inline (too wide for any slot, or an entry uses
-    `$`) is queued only so the pool can decline it in its turn (`inline`: index -> cause).
+    bit offsets from its start. A table that stayed inline (too wide for any slot) is queued only so
+    the pool can decline it in its turn (`inline`: index -> cause).
 
     ~43 bytes a table: parallel arrays, not an object per table (a big program queues hundreds of
     thousands of tables). A kept site path is the interned heat key, or for a subclass that overrides
@@ -185,7 +183,7 @@ class DeferredTables:
         self.segments: List[Optional[NewSegment]] = []  # None for a table that stayed inline
         self.sites: List[str] = []  # kept only when `keeps_sites` (see BlockPool.keeps_site_paths)
         self.keeps_sites = keeps_sites
-        self.inline: Dict[int, str] = {}  # index -> DEFER_TOO_WIDE / DEFER_NEXT_ADDRESS
+        self.inline: Dict[int, str] = {}  # index -> DEFER_TOO_WIDE
         self.label_names: List[str] = []  # the deferred labels, table after table
         self.label_offsets = array('I')  # ...each one's bit offset inside its table
         self.label_ends = array('I')  # table i's labels are label_names[label_ends[i-1]:label_ends[i]]
@@ -271,7 +269,6 @@ class TablePool:
         run_ops: int = 256,
         capacity: Optional[int] = None,
         span_bits: Optional[int] = None,
-        wants: Optional[Callable[[MacroName, str], bool]] = None,
     ):
         """
         @param memory_width: the memory-width
@@ -283,7 +280,6 @@ class TablePool:
         @param span_bits: how far above pool_base the pool may reach (None = to the top of memory).
         Worth setting: offsets are handed out cheapest-popcount-first, so an unbounded pool scatters
         to the top of the address space and the .fjm's span approaches 2^w while its data stays small.
-        @param wants: given (macro name, call-site macro path), whether that table is relocated
         """
         self.memory_width = memory_width
         self.op_bits = 2 * memory_width
@@ -293,7 +289,6 @@ class TablePool:
         self.pool_base = pool_base
         self.capacity = capacity
         self.span_bits = span_bits
-        self._wants = wants
         # `pin_exclude(address, labels) -> bool` lets the caller veto pinning a word it owns (see
         # assembler.resolve_pinned); a plain pool pins nothing, so both only matter for BlockPool
         self.pin_exclude: Optional[Callable[[int, LabelsDict], bool]] = None
@@ -329,14 +324,9 @@ class TablePool:
                 ripple = offset + lowest
                 offset = ripple | (((offset ^ ripple) >> 2) // lowest)
 
-    def wants(self, macro_name: MacroName, labels_prefix: str = '') -> bool:
-        """`labels_prefix` is the full macro-expansion path, i.e. the CALL SITE -- so a caller can
-        relocate the hot sites a profile named rather than every expansion of a macro. Cheap
-        addresses are finite, and spending them on cold tables is how a placement pass ends up
-        costing more than it saves."""
-        if self.capacity is not None and self.allocated >= self.capacity:
-            return False
-        return True if self._wants is None else self._wants(macro_name, labels_prefix)
+    def has_room(self) -> bool:
+        """False once `capacity` tables were relocated"""
+        return self.capacity is None or self.allocated < self.capacity
 
     def reserve(
         self,
@@ -485,9 +475,8 @@ class BlockPool(TablePool):
     The op stream then never depends on placement: a table that gets no block goes to an OVERFLOW
     region right after the blocks and inside the pool's span (`overflow_base` moves it), never
     inline, in the order the expansion reached them - so code appended later never moves an earlier
-    one. Two kinds of table stay inline, decided at their pad and declined in their turn: one too
-    wide for any slot (as in the two-pass build), and one whose entries compute an address from `$`,
-    which is unknown while they expand ('next_address'; no stl table does this).
+    one. A table too wide for any slot stays inline, decided at its pad and declined in its turn (as
+    in the two-pass build).
 
     Given the same counts, one pass decides every table exactly as the placing pass of the two-pass
     build, and the binaries are identical - EXCEPT where (a) the pool lacks room for a block: the
@@ -497,10 +486,9 @@ class BlockPool(TablePool):
     in the overflow region (their power-of-two or spread padding: _choose_unblocked) - which can be
     more tables than the two-pass build leaves inline or, where spread pads the blocks, fewer - and
     lays out exactly that plan (so `evict_by_value` drops nothing more), while a pool given counts,
-    or an overflow_base, drops what the two-pass build drops, to the overflow region; (b) an
-    entry uses `$`: the two-pass build places that table; (c) with merge_aliases, a group's word
-    names a deferred table's label: that alias is unknown when the blocks are sized
-    (`alias_unresolved`); or (d) the counts given were stale: every table they decline stays
+    or an overflow_base, drops what the two-pass build drops, to the overflow region; (b) with
+    merge_aliases, a group's word names a deferred table's label: that alias is unknown when the
+    blocks are sized (`alias_unresolved`); or (c) the counts given were stale: every table they decline stays
     inline in the two-pass build and overflows here. The debugging file lists a deferred table's
     labels after the others; the label addresses, and the debugger's address -> label choice, are
     the same.
@@ -521,7 +509,7 @@ class BlockPool(TablePool):
 
     A subclass sees every table in `defer`, at its pad, with its site path. `reserve` is called at
     placement, in encounter order, for the tables that left the stream or stayed inline as too wide
-    (not for ungrouped or `$` ones): with the full site path when the subclass overrides `reserve`,
+    (not for ungrouped ones): with the full site path when the subclass overrides `reserve`,
     with just its heat key when only pin protection reads it, else with '' (see kept_site).
 
     PIN PROTECTION (`heat`, opt-in). Two things re-roll a hot word's cost when the program changes:
@@ -550,7 +538,6 @@ class BlockPool(TablePool):
         pin_broken: bool = False,
         width_hist: Optional[Dict[str, Dict[int, int]]] = None,
         width_buckets: bool = False,
-        wants: Optional[Callable[[MacroName, str], bool]] = None,
         heat: Optional[Mapping[str, Sequence[Tuple[str, int, int]]]] = None,
         one_pass: bool = False,
         merge_aliases: bool = False,
@@ -558,7 +545,7 @@ class BlockPool(TablePool):
         unblocked: Optional[Sequence[str]] = None,
     ):
         """
-        (see TablePool for memory_width, pool_base, span_bits and wants, and the class docstring)
+        (see TablePool for memory_width, pool_base and span_bits, and the class docstring)
         @param counts: tables per group. None makes a COUNTING pool - or, with one_pass, sizes the
         blocks from the very expansion it places.
         @param one_pass: ONE expansion (see the class docstring): tables wait out of the op stream
@@ -588,7 +575,7 @@ class BlockPool(TablePool):
             raise ValueError('overflow_base: the program starts at 0, the overflow region must be above it')
         if unblocked and counts is None:
             raise ValueError('unblocked: only a pool given counts leaves groups of them without a block')
-        super().__init__(memory_width, pool_base, run_ops=16, span_bits=span_bits, wants=wants)
+        super().__init__(memory_width, pool_base, run_ops=16, span_bits=span_bits)
         self.counts = {} if counts is None else dict(counts)
         # a slot must hold the BIGGEST table of its group (`hex.cmp`'s is 31 ops behind a `pad 4`),
         # so the counting pass records each group's widest table, keyed like `counts`
@@ -618,7 +605,6 @@ class BlockPool(TablePool):
         self.deferred = 0  # tables taken out of the op stream (one_pass)
         self.overflowed = 0  # ...placed in the overflow region, having got no block
         self.overflow_tables: List[Tuple[int, int]] = []  # ...each one's (address, ops_alignment)
-        self.kept_inline = 0  # ...left inline: an entry computes an address from `$`
         self.alias_unresolved = 0  # one pass, merge_aliases: group words unknown when it was sized
         # the groups left without a block on purpose: given, or (one pass, sized from its census) the
         # ones left out to make room for the overflow region and the ones there was no room for
@@ -644,7 +630,6 @@ class BlockPool(TablePool):
                 max_slot_ops=max_slot_ops,
                 spread=spread,
                 spread_min_count=spread_min_count,
-                wants=wants,
             )
         )
         # the alias the labels of this pool's own assembly imply (labels_resolved), for census()
@@ -653,7 +638,6 @@ class BlockPool(TablePool):
         self.declined_no_block = 0  # its group got no block at all: pool exhausted, or a group the counts lack
         self.declined_too_wide = 0  # wider than its slot: than max_slot_ops allows, or than the counts said
         self.declined_overflow = 0  # more tables in the group than the counting pass saw
-        self.declined_next_address = 0  # (one pass) an entry uses `$`: it stays inline
         # ...and by group: {group: {cause: tables}}, the causes of DECLINE_STALE and DECLINE_OTHER
         self.declines_by_group: Dict[str, Dict[str, int]] = {}
         # opt-in: when the pool cannot hold every block, drop the least valuable groups (tables per
@@ -1071,9 +1055,6 @@ class BlockPool(TablePool):
         elif cause == 'overflow':
             self.declined_overflow += 1
             self.broken_groups.add(group)
-        elif cause == 'next_address':
-            self.declined_next_address += 1
-            self.broken_groups.add(group)
         else:
             raise ValueError(f'unknown decline cause {cause!r}')
 
@@ -1183,27 +1164,21 @@ class BlockPool(TablePool):
         group: Optional[str],
         group_expr: Optional[Expr],
         labels_prefix: str = '',
-        *,
-        can_defer: bool = True,
     ) -> str:
         """one_pass: what becomes of a table the expansion reached, at its pad (DEFER_OUT,
-        DEFER_TOO_WIDE, DEFER_NEXT_ADDRESS or DEFER_INLINE). It is recorded first (census), exactly
+        DEFER_TOO_WIDE or DEFER_INLINE). It is recorded first (census), exactly
         as a counting pass counts it. This is the hook a subclass overrides to see every table at
         its pad, in order, with its site path.
 
-        A table with no group cannot be blocked and stays inline, as in the two-pass mode. Two more
-        stay inline but are queued, so place_deferred declines them in their turn (pin protection
-        counts a hot group's tables in that order): one wider than any slot max_slot_ops allows -
-        declined whatever the counts, exactly as a placing pass declines it at its pad - and one
-        the caller cannot defer (`can_defer`: an entry computes an address from `$`).
+        A table with no group cannot be blocked and stays inline, as in the two-pass mode. One wider
+        than any slot max_slot_ops allows stays inline too but is queued, so place_deferred declines it
+        in its turn (pin protection counts a hot group's tables in that order) - whatever the counts,
+        exactly as a placing pass declines it at its pad.
         """
         self.recording.reserve(ops_alignment, table_ops, group, group_expr, labels_prefix)
         if group is None:
             self.ungrouped += 1
             return DEFER_INLINE
-        if not can_defer:
-            self.kept_inline += 1
-            return DEFER_NEXT_ADDRESS
         if self._width_cause(max(table_ops, ops_alignment, 1)) == 'too_wide':
             return DEFER_TOO_WIDE
         self.deferred += 1
@@ -1249,9 +1224,6 @@ class BlockPool(TablePool):
         addresses = array('Q', bytes(8 * len(tables)))  # 0: it stayed inline
         overflow: List[Tuple[int, int, int]] = []  # (index, ops_alignment, table_ops), encounter order
         for index, group, group_expr, ops_alignment, table_ops, site, inline_cause in tables:
-            if inline_cause == DEFER_NEXT_ADDRESS:
-                self._decline_next_address(group, site)
-                continue
             reserved = self.reserve(ops_alignment, table_ops, group, group_expr, site)
             if inline_cause is not None:  # too wide: reserve() declines it, exactly as at its pad
                 if reserved is not None:  # defer() and reserve() disagree on what is too wide
@@ -1265,14 +1237,6 @@ class BlockPool(TablePool):
         for index, address in self._place_overflow(overflow):
             addresses[index] = address
         return addresses
-
-    def _decline_next_address(self, group: str, site: str) -> None:
-        """a table whose entries use `$` stayed inline: decline it in its turn, as reserve() declines
-        a table at its pad - a hot group counts it among its sites first (see _hot_site)"""
-        group = self.alias.get(group, group)
-        if group in self.hot_sites:
-            self._hot_site(group, site)
-        self._decline(group, 'next_address')
 
     def _choose_unblocked(self, tables: DeferredTables) -> List[str]:
         """The groups to leave without a block so that the blocks AND the overflow region - every
