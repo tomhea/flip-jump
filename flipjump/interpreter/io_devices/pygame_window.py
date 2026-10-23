@@ -43,6 +43,20 @@ from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO, KeyEventSourc
 from flipjump.interpreter.io_devices.ScreenIO import FORMAT_RGB, InMemoryScreen, rgb_of
 from flipjump.utils.exceptions import IODeviceException
 
+# the >=0x80 keycodes (io_devices/README.md, "Keycodes")
+KEYCODE_LEFT_CTRL = 0x80
+KEYCODE_LEFT_SHIFT = 0x81
+KEYCODE_LEFT_ALT = 0x82
+KEYCODE_LEFT_GUI = 0x83
+KEYCODE_RIGHT_CTRL = 0x84
+KEYCODE_RIGHT_SHIFT = 0x85
+KEYCODE_RIGHT_ALT = 0x86
+KEYCODE_RIGHT_GUI = 0x87
+KEYCODE_RIGHT = 0xD7
+KEYCODE_LEFT = 0xD8
+KEYCODE_DOWN = 0xD9
+KEYCODE_UP = 0xDA
+
 # SDL2 gives a key with a character its ASCII code, and every other key its USB HID usage ID (SDL's
 # "scancode") with bit 30 set. pygame's event.key is that SDL keycode.
 SDL_SCANCODE_KEY = 1 << 30
@@ -58,14 +72,14 @@ KEYCODES: Dict[int, int] = {
     **{code: code for code in range(0x20, 0x7F) if not ord('A') <= code <= ord('Z')},
     0x7F: HID_KEYCODE_BASE + 0x4C,  # Delete: SDL gives it ASCII DEL; the table's Delete is HID 0x4C (0xD4)
     # the modifiers, HID 0xE0-0xE7 -> 0x80-0x87
-    SDL_SCANCODE_KEY | 0xE0: 0x80,  # Left Ctrl
-    SDL_SCANCODE_KEY | 0xE1: 0x81,  # Left Shift
-    SDL_SCANCODE_KEY | 0xE2: 0x82,  # Left Alt
-    SDL_SCANCODE_KEY | 0xE3: 0x83,  # Left GUI (Windows / Command)
-    SDL_SCANCODE_KEY | 0xE4: 0x84,  # Right Ctrl
-    SDL_SCANCODE_KEY | 0xE5: 0x85,  # Right Shift
-    SDL_SCANCODE_KEY | 0xE6: 0x86,  # Right Alt
-    SDL_SCANCODE_KEY | 0xE7: 0x87,  # Right GUI
+    SDL_SCANCODE_KEY | 0xE0: KEYCODE_LEFT_CTRL,
+    SDL_SCANCODE_KEY | 0xE1: KEYCODE_LEFT_SHIFT,
+    SDL_SCANCODE_KEY | 0xE2: KEYCODE_LEFT_ALT,
+    SDL_SCANCODE_KEY | 0xE3: KEYCODE_LEFT_GUI,  # Windows / Command
+    SDL_SCANCODE_KEY | 0xE4: KEYCODE_RIGHT_CTRL,
+    SDL_SCANCODE_KEY | 0xE5: KEYCODE_RIGHT_SHIFT,
+    SDL_SCANCODE_KEY | 0xE6: KEYCODE_RIGHT_ALT,
+    SDL_SCANCODE_KEY | 0xE7: KEYCODE_RIGHT_GUI,
     # 0x88 + HID: Caps Lock (0x39), F1-F12 (0x3A-0x45), Print Screen, Scroll Lock, Pause (0x46-0x48),
     # Insert, Home, Page Up (0x49-0x4B), End, Page Down (0x4D, 0x4E; Delete is 0x7F above),
     # Right, Left, Down, Up (0x4F-0x52), Num Lock (0x53), keypad / * - + Enter (0x54-0x58),

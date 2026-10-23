@@ -12,11 +12,13 @@ from pathlib import Path
 from typing import List, Set, Tuple
 
 from flipjump.interpreter.io_devices.KeyboardIO import (
-    KEYCODE_BACKSPACE,
+    KeyEvent,
+    KeyboardIO,
+    ScriptedKeyEventSource,
+)
+from flipjump.interpreter.io_devices.pygame_window import (
+    HID_KEYCODE_BASE,
     KEYCODE_DOWN,
-    KEYCODE_ENTER,
-    KEYCODE_ESC,
-    KEYCODE_HID_BASE,
     KEYCODE_LEFT,
     KEYCODE_LEFT_ALT,
     KEYCODE_LEFT_CTRL,
@@ -27,12 +29,8 @@ from flipjump.interpreter.io_devices.KeyboardIO import (
     KEYCODE_RIGHT_CTRL,
     KEYCODE_RIGHT_GUI,
     KEYCODE_RIGHT_SHIFT,
-    KEYCODE_SPACE,
-    KEYCODE_TAB,
     KEYCODE_UP,
-    KeyEvent,
-    KeyboardIO,
-    ScriptedKeyEventSource,
+    KEYCODES,
 )
 
 
@@ -122,8 +120,6 @@ def test_the_readme_table_parses() -> None:
 def test_the_window_key_table_delivers_exactly_the_readmes_codes() -> None:
     """KEYCODES (pygame_window, the one table) against the README: every code the README lists is
     delivered by some key, nothing else is - except 'A'-'Z', which no key sends (letters are lowercase)."""
-    from flipjump.interpreter.io_devices.pygame_window import KEYCODES
-
     readme_codes = set().union(*(codes for codes, _ in readme_keycode_rows()))
     assert set(KEYCODES.values()) == readme_codes - set(range(ord('A'), ord('Z') + 1))
     assert len(set(KEYCODES.values())) == len(KEYCODES)  # one key per code
@@ -131,17 +127,14 @@ def test_the_window_key_table_delivers_exactly_the_readmes_codes() -> None:
 
 def test_control_a_moved_code_breaks_the_table_check() -> None:
     """the negative control: the check above must reject a table with one key moved (Up at 0xDB)"""
-    from flipjump.interpreter.io_devices.pygame_window import KEYCODES
-
     moved = {key: (0xDB if code == 0xDA else code) for key, code in KEYCODES.items()}
     readme_codes = set().union(*(codes for codes, _ in readme_keycode_rows()))
     assert set(moved.values()) != readme_codes - set(range(ord('A'), ord('Z') + 1))
 
 
 def test_the_named_keycodes_are_the_readmes() -> None:
-    assert (KEYCODE_BACKSPACE, KEYCODE_TAB, KEYCODE_ENTER, KEYCODE_ESC, KEYCODE_SPACE) == (8, 9, 13, 27, 32)
     modifiers = [KEYCODE_LEFT_CTRL, KEYCODE_LEFT_SHIFT, KEYCODE_LEFT_ALT, KEYCODE_LEFT_GUI]
     modifiers += [KEYCODE_RIGHT_CTRL, KEYCODE_RIGHT_SHIFT, KEYCODE_RIGHT_ALT, KEYCODE_RIGHT_GUI]
     assert modifiers == list(range(0x80, 0x88))
     assert (KEYCODE_RIGHT, KEYCODE_LEFT, KEYCODE_DOWN, KEYCODE_UP) == (0xD7, 0xD8, 0xD9, 0xDA)
-    assert KEYCODE_UP == KEYCODE_HID_BASE + 0x52  # HID usage 0x52 is Up Arrow
+    assert KEYCODE_UP == HID_KEYCODE_BASE + 0x52  # HID usage 0x52 is Up Arrow

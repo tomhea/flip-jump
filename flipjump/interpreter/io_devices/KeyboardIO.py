@@ -7,15 +7,7 @@ input bits over the regular input stream.
 
 the status hex: 0x0 = no event; 0x8 = a key was released; 0x9 = a key was pressed
 (bit 3 = event-present, bit 0 = is_down). on an event, the keycode byte follows through
-the input stream right after the status hex (read it with `hex.input`); it must be read, or
-every later poll is out of phase.
-
-the keycodes are io_devices/README.md's ("Keycodes"), the ones Arduino's Keyboard.h uses: ASCII
-below 0x80 for the key itself (letters lowercase, the digit row '0'-'9', Backspace 8, Tab 9,
-Enter 13, Esc 27, Space 32, punctuation unshifted), the modifiers at 0x80-0x87 (KEYCODE_LEFT_CTRL
-... KEYCODE_RIGHT_GUI below), and every other key in the README's table at 0x88 + its USB HID
-usage ID (e.g. the arrows: Right 0xD7, Left 0xD8, Down 0xD9, Up 0xDA). the live window's table
-from SDL keys to these codes is pygame_window.KEYCODES.
+the input stream right after the status hex (read it with `hex.input`).
 
 the event source is pluggable: ScriptedKeyEventSource replays a `tic, down/up, keycode`
 event file (deterministic replays), and pygame_window's WindowKeyEventSource reads live
@@ -28,25 +20,6 @@ from typing import Deque, List, NamedTuple, Optional, Tuple
 
 from flipjump.interpreter.io_devices.IODevice import IODevice
 from flipjump.utils.exceptions import IncompleteOutput, IODeviceException
-
-KEYCODE_BACKSPACE = 0x08
-KEYCODE_TAB = 0x09
-KEYCODE_ENTER = 0x0D
-KEYCODE_ESC = 0x1B
-KEYCODE_SPACE = 0x20
-KEYCODE_LEFT_CTRL = 0x80
-KEYCODE_LEFT_SHIFT = 0x81
-KEYCODE_LEFT_ALT = 0x82
-KEYCODE_LEFT_GUI = 0x83
-KEYCODE_RIGHT_CTRL = 0x84
-KEYCODE_RIGHT_SHIFT = 0x85
-KEYCODE_RIGHT_ALT = 0x86
-KEYCODE_RIGHT_GUI = 0x87
-KEYCODE_HID_BASE = 0x88  # a key outside ASCII and the modifiers: 0x88 + its USB HID usage ID
-KEYCODE_RIGHT = 0xD7
-KEYCODE_LEFT = 0xD8
-KEYCODE_DOWN = 0xD9
-KEYCODE_UP = 0xDA
 
 
 class KeyEvent(NamedTuple):
