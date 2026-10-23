@@ -99,6 +99,9 @@ Scripted input (tests, replays): a text file of `tic, down/up, keycode` lines (`
 `B` = the format's bits per colour. `init_screen` must come first; `0x02`, `0x06`, `0x07` exist only in indexed
 formats.
 
+The screen **never reads program memory**: every command carries its data in the output stream, so the device
+needs no memory hook.
+
 ### Formats (`init_screen`'s `format` = bits per colour)
 
 | `format` | Model | Colour | Default palette in slot 0 |
