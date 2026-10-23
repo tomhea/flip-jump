@@ -205,7 +205,8 @@ Each mode is one complete `IODevice` that owns all of its channels (and window, 
 Adding a new device (e.g. a windowed text console, or one that also
 drives speakers/printer) is one entry in `IO_MODES` (`io_devices/cli_devices.py`) plus its
 device class. Devices can also read the program's memory through the `DeviceMemory` hook
-(`IODevice.attach_memory`); the screen and keyboard protocols are [io_devices/README.md](flipjump/interpreter/io_devices/README.md). Headless /
+(`IODevice.attach_memory`); the screen and keyboard protocols are
+[io_devices/README.md](flipjump/interpreter/io_devices/README.md). Headless /
 scripted devices (a scripted keyboard + PNG frames, a plain `InMemoryScreen`, ...) are built
 programmatically and passed to `fjm_run.run(io_device=...)` - e.g. `PcIO.headless(events, dir)`.
 </details>

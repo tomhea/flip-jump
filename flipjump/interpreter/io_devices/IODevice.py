@@ -37,7 +37,7 @@ class IODevice(ABC):
         """
         called by the interpreter once, when a run ends by itself (looping, a null ip, end of input).
         a device whose protocol can be left unfinished (e.g. the screen, inside a command) raises its error here.
-        not called after Ctrl+C, a closed window, a memory error, or an error. the default does nothing.
+        not called after Ctrl+C, a closed window or a memory error, or when the run raised. the default does nothing.
         """
 
     @abstractmethod
