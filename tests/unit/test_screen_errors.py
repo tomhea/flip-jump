@@ -6,6 +6,8 @@ pixel) and why (the field, its value, the values it allows).
 Every test here is a negative control in its own right: a stream the device must reject.
 """
 
+from typing import Optional
+
 import pytest
 
 from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
@@ -15,7 +17,7 @@ from tests.unit import screen_stream as ss
 COMMANDS = 'commands: 0x01-0x07, 0x10, 0x11, 0x1F'
 
 
-def rejected(stream: bytes, device: InMemoryScreen = None) -> str:  # type: ignore[assignment]
+def rejected(stream: bytes, device: Optional[InMemoryScreen] = None) -> str:
     device = device if device is not None else InMemoryScreen()
     with pytest.raises(IODeviceException) as failure:
         ss.feed(device, stream)

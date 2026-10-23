@@ -9,6 +9,7 @@ row of the README's table) are in test_screen_errors.py; draw_collines in test_s
 
 import hashlib
 import struct
+import zlib
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple, Union
 
@@ -28,8 +29,8 @@ from tests.unit import screen_stream as ss
 BLACK, WHITE = (0, 0, 0), (255, 255, 255)
 
 
-def screen_after(stream: bytes, **kwargs) -> InMemoryScreen:  # type: ignore[no-untyped-def]
-    device = InMemoryScreen(**kwargs)
+def screen_after(stream: bytes, frames_dir: Optional[Path] = None) -> InMemoryScreen:
+    device = InMemoryScreen(frames_dir=frames_dir)
     ss.feed(device, stream)
     return device
 
@@ -556,9 +557,7 @@ def test_last_frame_rgb_is_a_snapshot_not_a_live_view() -> None:
     assert device.last_frame_rgb == [WHITE, WHITE]
 
 
-def test_the_png_holds_the_presented_rgb(tmp_path: Path) -> None:
-    import zlib
-
+def test_png_pixels_decode_correctly(tmp_path: Path) -> None:
     device = screen_after(ss.init_screen(3, 2, 24) + bytes([0x10, *range(18)]) + ss.PRESENT, frames_dir=tmp_path)
     png = (tmp_path / 'frame_000000.png').read_bytes()
     width, height = struct.unpack('>II', png[16:24])
