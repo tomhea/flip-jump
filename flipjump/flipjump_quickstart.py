@@ -5,6 +5,7 @@ run_test_output, and the combined assemble_and_run / assemble_and_debug /
 assemble_and_run_test_output helpers.
 """
 
+import lzma
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import List, Optional, Set
@@ -42,7 +43,7 @@ def assemble(
     show_statistics: bool = False,
     print_time: bool = True,
     max_recursion_depth: int = DEFAULT_MAX_MACRO_RECURSION_DEPTH,
-    lzma_fast: bool = False,
+    lzma_preset: int = lzma.PRESET_DEFAULT,
     defines_file: Optional[Path] = None,
     table_pool: Optional[TablePool] = None,
     run_flags: int = 0,
@@ -63,8 +64,7 @@ def assemble(
     up to the specified recursion depth.
     :param defines_file: a .fj file whose constants OVERRIDE the declarations in fj_file_paths
     (the API form of the CLI's -D). It is parsed before the stl.
-    :param lzma_fast: compress the .fjm with the fast match finder. Encoder-only, so the result is
-    readable by any reader; much faster to write, ~33% larger on disk.
+    :param lzma_preset: the preset used to compress a version-3 .fjm (0-9, faster->smaller).
 
     :param table_pool: if given, relocate lookup tables to low-popcount addresses.
     See assembler.preprocessor.TablePool.
@@ -80,7 +80,7 @@ def assemble(
         # stl computes from it. Without this line the parameter is accepted and ignored.
         file_tuples.insert(0, ('d1', defines_file))
     fjm_writer = Writer(
-        output_fjm_path, memory_width, fjm_version, lzma_fast=lzma_fast, run_flags=run_flags, io_mode=io_mode
+        output_fjm_path, memory_width, fjm_version, lzma_preset=lzma_preset, run_flags=run_flags, io_mode=io_mode
     )
     assembler.assemble(
         file_tuples,
