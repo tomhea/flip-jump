@@ -1,8 +1,7 @@
 """
 end-to-end tests for the io-devices: an .fj program drives the InMemoryScreen over the output
-stream with io_devices/README.md's commands (golden frame-hash + PNG output), a scripted keyboard
-replays deterministically into an .fj polling loop, and the complete PcIO device (screen + keyboard
-together) runs a program.
+stream (golden frame-hash + PNG output), a scripted keyboard replays deterministically into
+an .fj polling loop, and the complete PcIO device (screen + keyboard together) runs a program.
 """
 
 import contextlib
@@ -100,7 +99,8 @@ def test_fj_program_drives_the_screen(tmp_path: Path, engine: str) -> None:
     assert screen.frame_count == 1
     assert screen.frame_hashes[0][1] == EXPECTED_FRAME_HASH
     assert (frames_dir / 'frame_000000.png').exists()
-    assert screen.last_frame_rgb[:2] == [(10, 20, 30), (200, 100, 0)]
+    assert screen.last_frame_rgb[0] == (10, 20, 30)
+    assert screen.last_frame_rgb[1] == (200, 100, 0)
     assert screen.get_output() == b''  # the output ended between commands
 
 
@@ -116,11 +116,11 @@ def test_fj_program_packs_3_bit_colours(tmp_path: Path, engine: str) -> None:
 def test_control_a_bad_stream_stops_the_run(tmp_path: Path, engine: str) -> None:
     fjm_path = assemble_to_path(BAD_SCREEN_PROGRAM, tmp_path, use_stl=True)
     screen = InMemoryScreen()
-    # the engines report the device's error differently (the native run wraps it), but both stop on it
-    with pytest.raises(Exception) as failure:
+    with pytest.raises(IODeviceException) as failure:  # every engine raises the device's own error
         fjm_run.run(fjm_path, io_device=screen, print_time=False)
-    message = 'ScreenIO: reserved (0x00) at output byte 25, frame 0: opcode 0x00 is reserved (a stray zero byte?)'
-    assert message in repr(failure.value) + repr(failure.value.__cause__)
+    assert str(failure.value) == (
+        'ScreenIO: reserved (0x00) at output byte 25, frame 0: opcode 0x00 is reserved (a stray zero byte?)'
+    )
     assert screen.frame_count == 0
 
 
