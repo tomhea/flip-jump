@@ -62,7 +62,7 @@ from flipjump.assembler.inner_classes.ops import (
 from flipjump.assembler.inner_classes.op_stream import OpStream
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
-OpsQueue = OpStream  # the preprocessor's output (it was a Deque[LastPhaseOp])
+OpsQueue = OpStream  # the preprocessor's output
 LabelsDict = Dict[str, int]
 
 wflip_start_label = '_.wflip_area_start_'
@@ -198,14 +198,9 @@ class DeferredTables:
     bit offsets from its start. A table that stayed inline (too wide for any slot, or an entry uses
     `$`) is queued only so the pool can decline it in its turn (`inline`: index -> cause).
 
-    Kept as parallel arrays, not an object per table: a big program queues hundreds of thousands of
-    tables (doom-flipjump ~622K), and the per-table cost is what one pass adds over a placing pass.
-    MEASURED (tests/unit/test_table_pool.py::test_a_deferred_table_costs_tens_of_bytes, 20,000
-    tables): 43 bytes per table with one label and no site path, +13 per further label, +9 for a
-    kept site path - plus the path string it keeps alive: pin protection keeps the interned heat
-    key (shared by every site with that key), a subclass that overrides reserve() the full path.
-    That is on top of what a placing pass holds too: the op pointers, the NewSegment, the label
-    strings. (An object per table, with its own op list and (label, offset) tuples, cost ~540.)
+    ~43 bytes a table: parallel arrays, not an object per table (a big program queues hundreds of
+    thousands of tables). A kept site path is the interned heat key, or for a subclass that overrides
+    reserve() the full path.
     """
 
     __slots__ = (
@@ -658,7 +653,6 @@ class BlockPool(TablePool):
         # the widest table (see _bucket_layout)
         self.width_buckets = width_buckets
         self._layout_cache: Dict[str, Tuple[Dict[int, Tuple[int, int, int]], int]] = {}
-        self._bucket_next: Dict[Tuple[str, int], int] = {}
         # ONE PASS (opt-in): tables are deferred during the expansion and placed after it (see the
         # class docstring); with no counts the blocks are sized from that expansion's own census
         self.one_pass = one_pass
@@ -726,7 +720,7 @@ class BlockPool(TablePool):
         # both the blocked and the inline tables in it stay correct; only the saving is lost.
         self.broken_groups: Set[str] = set()
         self._used = 0  # bits handed out, from pool_base
-        self._next_index: Dict[str, int] = {}
+        self._next_index: Dict[Tuple[str, int], int] = {}  # (group, slot width - 0 for uniform) -> tables placed
         self.ungrouped = 0
         # a block's slots are uniform, so one wide table sets the width for its whole group and a
         # single 514-op table could claim the entire pool. Wider tables are declined and stay
@@ -878,10 +872,6 @@ class BlockPool(TablePool):
             self._cheap_index_cache[slots] = cached
         return cached
 
-    def _cheap_indices(self, slots: int, need: int) -> List[int]:
-        """the `need` lowest-popcount indices inside a block of `slots`, cheapest first"""
-        return self._cheapest_order(slots)[:need]
-
     def _resolve_heat(self, heat: Mapping[str, Sequence[Tuple[str, int, int]]]) -> None:
         """match the heat list's groups to this program's and rank each group's sites per width"""
         by_key: Dict[str, List[str]] = {}
@@ -978,10 +968,8 @@ class BlockPool(TablePool):
             spread = self.spread if (self.spread > 1 and total_count >= self.spread_min_count) else 1
             sized: Dict[int, Tuple[int, int]] = {}
             for slot_ops, count in buckets.items():
-                slots = (1 << max(0, (count - 1).bit_length())) * spread
                 need = count + self.hot_ranks.get((group, slot_ops), 0)  # a hot width holds its ranks too
-                while slots < need:  # double only when they do not fit: a spread width has room
-                    slots *= 2
+                slots = self._slots_for(count, need, spread)
                 sized[slot_ops] = (slots, slots * slot_ops * self.op_bits)
             offset = 0
             for slot_ops in sorted(sized, key=lambda k: (-sized[k][1], -k)):
@@ -1005,15 +993,27 @@ class BlockPool(TablePool):
         count = self.counts.get(group, 1)
         width = min(max(self.widths.get(group, 16), 1), self.max_slot_ops)
         slot_ops = 1 << max(0, (width - 1).bit_length())
-        slots = 1 << max(0, (count - 1).bit_length())
-        if self.spread > 1 and count >= self.spread_min_count:
-            slots *= self.spread
+        spread = self.spread if (self.spread > 1 and count >= self.spread_min_count) else 1
         # a hot group holds its reserved ranks too; bucket mode (whose group without a width
         # histogram lands here) keys them by the slot width, uniform mode by 0
         need = count + self.hot_ranks.get((group, slot_ops if self.width_buckets else 0), 0)
-        while slots < need:  # double only when they do not fit: a spread group has room
+        return self._slots_for(count, need, spread), slot_ops * self.op_bits
+
+    @staticmethod
+    def _slots_for(count: int, need: int, spread: int) -> int:
+        """`count` rounded up to a power of two, times `spread`, then doubled only while `need` does not fit
+        (a spread block has room)"""
+        slots = (1 << max(0, (count - 1).bit_length())) * spread
+        while slots < need:
             slots *= 2
-        return slots, slot_ops * self.op_bits
+        return slots
+
+    def _hot_blocks_end(self, bits: Mapping[str, int]) -> int:
+        """where the hot groups' blocks end when they are laid out first, from pool_base, with no limit"""
+        end = self.pool_base
+        for group in self.hot_sites:
+            end = -(-end // bits[group]) * bits[group] + bits[group]
+        return end
 
     def _pool_limit(self) -> int:
         """the first address past the pool: pool_base + span_bits, and never past the memory"""
@@ -1072,11 +1072,9 @@ class BlockPool(TablePool):
             # on the groups with the most dispatch sites (`counts` counts SITES, not calls)
             capacity = limit - self.pool_base
             # with hot groups the demand is where the layout would END (hot-first placement can
-            # leave holes, see the docstring); with no list it stays 1.5.1's plain sum, byte for
-            # byte, even where an unaligned pool base makes the layout end later
-            hot_end = self.pool_base
-            for group in self.hot_sites:
-                hot_end = -(-hot_end // bits[group]) * bits[group] + bits[group]
+            # leave holes, see the docstring); with no list it is the plain sum, even where an
+            # unaligned pool base makes the layout end later
+            hot_end = self._hot_blocks_end(bits)
             sizes = collections.Counter(bits[g] for g in keep if g not in self.hot_sites)
             rest = sum(size * n for size, n in sizes.items())
 
@@ -1103,7 +1101,6 @@ class BlockPool(TablePool):
         self.broken_groups.update(unfit)  # no room: these groups stay inline everywhere
         for group, base in bases.items():
             self.groups[group] = (base, None)
-            self._next_index[group] = 0
         self._used = cursor - self.pool_base
         lost = sorted(group for group in self.hot_sites if group not in self.groups)
         if lost:
@@ -1171,91 +1168,61 @@ class BlockPool(TablePool):
             # do not have the group at all
             self._decline(group, 'no_block' if group in self.counts else 'new_group')
             return None
-        if self.width_buckets:
-            return self._reserve_bucketed(ops_alignment, table_ops, group, group_expr, hot_site)
-        slots, slot_bits = self._uniform_shape(group)
-        if table_ops * self.op_bits > slot_bits or ops_alignment * self.op_bits > slot_bits:
-            self._decline(group, self._width_cause(max(table_ops, ops_alignment)))  # wider than its slot
+        width = max(table_ops, ops_alignment)
+        slot = self._bucket_slot(group, width) if self.width_buckets else self._uniform_slot(group, width)
+        if slot is None:
             return None
+        offset, slots, slot_ops, count = slot
+        key = (group, slot_ops if self.width_buckets else 0)
+        raw = self._next_index.get(key, 0)
         if hot_site is not None:
-            hot = self._hot_index(group, 0, slots, hot_site)
-            if hot is None:
+            index = self._hot_index(group, key[1], slots, hot_site)
+            if index is None:
                 self._decline(group, 'overflow')
                 return None
-            index = hot
         else:
-            index = self._next_index[group]
-            count = self.counts.get(group, 1)
-            if self.spread > 1 and count >= self.spread_min_count:
+            index = raw
+            if self.spread > 1 and self.counts.get(group, 1) >= self.spread_min_count:
                 # an overflow table must decline, never fall back to a raw index: the cheap-index
                 # list is a subset of range(slots), so a raw index past its end can collide with a
                 # mapped one already handed out (two tables at one address)
                 if index >= count:
                     self._decline(group, 'overflow')
                     return None
-                index = self._cheap_indices(slots, count)[index]
+                index = self._cheapest_order(slots)[index]
             if index >= slots:
                 self._decline(group, 'overflow')  # more tables than the counting pass saw
                 return None
         base, previous_expr = self.groups[group]
         self.groups[group] = (base, group_expr if group_expr is not None else previous_expr)
-        self._next_index[group] = self._next_index[group] + 1
+        self._next_index[key] = raw + 1
         self.allocated += 1
-        address = base + index * slot_bits
+        address = base + offset + index * slot_ops * self.op_bits
         self.run_starts.append(address)
         return address, True, 0  # its own segment; blocks are sparse by construction
 
-    def _reserve_bucketed(
-        self,
-        ops_alignment: int,
-        table_ops: int,
-        group: str,
-        group_expr: Optional[Expr],
-        hot_site: Optional[Tuple[str, int]] = None,
-    ) -> Optional[Tuple[int, bool, int]]:
-        """`reserve` for width-bucketed blocks: the table picks the sub-block matching ITS width.
+    def _uniform_slot(self, group: str, width: int) -> Optional[Tuple[int, int, int, int]]:
+        """(offset in the block, slots, slot_ops, tables counted) of the group's uniform slots for a table of
+        `width` ops, or None: declined, wider than its slot"""
+        slots, slot_bits = self._uniform_shape(group)
+        if width * self.op_bits > slot_bits:
+            self._decline(group, self._width_cause(width))
+            return None
+        return 0, slots, slot_bits // self.op_bits, self.counts.get(group, 1)
 
-        Mirrors the uniform path exactly - same decline reasons, same sparse-index rule, same
-        raw-counter increment - differing only in that the slot size and offset come from the
-        bucket rather than from the group's widest table.
-        """
-        width = max(table_ops, ops_alignment, 1)
+    def _bucket_slot(self, group: str, width: int) -> Optional[Tuple[int, int, int, int]]:
+        """_uniform_slot for width-bucketed blocks: the table picks the sub-block matching ITS width"""
+        width = max(width, 1)
         if width > self.max_slot_ops:
             self._decline(group, 'too_wide')
             return None
         slot_ops = 1 << max(0, (width - 1).bit_length())
-        layout, _ = self._bucket_layout(group)
-        entry = layout.get(slot_ops)
+        entry = self._bucket_layout(group)[0].get(slot_ops)
         if entry is None:  # a width the counting pass never saw for this group
             self._decline(group, 'width_overflow')
             return None
         offset, slots, bucket_count = entry
-        key = (group, slot_ops)
-        raw = self._bucket_next.get(key, 0)
-        if hot_site is not None:
-            hot = self._hot_index(group, slot_ops, slots, hot_site)
-            if hot is None:
-                self._decline(group, 'overflow')
-                return None
-            index = hot
-        else:
-            index = raw
-            total_count = self.counts.get(group, 1)
-            if self.spread > 1 and total_count >= self.spread_min_count:
-                if raw >= bucket_count:  # same rule as the uniform path: decline, never a raw index
-                    self._decline(group, 'overflow')
-                    return None
-                index = self._cheap_indices(slots, bucket_count)[raw]
-            if index >= slots:
-                self._decline(group, 'overflow')
-                return None
-        base, previous_expr = self.groups[group]
-        self.groups[group] = (base, group_expr if group_expr is not None else previous_expr)
-        self._bucket_next[key] = raw + 1
-        self.allocated += 1
-        address = base + offset + index * slot_ops * self.op_bits
-        self.run_starts.append(address)
-        return address, True, 0
+        return offset, slots, slot_ops, bucket_count
 
     def commit(self, end_address: int) -> None:
         pass  # each table owns its slot; no shared cursor
@@ -1391,9 +1358,7 @@ class BlockPool(TablePool):
         if not unfit:
             return []  # every block fits, so nothing overflows: the plain layout
         if any(group in self.hot_sites for group in unfit):
-            hot_end = self.pool_base  # where the hot blocks alone end, with no limit
-            for group in self.hot_sites:
-                hot_end = -(-hot_end // bits[group]) * bits[group] + bits[group]
+            hot_end = self._hot_blocks_end(bits)
             raise FlipJumpPreprocessorException(
                 f"one-pass blocking: the pool [{hex(self.pool_base)}, {hex(limit)}) cannot hold its hot groups' "
                 f'blocks and the overflow region of the groups it has no block for - short by {hex(hot_end - limit)} '
@@ -1548,19 +1513,7 @@ class PreprocessorData:
     """
 
     class _PrepareMacroCall:
-        # PERF (doom-flipjump, 2026-08-20): __slots__, derived from this class's own __init__.
-        # One of these is allocated per MACRO EXPANSION -- several million on the doom-flipjump
-        # program -- purely to hold four references across a `with` block.
-        # (A further step is possible and deliberately NOT taken here: the object could be dropped
-        # altogether by inlining enter/exit as a try/finally at the two call sites, since __exit__
-        # only pops curr_tree. That trades this class's encapsulation for the allocation, and is
-        # worth measuring separately rather than folding into a __slots__ change.)
-        __slots__ = (
-            'curr_tree',
-            'calling_op',
-            'macros',
-            'max_recursion_depth',
-        )
+        __slots__ = ('curr_tree', 'calling_op', 'macros', 'max_recursion_depth')
 
         def __init__(
             self,
@@ -1638,8 +1591,7 @@ class PreprocessorData:
         self._deferred_label_positions: Dict[str, CodePosition] = {}
 
         self.labels: Dict[str, int] = {}
-        # the emitted ops, compactly: see OpStream (as objects they cost ~250 bytes an op, and a
-        # doom level emits 40-70M of them). Every stream of this preprocessor shares one refs list.
+        # the emitted ops, compactly (see OpStream). Every stream of this preprocessor shares one refs list.
         self._op_refs: List[Any] = []
         self.result_ops: OpStream = OpStream(self._op_refs, self.labels)
         self.addresses_with_labels: Set[int] = set()
@@ -1980,17 +1932,10 @@ class PreprocessorData:
 
     def insert_macro_start_label(self, labels_prefix: str, code_position: CodePosition) -> None:
         """Record that a macro expansion starts here, so a `<path>---:start:` label can name it.
-
-        ⚠ THESE LABELS ARE UNREACHABLE FROM FJ SOURCE, exactly like `:wflips:N`:
-        STARTING_LABEL_IN_MACROS_STRING is ':start:' and the lexer's identifier rule is
-        `[a-zA-Z_][a-zA-Z_0-9]*`, so no Expr can ever name one. They exist for the debugging file
-        and for macro-trace readability. MEASURED (doom-flipjump, 2026-08-20): that program does
-        1.69M macro expansions, so this is 1.69M long f-strings and 1.69M list entries, plus a
-        set of every labelled address, built for a debugging file that is never requested.
+        The label is unreachable from fj source, and only the debugging file reads it.
 
         @note must be called at the start of the expansion.
-        @note takes the PREFIX, not the finished label: when labels are off the string is never
-        built at all, which is where most of the saving is.
+        @note takes the PREFIX, not the finished label: when labels are off the string is never built.
         """
         if self.save_debug_labels:
             label = f'{labels_prefix}{MACRO_SEPARATOR_STRING}{STARTING_LABEL_IN_MACROS_STRING}'
@@ -2132,9 +2077,7 @@ def get_params_dictionary(
     for local_param in current_macro.local_params:
         params_dict[local_param] = Expr(f'{labels_prefix}{MACRO_SEPARATOR_STRING}{local_param}')
 
-    # PERF: the `namespace.name` keys are a property of the macro DECLARATION, so they are built
-    # once in Macro.__post_init__ rather than re-formatted on every expansion. `namespaced_params`
-    # is empty for a macro with no namespace, which is why the `if namespace` test is gone.
+    # namespaced_params is empty for a macro with no namespace
     for namespaced_name, name in current_macro.namespaced_params:
         params_dict[namespaced_name] = params_dict[name]
 
@@ -2252,9 +2195,8 @@ def resolve_macro_aux(
 
     preprocessor_data.insert_macro_start_label(labels_prefix, current_macro.code_position)
 
-    # MEMORY: when the caller gave the tree away (consume_main), the top level's ops are dropped as the
-    # expansion passes them - a doom level's top level is millions of statements, kept only to be
-    # expanded once. What is kept: the last non-label op already expanded and everything after it, which
+    # when the caller gave the tree away (consume_main), the top level's ops are dropped as the expansion
+    # passes them. What is kept: the last non-label op already expanded and everything after it, which
     # is all a `pad` looks back at (_reached_only_by_jump) or forward to (relocatable_table_end).
     ops = current_macro.ops
     consume = preprocessor_data.consume_main and macro_name is INITIAL_MACRO_NAME
@@ -2281,7 +2223,7 @@ def resolve_macro_aux(
         elif isinstance(op, FlipJump) or isinstance(op, WordFlip):
             preprocessor_data.curr_address += 2 * preprocessor_data.memory_width
             params_dict['$'] = Expr(preprocessor_data.curr_address)
-            # MEMORY: straight into the compact stream - no FlipJump/WordFlip object is built for it
+            # straight into the compact stream - no FlipJump/WordFlip object is built for it
             if op.__class__ is FlipJump:
                 preprocessor_data.emit_target.add_flip_jump_in(op.flip, op.jump, params_dict, op.code_position)
             elif op.__class__ is WordFlip:
