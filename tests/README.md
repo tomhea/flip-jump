@@ -116,11 +116,11 @@ In summary, they check:
 | [test_breakpoints.py](unit/test_breakpoints.py) | the debugger machinery: breakpoint resolution, debug actions, memory/variable reading, and an E2E break          |
 | [test_cli_debugger.py](unit/test_cli_debugger.py) | the terminal prompts of the debugger (messages, text answers, choice picking)                                  |
 | [test_device_memory.py](unit/test_device_memory.py) | the device<->memory hook over both engines                                                                  |
-| [test_keyboard_io.py](unit/test_keyboard_io.py) | the keyboard device: the status-hex protocol, scripted event files, and the keycodes against io_devices/README.md |
-| [test_screen_io.py](unit/test_screen_io.py)     | the headless screen device (io_devices/README.md): every opcode, the formats, palettes, the life cycle, PNGs, frame hashes |
-| [test_screen_collines.py](unit/test_screen_collines.py) | `draw_collines`: the field widths, KEEP / COPY / END, the README's example, and a random-picture encoder round trip |
-| [test_screen_errors.py](unit/test_screen_errors.py) | every row of the README's error table, with the exact message                                            |
-| [test_screen_window.py](unit/test_screen_window.py) | the interactive screen window (headless via the SDL dummy driver): the life cycle, title, icon, live keys and the key table, fullscreen, closing, max fps |
+| [test_keyboard_io.py](unit/test_keyboard_io.py) | the keyboard device: the status-hex protocol, scripted event files, and the keycodes (io_devices/README.md)     |
+| [test_screen_io.py](unit/test_screen_io.py)     | the headless screen (io_devices/README.md): the opcodes, formats, palettes, life cycle, PNGs, hashes            |
+| [test_screen_collines.py](unit/test_screen_collines.py) | `draw_collines`: the field widths, KEEP / COPY / END, the README's example, a random round trip         |
+| [test_screen_errors.py](unit/test_screen_errors.py) | every row of the README's error table, with the exact message                                               |
+| [test_screen_window.py](unit/test_screen_window.py) | the interactive window (SDL dummy driver): life cycle, title, icon, keys, fullscreen, max fps               |
 | [test_devices_e2e.py](unit/test_devices_e2e.py) | .fj programs driving the screen/keyboard devices end-to-end, and the complete `PcIO` device      |
 
 To add a unit-test, just add a `test_*` function to the relevant file (or a new `test_*.py` module)
