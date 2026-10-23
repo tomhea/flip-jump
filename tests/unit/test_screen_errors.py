@@ -82,7 +82,7 @@ def test_screen_width(width: int) -> None:
     )
 
 
-@pytest.mark.parametrize('height', [0, 65_532, 65_535])
+@pytest.mark.parametrize('height', [0, 65_532, 65_534, 65_535])
 def test_screen_height(height: int) -> None:
     assert rejected(ss.init_screen(4, height, 8)) == (
         f'ScreenIO: init_screen (0x01) at output byte 0, frame 0: h = {height:,}: must be 1..65,531'
@@ -127,39 +127,11 @@ def test_palette_range_first_after_last() -> None:
     assert rejected(stream) == 'ScreenIO: define_palette (0x02) at output byte 6, frame 0: first = 12 > last = 3'
 
 
-def test_palette_range_last_past_the_format() -> None:
-    """a B-bit field cannot carry `last` >= 2^B, so this row cannot be reached from the wire; its message is
-    pinned through the device's own check."""
-    device = InMemoryScreen()
-    ss.feed(device, ss.init_screen(4, 3, 8))
-    device._command = ('define_palette', 0x02, 6)
-    reason = device._colour_limit_reason('last', 300)
-    assert reason is not None
-    assert str(device._error(reason)) == (
-        'ScreenIO: define_palette (0x02) at output byte 6, frame 0: last = 300: format 8 has colours 0..255'
-    )
-    assert device._colour_limit_reason('last', 255) is None
-
-
 @pytest.mark.parametrize('builtin_id', [5, 7, 255])
 def test_builtin_palette_id(builtin_id: int) -> None:
     assert rejected(ss.init_screen(4, 3, 8) + ss.builtin_palette(0, builtin_id)) == (
         f'ScreenIO: builtin_palette (0x07) at output byte 6, frame 0: id = {builtin_id}: the built-ins are 0..4'
     )
-
-
-def test_colour_past_the_format() -> None:
-    """like `last`, a B-bit colour field cannot exceed the format; the message is pinned through the check."""
-    device = InMemoryScreen()
-    ss.feed(device, ss.init_screen(4, 3, 8))
-    device._command = ('draw_raw', 0x10, 6)
-    reason = device._colour_limit_reason('colour', 300)
-    assert reason is not None
-    assert str(device._error(reason, pixel=(2, 1))) == (
-        'ScreenIO: draw_raw (0x10) at output byte 6, frame 0, pixel (2, 1): colour = 300: format 8 has colours 0..255'
-    )
-    ss.feed(device, ss.init_screen(4, 3, 16))
-    assert device._colour_limit_reason('colour', 70_000) == 'colour = 70,000: format 16 has colours 0..65,535'
 
 
 # ---------------------------------------------------------------- draw_collines

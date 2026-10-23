@@ -133,6 +133,8 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
         )
     except FlipJumpFlatMemoryException as flat_error:
         sys.exit(str(flat_error))  # what failed, and how to run it anyway (run_defaults.flat_memory_failure_message)
+    finally:
+        io_device.close()  # the device this run created (e.g. the pc window), also when the run raised
 
 
 def get_version(version: Optional[int], is_outfile_specified: bool, error_func: ErrorFunc) -> FJMVersion:

@@ -7,14 +7,19 @@ together) runs a program.
 
 import hashlib
 from pathlib import Path
+from typing import Iterator
 
 import pytest
 
+import flipjump
+from flipjump import assemble_run_according_to_cmd_line_args
 from flipjump.interpreter import fjm_run
+from flipjump.interpreter.io_devices.FixedIO import FixedIO
 from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO, ScriptedKeyEventSource
 from flipjump.interpreter.io_devices.ScreenIO import XTERM256, InMemoryScreen
 from flipjump.interpreter.io_devices.pygame_window import PcIO
 from flipjump.utils.classes import TerminationCause
+from flipjump.utils.exceptions import IODeviceException
 from tests.unit.unit_utils import assemble_to_path
 
 # the screen stream of io_devices/README.md: init_screen 4x2 format 8; define_palette slot 0, entries 0-1;
@@ -149,3 +154,101 @@ def test_pc_headless_runs_a_program(tmp_path: Path) -> None:
     statistics = fjm_run.run(fjm_path, io_device=PcIO.headless(events_path, frames_dir), print_time=False)
     assert statistics.termination_cause == TerminationCause.Looping
     assert (frames_dir / 'frame_000000.png').exists()
+
+
+# ---------------------------------------------------------------- the end of the run (IODevice.end_of_run)
+
+# init_screen 4x2 format 8, then a draw_raw cut after 2 of its 8 pixels; then the program ends by itself
+CUT_STREAM = bytes([0x01, 4, 0, 2, 0, 8, 0x10, 0x01, 0x02])
+CUT_MESSAGE = (
+    'ScreenIO: draw_raw (0x10) at output byte 6, frame 0, pixel (2, 0): '
+    "the program's output ended inside draw_raw (0x10): 24 of its bits read"
+)
+CUT_ENDINGS = {
+    'looping': 'stl.loop\n',
+    'null_ip': ';0\n',
+    'eof': 'bit.input_bit in_bit\nstl.loop\nin_bit:\nbit.bit\n',
+}
+
+
+def cut_program(ending: str) -> str:
+    return 'stl.startup\n' + ''.join(f'stl.output_char {byte}\n' for byte in CUT_STREAM) + CUT_ENDINGS[ending]
+
+
+@pytest.mark.parametrize('ending', sorted(CUT_ENDINGS))
+def test_a_run_whose_output_ends_inside_a_command_raises(tmp_path: Path, engine: str, ending: str) -> None:
+    fjm_path = assemble_to_path(cut_program(ending), tmp_path, use_stl=True)
+    with pytest.raises(IODeviceException) as failure:
+        fjm_run.run(fjm_path, io_device=InMemoryScreen(), print_time=False)
+    assert str(failure.value) == CUT_MESSAGE
+
+
+def test_the_cut_program_raises_through_flipjump_run(tmp_path: Path) -> None:
+    fjm_path = assemble_to_path(cut_program('looping'), tmp_path, use_stl=True)
+    with pytest.raises(IODeviceException) as failure:
+        flipjump.run(fjm_path, io_device=InMemoryScreen(), print_time=False, print_termination=False)
+    assert str(failure.value) == CUT_MESSAGE
+
+
+@pytest.fixture
+def dummy_window(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    pygame = pytest.importorskip('pygame')
+    monkeypatch.setenv('SDL_VIDEODRIVER', 'dummy')
+    yield
+    pygame.quit()
+
+
+def test_the_cut_program_raises_through_the_cli(tmp_path: Path, dummy_window: None) -> None:
+    """`fj --run cut.fjm --io pc`: the window's PcIO forwards end_of_run to its screen"""
+    fjm_path = assemble_to_path(cut_program('looping'), tmp_path, use_stl=True)
+    with pytest.raises(IODeviceException) as failure:
+        assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--io', 'pc', str(fjm_path)])
+    assert str(failure.value) == CUT_MESSAGE
+
+
+def test_control_a_complete_program_does_not_raise_through_the_cli(tmp_path: Path, dummy_window: None) -> None:
+    fjm_path = assemble_to_path(SCREEN_PROGRAM, tmp_path, use_stl=True)
+    assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--io', 'pc', str(fjm_path)])
+
+
+def test_control_a_complete_program_does_not_raise(tmp_path: Path, engine: str) -> None:
+    fjm_path = assemble_to_path(SCREEN_PROGRAM, tmp_path, use_stl=True)
+    screen = InMemoryScreen()
+    flipjump.run(fjm_path, io_device=screen, print_time=False, print_termination=False)
+    assert screen.frame_count == 1
+
+
+class EndCountingIO(FixedIO):
+    def __init__(self, fixed_input: bytes) -> None:
+        super().__init__(fixed_input)
+        self.ends = 0
+
+    def end_of_run(self) -> None:
+        self.ends += 1
+
+
+@pytest.mark.parametrize(
+    'source, cause',
+    [
+        ('stl.startup\nstl.loop\n', TerminationCause.Looping),
+        ('stl.startup\n;0\n', TerminationCause.NullIP),
+        ('stl.startup\nbit.input_bit b\nstl.loop\nb:\nbit.bit\n', TerminationCause.EOF),
+    ],
+)
+@pytest.mark.parametrize('profile', [False, True])
+def test_end_of_run_is_called_exactly_once(
+    tmp_path: Path, engine: str, source: str, cause: TerminationCause, profile: bool
+) -> None:
+    fjm_path = assemble_to_path(source, tmp_path, use_stl=True)
+    device = EndCountingIO(b'')
+    statistics = fjm_run.run(fjm_path, io_device=device, print_time=False, profile=profile)
+    assert statistics.termination_cause == cause
+    assert device.ends == 1
+
+
+def test_end_of_run_is_not_called_after_a_memory_error(tmp_path: Path, engine: str) -> None:
+    fjm_path = assemble_to_path('stl.startup\n;0x4000 << 40\n', tmp_path, use_stl=True)
+    device = EndCountingIO(b'')
+    statistics = fjm_run.run(fjm_path, io_device=device, print_time=False)
+    assert statistics.termination_cause == TerminationCause.RuntimeMemoryError
+    assert device.ends == 0

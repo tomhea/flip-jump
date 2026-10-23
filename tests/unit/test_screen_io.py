@@ -550,3 +550,57 @@ def test_the_png_holds_the_presented_rgb(tmp_path: Path) -> None:
     rows = zlib.decompress(png[start + 4 : start + 4 + length])  # noqa: E203
     assert rows == bytes([0, *range(9), 0, *range(9, 18)])
     assert device.last_frame_rgb[4] == (12, 13, 14)
+
+
+class CommonNamesScreen(InMemoryScreen):
+    """a harness that uses common private names for its own state, before and after the device's __init__"""
+
+    COMMON_NAMES = ('_bits', '_feed', '_parse', '_acc', '_byte', '_inp', '_error', '_command', '_parser', '_nacc')
+
+    def __init__(self) -> None:
+        for name in self.COMMON_NAMES:
+            setattr(self, name, 0)
+        super().__init__()
+        for name in self.COMMON_NAMES:
+            setattr(self, name, 7)
+
+
+def test_a_subclass_using_common_private_names_still_decodes() -> None:
+    device = CommonNamesScreen()
+    ss.feed(device, ss.init_screen(2, 1, 8) + ss.draw_raw([3, 4], 8) + ss.PRESENT)
+    assert device.frame_count == 1 and device.last_frame_rgb == [XTERM256[3], XTERM256[4]]
+    assert all(getattr(device, name) == 7 for name in CommonNamesScreen.COMMON_NAMES)
+    with pytest.raises(IODeviceException) as failure:  # and its errors are still the device's
+        ss.feed(device, bytes([0x00]))
+    assert str(failure.value) == (
+        'ScreenIO: reserved (0x00) at output byte 10, frame 1: opcode 0x00 is reserved (a stray zero byte?)'
+    )
+
+
+def test_the_device_keeps_its_internals_under_one_prefix() -> None:
+    """every private attribute and method of the device is _scr_..., except the documented hooks"""
+    hooks = {'_present', '_extension_command', '_on_init_screen', '_on_window_title', '_on_window_icon', '_abc_impl'}
+    device = InMemoryScreen()
+    names = set(vars(device)) | {name for name in vars(InMemoryScreen)}
+    private = {name for name in names if name.startswith('_') and not name.startswith('__')}
+    assert private - hooks and all(name.startswith('_scr_') for name in private - hooks), private - hooks
+
+
+def test_end_of_run_inside_a_command_raises_and_between_commands_does_not() -> None:
+    complete = screen_after(ss.init_screen(2, 1, 8) + ss.PRESENT)
+    complete.end_of_run()
+    cut = screen_after(ss.init_screen(2, 1, 8) + bytes([0x10, 1]))
+    with pytest.raises(IODeviceException) as failure:
+        cut.end_of_run()
+    assert str(failure.value) == (
+        'ScreenIO: draw_raw (0x10) at output byte 6, frame 0, pixel (1, 0): '
+        "the program's output ended inside draw_raw (0x10): 16 of its bits read"
+    )
+
+
+def test_an_unfinished_extension_command_is_silent_at_the_end() -> None:
+    device = HostChannelScreen()
+    ss.feed(device, ss.init_screen(1, 1, 1) + bytes([0x80, 5]))
+    device.write_bit(True)  # even a partial byte inside its payload
+    device.end_of_run()
+    assert device.get_output() == b''

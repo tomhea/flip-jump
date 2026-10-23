@@ -542,3 +542,67 @@ def test_max_fps_keeps_pumping_the_window_while_it_waits(fake_clock: FakeClock) 
         present_raw_2x2(device)
     assert clock.now < 0.1  # well inside the 1 s slot: the first slice's pump saw the close
     assert draws == []
+
+
+# ---------------------------------------------------------------- re-creating the window at a new size
+
+
+def test_a_close_pending_at_a_resize_still_ends_the_run() -> None:
+    device = InteractiveScreen()
+    init_2x2_screen(device)
+    pygame.event.post(pygame.event.Event(pygame.QUIT))
+    with pytest.raises(KeyboardInterrupt):
+        ss.feed(device, ss.init_screen(3, 1, 8))
+    assert device.window.closed
+
+
+def test_a_key_pending_at_a_resize_is_still_delivered() -> None:
+    window = PygameWindow()
+    device = InteractiveScreen(window=window)
+    keyboard = keyboard_on(window)
+    init_2x2_screen(device)
+    post_key(pygame.K_q)
+    ss.feed(device, ss.init_screen(3, 1, 8))
+    assert pygame.display.get_surface().get_size() == (3, 1)
+    assert read_status_hex(keyboard) == 0x9
+    assert read_byte(keyboard) == ord('q')
+
+
+def test_control_a_key_pending_at_the_same_size_is_delivered_too() -> None:
+    window = PygameWindow()
+    device = InteractiveScreen(window=window)
+    keyboard = keyboard_on(window)
+    init_2x2_screen(device)
+    post_key(pygame.K_q)
+    init_2x2_screen(device)
+    assert (read_status_hex(keyboard), read_byte(keyboard)) == (0x9, ord('q'))
+
+
+def test_fullscreen_carries_over_a_resize(monkeypatch: pytest.MonkeyPatch) -> None:
+    device = InteractiveScreen()
+    init_2x2_screen(device)
+    assert not pygame.display.get_surface().get_flags() & pygame.FULLSCREEN
+    monkeypatch.setattr(pygame.display, 'is_fullscreen', lambda: True)  # the dummy driver cannot toggle it
+    ss.feed(device, ss.init_screen(3, 1, 8))
+    assert pygame.display.get_surface().get_flags() & pygame.FULLSCREEN
+
+
+def test_a_windowed_resize_stays_windowed() -> None:
+    device = InteractiveScreen()
+    init_2x2_screen(device)
+    ss.feed(device, ss.init_screen(3, 1, 8))
+    assert not pygame.display.get_surface().get_flags() & pygame.FULLSCREEN
+
+
+def test_the_frame_is_recorded_when_it_is_shown(fake_clock: FakeClock, monkeypatch: pytest.MonkeyPatch) -> None:
+    """the frame_hashes time of a held frame is after the max-fps wait, not before it"""
+    clock = fake_clock
+    monkeypatch.setattr(time, 'time_ns', lambda: round(clock.now * 1e9))
+    device = InteractiveScreen()
+    init_2x2_screen(device)
+    send_max_fps(device, 10)
+    present_raw_2x2(device)
+    clock.now += 0.01
+    present_raw_2x2(device)
+    (first, _), (second, _) = device.frame_hashes
+    assert second - first == pytest.approx(0.1e9)

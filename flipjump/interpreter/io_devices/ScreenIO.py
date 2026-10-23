@@ -16,6 +16,8 @@ implements it. In short:
 
 Every error raises IODeviceException with a message of the form
     ScreenIO: <command> (0xNN) at output byte <offset>, frame <n>[, column <x>, cursor <c> | pixel (<x>, <y>)]: <reason>
+The interpreter calls `end_of_run` when a run ends by itself; it raises if the output stopped inside a command.
+The device's own internals are all named `_scr_...`, so a subclass's private names cannot collide with them.
 
 The headless backend (this class) keeps, per `present`: the frame count, a (time ns, sha256) hash
 (`frame_hashes`), the presented picture as RGB (`last_frame_rgb`, expanded lazily) and a PNG per
@@ -291,50 +293,56 @@ class InMemoryScreen(IODevice):
         self.max_fps = 0
 
         # the field widths init_screen fixes: B bits per colour, R per row field, C per column field
-        self._colour_bits = 0
-        self._row_bits = 0
-        self._column_bits = 0
+        self._scr_colour_bits = 0
+        self._scr_row_bits = 0
+        self._scr_column_bits = 0
         # which slots own their list (a slot that does not may share it, and is copied before a write)
-        self._owned_slots: List[bool] = []
+        self._scr_owned_slots: List[bool] = []
         # (format, the presented values, the presented palette) - expanded only when asked
-        self._presented: Optional[Tuple[int, Tuple[int, ...], List[RGB]]] = None
-        self._palette_bytes_cache: Optional[Tuple[List[RGB], bytes]] = None
+        self._scr_presented: Optional[Tuple[int, Tuple[int, ...], List[RGB]]] = None
+        self._scr_palette_bytes_cache: Optional[Tuple[List[RGB], bytes]] = None
 
         # the output stream: a partial byte, the bytes handed to the parser, and the parser's bit buffer
-        self._current_byte = 0
-        self._bits_count = 0
-        self._bytes_in = 0
-        self._acc = 0
-        self._nacc = 0
+        self._scr_current_byte = 0
+        self._scr_bits_count = 0
+        self._scr_bytes_in = 0
+        self._scr_acc = 0
+        self._scr_nacc = 0
         # the command being parsed: (name, opcode, offset of its opcode byte), None between commands
-        self._command: Optional[Tuple[str, int, int]] = None
-        self._failure: Optional[IODeviceException] = None
-        self._parser: Parser = self._parse()
-        next(self._parser)
+        self._scr_command: Optional[Tuple[str, int, int]] = None
+        self._scr_failure: Optional[IODeviceException] = None
+        self._scr_in_extension = False  # inside an _extension_command's payload
+        self._scr_parser: Parser = self._scr_parse()
+        next(self._scr_parser)
 
     # ---------------------------------------------------------------- the IODevice interface
 
     def write_bit(self, bit: bool) -> None:
-        self._current_byte |= bit << self._bits_count
-        self._bits_count += 1
-        if self._bits_count == 8:
-            byte, self._current_byte, self._bits_count = self._current_byte, 0, 0
-            self._feed(byte)
+        self._scr_current_byte |= bit << self._scr_bits_count
+        self._scr_bits_count += 1
+        if self._scr_bits_count == 8:
+            byte, self._scr_current_byte, self._scr_bits_count = self._scr_current_byte, 0, 0
+            self._scr_feed(byte)
 
     def write_byte(self, byte: int) -> None:
-        if self._bits_count:  # never from the engine (it gathers bytes from a byte boundary only)
+        if self._scr_bits_count:  # never from the engine (it gathers bytes from a byte boundary only)
             super().write_byte(byte)
             return
-        self._feed(byte)
+        self._scr_feed(byte)
 
     def read_bit(self) -> bool:
         raise IOReadOnEOF('the screen device has no input - use a device that also reads input (e.g. --io pc)')
 
+    def end_of_run(self) -> None:
+        """the run is over: the program's output must not have ended inside a command (the README's "output ends
+        inside a command" error). An unfinished _extension_command payload is the subclass's business: silent."""
+        self._scr_check_output_complete()
+
     def get_output(self, *, allow_incomplete_output: bool = False) -> bytes:
         """the screen has no byte output. Unless `allow_incomplete_output`, the program's output must not
-        have ended inside a command: that is the README's "output ended inside a command" error."""
+        have ended inside a command (as end_of_run checks)."""
         if not allow_incomplete_output:
-            self._check_output_complete()
+            self._scr_check_output_complete()
         return b''
 
     # ---------------------------------------------------------------- the subclass hooks
@@ -354,42 +362,44 @@ class InMemoryScreen(IODevice):
 
     # ---------------------------------------------------------------- the stream
 
-    def _feed(self, byte: int) -> None:
-        if self._failure is not None:
-            raise self._failure
-        self._bytes_in += 1
+    def _scr_feed(self, byte: int) -> None:
+        if self._scr_failure is not None:
+            raise self._scr_failure
+        self._scr_bytes_in += 1
         try:
-            self._parser.send(byte)
+            self._scr_parser.send(byte)
         except IODeviceException as failure:
-            self._failure = failure
+            self._scr_failure = failure
             raise
 
-    def _check_output_complete(self) -> None:
-        if self._failure is not None:
-            raise self._failure
-        if self._command is not None:
+    def _scr_check_output_complete(self) -> None:
+        if self._scr_failure is not None:
+            raise self._scr_failure
+        if self._scr_in_extension:
+            return
+        if self._scr_command is not None:
             try:
-                self._parser.throw(_OutputEnded())
+                self._scr_parser.throw(_OutputEnded())
             except IODeviceException as failure:
-                self._failure = failure
+                self._scr_failure = failure
                 raise
-        elif self._bits_count:
+        elif self._scr_bits_count:
             raise IODeviceException(
-                f'ScreenIO: an opcode at output byte {self._bytes_in:,}, frame {self.frame_count:,}: '
-                f"the program's output ended inside an opcode byte: {self._bits_count} of its 8 bits read"
+                f'ScreenIO: an opcode at output byte {self._scr_bytes_in:,}, frame {self.frame_count:,}: '
+                f"the program's output ended inside an opcode byte: {self._scr_bits_count} of its 8 bits read"
             )
 
-    def _bits(self, count: int) -> Generator[None, int, int]:
+    def _scr_bits(self, count: int) -> Generator[None, int, int]:
         """read the next `count` bits of the stream as a number (lsb first)."""
-        while self._nacc < count:
-            self._acc |= (yield) << self._nacc
-            self._nacc += 8
-        value = self._acc & ((1 << count) - 1)
-        self._acc >>= count
-        self._nacc -= count
+        while self._scr_nacc < count:
+            self._scr_acc |= (yield) << self._scr_nacc
+            self._scr_nacc += 8
+        value = self._scr_acc & ((1 << count) - 1)
+        self._scr_acc >>= count
+        self._scr_nacc -= count
         return value
 
-    def _error(
+    def _scr_error(
         self,
         reason: str,
         *,
@@ -397,8 +407,8 @@ class InMemoryScreen(IODevice):
         cursor: Optional[int] = None,
         pixel: Optional[Tuple[int, int]] = None,
     ) -> IODeviceException:
-        assert self._command is not None
-        name, opcode, offset = self._command
+        assert self._scr_command is not None
+        name, opcode, offset = self._scr_command
         where = f'ScreenIO: {name} (0x{opcode:02X}) at output byte {offset:,}, frame {self.frame_count:,}'
         if column is not None:
             where += f', column {column:,}, cursor {cursor:,}'
@@ -406,163 +416,156 @@ class InMemoryScreen(IODevice):
             where += f', pixel ({pixel[0]:,}, {pixel[1]:,})'
         return IODeviceException(f'{where}: {reason}')
 
-    def _ended_reason(self) -> str:
-        assert self._command is not None
-        name, opcode, offset = self._command
-        bits = (self._bytes_in - offset) * 8 + self._bits_count
+    def _scr_ended_reason(self) -> str:
+        assert self._scr_command is not None
+        name, opcode, offset = self._scr_command
+        bits = (self._scr_bytes_in - offset) * 8 + self._scr_bits_count
         return f"the program's output ended inside {name} (0x{opcode:02X}): {bits:,} of its bits read"
 
-    def _parse(self) -> Parser:
+    def _scr_parse(self) -> Parser:
         """the command parser: a generator sent one output byte at a time."""
         handlers = {
-            CMD_INIT_SCREEN: self._cmd_init_screen,
-            CMD_DEFINE_PALETTE: self._cmd_define_palette,
-            CMD_SET_MAX_FPS: self._cmd_set_max_fps,
-            CMD_SET_WINDOW_TITLE: self._cmd_set_window_title,
-            CMD_SET_WINDOW_ICON: self._cmd_set_window_icon,
-            CMD_SELECT_PALETTE: self._cmd_select_palette,
-            CMD_BUILTIN_PALETTE: self._cmd_builtin_palette,
-            CMD_DRAW_RAW: self._cmd_draw_raw,
-            CMD_DRAW_COLLINES: self._cmd_draw_collines,
-            CMD_PRESENT: self._cmd_present,
+            CMD_INIT_SCREEN: self._scr_cmd_init_screen,
+            CMD_DEFINE_PALETTE: self._scr_cmd_define_palette,
+            CMD_SET_MAX_FPS: self._scr_cmd_set_max_fps,
+            CMD_SET_WINDOW_TITLE: self._scr_cmd_set_window_title,
+            CMD_SET_WINDOW_ICON: self._scr_cmd_set_window_icon,
+            CMD_SELECT_PALETTE: self._scr_cmd_select_palette,
+            CMD_BUILTIN_PALETTE: self._scr_cmd_builtin_palette,
+            CMD_DRAW_RAW: self._scr_cmd_draw_raw,
+            CMD_DRAW_COLLINES: self._scr_cmd_draw_collines,
+            CMD_PRESENT: self._scr_cmd_present,
         }
         while True:
-            assert self._nacc == 0  # every command starts on a byte boundary
-            opcode = yield from self._bits(8)
-            offset = self._bytes_in - 1
+            assert self._scr_nacc == 0  # every command starts on a byte boundary
+            opcode = yield from self._scr_bits(8)
+            offset = self._scr_bytes_in - 1
             name = COMMAND_NAMES.get(opcode)
             if name is None:
                 if opcode == CMD_RESERVED:
-                    self._command = ('reserved', opcode, offset)
-                    raise self._error('opcode 0x00 is reserved (a stray zero byte?)')
+                    self._scr_command = ('reserved', opcode, offset)
+                    raise self._scr_error('opcode 0x00 is reserved (a stray zero byte?)')
                 extension = self._extension_command(opcode)
                 if extension is None:
-                    self._command = ('unknown', opcode, offset)
-                    raise self._error(f'opcode 0x{opcode:02X} is not a command (commands: 0x01-0x07, 0x10, 0x11, 0x1F)')
+                    self._scr_command = ('unknown', opcode, offset)
+                    raise self._scr_error(
+                        f'opcode 0x{opcode:02X} is not a command (commands: 0x01-0x07, 0x10, 0x11, 0x1F)'
+                    )
                 if extension is not True:
+                    self._scr_in_extension = True
                     while not extension((yield)):
                         pass
+                    self._scr_in_extension = False
                 continue
 
-            self._command = (name, opcode, offset)
+            self._scr_command = (name, opcode, offset)
             if opcode != CMD_INIT_SCREEN and self.format == 0:
-                raise self._error(
+                raise self._scr_error(
                     f'{name} (0x{opcode:02X}) before init_screen: the first command must be init_screen (0x01)'
                 )
             if opcode in PALETTE_COMMANDS and self.format == FORMAT_RGB:
-                raise self._error(
+                raise self._scr_error(
                     f'{name} (0x{opcode:02X}) in format 24 (direct RGB): palettes exist only in formats 1-16'
                 )
             try:
                 yield from handlers[opcode]()
             except _OutputEnded:
-                raise self._error(self._ended_reason()) from None
+                raise self._scr_error(self._scr_ended_reason()) from None
 
-            padding_bits, padding = self._nacc, self._acc
-            self._acc = self._nacc = 0
+            padding_bits, padding = self._scr_nacc, self._scr_acc
+            self._scr_acc = self._scr_nacc = 0
             if padding:
-                raise self._error(
+                raise self._scr_error(
                     f'the padding bits after the command are 0b{padding:0{padding_bits}b}, '
                     'not zero (the stream is probably misaligned)'
                 )
-            self._command = None
+            self._scr_command = None
 
     # ---------------------------------------------------------------- the commands
 
-    def _cmd_init_screen(self) -> Generator[None, int, None]:
-        width = yield from self._bits(16)
-        height = yield from self._bits(16)
-        screen_format = yield from self._bits(8)
+    def _scr_cmd_init_screen(self) -> Generator[None, int, None]:
+        width = yield from self._scr_bits(16)
+        height = yield from self._scr_bits(16)
+        screen_format = yield from self._scr_bits(8)
         if not 1 <= width <= MAX_WIDTH:
-            raise self._error(f'w = {width:,}: must be 1..{MAX_WIDTH:,}')
+            raise self._scr_error(f'w = {width:,}: must be 1..{MAX_WIDTH:,}')
         if not 1 <= height <= MAX_HEIGHT:
-            raise self._error(f'h = {height:,}: must be 1..{MAX_HEIGHT:,}')
+            raise self._scr_error(f'h = {height:,}: must be 1..{MAX_HEIGHT:,}')
         if screen_format not in INDEXED_FORMATS and screen_format != FORMAT_RGB:
-            raise self._error(f'format = {screen_format}: must be 1-16 or 24')
-        self._init_screen(width, height, screen_format)
+            raise self._scr_error(f'format = {screen_format}: must be 1-16 or 24')
+        self._scr_init_screen(width, height, screen_format)
 
-    def _init_screen(self, width: int, height: int, screen_format: int) -> None:
+    def _scr_init_screen(self, width: int, height: int, screen_format: int) -> None:
         """the life cycle's init_screen: everything but the title, the icon, max fps and the frame count resets."""
         self.width, self.height, self.format = width, height, screen_format
-        self._colour_bits = screen_format
-        self._row_bits = row_field_width(height)
-        self._column_bits = column_field_width(width)
+        self._scr_colour_bits = screen_format
+        self._scr_row_bits = row_field_width(height)
+        self._scr_column_bits = column_field_width(width)
         self.pixel_indices = [0] * (width * height)
         if screen_format == FORMAT_RGB:
             self.palettes = []
-            self._owned_slots = []
+            self._scr_owned_slots = []
         else:
             shared_default = list(default_palette(screen_format))
             self.palettes = [shared_default] * PALETTE_SLOTS
-            self._owned_slots = [False] * PALETTE_SLOTS
+            self._scr_owned_slots = [False] * PALETTE_SLOTS
         self.selected_slot = 0
         self._on_init_screen()
 
-    def _colour_limit_reason(self, field: str, value: int) -> Optional[str]:
-        top = (1 << self._colour_bits) - 1
-        if value > top:
-            return f'{field} = {value:,}: format {self.format} has colours 0..{top:,}'
-        return None
-
-    def _writable_slot(self, slot: int) -> List[RGB]:
-        if not self._owned_slots[slot]:
+    def _scr_writable_slot(self, slot: int) -> List[RGB]:
+        if not self._scr_owned_slots[slot]:
             self.palettes[slot] = list(self.palettes[slot])
-            self._owned_slots[slot] = True
+            self._scr_owned_slots[slot] = True
         return self.palettes[slot]
 
-    def _cmd_define_palette(self) -> Generator[None, int, None]:
-        slot = yield from self._bits(8)
-        first = yield from self._bits(self._colour_bits)
-        last = yield from self._bits(self._colour_bits)
+    def _scr_cmd_define_palette(self) -> Generator[None, int, None]:
+        slot = yield from self._scr_bits(8)
+        first = yield from self._scr_bits(self._scr_colour_bits)
+        last = yield from self._scr_bits(self._scr_colour_bits)
         if first > last:
-            raise self._error(f'first = {first:,} > last = {last:,}')
-        reason = self._colour_limit_reason('last', last)
-        if reason is not None:  # a B-bit field cannot hold more; kept so the rule is stated in code
-            raise self._error(reason)
+            raise self._scr_error(f'first = {first:,} > last = {last:,}')
         entries = []
         for _ in range(last - first + 1):
-            entries.append(((yield from self._bits(8)), (yield from self._bits(8)), (yield from self._bits(8))))
-        self._writable_slot(slot)[first : last + 1] = entries  # noqa: E203
+            entries.append(
+                ((yield from self._scr_bits(8)), (yield from self._scr_bits(8)), (yield from self._scr_bits(8)))
+            )
+        self._scr_writable_slot(slot)[first : last + 1] = entries  # noqa: E203
 
-    def _cmd_set_max_fps(self) -> Generator[None, int, None]:
-        self.max_fps = yield from self._bits(8)
+    def _scr_cmd_set_max_fps(self) -> Generator[None, int, None]:
+        self.max_fps = yield from self._scr_bits(8)
 
-    def _cmd_set_window_title(self) -> Generator[None, int, None]:
+    def _scr_cmd_set_window_title(self) -> Generator[None, int, None]:
         title = bytearray()
         while True:
-            byte = yield from self._bits(8)
+            byte = yield from self._scr_bits(8)
             if byte == 0:
                 break
             title.append(byte)
         try:
             text = title.decode('utf-8')
         except UnicodeDecodeError as bad:
-            raise self._error(
+            raise self._scr_error(
                 f'set_window_title: title byte {bad.start:,} (0x{title[bad.start]:02X}) is not valid UTF-8'
             ) from None
         self.window_title = text
         self._on_window_title()
 
-    def _cmd_set_window_icon(self) -> Generator[None, int, None]:
-        width = yield from self._bits(8)
-        height = yield from self._bits(8)
+    def _scr_cmd_set_window_icon(self) -> Generator[None, int, None]:
+        width = yield from self._scr_bits(8)
+        height = yield from self._scr_bits(8)
         if width == 0:
-            raise self._error('set_window_icon: w = 0: must be 1..255')
+            raise self._scr_error('set_window_icon: w = 0: must be 1..255')
         if height == 0:
-            raise self._error('set_window_icon: h = 0: must be 1..255')
-        bits = self._colour_bits
+            raise self._scr_error('set_window_icon: h = 0: must be 1..255')
+        bits = self._scr_colour_bits
         values = []
         x = y = 0
         try:
             for y in range(height):
                 for x in range(width):
-                    value = yield from self._bits(bits)
-                    reason = self._colour_limit_reason('colour', value)
-                    if reason is not None:
-                        raise self._error(reason, pixel=(x, y))
-                    values.append(value)
+                    values.append((yield from self._scr_bits(bits)))
         except _OutputEnded:
-            raise self._error(self._ended_reason(), pixel=(x, y)) from None
+            raise self._scr_error(self._scr_ended_reason(), pixel=(x, y)) from None
         if self.format == FORMAT_RGB:
             colours = [rgb_of(value) for value in values]
         else:
@@ -571,35 +574,31 @@ class InMemoryScreen(IODevice):
         self.window_icon = (width, height, colours)
         self._on_window_icon()
 
-    def _cmd_select_palette(self) -> Generator[None, int, None]:
-        self.selected_slot = yield from self._bits(8)
+    def _scr_cmd_select_palette(self) -> Generator[None, int, None]:
+        self.selected_slot = yield from self._scr_bits(8)
 
-    def _cmd_builtin_palette(self) -> Generator[None, int, None]:
-        slot = yield from self._bits(8)
-        builtin_id = yield from self._bits(8)
+    def _scr_cmd_builtin_palette(self) -> Generator[None, int, None]:
+        slot = yield from self._scr_bits(8)
+        builtin_id = yield from self._scr_bits(8)
         if builtin_id not in BUILTIN_IDS:
-            raise self._error(f'id = {builtin_id}: the built-ins are 0..4')
-        self.palettes[slot] = list(builtin_palette(builtin_id, self._colour_bits))
-        self._owned_slots[slot] = True
+            raise self._scr_error(f'id = {builtin_id}: the built-ins are 0..4')
+        self.palettes[slot] = list(builtin_palette(builtin_id, self._scr_colour_bits))
+        self._scr_owned_slots[slot] = True
 
-    def _cmd_draw_raw(self) -> Generator[None, int, None]:
-        bits, width, picture = self._colour_bits, self.width, self.pixel_indices
+    def _scr_cmd_draw_raw(self) -> Generator[None, int, None]:
+        bits, width, picture = self._scr_colour_bits, self.width, self.pixel_indices
         x = y = 0
         try:
             for y in range(self.height):
                 row = y * width
                 for x in range(width):
-                    value = yield from self._bits(bits)
-                    reason = self._colour_limit_reason('colour', value)
-                    if reason is not None:
-                        raise self._error(reason, pixel=(x, y))
-                    picture[row + x] = value
+                    picture[row + x] = yield from self._scr_bits(bits)
         except _OutputEnded:
-            raise self._error(self._ended_reason(), pixel=(x, y)) from None
+            raise self._scr_error(self._scr_ended_reason(), pixel=(x, y)) from None
 
-    def _cmd_draw_collines(self) -> Generator[None, int, None]:
+    def _scr_cmd_draw_collines(self) -> Generator[None, int, None]:
         width, height, picture = self.width, self.height, self.pixel_indices
-        row_bits, column_bits, colour_bits = self._row_bits, self._column_bits, self._colour_bits
+        row_bits, column_bits, colour_bits = self._scr_row_bits, self._scr_column_bits, self._scr_colour_bits
         end_command, reserved_column = (1 << column_bits) - 1, (1 << column_bits) - 2
         end, keep, copy, reserved_row = (
             (1 << row_bits) - 1,
@@ -612,45 +611,45 @@ class InMemoryScreen(IODevice):
         try:
             while True:
                 x = None
-                column = yield from self._bits(column_bits)
+                column = yield from self._scr_bits(column_bits)
                 if column == end_command:
                     return
                 if column == reserved_column:
-                    raise self._error(
+                    raise self._scr_error(
                         f'x = 0x{column:0{column_bits // 4}X} is the reserved column token '
                         f'(2^C - 2, C = {column_bits})'
                     )
                 if column >= width:
-                    raise self._error(f'x = {column:,}: the screen has columns 0..{width - 1:,} (w = {width:,})')
+                    raise self._scr_error(f'x = {column:,}: the screen has columns 0..{width - 1:,} (w = {width:,})')
                 x, cursor = column, 0
                 while cursor < height:
-                    token = yield from self._bits(row_bits)
+                    token = yield from self._scr_bits(row_bits)
                     if token == end:
                         break
                     field = 'y2'
                     if token == keep or token == copy:
                         if token == copy and x == 0:
-                            raise self._error(
+                            raise self._scr_error(
                                 'COPY copies column x - 1, and column 0 has none', column=x, cursor=cursor
                             )
                         field = 'y'
-                        row = yield from self._bits(row_bits)
+                        row = yield from self._scr_bits(row_bits)
                     else:
                         row = token
                     if row == reserved_row:
-                        raise self._error(
+                        raise self._scr_error(
                             f'0x{row:0{row_bits // 4}X} is the reserved row token (2^R - 4, R = {row_bits})',
                             column=x,
                             cursor=cursor,
                         )
                     if row > height:
-                        raise self._error(
+                        raise self._scr_error(
                             f'{field} = {row:,} is past the screen (rows end at h = {height:,})',
                             column=x,
                             cursor=cursor,
                         )
                     if row <= cursor:
-                        raise self._error(
+                        raise self._scr_error(
                             f'{field} = {row:,} does not move the cursor forward '
                             f'(need {cursor:,} < {field} <= {height:,})',
                             column=x,
@@ -660,30 +659,27 @@ class InMemoryScreen(IODevice):
                     if token == copy:
                         picture[start:stop:width] = picture[start - 1 : stop - 1 : width]  # noqa: E203
                     elif token != keep:
-                        colour = yield from self._bits(colour_bits)
-                        reason = self._colour_limit_reason('colour', colour)
-                        if reason is not None:
-                            raise self._error(reason, column=x, cursor=cursor)
+                        colour = yield from self._scr_bits(colour_bits)
                         picture[start:stop:width] = [colour] * (row - cursor)
                     cursor = row
         except _OutputEnded:
             if x is None:
-                raise self._error(self._ended_reason()) from None
-            raise self._error(self._ended_reason(), column=x, cursor=cursor) from None
+                raise self._scr_error(self._scr_ended_reason()) from None
+            raise self._scr_error(self._scr_ended_reason(), column=x, cursor=cursor) from None
 
-    def _cmd_present(self) -> Generator[None, int, None]:
+    def _scr_cmd_present(self) -> Generator[None, int, None]:
         self._present()
         return
         yield  # a generator, like every command
 
     # ---------------------------------------------------------------- presenting
 
-    def _palette_bytes(self, palette: List[RGB]) -> bytes:
-        cached = self._palette_bytes_cache
+    def _scr_palette_bytes(self, palette: List[RGB]) -> bytes:
+        cached = self._scr_palette_bytes_cache
         if cached is not None and cached[0] is palette:
             return cached[1]
         palette_bytes = bytes(channel for colour in palette for channel in colour)
-        self._palette_bytes_cache = (palette, palette_bytes)
+        self._scr_palette_bytes_cache = (palette, palette_bytes)
         return palette_bytes
 
     def _present(self) -> None:
@@ -695,14 +691,14 @@ class InMemoryScreen(IODevice):
         else:
             palette = self.palettes[self.selected_slot]
             # the presented list is frozen from here on: a later define_palette copies the slot first
-            self._owned_slots[self.selected_slot] = False
-            if self._colour_bits <= 8:
+            self._scr_owned_slots[self.selected_slot] = False
+            if self._scr_colour_bits <= 8:
                 value_bytes = bytes(values)
             else:
                 value_bytes = struct.pack(f'<{len(values)}H', *values)
-            hashed = value_bytes + self._palette_bytes(palette)
+            hashed = value_bytes + self._scr_palette_bytes(palette)
         self.palette = palette
-        self._presented = (self.format, values, palette)
+        self._scr_presented = (self.format, values, palette)
         self.frame_count += 1
         self.frame_hashes.append((time.time_ns(), hashlib.sha256(hashed).hexdigest()))
 
@@ -724,9 +720,9 @@ class InMemoryScreen(IODevice):
         LAZY: the interactive window does not need it (it hands SDL the indices). The INPUTS are
         snapshotted at present time, so this is the frame that was presented, not whatever the device
         has been drawing since."""
-        if self._presented is None:
+        if self._scr_presented is None:
             return []
-        screen_format, values, palette = self._presented
+        screen_format, values, palette = self._scr_presented
         if screen_format == FORMAT_RGB:
             return [rgb_of(value) for value in values]
         return [palette[value] for value in values]

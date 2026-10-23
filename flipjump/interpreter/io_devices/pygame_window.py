@@ -131,20 +131,28 @@ class PygameWindow:
         if self._screen_surface is not None and self._screen_surface.get_size() == (width, height):
             return  # already open at this size - recreating the window would flicker
         pg = self._pygame
+        fullscreen = False
         if self._screen_surface is not None:
             # a new size: start a new window. SDL cannot re-create a SCALED window's renderer in place
             # (a second set_mode with SCALED crashes pygame-ce 2.5 with an access violation), so the
-            # display is closed first; the title and the icon are re-applied to the new window.
+            # display is closed first. Its pending events are taken first (keys queue; a close ends the
+            # run here), and the title, the icon and fullscreen carry over to the new window.
+            self.pump_events()
+            fullscreen = bool(pg.display.is_fullscreen())
             pg.display.quit()
+        elif pg.display.get_init() and pg.display.get_surface() is not None:
+            pg.display.quit()  # another PygameWindow's display is still up: the same SCALED re-create crash
         pg.display.init()
         pg.display.set_caption(self._title)
         # SCALED scales the small logical surface up to a window-sized one (and handles
         # fullscreen scaling); RESIZABLE lets the user drag-resize.
-        self._screen_surface = pg.display.set_mode((width, height), pg.SCALED | pg.RESIZABLE)
+        mode_flags = pg.SCALED | (pg.FULLSCREEN if fullscreen else pg.RESIZABLE)
+        self._screen_surface = pg.display.set_mode((width, height), mode_flags)
         if self._icon is not None:
             self._apply_icon(self._icon)
-        # width follows the program's aspect, so the picture is scaled but never stretched
-        self._resize_window(max(1, round(WINDOW_HEIGHT * width / height)), WINDOW_HEIGHT)
+        if not fullscreen:
+            # width follows the program's aspect, so the picture is scaled but never stretched
+            self._resize_window(max(1, round(WINDOW_HEIGHT * width / height)), WINDOW_HEIGHT)
 
     def _os_window(self) -> Any:
         """the OS window behind the display surface (pygame.window.Window).
@@ -290,7 +298,7 @@ class InteractiveScreen(InMemoryScreen):
         self.window = window if window is not None else PygameWindow()
         # time.perf_counter() of the previous present, for the max-fps cap; -inf: the first present never waits
         # (perf_counter's starting point is undefined, so 0.0 would hold the first frame on a clock that starts there)
-        self._last_flush = float('-inf')
+        self._scr_last_flush = float('-inf')
 
     def _on_init_screen(self) -> None:
         """the life cycle: init_screen opens (or resizes) the window and shows black at once."""
@@ -308,8 +316,9 @@ class InteractiveScreen(InMemoryScreen):
         self.window.set_icon(width, height, colours)
 
     def _present(self) -> None:
+        # wait first, so the frame is recorded (its frame_hashes time) when it is shown
+        self._scr_wait_for_frame_slot()
         super()._present()
-        self._wait_for_frame_slot()
         if self.format == FORMAT_RGB:
             self.window.draw(self.width, self.height, [rgb_of(value) for value in self.pixel_indices])
         elif self.format <= 8:
@@ -321,18 +330,18 @@ class InteractiveScreen(InMemoryScreen):
             self.window.draw(self.width, self.height, [palette[value] for value in self.pixel_indices])
         self.window.pump_events()
 
-    def _wait_for_frame_slot(self) -> None:
+    def _scr_wait_for_frame_slot(self) -> None:
         """the set_max_fps (0x03) cap: hold this present until 1/max_fps s have passed since the previous one.
         The wait sleeps in short slices and keeps pumping the window, so keys still queue and closing
         the window still ends the run while a fast frame waits."""
         if self.max_fps:
-            due = self._last_flush + 1.0 / self.max_fps
+            due = self._scr_last_flush + 1.0 / self.max_fps
             remaining = due - time.perf_counter()
             while remaining > 0:
                 time.sleep(min(remaining, 0.005))
                 self.window.pump_events()
                 remaining = due - time.perf_counter()
-        self._last_flush = time.perf_counter()
+        self._scr_last_flush = time.perf_counter()
 
 
 class PcIO(IODevice):
@@ -365,6 +374,10 @@ class PcIO(IODevice):
     def headless(cls, events_file: Path, frames_dir: Path) -> 'PcIO':
         """no window: a scripted keyboard in, PNG frames out (deterministic replays / CI)."""
         return cls(InMemoryScreen(frames_dir=frames_dir), KeyboardIO(ScriptedKeyEventSource.from_file(events_file)))
+
+    def end_of_run(self) -> None:
+        self._screen.end_of_run()  # the screen's output must not end inside a command
+        self._keyboard.end_of_run()
 
     def close(self) -> None:
         window = getattr(self._screen, 'window', None)
