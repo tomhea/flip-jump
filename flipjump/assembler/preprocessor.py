@@ -36,7 +36,7 @@ from flipjump.utils.constants import (
     DEFAULT_MAX_MACRO_RECURSION_DEPTH,
     GAP_BETWEEN_PYTHONS_AND_PREPROCESSOR_MACRO_RECURSION_DEPTH,
 )
-from flipjump.utils.exceptions import FlipJumpPreprocessorException, FlipJumpExprException
+from flipjump.utils.exceptions import FlipJumpAssemblerException, FlipJumpPreprocessorException, FlipJumpExprException
 from flipjump.assembler.inner_classes.expr import Expr
 from flipjump.assembler.inner_classes.ops import (
     FlipJump,
@@ -790,9 +790,17 @@ class BlockPool(TablePool):
     def labels_resolved(self, labels: LabelsDict) -> None:
         """record the alias this assembly's labels imply among the groups it met (census reads it).
         Only a dict of aliases is kept, never the labels. A one-pass pool that merged its own census
-        keeps the alias it was SIZED with instead (see census)."""
+        keeps the alias it was SIZED with instead (see census). Refuses a program that reads a pinned word
+        raw (RAW_READERS) when no pin_exclude says which cells it reads."""
         if not (self.sizes_from_census and self.merge_aliases and self._placed):
             self.seen_alias = self.recording.canonical_alias(labels)
+        if self.pinned_words() and self.reads_words_raw and self.pin_exclude is None:
+            raise FlipJumpAssemblerException(
+                "the program reads cells through hex.pointers, and a word the BlockPool pinned cannot be "
+                "read that way (it rests at base + value). Which cells a pointer reaches is runtime data: "
+                "pass pin_exclude=(lambda address, labels: ...) vetoing every cell a pointer can read "
+                "(it may veto nothing if none is an armed hex), or use TablePool."
+            )
 
     def census(self, merge_aliases: bool = False) -> BlockCensus:
         """The counts, widths, width histogram and alias of every table this pool was offered: what a

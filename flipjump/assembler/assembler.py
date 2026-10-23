@@ -540,13 +540,6 @@ def assemble(
         if table_pool is not None:
             # a BlockPool records the alias these labels imply, for its census (a dict, not the labels)
             table_pool.labels_resolved(labels)
-            if table_pool.pinned_words() and table_pool.reads_words_raw and table_pool.pin_exclude is None:
-                raise FlipJumpAssemblerException(
-                    "the program reads cells through hex.pointers, and a word the BlockPool pinned cannot be "
-                    "read that way (it rests at base + value). Which cells a pointer reaches is runtime data: "
-                    "pass pin_exclude=(lambda address, labels: ...) vetoing every cell a pointer can read "
-                    "(it may veto nothing if none is an armed hex), or use TablePool."
-                )
             pinned, table_pool.pin_conflicts = resolve_pinned(
                 table_pool.pinned_words(), labels, exclude=table_pool.pin_exclude
             )
