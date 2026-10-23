@@ -608,7 +608,7 @@ def test_a_hot_width_grows_only_when_its_ranks_do_not_fit() -> None:
 
 
 def test_a_hot_bucket_grows_only_when_its_ranks_do_not_fit() -> None:
-    # the width-bucket layout, which doom builds with: the same rule, width by width
+    # the width-bucket layout: the same rule, width by width
     kwargs = dict(
         counts={'g': 300},
         widths={'g': 16},
@@ -1833,8 +1833,8 @@ def test_the_op_stream_does_not_depend_on_what_one_pass_decides(tmp_path: Path) 
 
 
 def test_one_pass_with_frozen_counts_keeps_the_layout_when_code_is_appended(tmp_path: Path) -> None:
-    """the doom-flipjump game tier assembles twice, the second time with code appended: given the
-    first assembly's census, the second lays out everything the first had at the same addresses"""
+    """an assembly with code appended, given the first assembly's census, lays out everything the first
+    had at the same addresses"""
     first = BlockPool(W, POOL_BASE, one_pass=True)
     first_labels = expand_labels(XOR_PROGRAM, tmp_path, first, name='first')
     census = first.census()
