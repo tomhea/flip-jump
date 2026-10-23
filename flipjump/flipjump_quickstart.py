@@ -66,8 +66,11 @@ def assemble(
     (the API form of the CLI's -D). It is parsed before the stl.
     :param lzma_preset: the preset used to compress a version-3 .fjm (0-9, faster->smaller).
 
-    :param table_pool: if given, relocate lookup tables to low-popcount addresses.
-    See assembler.preprocessor.TablePool.
+    :param table_pool: if given, move the tables declared relocatable (the expansions of `__relocatable__`
+    macros) to addresses that are cheap to arm, so every table dispatch runs fewer ops. Behaviour does not
+    change: only declared, `$`-free tables move, reached through their labels. It costs a bigger address span
+    and a .fjm segment per table, and a declared table that breaks a rule the pool relies on is a compilation
+    error. See flipjump/assembler/table_pool.py; `fj --pool-tables` makes a one-pass BlockPool.
     :param run_flags: written into the .fjm: how it runs by default (fjm_consts.RUN_FLAG_*)
     :param io_mode: written into the .fjm: the io device it runs with by default (fjm_consts.IO_MODE_*)
 
@@ -380,6 +383,8 @@ def assemble_and_run(
     assembles the .fj files into a temporary .fjm file, then runs it.
     @note: This function combines the functionality of `assemble()` and `run()`.
     For more information about the parameters, see the documentation of these functions.
+    @param table_pool: if given, move the tables declared relocatable to addresses that are cheap to arm (see
+    assemble() and flipjump/assembler/table_pool.py).
 
     @return: the run's termination-statistics.
     """
@@ -439,6 +444,8 @@ def assemble_and_debug(
     assembles the .fj files into a temporary .fjm file, then runs and debugs it.
     @note: This function combines the functionality of `assemble()` and `debug()`.
     For more information about the parameters, see the documentation of these functions.
+    @param table_pool: if given, move the tables declared relocatable to addresses that are cheap to arm (see
+    assemble() and flipjump/assembler/table_pool.py).
 
     @return: the run's termination-statistics.
     """
@@ -516,6 +523,8 @@ def assemble_and_run_test_output(
     it finishes successfully and generates the expected output.
     @note: This function combines the functionality of `assemble()` and `test()`.
     For more information about the parameters, see the documentation of these functions.
+    @param table_pool: if given, move the tables declared relocatable to addresses that are cheap to arm (see
+    assemble() and flipjump/assembler/table_pool.py).
     @raises AssertionError: if should_raise_assertion_error, and the run finished unexpectedly or with an
     unexpected output.
 

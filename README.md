@@ -149,6 +149,11 @@ fj --run hello_world.fjm
 - The first line will assemble your code.
 - The second line will run your code.
 
+`--pool-tables` makes the assembled program run fewer ops: it moves the tables the stl declares relocatable (those
+of `hex.exact_xor` and its kin, and of the bit shifts) to addresses that are cheap to arm, and never changes what
+the program does. The tables move to the upper half of memory, so the `.fjm` spans to there; a program that reaches
+it, or one that reads cells through `hex.pointers`, is refused with the reason.
+
 <details>
 <summary><b>Make it fast 🚀</b> — the three interpreter engines (native C is the default, ~300M fj-ops/s).</summary>
 

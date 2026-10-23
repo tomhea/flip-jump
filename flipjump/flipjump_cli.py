@@ -15,6 +15,7 @@ from typing import Tuple, List, Callable, Optional
 
 from flipjump import flipjump_quickstart
 from flipjump.assembler import assembler
+from flipjump.assembler.table_pool import BlockPool
 from flipjump.fjm.fjm_consts import (
     FJMVersion,
     SUPPORTED_VERSIONS_NAMES,
@@ -203,6 +204,8 @@ def assemble(
         print_time=not args.silent,
         max_recursion_depth=args.max_recursion_depth,
         defines_file=defines_file,
+        # based at half the memory: the program, from address 0, must stay below it
+        table_pool=BlockPool(args.width, 1 << (args.width - 1), one_pass=True) if args.pool_tables else None,
     )
 
 
@@ -399,6 +402,18 @@ def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
         help=f"The preset used for the LZMA2 algorithm compression ("
         f"{lzma.PRESET_DEFAULT} by default; "
         f"used when version={FJMVersion.CompressedVersion}).",
+    )
+
+    asm_arguments.add_argument(
+        '--pool-tables',
+        action='store_true',
+        help="move the tables declared relocatable (the expansions of `__relocatable__` macros, such as "
+        "hex.exact_xor's) to addresses that are cheap to arm, so every table dispatch runs fewer ops. "
+        "behaviour never changes: only declared, `$`-free tables move, and code reaches them through their "
+        "labels. it costs a .fjm that spans to the upper half of memory, and a segment per moved table. "
+        "with it, a relocatable that uses `$`, declares its start label after its first op, holds more than "
+        "labels and `a;b` ops, or has no `pad` right before its call is an error; and a program that reaches "
+        "the upper half of memory, or reads cells through hex.pointers, is refused",
     )
 
     asm_arguments.add_argument('--werror', help="treat all assemble warnings as errors", action='store_true')

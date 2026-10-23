@@ -1,15 +1,17 @@
 """
-the table pool: an opt-in placement of the lookup tables, used only when assemble() is given one (`table_pool=`).
+the table pool: an opt-in placement of the declared lookup tables (`assemble(table_pool=...)`, `fj --pool-tables`).
 
-A lookup table is the code after a `pad` that is only ever entered by a jump (`hex.exact_xor`'s switch and the
-like). Arming one writes its address into a word, one executed op per set bit, so a table at an address that is
-cheap to arm makes every dispatch through it cost fewer ops. The pool moves such tables there:
+A table is one expansion of a macro whose innermost namespace is `__relocatable__` (hex.exact_xor's switch and the
+like), called right after the `pad` that aligns it (see preprocessor.relocatable_call). Arming one writes its
+address into a word, one executed op per set bit, so a table at an address that is cheap to arm makes every
+dispatch through it cost fewer ops. The pool moves the tables there:
     TablePool - each to the lowest-popcount free address above pool_base;
     BlockPool - the tables dispatched through one word share a block, and the word rests at the block's base, so
-                arming flips only the table's index in it.
-Only code entered by a jump, never by falling through, is moved, so a program reaching the table through its own
-labels runs the same. It costs a bigger address span (the pool sits above the program) and .fjm segments: one per
-placed table (BlockPool) or per run of tables (TablePool).
+                arming flips only the table's index in it (`fj --pool-tables`: a one-pass BlockPool).
+Behaviour does not change: only declared, `$`-free tables move, entered by a jump and reached through their labels.
+It costs a bigger address span (the pool sits above the program) and .fjm segments: one per placed table
+(BlockPool) or per run of tables (TablePool). A declared table that breaks a rule the pool relies on is a
+compilation error, and so is a program that reaches into the pool, or (BlockPool) reads a pinned word raw.
 """
 
 from __future__ import annotations
@@ -726,7 +728,7 @@ class BlockPool(TablePool):
                 "the program reads cells through hex.pointers, and a word the BlockPool pinned cannot be "
                 "read that way (it rests at base + value). Which cells a pointer reaches is runtime data: "
                 "pass pin_exclude=(lambda address, labels: ...) vetoing every cell a pointer can read "
-                "(it may veto nothing if none is an armed hex), or use TablePool."
+                "(it may veto nothing if none is an armed hex), or use TablePool (fj: drop --pool-tables)."
             )
 
     def census(self, merge_aliases: bool = False) -> BlockCensus:

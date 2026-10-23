@@ -409,8 +409,8 @@ class PreprocessorData:
             # this is an error, not a warning.
             raise FlipJumpPreprocessorException(
                 'table-placement: the program reached %s, which is inside the table pool based at '
-                '%s. Raise pool_base, or relocate fewer tables.'
-                % (hex(self.curr_address), hex(self.table_pool.pool_base))
+                '%s. Raise pool_base, or relocate fewer tables (fj --pool-tables bases the pool at half the '
+                'memory: the program must stay below it).' % (hex(self.curr_address), hex(self.table_pool.pool_base))
             )
         if self._one_pass is not None:
             self._place_deferred_tables(self._one_pass)
