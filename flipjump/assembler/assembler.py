@@ -5,11 +5,12 @@ parsing the macro-tree, resolving macros into a flat op-list (the preprocessor),
 and resolving labels into addresses while writing the result with the fjm Writer.
 """
 
+import dataclasses
 import gc
 from array import array
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, Deque, List, Dict, MutableSequence, Tuple, Optional, NamedTuple, Union
+from typing import Callable, Deque, List, Dict, MutableSequence, Tuple, Optional, Union
 
 from flipjump.fjm.fjm_writer import Writer, new_word_buffer
 from flipjump.utils.constants import WFLIP_LABEL_PREFIX, DEFAULT_MAX_MACRO_RECURSION_DEPTH
@@ -64,10 +65,7 @@ def add_segment_to_fjm(
     if first_address == last_address:
         return
 
-    # PERF (doom-flipjump, 2026-08-20): appended in two pieces instead of `fj_words + wflip_words`.
-    # That concatenation built a THIRD list holding every word of the segment -- 78.6M of them on
-    # the doom-flipjump program, 22.9 s of pure copying -- purely to pass them as one argument.
-    # add_data appends, so two calls land contiguously and `data_start` is still the first one's.
+    # two appends, not `fj_words + wflip_words` (a copy of every word): they land contiguously
     data_length = len(fj_words) + len(wflip_words)  # (before add_data: a writer that takes fj_words grows it)
     data_start = fjm_writer.add_data(fj_words, take=take)
     fjm_writer.add_data(wflip_words)
@@ -86,32 +84,19 @@ def add_segment_to_fjm(
 
     if take:
         return
-    # `del x[:]` not `.clear()`: array.array has no clear() (verified -- it is not registered as
-    # a MutableSequence), while `del x[:]` empties BOTH an array and a list.
+    # `del x[:]` empties both an array (which has no clear()) and a list
     del fj_words[:]
     del wflip_words[:]
 
 
-class WFlipSpot(NamedTuple):
-    """Where the next wflip-chain op goes: (the word-list, the index in it, its address).
-
-    PERF (doom-flipjump, 2026-08-20): this was a plain @dataclass, and it is allocated once per
-    wflip-chain link -- 16.1M times on the doom-flipjump program, which is the single most
-    frequently constructed object in `labels_resolve`. A NamedTuple keeps the exact same
-    `.list/.word_index/.address` attribute access with none of the per-instance __dict__, and
-    tuple allocation comes off CPython's freelist (the index field is `word_index`: a NamedTuple
-    field cannot be called `index`, which tuple already defines).
-    """
-
+@dataclasses.dataclass(slots=True)
+class WFlipSpot:
     list: MutableSequence[int]
-    word_index: int
+    index: int
     address: int
 
 
 class BinaryData:
-    # PERF (doom-flipjump, 2026-08-20): __slots__. One instance per assembly, so this is not about
-    # instance size -- it is about attribute ACCESS: every slot read in the hot loop below becomes an
-    # index instead of a dict lookup, and those run tens of millions of times.
     __slots__ = (
         'memory_width',
         'first_address',
@@ -137,15 +122,14 @@ class BinaryData:
         pinned: Optional[Dict[int, int]] = None,
     ):
         """
-        @param save_wflip_labels: whether to record a `:wflips:N` label per generated wflip-chain op.
-        These labels exist ONLY for the debugging-file; see the note on _insert_wflip_label.
+        @param save_wflip_labels: whether to record a `:wflips:N` label per generated wflip-chain op
         """
         self.memory_width = memory_width
 
         # {jump-word address: block base} for BlockPool; None for every other build, so the two use
-        # sites below cost one truthiness test per op when off. A flip smaller than a `pad 16`-aligned
-        # address only edits the variable's VALUE bits (hex.set, xor_by) and must not be rebased.
+        # sites below cost one truthiness test per op when off
         self.pinned = pinned
+        # a flip value below a `pad 16` table address is a VALUE flip (hex.set, xor_by), not a jump target
         self.pinned_floor = 16 * 2 * memory_width
 
         self.first_address = first_segment.start_address
@@ -155,9 +139,7 @@ class BinaryData:
         self.wflips_so_far = 0
         self.save_wflip_labels = save_wflip_labels
 
-        # PERF (doom-flipjump, 2026-08-20): typed word arrays, not lists of python ints -- these
-        # hold every word of the program (78.6M on the doom-flipjump build) and labels-resolve is
-        # the phase that pages. Falls back to a plain list where the typecode does not fit exactly.
+        # typed word arrays (a plain list where no typecode fits the width): they hold every word
         self.fj_words = new_word_buffer(memory_width)
         self.wflip_words = new_word_buffer(memory_width)
 
@@ -166,8 +148,6 @@ class BinaryData:
         self.padding_ops_indices = array('q')
 
         # return_address -> { a chain tail (its addresses, as one int: see insert_wflip_ops) -> start_flip_address }
-        # PERF: defaultdict(dict) not defaultdict(lambda: {}) -- the C constructor, not a python
-        # call, on every previously-unseen return address.
         self.wflips_dict: Dict[int, Dict[int, int]] = defaultdict(dict)
 
     def get_wflip_spot(self) -> WFlipSpot:
@@ -202,17 +182,7 @@ class BinaryData:
         self.wflip_words = new_word_buffer(self.memory_width)
 
     def _insert_wflip_label(self, address: int) -> None:
-        """Record the debugging label for a generated wflip-chain op.
-
-        ⚠ THESE LABELS ARE UNREACHABLE FROM FJ SOURCE. `WFLIP_LABEL_PREFIX` is ':wflips:' and the
-        lexer's identifier rule is `[a-zA-Z_][a-zA-Z_0-9]*` -- a ':' can never appear in a user
-        label, so no Expr can ever name one. Their only consumer is save_debugging_labels(), i.e.
-        the optional debugging-file. MEASURED (doom-flipjump, 2026-08-20): on that program they are
-        16,137,538 of the 24,386,265 entries in the labels dict -- 66% of it -- built out of 16.1M
-        f-string formats and 16.1M dict insertions that nothing then reads. When no debugging file
-        was asked for, skipping them is not an approximation: it is removing dead work. Emission is
-        untouched, asserted by sha256 of the .fjm.
-        """
+        """the `:wflips:N` labels are read only by the debugging file (fj source cannot name them)"""
         if self.save_wflip_labels:
             self.labels[f'{WFLIP_LABEL_PREFIX}{self.wflips_so_far}'] = address
             self.wflips_so_far += 1
@@ -247,11 +217,8 @@ class BinaryData:
             # (tested with many other orders) that produces the best found-statistic for searching a
             # chain's tail in return_dict), and every tail is shared through return_dict: a tail is
             # the SET of addresses still to flip.
-            # MEMORY (doom-flipjump, 2026-10-19): a tail is keyed by one int, not by the tuple of its
-            # addresses. The set is {a + i : bit i of m}, with a its lowest address and bit 0 of m set;
-            # (a, m) determines the set and the set determines (a, m), and m < 2**w, so `a << w | m`
-            # is equal for two tails exactly when their address tuples are. A tuple of up to w address
-            # ints per chain op (and the O(k^2) re-tupling) was the bulk of this dict.
+            # A tail {a + i : bit i of m} (a its lowest address, bit 0 of m set, m < 2**w) is keyed by
+            # one int, `a << w | m`, which is equal for two tails exactly when their address sets are.
             width = self.memory_width
             remaining = flip_value
 
@@ -278,9 +245,9 @@ class BinaryData:
                     ops_list[last_address_index] = wflip_spot.address
                     return_dict[flips_key] = wflip_spot.address
 
-                    wflip_spot.list[wflip_spot.word_index] = word_address + lowest
+                    wflip_spot.list[wflip_spot.index] = word_address + lowest
                     remaining &= remaining - 1
-                    last_return_address_index = wflip_spot.list, wflip_spot.word_index + 1
+                    last_return_address_index = wflip_spot.list, wflip_spot.index + 1
 
             ops_list, last_address_index = last_return_address_index
             ops_list[last_address_index] = return_address
@@ -314,7 +281,6 @@ class BinaryData:
 def resolve_pinned(
     pinned_exprs: Dict[Expr, int],
     labels: Dict[str, int],
-    reserved_below: int = RESERVED_BELOW,
     exclude: Optional[Callable[[int, Dict[str, int]], bool]] = None,
 ) -> Tuple[Dict[int, int], int]:
     """({jump-word address: block base}, number of aliased addresses dropped).
@@ -335,7 +301,7 @@ def resolve_pinned(
             address = expr.exact_eval(labels)
         except FlipJumpExprException:
             continue  # an unresolvable word simply is not pinned
-        if address < reserved_below:
+        if address < RESERVED_BELOW:
             continue  # the runtime's word (stl.IO), not the program's
         if exclude is not None and exclude(address, labels):
             continue  # the caller owns this word
@@ -455,9 +421,7 @@ def labels_resolve(
     @param labels:[in]: dictionary from label to its resolved value
     @param memory_width: the memory-width
     @param fjm_writer: [out]: the .fjm file writer
-    @param save_wflip_labels: record a `:wflips:N` debugging label per generated wflip-chain op.
-    Only the debugging-file reads them (see BinaryData._insert_wflip_label), so a caller that is not
-    writing one can pass False and skip the work. It cannot change the emitted .fjm.
+    @param save_wflip_labels: record a `:wflips:N` debugging label per generated wflip-chain op
     @param on_progress: if given, called every _PROGRESS_CHUNK ops with the fraction of ops resolved (OpStream only)
     """
     if isinstance(ops, OpStream):
@@ -544,15 +508,7 @@ def assemble(
     up to the specified recursion depth.
     :param table_pool: if given, relocate lookup tables to low-popcount addresses (see TablePool).
     """
-    # PERF (doom-flipjump, 2026-08-20): the cyclic garbage collector is off for the pipeline.
-    # Assembly is one enormous monotonic allocation: the doom-flipjump program builds ~42M op objects
-    # and ~24M labels and frees almost none of them until it is done. CPython triggers a generation-2
-    # sweep on allocation COUNT, and every sweep has to walk each live container -- so the cost grows
-    # with the size of a graph that is, by construction, still fully reachable. Nothing built here is
-    # cyclic (Expr trees are acyclic tuples of Exprs; ops reference Exprs and never back), so plain
-    # reference counting still reclaims temporaries immediately and the peak does not move.
-    # RESTORED IN `finally`: leaving the interpreter gc off after assemble() returns would be a
-    # global side effect on the caller, and this library is used as an in-process API.
+    # the pipeline allocates a large acyclic graph: the cyclic gc only re-walks it (restored in finally)
     gc_was_enabled = gc.isenabled()
     gc.disable()
     try:
@@ -562,8 +518,7 @@ def assemble(
             )
 
         with ProgressBar('  macro resolve:   ', print_time=print_time, total=1.0) as progress:
-            # the `...---:start:` macro-start labels are debugging-file-only and unreachable from
-            # fj source, same as `:wflips:N` below -- don't build 1.7M of them for nobody.
+            # the `...---:start:` macro-start labels are read only by the debugging file
             ops, labels = resolve_macros(
                 memory_width,
                 macros,
@@ -599,8 +554,7 @@ def assemble(
                 pinned = None
 
         with ProgressBar('  labels resolve:  ', print_time=print_time, total=1.0) as progress:
-            # the `:wflips:N` labels are debugging-file-only and unreachable from fj source; don't
-            # build 16M of them for a caller that is not writing a debugging file.
+            # the `:wflips:N` labels are read only by the debugging file
             labels_resolve(
                 ops,
                 labels,
