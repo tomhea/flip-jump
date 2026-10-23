@@ -95,7 +95,7 @@ ns hex {
     //  Time Complexity:  w(2.75@+9.25) + 7@+13
     // Space Complexity:  w(2.75@+62)    + 7@+48
     // @note: The complexity is calculated for w=64. For w=32/16, add 0.25@/0.5@ in both complexities.
-    //   dst = *(ptr + index*2w)   — read the index-th hex past *ptr.
+    //   dst = *(ptr + index*2w)   ג€” read the index-th hex past *ptr.
     // dst is a hex; ptr is a hex[:w/4]; index is a signed hex[:w/4] (may be negative). ptr,index preserved.
     // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
     def read_nth_hex dst, ptr, index < hex.pointers.nth_ptr {
@@ -106,11 +106,88 @@ ns hex {
     //  Time Complexity:  w(2.75@+9.25) + 9@+13
     // Space Complexity:  w(2.75@+62)    + 9@+72
     // @note: The complexity is calculated for w=64. For w=32/16, add 0.25@/0.5@ in both complexities.
-    //   dst[:2] = *(ptr + index*2w)   — read the index-th byte past *ptr.
+    //   dst[:2] = *(ptr + index*2w)   ג€” read the index-th byte past *ptr.
     // dst is a hex[:2]; ptr is a hex[:w/4]; index is a signed hex[:w/4] (may be negative). ptr,index preserved.
     // @requires hex.init and stl.ptr_init (or stl.startup_and_init_all).
     def read_nth_byte dst, ptr, index < hex.pointers.nth_ptr {
         .ptr_index hex.pointers.nth_ptr, ptr, index
         .read_byte dst, hex.pointers.nth_ptr
+    }
+}
+
+
+// ---------- Constant-Array Entries
+
+
+ns hex {
+    //  Time Complexity: n(w(0.5@+4) + 16@+27) + entry_address
+    // Space Complexity: n(w(0.88@+25) + 12@+103) + entry_address
+    //   dst[:n] = table[idx]    (the idx-th entry of a constant array of hex[:n] entries)
+    //
+    // table is a constant address; entry k is the n hex data-ops at table + k*n*dw (a hex.vec n value).
+    // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst must not alias idx. entry_address: see hex.pointers.
+    // @requires hex.init & stl.ptr_init
+    def read_entry n, dst, table, idx_n, idx @ ptr, end {
+        .pointers.entry_address ptr, table, n, idx_n, idx
+        .read_hex n, dst, ptr
+        ;end
+      ptr: .vec w/4
+      end:
+    }
+
+    //  Time Complexity: w(0.5@+4) + 9@+13 + entry_address
+    // Space Complexity: w(0.5@+22) + 9@+72 + entry_address
+    //   dst[:2] = table[idx]    (the idx-th entry of a constant array of bytes)
+    //
+    // table is a constant address; entry k is the byte data-op at table + k*dw (;byte*dw).
+    // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst must not alias idx.
+    // @requires hex.init & stl.ptr_init
+    def read_entry_byte dst, table, idx_n, idx @ ptr, end {
+        .pointers.entry_address ptr, table, 1, idx_n, idx
+        .read_byte dst, ptr
+        ;end
+      ptr: .vec w/4
+      end:
+    }
+
+    //  Time Complexity: nb(w(0.5@+4) + 18@+27) + entry_address
+    // Space Complexity: nb(w(0.88@+25) + 14@+127) + entry_address
+    //   dst[:2nb] = table[idx]    (the idx-th entry of a constant array of nb-byte entries)
+    //
+    // table is a constant address; entry k is the nb byte data-ops at table + k*nb*dw, little-endian
+    //   (byte i of the entry lands in dst[2i:2i+2]).
+    // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst must not alias idx.
+    // @requires hex.init & stl.ptr_init
+    def read_entry_packed nb, dst, table, idx_n, idx @ ptr, end {
+        .pointers.entry_address ptr, table, nb, idx_n, idx
+        .read_byte nb, dst, ptr
+        ;end
+      ptr: .vec w/4
+      end:
+    }
+
+    ns pointers {
+        //  Time Complexity:  sw(4.5@+8) + w/4(@) + 5@+18       (size*2w a power of 2; else see hex.mul_const)
+        // Space Complexity:  sw(6@+150) + w/4(1.5@+20)
+        //   dst[:w/4] = table + idx*size*2w    (the address of the idx-th size-ops entry of the array at table)
+        //
+        // table is a constant address; size is a constant (> 0); idx is an unsigned hex[:idx_n] (idx_n <= w/4).
+        // The index is scaled in the sw = min(w/4, idx_n + ceil(#(size*2w)/4)) hexes it needs - a power-of-2
+        //   size*2w by shifts (as in hex.ptr_index n), any other by hex.mul_const - then added into dst = table.
+        // @requires hex.add.init (or hex.init)
+        def entry_address dst, table, size, idx_n, idx {
+            .entry_address dst, table, size*dw, idx_n, idx, (idx_n+((#(size*dw))+3)/4 < w/4) ? idx_n+((#(size*dw))+3)/4 : w/4
+        }
+        def entry_address dst, table, c, idx_n, idx, sw @ scaled, end {
+            ..zero sw, scaled
+            ..xor idx_n, scaled, idx
+            rep((c & (c-1)) == 0, i) .shl_index sw, scaled, (#c)-1
+            rep((c & (c-1)) != 0, i) ..mul_const sw, scaled, scaled, c
+            ..set w/4, dst, table
+            ..add_shifted w/4, sw, dst, scaled, 0
+            ;end
+          scaled: ..vec sw
+          end:
+        }
     }
 }

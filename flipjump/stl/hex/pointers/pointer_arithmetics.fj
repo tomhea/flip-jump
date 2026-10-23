@@ -50,4 +50,66 @@ ns hex {
         .shl_hex w/4, dst
         .add w/4, dst, ptr
     }
+
+    //  Time Complexity:  (n+2)(4.5@+8) + w/4(2@) + 5@+18    (if n+2 <= w/8; else ptr_index's, at n+2 hexes)
+    // Space Complexity:  (n+2)(6@+150) + w/4(2.5@+48)
+    // @note: The complexity is calculated for w=64 (index*2w needs n+2 hexes).
+    //   dst[:w/4] = ptr + index*2w     (the address of the index-th dw-aligned op past *ptr)
+    // dst, ptr are hex[:w/4] (dst must not alias ptr); index is an unsigned hex[:n] (n <= w/4).
+    // At n == w/4 it's ptr_index dst, ptr, index (a "negative" index[:w/4] is the same modulo 2^w).
+    // The shifts run at the hexes index*2w needs (exact for every index[:n]), not at w/4.
+    // @requires hex.add.init (or hex.init)
+    // @Assumes: w in {16, 32, 64, 128}.
+    def ptr_index n, dst, ptr, index {
+        .pointers.ptr_index n, (n+(#w+3)/4 < w/4) ? n+(#w+3)/4 : w/4, dst, ptr, index
+    }
+
+    ns pointers {
+        //   dst[:w/4] = ptr + index*2w    (see hex.ptr_index n; index*2w fits sw hexes)
+        // A narrow one (sw <= w/8) is scaled in sw hexes of its own, then added into a copy of ptr (add_shifted).
+        //   A wider one is scaled in dst, and ptr is added to it (as ptr_index dst, ptr, index does).
+        // @requires hex.add.init (or hex.init)
+        def ptr_index n, sw, dst, ptr, index {
+            rep(sw <= w/8, i) .ptr_index_narrow n, sw, dst, ptr, index
+            rep(sw > w/8, i) .ptr_index_wide n, sw, dst, ptr, index
+        }
+
+        //  Time Complexity:  sw(4.5@+8) + w/4(2@) + 5@+18
+        // Space Complexity:  sw(6@+150) + w/4(2.5@+48)
+        //   dst[:w/4] = ptr + index*2w    (index*2w fits sw hexes)
+        // @requires hex.add.init (or hex.init)
+        def ptr_index_narrow n, sw, dst, ptr, index @ scaled, end {
+            ..zero sw, scaled
+            ..xor n, scaled, index
+            .shl_index sw, scaled, #w
+            ..mov w/4, dst, ptr
+            ..add_shifted w/4, sw, dst, scaled, 0
+            ;end
+          scaled: ..vec sw
+          end:
+        }
+
+        //  Time Complexity:  sw(2.5@+8) + w/4(4@+14) + n@
+        // Space Complexity:  sw(3@+84) + w/4(4@+82) + n(@+12)
+        //   dst[:w/4] = ptr + index*2w    (index*2w fits sw hexes)
+        // @requires hex.add.init (or hex.init)
+        def ptr_index_wide n, sw, dst, ptr, index {
+            ..zero w/4, dst
+            ..xor n, dst, index
+            .shl_index sw, dst, #w
+            ..add w/4, dst, ptr
+        }
+
+        //  Time Complexity:  sw(2.5@+8)
+        // Space Complexity:  sw(3@+84)
+        //   x[:sw] <<= k
+        // k is a constant: k/4 hex shifts, then 1-2 bit shifts (3 is a bit right and a hex left).
+        // @Assumes: k >= 4.
+        def shl_index sw, x, k {
+            ..shl_hex sw, k/4, x
+            rep(k%4 == 3, i) ..shr_bit sw, x
+            rep(k%4 == 3, i) ..shl_hex sw, x
+            rep(k%4 == 3 ? 0 : k%4, i) ..shl_bit sw, x
+        }
+    }
 }
