@@ -1,12 +1,15 @@
 """
 draw_collines (io_devices/README.md): the field widths R and C at every boundary, the README's byte
-example, KEEP / COPY / END and the auto-end at h, columns in any order and revisited - and a property
+example, KEEP / COPY / END (which closes every column, also at h), items of zero rows, columns in any
+order and revisited - and a property
 test: an encoder written HERE, from the README alone, turns >= 500 random target pictures into
 draw_collines / draw_raw streams, and the device must reproduce every picture exactly.
 """
 
 import random
+import re
 from collections import Counter
+from pathlib import Path
 from typing import Any, List, Optional, Sequence, Tuple
 
 import pytest
@@ -29,7 +32,7 @@ def column(device: InMemoryScreen, x: int) -> List[int]:
 # ---------------------------------------------------------------- the README's example
 
 
-README_EXAMPLE = bytes.fromhex('01 04 00 03 00 08' '11 30 05 D1 F3' '1F')
+README_EXAMPLE = bytes.fromhex('01 04 00 03 00 08' '11 30 05 1F 3D FF' '1F')
 
 
 def test_the_readmes_example() -> None:
@@ -38,7 +41,7 @@ def test_the_readmes_example() -> None:
     # column 0 filled with 5, column 1 copied from it, the rest colour 0
     assert device.pixel_indices == [5, 5, 0, 0] * 3
     assert device.frame_count == 1
-    assert ss.draw_collines([(0, [('fill', 3, 5)]), (1, [('copy', 3)])], 4, 3, 8) == README_EXAMPLE[6:11]
+    assert ss.draw_collines([(0, [('fill', 3, 5)]), (1, [('copy', 3)])], 4, 3, 8) == README_EXAMPLE[6:12]
 
 
 def test_the_readmes_example_bit_by_bit() -> None:
@@ -48,13 +51,26 @@ def test_the_readmes_example_bit_by_bit() -> None:
 
 
 def test_control_the_readmes_example_with_its_copy_moved_to_column_0() -> None:
-    """the negative control: D1 -> D0 makes it a COPY in column 0"""
-    stream = README_EXAMPLE.replace(bytes([0xD1]), bytes([0xD0]))
+    """the negative control: 1F -> 0F (END | x=0) makes it a COPY in column 0"""
+    stream = bytearray(README_EXAMPLE)
+    assert stream[9] == 0x1F
+    stream[9] = 0x0F
     with pytest.raises(IODeviceException) as failure:
-        ss.feed(InMemoryScreen(), stream)
+        ss.feed(InMemoryScreen(), bytes(stream))
     assert str(failure.value) == (
         'ScreenIO: draw_collines (0x11) at output byte 6, frame 0, column 0, cursor 0: '
         'COPY copies column x - 1, and column 0 has none'
+    )
+
+
+def test_control_the_old_example_without_its_ends_is_refused() -> None:
+    """the example as it was written when a column ended by itself at h: column 0 reaches h, and its next
+    nibble (x = 1) is read as a row field - a row behind the cursor"""
+    with pytest.raises(IODeviceException) as failure:
+        ss.feed(InMemoryScreen(), bytes.fromhex('01 04 00 03 00 08' '11 30 05 D1 F3' '1F'))
+    assert str(failure.value) == (
+        'ScreenIO: draw_collines (0x11) at output byte 6, frame 0, column 0, cursor 3: '
+        'y2 = 1 is behind the cursor (need 3 <= y2 <= 3)'
     )
 
 
@@ -69,9 +85,12 @@ def test_the_row_field_width_at_every_boundary(height: int, row_bits: int) -> No
     assert row_field_width(height) == row_bits
     # drawn with R-bit row fields, a full column of colour 1 lands exactly
     device = screen_after(
-        ss.init_screen(1, height, 1) + ss.command(0x11, (0, 4), (height, row_bits), (1, 1), (15, 4)) + ss.PRESENT
+        ss.init_screen(1, height, 1)
+        + ss.command(0x11, (0, 4), (height, row_bits), (1, 1), (2**row_bits - 1, row_bits), (15, 4))
+        + ss.PRESENT
     )
     assert device.pixel_indices == [1] * height
+    assert device.frame_count == 1 and device.get_output() == b''  # the whole stream was read, to the present
 
 
 @pytest.mark.parametrize(
@@ -82,10 +101,11 @@ def test_the_column_field_width_at_every_boundary(width: int, column_bits: int) 
     assert column_field_width(width) == column_bits
     # the last column, drawn with a C-bit column field (and END_CMD = 2^C - 1)
     stream = ss.init_screen(width, 1, 1) + ss.command(
-        0x11, (width - 1, column_bits), (1, 4), (1, 1), (2**column_bits - 1, column_bits)
+        0x11, (width - 1, column_bits), (1, 4), (1, 1), (15, 4), (2**column_bits - 1, column_bits)
     )
-    device = screen_after(stream)
+    device = screen_after(stream + ss.PRESENT)
     assert device.pixel_indices[-1] == 1 and sum(device.pixel_indices) == 1
+    assert device.frame_count == 1 and device.get_output() == b''
 
 
 def test_the_widths_are_the_readmes() -> None:
@@ -105,13 +125,49 @@ def test_end_leaves_the_rows_below_the_cursor() -> None:
     assert column(device, 0) == [9] * 4  # a column never mentioned keeps its pixels
 
 
-def test_a_column_ends_by_itself_at_h() -> None:
-    # after reaching h the next field is a column field: here END_CMD, which as a row field would be END
+def test_a_column_that_reached_h_still_needs_end() -> None:
     device = screen_after(
         ss.init_screen(3, 2, 8)
-        + ss.draw_collines([(2, [('fill', 2, 4)]), (0, [('fill', 1, 6), ('fill', 2, 7)])], 3, 2, 8)
+        + ss.command(0x11, (2, 4), (2, 4), (4, 8), (15, 4), (0, 4), (1, 4), (6, 8), (2, 4), (7, 8), (15, 4), (15, 4))
+        + ss.PRESENT
     )
     assert device.pixel_indices == [6, 0, 4, 7, 0, 4]
+    assert device.frame_count == 1
+
+
+def test_a_column_right_after_reaching_h_is_read_as_a_row_field() -> None:
+    """without its END, column 2's fill to h is followed by x = 0 - read as the row field y2 = 0"""
+    stream = ss.init_screen(3, 2, 8) + ss.command(0x11, (2, 4), (2, 4), (4, 8), (0, 4), (1, 4), (6, 8))
+    with pytest.raises(IODeviceException) as failure:
+        ss.feed(InMemoryScreen(), stream)
+    assert str(failure.value) == (
+        'ScreenIO: draw_collines (0x11) at output byte 6, frame 0, column 2, cursor 2: '
+        'y2 = 0 is behind the cursor (need 2 <= y2 <= 2)'
+    )
+
+
+def test_items_of_zero_rows_paint_nothing() -> None:
+    device = screen_after(ss.init_screen(2, 3, 8) + ss.draw_raw([1, 2, 3, 4, 5, 6], 8))
+    items = [('fill', 0, 9), ('keep', 0), ('copy', 0), ('fill', 2, 7), ('fill', 2, 8), ('copy', 2), ('keep', 2)]
+    ss.feed(device, ss.draw_collines([(1, items)], 2, 3, 8))
+    assert device.pixel_indices == [1, 7, 3, 7, 5, 6]
+
+
+@pytest.mark.parametrize('item', [('fill', 3, 9), ('keep', 3), ('copy', 3)])
+def test_a_zero_row_item_at_h_is_allowed(item: Tuple[Any, ...]) -> None:
+    device = screen_after(ss.init_screen(2, 3, 8) + ss.draw_raw([1, 2, 3, 4, 5, 6], 8))
+    ss.feed(device, ss.draw_collines([(1, [('fill', 3, 7), item])], 2, 3, 8) + ss.PRESENT)
+    assert device.pixel_indices == [1, 7, 3, 7, 5, 7] and device.frame_count == 1
+
+
+def test_a_zero_row_copy_in_column_0_is_still_refused() -> None:
+    stream = ss.init_screen(2, 3, 8) + ss.draw_collines([(0, [('copy', 0)])], 2, 3, 8)
+    with pytest.raises(IODeviceException) as failure:
+        ss.feed(InMemoryScreen(), stream)
+    assert str(failure.value) == (
+        'ScreenIO: draw_collines (0x11) at output byte 6, frame 0, column 0, cursor 0: '
+        'COPY copies column x - 1, and column 0 has none'
+    )
 
 
 def test_keep_keeps_the_last_presented_frame() -> None:
@@ -243,13 +299,29 @@ def encode_collines(
             length += 1
         return length
 
+    def emit_zero_row_item(x: int, cursor: int) -> None:
+        """a fill, KEEP or COPY of zero rows (y = the cursor): it paints nothing"""
+        kind = rng.choice(['fill', 'keep'] + (['copy'] if x > 0 else []))
+        if kind == 'fill':
+            enc.put(cursor, row_bits)
+            enc.put(rng.randrange(1 << bits), bits)
+        else:
+            enc.put(keep if kind == 'keep' else copy, row_bits)
+            enc.put(cursor, row_bits)
+        stats['zero-row'] += 1
+        stats['zero-row at h'] += cursor == height
+
     def emit_column(x: int, wanted: Sequence[int]) -> None:
         enc.put(x, column_bits)
         cursor = 0
-        while cursor < height:
-            if all(screen[cell(x, y)] == wanted[y] for y in range(cursor, height)) and rng.random() < 0.5:
-                enc.put(end, row_bits)
+        while True:
+            if rng.random() < 0.1:
+                emit_zero_row_item(x, cursor)
+            done = all(screen[cell(x, y)] == wanted[y] for y in range(cursor, height))
+            if cursor == height or (done and rng.random() < 0.5):
+                enc.put(end, row_bits)  # END always closes a column, also at h
                 stats['end'] += 1
+                stats['end at h'] += cursor == height
                 return
             options = []
             fill_length = run_length(x, cursor, lambda y: wanted[y] == wanted[cursor])
@@ -264,7 +336,6 @@ def encode_collines(
             kind, longest = rng.choice(options)
             stop = cursor + rng.randint(1, longest)
             stats[kind] += 1
-            stats['auto-end'] += stop == height
             if kind == 'fill':
                 enc.put(stop, row_bits)
                 enc.put(wanted[cursor], bits)
@@ -363,7 +434,8 @@ def test_random_pictures_round_trip_through_the_device() -> None:
     assert screens >= 150 and frames >= 600
     # not vacuous: every kind of item, and every way a column can go, was exercised many times
     assert all(
-        stats[kind] >= 200 for kind in ('fill', 'keep', 'copy', 'end', 'auto-end', 'revisited', 'skipped')
+        stats[kind] >= 200
+        for kind in ('fill', 'keep', 'copy', 'end', 'end at h', 'zero-row', 'zero-row at h', 'revisited', 'skipped')
     ), stats
 
 
@@ -387,3 +459,14 @@ def test_control_the_property_test_sees_a_wrong_picture() -> None:
         'ScreenIO: draw_raw (0x10) at output byte 6, frame 0, pixel (5, 4): '
         "the program's output ended inside draw_raw (0x10): 240 of its bits read"
     )
+
+
+def test_the_readmes_example_block_is_this_stream() -> None:
+    """the bytes in the README's example block, as printed there, are exactly README_EXAMPLE"""
+    readme = Path(__file__).resolve().parents[2] / 'flipjump' / 'interpreter' / 'io_devices' / 'README.md'
+    text = readme.read_text(encoding='utf-8')
+    block = text[text.index('### Example') :].split('```')[1]  # noqa: E203
+    printed = b''.join(
+        bytes.fromhex(re.split(r'\s{3,}', line.strip())[0]) for line in block.splitlines() if line.strip()
+    )
+    assert printed == README_EXAMPLE

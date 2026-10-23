@@ -190,36 +190,44 @@ def test_a_token_after_keep_is_past_the_screen() -> None:
     )
 
 
-def test_cursor_not_moving_forward() -> None:
+def test_a_row_behind_the_cursor() -> None:
     stream = ss.init_screen(160, 84, 8) + ss.command(0x11, (17, 8), (40, 8), (1, 8), (30, 8))
     assert rejected(stream) == (
         'ScreenIO: draw_collines (0x11) at output byte 6, frame 0, column 17, cursor 40: '
-        'y2 = 30 does not move the cursor forward (need 40 < y2 <= 84)'
+        'y2 = 30 is behind the cursor (need 40 <= y2 <= 84)'
     )
 
 
-def test_cursor_standing_still() -> None:
-    stream = ss.init_screen(160, 84, 8) + ss.command(0x11, (17, 8), (40, 8), (1, 8), (40, 8))
+def test_a_row_one_behind_the_cursor() -> None:
+    stream = ss.init_screen(160, 84, 8) + ss.command(0x11, (17, 8), (40, 8), (1, 8), (39, 8))
     assert rejected(stream) == (
         'ScreenIO: draw_collines (0x11) at output byte 6, frame 0, column 17, cursor 40: '
-        'y2 = 40 does not move the cursor forward (need 40 < y2 <= 84)'
+        'y2 = 39 is behind the cursor (need 40 <= y2 <= 84)'
     )
 
 
-def test_a_fill_to_row_0() -> None:
-    stream = ss.init_screen(160, 84, 8) + ss.command(0x11, (17, 8), (0, 8))
-    assert rejected(stream) == (
-        'ScreenIO: draw_collines (0x11) at output byte 6, frame 0, column 17, cursor 0: '
-        'y2 = 0 does not move the cursor forward (need 0 < y2 <= 84)'
-    )
+def test_control_a_row_at_the_cursor_is_a_zero_row_fill() -> None:
+    """the vacuity control of the two above: y2 = the cursor is allowed (it paints nothing)"""
+    device = InMemoryScreen()
+    stream = ss.command(0x11, (17, 8), (40, 8), (1, 8), (40, 8), (2, 8), (0xFF, 8), (0xFF, 8))
+    ss.feed(device, ss.init_screen(160, 84, 8) + stream + ss.PRESENT)
+    assert device.pixel_indices[39 * 160 + 17] == 1 and device.pixel_indices[40 * 160 + 17] == 0
 
 
 @pytest.mark.parametrize('token', [0xFE, 0xFD])
-def test_keep_and_copy_not_moving_forward(token: int) -> None:
-    stream = ss.init_screen(160, 84, 8) + ss.command(0x11, (17, 8), (40, 8), (1, 8), (token, 8), (40, 8))
+def test_keep_and_copy_behind_the_cursor(token: int) -> None:
+    stream = ss.init_screen(160, 84, 8) + ss.command(0x11, (17, 8), (40, 8), (1, 8), (token, 8), (39, 8))
     assert rejected(stream) == (
         'ScreenIO: draw_collines (0x11) at output byte 6, frame 0, column 17, cursor 40: '
-        'y = 40 does not move the cursor forward (need 40 < y <= 84)'
+        'y = 39 is behind the cursor (need 40 <= y <= 84)'
+    )
+
+
+def test_an_item_after_h_other_than_end_is_past_the_screen() -> None:
+    stream = ss.init_screen(160, 84, 8) + ss.command(0x11, (17, 8), (84, 8), (1, 8), (85, 8))
+    assert rejected(stream) == (
+        'ScreenIO: draw_collines (0x11) at output byte 6, frame 0, column 17, cursor 84: '
+        'y2 = 85 is past the screen (rows end at h = 84)'
     )
 
 
@@ -260,8 +268,8 @@ def test_keep_in_column_0_is_fine() -> None:
 
 
 def test_non_zero_padding() -> None:
-    # the README example's column 0, then END_CMD: 20 bits, and 0b0101 in the 4 padding bits
-    stream = ss.init_screen(4, 3, 8) + bytes([0x11, 0x30, 0x05, 0x5F])
+    # column 0 with nothing but its END, then END_CMD: 20 bits, and 0b0101 in the 4 padding bits
+    stream = ss.init_screen(4, 3, 8) + bytes([0x11, 0xF0, 0x5F])
     assert rejected(stream) == (
         'ScreenIO: draw_collines (0x11) at output byte 6, frame 0: '
         'the padding bits after the command are 0b0101, not zero (the stream is probably misaligned)'
@@ -279,8 +287,9 @@ def test_non_zero_padding_shows_every_padding_bit() -> None:
 
 def test_padding_control_zero_padding_passes() -> None:
     device = InMemoryScreen()
-    ss.feed(device, ss.init_screen(4, 3, 8) + bytes([0x11, 0x30, 0x05, 0x0F]))
+    ss.feed(device, ss.init_screen(4, 3, 8) + bytes([0x11, 0x30, 0x05, 0xFF, 0x11, 0xF1, 0x0F]) + ss.PRESENT)
     assert device.pixel_indices[0::4] == [5, 5, 5]
+    assert device.frame_count == 1 and device.get_output() == b''
 
 
 @pytest.mark.parametrize('width, height, field', [(0, 3, 'w'), (3, 0, 'h'), (0, 0, 'w')])
@@ -322,8 +331,8 @@ def ended(stream: bytes, extra_bits: int = 0) -> str:
 
 
 def test_output_ends_inside_draw_collines() -> None:
-    # the README example up to column 1's COPY, then 5 more bits: 37 of the command's bits
-    stream = ss.init_screen(4, 3, 8) + bytes([0x11, 0x30, 0x05, 0xD1])
+    # the README example up to column 1's x, then 5 more bits: 37 of the command's bits
+    stream = ss.init_screen(4, 3, 8) + bytes([0x11, 0x30, 0x05, 0x1F])
     assert ended(stream, extra_bits=5) == (
         'ScreenIO: draw_collines (0x11) at output byte 6, frame 0, column 1, cursor 0: '
         "the program's output ended inside draw_collines (0x11): 37 of its bits read"

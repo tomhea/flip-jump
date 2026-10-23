@@ -90,7 +90,8 @@ def collines_fields(
     columns: Sequence[Tuple[int, Sequence[Tuple[Any, ...]]]], row_bits: int, column_bits: int, bits: int
 ) -> List[Field]:
     """draw_collines's fields (after the opcode). `columns` is [(x, items)], an item one of
-    ('fill', y2, colour), ('keep', y), ('copy', y), ('end',) - each written as the README's tokens."""
+    ('fill', y2, colour), ('keep', y), ('copy', y), ('end',) - each written as the README's tokens. A column
+    whose items do not end with ('end',) gets one: END closes every column."""
     end, keep, copy = 2**row_bits - 1, 2**row_bits - 2, 2**row_bits - 3
     fields: List[Field] = []
     for x, items in columns:
@@ -105,6 +106,8 @@ def collines_fields(
             else:
                 assert item[0] == 'end'
                 fields.append((end, row_bits))
+        if not items or items[-1][0] != 'end':
+            fields.append((end, row_bits))
     fields.append((2**column_bits - 1, column_bits))  # END_CMD
     return fields
 

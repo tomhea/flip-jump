@@ -622,7 +622,7 @@ class InMemoryScreen(IODevice):
                 if column >= width:
                     raise self._scr_error(f'x = {column:,}: the screen has columns 0..{width - 1:,} (w = {width:,})')
                 x, cursor = column, 0
-                while cursor < height:
+                while True:  # only END closes a column, also once the cursor reached h
                     token = yield from self._scr_bits(row_bits)
                     if token == end:
                         break
@@ -648,10 +648,9 @@ class InMemoryScreen(IODevice):
                             column=x,
                             cursor=cursor,
                         )
-                    if row <= cursor:
+                    if row < cursor:  # row == cursor: an item of zero rows, which paints nothing
                         raise self._scr_error(
-                            f'{field} = {row:,} does not move the cursor forward '
-                            f'(need {cursor:,} < {field} <= {height:,})',
+                            f'{field} = {row:,} is behind the cursor (need {cursor:,} <= {field} <= {height:,})',
                             column=x,
                             cursor=cursor,
                         )

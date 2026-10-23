@@ -172,11 +172,11 @@ resolved what is in front, so the device only fills.
 
 ```
 draw_collines := 0x11  ( column )*  END_CMD
-column        := x  item*                       x = the column to draw (any order; repeats allowed)
+column        := x  item*  END                  x = the column to draw (any order; repeats allowed);
+                                                END closes it (rows below the cursor are left as they are)
 item          := y2 colour                      fill rows [cursor, y2) with colour; cursor = y2
                | KEEP y                         rows [cursor, y) keep what the screen shows there; cursor = y
                | COPY y                         rows [cursor, y) copy the column to the left (x − 1); cursor = y
-               | END                            the column is done (rows below the cursor are left as they are)
 ```
 
 | Row-field value | Token | At `R = 8` |
@@ -195,13 +195,15 @@ item          := y2 colour                      fill rows [cursor, y2) with colo
 
 **Rules:**
 
-- Each column's cursor starts at row 0. Every fill, KEEP and COPY must move it forward: `cursor < y2 ≤ h`.
-- A column also ends by itself when the cursor reaches `h` (so full columns need no END).
+- Each column's cursor starts at row 0. A fill, KEEP or COPY moves it to `y2` / `y` with `cursor ≤ y2 ≤ h`:
+  it may stay where it is (an item of zero rows paints nothing); only a row behind the cursor is an error.
+- END always closes a column, also when the cursor has reached `h`: after that only END may follow (or another
+  zero-row item).
 - KEEP and COPY act on rows `[cursor, y)` only — from where the column is now, not from row 0.
 - **KEEP** keeps the pixels the last presented frame had in those rows — unless this frame already drew them,
   in which case it keeps the new ones.
 - **COPY** copies the same rows of the column to the left (`x − 1`), as that column is at that moment: its new
-  pixels if this frame already drew it, otherwise the last frame's. COPY in column 0 is an error.
+  pixels if this frame already drew it, otherwise the last frame's. COPY in column 0 is an error, whatever its `y`.
 - Columns can come in any order, be skipped, or be drawn again (e.g. an overlay: `KEEP` down to it, then fill).
 
 ### Example
@@ -212,9 +214,10 @@ Here `R = 4` and `C = 4` (both fields are nibbles); the first field of each byte
 ```
 01  04 00  03 00  08      init_screen  w=4 h=3 format=8
 11                        draw_collines
-30 05                       x=0, y2=3 | colour 0x05            (column 0: rows 0-2 = 5, ends at h)
-D1                          x=1, COPY                         (column 1: copied from column 0 ...)
-F3                          y=3 | END_CMD (x=0xF)             (... rows 0-2; the command ends on a byte boundary)
+30 05                       x=0, y2=3 | colour 0x05            (column 0: rows 0-2 = 5)
+1F                          END | x=1                         (column 0 closed; column 1 ...)
+3D                          COPY | y=3                        (... rows 0-2 copied from column 0)
+FF                          END | END_CMD                     (column 1 closed; the command ends on a byte boundary)
 1F                        present
 ```
 
@@ -244,7 +247,7 @@ ScreenIO: draw_collines (0x11) at output byte 1,204, frame 37, column 17, cursor
 | column | `x = 170: the screen has columns 0..159 (w = 160)` |
 | reserved column token | `x = 0xFE is the reserved column token (2^C - 2, C = 8)` |
 | row past the screen | `y2 = 90 is past the screen (rows end at h = 84)` |
-| cursor not moving forward | `y2 = 30 does not move the cursor forward (need 40 < y2 <= 84)` |
+| a row behind the cursor | `y2 = 30 is behind the cursor (need 40 <= y2 <= 84)` |
 | reserved row token | `0xFC is the reserved row token (2^R - 4, R = 8)` |
 | COPY in column 0 | `COPY copies column x - 1, and column 0 has none` |
 | non-zero padding | `the padding bits after the command are 0b0101, not zero (the stream is probably misaligned)` |
