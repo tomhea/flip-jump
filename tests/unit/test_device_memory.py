@@ -2,8 +2,7 @@
 unit-tests for the device<->memory hook.
 
 an IODevice can be attached to the interpreter memory at run-start (attach_memory), and can
-then read and write interpreter memory by address during the run - the screen device reads
-data straight out of the program memory. pinned here over both the
+then read and write interpreter memory by address during the run. pinned here over both the
 pure-python and the native engine.
 """
 

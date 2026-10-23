@@ -174,7 +174,7 @@ fj --run program.fjm --io pc
 ```
 
 - **`--io standard`** - input/output over the terminal.
-- **`--io pc`** - an interactive window: live keyboard input **and** a scaled 256-color screen,
+- **`--io pc`** - an interactive window: live keyboard input **and** a scaled screen,
   in one window the device owns (F11 toggles fullscreen, closing it stops the run). Needs
   pygame-ce (`pip install flipjump[io]`); works on Windows, Linux and macOS. ⚠ pygame-ce, NOT
   upstream pygame: they share a module name, so the wrong one is silent -- the window code
@@ -204,8 +204,10 @@ From python, `flipjump.assemble(..., io_mode=, run_flags=)` compiles them in and
 Each mode is one complete `IODevice` that owns all of its channels (and window, if any).
 Adding a new device (e.g. a windowed text console, or one that also
 drives speakers/printer) is one entry in `IO_MODES` (`io_devices/cli_devices.py`) plus its
-device class. Devices can also read the program's memory through the `DeviceMemory` hook
-(`IODevice.attach_memory`) - e.g. the screen reads pixel data straight from memory. Headless /
+device class. The screen and keyboard protocols (the screen's commands, formats and palettes, and
+the keycodes) are specified in [io_devices/README.md](flipjump/interpreter/io_devices/README.md); the
+screen never reads program memory - every command carries its data in the output stream. A device
+can still reach the program's memory through the `DeviceMemory` hook (`IODevice.attach_memory`). Headless /
 scripted devices (a scripted keyboard + PNG frames, a plain `InMemoryScreen`, ...) are built
 programmatically and passed to `fjm_run.run(io_device=...)` - e.g. `PcIO.headless(events, dir)`.
 </details>

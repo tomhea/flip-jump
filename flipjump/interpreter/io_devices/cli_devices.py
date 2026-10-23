@@ -9,7 +9,7 @@ that are passed to the mode's factory (no current mode takes parameters).
 
 modes:
   standard - terminal input/output (the default).
-  pc       - an interactive window: live keyboard input + a scaled 256-color screen.
+  pc       - an interactive window: live keyboard input + a scaled screen (io_devices/README.md).
 
 headless/scripted devices (e.g. scripted keys + PNG frames, or a plain InMemoryScreen) are
 built programmatically and passed straight to fjm_run.run(io_device=...) - e.g.
