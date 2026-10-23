@@ -5,6 +5,7 @@ hexlib-triple_exact_xor, programs/hexlib_tests/basics1/triple_exact_xor.fj,tests
 hexlib-basic_math, programs/hexlib_tests/basics1/basic_math.fj,tests/compiled/hexlib_tests/basics1/basic_math.fjm, 64,3,0, True,True
 hexlib-if, programs/hexlib_tests/basics1/if.fj,tests/compiled/hexlib_tests/basics1/if.fjm, 64,3,0, True,True
 hexlib-print_int, programs/hexlib_tests/basics1/print_int.fj,tests/compiled/hexlib_tests/basics1/print_int.fjm, 64,3,0, True,True
+hexlib-switch, programs/hexlib_tests/basics1/switch.fj,tests/compiled/hexlib_tests/basics1/switch.fjm, 64,3,0, True,True
 
 hexlib-add_count_bits, programs/hexlib_tests/basics2/add_count_bits.fj, tests/compiled/hexlib_tests/basics2/add_count_bits.fjm, 64,3,0, True,True
 hexlib-count_bits, programs/hexlib_tests/basics2/count_bits.fj, tests/compiled/hexlib_tests/basics2/count_bits.fjm, 64,3,0, True,True
