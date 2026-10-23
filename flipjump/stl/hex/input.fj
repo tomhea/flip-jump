@@ -41,6 +41,21 @@ ns hex {
         rep(n, i) .input bytes+2*i*dw
     }
 
+    //  Time Complexity: 3@+6     (+ 4@+14 when a key event arrived)
+    // Space Complexity: 7@+70
+    //   status = input(4bits)     // the keyboard's next status: 0x0 no event, 0x9 a key was pressed, 0x8 released
+    //   if status != 0:  keycode[:2] = input(8bits)     // the event's keycode (else keycode is unchanged)
+    //
+    // The keyboard device's protocol (flipjump/interpreter/io_devices/README.md): an event's keycode byte follows
+    //   its status, and must be read, or every later poll is out of phase. Polling never waits.
+    // status is a hex, keycode is a hex[:2].
+    def poll_key status, keycode @ end {
+        .input_hex status
+        .if0 status, end
+        .input keycode
+      end:
+    }
+
     //  Time Complexity: 7@+11
     // Space Complexity: 8.5@+92
     //   hex = hex_from_ascii(input(1byte))
