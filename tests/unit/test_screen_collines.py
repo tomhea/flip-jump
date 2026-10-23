@@ -240,55 +240,24 @@ def test_the_colour_field_is_b_bits(bits: int) -> None:
 # ---------------------------------------------------------------- the property test
 
 
-class Encoder:
-    """an independent, README-only encoder: a bit list, fields lsb first, zero padding."""
-
-    def __init__(self) -> None:
-        self.bits: List[int] = []
-
-    def put(self, value: int, width: int) -> None:
-        self.bits += [(value >> i) & 1 for i in range(width)]
-
-    def end_command(self) -> None:
-        self.bits += [0] * (-len(self.bits) % 8)
-
-    def data(self) -> bytes:
-        assert len(self.bits) % 8 == 0
-        octets = [self.bits[i:][:8] for i in range(0, len(self.bits), 8)]
-        return bytes(int(''.join(map(str, reversed(octet))), 2) for octet in octets)
-
-
-def encode_init(enc: Encoder, width: int, height: int, screen_format: int) -> None:
-    enc.put(0x01, 8)
-    enc.put(width, 16)
-    enc.put(height, 16)
-    enc.put(screen_format, 8)
-    enc.end_command()
-
-
-def encode_raw(enc: Encoder, target: Sequence[int], bits: int) -> None:
-    enc.put(0x10, 8)
-    for value in target:
-        enc.put(value, bits)
-    enc.end_command()
-
-
 def encode_collines(
     rng: random.Random,
-    enc: Encoder,
     screen: List[int],
     target: Sequence[int],
     width: int,
     height: int,
     bits: int,
     stats: 'Counter[str]',
-) -> None:
+) -> bytes:
     """draw `target` over `screen` (the encoder's own model of what the device holds, updated as it goes):
     every column, in a random order, some first scribbled over and fixed later, each as random runs of
     fills, KEEPs, COPYs and ENDs that are correct for the model at that moment."""
-    row_bits = min(r for r in (4, 8, 12, 16) if height < 2**r - 4)
-    column_bits = min(c for c in (4, 8, 12, 16) if width < 2**c - 1)
+    row_bits, column_bits = ss.field_widths(width, height)
     end, keep, copy = 2**row_bits - 1, 2**row_bits - 2, 2**row_bits - 3
+    fields: List[ss.Field] = []
+
+    def put(value: int, field_width: int) -> None:
+        fields.append((value, field_width))
 
     def cell(x: int, y: int) -> int:
         return y * width + x
@@ -303,23 +272,23 @@ def encode_collines(
         """a fill, KEEP or COPY of zero rows (y = the cursor): it paints nothing"""
         kind = rng.choice(['fill', 'keep'] + (['copy'] if x > 0 else []))
         if kind == 'fill':
-            enc.put(cursor, row_bits)
-            enc.put(rng.randrange(1 << bits), bits)
+            put(cursor, row_bits)
+            put(rng.randrange(1 << bits), bits)
         else:
-            enc.put(keep if kind == 'keep' else copy, row_bits)
-            enc.put(cursor, row_bits)
+            put(keep if kind == 'keep' else copy, row_bits)
+            put(cursor, row_bits)
         stats['zero-row'] += 1
         stats['zero-row at h'] += cursor == height
 
     def emit_column(x: int, wanted: Sequence[int]) -> None:
-        enc.put(x, column_bits)
+        put(x, column_bits)
         cursor = 0
         while True:
             if rng.random() < 0.1:
                 emit_zero_row_item(x, cursor)
             done = all(screen[cell(x, y)] == wanted[y] for y in range(cursor, height))
             if cursor == height or (done and rng.random() < 0.5):
-                enc.put(end, row_bits)  # END always closes a column, also at h
+                put(end, row_bits)  # END always closes a column, also at h
                 stats['end'] += 1
                 stats['end at h'] += cursor == height
                 return
@@ -337,17 +306,16 @@ def encode_collines(
             stop = cursor + rng.randint(1, longest)
             stats[kind] += 1
             if kind == 'fill':
-                enc.put(stop, row_bits)
-                enc.put(wanted[cursor], bits)
+                put(stop, row_bits)
+                put(wanted[cursor], bits)
             else:
-                enc.put(keep if kind == 'keep' else copy, row_bits)
-                enc.put(stop, row_bits)
+                put(keep if kind == 'keep' else copy, row_bits)
+                put(stop, row_bits)
             for y in range(cursor, stop):
                 source = cell(x - 1, y) if kind == 'copy' else None
                 screen[cell(x, y)] = screen[source] if source is not None else wanted[y]
             cursor = stop
 
-    enc.put(0x11, 8)
     order = list(range(width))
     rng.shuffle(order)
     scribbled = rng.sample(order, k=rng.randint(0, min(3, width)))
@@ -360,9 +328,9 @@ def encode_collines(
             stats['skipped'] += 1
             continue  # skipped: it already shows its target
         emit_column(x, wanted)
-    enc.put(2**column_bits - 1, column_bits)
-    enc.end_command()
+    put(2**column_bits - 1, column_bits)
     assert screen == list(target)
+    return ss.command(0x11, *fields)
 
 
 def random_picture(rng: random.Random, size: int, bits: int, previous: Optional[List[int]]) -> List[int]:
@@ -399,8 +367,7 @@ def test_random_pictures_round_trip_through_the_device() -> None:
         width, height = random_size(rng)
         screen_format = rng.choice([*range(1, 17), 24])
         bits = screen_format
-        enc = Encoder()
-        encode_init(enc, width, height, screen_format)
+        stream = ss.init_screen(width, height, screen_format)
         device = InMemoryScreen()
         model = [0] * (width * height)
         previous: Optional[List[int]] = None
@@ -409,15 +376,14 @@ def test_random_pictures_round_trip_through_the_device() -> None:
         for _ in range(stream_frames):
             target = random_picture(rng, width * height, bits, previous)
             if rng.random() < 0.2:
-                encode_raw(enc, target, bits)
+                stream += ss.draw_raw(target, bits)
                 model = list(target)
             else:
-                encode_collines(rng, enc, model, target, width, height, bits, stats)
+                stream += encode_collines(rng, model, target, width, height, bits, stats)
                 stats['collines'] += 1
-            enc.put(0x1F, 8)
+            stream += ss.PRESENT
             targets.append(target)
             previous = target
-        stream = enc.data()
         presented = []
         original_present = device._present
 
@@ -443,11 +409,8 @@ def test_control_the_property_test_sees_a_wrong_picture() -> None:
     """the round trip's own negative control: a stream with one colour bit flipped reproduces a different
     picture, and the same stream cut by its last byte is refused with the exact message."""
     rng = random.Random(7)
-    enc = Encoder()
-    encode_init(enc, 6, 5, 8)
     target = random_picture(rng, 30, 8, None)
-    encode_raw(enc, target, 8)
-    stream = enc.data()
+    stream = ss.init_screen(6, 5, 8) + ss.draw_raw(target, 8)
     assert screen_after(stream).pixel_indices == target
     flipped = bytearray(stream)
     flipped[6 + 1 + 3] ^= 0x01
