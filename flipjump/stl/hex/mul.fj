@@ -15,17 +15,24 @@ ns hex {
         .xor_zero res, .tables.res
     }
 
-    //  Time Complexity: n(5@+26)
-    // Space Complexity: n(4@+52)
+    //  Time Complexity: n(4@+30) + 9@+52
+    // Space Complexity: n(3@+70) + 9@+100
     //   res[n] += a[n] * b[1]
     //
+    // The two clear_carry dances and the n add_mul dances are one chain of .mul.ret jumps (see hex.mul.chain_step).
     // @requires hex.add.init (or hex.init)
-    def add_mul n, res, a, b < .mul.dst {
-        .mul.clear_carry
+    def add_mul n, res, a, b @ head, tail, return < .mul.dst, .mul.ret, .tables.res {
         .xor .mul.dst, b
-        rep(n, i) .add_mul res+i*dw, a+i*dw
+        .mul.chained_clear_carry 0
+      head:
+        .mul.chained_add_mul res, a, head
+        rep(n-1, i) .mul.chain_step res+i*dw, res+(i+1)*dw, a+(i+1)*dw
+      tail:
+        .xor_zero res+(n-1)*dw, .tables.res
+        .mul.chained_clear_carry tail
+      return:
+        wflip .mul.ret+w, return
         .xor .mul.dst, b
-        .mul.clear_carry
     }
 
     //  Time Complexity: n(6@+27)
@@ -95,6 +102,47 @@ ns hex {
             pad 16
           return:
             wflip .ret+w, return
+        }
+
+        //  Time Complexity: 3@+27     (when chained; see hex.tables.chained_jump)
+        // Space Complexity: 2@+30
+        //   The chained form of clear_carry: .ret = this macro's end (it was prev_return).
+        // @Assumes: .ret holds prev_return (0 if it's clear). Like hex.tables.chained_jump, but for .ret:
+        //   until the chain clears .ret, no other .ret user (add_mul, mul, clear_carry) may run inside it.
+        def chained_clear_carry prev_return @ return < .ret, .add_carry_dst {
+            ..add.clear_carry
+            wflip .ret+w, prev_return ^ return
+            .add_carry_dst+dbit+9; .add_carry_dst
+            pad 16
+          return:
+        }
+
+        //  Time Complexity: 3@+26     (when chained; see hex.tables.chained_jump)
+        // Space Complexity: 2@+33
+        //   The chained form of add_mul: jumps to the add_mul flow of x, and returns to this macro's end,
+        //   with the result in hex.tables.res (not yet xored into res).
+        // @Assumes: .ret holds prev_return (see chained_clear_carry).
+        //
+        // res, x are hex.
+        def chained_add_mul res, x, prev_return @ return < .dst, ..add.dst, .ret {
+            ..xor .dst+4, x
+            ..xor ..add.dst, res
+            wflip .ret+w, prev_return ^ return, .dst
+            pad 16
+          return:
+        }
+
+        //  Time Complexity: 4@+30
+        // Space Complexity: 3@+61
+        //   prev_res ^= hex.tables.res;  hex.tables.res = 0
+        //   then chained_add_mul res, x (chained to the previous step's end).
+        // @Assumes: the previous step's end is this macro's start (see hex.tables.chained_jump).
+        //
+        // prev_res, res, x are hex.
+        def chain_step prev_res, res, x @ start < ..tables.res {
+          start:
+            ..xor_zero prev_res, ..tables.res
+            .chained_add_mul res, x, start
         }
 
         //  Time Complexity: @+24 (when jumping to dst, until finished)
