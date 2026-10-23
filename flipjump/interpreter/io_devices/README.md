@@ -4,8 +4,9 @@ A FlipJump program has exactly two I/O channels: an **input bit stream** and an 
 Every device here is a protocol on top of them. The program writes commands to its output and reads
 events from its input; the device does the rest.
 
-> **Status.** The **Screen API v2** below is the *planned* API. Today's `ScreenIO.py` implements v1
-> (see [Migrating from v1](#migrating-from-v1)). The keyboard and the other devices are current.
+> **Status.** This file is the *planned* API. Where today's `ScreenIO.py` and `KeyboardIO.py` still
+> differ from it, [Changes from today's implementation](#changes-from-todays-implementation) lists how.
+> The other devices are as described.
 
 | Device | File | Channels | Use |
 |---|---|---|---|
@@ -34,18 +35,41 @@ keeps its own frame clock, and idle polling never hits end-of-input.
 
 The keycode byte **must** be read after an event, or every later poll is out of phase.
 
-| Keycode | Key |
-|---|---|
-| `< 0x80` | printable / control keys, ASCII-like (`'a'` = 97, Esc = 27, Enter = 13, Space = 32) |
-| `0x80` `0x81` `0x82` `0x83` | Up, Down, Left, Right |
-| `0x84` `0x85` `0x86` | Shift, Ctrl, Alt |
+### Keycodes
 
-Other keys are not delivered. F11 toggles fullscreen and is never delivered.
+The codes are the ones Arduino's `Keyboard.h` uses: **ASCII below `0x80`**, the **modifiers at `0x80`–`0x87`**,
+and **every other key at `0x88` + its USB HID usage ID**.
+
+- A key is reported as the key, not as what it types: letters are lowercase (`'a'` = 97), the digit row is
+  `'0'`–`'9'`, whatever modifiers are held. Shift is its own event.
+- A key that has an ASCII code is always sent as that code: Backspace `8`, Tab `9`, Enter `13`, Esc `27`,
+  Space `32`. So `0x88`–`0xC0` (the HID numbers of those keys and of the printable keys) are never sent.
+
+| Code | Key |
+|---|---|
+| `0x08` `0x09` `0x0D` `0x1B` | Backspace, Tab, Enter, Esc |
+| `0x20`–`0x7E` | the printable keys: Space, `'0'`–`'9'`, `'a'`–`'z'`, punctuation (unshifted) |
+| `0x80` `0x81` `0x82` `0x83` | Left Ctrl, Left Shift, Left Alt, Left GUI (Windows / Command) |
+| `0x84` `0x85` `0x86` `0x87` | Right Ctrl, Right Shift, Right Alt, Right GUI |
+| `0xC1` | Caps Lock |
+| `0xC2`–`0xCD` | F1–F12 |
+| `0xCE` `0xCF` `0xD0` | Print Screen, Scroll Lock, Pause |
+| `0xD1` `0xD2` `0xD3` | Insert, Home, Page Up |
+| `0xD4` `0xD5` `0xD6` | Delete, End, Page Down |
+| `0xD7` `0xD8` `0xD9` `0xDA` | **Right, Left, Down, Up** |
+| `0xDB` | Num Lock |
+| `0xDC` `0xDD` `0xDE` `0xDF` `0xE0` | keypad `/` `*` `-` `+` Enter |
+| `0xE1`–`0xE9`, `0xEA`, `0xEB` | keypad `1`–`9`, `0`, `.` |
+| `0xED` | Menu |
+| `0xF0`–`0xFB` | F13–F24 |
+
+A program that wants "either Ctrl" tests both `0x80` and `0x84` (the same for Shift, Alt and GUI).
+Keys not in the table are not delivered. In the PC window F11 toggles fullscreen and is never delivered.
 Scripted input (tests, replays): a text file of `tic, down/up, keycode` lines (`ScriptedKeyEventSource`).
 
 ---
 
-## Screen API v2
+## Screen
 
 ### How a command is written
 
@@ -181,9 +205,13 @@ not move forward, COPY's `src` out of range); a palette command in RGB format; a
 | headless (default in tests) | the RGB frame in memory, a PNG per frame, a sha256 per frame (for golden tests) |
 | PC window | a scaled window; `set_max_fps` makes `present` wait (the headless backend never waits) |
 
-### Migrating from v1
+---
 
-| v1 | v2 |
+## Changes from today's implementation
+
+### Screen
+
+| Today's `ScreenIO.py` | This API |
 |---|---|
 | `0x01 init_screen [w:2][h:2][bpp:1][palette_size:2]` | `0x01 init_screen [w:2][h:2][format:1]` |
 | `0x02 set_palette [address]` (read from memory) | `0x02 define_palette` (in the stream) + `0x06 select_palette` |
@@ -192,4 +220,19 @@ not move forward, COPY's `src` out of range); a palette command in RGB format; a
 | `0x0B begin_frame_collines` (`[x]…0xFF`, `0xFE` / `0xFD` / `0xFC`) | `0x11 draw_collines` + `0x1F present` (tokens at the top of nibble-sized fields; `COPY` names its source) |
 | `0x12` / `0x13` / `0x14` title / icon / max fps | `0x04` / `0x05` / `0x03` |
 
-v2 never reads program memory, so the screen needs no device-memory hook.
+The screen never reads program memory, so it needs no device-memory hook.
+
+### Keyboard
+
+The protocol (status nibble, then keycode) is unchanged; the codes above `0x80` move to Arduino's.
+
+| Key | Today's `KeyboardIO.py` | This API |
+|---|---|---|
+| Up, Down, Left, Right | `0x80` `0x81` `0x82` `0x83` | `0xDA` `0xD9` `0xD8` `0xD7` |
+| Shift | `0x84` (either) | `0x81` left, `0x85` right |
+| Ctrl | `0x85` (either) | `0x80` left, `0x84` right |
+| Alt | `0x86` (either) | `0x82` left, `0x86` right |
+| GUI, F-keys, Insert … Page Down, keypad, Caps / Num / Scroll Lock, Pause, Print Screen, Menu | not delivered | the table above |
+
+The codes `0x80`–`0x86` mean different keys before and after, so a program that reads the keyboard must be
+rebuilt for this change, together with the screen's.
