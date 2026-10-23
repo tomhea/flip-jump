@@ -282,6 +282,7 @@ class BinaryData:
 def resolve_pinned(
     pinned_exprs: Dict[Expr, int],
     labels: Dict[str, int],
+    reserved_below: int = RESERVED_BELOW,
     exclude: Optional[Callable[[int, Dict[str, int]], bool]] = None,
 ) -> Tuple[Dict[int, int], int]:
     """({jump-word address: block base}, number of aliased addresses dropped).
@@ -302,7 +303,7 @@ def resolve_pinned(
             address = expr.exact_eval(labels)
         except FlipJumpExprException:
             continue  # an unresolvable word simply is not pinned
-        if address < RESERVED_BELOW:
+        if address < reserved_below:
             continue  # the runtime's word (stl.IO), not the program's
         if exclude is not None and exclude(address, labels):
             continue  # the caller owns this word
