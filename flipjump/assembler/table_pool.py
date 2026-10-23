@@ -1,17 +1,15 @@
 """
-the table pool: an opt-in placement of the stl's lookup tables (`assemble(table_pool=...)`, `fj --table-pool`).
+the table pool: an opt-in placement of the lookup tables, used only when assemble() is given one (`table_pool=`).
 
 A lookup table is the code after a `pad` that is only ever entered by a jump (`hex.exact_xor`'s switch and the
 like). Arming one writes its address into a word, one executed op per set bit, so a table at an address that is
 cheap to arm makes every dispatch through it cost fewer ops. The pool moves such tables there:
-    TablePool - each to the lowest-popcount free address above pool_base (`fj --table-pool low`);
+    TablePool - each to the lowest-popcount free address above pool_base;
     BlockPool - the tables dispatched through one word share a block, and the word rests at the block's base, so
-                arming flips only the table's index in it (`fj --table-pool blocks`: BlockPool(one_pass=True)).
-It never changes what a program does: only code entered by a jump, never by falling through, is moved, and every
-reference to it goes through a label. It costs a bigger address span (the pool sits above the program) and .fjm
-segments: one per placed table (BlockPool) or per run of tables (TablePool).
-It refuses rather than miscompile: a program that reaches into the pool, and (BlockPool) a program that reads a
-pinned word raw through hex.pointers when no pin_exclude says which cells it reads.
+                arming flips only the table's index in it.
+Only code entered by a jump, never by falling through, is moved, so a program reaching the table through its own
+labels runs the same. It costs a bigger address span (the pool sits above the program) and .fjm segments: one per
+placed table (BlockPool) or per run of tables (TablePool).
 """
 
 from __future__ import annotations
