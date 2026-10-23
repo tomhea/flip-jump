@@ -272,18 +272,23 @@ def test_every_lzma_preset_reads_back(tmp_path: Path) -> None:
     # presets 7-9 encode with a 16-64 MiB dictionary, so the reader's decoder must be at least that large
     words = _far_repeat_words(64)
     for preset in range(10):
-        memory = Reader(_write_preset(tmp_path, words, preset)).get_memory()
+        fjm_path = _write_preset(tmp_path, words, preset)
+        memory = Reader(fjm_path).get_memory()
         assert [memory[index] for index in (0, 1, len(words) - 2, len(words) - 1)] == [
             words[0],
             words[1],
             words[-2],
             words[-1],
         ], preset
+        _, data = fjm_reader.read_fjm_raw(fjm_path)  # the lean load decodes on its own (jump words stay relative)
+        assert len(data) == 8 * len(words) and data[-16:-8] == words[-2].to_bytes(8, 'little'), preset
 
 
 def test_an_8mib_decoder_cannot_read_preset_9(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # the control: the far repeat above is matched only by a dictionary larger than liblzma's default 8 MiB
     fjm_path = _write_preset(tmp_path, _far_repeat_words(64), 9)
-    monkeypatch.setattr(fjm_reader, '_LZMA_DECOMPRESSION_FILTERS', [{"id": lzma.FILTER_LZMA2}])
+    monkeypatch.setattr(fjm_reader, '_LZMA_MAX_DICT_DECOMPRESSION_FILTERS', [{"id": lzma.FILTER_LZMA2}])
     with pytest.raises(FlipJumpReadFjmException):
         Reader(fjm_path)
+    with pytest.raises(FlipJumpReadFjmException):
+        fjm_reader.read_fjm_raw(fjm_path)

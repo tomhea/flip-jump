@@ -98,9 +98,13 @@ SUPPORTED_MEMORY_WIDTHS: frozenset[int] = frozenset({8, 16, 32, 64})
 
 
 _LZMA_FORMAT = lzma.FORMAT_RAW
-# preset 9's dictionary, the largest any preset writes with: a decoder at least as large reads every preset
+_LZMA_DECOMPRESSION_FILTERS: List[Dict[str, int]] = [{"id": lzma.FILTER_LZMA2}]
+# preset 9's dictionary, the largest any preset writes with: a decoder this large reads every preset. The reader
+# allocates it only for a stream that the default (8 MiB) decoder cannot read: presets 7-9 can match farther back.
 _LZMA_MAX_DICT_SIZE = 1 << 26
-_LZMA_DECOMPRESSION_FILTERS: List[Dict[str, int]] = [{"id": lzma.FILTER_LZMA2, "dict_size": _LZMA_MAX_DICT_SIZE}]
+_LZMA_MAX_DICT_DECOMPRESSION_FILTERS: List[Dict[str, int]] = [
+    {"id": lzma.FILTER_LZMA2, "dict_size": _LZMA_MAX_DICT_SIZE}
+]
 
 
 def _lzma_compression_filters(dw: int, preset: int) -> List[Dict[str, int]]:
