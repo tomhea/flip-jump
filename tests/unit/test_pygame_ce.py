@@ -6,7 +6,7 @@ Three behaviours introduced when the interactive window moved from upstream pyga
     install is otherwise completely silent -- everything imports and runs.
   * `PygameWindow.draw_indexed` hands SDL the palette indices instead of a python-expanded RGB
     list. It must paint EXACTLY what `draw` paints; the point is that it is faster, not different.
-  * `InMemoryScreen.last_frame_rgb` is now a lazy property, so a windowed run never builds it. It
+  * `InMemoryScreen.last_frame_rgb` is a lazy property, so a windowed run never builds it. It
     must still be a SNAPSHOT of the presented frame, not a live view of the pixel buffer.
 """
 
@@ -20,6 +20,7 @@ pygame = pytest.importorskip('pygame')
 from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen  # noqa: E402
 from flipjump.interpreter.io_devices import pygame_window  # noqa: E402
 from flipjump.utils.exceptions import IODeviceException  # noqa: E402
+from tests.unit import screen_stream as ss  # noqa: E402
 
 W, H = 8, 4
 PALETTE = [(10, 20, 30), (200, 100, 0), (1, 2, 3), (255, 255, 255)]
@@ -107,10 +108,9 @@ def test_draw_indexed_on_a_closed_window_is_a_no_op() -> None:
 
 
 def _present_one(device: InMemoryScreen, indices: List[int]) -> None:
-    device.width, device.height, device.bpp = W, H, 8
-    device.palette = list(PALETTE)
-    device.pixel_indices = list(indices)
-    device._present()
+    ss.feed(
+        device, ss.init_screen(W, H, 8) + ss.define_palette(0, 0, PALETTE, 8) + ss.draw_raw(indices, 8) + ss.PRESENT
+    )
 
 
 def test_last_frame_rgb_expands_the_presented_frame() -> None:
@@ -121,12 +121,12 @@ def test_last_frame_rgb_expands_the_presented_frame() -> None:
 
 def test_last_frame_rgb_is_a_snapshot_not_a_live_view() -> None:
     """It used to be built eagerly at present time; making it lazy must not turn it into a window
-    onto whatever the device has been filling in SINCE. 0x0B frames mutate pixel_indices between
-    presents, so this is the difference that would matter."""
+    onto whatever the device has been drawing SINCE: draws mutate pixel_indices between presents."""
     device = InMemoryScreen()
     _present_one(device, [1] * (W * H))
     before = device.last_frame_rgb
-    device.pixel_indices = [2] * (W * H)  # the NEXT frame starts arriving
+    ss.feed(device, ss.draw_raw([2] * (W * H), 8))  # the NEXT frame starts arriving
+    assert device.pixel_indices == [2] * (W * H)
     assert device.last_frame_rgb == before
     assert device.last_frame_rgb == [PALETTE[1]] * (W * H)
 
@@ -134,7 +134,7 @@ def test_last_frame_rgb_is_a_snapshot_not_a_live_view() -> None:
 def test_the_palette_is_snapshotted_too() -> None:
     device = InMemoryScreen()
     _present_one(device, [0] * (W * H))
-    device.palette = [(9, 9, 9)] * len(PALETTE)
+    ss.feed(device, ss.define_palette(0, 0, [(9, 9, 9)] * len(PALETTE), 8))
     assert device.last_frame_rgb == [PALETTE[0]] * (W * H)
 
 
@@ -142,7 +142,9 @@ def test_before_any_present_it_is_empty() -> None:
     assert InMemoryScreen().last_frame_rgb == []
 
 
-def test_an_index_past_the_palette_is_black() -> None:
+def test_control_a_changed_picture_changes_the_expansion() -> None:
+    """the vacuity control of the snapshot tests: a second present DOES change it"""
     device = InMemoryScreen()
-    _present_one(device, [200] * (W * H))
-    assert device.last_frame_rgb == [(0, 0, 0)] * (W * H)
+    _present_one(device, [1] * (W * H))
+    ss.feed(device, ss.draw_raw([2] * (W * H), 8) + ss.PRESENT)
+    assert device.last_frame_rgb == [PALETTE[2]] * (W * H)

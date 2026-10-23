@@ -1,102 +1,51 @@
 """
 end-to-end tests for the io-devices: an .fj program drives the InMemoryScreen over the output
-stream (golden frame-hash + PNG output), a scripted keyboard replays deterministically into
-an .fj polling loop, and the complete PcIO device (screen + keyboard together) runs a program.
+stream with io_devices/README.md's commands (golden frame-hash + PNG output), a scripted keyboard
+replays deterministically into an .fj polling loop, and the complete PcIO device (screen + keyboard
+together) runs a program.
 """
 
 import hashlib
 from pathlib import Path
 
+import pytest
+
 from flipjump.interpreter import fjm_run
 from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO, ScriptedKeyEventSource
-from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
+from flipjump.interpreter.io_devices.ScreenIO import XTERM256, InMemoryScreen
 from flipjump.interpreter.io_devices.pygame_window import PcIO
 from flipjump.utils.classes import TerminationCause
 from tests.unit.unit_utils import assemble_to_path
 
-# emits: init_screen(4x2, bpp=8, palette=2); set_palette(palette); update_screen(screen).
-# the palette and framebuffer are static packed-byte data ops (the byte at dbit..dbit+7
-# of an op is encoded as `;value * dw`).
-SCREEN_PROGRAM = """
-def output_u16 val {
-    rep(2, i) stl.output_char (val >> (8*i)) & 0xFF
-}
-def output_address addr {
-    // one bit at a time: the bit value is an op operand, so label-addresses are fine
-    rep(w, i) stl.output_bit (addr >> i) & 1
-}
+# the screen stream of io_devices/README.md: init_screen 4x2 format 8; define_palette slot 0, entries 0-1;
+# draw_raw 0,1,0,1 / 1,0,1,0; present. The program outputs it byte by byte.
+SCREEN_STREAM = (
+    bytes([0x01, 4, 0, 2, 0, 8])
+    + bytes([0x02, 0, 0, 1, 10, 20, 30, 200, 100, 0])
+    + bytes([0x10, 0, 1, 0, 1, 1, 0, 1, 0])
+    + bytes([0x1F])
+)
+SCREEN_PROGRAM = 'stl.startup\n' + ''.join(f'stl.output_char {byte}\n' for byte in SCREEN_STREAM) + 'stl.loop\n'
 
-stl.startup
+# the hash of a format-8 frame: the values, one byte each, then all 256 entries of the presented palette
+EXPECTED_FRAME_HASH = hashlib.sha256(
+    bytes([0, 1, 0, 1, 1, 0, 1, 0])
+    + bytes([10, 20, 30, 200, 100, 0])
+    + b''.join(bytes(colour) for colour in XTERM256[2:])
+).hexdigest()
 
-stl.output_char 1            // init_screen
-output_u16 4            // width
-output_u16 2            // height
-stl.output_char 8            // bpp
-output_u16 2            // palette_size
+# 3-bit colours, written BIT by bit (stl.output_bit): init 8x1 format 3, then draw_raw of 1..7, 0 - the
+# README's "8 pixels of 3 bits take 3 bytes" - then present.
+PACKED_PROGRAM = (
+    'stl.startup\n'
+    + ''.join(f'stl.output_char {byte}\n' for byte in [0x01, 8, 0, 1, 0, 3, 0x10])
+    + ''.join(f'stl.output_bit {(value >> i) & 1}\n' for value in [1, 2, 3, 4, 5, 6, 7, 0] for i in range(3))
+    + 'stl.output_char 0x1F\nstl.loop\n'
+)
 
-stl.output_char 2            // set_palette
-output_address palette
-
-stl.output_char 3            // update_screen
-output_address screen
-
-stl.loop
-
-palette:                // 2 entries * 3 packed bytes (R, G, B)
-    ;10  * dw
-    ;20  * dw
-    ;30  * dw
-    ;200 * dw
-    ;100 * dw
-    ;0   * dw
-
-screen:                 // 4x2 pixels, one packed byte each
-    ;0 * dw
-    ;1 * dw
-    ;0 * dw
-    ;1 * dw
-    ;1 * dw
-    ;0 * dw
-    ;1 * dw
-    ;0 * dw
-"""
-
-EXPECTED_FRAME_HASH = hashlib.sha256(bytes([0, 1, 0, 1, 1, 0, 1, 0]) + bytes([10, 20, 30, 200, 100, 0])).hexdigest()
-
-# same screen and palette, but the frame arrives with the raw command (0x05): the pixel
-# bytes are output in-stream - no framebuffer in program memory, no memory-hook read.
-RAW_SCREEN_PROGRAM = """
-def output_u16 val {
-    rep(2, i) stl.output_char (val >> (8*i)) & 0xFF
-}
-def output_address addr {
-    rep(w, i) stl.output_bit (addr >> i) & 1
-}
-
-stl.startup
-
-stl.output_char 1            // init_screen
-output_u16 4            // width
-output_u16 2            // height
-stl.output_char 8            // bpp
-output_u16 2            // palette_size
-
-stl.output_char 2            // set_palette
-output_address palette
-
-stl.output_char 5            // update_screen_raw: the 4x2 pixel bytes follow in-stream
-rep(8, i) stl.output_char (0x01011010 >> (4*i)) & 0xF   // pixels 0,1,0,1,1,0,1,0
-
-stl.loop
-
-palette:                // 2 entries * 3 packed bytes (R, G, B)
-    ;10  * dw
-    ;20  * dw
-    ;30  * dw
-    ;200 * dw
-    ;100 * dw
-    ;0   * dw
-"""
+# a program whose stream is wrong: a stray zero byte where a command should start
+BAD_SCREEN_PROGRAM = SCREEN_PROGRAM.replace('stl.output_char 31\n', 'stl.output_char 0\n')
+assert BAD_SCREEN_PROGRAM != SCREEN_PROGRAM
 
 
 # polls the keyboard 5 tics (one status HEX each: 0x0 idle, 0x8 key-up, 0x9 key-down):
@@ -145,22 +94,28 @@ def test_fj_program_drives_the_screen(tmp_path: Path, engine: str) -> None:
     assert screen.frame_count == 1
     assert screen.frame_hashes[0][1] == EXPECTED_FRAME_HASH
     assert (frames_dir / 'frame_000000.png').exists()
-    assert screen.last_frame_rgb[0] == (10, 20, 30)
-    assert screen.last_frame_rgb[1] == (200, 100, 0)
+    assert screen.last_frame_rgb[:2] == [(10, 20, 30), (200, 100, 0)]
+    assert screen.get_output() == b''  # the output ended between commands
 
 
-def test_fj_program_drives_the_screen_with_the_raw_command(tmp_path: Path, engine: str) -> None:
-    fjm_path = assemble_to_path(RAW_SCREEN_PROGRAM, tmp_path, use_stl=True)
-    frames_dir = tmp_path / 'frames'
-    screen = InMemoryScreen(frames_dir=frames_dir)
-
+def test_fj_program_packs_3_bit_colours(tmp_path: Path, engine: str) -> None:
+    fjm_path = assemble_to_path(PACKED_PROGRAM, tmp_path, use_stl=True)
+    screen = InMemoryScreen()
     statistics = fjm_run.run(fjm_path, io_device=screen, print_time=False)
-
     assert statistics.termination_cause == TerminationCause.Looping
     assert screen.frame_count == 1
-    # the raw in-stream frame hashes identically to the memory-hook frame of SCREEN_PROGRAM
-    assert screen.frame_hashes[0][1] == EXPECTED_FRAME_HASH
-    assert (frames_dir / 'frame_000000.png').exists()
+    assert screen.pixel_indices == [1, 2, 3, 4, 5, 6, 7, 0]
+
+
+def test_control_a_bad_stream_stops_the_run(tmp_path: Path, engine: str) -> None:
+    fjm_path = assemble_to_path(BAD_SCREEN_PROGRAM, tmp_path, use_stl=True)
+    screen = InMemoryScreen()
+    # the engines report the device's error differently (the native run wraps it), but both stop on it
+    with pytest.raises(Exception) as failure:
+        fjm_run.run(fjm_path, io_device=screen, print_time=False)
+    message = 'ScreenIO: reserved (0x00) at output byte 25, frame 0: opcode 0x00 is reserved (a stray zero byte?)'
+    assert message in repr(failure.value) + repr(failure.value.__cause__)
+    assert screen.frame_count == 0
 
 
 def test_scripted_keyboard_replay_is_deterministic(tmp_path: Path, engine: str) -> None:

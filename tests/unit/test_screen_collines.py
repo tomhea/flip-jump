@@ -1,404 +1,389 @@
 """
-unit-tests for the 0x0B begin_frame_collines grammar of the InMemoryScreen device.
-
-the grammar (see the ScreenIO module docstring): a record tag opens column x (or 0xFF ends the
-frame); inside the column's list, [y2][colour] pairs fill rows [cursor, y2), 0xFF ends the column,
-0xFE copies the whole column x-1 and ends it, and - on a screen of at most
-COLLINES_TOKENS_MAX_HEIGHT rows - [0xFD][y] copies rows [cursor, y) from column x-1 (PARTIAL DITTO)
-and [0xFC][y] leaves rows [cursor, y) as they are (KEEP), both moving the cursor to y and letting
-the list continue.
-
-every behaviour is a CHECK - a function of the decoder class - grouped as
-  baseline  the grammar as it was before the two tokens
-  partial   PARTIAL DITTO (0xFD)
-  keep      KEEP (0xFC)
-  compat    the tokens do not exist on a taller screen, and a legacy stream decodes as it did
-each check runs against the real InMemoryScreen. the NEGATIVE CONTROLS at the bottom (R9) mutate
-the real decoder's source and require the checks to reject the mutant: a suite that cannot fail
-proves nothing.
+draw_collines (io_devices/README.md): the field widths R and C at every boundary, the README's byte
+example, KEEP / COPY / END and the auto-end at h, columns in any order and revisited - and a property
+test: an encoder written HERE, from the README alone, turns >= 500 random target pictures into
+draw_collines / draw_raw streams, and the device must reproduce every picture exactly.
 """
 
-import hashlib
-import inspect
 import random
-import textwrap
-from typing import Callable, Dict, List, Sequence, Tuple, Type
+from collections import Counter
+from typing import Any, List, Optional, Sequence, Tuple
 
 import pytest
 
-from flipjump.interpreter.io_devices import ScreenIO
-from flipjump.interpreter.io_devices.ScreenIO import (
-    COLLINES_DITTO,
-    COLLINES_END,
-    COLLINES_KEEP,
-    COLLINES_PARTIAL_DITTO,
-    COLLINES_TOKENS_MAX_HEIGHT,
-    InMemoryScreen,
-)
+from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen, column_field_width, row_field_width
 from flipjump.utils.exceptions import IODeviceException
+from tests.unit import screen_stream as ss
 
-ScreenClass = Type[InMemoryScreen]
-Check = Callable[[ScreenClass], None]
 
-BEGIN = 0x0B
-END, DITTO, PARTIAL, KEEP = COLLINES_END, COLLINES_DITTO, COLLINES_PARTIAL_DITTO, COLLINES_KEEP
-W, H = 4, 6  # the small screen most checks use
+def screen_after(stream: bytes) -> InMemoryScreen:
+    device = InMemoryScreen()
+    ss.feed(device, stream)
+    return device
 
 
-# ---------------------------------------------------------------- helpers
+def column(device: InMemoryScreen, x: int) -> List[int]:
+    return device.pixel_indices[x :: device.width]  # noqa: E203
 
 
-def feed(screen: InMemoryScreen, data: Sequence[int]) -> None:
-    """the device takes BITS, lsb first - feed it exactly as the interpreter would."""
-    for byte in data:
-        for i in range(8):
-            screen.write_bit((byte >> i) & 1 == 1)
+# ---------------------------------------------------------------- the README's example
 
 
-def new_screen(cls: ScreenClass, width: int = W, height: int = H, bpp: int = 8) -> InMemoryScreen:
-    """a headless screen after init_screen ([0x01][w:2][h:2][bpp][palette_size:2], palette 0)."""
-    screen = cls()
-    feed(screen, [0x01, width & 0xFF, width >> 8, height & 0xFF, height >> 8, bpp, 0, 0])
-    return screen
+README_EXAMPLE = bytes.fromhex('01 04 00 03 00 08' '11 30 05 D1 F3' '1F')
 
 
-def column(screen: InMemoryScreen, x: int) -> List[int]:
-    return [screen.pixel_indices[row * screen.width + x] for row in range(screen.height)]
+def test_the_readmes_example() -> None:
+    device = screen_after(README_EXAMPLE)
+    assert (device.width, device.height, device.format) == (4, 3, 8)
+    # column 0 filled with 5, column 1 copied from it, the rest colour 0
+    assert device.pixel_indices == [5, 5, 0, 0] * 3
+    assert device.frame_count == 1
+    assert ss.draw_collines([(0, [('fill', 3, 5)]), (1, [('copy', 3)])], 4, 3, 8) == README_EXAMPLE[6:11]
 
 
-def base_colour(x: int, row: int) -> int:
-    """the base picture: every pixel distinct, so a copy from the wrong place always shows."""
-    return (16 * x + row) & 0xFF
+def test_the_readmes_example_bit_by_bit() -> None:
+    device = InMemoryScreen()
+    ss.feed_bits(device, README_EXAMPLE)
+    assert device.pixel_indices == [5, 5, 0, 0] * 3
 
 
-def with_base_picture(cls: ScreenClass, width: int = W, height: int = H) -> InMemoryScreen:
-    """a screen whose presented frame is the base picture, painted by one 0x0B frame of pairs."""
-    screen = new_screen(cls, width, height)
-    frame = [BEGIN]
-    for x in range(width):
-        frame.append(x)
-        for row in range(height):
-            frame += [row + 1, base_colour(x, row)]
-        frame.append(END)
-    frame.append(END)
-    feed(screen, frame)
-    assert screen.frame_count == 1
-    return screen
+def test_control_the_readmes_example_with_its_copy_moved_to_column_0() -> None:
+    """the negative control: D1 -> D0 makes it a COPY in column 0"""
+    stream = README_EXAMPLE.replace(bytes([0xD1]), bytes([0xD0]))
+    with pytest.raises(IODeviceException) as failure:
+        ss.feed(InMemoryScreen(), stream)
+    assert str(failure.value) == (
+        'ScreenIO: draw_collines (0x11) at output byte 6, frame 0, column 0, cursor 0: '
+        'COPY copies column x - 1, and column 0 has none'
+    )
 
 
-def base_column(x: int, height: int = H) -> List[int]:
-    return [base_colour(x, row) for row in range(height)]
+# ---------------------------------------------------------------- R and C
 
 
-CHECKS: Dict[str, List[Check]] = {'baseline': [], 'partial': [], 'keep': [], 'compat': []}
+@pytest.mark.parametrize(
+    'height, row_bits',
+    [(1, 4), (11, 4), (12, 8), (251, 8), (252, 12), (4091, 12), (4092, 16), (65_531, 16)],
+)
+def test_the_row_field_width_at_every_boundary(height: int, row_bits: int) -> None:
+    assert row_field_width(height) == row_bits
+    # drawn with R-bit row fields, a full column of colour 1 lands exactly
+    device = screen_after(
+        ss.init_screen(1, height, 1) + ss.command(0x11, (0, 4), (height, row_bits), (1, 1), (15, 4)) + ss.PRESENT
+    )
+    assert device.pixel_indices == [1] * height
 
 
-def check(group: str) -> Callable[[Check], Check]:
-    def register(function: Check) -> Check:
-        CHECKS[group].append(function)
-        return function
+@pytest.mark.parametrize(
+    'width, column_bits',
+    [(1, 4), (14, 4), (15, 8), (254, 8), (255, 12), (4094, 12), (4095, 16), (65_534, 16)],
+)
+def test_the_column_field_width_at_every_boundary(width: int, column_bits: int) -> None:
+    assert column_field_width(width) == column_bits
+    # the last column, drawn with a C-bit column field (and END_CMD = 2^C - 1)
+    stream = ss.init_screen(width, 1, 1) + ss.command(
+        0x11, (width - 1, column_bits), (1, 4), (1, 1), (2**column_bits - 1, column_bits)
+    )
+    device = screen_after(stream)
+    assert device.pixel_indices[-1] == 1 and sum(device.pixel_indices) == 1
 
-    return register
 
+def test_the_widths_are_the_readmes() -> None:
+    for height in range(1, 5000):
+        assert row_field_width(height) == ss.field_widths(1, height)[0]
+    for width in range(1, 5000):
+        assert column_field_width(width) == ss.field_widths(width, 1)[1]
 
-# ---------------------------------------------------------------- baseline: the grammar before the tokens
 
+# ---------------------------------------------------------------- the items
 
-@check('baseline')
-def pairs_fill_from_the_cursor_and_the_tail_keeps_last_frame(cls: ScreenClass) -> None:
-    screen = with_base_picture(cls)
-    feed(screen, [BEGIN, 1, 2, 7, 5, 9, END, END])
-    assert column(screen, 1) == [7, 7, 9, 9, 9] + base_column(1)[5:]
-    for x in (0, 2, 3):  # columns the frame never mentions keep last frame's pixels
-        assert column(screen, x) == base_column(x)
-    assert screen.frame_count == 2
 
+def test_end_leaves_the_rows_below_the_cursor() -> None:
+    device = screen_after(ss.init_screen(2, 4, 8) + ss.draw_raw([9] * 8, 8))
+    ss.feed(device, ss.draw_collines([(1, [('fill', 2, 3), ('end',)])], 2, 4, 8))
+    assert column(device, 1) == [3, 3, 9, 9]
+    assert column(device, 0) == [9] * 4  # a column never mentioned keeps its pixels
 
-@check('baseline')
-def full_ditto_copies_every_row_and_ends_the_column(cls: ScreenClass) -> None:
-    screen = with_base_picture(cls)
-    feed(screen, [BEGIN, 2, DITTO, 3, 3, 1, END, END])  # after the DITTO, `3` is the next record's tag
-    assert column(screen, 2) == base_column(1)
-    assert column(screen, 3) == [1, 1, 1] + base_column(3)[3:]
 
+def test_a_column_ends_by_itself_at_h() -> None:
+    # after reaching h the next field is a column field: here END_CMD, which as a row field would be END
+    device = screen_after(
+        ss.init_screen(3, 2, 8)
+        + ss.draw_collines([(2, [('fill', 2, 4)]), (0, [('fill', 1, 6), ('fill', 2, 7)])], 3, 2, 8)
+    )
+    assert device.pixel_indices == [6, 0, 4, 7, 0, 4]
 
-@check('baseline')
-def full_ditto_after_pairs_still_copies_every_row(cls: ScreenClass) -> None:
-    screen = with_base_picture(cls)
-    feed(screen, [BEGIN, 2, 3, 9, DITTO, END])
-    assert column(screen, 2) == base_column(1)
 
+def test_keep_keeps_the_last_presented_frame() -> None:
+    device = screen_after(ss.init_screen(1, 4, 8) + ss.draw_raw([1, 2, 3, 4], 8) + ss.PRESENT)
+    ss.feed(device, ss.draw_collines([(0, [('keep', 2), ('fill', 4, 9)])], 1, 4, 8) + ss.PRESENT)
+    assert device.pixel_indices == [1, 2, 9, 9]
 
-@check('baseline')
-def end_at_tag_position_presents_and_leaves_the_mode(cls: ScreenClass) -> None:
-    screen = new_screen(cls)
-    feed(screen, [BEGIN, 0, H, 3, END])
-    assert screen.frame_count == 0  # a column's end is not the frame's
-    feed(screen, [END])
-    assert screen.frame_count == 1
-    assert len(screen.frame_hashes) == 1
-    feed(screen, [0x05] + [1] * (W * H))  # the next byte is a COMMAND again (update_screen_raw)
-    assert screen.frame_count == 2 and screen.pixel_indices == [1] * (W * H)
 
+def test_keep_after_an_earlier_draw_in_the_same_frame_keeps_the_new_pixels() -> None:
+    device = screen_after(ss.init_screen(1, 4, 8) + ss.draw_raw([1, 2, 3, 4], 8) + ss.PRESENT)
+    ss.feed(device, ss.draw_collines([(0, [('fill', 4, 7)])], 1, 4, 8))  # this frame draws the column ...
+    ss.feed(device, ss.draw_collines([(0, [('keep', 3), ('fill', 4, 8)])], 1, 4, 8))  # ... then keeps its top
+    assert device.pixel_indices == [7, 7, 7, 8]
 
-@check('baseline')
-def pair_colour_is_masked_to_bpp(cls: ScreenClass) -> None:
-    screen = new_screen(cls, bpp=4)
-    feed(screen, [BEGIN, 0, H, 0xA7, END, END])
-    assert column(screen, 0) == [0x7] * H
 
+def test_keep_acts_from_the_cursor_not_from_row_0() -> None:
+    device = screen_after(ss.init_screen(1, 5, 8) + ss.draw_raw([1, 2, 3, 4, 5], 8))
+    ss.feed(device, ss.draw_collines([(0, [('fill', 2, 9), ('keep', 4), ('fill', 5, 6)])], 1, 5, 8))
+    assert device.pixel_indices == [9, 9, 3, 4, 6]
 
-@check('baseline')
-def baseline_errors(cls: ScreenClass) -> None:
-    with pytest.raises(IODeviceException, match='behind the fill cursor'):
-        feed(new_screen(cls), [BEGIN, 1, 4, 1, 3])
-    with pytest.raises(IODeviceException, match='past the 6-row screen'):
-        feed(new_screen(cls), [BEGIN, 1, H + 1])
-    with pytest.raises(IODeviceException, match='DITTO for column 0'):
-        feed(new_screen(cls), [BEGIN, 0, DITTO])
-    with pytest.raises(IODeviceException, match='outside the 4-column screen'):
-        feed(new_screen(cls), [BEGIN, W])
-    with pytest.raises(IODeviceException, match='not initialized'):
-        feed(cls(), [BEGIN])
 
+def test_copy_copies_the_left_column_from_the_cursor() -> None:
+    device = screen_after(ss.init_screen(2, 4, 8) + ss.draw_raw([1, 5, 2, 6, 3, 7, 4, 8], 8))
+    ss.feed(device, ss.draw_collines([(1, [('fill', 1, 9), ('copy', 3)])], 2, 4, 8))
+    assert column(device, 1) == [9, 2, 3, 8]
 
-# ---------------------------------------------------------------- PARTIAL DITTO (0xFD)
 
+def test_copy_after_x_minus_1_was_redrawn_copies_the_new_pixels() -> None:
+    device = screen_after(ss.init_screen(2, 3, 8) + ss.draw_raw([1, 1, 1, 1, 1, 1], 8) + ss.PRESENT)
+    ss.feed(device, ss.draw_collines([(0, [('fill', 3, 4)]), (1, [('copy', 3)])], 2, 3, 8))
+    assert column(device, 1) == [4, 4, 4]
 
-@check('partial')
-def partial_ditto_top_rows_then_pairs_then_the_tail(cls: ScreenClass) -> None:
-    screen = with_base_picture(cls)
-    feed(screen, [BEGIN, 2, PARTIAL, 3, 5, 9, END, END])
-    assert column(screen, 2) == base_column(1)[:3] + [9, 9] + base_column(2)[5:]
-    assert column(screen, 1) == base_column(1)  # the source is only read
 
+def test_copy_before_x_minus_1_is_redrawn_copies_the_old_pixels() -> None:
+    device = screen_after(ss.init_screen(2, 3, 8) + ss.draw_raw([1, 2, 1, 2, 1, 2], 8) + ss.PRESENT)
+    ss.feed(device, ss.draw_collines([(1, [('copy', 3)]), (0, [('fill', 3, 4)])], 2, 3, 8))
+    assert column(device, 0) == [4, 4, 4] and column(device, 1) == [1, 1, 1]
 
-@check('partial')
-def partial_ditto_mid_list_copies_only_cursor_to_y(cls: ScreenClass) -> None:
-    screen = with_base_picture(cls)
-    feed(screen, [BEGIN, 2, 2, 7, PARTIAL, 4, END, END])
-    assert column(screen, 2) == [7, 7] + base_column(1)[2:4] + base_column(2)[4:]
 
-
-@check('partial')
-def partial_ditto_to_the_cursor_is_a_no_op(cls: ScreenClass) -> None:
-    screen = with_base_picture(cls)
-    feed(screen, [BEGIN, 2, 3, 7, PARTIAL, 3, END, END])
-    assert column(screen, 2) == [7, 7, 7] + base_column(2)[3:]
-    screen = with_base_picture(cls)
-    feed(screen, [BEGIN, 2, PARTIAL, 0, END, END])  # at the top of the column, too
-    assert column(screen, 2) == base_column(2)
-
-
-@check('partial')
-def partial_ditto_to_the_bottom_row_copies_the_whole_column(cls: ScreenClass) -> None:
-    screen = with_base_picture(cls)
-    feed(screen, [BEGIN, 3, PARTIAL, H, H, 5, END, END])  # the list continues: an empty pair is legal
-    assert column(screen, 3) == base_column(2)
-
-
-@check('partial')
-def partial_ditto_copies_the_left_column_as_the_stream_left_it(cls: ScreenClass) -> None:
-    screen = with_base_picture(cls)
-    feed(screen, [BEGIN, 1, H, 3, END, 2, PARTIAL, 4, END, END])
-    assert column(screen, 2) == [3, 3, 3, 3] + base_column(2)[4:]
-
-
-@check('partial')
-def partial_ditto_and_keep_chain_in_one_list(cls: ScreenClass) -> None:
-    screen = with_base_picture(cls)
-    feed(screen, [BEGIN, 2, PARTIAL, 2, KEEP, 4, PARTIAL, H, END, END])
-    assert column(screen, 2) == base_column(1)[:2] + base_column(2)[2:4] + base_column(1)[4:]
-
-
-@check('partial')
-def partial_ditto_state_does_not_leak_into_the_next_column(cls: ScreenClass) -> None:
-    screen = with_base_picture(cls)
-    # the row byte after 0xFD is consumed as a row; the bytes after it are pairs / END as usual
-    feed(screen, [BEGIN, 1, PARTIAL, 1, END, 2, 2, 8, END, END])
-    assert column(screen, 1) == base_column(0)[:1] + base_column(1)[1:]
-    assert column(screen, 2) == [8, 8] + base_column(2)[2:]
-
-
-@check('partial')
-def partial_ditto_errors(cls: ScreenClass) -> None:
-    with pytest.raises(IODeviceException, match='PARTIAL DITTO for column 0'):
-        feed(new_screen(cls), [BEGIN, 0, PARTIAL])
-    with pytest.raises(IODeviceException, match='behind the fill cursor'):
-        feed(new_screen(cls), [BEGIN, 1, 4, 1, PARTIAL, 3])
-    with pytest.raises(IODeviceException, match='past the 6-row screen'):
-        feed(new_screen(cls), [BEGIN, 1, PARTIAL, H + 1])
-    with pytest.raises(IODeviceException, match='past the 6-row screen'):
-        feed(new_screen(cls), [BEGIN, 1, PARTIAL, END])  # 0xFF is a row byte here, not the column's end
-
-
-# ---------------------------------------------------------------- KEEP (0xFC)
-
-
-@check('keep')
-def keep_leaves_last_frames_rows_across_frames(cls: ScreenClass) -> None:
-    screen = new_screen(cls)
-    feed(screen, [BEGIN, 2, H, 5, END, END])  # frame 1: column 2 is all 5
-    feed(screen, [BEGIN, 2, KEEP, 3, 4, 8, END, END])  # frame 2: keep [0, 3), paint row 3, tail kept
-    assert column(screen, 2) == [5, 5, 5, 8, 5, 5]
-    assert screen.frame_count == 2
-
-
-@check('keep')
-def keep_mid_list_and_at_column_0(cls: ScreenClass) -> None:
-    screen = with_base_picture(cls)
-    feed(screen, [BEGIN, 0, 1, 9, KEEP, 4, H, 6, END, END])  # column 0 has no left neighbour - KEEP needs none
-    assert column(screen, 0) == [9] + base_column(0)[1:4] + [6, 6]
-
-
-@check('keep')
-def keep_moves_the_cursor(cls: ScreenClass) -> None:
-    with pytest.raises(IODeviceException, match='behind the fill cursor'):
-        feed(new_screen(cls), [BEGIN, 1, KEEP, 4, 3])  # a pair ending above the KEEP's row
-
-
-@check('keep')
-def keep_errors(cls: ScreenClass) -> None:
-    with pytest.raises(IODeviceException, match='behind the fill cursor'):
-        feed(new_screen(cls), [BEGIN, 1, 4, 1, KEEP, 3])
-    with pytest.raises(IODeviceException, match='past the 6-row screen'):
-        feed(new_screen(cls), [BEGIN, 1, KEEP, H + 1])
-
-
-# ---------------------------------------------------------------- compatibility
-
-
-TALL = 252  # the first height on which 0xFC is a legal y2 (y2 <= H)
-
-
-@check('compat')
-def tall_screen_reads_0xfc_as_a_plain_y2(cls: ScreenClass) -> None:
-    screen = new_screen(cls, width=3, height=TALL)
-    feed(screen, [BEGIN, 1, KEEP, 7, END, END])
-    assert column(screen, 1) == [7] * TALL
-
-
-@check('compat')
-def tall_screen_reads_0xfd_as_a_y2_past_the_screen(cls: ScreenClass) -> None:
-    with pytest.raises(IODeviceException, match='past the 252-row screen'):
-        feed(new_screen(cls, width=3, height=TALL), [BEGIN, 1, PARTIAL])
-
-
-@check('compat')
-def the_bound_screen_has_both_tokens(cls: ScreenClass) -> None:
-    height = COLLINES_TOKENS_MAX_HEIGHT
-    screen = new_screen(cls, width=3, height=height)
-    feed(screen, [BEGIN, 0, height, 4, END, 1, PARTIAL, 2, KEEP, height, END, END])
-    assert column(screen, 1) == [4, 4] + [0] * (height - 2)
-
-
-@check('compat')
-def the_token_values_and_their_bound(cls: ScreenClass) -> None:
-    # a build checks for these names to refuse emitting the tokens against an older device
-    assert (COLLINES_PARTIAL_DITTO, COLLINES_KEEP, COLLINES_TOKENS_MAX_HEIGHT) == (0xFD, 0xFC, 0xFB)
-    # on a recognising screen, no token byte can be a legal y2 (y2 <= H <= the bound)
-    assert COLLINES_TOKENS_MAX_HEIGHT < min(COLLINES_KEEP, COLLINES_PARTIAL_DITTO, COLLINES_DITTO, COLLINES_END)
-
-
-def legacy_stream(seed: int = 2026_10_04, frames: int = 3, width: int = 160, height: int = 100) -> List[int]:
-    """a deterministic stream in the PRE-TOKEN grammar, shaped like the shipped renderer's frames
-    (doom's 160x100 screen, columns left to right, ~35% dittos, some columns cut short or skipped)."""
-    # a fixed test vector, not a security use of randomness
-    rng = random.Random(seed)  # nosec B311
-    out = [0x01, width & 0xFF, width >> 8, height & 0xFF, height >> 8, 8, 0, 0]
-    for _ in range(frames):
-        out.append(BEGIN)
-        for x in range(width):
-            roll = rng.random()
-            if roll < 0.08:
-                continue
-            out.append(x)
-            if x > 0 and roll < 0.43:
-                out.append(DITTO)
-                continue
-            cursor = 0
-            while cursor < height and rng.random() < 0.93:
-                cursor = rng.randint(cursor, min(height, cursor + 24))
-                out += [cursor, rng.randrange(256)]
-            out.append(END)
-        out.append(END)
-    return out
-
-
-# sha256 over the presented frames' hashes, frozen with the decoder BEFORE the two tokens existed
-# (flipjump 1.5.1 bc8ee63): the change must leave every legacy stream's pixels where they were.
-LEGACY_STREAM_DIGEST = '6f6bfb9d3a557da0127d98268e3ed29ebd20e1ac85fc3783565b64ea77b60890'
-
-
-def legacy_digest(cls: ScreenClass) -> str:
-    screen = cls()
-    feed(screen, legacy_stream())
-    assert screen.frame_count == 3
-    return hashlib.sha256(''.join(frame_hash for _, frame_hash in screen.frame_hashes).encode()).hexdigest()
-
-
-@check('compat')
-def legacy_stream_decodes_to_the_frozen_pixels(cls: ScreenClass) -> None:
-    assert legacy_digest(cls) == LEGACY_STREAM_DIGEST
-
-
-# ---------------------------------------------------------------- the suite against the real decoder
-
-
-ALL_CHECKS: List[Tuple[str, Check]] = [(group, fn) for group, fns in CHECKS.items() for fn in fns]
-
-
-@pytest.mark.parametrize('group, check_fn', ALL_CHECKS, ids=[f'{g}-{fn.__name__}' for g, fn in ALL_CHECKS])
-def test_collines(group: str, check_fn: Check) -> None:
-    check_fn(InMemoryScreen)
-
-
-# ---------------------------------------------------------------- negative controls (R9)
-
-
-def mutant(old: str, new: str) -> ScreenClass:
-    """InMemoryScreen with ONE textual edit to the real `_handle_collines_byte`. The edit must match
-    exactly once, so a control whose target drifted away fails loudly instead of testing nothing."""
-    source = textwrap.dedent(inspect.getsource(InMemoryScreen._handle_collines_byte))
-    assert source.count(old) == 1, f'the mutation target {old!r} is not in the decoder exactly once'
-    namespace: Dict[str, object] = {}
-    # exec of the decoder's OWN source with one asserted edit - the R9 mutation, not untrusted input
-    exec(compile(source.replace(old, new), '<mutant>', 'exec'), dict(vars(ScreenIO)), namespace)  # nosec B102
-    return type('MutantScreen', (InMemoryScreen,), {'_handle_collines_byte': namespace['_handle_collines_byte']})
-
-
-def failing_checks(cls: ScreenClass, group: str) -> List[str]:
-    failed = []
-    for check_fn in CHECKS[group]:
-        try:
-            check_fn(cls)
-        # an assertion, a pytest.raises that did not raise (pytest's Failed is not an Exception),
-        # or an unexpected exception such as a wrong-row IndexError: all of them reject the mutant
-        except (Exception, pytest.fail.Exception):
-            failed.append(check_fn.__name__)
-    return failed
-
-
-def test_negative_control_partial_ditto_one_row_too_many() -> None:
-    """a decoder whose PARTIAL DITTO copies [cursor, y] instead of [cursor, y)."""
-    cls = mutant('range(self._collines_row, byte)', 'range(self._collines_row, byte + 1)')
-    assert failing_checks(cls, 'baseline') == []  # the mutation is narrow: the old grammar is untouched
-    failed = failing_checks(cls, 'partial')
-    assert 'partial_ditto_to_the_cursor_is_a_no_op' in failed, failed
-    assert 'partial_ditto_mid_list_copies_only_cursor_to_y' in failed, failed
-
-
-def test_negative_control_tokens_on_a_too_tall_screen() -> None:
-    """a decoder that recognises 0xFD / 0xFC whatever the screen height."""
-    cls = mutant('self.height <= COLLINES_TOKENS_MAX_HEIGHT', 'True')
-    assert failing_checks(cls, 'baseline') == []
-    assert failing_checks(cls, 'partial') == [] and failing_checks(cls, 'keep') == []
-    failed = failing_checks(cls, 'compat')
-    assert 'tall_screen_reads_0xfc_as_a_plain_y2' in failed, failed
-    assert 'tall_screen_reads_0xfd_as_a_y2_past_the_screen' in failed, failed
-
-
-def test_negative_control_legacy_digest_sees_a_one_pixel_change() -> None:
-    """the frozen legacy digest is not vacuous: a DITTO that skips the bottom row changes it."""
-    cls = mutant('for row in range(self.height):', 'for row in range(self.height - 1):')
-    assert legacy_digest(cls) != LEGACY_STREAM_DIGEST
+def test_columns_in_any_order_skipped_and_revisited() -> None:
+    columns: List[Tuple[int, List[Tuple[Any, ...]]]] = [
+        (3, [('fill', 3, 1)]),
+        (0, [('fill', 3, 2)]),
+        (3, [('keep', 1), ('fill', 2, 7), ('end',)]),  # an overlay: KEEP down to it, then fill
+        (0, [('fill', 1, 5), ('end',)]),
+    ]
+    device = screen_after(ss.init_screen(4, 3, 8) + ss.draw_collines(columns, 4, 3, 8) + ss.PRESENT)
+    assert device.pixel_indices == [5, 0, 0, 1, 2, 0, 0, 7, 2, 0, 0, 1]
+
+
+def test_an_empty_draw_collines_draws_nothing() -> None:
+    device = screen_after(ss.init_screen(2, 2, 8) + ss.draw_raw([1, 2, 3, 4], 8) + ss.draw_collines([], 2, 2, 8))
+    assert device.pixel_indices == [1, 2, 3, 4]
+
+
+def test_an_empty_column() -> None:
+    device = screen_after(
+        ss.init_screen(2, 2, 8) + ss.draw_raw([1, 2, 3, 4], 8) + ss.draw_collines([(1, [('end',)])], 2, 2, 8)
+    )
+    assert device.pixel_indices == [1, 2, 3, 4]
+
+
+@pytest.mark.parametrize('bits', [1, 3, 5, 12, 16, 24])
+def test_the_colour_field_is_b_bits(bits: int) -> None:
+    colour = (1 << bits) - 2 if bits > 1 else 1
+    device = screen_after(ss.init_screen(2, 2, bits) + ss.draw_collines([(1, [('fill', 2, colour)])], 2, 2, bits))
+    assert column(device, 1) == [colour, colour]
+
+
+# ---------------------------------------------------------------- the property test
+
+
+class Encoder:
+    """an independent, README-only encoder: a bit list, fields lsb first, zero padding."""
+
+    def __init__(self) -> None:
+        self.bits: List[int] = []
+
+    def put(self, value: int, width: int) -> None:
+        self.bits += [(value >> i) & 1 for i in range(width)]
+
+    def end_command(self) -> None:
+        self.bits += [0] * (-len(self.bits) % 8)
+
+    def data(self) -> bytes:
+        assert len(self.bits) % 8 == 0
+        octets = [self.bits[i:][:8] for i in range(0, len(self.bits), 8)]
+        return bytes(int(''.join(map(str, reversed(octet))), 2) for octet in octets)
+
+
+def encode_init(enc: Encoder, width: int, height: int, screen_format: int) -> None:
+    enc.put(0x01, 8)
+    enc.put(width, 16)
+    enc.put(height, 16)
+    enc.put(screen_format, 8)
+    enc.end_command()
+
+
+def encode_raw(enc: Encoder, target: Sequence[int], bits: int) -> None:
+    enc.put(0x10, 8)
+    for value in target:
+        enc.put(value, bits)
+    enc.end_command()
+
+
+def encode_collines(
+    rng: random.Random,
+    enc: Encoder,
+    screen: List[int],
+    target: Sequence[int],
+    width: int,
+    height: int,
+    bits: int,
+    stats: 'Counter[str]',
+) -> None:
+    """draw `target` over `screen` (the encoder's own model of what the device holds, updated as it goes):
+    every column, in a random order, some first scribbled over and fixed later, each as random runs of
+    fills, KEEPs, COPYs and ENDs that are correct for the model at that moment."""
+    row_bits = min(r for r in (4, 8, 12, 16) if height < 2**r - 4)
+    column_bits = min(c for c in (4, 8, 12, 16) if width < 2**c - 1)
+    end, keep, copy = 2**row_bits - 1, 2**row_bits - 2, 2**row_bits - 3
+
+    def cell(x: int, y: int) -> int:
+        return y * width + x
+
+    def run_length(x: int, start: int, matches) -> int:  # type: ignore[no-untyped-def]
+        length = 0
+        while start + length < height and matches(start + length):
+            length += 1
+        return length
+
+    def emit_column(x: int, wanted: Sequence[int]) -> None:
+        enc.put(x, column_bits)
+        cursor = 0
+        while cursor < height:
+            if all(screen[cell(x, y)] == wanted[y] for y in range(cursor, height)) and rng.random() < 0.5:
+                enc.put(end, row_bits)
+                stats['end'] += 1
+                return
+            options = []
+            fill_length = run_length(x, cursor, lambda y: wanted[y] == wanted[cursor])
+            options.append(('fill', fill_length))
+            keep_length = run_length(x, cursor, lambda y: screen[cell(x, y)] == wanted[y])
+            if keep_length:
+                options.append(('keep', keep_length))
+            if x > 0:
+                copy_length = run_length(x, cursor, lambda y: screen[cell(x - 1, y)] == wanted[y])
+                if copy_length:
+                    options.append(('copy', copy_length))
+            kind, longest = rng.choice(options)
+            stop = cursor + rng.randint(1, longest)
+            stats[kind] += 1
+            stats['auto-end'] += stop == height
+            if kind == 'fill':
+                enc.put(stop, row_bits)
+                enc.put(wanted[cursor], bits)
+            else:
+                enc.put(keep if kind == 'keep' else copy, row_bits)
+                enc.put(stop, row_bits)
+            for y in range(cursor, stop):
+                source = cell(x - 1, y) if kind == 'copy' else None
+                screen[cell(x, y)] = screen[source] if source is not None else wanted[y]
+            cursor = stop
+
+    enc.put(0x11, 8)
+    order = list(range(width))
+    rng.shuffle(order)
+    scribbled = rng.sample(order, k=rng.randint(0, min(3, width)))
+    for x in scribbled:  # draw these wrong first; they are revisited below
+        emit_column(x, [rng.randrange(1 << bits) for _ in range(height)])
+        stats['revisited'] += 1
+    for x in order:
+        wanted = [target[cell(x, y)] for y in range(height)]
+        if x not in scribbled and all(screen[cell(x, y)] == wanted[y] for y in range(height)) and rng.random() < 0.7:
+            stats['skipped'] += 1
+            continue  # skipped: it already shows its target
+        emit_column(x, wanted)
+    enc.put(2**column_bits - 1, column_bits)
+    enc.end_command()
+    assert screen == list(target)
+
+
+def random_picture(rng: random.Random, size: int, bits: int, previous: Optional[List[int]]) -> List[int]:
+    palette_size = 1 << bits
+    colours = [rng.randrange(palette_size) for _ in range(rng.randint(1, 4))]
+    picture = []
+    for i in range(size):
+        if previous is not None and rng.random() < 0.4:
+            picture.append(previous[i])
+        elif picture and rng.random() < 0.6:
+            picture.append(picture[-1])
+        else:
+            picture.append(rng.choice(colours))
+    return picture
+
+
+def random_size(rng: random.Random) -> Tuple[int, int]:
+    roll = rng.random()
+    if roll < 0.08:  # a tall or wide screen: the 8- and 12-bit fields and their edges
+        return rng.choice(
+            [
+                (rng.randint(1, 3), rng.choice([11, 12, 251, 252, 300])),
+                (rng.choice([14, 15, 254, 255, 300]), rng.randint(1, 3)),
+            ]
+        )
+    return rng.randint(1, 18), rng.randint(1, 14)
+
+
+def test_random_pictures_round_trip_through_the_device() -> None:
+    rng = random.Random(0x5C12EE)
+    screens = frames = 0
+    stats: 'Counter[str]' = Counter()
+    while frames < 600:
+        width, height = random_size(rng)
+        screen_format = rng.choice([*range(1, 17), 24])
+        bits = screen_format
+        enc = Encoder()
+        encode_init(enc, width, height, screen_format)
+        device = InMemoryScreen()
+        model = [0] * (width * height)
+        previous: Optional[List[int]] = None
+        stream_frames = rng.randint(1, 4)
+        targets = []
+        for _ in range(stream_frames):
+            target = random_picture(rng, width * height, bits, previous)
+            if rng.random() < 0.2:
+                encode_raw(enc, target, bits)
+                model = list(target)
+            else:
+                encode_collines(rng, enc, model, target, width, height, bits, stats)
+                stats['collines'] += 1
+            enc.put(0x1F, 8)
+            targets.append(target)
+            previous = target
+        stream = enc.data()
+        presented = []
+        original_present = device._present
+
+        def record(device: InMemoryScreen = device, original=original_present) -> None:  # type: ignore[no-untyped-def]
+            original()
+            presented.append(list(device.pixel_indices))
+
+        device._present = record  # type: ignore[method-assign]
+        ss.feed(device, stream)
+        assert presented == targets, (width, height, screen_format)
+        assert device.frame_count == stream_frames
+        screens += 1
+        frames += stream_frames
+    assert screens >= 150 and frames >= 600
+    # not vacuous: every kind of item, and every way a column can go, was exercised many times
+    assert all(
+        stats[kind] >= 200 for kind in ('fill', 'keep', 'copy', 'end', 'auto-end', 'revisited', 'skipped')
+    ), stats
+
+
+def test_control_the_property_test_sees_a_wrong_picture() -> None:
+    """the round trip's own negative control: a stream with one colour bit flipped reproduces a different
+    picture, and the same stream cut by its last byte is refused with the exact message."""
+    rng = random.Random(7)
+    enc = Encoder()
+    encode_init(enc, 6, 5, 8)
+    target = random_picture(rng, 30, 8, None)
+    encode_raw(enc, target, 8)
+    stream = enc.data()
+    assert screen_after(stream).pixel_indices == target
+    flipped = bytearray(stream)
+    flipped[6 + 1 + 3] ^= 0x01
+    assert screen_after(bytes(flipped)).pixel_indices != target
+    cut = screen_after(stream[:-1])
+    with pytest.raises(IODeviceException) as failure:
+        cut.get_output()
+    assert str(failure.value) == (
+        'ScreenIO: draw_raw (0x10) at output byte 6, frame 0, pixel (5, 4): '
+        "the program's output ended inside draw_raw (0x10): 240 of its bits read"
+    )

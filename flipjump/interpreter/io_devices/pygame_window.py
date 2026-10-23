@@ -14,10 +14,11 @@ In `pc` the screen opens+sizes the window on the program's init-screen command; 
 with no screen to size it (e.g. standalone keyboard tests), ensure_open_for_input opens a
 small default window.
 
-keycodes delivered to the fj program (one byte): printable/control keys send their
-ascii-like SDL keycode (k < 0x80, e.g. 'a'=97, esc=27, enter=13, space=32); the
-arrows/shift/ctrl/alt send 0x80-0x86 (up,down,left,right,shift,ctrl,alt). other keys
-are ignored. F11 is captured for the fullscreen toggle and is never delivered.
+keycodes delivered to the fj program (one byte) are io_devices/README.md's (Arduino Keyboard.h): ASCII
+below 0x80 for the key itself (letters lowercase, the digit row '0'-'9', Backspace 8, Tab 9, Enter 13,
+Esc 27, Space 32, punctuation unshifted), the modifiers at 0x80-0x87, and every other key in the README's
+table at 0x88 + its USB HID usage ID. KEYCODES below is the one table. Keys not in it are not delivered;
+F11 is captured for the fullscreen toggle and is never delivered.
 
 pygame-ce is an optional dependency: `pip install flipjump[io]`. the window must be
 driven from the main thread (a macOS/SDL requirement) - the interpreter already runs
@@ -35,22 +36,45 @@ import time
 import warnings
 from collections import deque
 from pathlib import Path
-from typing import Any, Deque, List, Optional, Sequence, Tuple
+from typing import Any, Deque, Dict, List, Optional, Sequence, Tuple
 
 from flipjump.interpreter.io_devices.IODevice import IODevice
 from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO, KeyEventSource, ScriptedKeyEventSource
-from flipjump.interpreter.io_devices.ScreenIO import ICON_TRANSPARENT_INDEX, InMemoryScreen
-from flipjump.interpreter.io_devices.device_memory import DeviceMemory
+from flipjump.interpreter.io_devices.ScreenIO import FORMAT_RGB, InMemoryScreen, rgb_of
 from flipjump.utils.exceptions import IODeviceException
 
-# the >=0x80 keycodes (the SDL keycodes of these keys don't fit a byte)
-KEYCODE_UP = 0x80
-KEYCODE_DOWN = 0x81
-KEYCODE_LEFT = 0x82
-KEYCODE_RIGHT = 0x83
-KEYCODE_SHIFT = 0x84
-KEYCODE_CTRL = 0x85
-KEYCODE_ALT = 0x86
+# SDL2 gives a key with a character its ASCII code, and every other key its USB HID usage ID (SDL's
+# "scancode") with bit 30 set. pygame's event.key is that SDL keycode.
+SDL_SCANCODE_KEY = 1 << 30
+HID_KEYCODE_BASE = 0x88  # a key outside ASCII and the modifiers is sent as 0x88 + its HID usage ID
+
+# THE key table: SDL keycode -> the byte delivered to the program (io_devices/README.md, "Keycodes").
+KEYCODES: Dict[int, int] = {
+    0x08: 0x08,  # Backspace
+    0x09: 0x09,  # Tab
+    0x0D: 0x0D,  # Enter
+    0x1B: 0x1B,  # Esc
+    # the printable keys, unshifted: Space, punctuation, '0'-'9', 'a'-'z' (SDL never gives 'A'-'Z')
+    **{code: code for code in range(0x20, 0x7F) if not ord('A') <= code <= ord('Z')},
+    0x7F: HID_KEYCODE_BASE + 0x4C,  # Delete: SDL gives it ASCII DEL; the table's Delete is HID 0x4C (0xD4)
+    # the modifiers, HID 0xE0-0xE7 -> 0x80-0x87
+    SDL_SCANCODE_KEY | 0xE0: 0x80,  # Left Ctrl
+    SDL_SCANCODE_KEY | 0xE1: 0x81,  # Left Shift
+    SDL_SCANCODE_KEY | 0xE2: 0x82,  # Left Alt
+    SDL_SCANCODE_KEY | 0xE3: 0x83,  # Left GUI (Windows / Command)
+    SDL_SCANCODE_KEY | 0xE4: 0x84,  # Right Ctrl
+    SDL_SCANCODE_KEY | 0xE5: 0x85,  # Right Shift
+    SDL_SCANCODE_KEY | 0xE6: 0x86,  # Right Alt
+    SDL_SCANCODE_KEY | 0xE7: 0x87,  # Right GUI
+    # 0x88 + HID: Caps Lock (0x39), F1-F12 (0x3A-0x45), Print Screen, Scroll Lock, Pause (0x46-0x48),
+    # Insert, Home, Page Up (0x49-0x4B), End, Page Down (0x4D, 0x4E; Delete is 0x7F above),
+    # Right, Left, Down, Up (0x4F-0x52), Num Lock (0x53), keypad / * - + Enter (0x54-0x58),
+    # keypad 1-9, 0, . (0x59-0x63), Menu (0x65, "Application"), F13-F24 (0x68-0x73)
+    **{
+        SDL_SCANCODE_KEY | usage: HID_KEYCODE_BASE + usage
+        for usage in [*range(0x39, 0x4C), *range(0x4D, 0x64), 0x65, *range(0x68, 0x74)]
+    },
+}
 
 # the size of the standalone window opened for a live keyboard that has no interactive screen
 # (`ensure_open_for_input`); a program that sends init_screen opens through `ensure_open` instead
@@ -94,22 +118,9 @@ class PygameWindow:
         self._pygame = _import_pygame()
         self._title = title
         self._screen_surface = None
+        self._icon: Any = None  # the last icon surface, re-applied when the window is re-created
         self.key_events: Deque[Tuple[bool, int]] = deque()  # (is_down, keycode)
         self.closed = False
-
-        pg = self._pygame
-        self._special_keycodes = {
-            pg.K_UP: KEYCODE_UP,
-            pg.K_DOWN: KEYCODE_DOWN,
-            pg.K_LEFT: KEYCODE_LEFT,
-            pg.K_RIGHT: KEYCODE_RIGHT,
-            pg.K_LSHIFT: KEYCODE_SHIFT,
-            pg.K_RSHIFT: KEYCODE_SHIFT,
-            pg.K_LCTRL: KEYCODE_CTRL,
-            pg.K_RCTRL: KEYCODE_CTRL,
-            pg.K_LALT: KEYCODE_ALT,
-            pg.K_RALT: KEYCODE_ALT,
-        }
 
     @property
     def is_open(self) -> bool:
@@ -120,11 +131,18 @@ class PygameWindow:
         if self._screen_surface is not None and self._screen_surface.get_size() == (width, height):
             return  # already open at this size - recreating the window would flicker
         pg = self._pygame
+        if self._screen_surface is not None:
+            # a new size: start a new window. SDL cannot re-create a SCALED window's renderer in place
+            # (a second set_mode with SCALED crashes pygame-ce 2.5 with an access violation), so the
+            # display is closed first; the title and the icon are re-applied to the new window.
+            pg.display.quit()
         pg.display.init()
         pg.display.set_caption(self._title)
         # SCALED scales the small logical surface up to a window-sized one (and handles
         # fullscreen scaling); RESIZABLE lets the user drag-resize.
         self._screen_surface = pg.display.set_mode((width, height), pg.SCALED | pg.RESIZABLE)
+        if self._icon is not None:
+            self._apply_icon(self._icon)
         # width follows the program's aspect, so the picture is scaled but never stretched
         self._resize_window(max(1, round(WINDOW_HEIGHT * width / height)), WINDOW_HEIGHT)
 
@@ -157,26 +175,16 @@ class PygameWindow:
         if self._screen_surface is not None:
             self._pygame.display.set_caption(title)
 
-    def set_icon(
-        self,
-        width: int,
-        height: int,
-        indices: Sequence[int],
-        palette: Sequence[Tuple[int, int, int]],
-        transparent_index: Optional[int] = None,
-    ) -> None:
-        """set the window icon from palette indices, the form the program sends them in.
-        `transparent_index` becomes a colorkey rather than an alpha channel."""
+    def set_icon(self, width: int, height: int, colours: Sequence[Tuple[int, int, int]]) -> None:
+        """set the window icon from row-major RGB colours (opaque: the icon has no transparency)."""
         pg = self._pygame
         pg.display.init()
-        surface = pg.Surface((width, height))
-        for y in range(height):
-            row = y * width
-            for x in range(width):
-                idx = indices[row + x]
-                surface.set_at((x, y), palette[idx] if idx < len(palette) else (0, 0, 0))
-        if transparent_index is not None and transparent_index < len(palette):
-            surface.set_colorkey(palette[transparent_index])
+        rgb_bytes = bytes(channel for colour in colours for channel in colour)
+        self._icon = pg.image.frombuffer(rgb_bytes, (width, height), 'RGB').copy()
+        self._apply_icon(self._icon)
+
+    def _apply_icon(self, surface: Any) -> None:
+        pg = self._pygame
         # `pg.display.set_icon` only takes effect before `set_mode`, and the icon arrives over the
         # output stream after the window is open, so it goes through the live window
         try:
@@ -190,10 +198,9 @@ class PygameWindow:
         if not self.is_open:
             self.ensure_open(*INPUT_WINDOW_SIZE)
 
-    def _byte_keycode(self, sdl_key: int) -> Optional[int]:
-        if 0 < sdl_key < 0x80:
-            return sdl_key
-        return self._special_keycodes.get(sdl_key)
+    @staticmethod
+    def _byte_keycode(sdl_key: int) -> Optional[int]:
+        return KEYCODES.get(sdl_key)
 
     def pump_events(self) -> None:
         """process pending window events: queue key transitions, F11 = fullscreen toggle,
@@ -217,7 +224,14 @@ class PygameWindow:
                 if keycode is not None:
                     self.key_events.append((event.type == pg.KEYDOWN, keycode))
 
-    def draw(self, width: int, height: int, rgb_pixels: List[Tuple[int, int, int]]) -> None:
+    def show_black(self) -> None:
+        """fill the window black and show it (init_screen's black screen)."""
+        if self._screen_surface is None:
+            return
+        self._screen_surface.fill((0, 0, 0))
+        self._pygame.display.flip()
+
+    def draw(self, width: int, height: int, rgb_pixels: Sequence[Tuple[int, int, int]]) -> None:
         """blit a full frame given as row-major RGB tuples, and present it.
 
         Prefer `draw_indexed` when the caller already has palette indices: this signature forces
@@ -274,43 +288,41 @@ class InteractiveScreen(InMemoryScreen):
     def __init__(self, *, frames_dir: Optional[Path] = None, window: Optional[PygameWindow] = None):
         super().__init__(frames_dir=frames_dir)
         self.window = window if window is not None else PygameWindow()
-        self._palette_set = False
         # time.perf_counter() of the previous present, for the max-fps cap; -inf: the first present never waits
         # (perf_counter's starting point is undefined, so 0.0 would hold the first frame on a clock that starts there)
         self._last_flush = float('-inf')
 
-    def _init_screen(self, width: int, height: int, bpp: int, palette_size: int) -> None:
-        super()._init_screen(width, height, bpp, palette_size)
-        self.window.ensure_open(width, height)
+    def _on_init_screen(self) -> None:
+        """the life cycle: init_screen opens (or resizes) the window and shows black at once."""
+        self.window.ensure_open(self.width, self.height)
+        self.window.show_black()
 
-    def _set_window_title(self, text: str) -> None:
-        super()._set_window_title(text)
-        self.window.set_title(text)
+    def _on_window_title(self) -> None:
+        assert self.window_title is not None
+        self.window.set_title(self.window_title)
 
-    def _set_window_icon(self, width: int, height: int, indices: List[int]) -> None:
-        super()._set_window_icon(width, height, indices)
-        # if the program set the icon before its palette, `self.palette` is still the init_screen
-        # zero-fill and the icon would be black; it is applied once a palette arrives
-        if self._palette_set:
-            self.window.set_icon(width, height, indices, self.palette, ICON_TRANSPARENT_INDEX)
-
-    def _set_palette(self, palette_bit_address: int) -> None:
-        super()._set_palette(palette_bit_address)
-        self._palette_set = True
-        if self.window_icon is not None:
-            width, height, indices = self.window_icon
-            self.window.set_icon(width, height, indices, self.palette, ICON_TRANSPARENT_INDEX)
+    def _on_window_icon(self) -> None:
+        """the icon's colours were resolved when the command ran (InMemoryScreen.window_icon)."""
+        assert self.window_icon is not None
+        width, height, colours = self.window_icon
+        self.window.set_icon(width, height, colours)
 
     def _present(self) -> None:
         super()._present()
         self._wait_for_frame_slot()
-        # the INDEXED path: hand SDL the palette indices and let it expand them. `last_frame_rgb`
-        # is lazy (see InMemoryScreen), so a windowed run never builds the per-pixel RGB list.
-        self.window.draw_indexed(self.width, self.height, bytes(self.pixel_indices), list(self.palette))
+        if self.format == FORMAT_RGB:
+            self.window.draw(self.width, self.height, [rgb_of(value) for value in self.pixel_indices])
+        elif self.format <= 8:
+            # the INDEXED path: hand SDL the palette indices and let it expand them. `last_frame_rgb`
+            # is lazy (see InMemoryScreen), so a windowed run never builds the per-pixel RGB list.
+            self.window.draw_indexed(self.width, self.height, bytes(self.pixel_indices), self.palette)
+        else:  # more than 256 colours: SDL's 8-bit surfaces cannot hold the palette
+            palette = self.palette
+            self.window.draw(self.width, self.height, [palette[value] for value in self.pixel_indices])
         self.window.pump_events()
 
     def _wait_for_frame_slot(self) -> None:
-        """the 0x14 max-fps cap: hold this present until 1/max_fps s have passed since the previous one.
+        """the set_max_fps (0x03) cap: hold this present until 1/max_fps s have passed since the previous one.
         The wait sleeps in short slices and keeps pumping the window, so keys still queue and closing
         the window still ends the run while a fast frame waits."""
         if self.max_fps:
@@ -324,7 +336,7 @@ class InteractiveScreen(InMemoryScreen):
 
 
 class PcIO(IODevice):
-    """the complete 'pc' io-device: live keyboard input + a 256-color screen, together.
+    """the complete 'pc' io-device: live keyboard input + the screen, together.
 
     a single device that owns both channels: read_bit comes from the keyboard, write_bit
     drives the screen. interactive() wires both onto the one real window it owns (the keys
@@ -343,7 +355,7 @@ class PcIO(IODevice):
 
     @classmethod
     def interactive(cls) -> 'PcIO':
-        """a real window: live key presses in, a scaled 256-color screen out (one window).
+        """a real window: live key presses in, a scaled screen out (one window).
         the screen opens+sizes the window on the program's init-screen command (so live keys
         are captured from then on - a pc program initializes its screen up front)."""
         window = PygameWindow()
@@ -358,9 +370,6 @@ class PcIO(IODevice):
         window = getattr(self._screen, 'window', None)
         if window is not None:
             window.close()
-
-    def attach_memory(self, device_memory: DeviceMemory) -> None:
-        self._screen.attach_memory(device_memory)  # the screen reads the framebuffer; the keyboard needs no memory
 
     def read_bit(self) -> bool:
         return self._keyboard.read_bit()
