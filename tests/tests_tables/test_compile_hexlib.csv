@@ -22,6 +22,7 @@ hexlib-shr_hex_big, programs/hexlib_tests/basics2/shift_utils.fj | programs/hexl
 hexlib-ptr_index_n, programs/hexlib_tests/basics2/ptr_index_n.fj, tests/compiled/hexlib_tests/basics2/ptr_index_n.fjm, 64,3,0, True,True
 hexlib-read_entry, programs/hexlib_tests/basics2/read_entry.fj, tests/compiled/hexlib_tests/basics2/read_entry.fjm, 64,3,0, True,True
 hexlib-read_write_back, programs/hexlib_tests/basics2/read_write_back.fj, tests/compiled/hexlib_tests/basics2/read_write_back.fjm, 64,3,0, True,True
+hexlib-seq_pointers, programs/hexlib_tests/basics2/seq_pointers.fj, tests/compiled/hexlib_tests/basics2/seq_pointers.fjm, 64,3,0, True,True
 
 hexlib-cmp, programs/hexlib_tests/2params/cmp.fj,tests/compiled/hexlib_tests/2params/cmp.fjm, 64,3,0, True,True
 hexlib-cmp_n, programs/hexlib_tests/2params/cmp_n.fj,tests/compiled/hexlib_tests/2params/cmp_n.fjm, 64,3,0, True,True

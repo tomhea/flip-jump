@@ -48,13 +48,15 @@ ns hex {
         .ptr_inc ptr
     }
 
-    //  Time Complexity: n(w( 0.5@+ 4) + 16@+27)
-    // Space Complexity: n(w(0.88@+25) + 12@+103)
+    //  Time Complexity: w(0.5@+4) + n(5@+24) + 2.5@+10
+    // Space Complexity: w(0.5@+22) + n((w-#w)(@+18) + 4@+82) + 3@+24
     //   like:  dst[:n] = *ptr[:n]
     // dst is a hex[:n]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
+    // Arms ptr once; the armed fields then advance a cell at a time (see hex.pointers.xor_cells_from_inners_ptrs).
     def read_hex n, dst, ptr {
-        rep(n, i) .read_hex_and_inc dst + i*dw, ptr
-        .ptr_sub ptr, n
+        .zero n, dst
+        .pointers.set_flip_and_jump_pointers ptr
+        .pointers.xor_cells_from_inners_ptrs n, 1, dst
     }
 
     //  Time Complexity: w( 0.5@+ 4) + 18@+27
@@ -67,13 +69,15 @@ ns hex {
         .ptr_inc ptr
     }
 
-    //  Time Complexity: n(w( 0.5@+ 4) + 18@+27)
-    // Space Complexity: n(w(0.88@+25) + 14@+127)
+    //  Time Complexity: w(0.5@+4) + n(6@+24) + 2.5@+10
+    // Space Complexity: w(0.5@+22) + n((w-#w)(@+18) + 5@+94) + 3@+24
     //   like:  dst[:2n] = *ptr[:n]
     // dst is a hex[:2n]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
+    // Arms ptr once; the armed fields then advance a cell at a time (see hex.pointers.xor_cells_from_inners_ptrs).
     def read_byte n, dst, ptr {
-        rep(n, i) .read_byte_and_inc dst + i*2*dw, ptr
-        .ptr_sub ptr, n
+        .zero 2*n, dst
+        .pointers.set_flip_and_jump_pointers ptr
+        .pointers.xor_cells_from_inners_ptrs n, 2, dst
     }
 
     //  Time Complexity: w(0.88@+7) + (5+2*PTR_WIDE/4)@+27

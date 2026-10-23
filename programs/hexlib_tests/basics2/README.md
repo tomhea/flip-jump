@@ -19,3 +19,4 @@ cover wide 16-hex values and variable shift amounts.
 | `ptr_index_n.fj` | `hex.ptr_index n` (an unsigned n-hex index), against `hex.ptr_index` at `n = w/4`. |
 | `read_entry.fj` | `hex.read_entry` / `read_entry_byte` / `read_entry_packed` (an entry of a constant array). |
 | `read_write_back.fj` | `hex.read_back` / `write_back`: the armed address after every kind of pointer operation. |
+| `seq_pointers.fj` | The n-cell pointer ops (`read_byte n`, `write_hex n`, `xor_byte_to_ptr n`, ...) at n = 1..16, across a long carry. |
