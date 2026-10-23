@@ -12,3 +12,4 @@ the macro and prints the results (see `tests/tests_tables/test_compile_hexlib.cs
 | `mul32_negative.fj` | `hex.mul` data for signed (negative) 32-bit operands. |
 | `add_mul_test.fj` | Harness for `hex.add_mul`. |
 | `add_mul4.fj` / `add_mul8.fj` / `add_mul32.fj` / `add_mul64.fj` | `hex.add_mul` data for 4/8/32/64-bit operands. |
+| `add_mul_n.fj` | `hex.add_mul n` at n = 1, 2, 3, 4, 7, 8, 16, with a dirty multiply-carry on entry (standalone). |
