@@ -293,6 +293,8 @@ def run_test_output(
     flat_max_words: Optional[int] = None,
     flat_memory: bool = False,
     run_flags: Optional[int] = None,
+    profile: bool = False,
+    flat_required: bool = False,
 ) -> bool:
     """
     runs a .fjm file (with the FlipJump interpreter) with the given input, and checks that it finished successfuly and
@@ -309,7 +311,7 @@ def run_test_output(
     @param print_time: if true print running times
     @param print_termination: if true print the termination statistics
     @param last_ops_debugging_list_length: The length of the last-ops list
-    @param flat_max_words, flat_memory, run_flags: the flat-memory window, as in run()
+    @param flat_max_words, flat_memory, run_flags, profile, flat_required: as in run()
     @return: True if the run finished successfully, and with the expected output.
     @raises AssertionError: if should_raise_assertion_error, and the run finished unexpectedly or with an
     unexpected output.
@@ -334,6 +336,8 @@ def run_test_output(
         flat_max_words=flat_max_words,
         flat_memory=flat_memory,
         run_flags=run_flags,
+        profile=profile,
+        flat_required=flat_required,
     )
 
     try:
@@ -364,6 +368,13 @@ def assemble_and_run(
     last_ops_debugging_list_length: Optional[int] = None,
     run_flags: int = 0,
     io_mode: int = 0,
+    lzma_preset: int = lzma.PRESET_DEFAULT,
+    defines_file: Optional[Path] = None,
+    table_pool: Optional[TablePool] = None,
+    profile: bool = False,
+    flat_max_words: Optional[int] = None,
+    flat_required: bool = False,
+    flat_memory: bool = False,
 ) -> TerminationStatistics:
     """
     assembles the .fj files into a temporary .fjm file, then runs it.
@@ -387,6 +398,13 @@ def assemble_and_run(
         last_ops_debugging_list_length=last_ops_debugging_list_length,
         run_flags=run_flags,
         io_mode=io_mode,
+        lzma_preset=lzma_preset,
+        defines_file=defines_file,
+        table_pool=table_pool,
+        profile=profile,
+        flat_max_words=flat_max_words,
+        flat_required=flat_required,
+        flat_memory=flat_memory,
     )
 
 
@@ -409,6 +427,13 @@ def assemble_and_debug(
     last_ops_debugging_list_length: Optional[int] = None,
     run_flags: int = 0,
     io_mode: int = 0,
+    lzma_preset: int = lzma.PRESET_DEFAULT,
+    defines_file: Optional[Path] = None,
+    table_pool: Optional[TablePool] = None,
+    profile: bool = False,
+    flat_max_words: Optional[int] = None,
+    flat_required: bool = False,
+    flat_memory: bool = False,
 ) -> TerminationStatistics:
     """
     assembles the .fj files into a temporary .fjm file, then runs and debugs it.
@@ -434,6 +459,9 @@ def assemble_and_debug(
             max_recursion_depth=max_recursion_depth,
             run_flags=run_flags,
             io_mode=io_mode,
+            lzma_preset=lzma_preset,
+            defines_file=defines_file,
+            table_pool=table_pool,
         )
 
         termination_statistics = debug(
@@ -447,6 +475,10 @@ def assemble_and_debug(
             print_time=print_time,
             print_termination=print_termination,
             last_ops_debugging_list_length=last_ops_debugging_list_length,
+            profile=profile,
+            flat_max_words=flat_max_words,
+            flat_required=flat_required,
+            flat_memory=flat_memory,
         )
 
         return termination_statistics
@@ -471,6 +503,13 @@ def assemble_and_run_test_output(
     last_ops_debugging_list_length: Optional[int] = None,
     run_flags: int = 0,
     io_mode: int = 0,
+    lzma_preset: int = lzma.PRESET_DEFAULT,
+    defines_file: Optional[Path] = None,
+    table_pool: Optional[TablePool] = None,
+    profile: bool = False,
+    flat_max_words: Optional[int] = None,
+    flat_required: bool = False,
+    flat_memory: bool = False,
 ) -> bool:
     """
     assembles the .fj files into a temporary .fjm file, then runs it with the given input, and checks that
@@ -505,6 +544,9 @@ def assemble_and_run_test_output(
             max_recursion_depth=max_recursion_depth,
             run_flags=run_flags,
             io_mode=io_mode,
+            lzma_preset=lzma_preset,
+            defines_file=defines_file,
+            table_pool=table_pool,
         )
 
         test_succeeded = run_test_output(
@@ -518,6 +560,10 @@ def assemble_and_run_test_output(
             print_time=print_time,
             print_termination=print_termination,
             last_ops_debugging_list_length=last_ops_debugging_list_length,
+            profile=profile,
+            flat_max_words=flat_max_words,
+            flat_required=flat_required,
+            flat_memory=flat_memory,
         )
 
         return test_succeeded
