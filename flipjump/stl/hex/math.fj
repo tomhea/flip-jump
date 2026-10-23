@@ -13,24 +13,21 @@ ns hex {
         .tables.jump_to_table_entry dst, src, .add.dst
     }
 
-    //  Time Complexity: n(4@+12)
-    // Space Complexity: n(4@+52)
+    //  Time Complexity: n(3@+14) + 3@+18
+    // Space Complexity: n(3@+70) + 4@+60
     //   dst[:n] += src[:n]
     // @requires hex.add.init (or hex.init)
-    def add n, dst, src {
-        .add.clear_carry
-        rep(n, i) .add dst+i*dw, src+i*dw
-        .add.clear_carry
+    def add n, dst, src @ end {
+        .add.chain n, dst, src, end, end
+      end:
     }
 
-    //  Time Complexity: src_n(4@+12)   + 5@+1        // It's on average, see the note in hex.inc.
-    // Space Complexity: src_n(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+28
+    //  Time Complexity: src_n(3@+14)   + 4@+18       // It's on average, see the note in hex.inc.
+    // Space Complexity: src_n(2.5@+57) + (dst_n - hex_shift)(1.5@+13) + 4@+60
     //   dst[:dst_n] += src[:src_n] << (4*hex_shift)
     // @requires hex.add.init (or hex.init)
     def add_shifted dst_n, src_n, dst, src, hex_shift @ do_inc, end {
-        .add.clear_carry
-        rep(src_n, i) .add dst+(hex_shift + i)*dw, src+i*dw
-        .add.clear_carry end, do_inc
+        .add.chain src_n, dst+hex_shift*dw, src, end, do_inc
       do_inc:
         rep(dst_n - (src_n + hex_shift), i) .inc.step dst+(src_n + hex_shift + i)*dw, end
       end:
@@ -87,6 +84,31 @@ ns hex {
             wflip ..tables.ret+w, ret, .dst
           ret:
             wflip ..tables.ret+w, ret
+            // carry is 0/1
+            ..if0 ..tables.res, c0
+            ..tables.res+dbit; c1
+        }
+
+        //  Time Complexity: n(3@+14) + 3@+18
+        // Space Complexity: n(3@+70) + 4@+60
+        //   carry = 0
+        //   x[:n] += y[:n]
+        //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
+        //
+        // x,y are hex[:n] (named so, as .dst is the table's jumper).
+        // The two clear_carry dances and the n add dances are one chain of table jumps (see hex.tables.chained_jump).
+        // @requires hex.add.init (or hex.init)
+        def chain n, x, y, c0, c1 @ head, tail, return < ..tables.ret, ..tables.res, .dst {
+            ..tables.chained_jump .dst, 0
+          head:
+            ..zero ..tables.res
+            ..tables.chained_jump_to_table_entry x, y, .dst, head
+            rep(n-1, i) ..tables.chain_step x+i*dw, x+(i+1)*dw, y+(i+1)*dw, .dst
+          tail:
+            ..xor_zero x+(n-1)*dw, ..tables.res
+            ..tables.chained_jump .dst, tail
+          return:
+            wflip ..tables.ret+w, return
             // carry is 0/1
             ..if0 ..tables.res, c0
             ..tables.res+dbit; c1
@@ -158,24 +180,21 @@ ns hex {
         .tables.jump_to_table_entry dst, src, .sub.dst
     }
 
-    //  Time Complexity: n(4@+12)
-    // Space Complexity: n(4@+52)
+    //  Time Complexity: n(3@+14) + 3@+22
+    // Space Complexity: n(3@+70) + 4@+68
     //   dst[:n] -= src[:n]
     // @requires hex.sub.init (or hex.init)
-    def sub n, dst, src {
-        .sub.clear_carry
-        rep(n, i) .sub dst+i*dw, src+i*dw
-        .sub.clear_carry
+    def sub n, dst, src @ end {
+        .sub.chain n, dst, src, end, end
+      end:
     }
 
-    //  Time Complexity: src_n(4@+12)   + 5@+10        // It's on average, see the note in hex.inc.
-    // Space Complexity: src_n(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+40
+    //  Time Complexity: src_n(3@+14)   + 4@+22       // It's on average, see the note in hex.inc.
+    // Space Complexity: src_n(2.5@+57) + (dst_n - hex_shift)(1.5@+13) + 4@+68
     //   dst[:dst_n] -= src[:src_n] << (4*hex_shift)
     // @requires hex.sub.init (or hex.init)
     def sub_shifted dst_n, src_n, dst, src, hex_shift @ do_dec, end {
-        .sub.clear_carry
-        rep(src_n, i) .sub dst+(hex_shift + i)*dw, src+i*dw
-        .sub.clear_carry end, do_dec
+        .sub.chain src_n, dst+hex_shift*dw, src, end, do_dec
       do_dec:
         rep(dst_n - (src_n + hex_shift), i) .dec.step dst+(src_n + hex_shift + i)*dw, end
       end:
@@ -228,6 +247,36 @@ ns hex {
             wflip ..tables.ret+w, ret, .dst
           ret:
             wflip ..tables.ret+w, ret
+            // carry is 0/f
+            ..if0 ..tables.res, c0
+            .not_carry
+            wflip ..tables.res+w, 0xf*dw, c1
+        }
+
+        //  Time Complexity: n(3@+14) + 3@+22
+        // Space Complexity: n(3@+70) + 4@+68
+        //   carry = 0
+        //   x[:n] -= y[:n]
+        //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
+        //
+        // x,y are hex[:n] (named so, as .dst is the table's jumper).
+        // The two clear_carry dances and the n sub dances are one chain of table jumps (see hex.tables.chained_jump).
+        // @requires hex.sub.init (or hex.init)
+        def chain n, x, y, c0, c1 @ head, cleared, tail, return < ..tables.ret, ..tables.res, .dst {
+            ..tables.chained_jump .dst, 0
+          head:
+            // carry is 0/f
+            ..if0 ..tables.res, cleared
+            .not_carry
+            wflip ..tables.res+w, 0xf*dw
+          cleared:
+            ..tables.chained_jump_to_table_entry x, y, .dst, head
+            rep(n-1, i) ..tables.chain_step x+i*dw, x+(i+1)*dw, y+(i+1)*dw, .dst
+          tail:
+            ..xor_zero x+(n-1)*dw, ..tables.res
+            ..tables.chained_jump .dst, tail
+          return:
+            wflip ..tables.ret+w, return
             // carry is 0/f
             ..if0 ..tables.res, c0
             .not_carry
