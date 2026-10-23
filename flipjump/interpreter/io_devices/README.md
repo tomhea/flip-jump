@@ -4,9 +4,6 @@ A FlipJump program has exactly two I/O channels: an **input bit stream** and an 
 Every device here is a protocol on top of them. The program writes commands to its output and reads
 events from its input; the device does the rest.
 
-> **Status.** The screen and keyboard below are the API `ScreenIO.py` and `KeyboardIO.py` are being
-> written to.
-
 | Device | File | Channels | Use |
 |---|---|---|---|
 | Standard | `StandardIO.py` | stdin / stdout | the default (`fj --io standard`) |
@@ -43,6 +40,9 @@ and **every other key at `0x88` + its USB HID usage ID**.
   `'0'`–`'9'`, whatever modifiers are held. Shift is its own event.
 - A key that has an ASCII code is always sent as that code: Backspace `8`, Tab `9`, Enter `13`, Esc `27`,
   Space `32`. So `0x88`–`0xC0` (the HID numbers of those keys and of the printable keys) are never sent.
+- Delete is `0xD4` (its HID code); ASCII 127 is never sent.
+- The printable codes follow the current keyboard layout's unshifted key: on a French layout the key that types
+  `&` sends `'&'`. A key whose unshifted character is not ASCII is not delivered.
 
 | Code | Key |
 |---|---|
@@ -59,7 +59,7 @@ and **every other key at `0x88` + its USB HID usage ID**.
 | `0xDB` | Num Lock |
 | `0xDC` `0xDD` `0xDE` `0xDF` `0xE0` | keypad `/` `*` `-` `+` Enter |
 | `0xE1`–`0xE9`, `0xEA`, `0xEB` | keypad `1`–`9`, `0`, `.` |
-| `0xED` | Menu |
+| `0xED` | Menu (the Application key, HID `0x65`) |
 | `0xF0`–`0xFB` | F13–F24 |
 
 A program that wants "either Ctrl" tests both `0x80` and `0x84` (the same for Shift, Alt and GUI).
@@ -116,8 +116,12 @@ needs no memory hook.
 
 **The RGB cube of `b` bits**: green gets `⌈b/3⌉` bits, red `⌈(b − green)/2⌉`, blue the rest —
 3 → 1:1:1 (8 colours), 6 → 2:2:2, 12 → 4:4:4, 15 → 5:5:5, 16 → 5:6:5 ("high colour").
+The value is red, green, blue from the high bits down: at 16 it is RGB565 (`0xF800` red, `0x07E0` green,
+`0x001F` blue). Each channel is scaled to 0-255 (`round(level × 255 / (2^bits − 1))`).
 
-A colour value `≥ 2^B` is an error. The picture starts as colour 0 everywhere.
+In format 24, `R` is the first (lowest) byte of a colour: `R:8 G:8 B:8` in stream order.
+
+The picture starts as colour 0 everywhere.
 
 ### Palettes (indexed formats)
 
@@ -135,6 +139,12 @@ A colour value `≥ 2^B` is an error. The picture starts as colour 0 everywhere.
 | `2` | EGA-16 |
 | `3` | xterm-256 |
 | `4` | the RGB cube of `B` bits |
+
+A built-in has exactly `2^B` entries: a longer one is cut, a shorter one padded with black (black / white is
+black, white, then black).
+
+The icon's colours go through the palette selected when `set_window_icon` runs (format 24: their RGB). The icon
+has no transparency.
 
 ### The screen's life cycle
 
@@ -216,9 +226,9 @@ Every error raises `IODeviceException`, and its message says exactly **where** a
 ScreenIO: draw_collines (0x11) at output byte 1,204, frame 37, column 17, cursor 40: y2 = 90 is past the screen (rows end at h = 84)
 ```
 
-- **Where**: the command and its opcode; the byte offset of its opcode in the program's output (from 0); the frame
-  (the number of `present`s so far); and inside a draw, the column `x` and the cursor (or the pixel `(x, y)` in
-  `draw_raw` and the icon).
+- **Where**: the command and its opcode (`unknown (0xNN)` and `reserved (0x00)` for a byte that is not a
+  command); the byte offset of its opcode in the program's output (from 0); the frame (the number of `present`s so
+  far); and inside a draw, the column `x` and the cursor (or the pixel `(x, y)` in `draw_raw` and the icon).
 - **Why**: the field, the value it got, and the values it allows.
 
 | Error | The message's reason (after the "where") |
@@ -226,12 +236,11 @@ ScreenIO: draw_collines (0x11) at output byte 1,204, frame 37, column 17, cursor
 | unknown opcode | `opcode 0x23 is not a command (commands: 0x01-0x07, 0x10, 0x11, 0x1F)` |
 | reserved opcode | `opcode 0x00 is reserved (a stray zero byte?)` |
 | a command before `init_screen` | `select_palette (0x06) before init_screen: the first command must be init_screen (0x01)` |
-| screen size | `w = 0: must be 1..65,534` · `h = 70,000: must be 1..65,531` |
+| screen size | `w = 0: must be 1..65,534` · `h = 65,534: must be 1..65,531` |
 | format | `format = 20: must be 1-16 or 24` |
 | a palette command in RGB | `define_palette (0x02) in format 24 (direct RGB): palettes exist only in formats 1-16` |
-| palette range | `first = 12 > last = 3` · `last = 300: format 8 has colours 0..255` |
+| palette range | `first = 12 > last = 3` |
 | built-in palette | `id = 7: the built-ins are 0..4` |
-| colour | `colour = 300: format 8 has colours 0..255` |
 | column | `x = 170: the screen has columns 0..159 (w = 160)` |
 | reserved column token | `x = 0xFE is the reserved column token (2^C - 2, C = 8)` |
 | row past the screen | `y2 = 90 is past the screen (rows end at h = 84)` |
@@ -242,6 +251,10 @@ ScreenIO: draw_collines (0x11) at output byte 1,204, frame 37, column 17, cursor
 | icon size | `set_window_icon: w = 0: must be 1..255` |
 | title | `set_window_title: title byte 5 (0xC3) is not valid UTF-8` |
 | output ends inside a command | `the program's output ended inside draw_collines (0x11): 37 of its bits read` |
+| output ends inside an opcode byte | `the program's output ended inside an opcode byte: 3 of its 8 bits read` (where: `an opcode at output byte N, frame F`) |
+
+"N of its bits read" counts from the first bit of the command's opcode. The run checks it when it ends by itself
+(looping, a null jump, end of input): a program whose output stops inside a command is an error.
 
 ### Backends
 
