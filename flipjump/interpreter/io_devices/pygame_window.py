@@ -14,11 +14,8 @@ In `pc` the screen opens+sizes the window on the program's init-screen command; 
 with no screen to size it (e.g. standalone keyboard tests), ensure_open_for_input opens a
 small default window.
 
-keycodes delivered to the fj program (one byte) are io_devices/README.md's (Arduino Keyboard.h): ASCII
-below 0x80 for the key itself (letters lowercase, the digit row '0'-'9', Backspace 8, Tab 9, Enter 13,
-Esc 27, Space 32, punctuation unshifted), the modifiers at 0x80-0x87, and every other key in the README's
-table at 0x88 + its USB HID usage ID. KEYCODES below is the one table. Keys not in it are not delivered;
-F11 is captured for the fullscreen toggle and is never delivered.
+keycodes delivered to the fj program (one byte) are io_devices/README.md's; KEYCODES below is the one
+table. Keys not in it are not delivered; F11 is captured for the fullscreen toggle and is never delivered.
 
 pygame-ce is an optional dependency: `pip install flipjump[io]`. the window must be
 driven from the main thread (a macOS/SDL requirement) - the interpreter already runs
@@ -40,7 +37,7 @@ from typing import Any, Deque, Dict, List, Optional, Sequence, Tuple
 
 from flipjump.interpreter.io_devices.IODevice import IODevice
 from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO, KeyEventSource, ScriptedKeyEventSource
-from flipjump.interpreter.io_devices.ScreenIO import FORMAT_RGB, InMemoryScreen, rgb_of
+from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen
 from flipjump.utils.exceptions import IODeviceException
 
 # the >=0x80 keycodes (io_devices/README.md, "Keycodes")
@@ -220,8 +217,7 @@ class PygameWindow:
         if not self.is_open:
             self.ensure_open(*INPUT_WINDOW_SIZE)
 
-    @staticmethod
-    def _byte_keycode(sdl_key: int) -> Optional[int]:
+    def _byte_keycode(self, sdl_key: int) -> Optional[int]:
         return KEYCODES.get(sdl_key)
 
     def pump_events(self) -> None:
@@ -248,12 +244,11 @@ class PygameWindow:
 
     def show_black(self) -> None:
         """fill the window black and show it (init_screen's black screen)."""
-        if self._screen_surface is None:
-            return
+        assert self._screen_surface is not None
         self._screen_surface.fill((0, 0, 0))
         self._pygame.display.flip()
 
-    def draw(self, width: int, height: int, rgb_pixels: Sequence[Tuple[int, int, int]]) -> None:
+    def draw(self, width: int, height: int, rgb_pixels: List[Tuple[int, int, int]]) -> None:
         """blit a full frame given as row-major RGB tuples, and present it.
 
         Prefer `draw_indexed` when the caller already has palette indices: this signature forces
@@ -331,15 +326,12 @@ class InteractiveScreen(InMemoryScreen):
         # wait first, so the frame is recorded (its frame_hashes time) when it is shown
         self._wait_for_frame_slot()
         super()._present()
-        if self.bpp == FORMAT_RGB:
-            self.window.draw(self.width, self.height, [rgb_of(value) for value in self.pixel_indices])
-        elif self.bpp <= 8:
+        if self.bpp <= 8:
             # the INDEXED path: hand SDL the palette indices and let it expand them. `last_frame_rgb`
             # is lazy (see InMemoryScreen), so a windowed run never builds the per-pixel RGB list.
             self.window.draw_indexed(self.width, self.height, bytes(self.pixel_indices), self.palette)
-        else:  # more than 256 colours: SDL's 8-bit surfaces cannot hold the palette
-            palette = self.palette
-            self.window.draw(self.width, self.height, [palette[value] for value in self.pixel_indices])
+        else:  # RGB, or more than 256 colours: SDL's 8-bit surfaces cannot hold the palette
+            self.window.draw(self.width, self.height, self.last_frame_rgb)
         self.window.pump_events()
 
     def _wait_for_frame_slot(self) -> None:
