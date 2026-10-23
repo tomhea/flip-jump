@@ -95,7 +95,6 @@ Scripted input (tests, replays): a text file of `tic, down/up, keycode` lines (`
 | `0x10` | `draw_raw` | `w×h` colours of `B` bits, row-major | draw |
 | `0x11` | `draw_collines` | columns (below), ended by the top column value | draw |
 | `0x1F` | `present` | — | show |
-| `0x20`–`0x2F` | — | reserved (no framebuffer commands) | |
 
 `B` = the format's bits per colour. `init_screen` must come first; `0x02`, `0x06`, `0x07` exist only in indexed
 formats.
