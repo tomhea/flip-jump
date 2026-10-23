@@ -37,7 +37,7 @@ README_EXAMPLE = bytes.fromhex('01 04 00 03 00 08' '11 30 05 1F 3D FF' '1F')
 
 def test_the_readmes_example() -> None:
     device = screen_after(README_EXAMPLE)
-    assert (device.width, device.height, device.format) == (4, 3, 8)
+    assert (device.width, device.height, device.bpp) == (4, 3, 8)
     # column 0 filled with 5, column 1 copied from it, the rest colour 0
     assert device.pixel_indices == [5, 5, 0, 0] * 3
     assert device.frame_count == 1

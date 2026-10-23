@@ -300,28 +300,26 @@ class InteractiveScreen(InMemoryScreen):
         # (perf_counter's starting point is undefined, so 0.0 would hold the first frame on a clock that starts there)
         self._scr_last_flush = float('-inf')
 
-    def _on_init_screen(self) -> None:
-        """the life cycle: init_screen opens (or resizes) the window and shows black at once."""
-        self.window.ensure_open(self.width, self.height)
+    def _init_screen(self, width: int, height: int, bpp: int) -> None:
+        super()._init_screen(width, height, bpp)
+        self.window.ensure_open(width, height)
         self.window.show_black()
 
-    def _on_window_title(self) -> None:
-        assert self.window_title is not None
-        self.window.set_title(self.window_title)
+    def _set_window_title(self, title: str) -> None:
+        super()._set_window_title(title)
+        self.window.set_title(title)
 
-    def _on_window_icon(self) -> None:
-        """the icon's colours were resolved when the command ran (InMemoryScreen.window_icon)."""
-        assert self.window_icon is not None
-        width, height, colours = self.window_icon
+    def _set_window_icon(self, width: int, height: int, colours: List[Tuple[int, int, int]]) -> None:
+        super()._set_window_icon(width, height, colours)
         self.window.set_icon(width, height, colours)
 
     def _present(self) -> None:
         # wait first, so the frame is recorded (its frame_hashes time) when it is shown
         self._scr_wait_for_frame_slot()
         super()._present()
-        if self.format == FORMAT_RGB:
+        if self.bpp == FORMAT_RGB:
             self.window.draw(self.width, self.height, [rgb_of(value) for value in self.pixel_indices])
-        elif self.format <= 8:
+        elif self.bpp <= 8:
             # the INDEXED path: hand SDL the palette indices and let it expand them. `last_frame_rgb`
             # is lazy (see InMemoryScreen), so a windowed run never builds the per-pixel RGB list.
             self.window.draw_indexed(self.width, self.height, bytes(self.pixel_indices), self.palette)

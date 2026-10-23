@@ -40,7 +40,7 @@ def screen_after(stream: bytes, **kwargs) -> InMemoryScreen:  # type: ignore[no-
 @pytest.mark.parametrize('screen_format', [*range(1, 17), 24])
 def test_init_screen_accepts_every_format(screen_format: int) -> None:
     device = screen_after(ss.init_screen(5, 3, screen_format))
-    assert (device.width, device.height, device.format) == (5, 3, screen_format)
+    assert (device.width, device.height, device.bpp) == (5, 3, screen_format)
     assert device.pixel_indices == [0] * 15
     assert device.selected_slot == 0
     assert device.frame_count == 0 and device.frame_hashes == [] and device.last_frame_rgb == []
@@ -345,7 +345,7 @@ def test_another_init_screen_starts_over() -> None:
         + ss.PRESENT
         + ss.init_screen(3, 2, 4)
     )
-    assert (device.width, device.height, device.format) == (3, 2, 4)
+    assert (device.width, device.height, device.bpp) == (3, 2, 4)
     assert device.pixel_indices == [0] * 6
     assert device.selected_slot == 0
     assert all(slot == list(EGA16) for slot in device.palettes)
@@ -579,7 +579,7 @@ def test_a_subclass_using_common_private_names_still_decodes() -> None:
 
 def test_the_device_keeps_its_internals_under_one_prefix() -> None:
     """every private attribute and method of the device is _scr_..., except the documented hooks"""
-    hooks = {'_present', '_extension_command', '_on_init_screen', '_on_window_title', '_on_window_icon', '_abc_impl'}
+    hooks = {'_present', '_extension_command', '_init_screen', '_set_window_title', '_set_window_icon', '_abc_impl'}
     device = InMemoryScreen()
     names = set(vars(device)) | {name for name in vars(InMemoryScreen)}
     private = {name for name in names if name.startswith('_') and not name.startswith('__')}
