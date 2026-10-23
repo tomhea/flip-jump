@@ -230,3 +230,110 @@ ns hex {
         }
     }
 }
+
+
+
+// ---------- Truncated, Constant and Fixed-Point Multiplication
+
+
+ns hex {
+    //  Time Complexity: n^2(2@+15) + n(10@+52)
+    // Space Complexity: n^2(1.5@+35) + n(11@+150)
+    //   res[:n] = a[:n] * b[:n]    (the low n hexes of the product, like hex.mul)
+    //
+    // A truncated schoolbook: row j adds a[:n-j] * b[j] into res[j:n] (skipped when b[j] is 0). Unrolled,
+    //   so it takes the same time for negative (sign-extended) numbers as for positive ones.
+    // res,a,b are hex[:n]; res must not alias a or b.
+    // @requires hex.add.init (or hex.init)
+    def mul_low n, res, a, b {
+        .zero n, res
+        rep(n, j) .mul_low.row n, j, res, a, b+j*dw
+    }
+    ns mul_low {
+        //  Time Complexity: (m-j)(4@+30) + 10@+51
+        //   res[j:m] += wa[:m-j] * wbj    (skipped when wbj is 0)
+        // res is hex[:m], wa is hex[:m-j], wbj is a hex.
+        def row m, j, res, wa, wbj @ skip {
+            ..if0 wbj, skip
+            ..add_mul m-j, res+j*dw, wa, wbj
+          skip:
+        }
+    }
+
+    //  Time Complexity: 4n^2(5.5@+20) + n(8@+33)
+    // Space Complexity: n(50@+1000)
+    //   dst[:n] = (a[:n] * b[:n]) >> 4f    (signed fixed-point multiply)
+    //
+    // a,b,dst are signed Q-format hex[:n] with f fraction-hexes (dst may alias a/b).
+    // The product is computed at full 2n-hex width (no intermediate overflow), then shifted right by the
+    //   (hex-aligned) fraction. The result is truncated to n hexes (wraps modulo 2^4n).
+    // @Assumes: 0 < f <= n.
+    // @requires hex.add.init & hex.cmp.init (or hex.init)
+    def fixed_mul n, f, dst, a, b @ wide_a, wide_b, product, end {
+        .mov n, wide_a, a
+        .sign_extend 2*n, n, wide_a
+        .mov n, wide_b, b
+        .sign_extend 2*n, n, wide_b
+        .mul 2*n, product, wide_a, wide_b
+        .mov n, dst, product+f*dw
+        ;end
+
+      wide_a: .vec 2*n
+      wide_b: .vec 2*n
+      product: .vec 2*n
+      end:
+    }
+
+    //  Time Complexity: (n+f)^2(2@+15) + (n+f)(12@+52) + n(4@+4)
+    // Space Complexity: (n+f)^2(1.5@+35) + (n+f)(13@+180)
+    //   dst[:n] = (a[:n] * b[:n]) >> 4f    (signed fixed-point multiply - the same result as fixed_mul)
+    //
+    // Computes only the n+f low hexes of the product (the only ones the result can see), with mul_low's rows:
+    //   n rows on b's hexes, and f rows on its sign-extension hexes (0xf, and only if b is negative).
+    // a,b,dst are signed Q-format hex[:n] with f fraction-hexes (dst may alias a/b).
+    // @Assumes: 0 < f <= n.
+    // @requires hex.add.init (or hex.init)
+    def fixed_mul_low n, f, dst, a, b @ wide_a, product, sign_hex, negative, positive, end {
+        .mov n, wide_a, a
+        .sign_extend n+f, n, wide_a
+        .zero n+f, product
+        rep(n, j) .mul_low.row n+f, j, product, wide_a, b+j*dw
+        .sign n, b, negative, positive
+      negative:
+        rep(f, k) .mul_low.row n+f, n+k, product, wide_a, sign_hex
+      positive:
+        .mov n, dst, product+f*dw
+        ;end
+
+      wide_a: .vec n+f
+      product: .vec n+f
+      sign_hex: .hex 0xf
+      end:
+    }
+
+    //  Time Complexity: n(2@+1) + (#c-1)n(@+1) + (#on-bits of c)(n(3@+14) + 3@+18)
+    // Space Complexity: n(2@+40) + (#c-1)n(@+28) + (#on-bits of c)(n(3@+70) + 4@+60)
+    //   dst[:n] = src[:n] * c    (c is a constant)
+    //
+    // The strength-reduced constant multiply: every on-bit of c adds a shifted src. No multiplication tables.
+    // dst,src are hex[:n] (dst may alias src).
+    // @requires hex.add.init (or hex.init)
+    def mul_const n, dst, src, c @ shifted, end {
+        .mov n, shifted, src
+        .zero n, dst
+        rep(#c, i) .mul_const.step n, dst, shifted, (c>>i)&1, i < (#c)-1
+        ;end
+
+      shifted: .vec n
+      end:
+    }
+    ns mul_const {
+        //   if on: dst[:n] += shifted[:n]
+        //   if shift: shifted[:n] <<= 1
+        // on, shift are constants (0/1).
+        def step n, dst, shifted, on, shift {
+            rep(on, i) ..add n, dst, shifted
+            rep(shift, i) ..shl_bit n, shifted
+        }
+    }
+}

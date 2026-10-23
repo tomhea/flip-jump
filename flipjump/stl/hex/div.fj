@@ -149,3 +149,33 @@ ns hex {
       end:
     }
 }
+
+
+
+// ---------- Fixed-Point Division
+
+
+ns hex {
+    //  Time Complexity: 4n^2(36@+100)
+    // Space Complexity: n(60@+880)
+    //   if b==0: goto div0
+    //   dst[:n] = (a[:n] << 4f) / b[:n]    (signed fixed-point divide, truncated toward zero)
+    //
+    // a,b,dst are signed Q-format hex[:n] with f fraction-hexes (dst may alias a/b). div0 is an address.
+    // The dividend is shifted at full 2n-hex width (hex-aligned - no runtime shift).
+    // @Assumes: 0 < f <= n.
+    // @requires hex.sub.init & hex.cmp.init (or hex.init)
+    def fixed_div n, f, dst, a, b, div0 @ wide_a, quotient, remainder, end {
+        .zero f, wide_a
+        .mov n, wide_a+f*dw, a
+        .sign_extend 2*n, n+f, wide_a
+        .idiv 2*n, n, quotient, remainder, wide_a, b, div0, 1
+        .mov n, dst, quotient
+        ;end
+
+      wide_a: .vec 2*n
+      quotient: .vec 2*n
+      remainder: .vec n
+      end:
+    }
+}
