@@ -4,9 +4,8 @@ A FlipJump program has exactly two I/O channels: an **input bit stream** and an 
 Every device here is a protocol on top of them. The program writes commands to its output and reads
 events from its input; the device does the rest.
 
-> **Status.** This file is the *planned* API. Where today's `ScreenIO.py` and `KeyboardIO.py` still
-> differ from it, [Changes from today's implementation](#changes-from-todays-implementation) lists how.
-> The other devices are as described.
+> **Status.** The screen and keyboard below are the API `ScreenIO.py` and `KeyboardIO.py` are being
+> written to.
 
 | Device | File | Channels | Use |
 |---|---|---|---|
@@ -247,35 +246,3 @@ ScreenIO: draw_collines (0x11) at output byte 1,204, frame 37, column 17, cursor
 |---|---|
 | headless (default in tests) | the RGB frame in memory, a PNG per frame, a sha256 per frame (for golden tests) |
 | PC window | a scaled window; `set_max_fps` makes `present` wait (the headless backend never waits) |
-
----
-
-## Changes from today's implementation
-
-### Screen
-
-| Today's `ScreenIO.py` | This API |
-|---|---|
-| `0x01 init_screen [w:2][h:2][bpp:1][palette_size:2]` | `0x01 init_screen [w:2][h:2][format:1]` |
-| `0x02 set_palette [address]` (read from memory) | `0x02 define_palette` (in the stream) + `0x06 select_palette` |
-| `0x03` / `0x04` / `0x06` framebuffer presents (read from memory) | removed: draw with `0x10` / `0x11` |
-| `0x05 update_screen_raw` | `0x10 draw_raw` + `0x1F present` (bit-packed at the format's width) |
-| `0x0B begin_frame_collines` (`[x]…0xFF`, `0xFE` / `0xFD` / `0xFC`) | `0x11 draw_collines` + `0x1F present` (tokens at the top of nibble-sized fields; COPY copies column x − 1, as today) |
-| `0x12` / `0x13` / `0x14` title / icon / max fps | `0x04` / `0x05` / `0x03` |
-
-The screen never reads program memory, so it needs no device-memory hook.
-
-### Keyboard
-
-The protocol (status nibble, then keycode) is unchanged; the codes above `0x80` move to Arduino's.
-
-| Key | Today's `KeyboardIO.py` | This API |
-|---|---|---|
-| Up, Down, Left, Right | `0x80` `0x81` `0x82` `0x83` | `0xDA` `0xD9` `0xD8` `0xD7` |
-| Shift | `0x84` (either) | `0x81` left, `0x85` right |
-| Ctrl | `0x85` (either) | `0x80` left, `0x84` right |
-| Alt | `0x86` (either) | `0x82` left, `0x86` right |
-| GUI, F-keys, Insert … Page Down, keypad, Caps / Num / Scroll Lock, Pause, Print Screen, Menu | not delivered | the table above |
-
-The codes `0x80`–`0x86` mean different keys before and after, so a program that reads the keyboard must be
-rebuilt for this change, together with the screen's.
