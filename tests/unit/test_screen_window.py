@@ -123,7 +123,12 @@ def test_a_second_window_closes_the_first_display_before_opening(monkeypatch: py
     PygameWindow().ensure_open(2, 2)
     quits = []
     real_quit = pygame.display.quit
-    monkeypatch.setattr(pygame.display, 'quit', lambda: (quits.append(True), real_quit()))
+
+    def recording_quit() -> None:
+        quits.append(True)
+        real_quit()
+
+    monkeypatch.setattr(pygame.display, 'quit', recording_quit)
     PygameWindow().ensure_open(3, 1)
     assert quits == [True] and pygame.display.get_surface().get_size() == (3, 1)
 
@@ -206,7 +211,7 @@ def test_an_rgb_icon_is_opaque() -> None:
 def test_the_icon_survives_a_resize(monkeypatch: pytest.MonkeyPatch) -> None:
     device = InteractiveScreen()
     ss.feed(device, ss.init_screen(2, 2, 1) + ss.set_window_icon(1, 1, [1], 1))
-    applied = []
+    applied: List[object] = []
     monkeypatch.setattr(device.window, '_apply_icon', applied.append)
     ss.feed(device, ss.init_screen(3, 1, 1))
     assert applied == [device.window._icon]
