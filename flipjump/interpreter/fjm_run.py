@@ -236,7 +236,7 @@ def run(
         except KeyboardInterrupt:
             return TerminationStatistics(statistics, TerminationCause.KeyboardInterrupt)
         try:
-            termination = _run_native(core, header.memory_width, io_device, statistics)
+            return _end_of_run(io_device, _run_native(core, header.memory_width, io_device, statistics))
         except FlipJumpException as fj_exception:
             raise fj_exception
         except KeyboardInterrupt:
@@ -245,7 +245,6 @@ def run(
             raise FlipJumpRuntimeException(
                 "Unknown exception during running an .fjm file, please report this bug"
             ) from unknown_exception
-        return _end_of_run(io_device, termination)
 
     try:
         with ProgressBar('  loading memory:  ', print_time=print_time):
@@ -260,11 +259,11 @@ def run(
     statistics = RunStatistics(mem.memory_width, last_ops_debugging_list_length)
 
     try:
-        io_device.attach_memory(ReaderDeviceMemory(mem))
         if use_featured_loop:
-            termination = _run_featured(mem, io_device, statistics, breakpoint_handler, show_trace)
-        else:
-            termination = _run_fast(mem, io_device, statistics)
+            io_device.attach_memory(ReaderDeviceMemory(mem))
+            return _end_of_run(io_device, _run_featured(mem, io_device, statistics, breakpoint_handler, show_trace))
+        io_device.attach_memory(ReaderDeviceMemory(mem))
+        return _end_of_run(io_device, _run_fast(mem, io_device, statistics))
 
     except FlipJumpRuntimeMemoryException as mem_e:
         return TerminationStatistics(
@@ -278,7 +277,6 @@ def run(
         raise FlipJumpRuntimeException(
             "Unknown exception during running an .fjm file, please report this bug"
         ) from unknown_exception
-    return _end_of_run(io_device, termination)
 
 
 # the terminations of a run that ended by itself: the device hears that its output is complete (IODevice.end_of_run)
