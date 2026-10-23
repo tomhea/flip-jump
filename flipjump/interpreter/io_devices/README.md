@@ -108,7 +108,7 @@ formats.
 | `4` | indexed | 4 bits | the 16 EGA/VGA colours |
 | `8` | indexed | 8 bits | xterm-256: the 16 colours, a 6×6×6 RGB cube, 24 greys |
 | `3`, `5`–`7`, `9`–`16` | indexed | that many bits | the RGB cube of that many bits (below) |
-| `17`–`23` | — | refused | — |
+| `0`, `17`–`23`, `25`–`255` | — | refused | — |
 | `24` | direct RGB | 24 bits: `R:8 G:8 B:8` | none (no palettes) |
 
 **The RGB cube of `b` bits**: green gets `⌈b/3⌉` bits, red `⌈(b − green)/2⌉`, blue the rest —
@@ -197,10 +197,38 @@ F3                          y=3 | END_CMD (x=0xF)             (... rows 0-2; the
 
 ### Errors
 
-The device raises (`IODeviceException`) on: an unknown or reserved opcode; a reserved token (the row
-field's `2^R − 4`, the column field's `2^C − 2`); any command before
-`init_screen`; a field out of range (a colour `≥ 2^B`, a row past `h`, a column past `w`, a cursor that does
-not move forward, a COPY in column 0); a palette command in RGB format; a format of 17–23 or 0.
+Every error raises `IODeviceException`, and its message says exactly **where** and **why, with the numbers**:
+
+```
+ScreenIO: draw_collines (0x11) at output byte 1,204, frame 37, column 17, cursor 40: y2 = 90 is past the screen (rows end at h = 84)
+```
+
+- **Where**: the command and its opcode; the byte offset of its opcode in the program's output (from 0); the frame
+  (the number of `present`s so far); and inside a draw, the column `x` and the cursor (or the pixel `(x, y)` in
+  `draw_raw` and the icon).
+- **Why**: the field, the value it got, and the values it allows.
+
+| Error | The message's reason (after the "where") |
+|---|---|
+| unknown opcode | `opcode 0x23 is not a command (commands: 0x01-0x07, 0x10, 0x11, 0x1F)` |
+| reserved opcode | `opcode 0x00 is reserved (a stray zero byte?)` |
+| a command before `init_screen` | `select_palette (0x06) before init_screen: the first command must be init_screen (0x01)` |
+| screen size | `w = 0: must be 1..65,534` · `h = 70,000: must be 1..65,531` |
+| format | `format = 20: must be 1-16 or 24` |
+| a palette command in RGB | `define_palette (0x02) in format 24 (direct RGB): palettes exist only in formats 1-16` |
+| palette range | `first = 12 > last = 3` · `last = 300: format 8 has colours 0..255` |
+| built-in palette | `id = 7: the built-ins are 0..4` |
+| colour | `colour = 300: format 8 has colours 0..255` |
+| column | `x = 170: the screen has columns 0..159 (w = 160)` |
+| reserved column token | `x = 0xFE is the reserved column token (2^C - 2, C = 8)` |
+| row past the screen | `y2 = 90 is past the screen (rows end at h = 84)` |
+| cursor not moving forward | `y2 = 30 does not move the cursor forward (need 40 < y2 <= 84)` |
+| reserved row token | `0xFC is the reserved row token (2^R - 4, R = 8)` |
+| COPY in column 0 | `COPY copies column x - 1, and column 0 has none` |
+| non-zero padding | `the padding bits after the command are 0b0101, not zero (the stream is probably misaligned)` |
+| icon size | `set_window_icon: w = 0: must be 1..255` |
+| title | `set_window_title: title byte 5 (0xC3) is not valid UTF-8` |
+| output ends inside a command | `the program's output ended inside draw_collines (0x11): 37 of its bits read` |
 
 ### Backends
 
