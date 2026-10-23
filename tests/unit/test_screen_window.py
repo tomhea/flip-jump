@@ -2,14 +2,11 @@
 unit-tests for the interactive pygame window (pygame_window.py) - run headless with SDL's
 dummy video driver, so they work on Windows/Linux/macOS and in CI.
 
-pinned: the life cycle in the window (init_screen opens / resizes it black at once, present draws
-through the palette selected at present, RGB and >256-colour formats draw too, a re-init goes black);
-the title and the (opaque) icon reach the window; live key events flow from the window into a
-KeyboardIO that does NOT depend on the screen, mapped by pygame_window.KEYCODES to
-io_devices/README.md's codes; F11 toggles fullscreen and is never delivered; keys outside the table
-are not delivered; closing the window stops the run; the CLI wires the two interactive devices onto
-one shared window; and the set_max_fps cap holds a fast present until its slot -- pumping the window
-while it waits, and only then drawing.
+pinned: the screen opens/draws the shared window; live key events (io_devices/README.md's
+keycodes) flow from the window into a KeyboardIO that does NOT depend on the screen;
+F11 toggles fullscreen and is never delivered; closing the window stops the run; and the CLI
+wires the two interactive devices onto one shared window (a lone live keyboard opens its own);
+the title and the icon reach the window, and the set_max_fps cap holds a fast present until its slot.
 """
 
 import time
@@ -24,6 +21,7 @@ from flipjump.interpreter import fjm_run  # noqa: E402
 from flipjump.interpreter.io_devices.KeyboardIO import KeyboardIO  # noqa: E402
 from flipjump.interpreter.io_devices.pygame_window import (  # noqa: E402
     KEYCODES,
+    SDL_SCANCODE_KEY,
     InteractiveScreen,
     PcIO,
     WINDOW_HEIGHT,
@@ -81,7 +79,7 @@ def read_byte(keyboard: KeyboardIO) -> int:
 # ---------------------------------------------------------------- the life cycle in the window
 
 
-def test_init_screen_opens_the_window_black() -> None:
+def test_init_screen_opens_the_window() -> None:
     device = InteractiveScreen()
     init_2x2_screen(device)
     surface = pygame.display.get_surface()
@@ -91,7 +89,7 @@ def test_init_screen_opens_the_window_black() -> None:
     assert device.frame_count == 0
 
 
-def test_present_draws_through_the_palette_selected_at_present() -> None:
+def test_present_draws_the_frame_pixels() -> None:
     device = InteractiveScreen()
     init_2x2_screen(device)
     ss.feed(device, ss.define_palette(3, 0, [(9, 8, 7), (1, 2, 3)], 8) + ss.draw_raw([0, 1, 1, 0], 8))
@@ -310,10 +308,10 @@ README_KEYS = [
     (pygame.K_KP9, 0xE9),
     (pygame.K_KP0, 0xEA),
     (pygame.K_KP_PERIOD, 0xEB),
-    ((1 << 30) | 0x65, 0xED),  # SDLK_APPLICATION, the "Menu" key (pygame has no constant for it)
+    (SDL_SCANCODE_KEY | 0x65, 0xED),  # SDLK_APPLICATION, the "Menu" key (pygame has no constant for it)
     (pygame.K_F13, 0xF0),
     (pygame.K_F15, 0xF2),
-    ((1 << 30) | 0x73, 0xFB),  # SDLK_F24
+    (SDL_SCANCODE_KEY | 0x73, 0xFB),  # SDLK_F24
 ]
 
 
@@ -323,7 +321,7 @@ def test_the_key_table_is_the_readmes(key: int, code: int) -> None:
 
 
 @pytest.mark.parametrize('key, code', [(pygame.K_UP, 0xDA), (pygame.K_RCTRL, 0x84), (pygame.K_DELETE, 0xD4)])
-def test_special_keys_arrive_with_their_codes(key: int, code: int) -> None:
+def test_special_keys_use_the_byte_keycodes(key: int, code: int) -> None:
     window = PygameWindow()
     window.ensure_open_for_input()
     keyboard = keyboard_on(window)
@@ -346,7 +344,7 @@ def test_f11_toggles_fullscreen_and_is_not_delivered(monkeypatch: pytest.MonkeyP
 
 
 @pytest.mark.parametrize('key', [pygame.K_KP_EQUALS, pygame.K_MENU, pygame.K_SYSREQ, 0xE9, ord('A')])
-def test_keys_not_in_the_table_are_not_delivered(key: int) -> None:
+def test_unmapped_keys_are_ignored(key: int) -> None:
     window = PygameWindow()
     window.ensure_open_for_input()
     keyboard = keyboard_on(window)
