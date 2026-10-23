@@ -2,17 +2,7 @@
 the InMemoryScreen output-device - headless-first.
 
 The wire format is io_devices/README.md ("Screen"), and that file is the authority: this module
-implements it. In short:
-
-- a command starts on a byte boundary with its opcode byte; its fields follow packed back to back
-  at exactly their width in bits, least-significant bit first; the command ends with zero bits up
-  to the next byte boundary.
-- opcodes: 0x01 init_screen, 0x02 define_palette, 0x03 set_max_fps, 0x04 set_window_title,
-  0x05 set_window_icon, 0x06 select_palette, 0x07 builtin_palette, 0x10 draw_raw,
-  0x11 draw_collines, 0x1F present. 0x00 is reserved; every other opcode is an error.
-- formats 1-16 are indexed (the picture holds colour indices, the palette selected when `present`
-  runs gives them their RGB); format 24 is direct RGB (R:8 G:8 B:8, R in the low bits).
-- the screen never reads program memory: every command carries its data in the output stream.
+implements it.
 
 Every error raises IODeviceException with a message of the form
     ScreenIO: <command> (0xNN) at output byte <offset>, frame <n>[, column <x>, cursor <c> | pixel (<x>, <y>)]: <reason>
@@ -186,14 +176,7 @@ def _fit(colours: Tuple[RGB, ...], bits: int) -> Tuple[RGB, ...]:
 
 @lru_cache(maxsize=None)
 def builtin_palette(builtin_id: int, bits: int) -> Tuple[RGB, ...]:
-    """the built-in palette `builtin_id` for a format of `bits` bits per colour: exactly 2^bits entries.
-
-    0 black / white: entry 0 black, entry 1 white, the rest black.
-    1 grey ramp: 2^bits evenly spaced greys from black to white.
-    2 EGA-16 and 3 xterm-256: the list, cut to 2^bits entries or padded with black.
-    4 the RGB cube of `bits` bits: the value is red | green | blue from the high bits down
-      (red in the top bits, blue in the low bits - RGB565 at 16), each channel scaled to 0..255.
-    """
+    """the built-in palette `builtin_id` for a format of `bits` bits per colour: exactly 2^bits entries."""
     size = 1 << bits
     if builtin_id == BUILTIN_BLACK_WHITE:
         return _fit(((0, 0, 0), (255, 255, 255)), bits)
@@ -217,8 +200,7 @@ def builtin_palette(builtin_id: int, bits: int) -> Tuple[RGB, ...]:
 
 
 def default_palette(screen_format: int) -> Tuple[RGB, ...]:
-    """the palette every slot holds after init_screen: 1 black/white, 2 four greys, 4 EGA-16,
-    8 xterm-256, the other indexed formats the RGB cube of that many bits."""
+    """the palette every slot holds after init_screen."""
     builtin_id = {1: BUILTIN_BLACK_WHITE, 2: BUILTIN_GREY_RAMP, 4: BUILTIN_EGA16, 8: BUILTIN_XTERM256}.get(
         screen_format, BUILTIN_RGB_CUBE
     )
@@ -257,23 +239,7 @@ Parser = Generator[None, int, None]
 
 
 class InMemoryScreen(IODevice):
-    """the screen of io_devices/README.md, headless. See the module docstring.
-
-    public state:
-      width, height, bpp          the screen (0, 0, 8 before the first init_screen)
-      pixel_indices               the picture being drawn: a flat row-major list of colour values
-      palettes                    256 slots, each a list of 2^B RGB tuples (indexed formats; [] in format 24).
-                                  Slots that were never written may share one list object: treat them as
-                                  read-only (the device copies a slot before writing it).
-      selected_slot               the slot `present` will use
-      palette                     the RGB list of the slot selected at the last present ([] before it, and in RGB)
-      frame_count, frame_hashes   the presents so far; (time ns, sha256 hex) per present
-      last_frame_rgb              the last PRESENTED picture as row-major RGB tuples (lazy)
-      window_title                the last set_window_title (None before one)
-      window_icon                 the last set_window_icon as (w, h, row-major RGB tuples), None before one
-      max_fps                     the last set_max_fps (0 = no cap)
-      frames_dir                  where a PNG per present is written (None = no PNGs)
-    """
+    """see the module docstring for the command stream."""
 
     def __init__(self, *, frames_dir: Optional[Path] = None):
         self.frames_dir = frames_dir
@@ -282,9 +248,10 @@ class InMemoryScreen(IODevice):
         self.height = 0
         self.bpp = 8
         self.pixel_indices: List[int] = []
+        # slots never written may share one list object: read-only; the device copies a slot before writing it
         self.palettes: List[List[RGB]] = []
         self.selected_slot = 0
-        self.palette: List[RGB] = []
+        self.palette: List[RGB] = []  # the slot selected at the last present
 
         self.frame_count = 0
         self.frame_hashes: List[Tuple[int, str]] = []  # (present-time ns, sha256 hexdigest)
@@ -315,7 +282,7 @@ class InMemoryScreen(IODevice):
         self._scr_parser: Parser = self._scr_parse()
         next(self._scr_parser)
 
-    # ---------------------------------------------------------------- the IODevice interface
+    # ---------------------------------------------------------------- output stream
 
     def write_bit(self, bit: bool) -> None:
         self._scr_current_byte |= bit << self._scr_bits_count
@@ -345,13 +312,11 @@ class InMemoryScreen(IODevice):
             self._scr_check_output_complete()
         return b''
 
-    # ---------------------------------------------------------------- the subclass hooks
+    # ---------------------------------------------------------------- command decoding
 
     def _extension_command(self, opcode: int) -> Optional[Union[Callable[[int], bool], Literal[True]]]:
         """a subclass hook, not part of the wire API: see the module docstring. None = an unknown opcode."""
         return None
-
-    # ---------------------------------------------------------------- the stream
 
     def _scr_feed(self, byte: int) -> None:
         if self._scr_failure is not None:
@@ -415,18 +380,7 @@ class InMemoryScreen(IODevice):
 
     def _scr_parse(self) -> Parser:
         """the command parser: a generator sent one output byte at a time."""
-        handlers = {
-            CMD_INIT_SCREEN: self._scr_cmd_init_screen,
-            CMD_DEFINE_PALETTE: self._scr_cmd_define_palette,
-            CMD_SET_MAX_FPS: self._scr_cmd_set_max_fps,
-            CMD_SET_WINDOW_TITLE: self._scr_cmd_set_window_title,
-            CMD_SET_WINDOW_ICON: self._scr_cmd_set_window_icon,
-            CMD_SELECT_PALETTE: self._scr_cmd_select_palette,
-            CMD_BUILTIN_PALETTE: self._scr_cmd_builtin_palette,
-            CMD_DRAW_RAW: self._scr_cmd_draw_raw,
-            CMD_DRAW_COLLINES: self._scr_cmd_draw_collines,
-            CMD_PRESENT: self._scr_cmd_present,
-        }
+        handlers = {opcode: getattr(self, f'_scr_cmd_{name}') for opcode, name in COMMAND_NAMES.items()}
         while True:
             assert self._scr_nacc == 0  # every command starts on a byte boundary
             opcode = yield from self._scr_bits(8)
@@ -472,7 +426,7 @@ class InMemoryScreen(IODevice):
                 )
             self._scr_command = None
 
-    # ---------------------------------------------------------------- the commands
+    # ---------------------------------------------------------------- screen functions
 
     def _scr_cmd_init_screen(self) -> Generator[None, int, None]:
         width = yield from self._scr_bits(16)
@@ -593,14 +547,13 @@ class InMemoryScreen(IODevice):
         width, height, picture = self.width, self.height, self.pixel_indices
         row_bits, column_bits, colour_bits = self._scr_row_bits, self._scr_column_bits, self.bpp
         end_command, reserved_column = (1 << column_bits) - 1, (1 << column_bits) - 2
-        end, keep, copy, reserved_row = (
-            (1 << row_bits) - 1,
-            (1 << row_bits) - 2,
-            (1 << row_bits) - 3,
-            (1 << row_bits) - 4,
-        )
+        end, keep, copy, reserved_row = ((1 << row_bits) - k for k in (1, 2, 3, 4))
         x: Optional[int] = None
         cursor = 0
+
+        def refuse(reason: str) -> IODeviceException:
+            return self._scr_error(reason, column=x, cursor=cursor)
+
         try:
             while True:
                 x = None
@@ -622,30 +575,18 @@ class InMemoryScreen(IODevice):
                     field = 'y2'
                     if token == keep or token == copy:
                         if token == copy and x == 0:
-                            raise self._scr_error(
-                                'COPY copies column x - 1, and column 0 has none', column=x, cursor=cursor
-                            )
+                            raise refuse('COPY copies column x - 1, and column 0 has none')
                         field = 'y'
                         row = yield from self._scr_bits(row_bits)
                     else:
                         row = token
                     if row == reserved_row:
-                        raise self._scr_error(
-                            f'0x{row:0{row_bits // 4}X} is the reserved row token (2^R - 4, R = {row_bits})',
-                            column=x,
-                            cursor=cursor,
-                        )
+                        raise refuse(f'0x{row:0{row_bits // 4}X} is the reserved row token (2^R - 4, R = {row_bits})')
                     if row > height:
-                        raise self._scr_error(
-                            f'{field} = {row:,} is past the screen (rows end at h = {height:,})',
-                            column=x,
-                            cursor=cursor,
-                        )
+                        raise refuse(f'{field} = {row:,} is past the screen (rows end at h = {height:,})')
                     if row < cursor:  # row == cursor: an item of zero rows, which paints nothing
-                        raise self._scr_error(
-                            f'{field} = {row:,} is behind the cursor (need {cursor:,} <= {field} <= {height:,})',
-                            column=x,
-                            cursor=cursor,
+                        raise refuse(
+                            f'{field} = {row:,} is behind the cursor (need {cursor:,} <= {field} <= {height:,})'
                         )
                     start, stop = cursor * width + x, row * width + x
                     if token == copy:
@@ -657,14 +598,12 @@ class InMemoryScreen(IODevice):
         except _OutputEnded:
             if x is None:
                 raise self._scr_error(self._scr_ended_reason()) from None
-            raise self._scr_error(self._scr_ended_reason(), column=x, cursor=cursor) from None
+            raise refuse(self._scr_ended_reason()) from None
 
     def _scr_cmd_present(self) -> Generator[None, int, None]:
         self._present()
         return
         yield  # a generator, like every command
-
-    # ---------------------------------------------------------------- presenting
 
     def _scr_palette_bytes(self, palette: List[RGB]) -> bytes:
         cached = self._scr_palette_bytes_cache
@@ -696,12 +635,11 @@ class InMemoryScreen(IODevice):
 
         if self.frames_dir is not None:
             self.frames_dir.mkdir(parents=True, exist_ok=True)
-            # !! BIND IT ONCE: `last_frame_rgb` expands the whole frame each time it is read
-            frame_rgb = self.last_frame_rgb
-            rgb_bytes = bytes(channel for colour in frame_rgb for channel in colour)
-            row_bytes = 3 * self.width
-            stops = range(row_bytes, len(rgb_bytes) + 1, row_bytes)
-            rows = b''.join(b'\x00' + rgb_bytes[stop - row_bytes : stop] for stop in stops)  # noqa: E203
+            frame_rgb = self.last_frame_rgb  # bound once: the property expands the whole frame on every read
+            row_slices = [
+                frame_rgb[row * self.width : (row + 1) * self.width] for row in range(self.height)  # noqa: E203
+            ]
+            rows = b''.join(b'\x00' + b''.join(bytes(rgb) for rgb in row_slice) for row_slice in row_slices)
             png_path = self.frames_dir / f'frame_{self.frame_count - 1:06d}.png'
             png_path.write_bytes(encode_png(self.width, self.height, rows))
 
