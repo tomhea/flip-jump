@@ -392,3 +392,6 @@ def test_the_device_stays_failed() -> None:
     with pytest.raises(IODeviceException) as again:
         ss.feed(device, ss.init_screen(4, 3, 8))
     assert str(again.value) == message
+    with pytest.raises(IODeviceException) as at_end:
+        device.end_of_run()
+    assert str(at_end.value) == message

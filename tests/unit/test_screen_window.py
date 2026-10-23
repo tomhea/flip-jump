@@ -119,6 +119,15 @@ def test_a_reinit_resizes_the_window() -> None:
     assert painted() == [(255, 255, 255), (0, 0, 0), (255, 255, 255)]
 
 
+def test_a_second_window_closes_the_first_display_before_opening(monkeypatch: pytest.MonkeyPatch) -> None:
+    PygameWindow().ensure_open(2, 2)
+    quits = []
+    real_quit = pygame.display.quit
+    monkeypatch.setattr(pygame.display, 'quit', lambda: (quits.append(True), real_quit()))
+    PygameWindow().ensure_open(3, 1)
+    assert quits == [True] and pygame.display.get_surface().get_size() == (3, 1)
+
+
 def test_rgb_frames_are_drawn() -> None:
     device = InteractiveScreen()
     ss.feed(device, ss.init_screen(2, 1, 24) + bytes([0x10, 1, 2, 3, 250, 128, 0]) + ss.PRESENT)
@@ -191,6 +200,16 @@ def test_an_rgb_icon_is_opaque() -> None:
     window = PygameWindow()
     window.ensure_open(2, 2)
     window.set_icon(2, 1, [(0, 0, 0), (255, 0, 0)])  # through the dummy driver: must not raise
+    assert window._icon.get_colorkey() is None and window._icon.get_at((0, 0))[:3] == (0, 0, 0)
+
+
+def test_the_icon_survives_a_resize(monkeypatch: pytest.MonkeyPatch) -> None:
+    device = InteractiveScreen()
+    ss.feed(device, ss.init_screen(2, 2, 1) + ss.set_window_icon(1, 1, [1], 1))
+    applied = []
+    monkeypatch.setattr(device.window, '_apply_icon', applied.append)
+    ss.feed(device, ss.init_screen(3, 1, 1))
+    assert applied == [device.window._icon]
 
 
 def test_icon_through_the_whole_window_path() -> None:

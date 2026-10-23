@@ -5,6 +5,7 @@ replays deterministically into an .fj polling loop, and the complete PcIO device
 together) runs a program.
 """
 
+import contextlib
 import hashlib
 from pathlib import Path
 from typing import Iterator
@@ -209,6 +210,27 @@ def test_the_cut_program_raises_through_the_cli(tmp_path: Path, dummy_window: No
 def test_control_a_complete_program_does_not_raise_through_the_cli(tmp_path: Path, dummy_window: None) -> None:
     fjm_path = assemble_to_path(SCREEN_PROGRAM, tmp_path, use_stl=True)
     assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', '--io', 'pc', str(fjm_path)])
+
+
+class ClosingScreen(InMemoryScreen):
+    def __init__(self) -> None:
+        super().__init__()
+        self.closes = 0
+
+    def close(self) -> None:
+        self.closes += 1
+
+
+@pytest.mark.parametrize('program, raises', [(SCREEN_PROGRAM, False), (cut_program('looping'), True)])
+def test_the_cli_closes_the_device_it_created(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, program: str, raises: bool
+) -> None:
+    device = ClosingScreen()
+    monkeypatch.setattr(flipjump.flipjump_cli, 'make_io_device', lambda mode: device)
+    fjm_path = assemble_to_path(program, tmp_path, use_stl=True)
+    with pytest.raises(IODeviceException) if raises else contextlib.nullcontext():
+        assemble_run_according_to_cmd_line_args(cmd_line_args=['--run', '-s', str(fjm_path)])
+    assert device.closes == 1
 
 
 def test_control_a_complete_program_does_not_raise(tmp_path: Path, engine: str) -> None:

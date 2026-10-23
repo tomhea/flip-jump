@@ -162,6 +162,11 @@ def test_builtin_palette_of_format_1() -> None:
     assert builtin_palette(1, 1) == (BLACK, WHITE)
 
 
+def test_builtin_palette_refuses_an_unknown_id() -> None:
+    with pytest.raises(ValueError):
+        builtin_palette(5, 8)
+
+
 # ---------------------------------------------------------------- palettes
 
 
@@ -407,6 +412,19 @@ def test_write_bit_and_write_byte_decode_the_same() -> None:
     ss.feed_bits(by_bits, stream)
     assert by_bits.pixel_indices == by_bytes.pixel_indices == [1, 2, 3, 4, 5, 6]
     assert by_bits.frame_hashes[0][1] == by_bytes.frame_hashes[0][1]
+
+
+def test_write_byte_after_a_partial_byte_decodes_the_same() -> None:
+    stream = ss.init_screen(3, 2, 3) + ss.draw_raw([1, 2, 3, 4, 5, 6], 3) + ss.PRESENT
+    bits = [(byte >> i) & 1 for byte in stream for i in range(8)]
+    device = InMemoryScreen()
+    for bit in bits[:3]:
+        device.write_bit(bool(bit))  # off the byte boundary ...
+    for k in range(3, len(bits) - 5, 8):  # ... so every write_byte goes bit by bit
+        device.write_byte(sum(bits[k + i] << i for i in range(8)))
+    for bit in bits[len(bits) - 5 :]:  # noqa: E203
+        device.write_bit(bool(bit))
+    assert device.pixel_indices == [1, 2, 3, 4, 5, 6] and device.frame_count == 1
 
 
 def test_the_screen_never_reads_program_memory() -> None:
