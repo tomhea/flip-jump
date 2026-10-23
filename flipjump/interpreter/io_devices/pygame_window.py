@@ -298,7 +298,7 @@ class InteractiveScreen(InMemoryScreen):
         self.window = window if window is not None else PygameWindow()
         # time.perf_counter() of the previous present, for the max-fps cap; -inf: the first present never waits
         # (perf_counter's starting point is undefined, so 0.0 would hold the first frame on a clock that starts there)
-        self._scr_last_flush = float('-inf')
+        self._last_flush = float('-inf')
 
     def _init_screen(self, width: int, height: int, bpp: int) -> None:
         super()._init_screen(width, height, bpp)
@@ -315,7 +315,7 @@ class InteractiveScreen(InMemoryScreen):
 
     def _present(self) -> None:
         # wait first, so the frame is recorded (its frame_hashes time) when it is shown
-        self._scr_wait_for_frame_slot()
+        self._wait_for_frame_slot()
         super()._present()
         if self.bpp == FORMAT_RGB:
             self.window.draw(self.width, self.height, [rgb_of(value) for value in self.pixel_indices])
@@ -328,18 +328,18 @@ class InteractiveScreen(InMemoryScreen):
             self.window.draw(self.width, self.height, [palette[value] for value in self.pixel_indices])
         self.window.pump_events()
 
-    def _scr_wait_for_frame_slot(self) -> None:
+    def _wait_for_frame_slot(self) -> None:
         """the set_max_fps (0x03) cap: hold this present until 1/max_fps s have passed since the previous one.
         The wait sleeps in short slices and keeps pumping the window, so keys still queue and closing
         the window still ends the run while a fast frame waits."""
         if self.max_fps:
-            due = self._scr_last_flush + 1.0 / self.max_fps
+            due = self._last_flush + 1.0 / self.max_fps
             remaining = due - time.perf_counter()
             while remaining > 0:
                 time.sleep(min(remaining, 0.005))
                 self.window.pump_events()
                 remaining = due - time.perf_counter()
-        self._scr_last_flush = time.perf_counter()
+        self._last_flush = time.perf_counter()
 
 
 class PcIO(IODevice):
