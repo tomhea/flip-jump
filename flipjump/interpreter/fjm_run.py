@@ -236,7 +236,7 @@ def run(
         except KeyboardInterrupt:
             return TerminationStatistics(statistics, TerminationCause.KeyboardInterrupt)
         try:
-            return _run_native(core, header.memory_width, io_device, statistics)
+            return _end_of_run(io_device, _run_native(core, header.memory_width, io_device, statistics))
         except FlipJumpException as fj_exception:
             raise fj_exception
         except KeyboardInterrupt:
@@ -261,9 +261,9 @@ def run(
     try:
         if use_featured_loop:
             io_device.attach_memory(ReaderDeviceMemory(mem))
-            return _run_featured(mem, io_device, statistics, breakpoint_handler, show_trace)
+            return _end_of_run(io_device, _run_featured(mem, io_device, statistics, breakpoint_handler, show_trace))
         io_device.attach_memory(ReaderDeviceMemory(mem))
-        return _run_fast(mem, io_device, statistics)
+        return _end_of_run(io_device, _run_fast(mem, io_device, statistics))
 
     except FlipJumpRuntimeMemoryException as mem_e:
         return TerminationStatistics(
@@ -277,6 +277,17 @@ def run(
         raise FlipJumpRuntimeException(
             "Unknown exception during running an .fjm file, please report this bug"
         ) from unknown_exception
+
+
+# the terminations of a run that ended by itself: the device hears that its output is complete (IODevice.end_of_run)
+_ENDED_BY_ITSELF = (TerminationCause.Looping, TerminationCause.NullIP, TerminationCause.EOF)
+
+
+def _end_of_run(io_device: IODevice, termination: TerminationStatistics) -> TerminationStatistics:
+    """tell the device the run is over (exactly once, on every engine), when the program ended by itself"""
+    if termination.termination_cause in _ENDED_BY_ITSELF:
+        io_device.end_of_run()
+    return termination
 
 
 def is_native_engine_active() -> bool:

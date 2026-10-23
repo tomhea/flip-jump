@@ -133,6 +133,8 @@ def run(in_fjm_path: Path, debug_file: Optional[Path], args: argparse.Namespace,
         )
     except FlipJumpFlatMemoryException as flat_error:
         sys.exit(str(flat_error))  # what failed, and how to run it anyway (run_defaults.flat_memory_failure_message)
+    finally:
+        io_device.close()  # the device this run created (e.g. the pc window), also when the run raised
 
 
 def get_version(version: Optional[int], is_outfile_specified: bool, error_func: ErrorFunc) -> FJMVersion:
@@ -322,7 +324,7 @@ def add_run_only_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         type=_io_mode,
         help="the IO device. `standard` - input/output over the terminal. "
-        "`pc` - an interactive window: live keyboard input + a scaled 256-color screen "
+        "`pc` - an interactive window: live keyboard input + a scaled screen "
         "(F11 toggles fullscreen, closing it stops the run; needs pygame-ce - "
         "`pip install flipjump[io]`). "
         "by default, the io mode compiled into the .fjm (--io-mode; `standard` unless set)",

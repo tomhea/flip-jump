@@ -1,13 +1,11 @@
-"""pygame-ce: the import guard, the indexed blit, and the lazy frame expansion.
+"""pygame-ce: the import guard and the indexed blit.
 
-Three behaviours introduced when the interactive window moved from upstream pygame to pygame-ce:
+Two behaviours introduced when the interactive window moved from upstream pygame to pygame-ce:
 
   * `_import_pygame` REQUIRES pygame-ce. The two install under the same module name, so a wrong
     install is otherwise completely silent -- everything imports and runs.
   * `PygameWindow.draw_indexed` hands SDL the palette indices instead of a python-expanded RGB
     list. It must paint EXACTLY what `draw` paints; the point is that it is faster, not different.
-  * `InMemoryScreen.last_frame_rgb` is now a lazy property, so a windowed run never builds it. It
-    must still be a SNAPSHOT of the presented frame, not a live view of the pixel buffer.
 """
 
 import os
@@ -17,7 +15,6 @@ import pytest
 
 pygame = pytest.importorskip('pygame')
 
-from flipjump.interpreter.io_devices.ScreenIO import InMemoryScreen  # noqa: E402
 from flipjump.interpreter.io_devices import pygame_window  # noqa: E402
 from flipjump.utils.exceptions import IODeviceException  # noqa: E402
 
@@ -101,48 +98,3 @@ def test_draw_indexed_paints_exactly_what_draw_paints() -> None:
 def test_draw_indexed_on_a_closed_window_is_a_no_op() -> None:
     window = pygame_window.PygameWindow()
     window.draw_indexed(W, H, bytes(W * H), PALETTE)  # never opened -- must not raise
-
-
-# -- the lazy frame -----------------------------------------------------------------------------
-
-
-def _present_one(device: InMemoryScreen, indices: List[int]) -> None:
-    device.width, device.height, device.bpp = W, H, 8
-    device.palette = list(PALETTE)
-    device.pixel_indices = list(indices)
-    device._present()
-
-
-def test_last_frame_rgb_expands_the_presented_frame() -> None:
-    device = InMemoryScreen()
-    _present_one(device, [1] * (W * H))
-    assert device.last_frame_rgb == [PALETTE[1]] * (W * H)
-
-
-def test_last_frame_rgb_is_a_snapshot_not_a_live_view() -> None:
-    """It used to be built eagerly at present time; making it lazy must not turn it into a window
-    onto whatever the device has been filling in SINCE. 0x0B frames mutate pixel_indices between
-    presents, so this is the difference that would matter."""
-    device = InMemoryScreen()
-    _present_one(device, [1] * (W * H))
-    before = device.last_frame_rgb
-    device.pixel_indices = [2] * (W * H)  # the NEXT frame starts arriving
-    assert device.last_frame_rgb == before
-    assert device.last_frame_rgb == [PALETTE[1]] * (W * H)
-
-
-def test_the_palette_is_snapshotted_too() -> None:
-    device = InMemoryScreen()
-    _present_one(device, [0] * (W * H))
-    device.palette = [(9, 9, 9)] * len(PALETTE)
-    assert device.last_frame_rgb == [PALETTE[0]] * (W * H)
-
-
-def test_before_any_present_it_is_empty() -> None:
-    assert InMemoryScreen().last_frame_rgb == []
-
-
-def test_an_index_past_the_palette_is_black() -> None:
-    device = InMemoryScreen()
-    _present_one(device, [200] * (W * H))
-    assert device.last_frame_rgb == [(0, 0, 0)] * (W * H)

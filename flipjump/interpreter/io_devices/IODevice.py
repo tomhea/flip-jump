@@ -33,6 +33,13 @@ class IODevice(ABC):
     def close(self) -> None:
         """release what the device holds (e.g. its window). the default holds nothing."""
 
+    def end_of_run(self) -> None:
+        """
+        called by the interpreter once, when a run ends by itself (looping, a null ip, end of input).
+        a device whose protocol can be left unfinished (e.g. the screen, inside a command) raises its error here.
+        not called after Ctrl+C, a closed window or a memory error, or when the run raised. the default does nothing.
+        """
+
     @abstractmethod
     def read_bit(self) -> bool:
         return False
