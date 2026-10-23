@@ -6,7 +6,7 @@ This folder is the table-driven counterpart to `bit/`. Where `bit/`-macros work 
 
 | File / folder           | What it provides                                                                                  |
 |-------------------------|---------------------------------------------------------------------------------------------------|
-| `tables_init.fj`        | `hex.init` and the `tables.*` machinery that every other hex operation depends on.                |
+| `tables_init.fj`        | `hex.init` and the `tables.*` machinery that every other hex operation depends on (incl. the chained table jumps of the n-hex ops). |
 | `memory.fj`             | `hex`, `vec`, `zero`, `mov`, `xor_by`, `set`, `swap`.                                             |
 | `logics.fj`             | `xor`, `or`, `and`, `not`, plus the `exact_xor` family (1/2/3/4 destination groups) and its `address_and_variable_*` forms. |
 | `math.fj`               | `add`, `sub`, `add_constant`, `add_shifted`, `add_hex_shifted_constant`, plus the `clear_carry` / `not_carry` / `set_carry` helpers for both `ns add` and `ns sub`. |
