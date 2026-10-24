@@ -13,8 +13,8 @@ ns hex {
         .tables.jump_to_table_entry dst, src, .add.dst
     }
 
-    //  Time Complexity: n(3@+14) + 3@+18
-    // Space Complexity: n(3@+70) + 4@+60
+    //  Time Complexity: n(4@+12)
+    // Space Complexity: n(4@+52)
     //   dst[:n] += src[:n]
     // @requires hex.add.init (or hex.init)
     def add n, dst, src @ end {
@@ -22,8 +22,8 @@ ns hex {
       end:
     }
 
-    //  Time Complexity: src_n(3@+14)   + 4@+18       // It's on average, see the note in hex.inc.
-    // Space Complexity: src_n(3@+70) + (dst_n - hex_shift)(1.5@+13) + 4@+60
+    //  Time Complexity: src_n(4@+12)   + 5@+1        // It's on average, see the note in hex.inc.
+    // Space Complexity: src_n(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+28
     //   dst[:dst_n] += src[:src_n] << (4*hex_shift)
     // @requires hex.add.init (or hex.init)
     def add_shifted dst_n, src_n, dst, src, hex_shift @ do_inc, end {
@@ -182,8 +182,8 @@ ns hex {
         .tables.jump_to_table_entry dst, src, .sub.dst
     }
 
-    //  Time Complexity: n(3@+14) + 3@+22
-    // Space Complexity: n(3@+70) + 4@+68
+    //  Time Complexity: n(4@+12)
+    // Space Complexity: n(4@+52)
     //   dst[:n] -= src[:n]
     // @requires hex.sub.init (or hex.init)
     def sub n, dst, src @ end {
@@ -191,8 +191,8 @@ ns hex {
       end:
     }
 
-    //  Time Complexity: src_n(3@+14)   + 4@+22       // It's on average, see the note in hex.inc.
-    // Space Complexity: src_n(3@+70) + (dst_n - hex_shift)(1.5@+13) + 4@+68
+    //  Time Complexity: src_n(4@+12)   + 5@+10        // It's on average, see the note in hex.inc.
+    // Space Complexity: src_n(2.5@+39) + (dst_n - hex_shift)(1.5@+13) + 4@+40
     //   dst[:dst_n] -= src[:src_n] << (4*hex_shift)
     // @requires hex.sub.init (or hex.init)
     def sub_shifted dst_n, src_n, dst, src, hex_shift @ do_dec, end {

@@ -15,8 +15,8 @@ ns hex {
         .xor_zero res, .tables.res
     }
 
-    //  Time Complexity: n(4@+30) + 9@+52
-    // Space Complexity: n(3@+70) + 9@+100
+    //  Time Complexity: n(5@+26)
+    // Space Complexity: n(4@+52)
     //   res[n] += a[n] * b[1]
     //
     // @requires hex.add.init (or hex.init)
