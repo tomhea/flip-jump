@@ -156,8 +156,10 @@ ns hex {
 
 
 ns hex {
-    //  Time Complexity: n^2(76@+216)      (hex.idiv's, at 2n / n)
-    // Space Complexity: n(60@+880)
+    //  Time Complexity: ~n^2(20@+150) + n(40@+500) + 40@        (hex.idiv's own doc gives n^2(76@+216): an upper bound)
+    // Space Complexity: ~1780n + 930
+    // Measured (w=64, f = n/2 (1 at n = 1); n = 1, 2, 4, 8): time 2083, 4772, 12308, 40702 (@~15-17);
+    //   space 2703, 4496, 8095, 15200
     //   if b==0: goto div0
     //   dst[:n] = (a[:n] << 4f) / b[:n]    (signed fixed-point divide, truncated toward zero)
     //

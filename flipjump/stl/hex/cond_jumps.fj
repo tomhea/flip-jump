@@ -61,8 +61,8 @@ ns hex {
     }
 
 
-    //  Time Complexity: @+1
-    // Space Complexity: @+33
+    //  Time Complexity: ~@+1       (measured, w=64: 10 at @~13.3, 18 at @~17.5)
+    // Space Complexity: 46        (measured)
     //   jump to t<x>    (a 16-way jump on the value of the hex x)
     //
     // if_flags' trick: x's jump word is armed with switch, each entry disarms it and jumps on, so x is unchanged.

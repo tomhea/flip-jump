@@ -90,8 +90,10 @@ ns hex {
             wflip .ret+w, return
         }
 
-        //  Time Complexity: n(4@+30) + 9@+52
-        // Space Complexity: n(3@+70) + 9@+100
+        //  Time Complexity: ~n(4@+30) + 9@+52
+        // Space Complexity: ~128n + 158
+        //   Measured (w=64, as hex.add_mul n; n = 1, 2, 4, 8, 16):
+        //     time 225, 301, 467, 770, 1456 (@~14);  space 286, 414, 670, 1182, 2206
         //   res[n] += a[n] * b[1]
         //
         // The two clear_carry dances and the n add_mul dances are one chain of .ret jumps (see chain_step).
@@ -111,8 +113,8 @@ ns hex {
             ..xor .dst, b
         }
 
-        //  Time Complexity: 3@+27     (when chained; see hex.tables.chained_jump)
-        // Space Complexity: 2@+30
+        //  Time Complexity: ~4.5@-9    (clear_carry's less its clearing wflip; clear_carry measures 60 at @~13.3)
+        // Space Complexity: ~47
         //   The chained form of clear_carry: .ret = this macro's end (it was prev_return).
         // @Assumes: .ret holds prev_return (0 if it's clear). Like hex.tables.chained_jump, but for .ret:
         //   until the chain clears .ret, no other .ret user (add_mul, mul, clear_carry) may run inside it.
@@ -124,8 +126,8 @@ ns hex {
           return:
         }
 
-        //  Time Complexity: 3@+26     (when chained; see hex.tables.chained_jump)
-        // Space Complexity: 2@+33
+        //  Time Complexity: ~3@+26     (when chained; see hex.tables.chained_jump)
+        // Space Complexity: ~80
         //   The chained form of add_mul: jumps to the add_mul flow of x, and returns to this macro's end,
         //   with the result in hex.tables.res (not yet xored into res).
         // @Assumes: .ret holds prev_return (see chained_clear_carry).
@@ -139,8 +141,8 @@ ns hex {
           return:
         }
 
-        //  Time Complexity: 4@+30
-        // Space Complexity: 3@+61
+        //  Time Complexity: ~4@+30     (measured: 86 at @~14.5 - hex.add_mul n's slope)
+        // Space Complexity: 128       (the chain's stride, measured)
         //   prev_res ^= hex.tables.res;  hex.tables.res = 0
         //   then chained_add_mul res, x (chained to the previous step's end).
         // @Assumes: the previous step's end is this macro's start (see hex.tables.chained_jump).
@@ -244,8 +246,9 @@ ns hex {
 
 
 ns hex {
-    //  Time Complexity: n^2(2@+15) + n(10@+52)
-    // Space Complexity: n^2(1.5@+35) + n(11@+150)
+    //  Time Complexity: ~n^2(2@+15) + n(10@+52)
+    // Space Complexity: ~64n^2 + 288n
+    // Measured (w=64; n = 1, 2, 4, 8, 16): time 189, 565, 1409, 4319, 14676 (@~14-17);  space 350, 830, 2174, 6398, 20990
     //   res[:n] = a[:n] * b[:n]    (the low n hexes of the product, like hex.mul)
     //
     // A truncated schoolbook: row j adds a[:n-j] * b[j] into res[j:n] (skipped when b[j] is 0). Unrolled: its time
@@ -257,8 +260,8 @@ ns hex {
         rep(n, j) .mul_low.row n, j, res, a, b+j*dw
     }
     ns mul_low {
-        //  Time Complexity: (m-j)(4@+30) + 10@+51
-        // Space Complexity: (m-j)(3@+70) + 10@+115
+        //  Time Complexity: ~(m-j)(4@+30) + 10@+51
+        // Space Complexity: ~128(m-j) + 224
         //   res[j:m] += wa[:m-j] * wbj    (skipped when wbj is 0)
         // res is hex[:m], wa is hex[:m-j], wbj is a hex.
         def row m, j, res, wa, wbj @ skip {
@@ -268,8 +271,10 @@ ns hex {
         }
     }
 
-    //  Time Complexity: 4n^2(5.5@+20) + n(8@+33)      (hex.mul's, at 2n)
-    // Space Complexity: n(50@+1000)
+    //  Time Complexity: ~4n^2(5.5@+20) + n(8@+33)      (hex.mul's, at 2n)
+    // Space Complexity: ~2350n
+    // Measured (w=64, f = n/2 (1 at n = 1); n = 1, 2, 4, 8): time 988, 2348, 7626, 25414 (@~15-17);
+    //   space 2367, 4934, 9472, 18500
     //   dst[:n] = (a[:n] * b[:n]) >> 4f    (signed fixed-point multiply)
     //
     // a,b,dst are signed Q-format hex[:n] with f fraction-hexes (dst may alias a/b).
@@ -292,8 +297,10 @@ ns hex {
       end:
     }
 
-    //  Time Complexity: (n+f)^2(2@+15) + (n+f)(12@+52) + n(4@+4)
-    // Space Complexity: (n+f)^2(1.5@+35) + (n+f)(13@+180)
+    //  Time Complexity: ~(n+f)^2(2@+15) + (n+f)(12@+52) + n(4@+4)
+    // Space Complexity: ~64(n+f)^2 + 392(n+f)
+    // Measured (w=64, f = n/2 (1 at n = 1); n = 1, 2, 4, 8): time 619, 999, 2793, 8128 (@~14-17);
+    //   space 1055, 1791, 4686, 13920
     //   dst[:n] = (a[:n] * b[:n]) >> 4f    (signed fixed-point multiply - the same result as fixed_mul)
     //
     // Computes only the n+f low hexes of the product (the only ones the result can see), with mul_low's rows:
@@ -319,8 +326,10 @@ ns hex {
       end:
     }
 
-    //  Time Complexity: n(2@+1) + (#c-1)n(@+1) + (#on-bits of c)(n(3@+14) + 3@+18)
-    // Space Complexity: n(2@+40) + (#c-1)n(@+28) + (#on-bits of c)(n(3@+70) + 4@+60)
+    //  Time Complexity: ~n(2@+1) + (#c-1)n(@+1) + (#on-bits of c)(n(3@+14) + 3@+18)
+    // Space Complexity: ~64n#c + (#on-bits of c)(128n + 95)
+    // Measured (w=64, c = 10; n = 1, 2, 4, 8, 16): time 278, 473, 865, 1673, 3397 (@~14-16);
+    //   space 687, 1183, 2176, 4160, 8143
     //   dst[:n] = src[:n] * c    (c is a constant, c >= 0)
     //
     // The strength-reduced constant multiply: every on-bit of c adds a shifted src. No multiplication tables.
@@ -336,8 +345,8 @@ ns hex {
       end:
     }
     ns mul_const {
-        //  Time Complexity: on(n(3@+14) + 3@+18) + shift(n(@+1))
-        // Space Complexity: on(n(3@+70) + 4@+60) + shift(n(@+28))
+        //  Time Complexity: ~on(n(3@+14) + 3@+18) + shift(n(@+1))
+        // Space Complexity: ~on(128n + 95) + shift(64n)
         //   if on: dst[:n] += shifted[:n]
         //   if shift: shifted[:n] <<= 1
         // on, shift are constants (0/1).
