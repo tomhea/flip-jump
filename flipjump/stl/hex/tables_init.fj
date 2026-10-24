@@ -81,10 +81,8 @@ ns hex {
             ..xor_zero dst, .res
         }
 
-        //  Time Complexity: ~n(3@+6) + @       (4@+4 for n == 1; plus the table's own time per hex)
-        // Space Complexity: ~128n - 18         (112 for n == 1)
-        //   Measured (w=64, through hex.or n less its table's 6 per hex; n = 1, 2, 4, 8, 16):
-        //     time 48, 90, 182, 383, 757 (@~14);  space 110, 254, 510, 1022, 2046
+        //  Time Complexity: n(3@+6)       (plus the table's own time per hex; 4@+4 for n == 1)
+        // Space Complexity: n(2.5@+58)    (4@+52 for n == 1)
         //   for i in range(n):
         //     jump_to_table_entry dst[i], src[i], jumper_to_table
         //
@@ -95,8 +93,8 @@ ns hex {
             rep(n >= 2, i) .chain n, dst, src, jumper_to_table
         }
 
-        //  Time Complexity: ~n(3@+6) + @       (plus the table's own time per hex)
-        // Space Complexity: ~128n - 18         (see jump_to_table_entries' measured values)
+        //  Time Complexity: n(3@+6)       (plus the table's own time per hex)
+        // Space Complexity: n(2.5@+58)
         //   for i in range(n):
         //     jump_to_table_entry dst[i], src[i], jumper_to_table
         //
@@ -113,8 +111,8 @@ ns hex {
             ..xor_zero dst+(n-1)*dw, .res
         }
 
-        //  Time Complexity: ~2      (#(prev_return ^ return): 1-4 when chained, measured; @/2 when prev_return is 0)
-        // Space Complexity: ~9      (one op, and the pad to 16)
+        //  Time Complexity: 2      (avg. 2.3: #(prev_return ^ return), see the stl README; @/2-2 when prev_return is 0)
+        // Space Complexity: 1      (its chain tail is shared: the previous step's returns to jumper_to_table too)
         //   .ret = this macro's end (it was prev_return), and jump to jumper_to_table.
         //   The table returns to this macro's end, which is 16-padded: in a chain of identical steps the ends
         //   are a fixed (power of 2) stride apart, so moving .ret from one end to the next flips 1-2 bits.
@@ -130,8 +128,8 @@ ns hex {
           return:
         }
 
-        //  Time Complexity: ~2@+2
-        // Space Complexity: ~80     (two xors and chained_jump, at a 16-aligned start)
+        //  Time Complexity: 2@+2
+        // Space Complexity: 2@+25
         //   The chained form of jump_to_table_entry: jumps to the table at entry (src<<4 | dst),
         //   and returns to this macro's end, with the result in .res (not yet xored into dst).
         // @Assumes: .ret holds prev_return (see chained_jump).
@@ -144,8 +142,8 @@ ns hex {
             .chained_jump jumper_to_table, prev_return
         }
 
-        //  Time Complexity: ~3@+6      (measured: 47 at @~14.5 - hex.or n's slope less its table)
-        // Space Complexity: 128       (the chain's stride, measured)
+        //  Time Complexity: 3@+6
+        // Space Complexity: 2.5@+58   (xor_zero's first wflip shares its chain tail with the previous step's)
         //   prev_dst ^= .res;  .res = 0
         //   then chained_jump_to_table_entry dst, src, jumper_to_table (chained to the previous step's end).
         // @Assumes: the previous step's end is this macro's start (see chained_jump).
