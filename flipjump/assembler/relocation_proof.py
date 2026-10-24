@@ -7,11 +7,16 @@ number, and maps every op of the plain program to the pooled one: a moved op by 
     - every moved op is an op of a declared table (preprocessor.relocatable_call), and a declared table moves
       whole: all its ops by one distance, or none;
     - every operand that is an address - one label plus a constant - is the plain operand mapped, so an offset
-      from an outside label into a moved table fails. A number is a value and is not compared. An operand
-      computed from labels in any other way (`(ptr >> 8) & 15`) is not compared either - it is counted as
-      unchecked - unless it names a label of a moved table: then it fails, since nothing can check it;
-    - (BlockPool) every pinned word rests at its value xor its base, and every wflip of it flips an address
-      xor the base and a number as it is - read back from the assembled words, wflip chains included.
+      from an outside label into a moved table fails; so is a number in an address's place (a jump, a flip, a
+      wflip's word or return) that is the address of a plain op - `$ + 15*dw` included. A wflip's value that is a
+      number is a value, and is not compared. Of an operand computed from labels, every +/- sum (linear_parts) is
+      compared: one label plus a constant as an address, a distance (`b - a`) as a number that must not change.
+      What the sums compute beyond that (`(L >> 6) & 15`) is listed as unchecked (RelocationProof.unchecked);
+    - (BlockPool) the pins the assembler keeps (assembler.unpin) can hold, judged from the plain program, not
+      from the assembler's rules: every pinned word has an op that rests at its value xor its base; every wflip of
+      it flips an address it is armed with xor the base, or a value inside its window (assembler.window_top) as
+      it is; every `a;b` flip of it stays inside its window; and no pointer runtime reads it - read back from the
+      assembled words, wflip chains included.
 """
 
 from __future__ import annotations
@@ -22,10 +27,10 @@ from array import array
 from pathlib import Path
 from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 
-from flipjump.assembler.assembler import labels_resolve, resolve_pinned
+from flipjump.assembler.assembler import alignment, labels_resolve, resolve_pinned, unpin, window_top
 from flipjump.assembler.inner_classes.expr import Expr
 from flipjump.assembler.inner_classes.ops import FlipJump, Macro, MacroName, NewSegment, Padding, ReserveBits, WordFlip
-from flipjump.assembler.inner_classes.op_stream import OpStream, linear_sum
+from flipjump.assembler.inner_classes.op_stream import OpStream, linear_parts, linear_sum
 from flipjump.assembler.preprocessor import resolve_macros
 from flipjump.assembler.table_pool import TablePool
 from flipjump.fjm.fjm_consts import FJMVersion
@@ -36,11 +41,11 @@ _Op = Union[FlipJump, WordFlip]
 
 @dataclasses.dataclass
 class RelocationProof:
-    """the proof's findings: every mismatch fails it; `unchecked` counts the operands it could not compare (values
-    computed from labels that no moved table owns)"""
+    """the proof's findings: every mismatch fails it; `unchecked` lists the operands it could not compare in full
+    (what an operand computes beyond its +/- sums, from an address: `(L >> 6) & 15`)"""
 
     mismatches: List[str]
-    unchecked: int
+    unchecked: List[str]
 
 
 def _ops(stream: OpStream, memory_width: int) -> Iterator[Tuple[int, Optional[_Op]]]:
@@ -122,7 +127,7 @@ def prove_relocation(
     expand `macros` without a pool and with `table_pool` (a fresh one, as for any assembly), and compare the two
     programs op by op (see the module docstring). A refusal of the pool's own (a pin it cannot hold) is raised.
     @return: the proof: up to max_reported mismatches, each naming the plain op's address and the label before
-    it, and how many operands could not be compared
+    it, and the operands it could not compare in full
     """
     op_bits = 2 * memory_width
     extents: List[Tuple[int, int]] = []
@@ -222,12 +227,39 @@ def prove_relocation(
             return {value}
         return {value + delta for delta in deltas_at[label_addresses[index]]}
 
-    # the pins: a pin the pool cannot hold is refused here, as when assembling
+    # the pins the assembler keeps
     table_pool.labels_resolved(pooled_labels)
     pinned, _ = resolve_pinned(table_pool.pinned_words(), pooled_labels, exclude=table_pool.pin_exclude)
+    raw = table_pool.reads_words_raw and table_pool.pin_exclude is None
+    if pinned:
+        guard = table_pool.offset_guard
+        unpin(
+            pooled_stream,
+            pooled_labels,
+            memory_width,
+            pinned,
+            {},
+            alignment if guard is None else guard.alignment,
+            raw=raw,
+        )
+
+    def arm_alignment(plain_address: int, pooled_address: int) -> int:
+        """the bits the table a word is armed with is aligned to, with the pool and without: a declared table's
+        size, else the address's own alignment"""
+        extent = extent_of(plain_address)
+        if extent >= 0:
+            return (extents[extent][1] - extents[extent][0] - 1).bit_length()
+        return min(alignment(plain_address), alignment(pooled_address))
+
+    def compare(plain_address: int, op: _Op, operand: Expr, actual: int, expected: Set[int]) -> None:
+        if actual not in expected:
+            mismatch(
+                f'the plain op at {where(plain_address)} ({op}): {operand} should be '
+                f'{" or ".join(hex(v) for v in sorted(expected))} with the pool, and is {hex(actual)}'
+            )
 
     # every operand that is an address maps
-    unchecked = 0
+    unchecked: List[str] = []
     inline = pooled_inline()
     pairs: List[Tuple[_Op, int, _Op]] = []  # (plain op, pooled address, pooled op) of the pin check
     for plain_address, op in _ops(plain_stream, memory_width):
@@ -245,29 +277,49 @@ def prove_relocation(
             continue
         if pinned and _touches_a_pin(pooled_address, pooled_op, pooled_labels, pinned, memory_width):
             pairs.append((op, pooled_address, pooled_op))
-        for plain_operand, pooled_operand in zip(_operands(op), _operands(pooled_op)):
-            named = plain_operand.all_unknown_labels()
-            if not named:
-                continue  # a number: a value
-            if not _is_one_address(plain_operand):
-                if named & moved_labels:
-                    mismatch(
-                        f'the plain op at {where(plain_address)} ({op}): {plain_operand} computes from '
-                        f'{sorted(named & moved_labels)[0]}, a label of a moved table, so it cannot be checked'
-                    )
-                else:
-                    unchecked += 1
-                continue
-            expected = mapped(plain_operand.exact_eval(plain_labels))
+        for index, (plain_operand, pooled_operand) in enumerate(zip(_operands(op), _operands(pooled_op))):
+            is_value = isinstance(op, WordFlip) and index == 1
             actual = pooled_operand.exact_eval(pooled_labels)
-            if actual not in expected:
-                mismatch(
-                    f'the plain op at {where(plain_address)} ({op}): {plain_operand} should be '
-                    f'{" or ".join(hex(v) for v in sorted(expected))} with the pool, and is {hex(actual)}'
+            if not plain_operand.all_unknown_labels():
+                # a number: a value, or - where an address goes - the address of a plain op, mapped (`$ + 15*dw`)
+                number = plain_operand.exact_eval(plain_labels)
+                if not is_value and shifts.delta(number - number % op_bits) is not None:
+                    compare(plain_address, op, plain_operand, actual, mapped(number))
+                continue
+            if _is_one_address(plain_operand):
+                compare(plain_address, op, plain_operand, actual, mapped(plain_operand.exact_eval(plain_labels)))
+                continue
+            derived = False  # does it compute beyond its sums from an address (not only from distances)?
+            for (coefficients, constant), (pooled_coefficients, pooled_constant) in zip(
+                linear_parts(plain_operand), linear_parts(pooled_operand)
+            ):
+                part = constant + sum(c * plain_labels[label] for label, c in coefficients.items())
+                pooled_part = pooled_constant + sum(
+                    c * pooled_labels[label] for label, c in pooled_coefficients.items()
                 )
+                total = sum(coefficients.values())
+                if total == 0:
+                    compare(plain_address, op, plain_operand, pooled_part, {part})  # a distance: the same
+                    continue
+                if total == 1:
+                    compare(plain_address, op, plain_operand, pooled_part, mapped(part))  # an address: mapped
+                derived = True
+            if derived and not _is_linear(plain_operand):
+                unchecked.append(f'{where(plain_address)} ({op}): {plain_operand}')
 
     if pinned:
-        _check_pins(memory_width, pooled_stream, pooled_labels, pinned, pool_start, pairs, mismatch)
+        _check_pins(
+            memory_width,
+            pooled_stream,
+            pooled_labels,
+            plain_labels,
+            pinned,
+            raw,
+            pool_start,
+            pairs,
+            mismatch,
+            arm_alignment,
+        )
     return RelocationProof(mismatches, unchecked)
 
 
@@ -275,26 +327,52 @@ def _check_pins(
     memory_width: int,
     stream: OpStream,
     labels: Dict[str, int],
+    plain_labels: Dict[str, int],
     pinned: Dict[int, int],
+    raw: bool,
     pool_start: int,
     pairs: List[Tuple[_Op, int, _Op]],
     mismatch: Callable[[str], None],
+    arm_alignment: Callable[[int, int], int],
 ) -> None:
-    """the assembled words of the pinned program: each pinned word rests at its value xor its base, and each wflip
-    of it flips the plain value's kind - an address xor the base, a number as it is"""
+    """the assembled words of the pinned program (see the module docstring): each pinned word rests at its value
+    xor its base; each wflip of it flips an address it is armed with xor the base, or a value inside its window as
+    it is; each `a;b` flip of it stays inside its window; and no pointer runtime reaches it"""
+    if raw and pinned:
+        mismatch(
+            'the program uses the pointer runtime and no pin_exclude says which words it reaches, yet words are pinned'
+        )
     writer = Writer(Path('relocation_proof.fjm'), memory_width, FJMVersion.NormalVersion)
     labels_resolve(stream, labels, memory_width, writer, save_wflip_labels=False, pinned=pinned, pool_start=pool_start)
     image = _Image(writer, memory_width)
+    w = memory_width
+    # each word's window, below its base and the tables it is armed with - with the pool and without it
+    arms: Dict[int, List[int]] = {word: [] for word in pinned}
+    for plain_op, _, pooled_op in pairs:
+        if isinstance(pooled_op, WordFlip) and isinstance(plain_op, WordFlip) and _is_one_address(plain_op.flip_value):
+            word = pooled_op.word_address.exact_eval(labels)
+            if word in arms:
+                plain_label, pooled_label = linear_sum(plain_op.flip_value), linear_sum(pooled_op.flip_value)
+                arms[word].append(
+                    arm_alignment(plain_labels[plain_label[0]], labels[pooled_label[0]])  # type: ignore[index]
+                )
+    windows = {word: (1 << window_top(base, arms[word])) - 1 for word, base in pinned.items()}
     rested = set()
     for plain_op, address, pooled_op in pairs:
         if isinstance(pooled_op, FlipJump):
-            base = pinned.get(address + memory_width)
+            flip = image.word(address)
+            if flip is not None and flip - flip % w in windows and not windows[flip - flip % w] >> (flip % w) & 1:
+                mismatch(
+                    f'the op at {hex(address)} flips bit {flip % w} of the pinned word at {hex(flip - flip % w)}, '
+                    f'outside its window'
+                )
+            base = pinned.get(address + w)
             if base is None:
                 continue
-            rested.add(address + memory_width)
+            rested.add(address + w)
             expected = pooled_op.jump.exact_eval(labels) ^ base
-            if image.word(address + memory_width) != expected:
-                mismatch(f'the pinned word at {hex(address + memory_width)} does not rest at its value xor its base')
+            if image.word(address + w) != expected:
+                mismatch(f'the pinned word at {hex(address + w)} does not rest at its value xor its base')
             continue
         assert isinstance(pooled_op, WordFlip) and isinstance(plain_op, WordFlip)
         word = pooled_op.word_address.exact_eval(labels)
@@ -302,22 +380,37 @@ def _check_pins(
         if base is None:
             continue
         value = pooled_op.flip_value.exact_eval(labels)
-        if plain_op.flip_value.all_unknown_labels():
-            if not _is_one_address(plain_op.flip_value):
-                mismatch(f'the pinned word at {hex(word)} is wflipped by {plain_op.flip_value}, computed from labels')
-                continue
-            value ^= base
-        flipped = _flipped(image, address, pooled_op.return_address.exact_eval(labels), memory_width)
-        if flipped is None or flipped != _bits(value, word, memory_width):
+        if _is_one_address(plain_op.flip_value):
+            value ^= base  # an address it is armed with (the operand compare mapped it)
+        elif value & ~windows[word]:
+            mismatch(
+                f'the pinned word at {hex(word)} is wflipped by {plain_op.flip_value} = {hex(value)}, outside '
+                f'its window and no address it is armed with'
+            )
+            continue
+        flipped = _flipped(image, address, pooled_op.return_address.exact_eval(labels), w)
+        if flipped is None or flipped != _bits(value, word, w):
             mismatch(f'the wflip at {hex(address)} of the pinned word at {hex(word)} does not flip {hex(value)}')
     for word in sorted(set(pinned) - rested)[:3]:
         mismatch(f'the pinned word at {hex(word)} is no op: it cannot rest at its base')
 
 
+def _is_linear(operand: Expr) -> bool:
+    """is `operand` one +/- sum (linear_parts) - of labels and numbers, with labels times numbers?"""
+    value = operand.value
+    if not isinstance(value, tuple):
+        return True
+    op, args = value
+    if len(args) != 2 or op not in ('+', '-', '*') or not all(_is_linear(arg) for arg in args):
+        return False
+    return op != '*' or not args[0].all_unknown_labels() or not args[1].all_unknown_labels()
+
+
 def _touches_a_pin(address: int, op: _Op, labels: Dict[str, int], pinned: Dict[int, int], memory_width: int) -> bool:
-    """is the op a pinned word's own op, or a wflip of a pinned word?"""
+    """is the op a pinned word's own op, a wflip of a pinned word, or a flip of a pinned word's bit?"""
     if isinstance(op, FlipJump):
-        return address + memory_width in pinned
+        flip = op.flip.exact_eval(labels)
+        return address + memory_width in pinned or flip - flip % memory_width in pinned
     return op.word_address.exact_eval(labels) in pinned
 
 
