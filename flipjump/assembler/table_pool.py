@@ -8,10 +8,12 @@ dispatch through it cost fewer ops. The pool moves the tables there:
     TablePool - each to the lowest-popcount free address above pool_base;
     BlockPool - the tables dispatched through one word share a block, and the word rests at the block's base, so
                 arming flips only the table's index in it (`fj --pool-tables`: a one-pass BlockPool).
-Behaviour does not change: only declared, `$`-free tables move, entered by a jump and reached through their labels.
-It costs a bigger address span (the pool sits above the program) and .fjm segments: one per placed table
-(BlockPool) or per run of tables (TablePool). A declared table that breaks a rule the pool relies on is a
-compilation error, and so is a program that reaches into the pool, or (BlockPool) reads a pinned word raw.
+Only declared, `$`-free tables move, entered by a jump: behaviour does not change as long as code reaches a table
+through the table's own labels (an offset from another label into a moved table is not checked here - see
+relocation_proof). It costs a bigger address span (the pool sits above the program) and .fjm segments: one per
+placed table (BlockPool) or per run of tables (TablePool). A declared table that breaks a rule the pool relies on
+is a compilation error; so is a program segment, reserve or wflip area that reaches the pool, and (BlockPool) a
+pin that cannot hold (the pointer runtime, a `reserve`d word, a value computed from labels).
 """
 
 from __future__ import annotations
@@ -35,11 +37,13 @@ LabelsDict = Dict[str, int]
 # (assembler.resolve_pinned) - a block base baked into it would corrupt the program's startup.
 RESERVED_BELOW = 1024
 
-# the macros that read a cell RAW: they flip a bit of the pointed word and jump through it,
-# which lands on the pointer decoder only while the word holds exactly `value*dw`. A word that
-# BlockPool pinned holds `base + value*dw`, so a program that expands one of these must say which
-# cells a pointer can reach (TablePool.pin_exclude) before any word is pinned; see BlockPool.
-RAW_READERS = frozenset({'hex.pointers.read_cell_from_inners_ptrs'})
+# the pointer runtime's words: a macro that names one reads or writes a cell through a pointer - it flips
+# bits of the pointed word and jumps through it, or writes an address into it at runtime - which works on the
+# word's bare value. A word that BlockPool pinned holds `base + value`, so a program that expands such a
+# macro must say which cells a pointer can reach (TablePool.pin_exclude) before any word is pinned.
+POINTER_RUNTIME_LABELS = frozenset(
+    {'bit.pointers.to_jump', 'bit.pointers.to_flip', 'hex.pointers.to_jump', 'hex.pointers.to_flip'}
+)
 
 # a call site's coordinates in a macro-expansion path or a group expression: `f3:l120:` (a program
 # file) or `s1:l40:` (an stl file) - CodePosition.short_str() and its separator
@@ -295,7 +299,10 @@ class TablePool:
         # assembler.resolve_pinned); a plain pool pins nothing, so both only matter for BlockPool
         self.pin_exclude: Optional[Callable[[int, LabelsDict], bool]] = None
         self.pin_conflicts = 0
-        self.reads_words_raw = False  # set by the preprocessor when a RAW_READERS macro expands
+        self.reads_words_raw = False  # set by the preprocessor when a macro naming POINTER_RUNTIME_LABELS expands
+        self.raw_reader = ''  # ...the first such macro
+        self.laid_out = False  # a pool lays out one assembly (the preprocessor sets it)
+        self._passed: List[int] = []  # run offsets the cheapest-first search passed over, still free
         self.allocated = 0
         self.declined = 0
         self.reserved_words = 0  # tables through the runtime's words, never relocated
@@ -366,16 +373,13 @@ class TablePool:
                 self._cursor = candidate
         if new_run:
             slots_needed = -(-size_bits // self.run_bits)
-            slot = self._find_free_slots(slots_needed)
+            slot = self._find_free_slots(slots_needed, align_bits)
             if slot is None:
                 self.declined += 1
                 return None
             for extra in range(slots_needed):
                 self._consumed.add(slot + extra)
             base = self.pool_base + slot * self.run_bits
-            if base % align_bits:
-                self.declined += 1
-                return None
             self._cursor = base
             self._run_end = base + slots_needed * self.run_bits
             self.run_starts.append(base)
@@ -383,13 +387,30 @@ class TablePool:
         self.allocated += 1
         return self._cursor, new_run, gap_ops
 
-    def _find_free_slots(self, slots_needed: int) -> Optional[int]:
-        """the cheapest run offset with `slots_needed` consecutive free slots from it"""
+    def _find_free_slots(self, slots_needed: int, align_bits: int) -> Optional[int]:
+        """the cheapest run offset with `slots_needed` consecutive free slots from it, inside the span, whose
+        address is aligned to `align_bits`. An offset passed over stays a candidate for the next tables."""
+        self._passed = [slot for slot in self._passed if slot not in self._consumed]
+        for index, slot in enumerate(self._passed):
+            if self._fits(slot, slots_needed, align_bits):
+                del self._passed[index]
+                return slot
         for slot in self._offsets:
-            if all((slot + extra) not in self._consumed for extra in range(slots_needed)):
-                if self.pool_base + (slot + slots_needed) * self.run_bits <= (1 << self.memory_width):
-                    return slot
+            if self._fits(slot, slots_needed, align_bits):
+                return slot
+            if slot not in self._consumed:
+                self._passed.append(slot)
         return None
+
+    def _fits(self, slot: int, slots_needed: int, align_bits: int) -> bool:
+        reach = (1 << self.memory_width) - self.pool_base
+        if self.span_bits is not None:
+            reach = min(reach, self.span_bits)
+        return (
+            (slot + slots_needed) * self.run_bits <= reach
+            and (self.pool_base + slot * self.run_bits) % align_bits == 0
+            and all((slot + extra) not in self._consumed for extra in range(slots_needed))
+        )
 
     def commit(self, end_address: int) -> None:
         """the table ended here; the next one starts at or after it.
@@ -408,6 +429,10 @@ class TablePool:
     def pinned_words(self) -> Dict[Expr, int]:
         """{source-word Expr: block base} to bake into the program; a plain pool pins nothing"""
         return {}
+
+    def pool_start(self) -> int:
+        """the lowest address the pool places a table at: nothing else may reach it"""
+        return self.pool_base
 
     def labels_resolved(self, labels: LabelsDict) -> None:
         """assemble() calls this once every label of the program is known, before the labels are
@@ -428,15 +453,16 @@ class BlockPool(TablePool):
     `hex.shifts.*` and `hex.tables.*` keep working by construction - they wanted the word to become
     V, and (B + digit) ^ (V ^ B) is V + digit.
 
-    THE ONE THING A PINNED WORD CANNOT DO is be read raw. `hex.pointers`' read dance flips a bit
-    of the POINTED word and jumps through it, which reaches the decoder table only from
-    `value*dw`, not from `base + value*dw`; anything else that jumps through a cell expecting its
-    bare value has the same problem. Which cells a pointer will reach is runtime data, so the
-    caller declares it: `pin_exclude(address, labels) -> bool`, given the bit address of a cell's
-    JUMP word (`cell + w`), vetoes the pin of every cell a pointer (or any raw reader) can reach.
-    A program that expands a RAW_READERS macro and gives no `pin_exclude` is refused by assemble()
-    rather than miscompiled; `pin_exclude` may veto nothing when the caller knows no pointer
-    reaches an armed cell.
+    THE ONE THING A PINNED WORD CANNOT DO is be read or written raw. The pointer runtime flips bits
+    of the POINTED word and jumps through it, or writes an address into it at runtime, which works
+    only on the word's bare value, not on `base + value`. Which cells a pointer will reach is
+    runtime data, so the caller declares it: `pin_exclude(address, labels) -> bool`, given the bit
+    address of a cell's JUMP word (`cell + w`), vetoes the pin of every cell a pointer can reach.
+    A program that expands a macro naming POINTER_RUNTIME_LABELS and gives no `pin_exclude` is
+    refused by assemble() rather than miscompiled, naming the macro and the pinned words.
+    The pins are also refused where a word's rest value cannot carry the base (a `reserve`d
+    word), and where a wflip of a pinned word flips a value computed from labels (see
+    assembler.BinaryData.pinned_value).
 
     TWO PASSES. A block's size must be known before its base is chosen, and the tables of a group
     are scattered through the program, so counting comes first:
@@ -719,16 +745,19 @@ class BlockPool(TablePool):
     def labels_resolved(self, labels: LabelsDict) -> None:
         """record the alias this assembly's labels imply among the groups it met (census reads it).
         Only a dict of aliases is kept, never the labels. A one-pass pool that merged its own census
-        keeps the alias it was SIZED with instead (see census). Refuses a program that reads a pinned word
-        raw (RAW_READERS) when no pin_exclude says which cells it reads."""
+        keeps the alias it was SIZED with instead (see census). Refuses a program that expands the pointer
+        runtime (POINTER_RUNTIME_LABELS) when no pin_exclude says which cells a pointer can reach."""
         if not (self.sizes_from_census and self.merge_aliases and self._placed):
             self.seen_alias = self.recording.canonical_alias(labels)
-        if self.pinned_words() and self.reads_words_raw and self.pin_exclude is None:
+        pinned = self.pinned_words()
+        if pinned and self.reads_words_raw and self.pin_exclude is None:
+            words = ', '.join(sorted(str(word) for word in pinned)[:3])
             raise FlipJumpAssemblerException(
-                "the program reads cells through hex.pointers, and a word the BlockPool pinned cannot be "
-                "read that way (it rests at base + value). Which cells a pointer reaches is runtime data: "
-                "pass pin_exclude=(lambda address, labels: ...) vetoing every cell a pointer can read "
-                "(it may veto nothing if none is an armed hex), or use TablePool (fj: drop --pool-tables)."
+                f"the program uses the pointer runtime ({self.raw_reader}), and a word the BlockPool pinned "
+                f"cannot be read or written through a pointer (it rests at base + value). Which cells a pointer "
+                f"reaches is runtime data: pass pin_exclude=(lambda address, labels: ...) vetoing every cell a "
+                f"pointer can reach - the pinned words are {words}{' ...' if len(pinned) > 3 else ''} - or use "
+                f"TablePool (fj: drop --pool-tables)."
             )
 
     def census(self, merge_aliases: bool = False) -> BlockCensus:
@@ -1376,6 +1405,10 @@ class BlockPool(TablePool):
             )
         self.overflowed += len(placed)
         return placed
+
+    def pool_start(self) -> int:
+        """the lowest address the pool places a table at: its blocks, or the overflow region below them"""
+        return self.pool_base if self.overflow_base is None else min(self.pool_base, self.overflow_base)
 
     def pinned_words(self) -> Dict[Expr, int]:
         """{source-word Expr: block base} - the caller resolves the Expr once labels are known.

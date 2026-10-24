@@ -1997,7 +1997,7 @@ def test_the_pool_is_importable_from_the_preprocessor_too() -> None:
         'DEFER_OUT',
         'DEFER_TOO_WIDE',
         'DeferredTables',
-        'RAW_READERS',
+        'POINTER_RUNTIME_LABELS',
         'RESERVED_BELOW',
         'TablePool',
         'heat_key',
