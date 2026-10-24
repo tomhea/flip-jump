@@ -19,7 +19,7 @@ hexlib-shl_hex_big, tests/compiled/hexlib_tests/basics2/shl_hex_big.fjm, ,tests/
 hexlib-shr_hex, tests/compiled/hexlib_tests/basics2/shr_hex.fjm, ,tests/inout/hexlib_tests/basics2/256equals.out, False,False
 hexlib-shr_hex_n, tests/compiled/hexlib_tests/basics2/shr_hex_n.fjm, ,tests/inout/hexlib_tests/basics2/25equals.out, False,False
 hexlib-shr_hex_big, tests/compiled/hexlib_tests/basics2/shr_hex_big.fjm, ,tests/inout/hexlib_tests/basics2/25equals.out, False,False
-hexlib-ptr_index_n, tests/compiled/hexlib_tests/basics2/ptr_index_n.fjm, ,tests/inout/hexlib_tests/basics2/142equals.out, False,False
+hexlib-ptr_index_n, tests/compiled/hexlib_tests/basics2/ptr_index_n.fjm, ,tests/inout/hexlib_tests/basics2/158equals.out, False,False
 hexlib-read_entry, tests/compiled/hexlib_tests/basics2/read_entry.fjm, ,tests/inout/hexlib_tests/basics2/144equals.out, False,False
 hexlib-read_write_back, tests/compiled/hexlib_tests/basics2/read_write_back.fjm, ,tests/inout/hexlib_tests/basics2/read_write_back.out, False,False
 

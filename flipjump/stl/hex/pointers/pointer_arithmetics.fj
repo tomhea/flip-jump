@@ -51,11 +51,12 @@ ns hex {
         .add w/4, dst, ptr
     }
 
-    //  Time Complexity:  (n+2)(4.5@+8) + w/4(2@) + 5@+18    (if n+2 <= w/8; else ptr_index's, at n+2 hexes)
+    //  Time Complexity:  (n+2)(7@+23) + n@ + w/4(2@) + 4@+18    (if n+2 <= w/8; else ptr_index's, at n+2 hexes)
     // Space Complexity:  (n+2)(6@+150) + w/4(2.5@+48)
     // @note: The complexity is calculated for w=64 (index*2w needs n+2 hexes).
     //   dst[:w/4] = ptr + index*2w     (the address of the index-th dw-aligned op past *ptr)
-    // dst, ptr are hex[:w/4] (dst must not alias ptr); index is an unsigned hex[:n] (n <= w/4).
+    // dst, ptr are hex[:w/4]; index is an unsigned hex[:n] (n <= w/4).
+    // dst must not alias ptr, and must be index itself or not overlap it.
     // At n == w/4 it's ptr_index dst, ptr, index (a "negative" index[:w/4] is the same modulo 2^w).
     // The shifts run at the hexes index*2w needs (exact for every index[:n]), not at w/4.
     // @requires hex.add.init (or hex.init)
@@ -74,7 +75,7 @@ ns hex {
             rep(sw > w/8, i) .ptr_index_wide n, sw, dst, ptr, index
         }
 
-        //  Time Complexity:  sw(4.5@+8) + w/4(2@) + 5@+18
+        //  Time Complexity:  sw(7@+23) + n@ + w/4(2@) + 4@+18
         // Space Complexity:  sw(6@+150) + w/4(2.5@+48)
         //   dst[:w/4] = ptr + index*2w    (index*2w fits sw hexes)
         // @requires hex.add.init (or hex.init)
@@ -94,8 +95,8 @@ ns hex {
         //   dst[:w/4] = ptr + index*2w    (index*2w fits sw hexes)
         // @requires hex.add.init (or hex.init)
         def ptr_index_wide n, sw, dst, ptr, index {
-            ..zero w/4, dst
-            ..xor n, dst, index
+            ..zero w/4-n, dst+n*dw
+            ..mov n, dst, index
             .shl_index sw, dst, #w
             ..add w/4, dst, ptr
         }
