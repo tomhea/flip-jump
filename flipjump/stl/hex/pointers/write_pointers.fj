@@ -185,12 +185,8 @@ ns hex {
 
 ns hex {
     ns pointers {
-        //  Time Complexity: ~n((h+1)(5@+12) + @+4) + @
-        // Space Complexity: ~n(32(w-#w) + 160h + 70)
-        //   Measured through hex.write_byte n / write_hex n (with the arm; n = 1, 2, 4, 8, 16):
-        //     w=64 h=2: time 854, 1186, 1889, 3427, 6574 (@~15-18);  space 2433, 4641, 9057, 17936, 36454
-        //     w=64 h=1: time 718, 959, 1457, 2520, 4545;  space 2273, 4321, 8417, 16609, 33609
-        //     w=32 h=2: time 527, 871, 1538, 2936, 5796;  space 1409, 2625, 5057, 9921, 19790
+        //  Time Complexity: n((6h+5)@ + 12h+26)
+        // Space Complexity: n((w-#w)(0.5@+22) + (6h+3)@ + 88h+34)
         //   use after:  hex.pointers.set_flip_and_jump_pointers ptr
         //   does:       *(ptr+i*2w) = src[i*h:(i+1)*h]      for i in range(n)     (the armed fields end at ptr+(n-1)*2w)
         //
@@ -204,16 +200,16 @@ ns hex {
             wflip .ret_after_read_byte+w, .to_flip
         }
 
-        //  Time Complexity: ~(h+1)(5@+12) + 4@+9
-        // Space Complexity: ~32(w-#w) + 160h + 70
+        //  Time Complexity: (6h+5)@ + 12h+26
+        // Space Complexity: (w-#w)(0.5@+22) + (6h+3)@ + 88h+34
         //  the armed fields += 2w;  then write_cell h, src.
         def advance_and_write_cell h, src {
             .advance
             .write_cell h, src
         }
 
-        //  Time Complexity: ~(h+1)(5@+12) + @+4
-        // Space Complexity: ~160h + 70
+        //  Time Complexity: (6h+3)@ + 12h+20
+        // Space Complexity: (6h+3)@ + 88h+34
         //   *armed[:h] = src[:h]     (like write_hex / write_byte without the arm, and with .ret_after_read_byte set)
         // @Assumes: .ret_after_read_byte holds to_flip (see write_cells).
         def write_cell h, src @ read, cleanup < .read_byte, .to_flip, .to_jump {
