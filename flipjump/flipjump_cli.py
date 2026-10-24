@@ -415,15 +415,14 @@ def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
         action='store_true',
         help="move the tables declared relocatable (the expansions of macros whose innermost namespace is "
         "`__relocatable__`, such as hex.exact_xor's) to addresses that are cheap to arm, so every table dispatch "
-        "runs fewer ops. only declared, `$`-free tables move, so behaviour does not change as long as code "
-        "reaches a table through the table's own labels; an operand that names a label and would point elsewhere "
-        "once the tables moved (an offset from another label into or across a moved table) is refused. it costs "
-        "a .fjm that spans to the upper half of memory (a flat-memory run maps all of it), and a segment per moved "
-        "table. with it, `__relocatable__` is a reserved namespace, and a relocatable that "
-        "uses `$`, declares a label outside its ops, leaves itself through its own label, holds more than labels "
-        "and `a;b` ops, or has no power-of-two `pad` right before its call is an error; and a program that reaches "
-        "the upper half of memory, uses the pointer runtime, or keeps a table's dispatch word in a `reserve` is "
-        "refused",
+        "runs fewer ops. only declared, `$`-free tables move, and the program runs the same: where moving a table "
+        "would change an operand that names a label (an offset from another label into or across the table), the "
+        "table stays inline, and where pinning a word would, the word is not pinned; an operand that comes too late "
+        "to keep its table inline is refused. it costs a .fjm that spans to the upper half of memory (a "
+        "flat-memory run maps all of it), and a segment per moved table. with it, `__relocatable__` is a reserved "
+        "namespace, and a relocatable that uses `$`, declares a label outside its ops, leaves itself through its "
+        "own label, holds more than labels and `a;b` ops, or has no power-of-two `pad` right before its call is an "
+        "error; and a program that reaches the upper half of memory is refused",
     )
 
     asm_arguments.add_argument('--werror', help="treat all assemble warnings as errors", action='store_true')
