@@ -10,7 +10,7 @@ import random
 import subprocess
 import sys
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from flipjump import assemble
 from flipjump.assembler.fj_parser import parse_macro_tree
@@ -21,7 +21,9 @@ from flipjump.utils.functions import get_file_tuples
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # refusals that say why (any other refusal of a pooled build is a finding)
-KNOWN_REFUSALS = ('inside the table pool', 'Raise span_bits', 'pointer runtime', 'cannot hold', 'pinned word')
+# the refusals a random program may meet: a span too small, a program reaching the pool, and a label distance across
+# a moved table's place (the `distance` op)
+KNOWN_REFUSALS = ('inside the table pool', 'Raise span_bits', 'cannot hold', 'takes the distance across the place')
 
 _RUNNER = """
 import sys
@@ -98,7 +100,7 @@ class Generator:
         n = r.randint(1, self.digits)
         kinds = ['xor', 'xor1', 'xor_zero', 'double_xor', 'triple', 'quad', 'sparse_xor', 'sparse_double']
         kinds += ['shl_bit', 'shr_bit', 'shl_hex', 'shr_hex', 'inc', 'dec', 'not', 'neg', 'mov', 'zero', 'if']
-        kinds += ['rep_xor', 'set', 'count_bits']
+        kinds += ['rep_xor', 'set', 'count_bits', 'offset_jump', 'skip', 'set_label', 'distance']
         if self.init:
             kinds += ['add', 'sub', 'or', 'and', 'cmp', 'mul']
         kind = r.choice(kinds)
@@ -140,6 +142,16 @@ class Generator:
             )
         if kind == 'count_bits':
             return 'hex.count_bits 2, {}, {}'.format(*self.two_distinct(2))
+        if kind in ('offset_jump', 'skip'):  # `label + dw` / `$ + dw` over one op: inside its piece
+            label, wrong, end = self.label(), self.label(), self.label()
+            jump = f';{label} + dw\n{label}:' if kind == 'offset_jump' else 'stl.skip'
+            return f"{jump}\n    ;{wrong}\n    ;{end}\n{wrong}:\n    stl.output '!'\n{end}:"
+        if kind == 'set_label':  # a digit of a label's address: a value
+            return f'hex.set {self.digit()}, (L0 >> {r.choice([4, 6, 8])}) & 0xf'
+        if kind == 'distance':  # a label distance: across a moved table's place it is refused
+            first, second = self.label(), self.label()
+            inner = f'hex.xor {self.digit()}, {self.digit()}' if r.random() < 0.5 else f'hex.not 1, {self.digit()}'
+            return f'{first}:\n    {inner}\n{second}:\n    hex.set {self.digit()}, (({second} - {first}) >> 6) & 0xf'
         self.uses_init = True
         if kind in ('add', 'sub', 'or', 'and'):
             return 'hex.{} {}, {}, {}'.format(kind, n, *self.two_distinct(n))
@@ -157,7 +169,7 @@ class Generator:
         return f'hex.mul 2, {result}, {a}, {b}'
 
     def program(self) -> str:
-        lines = ['stl.startup']
+        lines = ['stl.startup', 'L0:']
         for _ in range(self.rng.randint(2, 4) if self.memory_width == 16 else self.rng.randint(3, 14)):
             lines.append(self.op())
         for v in range(self.variables):
@@ -173,7 +185,8 @@ class Generator:
 
 def pools(memory_width: int, rng: random.Random, source: Path, scratch: Path) -> Dict[str, Callable[[], TablePool]]:
     """name -> a factory, called in order: `fj --pool-tables`'s pool, a doom-like one, one with too small a span
-    (the overflow region), one leaving groups without a block, the two-pass recipe, and a TablePool"""
+    (the overflow region), one leaving groups without a block, one with an overflow region above the blocks, the
+    two-pass recipe, a TablePool and one with long runs"""
     base = 1 << (memory_width - 1)
     made: Dict[str, BlockPool] = {}
 
@@ -186,10 +199,19 @@ def pools(memory_width: int, rng: random.Random, source: Path, scratch: Path) ->
         span = max(32 * memory_width, int(used * rng.uniform(0.3, 0.95)) // (2 * memory_width) * 2 * memory_width)
         return BlockPool(memory_width, base, one_pass=True, span_bits=span, pin_broken=rng.random() < 0.5)
 
+    def cli_sizing() -> Dict[str, Any]:
+        """the cli pool's sizing - none if it refused the program"""
+        return made['cli'].sizing().pool_kwargs() if made['cli'].allocated else {'counts': {}}
+
     def unblocked() -> TablePool:
-        sizing = made['cli'].sizing().pool_kwargs()
+        sizing = cli_sizing()
         sizing['unblocked'] = [group for group in sorted(sizing['counts']) if rng.random() < 0.5]
         return BlockPool(memory_width, base, one_pass=True, pin_broken=rng.random() < 0.5, **sizing)
+
+    def overflow() -> TablePool:
+        sizing = cli_sizing()
+        sizing['unblocked'] = [group for group in sorted(sizing['counts']) if rng.random() < 0.5]
+        return BlockPool(memory_width, base, one_pass=True, overflow_base=base + (1 << (memory_width - 2)), **sizing)
 
     def two_pass() -> TablePool:
         counting = BlockPool(memory_width, base)
@@ -214,8 +236,12 @@ def pools(memory_width: int, rng: random.Random, source: Path, scratch: Path) ->
         'doomish': doomish,
         'tight': tight,
         'unblocked': unblocked,
+        'overflow': overflow,
         'two_pass': two_pass,
         'table': lambda: TablePool(memory_width, base, run_ops=16),
+        'table256': lambda: TablePool(
+            memory_width, base, run_ops=256, span_bits=rng.choice([None, 1 << (memory_width - 3)])
+        ),
     }
 
 

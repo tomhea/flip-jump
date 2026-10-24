@@ -434,9 +434,12 @@ def test_cli_pool_tables_runs_the_same_program_in_fewer_ops(tmp_path: Path, prog
     assert pooled_ops < plain_ops
 
 
-def test_cli_pool_tables_refuses_a_program_that_reads_through_pointers(tmp_path: Path) -> None:
-    with pytest.raises(FlipJumpException, match='hex.pointers'):
-        _cli_assemble(tmp_path, 'refused', [PROGRAMS_DIR / 'concept_checks' / 'hex_ptr.fj'], '--pool-tables')
+def test_cli_pool_tables_runs_a_program_that_reads_through_pointers_the_same(tmp_path: Path) -> None:
+    # a pointer may read any word raw, so the pool pins none (assembler.unpin): the tables still move
+    files = [PROGRAMS_DIR / 'concept_checks' / 'hex_ptr.fj']
+    plain, pooled = _cli_assemble(tmp_path, 'plain', files), _cli_assemble(tmp_path, 'pooled', files, '--pool-tables')
+    assert pooled.read_bytes() != plain.read_bytes()
+    assert _output_and_ops(pooled)[0] == _output_and_ops(plain)[0] != b''
 
 
 def test_cli_pool_tables_refuses_a_program_that_reaches_the_pool(tmp_path: Path) -> None:

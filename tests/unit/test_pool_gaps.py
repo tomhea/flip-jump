@@ -1,7 +1,8 @@
 """
-unit-tests for the table pool's gap hunt: every crafted program (tests/unit/pool_gaps) either runs with a pool
-exactly as without one, or is refused with the reason - and the pool's smaller promises (a pool lays out one
-assembly, a TablePool slot is aligned and inside the span, a wflip area that leaves the memory says so).
+unit-tests for the table pool's gap hunts: every crafted program (tests/unit/pool_gaps) either runs with a pool
+exactly as without one - through the fallbacks it counts where it needs them (a table kept inline, a word left
+unpinned) - or is refused with the reason; and the pool's smaller promises (a pool lays out one assembly, a TablePool
+slot is aligned and inside the span, a wflip area that leaves the memory says so).
 """
 
 from pathlib import Path
@@ -10,6 +11,7 @@ from typing import Dict, Optional, Tuple
 import pytest
 
 from flipjump import assemble, assemble_run_according_to_cmd_line_args
+from flipjump.assembler import assembler
 from flipjump.assembler.table_pool import BlockPool, OffsetGuard, TablePool
 from flipjump.utils.exceptions import FlipJumpException
 from tests.unit.pool_fuzzer import run
@@ -43,8 +45,14 @@ GUARD_C07_PLUS = (
 )
 GUARD_C07_COMPOUND = (
     r'the operand `\(\(T \+ 64\) \| 0\)` of the op at 0x80 \(after the label f1:l11:stl.startup---code_start\) '
-    r'lands at 0x80000040, in the table pool \(it computes from T, of the moved table T\)'
+    r'leaves the moved table T at 0x80000000: an offset from a moved table\'s label must stay inside it'
 )
+GUARD_C25 = r'the operand `f1:l19:go\(1\)---T \+ 64` .* leaves the moved table f1:l19:go\(1\)---T at 0x80000000'
+GUARD_C29 = (
+    r'the operand `\(\(\(\(b - a\) >> 6\) & 15\) \* 64\)` of the op at 0x140 \(in the top level\) takes the distance '
+    r'across the place of the table f1:l8:hex.xor\(2\)---s16:l12:hex.exact_xor\(5\)---switch, which moved out of 0x100'
+)
+REACHES = 'an operand reaches over its place'
 GUARDED = [
     'c06_label_before_pad',
     'c07a_reach_in_plus',
@@ -54,12 +62,12 @@ GUARDED = [
 ]
 # (program, memory width): {pool: SAME, or the words of its refusal}
 CASES: Dict[Tuple[str, int], Dict[str, Optional[str]]] = {
-    ('c01_raw_read_bit_ptr', 32): {'cli': 'pointer runtime', 'two_pass': 'pointer runtime', 'table': SAME},  # B1
-    ('c16_runtime_write_upper_half', 32): {'cli': 'pointer runtime', 'table': SAME},  # B1
+    ('c01_raw_read_bit_ptr', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},  # B1, N7: un-pinned
+    ('c16_runtime_write_upper_half', 32): {'cli': SAME, 'table': SAME},  # B1, N7: un-pinned
     ('c02_pinned_floor', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},  # B2
-    ('c03_pinned_in_reserve', 32): {'cli': 'are no op', 'two_pass': 'are no op', 'table': SAME},  # B3
-    ('c08_retarget_xor', 32): {'cli': 'computed from labels', 'two_pass': 'computed from labels', 'table': SAME},  # B4
-    ('c08b_retarget_xor_labelled', 32): {'cli': 'computed from labels', 'table': SAME},  # B4
+    ('c03_pinned_in_reserve', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},  # B3, N7: un-pinned
+    ('c08_retarget_xor', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},  # B4, N7: un-pinned
+    ('c08b_retarget_xor_labelled', 32): {'cli': SAME, 'table': SAME},  # B4, N7: un-pinned
     ('c05_label_offset_out_of_table', 32): {'cli': 'leaves the table through', 'table': 'leaves the table through'},
     ('c05b_trailing_label', 32): {'cli': 'declares a label after its last op', 'table': 'after its last op'},  # B5
     ('c09_pad3', 32): {'cli': 'power-of-two pad', 'table': 'power-of-two pad'},  # B6
@@ -75,6 +83,43 @@ CASES: Dict[Tuple[str, int], Dict[str, Optional[str]]] = {
     ('c07b_reach_in_compound', 32): {'cli': GUARD_C07_COMPOUND, 'table': GUARD_C07_COMPOUND},
     ('c07c_reach_in_compound_labelled', 32): {'cli': GUARD_C07_COMPOUND, 'table': GUARD_C07_COMPOUND},
     ('c07d_reach_in_plus_labelled', 32): {'cli': GUARD_C07_PLUS, 'table': GUARD_C07_PLUS},
+    # the gap hunt's second round
+    ('c20_dollar_across_table', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},  # N1: kept inline
+    ('c21_inline_compound_across_table', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},  # N2: kept inline
+    ('c22_label_digit_into_pinned', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},  # N6: a value, stays pinned
+    ('c23_numeric_address_arm', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},  # N4: un-pinned
+    ('c24_constant_value', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},
+    ('c25_arg_reach_out', 32): {'cli': GUARD_C25, 'two_pass': GUARD_C25, 'table': GUARD_C25},  # N3
+    ('c26_pointer_write_only', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},  # N6, N7: un-pinned
+    ('c27_bitwise_arm', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},  # N5: un-pinned
+    ('c28_segment_back', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},  # N6
+    ('c29_label_difference_value', 32): {'cli': GUARD_C29, 'two_pass': GUARD_C29, 'table': GUARD_C29},  # N2
+    ('c30_count_bits_stays_pinned', 32): {'cli': SAME, 'two_pass': SAME, 'table': SAME},  # N5: stays pinned
+}
+# (program, pool): (the tables the pool kept inline, the words it left unpinned), by reason - every other SAME
+# program needs neither
+POINTERS: Tuple[Dict[str, int], Dict[str, int]] = ({}, {'the pointer runtime': 1})
+FALLBACKS: Dict[Tuple[str, str], Tuple[Dict[str, int], Dict[str, int]]] = {
+    ('c01_raw_read_bit_ptr', 'cli'): POINTERS,
+    ('c01_raw_read_bit_ptr', 'two_pass'): POINTERS,
+    ('c16_runtime_write_upper_half', 'cli'): POINTERS,
+    ('c03_pinned_in_reserve', 'cli'): ({}, {'no op of its own': 1}),
+    ('c03_pinned_in_reserve', 'two_pass'): ({}, {'no op of its own': 1}),
+    ('c08_retarget_xor', 'cli'): ({}, {'armed with a value computed from labels': 1}),
+    ('c08_retarget_xor', 'two_pass'): ({}, {'armed with a value computed from labels': 1}),
+    ('c08b_retarget_xor_labelled', 'cli'): ({}, {'armed with a value computed from labels': 1}),
+    ('c20_dollar_across_table', 'cli'): ({REACHES: 1}, {}),
+    ('c20_dollar_across_table', 'two_pass'): ({REACHES: 1}, {}),
+    ('c20_dollar_across_table', 'table'): ({REACHES: 1}, {}),
+    ('c21_inline_compound_across_table', 'cli'): ({REACHES: 1}, {}),
+    ('c21_inline_compound_across_table', 'two_pass'): ({REACHES: 1}, {}),
+    ('c21_inline_compound_across_table', 'table'): ({REACHES: 1}, {}),
+    ('c23_numeric_address_arm', 'cli'): ({}, {'armed with a number': 1}),
+    ('c23_numeric_address_arm', 'two_pass'): ({}, {'armed with a number': 1}),
+    ('c26_pointer_write_only', 'cli'): POINTERS,
+    ('c26_pointer_write_only', 'two_pass'): POINTERS,
+    ('c27_bitwise_arm', 'cli'): ({}, {'a bit flip above its window': 1}),
+    ('c27_bitwise_arm', 'two_pass'): ({}, {'a bit flip above its window': 1}),
 }
 PARAMS = [(name, width, pool, refusal) for (name, width), pools in CASES.items() for pool, refusal in pools.items()]
 
@@ -99,7 +144,9 @@ def test_a_crafted_program_runs_the_same_with_the_pool_or_is_refused(
         return
     table_pool = _pool(pool, memory_width, source, tmp_path)
     assemble([source], pooled, memory_width=memory_width, print_time=False, table_pool=table_pool)
-    assert table_pool.allocated and run(pooled, 30) == run(plain, 30)
+    assert run(pooled, 30) == run(plain, 30)
+    assert (table_pool.unsafe_declines, table_pool.unpins) == FALLBACKS.get((name, pool), ({}, {}))
+    assert table_pool.allocated or table_pool.unsafe_declines
 
 
 @pytest.mark.parametrize('pool', ['cli', 'table'])
@@ -108,7 +155,7 @@ def test_without_the_offset_guard_a_reach_into_a_moved_table_miscompiles(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str, pool: str
 ) -> None:
     # the control: each refusal above prevents a real miscompile, which this run shows
-    monkeypatch.setattr(OffsetGuard, 'check', lambda self, label, address, offset: None)
+    monkeypatch.setattr(OffsetGuard, 'check', lambda self, label, address, offset, operand=None: None)
     monkeypatch.setattr(OffsetGuard, 'check_expr', lambda self, expr, value, is_address=True: None)
     source = GAPS / f'{name}.fj'
     plain = tmp_path / 'plain.fjm'
@@ -117,6 +164,66 @@ def test_without_the_offset_guard_a_reach_into_a_moved_table_miscompiles(
     table_pool = _pool(pool, W, source, tmp_path)
     assemble([source], pooled, memory_width=W, print_time=False, table_pool=table_pool)
     assert table_pool.allocated and run(pooled, 30) != run(plain, 30)
+
+
+def _differs(source: Path, tmp_path: Path, pool: str) -> bool:
+    """does `source` run differently with the pool than without it?"""
+    plain = tmp_path / 'plain.fjm'
+    assemble([source], plain, memory_width=W, print_time=False)
+    pooled = tmp_path / 'pooled.fjm'
+    assemble([source], pooled, memory_width=W, print_time=False, table_pool=_pool(pool, W, source, tmp_path))
+    return run(pooled, 30) != run(plain, 30)
+
+
+@pytest.mark.parametrize('pool', ['cli', 'two_pass', 'table'])
+@pytest.mark.parametrize('name', ['c20_dollar_across_table', 'c21_inline_compound_across_table'])
+def test_without_keeping_its_table_inline_a_reach_over_its_place_miscompiles(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str, pool: str
+) -> None:
+    # the control of N1 and N2: the table moves, and nothing later checks the operand
+    monkeypatch.setattr(OffsetGuard, 'may_move', lambda self, anchor: None)
+    monkeypatch.setattr(OffsetGuard, 'check_expr', lambda self, expr, value, is_address=True: None)
+    assert _differs(GAPS / f'{name}.fj', tmp_path, pool)
+
+
+@pytest.mark.parametrize('pool', ['cli', 'two_pass', 'table'])
+def test_without_the_distance_check_a_label_difference_across_a_moved_table_miscompiles(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pool: str
+) -> None:
+    # the control of N2: `b - a` across a moved table's place is a different number
+    monkeypatch.setattr(OffsetGuard, '_check_part', lambda self, coefficients, constant, operand: False)
+    assert _differs(GAPS / 'c29_label_difference_value.fj', tmp_path, pool)
+
+
+@pytest.mark.parametrize('pool', ['cli', 'two_pass'])
+@pytest.mark.parametrize('name', ['c23_numeric_address_arm', 'c27_bitwise_arm'])
+def test_without_unpinning_a_pin_that_cannot_hold_miscompiles(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str, pool: str
+) -> None:
+    # the control of N4, N5: the word stays pinned. (c08's `T1 ^ T2` would hold pinned - the bases cancel - but a
+    # value computed from labels is un-pinned whatever it computes)
+    monkeypatch.setattr(assembler, 'unpin', lambda *args, **kwargs: None)
+    assert _differs(GAPS / f'{name}.fj', tmp_path, pool)
+
+
+def test_a_program_that_reaches_the_pool_says_so(tmp_path: Path) -> None:
+    # N8: a counting pool moves nothing, so an operand past pool_base is the program's own reach
+    with pytest.raises(FlipJumpException, match='the program reached 0x80e0, which is inside the table pool at 0x8000'):
+        assemble(
+            [GAPS / 'c31_program_reaches_the_pool.fj'],
+            tmp_path / 'a.fjm',
+            memory_width=16,
+            print_time=False,
+            table_pool=BlockPool(16, 1 << 15),
+        )
+
+
+def test_count_bits_keeps_its_pin(tmp_path: Path) -> None:
+    # N5: hex.count_bits flips dst+dbit+4/5 inside the table it armed dst with: a move the base does not change
+    source = GAPS / 'c30_count_bits_stays_pinned.fj'
+    pool = BlockPool(W, 1 << (W - 1), one_pass=True)
+    assemble([source], tmp_path / 'pooled.fjm', memory_width=W, print_time=False, table_pool=pool)
+    assert pool.pinned_words() and pool.unpins == {}
 
 
 # `before + 2*dw` names the table's third entry ('B') only while the table is where it was declared; the
@@ -137,12 +244,9 @@ OUTSIDE_OFFSET_PROGRAMS = {
     'deferred': ('stl.startup\n    ;before + 2*dw\n' + _TABLE_AND_PRINTS, 'reaches across the place of the table'),
     # the label is known when the operand is emitted, after the table moved: the preprocessor checks it
     'folded': ('stl.startup\n    ;go\n' + _TABLE_AND_PRINTS + 'go:\n    ;before + 2*dw\n', 'reaches across'),
-    # the label is known, and the table moves after the operand: refused when it moves
-    'pending': (
-        'stl.startup\nhere:\n    ;here + 3*dw\n' + _TABLE_AND_PRINTS,
-        'of an earlier op reaches over the place',
-    ),
 }
+# the label is known, and the table moves after the operand: it stays inline
+PENDING = 'stl.startup\nhere:\n    ;here + 3*dw\n' + _TABLE_AND_PRINTS
 
 
 @pytest.mark.parametrize('program', sorted(OUTSIDE_OFFSET_PROGRAMS))
@@ -160,6 +264,15 @@ def test_an_offset_from_outside_into_a_moved_table_is_refused_wherever_it_is_see
     monkeypatch.setattr(OffsetGuard, 'check', lambda self, label, address, offset: None)
     table_pool = _pool('table', W, path, tmp_path)
     assert build_and_run(source, tmp_path, table_pool, name='unguarded')[0] != b'B' and table_pool.allocated
+
+
+def test_a_table_an_earlier_offset_reaches_over_stays_inline(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    pool = TablePool(W, 1 << (W - 1), run_ops=16)
+    assert build_and_run(PENDING, tmp_path, pool, name='pooled')[0] == b'B'
+    assert pool.unsafe_declines == {REACHES: 1} and pool.allocated == 0
+    # the control: moved, the program miscompiles
+    monkeypatch.setattr(OffsetGuard, 'may_move', lambda self, anchor: None)
+    assert build_and_run(PENDING, tmp_path, TablePool(W, 1 << (W - 1), run_ops=16), name='moved')[0] != b'B'
 
 
 _XOR = """

@@ -834,10 +834,10 @@ def test_a_pinned_word_read_through_a_pointer_needs_the_callers_exclusion(tmp_pa
     counting = BlockPool(W, POOL_BASE)
     build_and_run(POINTER_PROGRAM, tmp_path, counting, name='counting')
     assert counting.reads_words_raw
-    # pinning without a declaration of the cells pointers reach is refused, not miscompiled
-    with pytest.raises(FlipJumpException, match='pin_exclude'):
-        blocked_pool = BlockPool(W, POOL_BASE, counts=counting.counts, widths=counting.widths)
-        build_and_run(POINTER_PROGRAM, tmp_path, blocked_pool, name='refused')
+    # without a declaration of the cells pointers reach, no word is pinned: the same program, slower
+    unpinned_pool = BlockPool(W, POOL_BASE, counts=counting.counts, widths=counting.widths)
+    output, _, _ = build_and_run(POINTER_PROGRAM, tmp_path, unpinned_pool, name='unpinned')
+    assert output == reference and list(unpinned_pool.unpins) == ['the pointer runtime']
     # with the pointed cell excluded from pinning the blocked program is the same program; the
     # veto sees the bit address of the cell's JUMP word, `d + w`
     blocked_pool = BlockPool(W, POOL_BASE, counts=counting.counts, widths=counting.widths)
