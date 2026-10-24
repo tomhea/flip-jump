@@ -18,16 +18,17 @@ ns hex {
     //   dst[:n] += src[:n]
     // @requires hex.add.init (or hex.init)
     def add n, dst, src @ end {
-        .add.chain n, dst, src, end, end
+        rep(n > 0, i) .add.chain n, dst, src, end, end
       end:
     }
 
     //  Time Complexity: src_n(3@+14)   + 4@+18       // It's on average, see the note in hex.inc.
-    // Space Complexity: src_n(2.5@+57) + (dst_n - hex_shift)(1.5@+13) + 4@+60
+    // Space Complexity: src_n(3@+70) + (dst_n - hex_shift)(1.5@+13) + 4@+60
     //   dst[:dst_n] += src[:src_n] << (4*hex_shift)
     // @requires hex.add.init (or hex.init)
     def add_shifted dst_n, src_n, dst, src, hex_shift @ do_inc, end {
-        .add.chain src_n, dst+hex_shift*dw, src, end, do_inc
+        rep(src_n > 0, i) .add.chain src_n, dst+hex_shift*dw, src, end, do_inc
+        rep(src_n == 0, i) stl.fj 0, end
       do_inc:
         rep(dst_n - (src_n + hex_shift), i) .inc.step dst+(src_n + hex_shift + i)*dw, end
       end:
@@ -96,6 +97,7 @@ ns hex {
         //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
         //
         // x,y are hex[:n] (named so, as .dst is the table's jumper).
+        // @Assumes: n >= 1.
         // The two clear_carry dances and the n add dances are one chain of table jumps (see hex.tables.chained_jump).
         // @requires hex.add.init (or hex.init)
         def chain n, x, y, c0, c1 @ head, tail, return < ..tables.ret, ..tables.res, .dst {
@@ -185,16 +187,17 @@ ns hex {
     //   dst[:n] -= src[:n]
     // @requires hex.sub.init (or hex.init)
     def sub n, dst, src @ end {
-        .sub.chain n, dst, src, end, end
+        rep(n > 0, i) .sub.chain n, dst, src, end, end
       end:
     }
 
     //  Time Complexity: src_n(3@+14)   + 4@+22       // It's on average, see the note in hex.inc.
-    // Space Complexity: src_n(2.5@+57) + (dst_n - hex_shift)(1.5@+13) + 4@+68
+    // Space Complexity: src_n(3@+70) + (dst_n - hex_shift)(1.5@+13) + 4@+68
     //   dst[:dst_n] -= src[:src_n] << (4*hex_shift)
     // @requires hex.sub.init (or hex.init)
     def sub_shifted dst_n, src_n, dst, src, hex_shift @ do_dec, end {
-        .sub.chain src_n, dst+hex_shift*dw, src, end, do_dec
+        rep(src_n > 0, i) .sub.chain src_n, dst+hex_shift*dw, src, end, do_dec
+        rep(src_n == 0, i) stl.fj 0, end
       do_dec:
         rep(dst_n - (src_n + hex_shift), i) .dec.step dst+(src_n + hex_shift + i)*dw, end
       end:
@@ -260,6 +263,7 @@ ns hex {
         //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
         //
         // x,y are hex[:n] (named so, as .dst is the table's jumper).
+        // @Assumes: n >= 1.
         // The two clear_carry dances and the n sub dances are one chain of table jumps (see hex.tables.chained_jump).
         // @requires hex.sub.init (or hex.init)
         def chain n, x, y, c0, c1 @ head, cleared, tail, return < ..tables.ret, ..tables.res, .dst {
