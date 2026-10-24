@@ -51,6 +51,7 @@ from flipjump.assembler.table_pool import (  # noqa: F401 - the pool is importab
     DEFER_OUT,
     DEFER_TOO_WIDE,
     DeferredTables,
+    OffsetGuard,
     POINTER_RUNTIME_LABELS,
     RESERVED_BELOW,
     TablePool,
@@ -210,6 +211,13 @@ class PreprocessorData:
         # a pinned word's wflips tell an address from a number by its expression (BinaryData.pinned_value)
         self.result_ops.keep_label_values = self.pool_ops.keep_label_values = isinstance(table_pool, BlockPool)
         self.relocatable_extents = relocatable_extents
+        # an operand that would point elsewhere once the tables moved is refused (see OffsetGuard)
+        self.offset_guard: Optional[OffsetGuard] = None
+        if table_pool is not None:
+            self.offset_guard = table_pool.offset_guard = OffsetGuard(table_pool.pool_start(), self.labels)
+            self.offset_guard.where = self._where
+        self.result_ops.guard = self.pool_ops.guard = self.offset_guard
+        self._table_start = 0  # (two passes) where the table being emitted was placed
         self._pointer_runtime_users: Dict[int, bool] = {}  # id(macro) -> it names POINTER_RUNTIME_LABELS
         self.emit_target: OpStream = self.result_ops
         self._reloc_stack: List[Tuple[int, OpStream]] = []
@@ -269,8 +277,10 @@ class PreprocessorData:
         labels_prefix: str = '',
         group: Optional[str] = None,
         group_expr: Optional[Expr] = None,
+        *,
+        table: str = '',
     ) -> bool:
-        """Move emission to a pool address instead of aligning in place.
+        """Move emission to a pool address instead of aligning in place (`table`: the table's start label).
 
         A declared table (see relocatable_call) is reached only by jump, so relocating it changes
         nothing but its address -- and the address is what the arming wflip pays for. Returns False
@@ -283,11 +293,15 @@ class PreprocessorData:
             pool.reserved_words += 1
             return False
         if self._one_pass is not None:
-            return self._begin_deferral(self._one_pass, ops_alignment, table_ops, labels_prefix, group, group_expr)
+            return self._begin_deferral(
+                self._one_pass, ops_alignment, table_ops, labels_prefix, group, group_expr, table
+            )
         reserved = pool.reserve(ops_alignment, table_ops, group, group_expr, labels_prefix)
         if reserved is None:
             return False
         address, starts_new_run, gap_ops = reserved
+        self._table_moved(table)
+        self._table_start = address
         self._reloc_stack.append((self.curr_address, self.emit_target))
         self.emit_target = self.pool_ops
         if starts_new_run:
@@ -300,6 +314,18 @@ class PreprocessorData:
             self.pool_ops.append(Padding(gap_ops))
         self.curr_address = address
         return True
+
+    def _table_moved(self, table: str) -> None:
+        """the table (its start label) leaves the inline stream here (see OffsetGuard)"""
+        if self.offset_guard is not None:
+            self.offset_guard.table_moved(self.curr_address, table)
+
+    def _where(self) -> str:
+        """where the op being emitted is (an OffsetGuard refusal says)"""
+        path = ' > '.join(call.trace_str() for call in self.curr_tree) or 'the top level'
+        if self._reloc_stack:
+            return f' of an op of a moved table (in {path})'
+        return f' of the op at {hex(self.curr_address - 2 * self.memory_width)} (in {path})'
 
     def _is_runtime_word(self, word: Expr) -> bool:
         """is `word` one of the runtime's (see RESERVED_BELOW)? Those are declared before any code
@@ -318,6 +344,7 @@ class PreprocessorData:
         labels_prefix: str,
         group: Optional[str],
         group_expr: Optional[Expr],
+        table: str,
     ) -> bool:
         """one pass: take the table out of the op stream (see BlockPool's ONE PASS). Its ops go into
         the pool's stream behind a NewSegment whose address is set once it is placed, and its labels
@@ -332,6 +359,7 @@ class PreprocessorData:
         if verdict != DEFER_OUT:
             self._deferred.add(group, group_expr, ops_alignment, table_ops, site, None, verdict)
             return False  # aligned and emitted in place, exactly as a placing pass declines it
+        self._table_moved(table)
         segment = NewSegment(0)  # its address is decided once the expansion is done
         self.pool_ops.append(segment)
         self._deferred.add(group, group_expr, ops_alignment, table_ops, site, segment)
@@ -348,9 +376,14 @@ class PreprocessorData:
         assert tables is not None
         op_bits = 2 * self.memory_width
         addresses = pool.place_deferred(tables, self.labels)
+        guard = self.offset_guard
+        moved = 0  # the tables that left the stream, in the order they did (OffsetGuard.tables)
         for index, address in enumerate(addresses):
             if not address:
                 continue  # it stayed inline: its labels are in place already
+            if guard is not None:
+                guard.table_placed(address, address + tables.sizes[index] * op_bits, guard.tables[moved])
+                moved += 1
             for label, offset in tables.labels_of(index):
                 self.labels[label] = address + offset
                 self._label_positions.append(self._deferred_label_positions.get(label))
@@ -382,6 +415,8 @@ class PreprocessorData:
             return
         if self.table_pool is not None:
             self.table_pool.commit(self.curr_address)
+        if self.offset_guard is not None:
+            self.offset_guard.table_placed(self._table_start, self.curr_address, self.offset_guard.tables[-1])
         if self._pool_segment is not None:
             self._pool_segment.wflip_start_address = self.curr_address
         saved_address, saved_target = self._reloc_stack.pop()
@@ -669,9 +704,9 @@ def is_relocatable(macro_name: MacroName) -> bool:
 
 def relocatable_call(
     preprocessor_data: PreprocessorData, ops: List[Op], pad_index: int, params_dict: Dict[str, Expr]
-) -> Optional[Tuple[int, int, Optional[str], Optional[Expr]]]:
-    """(the call's index, the table's ops, its group, the group's source-word Expr) if the op after the
-    `pad` at `ops[pad_index]` (labels aside) calls a relocatable table, else None. A table pool is on.
+) -> Optional[Tuple[int, int, Optional[str], Optional[Expr], str]]:
+    """(the call's index, the table's ops, its group, the group's source-word Expr, its start label) if the op
+    after the `pad` at `ops[pad_index]` (labels aside) calls a relocatable table, else None. A table pool is on.
 
     THE TABLE is one expansion of a macro whose innermost namespace is `__relocatable__`: its whole
     expansion, which the pool may place anywhere (the pad gives its alignment). Its first argument is
@@ -709,7 +744,7 @@ def relocatable_call(
             group_expr = disarm.word_address.eval_new(params_dict)
             group = str(group_expr)
         break
-    return index, table_ops, group, group_expr
+    return index, table_ops, group, group_expr, str(call.arguments[0].value)
 
 
 def _relocatable_table_ops(preprocessor_data: PreprocessorData, macro: Macro, call: MacroCall) -> int:
@@ -831,7 +866,7 @@ def resolve_macro_aux(
                         f'this one at its alignment',
                     )
             if table is not None and preprocessor_data.begin_relocation(
-                ops_alignment, table[1], labels_prefix, table[2], table[3]
+                ops_alignment, table[1], labels_prefix, table[2], table[3], table=table[4]
             ):
                 relocated_call = table_call
             else:

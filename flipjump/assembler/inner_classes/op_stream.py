@@ -132,7 +132,7 @@ def _linear_memo(expr: Expr) -> Optional[Tuple[Optional[str], int]]:
 class OpStream:
     """an ordered stream of last-phase ops, stored compactly (see the module docstring)"""
 
-    __slots__ = ('kinds', 'vals', 'refs', 'labels', 'marks', 'keep_label_values')
+    __slots__ = ('kinds', 'vals', 'refs', 'labels', 'marks', 'keep_label_values', 'guard')
 
     def __init__(self, refs: List[Any], labels: Dict[str, int]):
         """
@@ -148,6 +148,8 @@ class OpStream:
         self.marks: List[Tuple[int, int, Any]] = []
         # a wflip's value that names a label stays an expression (BlockPool tells an address from a number)
         self.keep_label_values = False
+        # a table pool's OffsetGuard: told of every operand folded here that names a label (None: no pool)
+        self.guard: Any = None
 
     def __len__(self) -> int:
         return len(self.kinds)
@@ -165,6 +167,8 @@ class OpStream:
         elif value.__class__ is str:
             known = self.labels.get(value)
             if known is not None and 0 <= known <= LITERAL_MAX:
+                if self.guard is not None and value in self.guard.stranded:
+                    self.guard.check(value, known, 0)
                 vals.append(known)
                 return False
             refs = self.refs
@@ -185,6 +189,8 @@ class OpStream:
         vals = self.vals
         known = self.labels.get(name)
         if known is not None:
+            if self.guard is not None and (const or name in self.guard.stranded):
+                self.guard.check(name, known, const)
             if 0 <= known + const <= LITERAL_MAX:
                 vals.append(known + const)
                 return True
@@ -239,6 +245,8 @@ class OpStream:
                 return self._operand(expr.eval_new(params))
         known = self.labels.get(name)
         if known is not None:
+            if self.guard is not None and (const or name in self.guard.stranded):
+                self.guard.check(name, known, const)
             known += const
             if 0 <= known <= LITERAL_MAX:
                 self.vals.append(known)
