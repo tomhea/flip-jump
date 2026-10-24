@@ -41,8 +41,8 @@ ns hex {
         rep(n, i) .input bytes+2*i*dw
     }
 
-    //  Time Complexity: 3@+6     (+ 4@+14 when a key event arrived)
-    // Space Complexity: 7@+70
+    //  Time Complexity: ~3@+6     (+ 4@+14 when a key event arrived)  (measured, w=64, @~13.5: 43, and 110)
+    // Space Complexity: 174      (measured)
     //   status = input(4bits)     // the keyboard's next status: 0x0 no event, 0x9 a key was pressed, 0x8 released
     //   if status != 0:  keycode[:2] = input(8bits)     // the event's keycode (else keycode is unchanged)
     //

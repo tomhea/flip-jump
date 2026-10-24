@@ -61,13 +61,11 @@ ns hex {
     }
 
 
-    //  Time Complexity: @+1
-    // Space Complexity: @+33
+    //  Time Complexity: ~@+1       (measured, w=64: 10 at @~13.3, 18 at @~17.5)
+    // Space Complexity: 46        (measured)
     //   jump to t<x>    (a 16-way jump on the value of the hex x)
     //
-    // The table is the shape a table-placement pass can relocate: pad 16, sixteen plain ;r<i> entries, and
-    //   wflips that name its head label. Arming xors switch into x's jump word and jumps THROUGH x (if_flags'
-    //   own trick); each trampoline disarms and jumps on, so x is unchanged on every exit.
+    // if_flags' trick: x's jump word is armed with switch, each entry disarms it and jumps on, so x is unchanged.
     // x is a hex; t0..t15 are addresses.
     def switch x, t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15 \
             @ switch, r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15 {

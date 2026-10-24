@@ -62,13 +62,12 @@ ns screen {
         stl.output_char fps
     }
 
-    // Complexity: 8(len+2)
+    // Complexity: 8(string_length+2)
     //   set_window_title: [0x04] <utf-8 bytes> [0x00]
-    // text is a constant string (least-significant byte first, like stl.output); len is its length in bytes
-    //   (explicit, so a zero byte in text can't cut it short).
-    def set_window_title text, len {
+    // text is a constant string (least-significant byte first, as stl.output outputs it).
+    def set_window_title text {
         stl.output_char 0x04
-        rep(len, i) stl.output_char (text>>(8*i))&0xff
+        stl.output text
         stl.output_char 0x00
     }
 
@@ -81,6 +80,13 @@ ns screen {
         stl.output_char 0x05
         stl.output_char width
         stl.output_char height
+    }
+
+    // Complexity: 8
+    //   draw_raw: [0x10]     (the header only: the width*height colours, B bits each, row-major, then zero bits to the
+    //   byte, are the program's own output)
+    def draw_raw {
+        stl.output_char 0x10
     }
 
     // Complexity: 8

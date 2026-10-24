@@ -1,6 +1,6 @@
 // Tests the chained n-hex table ops (hex.add/sub/or/and n, hex.add_shifted/sub_shifted), n = 1, 2, 3, 4, 7, 8, 16.
 // Every n gets a random case, a carry through every nibble (0xf..f + 1), a borrow through every nibble
-//   (0 - 1), and a random case entered with a set carry (the ops must clear it, before and after).
+//   (0 - 1), and a random case entered with a set carry (the ops must clear it, before and after). And n = 0.
 // Generated with python's random (seed 20261023); each line prints '=' when the result is right.
 stl.startup
 
@@ -178,6 +178,13 @@ test_sub_shifted 16, 0xd6c50b3b5b83de3dcd, 0xfd98be49bc8a18dd, 0
 test_sub_shifted 16, 0xffffffffffffffffff, 0x1, 0
 test_sub_shifted 16, 0x0, 0x1, 0
 test_sub_shifted 16, 0x6ec796a60e410f2a4f, 0x12ed6ef8a1b802d7, 1
+// n = 0 (src_n = 0) is a no-op: neither x nor the hex before it changes
+test_n0_add
+test_n0_sub
+test_n0_or
+test_n0_and
+test_n0_add_shifted
+test_n0_sub_shifted
 
 stl.loop
 
@@ -244,6 +251,62 @@ def test_sub_shifted n, a, b, dirty @ x, y, end {
     ;end
   x: hex.vec n+2, a
   y: hex.vec n, b
+  end:
+}
+
+// n = 0: s (the hex before x) = 1, x = 5 (then 7), y = 3 - and after the op, still s:x = 0x751.
+def test_n0_add @ s, x, y, end {
+    hex.add 0, x, y
+    check 3, s, 0x751
+    ;end
+  s: hex.hex 1
+  x: hex.vec 2, 0x75
+  y: hex.hex 3
+  end:
+}
+def test_n0_sub @ s, x, y, end {
+    hex.sub 0, x, y
+    check 3, s, 0x751
+    ;end
+  s: hex.hex 1
+  x: hex.vec 2, 0x75
+  y: hex.hex 3
+  end:
+}
+def test_n0_or @ s, x, y, end {
+    hex.or 0, x, y
+    check 3, s, 0x751
+    ;end
+  s: hex.hex 1
+  x: hex.vec 2, 0x75
+  y: hex.hex 3
+  end:
+}
+def test_n0_and @ s, x, y, end {
+    hex.and 0, x, y
+    check 3, s, 0x751
+    ;end
+  s: hex.hex 1
+  x: hex.vec 2, 0x75
+  y: hex.hex 3
+  end:
+}
+def test_n0_add_shifted @ s, x, y, end {
+    hex.add_shifted 2, 0, x, y, 0
+    check 3, s, 0x751
+    ;end
+  s: hex.hex 1
+  x: hex.vec 2, 0x75
+  y: hex.hex 3
+  end:
+}
+def test_n0_sub_shifted @ s, x, y, end {
+    hex.sub_shifted 2, 0, x, y, 0
+    check 3, s, 0x751
+    ;end
+  s: hex.hex 1
+  x: hex.vec 2, 0x75
+  y: hex.hex 3
   end:
 }
 

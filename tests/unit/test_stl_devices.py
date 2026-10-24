@@ -101,7 +101,7 @@ SETUP_TITLE = 'stl screen'
 SETUP_PROGRAM = f'''
 stl.startup
 screen.init_screen 2, 2, 4
-screen.set_window_title {hex(int.from_bytes(SETUP_TITLE.encode(), 'little'))}, {len(SETUP_TITLE)}
+screen.set_window_title {hex(int.from_bytes(SETUP_TITLE.encode(), 'little'))}
 screen.set_max_fps 30
 screen.builtin_palette 3, 2
 screen.define_palette 4, 1, 0, 0, 0x332211
@@ -143,6 +143,31 @@ def test_the_setup_commands_reach_the_screen(tmp_path: Path) -> None:
     assert screen.window_icon == (1, 1, [(0x11, 0x22, 0x33)])
     assert screen.frame_count == 1
     assert screen.palette[0] == (0x11, 0x22, 0x33)  # presented through slot 1
+
+
+DRAW_RAW_PROGRAM = '''
+stl.startup
+screen.init_screen 3, 1, 4
+screen.draw_raw
+screen.output_bits 4, 0x5
+screen.output_bits 4, 0xC
+screen.output_bits 4, 0x7
+screen.output_bits 4, 0
+screen.present
+stl.loop
+'''
+
+
+def test_draw_raw_is_byte_exact(tmp_path: Path) -> None:
+    """the colours (B = 4, row-major) and the zero bits to the byte are the program's own output."""
+    expected = ss.init_screen(3, 1, 4) + ss.draw_raw([0x5, 0xC, 0x7], 4) + ss.PRESENT
+    assert output_bytes(tmp_path, DRAW_RAW_PROGRAM) == expected
+
+
+def test_draw_raw_draws_on_the_screen(tmp_path: Path) -> None:
+    screen = InMemoryScreen()
+    run_program(tmp_path, DRAW_RAW_PROGRAM, screen)
+    assert (screen.frame_count, screen.pixel_indices) == (1, [0x5, 0xC, 0x7])
 
 
 @pytest.mark.parametrize('width', [1, 14, 15, 254, 255, 4094, 4095, 65534])
@@ -220,3 +245,43 @@ def broken_poll_key status, keycode @ end {
     keyboard = KeyboardIO(ScriptedKeyEventSource(EVENTS))
     run_program(tmp_path, broken, keyboard)
     assert keyboard.get_output() != expected_polls(EVENTS)
+
+
+SHARED_KEYCODE_PROGRAM = '''
+stl.startup
+rep(3, i) poll_and_print
+stl.loop
+hex.init
+
+status: hex.hex
+keycode: hex.vec 2, 0x5a
+
+// polls into the one shared keycode (it starts as 0x5a), and prints "<status> <keycode>" and a new line.
+def poll_and_print < status, keycode {
+    POLL status, keycode
+    hex.print_as_digit status, 0
+    stl.output ' '
+    hex.print_as_digit keycode+dw, 0
+    hex.print_as_digit keycode, 0
+    stl.output_char 10
+}
+'''
+
+
+def test_an_idle_poll_key_leaves_the_keycode_alone(tmp_path: Path) -> None:
+    keyboard = KeyboardIO(ScriptedKeyEventSource([KeyEvent(1, True, 0x61)]))
+    run_program(tmp_path, SHARED_KEYCODE_PROGRAM.replace('POLL', 'hex.poll_key'), keyboard)
+    assert keyboard.get_output() == b'0 5a\n9 61\n0 61\n'
+
+
+def test_an_idle_poll_key_negative_control(tmp_path: Path) -> None:
+    """a poll that zeroes the keycode when no key event arrived does not leave it alone."""
+    broken = SHARED_KEYCODE_PROGRAM.replace('POLL', 'zeroing_poll_key') + '''
+def zeroing_poll_key status, keycode {
+    hex.zero 2, keycode
+    hex.poll_key status, keycode
+}
+'''
+    keyboard = KeyboardIO(ScriptedKeyEventSource([KeyEvent(1, True, 0x61)]))
+    run_program(tmp_path, broken, keyboard)
+    assert keyboard.get_output() != b'0 5a\n9 61\n0 61\n'

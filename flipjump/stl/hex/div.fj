@@ -156,13 +156,16 @@ ns hex {
 
 
 ns hex {
-    //  Time Complexity: 4n^2(36@+100)
-    // Space Complexity: n(60@+880)
+    //  Time Complexity: ~n^2(20@+150) + n(40@+500) + 40@        (hex.idiv's own doc gives n^2(76@+216): an upper bound)
+    // Space Complexity: ~1780n + 930
+    // Measured (w=64, f = n/2 (1 at n = 1); n = 1, 2, 4, 8): time 2083, 4772, 12308, 40702 (@~15-17);
+    //   space 2703, 4496, 8095, 15200
     //   if b==0: goto div0
     //   dst[:n] = (a[:n] << 4f) / b[:n]    (signed fixed-point divide, truncated toward zero)
     //
     // a,b,dst are signed Q-format hex[:n] with f fraction-hexes (dst may alias a/b). div0 is an address.
     // The dividend is shifted at full 2n-hex width (hex-aligned - no runtime shift).
+    //   The quotient is truncated to n hexes (wraps modulo 2^4n).
     // @Assumes: 0 < f <= n.
     // @requires hex.sub.init & hex.cmp.init (or hex.init)
     def fixed_div n, f, dst, a, b, div0 @ wide_a, quotient, remainder, end {
