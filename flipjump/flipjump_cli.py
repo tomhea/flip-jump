@@ -20,6 +20,7 @@ from flipjump.fjm.fjm_consts import (
     FJMVersion,
     SUPPORTED_VERSIONS_NAMES,
     IO_MODE_NAMES,
+    RUN_FLAG_FLAT_MEMORY,
     bad_io_mode_message,
     bad_run_flags_message,
 )
@@ -184,6 +185,11 @@ def assemble(
     verify_fj_files(error_func, file_tuples)
 
     version = get_version(args.version, args.outfile is not None, error_func)
+    if args.pool_tables and args.width == 64 and (args.run_flags or 0) & RUN_FLAG_FLAT_MEMORY:
+        error_func(
+            '--pool-tables puts the tables at 2^63, so a flat-memory window (--run-flags 1) would span 2^57 words; '
+            'run it in paged memory.'
+        )
     if version == FJMVersion.BaseVersion and (args.run_flags or args.io_mode):
         error_func('fjm version 0 has no header room for --run-flags / --io-mode; use version 1 or above.')
     fjm_writer = Writer(
@@ -407,13 +413,16 @@ def add_assemble_only_arguments(parser: argparse.ArgumentParser) -> None:
     asm_arguments.add_argument(
         '--pool-tables',
         action='store_true',
-        help="move the tables declared relocatable (the expansions of `__relocatable__` macros, such as "
-        "hex.exact_xor's) to addresses that are cheap to arm, so every table dispatch runs fewer ops. "
-        "behaviour never changes: only declared, `$`-free tables move, and code reaches them through their "
-        "labels. it costs a .fjm that spans to the upper half of memory, and a segment per moved table. "
-        "with it, a relocatable that uses `$`, declares its start label after its first op, holds more than "
-        "labels and `a;b` ops, or has no `pad` right before its call is an error; and a program that reaches "
-        "the upper half of memory, or reads cells through hex.pointers, is refused",
+        help="move the tables declared relocatable (the expansions of macros whose innermost namespace is "
+        "`__relocatable__`, such as hex.exact_xor's) to addresses that are cheap to arm, so every table dispatch "
+        "runs fewer ops. only declared, `$`-free tables move, so behaviour does not change as long as code "
+        "reaches a table through the table's own labels (an offset from another label into a moved table is not "
+        "checked). it costs a .fjm that spans to the upper half of memory (a flat-memory run maps all of it), and "
+        "a segment per moved table. with it, `__relocatable__` is a reserved namespace, and a relocatable that "
+        "uses `$`, declares a label outside its ops, leaves itself through its own label, holds more than labels "
+        "and `a;b` ops, or has no power-of-two `pad` right before its call is an error; and a program that reaches "
+        "the upper half of memory, uses the pointer runtime, or keeps a table's dispatch word in a `reserve` is "
+        "refused",
     )
 
     asm_arguments.add_argument('--werror', help="treat all assemble warnings as errors", action='store_true')

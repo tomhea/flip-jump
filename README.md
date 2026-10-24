@@ -150,9 +150,10 @@ fj --run hello_world.fjm
 - The second line will run your code.
 
 `--pool-tables` makes the assembled program run fewer ops: it moves the tables the stl declares relocatable (those
-of `hex.exact_xor` and its kin, and of the bit shifts) to addresses that are cheap to arm, and never changes what
-the program does. The tables move to the upper half of memory, so the `.fjm` spans to there; a program that reaches
-it, or one that reads cells through `hex.pointers`, is refused with the reason.
+of `hex.exact_xor` and its kin, and of the bit shifts) to addresses that are cheap to arm. Code that reaches a table
+through the table's own labels runs the same. The tables move to the upper half of memory, so the `.fjm` spans to
+there; a program that reaches it, or uses the pointer runtime, is refused with the reason. With it, `__relocatable__`
+is a reserved namespace: a macro whose innermost namespace has that name is a table the pool may move.
 
 <details>
 <summary><b>Make it fast 🚀</b> — the three interpreter engines (native C is the default, ~300M fj-ops/s).</summary>
