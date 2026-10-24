@@ -16,8 +16,8 @@ from flipjump.assembler.fj_parser import parse_macro_tree
 from flipjump.assembler.inner_classes.expr import Expr
 from flipjump.assembler.inner_classes.ops import FlipJump, Macro, MacroName, NewSegment
 from flipjump.assembler.relocation_proof import prove_relocation
-from flipjump.assembler.table_pool import BlockPool, TablePool
-from flipjump.utils.exceptions import FlipJumpAssemblerException, FlipJumpPreprocessorException
+from flipjump.assembler.table_pool import BlockPool, OffsetGuard, TablePool
+from flipjump.utils.exceptions import FlipJumpAssemblerException, FlipJumpException, FlipJumpPreprocessorException
 from flipjump.utils.functions import get_file_tuples
 from tests.unit.test_table_pool import build_and_run, relocatable
 from tests.unit.unit_utils import PROGRAMS_DIR
@@ -102,12 +102,17 @@ def _write(tmp_path: Path, source: str) -> List[str]:
     return [str(path)]
 
 
-def test_an_offset_from_outside_into_a_moved_table_fails_the_proof(tmp_path: Path) -> None:
+def test_an_offset_from_outside_into_a_moved_table_fails_the_proof(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     proof = prove_relocation(W, _macros(_write(tmp_path, OUTSIDE_OFFSET_PROGRAM), W), TablePool(W, POOL_BASE))
     assert any('(before + 128)' in mismatch for mismatch in proof.mismatches), proof.mismatches
-    # and it is a miscompile: the moved program prints nothing where the plain one prints B
+    # assemble() refuses it (OffsetGuard); without that, the moved program prints nothing where the plain one prints B
     assert build_and_run(OUTSIDE_OFFSET_PROGRAM, tmp_path, None, name='plain')[0] == b'B'
-    assert build_and_run(OUTSIDE_OFFSET_PROGRAM, tmp_path, TablePool(W, POOL_BASE), name='pooled')[0] != b'B'
+    with pytest.raises(FlipJumpException, match='reaches across the place of the table tbl_start'):
+        build_and_run(OUTSIDE_OFFSET_PROGRAM, tmp_path, TablePool(W, POOL_BASE), name='pooled')
+    monkeypatch.setattr(OffsetGuard, 'check', lambda self, label, address, offset: None)
+    assert build_and_run(OUTSIDE_OFFSET_PROGRAM, tmp_path, TablePool(W, POOL_BASE), name='unguarded')[0] != b'B'
 
 
 @pytest.mark.parametrize('name', ['c06_label_before_pad', 'c07a_reach_in_plus', 'c07d_reach_in_plus_labelled'])

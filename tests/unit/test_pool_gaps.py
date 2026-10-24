@@ -10,9 +10,10 @@ from typing import Dict, Optional, Tuple
 import pytest
 
 from flipjump import assemble, assemble_run_according_to_cmd_line_args
-from flipjump.assembler.table_pool import BlockPool, TablePool
+from flipjump.assembler.table_pool import BlockPool, OffsetGuard, TablePool
 from flipjump.utils.exceptions import FlipJumpException
 from tests.unit.pool_fuzzer import run
+from tests.unit.test_table_pool import build_and_run, relocatable
 
 GAPS = Path(__file__).parent / 'pool_gaps'
 W = 32
@@ -32,6 +33,25 @@ def _pool(kind: str, memory_width: int, source: Path, tmp_path: Path) -> TablePo
 
 
 SAME = None
+GUARD_C06 = (
+    r'the operand `L` of the op at 0x480 \(in the top level\) names L, declared at 0x400 before the `pad` of the '
+    r'table T: it named the table\'s start'
+)
+GUARD_C07_PLUS = (
+    r'the operand `T \+ 64` of the op at 0x80 \(after the label f1:l11:stl.startup---code_start\) leaves the moved '
+    r'table T at 0x80000000: an offset from a moved table\'s label must stay inside it'
+)
+GUARD_C07_COMPOUND = (
+    r'the operand `\(\(T \+ 64\) \| 0\)` of the op at 0x80 \(after the label f1:l11:stl.startup---code_start\) '
+    r'lands at 0x80000040, in the table pool \(it computes from T, of the moved table T\)'
+)
+GUARDED = [
+    'c06_label_before_pad',
+    'c07a_reach_in_plus',
+    'c07b_reach_in_compound',
+    'c07c_reach_in_compound_labelled',
+    'c07d_reach_in_plus_labelled',
+]
 # (program, memory width): {pool: SAME, or the words of its refusal}
 CASES: Dict[Tuple[str, int], Dict[str, Optional[str]]] = {
     ('c01_raw_read_bit_ptr', 32): {'cli': 'pointer runtime', 'two_pass': 'pointer runtime', 'table': SAME},  # B1
@@ -49,6 +69,12 @@ CASES: Dict[Tuple[str, int], Dict[str, Optional[str]]] = {
     ('c13_label_between_pad_and_call', 32): {'cli': SAME, 'table': SAME},
     ('c15_nested_namespaces', 32): {'cli': SAME, 'table': SAME},
     ('c19_no_label_after_call', 32): {'cli': SAME, 'table': SAME},
+    # an operand outside a moved table that names a label and reaches the table's place (OffsetGuard)
+    ('c06_label_before_pad', 32): {'cli': GUARD_C06, 'table': GUARD_C06},
+    ('c07a_reach_in_plus', 32): {'cli': GUARD_C07_PLUS, 'table': GUARD_C07_PLUS},
+    ('c07b_reach_in_compound', 32): {'cli': GUARD_C07_COMPOUND, 'table': GUARD_C07_COMPOUND},
+    ('c07c_reach_in_compound_labelled', 32): {'cli': GUARD_C07_COMPOUND, 'table': GUARD_C07_COMPOUND},
+    ('c07d_reach_in_plus_labelled', 32): {'cli': GUARD_C07_PLUS, 'table': GUARD_C07_PLUS},
 }
 PARAMS = [(name, width, pool, refusal) for (name, width), pools in CASES.items() for pool, refusal in pools.items()]
 
@@ -74,6 +100,66 @@ def test_a_crafted_program_runs_the_same_with_the_pool_or_is_refused(
     table_pool = _pool(pool, memory_width, source, tmp_path)
     assemble([source], pooled, memory_width=memory_width, print_time=False, table_pool=table_pool)
     assert table_pool.allocated and run(pooled, 30) == run(plain, 30)
+
+
+@pytest.mark.parametrize('pool', ['cli', 'table'])
+@pytest.mark.parametrize('name', GUARDED)
+def test_without_the_offset_guard_a_reach_into_a_moved_table_miscompiles(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str, pool: str
+) -> None:
+    # the control: each refusal above prevents a real miscompile, which this run shows
+    monkeypatch.setattr(OffsetGuard, 'check', lambda self, label, address, offset: None)
+    monkeypatch.setattr(OffsetGuard, 'check_expr', lambda self, expr, value, is_address=True: None)
+    source = GAPS / f'{name}.fj'
+    plain = tmp_path / 'plain.fjm'
+    assemble([source], plain, memory_width=W, print_time=False)
+    pooled = tmp_path / 'pooled.fjm'
+    table_pool = _pool(pool, W, source, tmp_path)
+    assemble([source], pooled, memory_width=W, print_time=False, table_pool=table_pool)
+    assert table_pool.allocated and run(pooled, 30) != run(plain, 30)
+
+
+# `before + 2*dw` names the table's third entry ('B') only while the table is where it was declared; the
+# OffsetGuard sees each in a different place
+_TABLE_AND_PRINTS = """
+before:
+    pad 1
+    tbl.__relocatable__.table tbl_start, print_a, print_b
+print_a:
+    stl.output 'A'
+    stl.loop
+print_b:
+    stl.output 'B'
+    stl.loop
+""" + relocatable('tbl', 'start, a, b', 'start', '    ;a\n    ;a\n    ;b\n    ;a\n')
+OUTSIDE_OFFSET_PROGRAMS = {
+    # the label is declared after the operand: labels_resolve checks it
+    'deferred': ('stl.startup\n    ;before + 2*dw\n' + _TABLE_AND_PRINTS, 'reaches across the place of the table'),
+    # the label is known when the operand is emitted, after the table moved: the preprocessor checks it
+    'folded': ('stl.startup\n    ;go\n' + _TABLE_AND_PRINTS + 'go:\n    ;before + 2*dw\n', 'reaches across'),
+    # the label is known, and the table moves after the operand: refused when it moves
+    'pending': (
+        'stl.startup\nhere:\n    ;here + 3*dw\n' + _TABLE_AND_PRINTS,
+        'of an earlier op reaches over the place',
+    ),
+}
+
+
+@pytest.mark.parametrize('program', sorted(OUTSIDE_OFFSET_PROGRAMS))
+def test_an_offset_from_outside_into_a_moved_table_is_refused_wherever_it_is_seen(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, program: str
+) -> None:
+    # (a TablePool: the table is dispatched through no word, so a BlockPool would keep it in place)
+    source, refusal = OUTSIDE_OFFSET_PROGRAMS[program]
+    assert build_and_run(source, tmp_path, None, name='plain')[0] == b'B'
+    path = tmp_path / 'p.fj'
+    path.write_text(source)
+    with pytest.raises(FlipJumpException, match=refusal):
+        build_and_run(source, tmp_path, _pool('table', W, path, tmp_path), name='pooled')
+    # the control: without the guard it is a miscompile
+    monkeypatch.setattr(OffsetGuard, 'check', lambda self, label, address, offset: None)
+    table_pool = _pool('table', W, path, tmp_path)
+    assert build_and_run(source, tmp_path, table_pool, name='unguarded')[0] != b'B' and table_pool.allocated
 
 
 _XOR = """
