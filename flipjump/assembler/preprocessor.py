@@ -57,6 +57,7 @@ from flipjump.assembler.table_pool import (  # noqa: F401 - the pool is importab
     TablePool,
     heat_key,
     merge_aliased_groups,
+    reached_the_pool,
 )
 
 CurrTree = Deque[Union[MacroCall, RepCall]]
@@ -216,8 +217,9 @@ class PreprocessorData:
         if table_pool is not None:
             self.offset_guard = table_pool.offset_guard = OffsetGuard(table_pool.pool_start(), self.labels)
             self.offset_guard.where = self._where
+            self.offset_guard.emitting = self._emitting
         self.result_ops.guard = self.pool_ops.guard = self.offset_guard
-        self._table_start = 0  # (two passes) where the table being emitted was placed
+        self._dollar_ops: Dict[int, Dict[int, bool]] = {}  # id(macro) -> its ops that name `$` (see dollar_ops)
         self._pointer_runtime_users: Dict[int, bool] = {}  # id(macro) -> it names POINTER_RUNTIME_LABELS
         self.emit_target: OpStream = self.result_ops
         self._reloc_stack: List[Tuple[int, OpStream]] = []
@@ -289,6 +291,11 @@ class PreprocessorData:
         pool = self.table_pool
         if pool is None or not pool.has_room():
             return False
+        if self.offset_guard is not None:
+            unsafe = self.offset_guard.may_move(self.curr_address)
+            if unsafe is not None:
+                pool.unsafe_declines[unsafe] = pool.unsafe_declines.get(unsafe, 0) + 1
+                return False  # it stays inline: see OffsetGuard
         if group_expr is not None and self._is_runtime_word(group_expr):
             pool.reserved_words += 1
             return False
@@ -301,7 +308,8 @@ class PreprocessorData:
             return False
         address, starts_new_run, gap_ops = reserved
         self._table_moved(table)
-        self._table_start = address
+        if self.offset_guard is not None:
+            self.offset_guard.table_placed(address, address + table_ops * 2 * self.memory_width, table)
         self._reloc_stack.append((self.curr_address, self.emit_target))
         self.emit_target = self.pool_ops
         if starts_new_run:
@@ -319,6 +327,43 @@ class PreprocessorData:
         """the table (its start label) leaves the inline stream here (see OffsetGuard)"""
         if self.offset_guard is not None:
             self.offset_guard.table_moved(self.curr_address, table)
+
+    def _emitting(self) -> int:
+        """the next inline address (OffsetGuard: a table moving out of it or above can still stay inline)"""
+        return self._reloc_stack[-1][0] if self._reloc_stack else self.curr_address
+
+    def dollar_ops(self, macro: Macro) -> Dict[int, bool]:
+        """(a table pool is on) {op index: names `$` in a sum} of the macro's ops that name `$` (the next op's
+        address) - not in a sum (False), it falls through: see dollar"""
+        found = self._dollar_ops.get(id(macro))
+        if found is None:
+            found = self._dollar_ops[id(macro)] = {}
+            for index, op in enumerate(macro.ops):
+                if isinstance(op, FlipJump):
+                    operands: Tuple[Expr, ...] = (op.flip, op.jump)
+                elif isinstance(op, WordFlip):
+                    operands = (op.word_address, op.flip_value, op.return_address)
+                else:
+                    continue
+                in_sum = any(operand.value != '$' and '$' in operand.all_unknown_labels() for operand in operands)
+                if in_sum or any(operand.value == '$' for operand in operands):
+                    found[index] = in_sum
+        return found
+
+    def dollar(
+        self, in_sum: bool, labels_prefix: str, op_index: int, code_position: CodePosition, params_dict: Dict[str, Expr]
+    ) -> None:
+        """(a table pool is on) the op being emitted (`op_index` of the macro at `labels_prefix`) names `$`: if in a
+        sum, `$` becomes a label at the next op, which OffsetGuard checks as any inline label; else the op falls
+        through to the next op"""
+        assert self.offset_guard is not None
+        if in_sum:
+            name = f'{labels_prefix}{MACRO_SEPARATOR_STRING}$:{op_index}' if labels_prefix else f'$:{op_index}'
+            self.insert_label(name, code_position)
+            self.offset_guard.watched.add(name)
+            params_dict['$'] = Expr(name)
+        else:
+            self.offset_guard.falls_to = self.curr_address
 
     def _where(self) -> str:
         """where the op being emitted is (an OffsetGuard refusal says)"""
@@ -382,7 +427,7 @@ class PreprocessorData:
             if not address:
                 continue  # it stayed inline: its labels are in place already
             if guard is not None:
-                guard.table_placed(address, address + tables.sizes[index] * op_bits, guard.tables[moved])
+                guard.table_placed(address, address + tables.sizes[index] * op_bits, guard.moved_tables[moved])
                 moved += 1
             for label, offset in tables.labels_of(index):
                 self.labels[label] = address + offset
@@ -415,8 +460,6 @@ class PreprocessorData:
             return
         if self.table_pool is not None:
             self.table_pool.commit(self.curr_address)
-        if self.offset_guard is not None:
-            self.offset_guard.table_placed(self._table_start, self.curr_address, self.offset_guard.tables[-1])
         if self._pool_segment is not None:
             self._pool_segment.wflip_start_address = self.curr_address
         saved_address, saved_target = self._reloc_stack.pop()
@@ -469,11 +512,7 @@ class PreprocessorData:
         relocated table is sitting on top of code and the program is silently wrong -- so this is an error,
         not a warning. (labels-resolve checks the wflip areas.)"""
         if self.table_pool is not None and address > self.table_pool.pool_start():
-            raise FlipJumpPreprocessorException(
-                'table-placement: the program reached %s, which is inside the table pool at %s. Raise pool_base, '
-                'or relocate fewer tables (fj --pool-tables bases the pool at half the memory: the program must '
-                'stay below it).' % (hex(address), hex(self.table_pool.pool_start()))
-            )
+            raise reached_the_pool(address, self.table_pool.pool_start())
 
     def finish(self, show_statistics: bool) -> None:
         self.patch_last_wflip_address()
@@ -814,6 +853,8 @@ def resolve_macro_aux(
     params_dict = get_params_dictionary(current_macro, args, current_macro.namespace, labels_prefix)
 
     preprocessor_data.insert_macro_start_label(labels_prefix, current_macro.code_position)
+    # (a table pool is on) the ops that name `$`, the next op's address: OffsetGuard checks them
+    dollar_ops = None if preprocessor_data.offset_guard is None else preprocessor_data.dollar_ops(current_macro)
 
     # when the caller gave the tree away (consume_main), the top level's ops are dropped as the expansion
     # passes them. What is kept: the last non-label op already expanded and everything after it, which
@@ -837,6 +878,8 @@ def resolve_macro_aux(
         elif isinstance(op, FlipJump) or isinstance(op, WordFlip):
             preprocessor_data.curr_address += 2 * preprocessor_data.memory_width
             params_dict['$'] = Expr(preprocessor_data.curr_address)
+            if dollar_ops and op_index in dollar_ops:
+                preprocessor_data.dollar(dollar_ops[op_index], labels_prefix, op_index, op.code_position, params_dict)
             # straight into the compact stream - no FlipJump/WordFlip object is built for it
             if op.__class__ is FlipJump:
                 preprocessor_data.emit_target.add_flip_jump_in(op.flip, op.jump, params_dict, op.code_position)

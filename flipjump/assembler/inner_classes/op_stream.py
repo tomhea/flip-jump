@@ -107,6 +107,49 @@ def _linear_in(expr: Expr, params: Dict[str, Expr]) -> Optional[Tuple[Optional[s
     return left[0], left[1] - right[1]
 
 
+LinearPart = Tuple[Dict[str, int], int]
+
+
+def linear_parts(expr: Expr) -> List[LinearPart]:
+    """every maximal sum of `expr` - +, - and * by a number - that names a label, as ({label: coefficient},
+    constant): one part for a linear `expr` (`b - a`), else its linear sub-sums (`L + 15*dw` of `(L + 15*dw) | 0`).
+    A label whose coefficients cancel (`a - a`) is left out; a number is no part."""
+    parts: List[LinearPart] = []
+
+    def collect(side: Optional[LinearPart]) -> None:
+        if side is not None and side[0]:
+            parts.append(side)
+
+    def linear(node: Expr) -> Optional[LinearPart]:
+        value: Any = node.value
+        if value.__class__ is int:
+            return {}, value
+        if value.__class__ is str:
+            return {value: 1}, 0
+        op, args = value
+        if len(args) == 2 and op in ('+', '-', '*'):
+            left, right = linear(args[0]), linear(args[1])
+            if left is not None and right is not None:
+                if op != '*':
+                    sign = 1 if op == '+' else -1
+                    coefficients = dict(left[0])
+                    for label, coefficient in right[0].items():
+                        coefficients[label] = coefficients.get(label, 0) + sign * coefficient
+                    return {label: c for label, c in coefficients.items() if c}, left[1] + sign * right[1]
+                if not left[0] or not right[0]:
+                    factor, scaled = (left[1], right) if not left[0] else (right[1], left)
+                    return {label: c * factor for label, c in scaled[0].items() if c * factor}, scaled[1] * factor
+            collect(left)
+            collect(right)
+            return None
+        for arg in args:
+            collect(linear(arg))
+        return None
+
+    collect(linear(expr))
+    return parts
+
+
 # the linear sums of the macro arguments (the params values): an argument such as `va + 2*dw` is referenced by
 # many ops of its expansion, so its sum is computed once. Keyed by the Expr object (Expr has identity
 # hashing, and the key keeps it alive, so an id cannot be reused); bounded by clearing.
@@ -165,10 +208,10 @@ class OpStream:
                 vals.append(value)
                 return False
         elif value.__class__ is str:
+            if self.guard is not None and value in self.guard.watched:
+                self._guarded(value, 0)
             known = self.labels.get(value)
             if known is not None and 0 <= known <= LITERAL_MAX:
-                if self.guard is not None and value in self.guard.stranded:
-                    self.guard.check(value, known, 0)
                 vals.append(known)
                 return False
             refs = self.refs
@@ -179,6 +222,8 @@ class OpStream:
             linear = _linear_in(expr, _NO_PARAMS)
             if linear is not None and linear[0] is not None and self._label_plus(linear[0], linear[1]):
                 return linear[0] not in self.labels
+            if self.guard is not None:
+                self.guard.check_emitted(expr)
         refs = self.refs
         vals.append(~(len(refs) << 2 | TAG_EXPR))
         refs.append(expr)
@@ -187,10 +232,10 @@ class OpStream:
     def _label_plus(self, name: str, const: int) -> bool:
         """append the slot(s) of `labels[name] + const`; False (nothing appended) if it does not fit"""
         vals = self.vals
+        if self.guard is not None and (const or name in self.guard.watched):
+            self._guarded(name, const)
         known = self.labels.get(name)
         if known is not None:
-            if self.guard is not None and (const or name in self.guard.stranded):
-                self.guard.check(name, known, const)
             if 0 <= known + const <= LITERAL_MAX:
                 vals.append(known + const)
                 return True
@@ -205,6 +250,13 @@ class OpStream:
             refs.append(name)
             return True
         return False
+
+    def _guarded(self, name: str, const: int) -> None:
+        """the table pool's guard checks the operand `name + const` now if `name` is declared (else labels_resolve
+        does), whether or not it is folded"""
+        address = self.guard.labels.get(name)
+        if address is not None:
+            self.guard.check(name, address, const)
 
     def _operand_in(self, expr: Expr, params: Dict[str, Expr]) -> bool:
         """_operand(expr.eval_new(params)) - the same slots - building no Expr for a +/- operand.
@@ -243,10 +295,10 @@ class OpStream:
                     self.vals.append(const)
                     return False
                 return self._operand(expr.eval_new(params))
+        if self.guard is not None and (const or name in self.guard.watched):
+            self._guarded(name, const)
         known = self.labels.get(name)
         if known is not None:
-            if self.guard is not None and (const or name in self.guard.stranded):
-                self.guard.check(name, known, const)
             known += const
             if 0 <= known <= LITERAL_MAX:
                 self.vals.append(known)
@@ -317,6 +369,8 @@ class OpStream:
         if not expr.all_unknown_labels():
             self._operand(expr)
             return
+        if self.guard is not None:
+            self.guard.check_emitted(expr)
         refs = self.refs
         if isinstance(expr.value, str):
             self.vals.append(~(len(refs) << 2 | TAG_LABEL))

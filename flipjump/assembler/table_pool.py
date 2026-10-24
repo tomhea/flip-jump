@@ -8,13 +8,15 @@ dispatch through it cost fewer ops. The pool moves the tables there:
     TablePool - each to the lowest-popcount free address above pool_base;
     BlockPool - the tables dispatched through one word share a block, and the word rests at the block's base, so
                 arming flips only the table's index in it (`fj --pool-tables`: a one-pass BlockPool).
-Only declared, `$`-free tables move, entered by a jump: behaviour does not change as long as code reaches a table
-through the table's own labels, and an operand that names a label but would point elsewhere once the tables moved is
-refused (OffsetGuard; an operand that names no label is a number, and is not checked). It costs a bigger address
-span (the pool sits above the program) and .fjm segments: one per placed table (BlockPool) or per run of tables
-(TablePool). A declared table that breaks a rule the pool relies on is a compilation error; so is a program segment,
-reserve or wflip area that reaches the pool, and (BlockPool) a pin that cannot hold (the pointer runtime, a
-`reserve`d word, a value computed from labels).
+Only declared, `$`-free tables move, entered by a jump. The pool never changes what the program does: where moving a
+table would change an operand - one that names a label, or `$` - the table stays inline, and where a pin cannot hold
+the word is left unpinned (the pool's `unsafe_declines` and `unpins` count both, by reason); an operand that would
+point elsewhere and that came too late to keep its table inline is refused (OffsetGuard). An operand that names no
+label is a number, and is not checked; neither is a label's address used as a number (`(L >> 6) & 15`), which
+differs with the layout as it does with any other change to the program. It costs a bigger address span (the pool
+sits above the program) and .fjm segments: one per placed table (BlockPool) or per run of tables (TablePool). A
+declared table that breaks a rule the pool relies on is a compilation error; so is a program segment, reserve or
+wflip area that reaches the pool.
 """
 
 from __future__ import annotations
@@ -29,7 +31,7 @@ from typing import Any, Callable, Collection, Dict, Iterator, List, Mapping, NoR
 
 from flipjump.utils.exceptions import FlipJumpAssemblerException, FlipJumpExprException, FlipJumpPreprocessorException
 from flipjump.assembler.inner_classes.expr import Expr
-from flipjump.assembler.inner_classes.op_stream import linear_sum
+from flipjump.assembler.inner_classes.op_stream import linear_parts
 from flipjump.assembler.inner_classes.ops import NewSegment
 
 LabelsDict = Dict[str, int]
@@ -250,37 +252,56 @@ class DeferredTables:
             yield self.label_names[at], self.label_offsets[at]
 
 
+def reached_the_pool(address: int, pool_start: int) -> FlipJumpPreprocessorException:
+    """the refusal of a program whose own code or data reaches the pool, at `address`"""
+    return FlipJumpPreprocessorException(
+        f'table-placement: the program reached {hex(address)}, which is inside the table pool at {hex(pool_start)}. '
+        f'Raise pool_base, or relocate fewer tables (fj --pool-tables bases the pool at half the memory: the program '
+        f'must stay below it).'
+    )
+
+
 class OffsetGuard:
-    """Refuses an operand that would point elsewhere once the tables moved (a table pool is on).
+    """Keeps an operand from pointing elsewhere once the tables moved (a table pool is on).
 
     A moved table leaves the inline stream, so the code after it moves up into its place - the table's
     ANCHOR, the inline address where it began. A label moves with its code, so an operand that names a label
-    means the same in both programs, as long as it stays where it was:
-      - an operand that names a moved table's label must be exactly `label + constant`, inside that table (the
-        table moves whole, the rest of the pool does not);
-      - `label + constant` from an inline label must stay in the label's PIECE of the inline stream: the anchors
-        cut it into pieces, and a label at an anchor's address lies before it if it was declared before the
-        table's `pad` (in the plain program it names the table's start), else after it;
-      - an operand computed from labels in any other way may not land in the pool, nor - if it is an address,
-        not a wflip's value - move with a moved table.
-    An operand that names no label is a number, and is not checked (an offset from `$` is a number too).
+    means the same in both programs, as long as it stays where it was. The anchors cut the inline stream into
+    PIECES; a label at an anchor's address lies before it if it was declared before the table's `pad` (in the
+    program without the pool it names the table's start), else after it. Every +/- sum of labels and constants in
+    an operand (linear_parts: all of a `label + constant`, the `L + 15*dw` of `(L + 15*dw) | 0`, the `b - a` of
+    `(b - a) >> 6`) must keep its meaning:
+      - one moved table's label plus a constant must land inside that table (the table moves whole), and a moved
+        table's labels may meet only in a distance inside one table;
+      - an inline label plus a constant must stay in the label's piece, and labels whose distance is taken must lie
+        in one piece;
+      - and an address computed from labels may not land in the pool.
+    `$` is an inline label at the next op (the preprocessor names it, see PreprocessorData.dollar_label), and an op
+    that falls through (`a;`) reaches the next op. A sum of one label with another coefficient (`2 * L`, the
+    `L` of `(L >> 6) & 15`) is that label's address as a number: it differs with the layout, as any label's address
+    does, and is not checked. An operand that names no label is a number, and is not checked either.
 
-    The preprocessor checks an operand whose labels it knows when it emits it (OpStream folds it into a number),
-    and labels_resolve checks the rest. `where()`, set by whichever of them is running, says where the op is.
+    The preprocessor checks an operand whose labels it knows as it emits it, and labels_resolve the rest. An
+    operand the preprocessor sees reaching past the code emitted so far is PENDING: the table whose place it would
+    reach over is declined instead - it stays inline (may_move). Every other violation is refused, with `where()`,
+    set by whichever of them is running, saying where the op is.
     """
 
     __slots__ = (
         'inline_end',
         'labels',
         'anchors',
-        'tables',
+        '_anchor_tables',
+        'moved_tables',
         'stranded',
-        '_reach',
-        '_reach_operand',
+        'watched',
+        'falls_to',
+        '_pending',
         '_starts',
         '_ends',
         '_names',
         'where',
+        'emitting',
     )
 
     def __init__(self, inline_end: int, labels: LabelsDict):
@@ -291,43 +312,47 @@ class OffsetGuard:
         self.inline_end = inline_end
         self.labels = labels
         self.anchors: List[int] = []  # the inline addresses the moved tables left, ascending
-        self.tables: List[str] = []  # ...and each table's start label
-        self.stranded: Dict[str, int] = {}  # a label declared at an anchor before its table -> its piece
-        self._reach = -1  # the farthest an offset in the last piece reaches, and that operand
-        self._reach_operand = ''
+        self._anchor_tables: List[str] = []  # ...and each one's table (its start label)
+        self.moved_tables: List[str] = []  # the moved tables' start labels, in the order they moved
+        # a label declared at an anchor before its table's pad -> (the anchor, the tables that moved out of it before)
+        self.stranded: Dict[str, Tuple[int, int]] = {}
+        self.watched: Set[str] = set()  # the labels checked with no offset too: the stranded ones, and `$`
+        self.falls_to = -1  # (the preprocessor's) where the last op that falls through to the next op falls to
+        self._pending: List[Tuple[int, int]] = []  # (label address, target) of operands reaching past the code
         self._starts: List[int] = []  # the moved tables' [start, end), by start
         self._ends: List[int] = []
         self._names: List[str] = []
         self.where: Callable[[], str] = lambda: ''
+        self.emitting: Optional[Callable[[], int]] = None  # the next inline address the preprocessor emits at
+
+    def may_move(self, anchor: int) -> Optional[str]:
+        """why the table about to move out of `anchor` must stay inline, or None"""
+        if self.falls_to == anchor:
+            return 'the op before it falls through to it'
+        for address, target in self._pending:
+            if address <= anchor <= target:
+                return 'an operand reaches over its place'
+        return None
 
     def table_moved(self, anchor: int, table: str) -> None:
         """the table (its start label) left the inline stream at `anchor`"""
         anchors = self.anchors
-        if anchors and anchor < anchors[-1]:
-            raise FlipJumpPreprocessorException(
-                f'table-placement: the table {table} moves out of {hex(anchor)}, below one that moved out of '
-                f'{hex(anchors[-1])} (a `segment` back): the offset check needs the moved tables in address order. '
-                f'Assemble this program without a table pool.'
-            )
-        if self._reach >= anchor:
-            self._refuse(
-                self._reach_operand,
-                f'reaches over the place of the table {table}, which moved out of {hex(anchor)}',
-                ' of an earlier op',
-            )
-        self._reach = -1
-        piece = len(anchors)
+        index = bisect.bisect_right(anchors, anchor)
+        before = index - bisect.bisect_left(anchors, anchor)
         labels = self.labels
         for name in reversed(labels):  # the labels declared at the anchor so far: before the table's pad
             address = labels[name]
             if address == anchor:
                 if name in self.stranded:
                     break  # declared before an earlier table that moved out of the same address
-                self.stranded[name] = piece
+                self.stranded[name] = (anchor, before)
+                self.watched.add(name)
             elif address < self.inline_end:
                 break  # (a two-pass pool's tables are declared in between: skip them)
-        anchors.append(anchor)
-        self.tables.append(table)
+        anchors.insert(index, anchor)
+        self._anchor_tables.insert(index, table)
+        self.moved_tables.append(table)
+        self._pending = [entry for entry in self._pending if entry[1] >= anchor]
 
     def table_placed(self, start: int, end: int, table: str) -> None:
         """a moved table is at [start, end)"""
@@ -341,61 +366,97 @@ class OffsetGuard:
         index = bisect.bisect_right(self._starts, address) - 1
         return index if index >= 0 and address < self._ends[index] else -1
 
-    def check(self, label: str, address: int, offset: int) -> None:
-        """the operand `label + offset`, where `label` is at `address`"""
+    def alignment(self, address: int) -> int:
+        """the bits the table at `address` is aligned to: a moved table's size, else the address's own alignment"""
+        table = self.table_at(address)
+        if table >= 0:
+            return (self._ends[table] - self._starts[table] - 1).bit_length()
+        return (address & -address).bit_length() - 1 if address else 1 << 30
+
+    def piece(self, label: str, address: int) -> int:
+        """the piece of the inline label `label`, at `address`: the anchors below it"""
+        stranded = self.stranded.get(label)
+        if stranded is not None:
+            return bisect.bisect_left(self.anchors, stranded[0]) + stranded[1]
+        return bisect.bisect_right(self.anchors, address)
+
+    def check(self, label: str, address: int, offset: int, operand: Optional[str] = None) -> None:
+        """the operand `label + offset` (or a sum that is one: `operand`), where `label` is at `address`"""
         target = address + offset
         if address >= self.inline_end:
             table = self.table_at(address)
-            if table >= 0 and not self._starts[table] <= target < self._ends[table]:
+            if table < 0:
+                raise reached_the_pool(address, self.inline_end)
+            if not self._starts[table] <= target < self._ends[table]:
                 self._refuse(
-                    _operand(label, offset),
+                    operand or _operand(label, offset),
                     f'leaves the moved table {self._names[table]} at {hex(self._starts[table])}: an offset from a '
                     f'moved table\'s label must stay inside it',
                 )
             return
         if target >= self.inline_end:
-            self._refuse_inside(_operand(label, offset), target)
+            self._refuse_inside(operand or _operand(label, offset), target)
         anchors = self.anchors
-        piece = self.stranded.get(label)
-        if piece is None:
-            piece = bisect.bisect_right(anchors, address)
-        if offset >= 0:
-            if piece < len(anchors):
-                if target >= anchors[piece]:
-                    self._refuse(_operand(label, offset), self._across(piece, label, offset))
-            elif target > self._reach:
-                self._reach, self._reach_operand = target, _operand(label, offset)  # a table may move out below it
-        elif piece and target < anchors[piece - 1]:
-            self._refuse(_operand(label, offset), self._across(piece - 1, label, offset))
+        piece = self.piece(label, address)
+        if piece < len(anchors) and target >= anchors[piece]:
+            self._refuse(operand or _operand(label, offset), self._across(piece, label, offset))
+        if piece and target < anchors[piece - 1]:
+            self._refuse(operand or _operand(label, offset), self._across(piece - 1, label, offset))
+        if (offset > 0 or label in self.watched) and self.emitting is not None and target >= self.emitting():
+            self._pending.append((address, target))  # a table may move out below it: it stays inline
 
     def check_expr(self, expr: Expr, value: int, is_address: bool = True) -> None:
-        """the operand `expr`, whose value is `value` (labels_resolve). An address computed from labels must not
-        move with a moved table (its value is the same when the table's labels move by 1 or by 2^64), unless it is
-        one of the table's labels plus a constant. A wflip's value (not `is_address`) may - `T1 ^ T2` retargets a
-        word from one table to the other - as long as it does not land in the pool."""
-        linear = linear_sum(expr)
-        if linear is not None:
-            label, offset = linear
-            if label is not None:
-                self.check(label, self.labels[label], offset)
-            return
-        named = expr.all_unknown_labels()
-        if not named:
-            return  # a number
-        moved = [label for label in named if self.table_at(self.labels[label]) >= 0]
-        if value >= self.inline_end:
-            self._refuse_inside(str(expr), value, moved)
-        if not is_address:
-            return
-        for shift in (1, 1 << 64) if moved else ():
-            shifted = {label: self.labels[label] + (shift if label in moved else 0) for label in named}
-            if expr.exact_eval(shifted) != value:
-                table = self.table_at(self.labels[moved[0]])
+        """the operand `expr`, whose value is `value`, every label of it declared. An address computed from labels
+        (`is_address`: not a wflip's value, which may be `T1 ^ T2`) may not land in the pool either."""
+        parts = linear_parts(expr)
+        names_a_table = False
+        for coefficients, constant in parts:
+            names_a_table = self._check_part(coefficients, constant, str(expr)) or names_a_table
+        if is_address and parts and not names_a_table and value >= self.inline_end:
+            self._refuse_inside(str(expr), value)
+
+    def check_emitted(self, expr: Expr) -> None:
+        """the operand `expr` the preprocessor keeps for labels_resolve: checked now if its labels are declared,
+        so a table it reaches over can still stay inline"""
+        labels = self.labels
+        if all(label in labels for label in expr.all_unknown_labels()):
+            self.check_expr(expr, expr.exact_eval(labels), is_address=False)
+
+    def _check_part(self, coefficients: Dict[str, int], constant: int, operand: str) -> bool:
+        """one +/- sum of `operand` (linear_parts); True if it names a moved table's label"""
+        labels = self.labels
+        if len(coefficients) == 1:
+            label, coefficient = next(iter(coefficients.items()))
+            if coefficient == 1:
+                self.check(label, labels[label], constant, operand)
+                return labels[label] >= self.inline_end
+        total = sum(coefficients.values())
+        moved = [label for label in coefficients if labels[label] >= self.inline_end]
+        value = constant + sum(coefficient * labels[label] for label, coefficient in coefficients.items())
+        if moved:
+            tables = {self.table_at(labels[label]) for label in coefficients}
+            if len(tables) != 1 or -1 in tables or total not in (0, 1):
                 self._refuse(
-                    str(expr),
-                    f'computes an address from {moved[0]}, a label of the moved table {self._names[table]}: an '
-                    f'address that moves with a table must be one of its labels plus a constant',
+                    operand,
+                    f'computes from {moved[0]}, a label of a moved table, with labels outside it: what it computes '
+                    f'changes with the move',
                 )
+            if total == 1:
+                self.check(moved[0], labels[moved[0]], value - labels[moved[0]], operand)
+            return True
+        if len(coefficients) == 1:
+            return False  # `2 * L`, the `L` of `L >> 6`: an address as a number
+        pieces = sorted(self.piece(label, labels[label]) for label in coefficients)
+        if pieces[0] != pieces[-1]:
+            self._refuse(
+                operand,
+                f'takes the distance across the place of the table {self._anchor_tables[pieces[0]]}, which moved out '
+                f'of {hex(self.anchors[pieces[0]])}, so it would no longer be the same',
+            )
+        if total == 1:
+            label = next(iter(coefficients))
+            self.check(label, labels[label], value - labels[label], operand)
+        return False
 
     def label_below(self, address: int) -> str:
         """the label nearest at or below `address`: its name is the macro path there (slow - a refusal asks)"""
@@ -405,31 +466,30 @@ class OffsetGuard:
         anchor = self.anchors[anchor_index]
         if offset == 0:
             return (
-                f'names {label}, declared at {hex(anchor)} before the `pad` of the table {self.tables[anchor_index]}: '
-                f'it named the table\'s start, which moved, while the label stays with the code after it'
+                f'names {label}, declared at {hex(anchor)} before the `pad` of the table '
+                f'{self._anchor_tables[anchor_index]}: it named the table\'s start, which moved, while the label stays '
+                f'with the code after it'
             )
         return (
-            f'reaches across the place of the table {self.tables[anchor_index]}, which moved out of {hex(anchor)}, '
-            f'so it would no longer point where it did'
+            f'reaches across the place of the table {self._anchor_tables[anchor_index]}, which moved out of '
+            f'{hex(anchor)}, so it would no longer point where it did'
         )
 
-    def _refuse_inside(self, operand: str, target: int, moved: Sequence[str] = ()) -> None:
-        """an operand that is not one of a moved table's labels plus a constant lands in the pool, at `target`
-        (`moved`: the moved tables' labels it computes from)"""
+    def _refuse_inside(self, operand: str, target: int) -> None:
+        """an operand that is not one of a moved table's labels plus a constant lands in the pool, at `target`"""
         table = self.table_at(target)
         if table >= 0:
             where = f'inside the moved table {self._names[table]} at {hex(self._starts[table])}'
         else:
             where = 'in the table pool'
-        if moved:
-            table = self.table_at(self.labels[moved[0]])
-            where += f' (it computes from {moved[0]}, of the moved table {self._names[table]})'
         self._refuse(operand, f'lands at {hex(target)}, {where}, and is not one of its labels plus a constant')
 
-    def _refuse(self, operand: str, what: str, where: Optional[str] = None) -> NoReturn:
+    def _refuse(self, operand: str, what: str) -> NoReturn:
+        if self.emitting is not None and self.emitting() > self.inline_end:
+            raise reached_the_pool(self.emitting(), self.inline_end)  # the program's own code did: that is the cause
         raise FlipJumpAssemblerException(
-            f'table-placement: the operand `{operand}`{self.where() if where is None else where} {what}. Address a '
-            f'moved table by its own labels, or assemble without a table pool.'
+            f'table-placement: the operand `{operand}`{self.where()} {what}. Address a moved table by its own labels, '
+            f'or assemble without a table pool.'
         )
 
 
@@ -494,6 +554,9 @@ class TablePool:
         self.raw_reader = ''  # ...the first such macro
         self.laid_out = False  # a pool lays out one assembly (the preprocessor sets it)
         self.offset_guard: Optional[OffsetGuard] = None  # ...and its OffsetGuard, which labels_resolve continues
+        # THE FALLBACKS - each keeps the program's behaviour at a cost in speed, and each is counted by its reason:
+        self.unsafe_declines: Dict[str, int] = {}  # tables kept inline: moving them would change an operand
+        self.unpins: Dict[str, int] = {}  # (BlockPool) words left unpinned: a pin could not hold (assembler.unpin)
         self._passed: List[int] = []  # run offsets the cheapest-first search passed over, still free
         self.allocated = 0
         self.declined = 0
@@ -650,11 +713,9 @@ class BlockPool(TablePool):
     only on the word's bare value, not on `base + value`. Which cells a pointer will reach is
     runtime data, so the caller declares it: `pin_exclude(address, labels) -> bool`, given the bit
     address of a cell's JUMP word (`cell + w`), vetoes the pin of every cell a pointer can reach.
-    A program that expands a macro naming POINTER_RUNTIME_LABELS and gives no `pin_exclude` is
-    refused by assemble() rather than miscompiled, naming the macro and the pinned words.
-    The pins are also refused where a word's rest value cannot carry the base (a `reserve`d
-    word), and where a wflip of a pinned word flips a value computed from labels (see
-    assembler.BinaryData.pinned_value).
+    A program that expands a macro naming POINTER_RUNTIME_LABELS and gives no `pin_exclude` gets
+    no pins at all. A word is also left unpinned where its rest value cannot carry the base (a
+    `reserve`d word), and where a flip of it is neither an arm nor a value (see assembler.unpin).
 
     TWO PASSES. A block's size must be known before its base is chosen, and the tables of a group
     are scattered through the program, so counting comes first:
@@ -941,16 +1002,6 @@ class BlockPool(TablePool):
         runtime (POINTER_RUNTIME_LABELS) when no pin_exclude says which cells a pointer can reach."""
         if not (self.sizes_from_census and self.merge_aliases and self._placed):
             self.seen_alias = self.recording.canonical_alias(labels)
-        pinned = self.pinned_words()
-        if pinned and self.reads_words_raw and self.pin_exclude is None:
-            words = ', '.join(sorted(str(word) for word in pinned)[:3])
-            raise FlipJumpAssemblerException(
-                f"the program uses the pointer runtime ({self.raw_reader}), and a word the BlockPool pinned "
-                f"cannot be read or written through a pointer (it rests at base + value). Which cells a pointer "
-                f"reaches is runtime data: pass pin_exclude=(lambda address, labels: ...) vetoing every cell a "
-                f"pointer can reach - the pinned words are {words}{' ...' if len(pinned) > 3 else ''} - or use "
-                f"TablePool (fj: drop --pool-tables)."
-            )
 
     def census(self, merge_aliases: bool = False) -> BlockCensus:
         """The counts, widths, width histogram and alias of every table this pool was offered: what a
