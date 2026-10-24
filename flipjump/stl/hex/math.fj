@@ -90,10 +90,8 @@ ns hex {
             ..tables.res+dbit; c1
         }
 
-        //  Time Complexity: ~n(3@+14) + 3@+18
-        // Space Complexity: ~128n + 95
-        //   Measured (w=64, as hex.add n; n = 1, 2, 4, 8, 16):
-        //     time 95, 148, 261, 474, 918 (@~14);  space 223, 351, 607, 1119, 2143
+        //  Time Complexity: n(3@+14)
+        // Space Complexity: n(2.5@+58)
         //   carry = 0
         //   x[:n] += y[:n]
         //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.
@@ -258,10 +256,8 @@ ns hex {
             wflip ..tables.res+w, 0xf*dw, c1
         }
 
-        //  Time Complexity: ~n(3@+14) + 3@+22
-        // Space Complexity: ~128n + 95
-        //   Measured (w=64, as hex.sub n; n = 1, 2, 4, 8, 16):
-        //     time 104, 155, 258, 480, 927 (@~14);  space 223, 351, 607, 1119, 2143
+        //  Time Complexity: n(3@+14)
+        // Space Complexity: n(2.5@+58)
         //   carry = 0
         //   x[:n] -= y[:n]
         //   carry = 0. jump to c0 if it was 0, and to c1 otherwise.

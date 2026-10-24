@@ -161,8 +161,8 @@ ns hex {
 
 
 ns hex {
-    //  Time Complexity: ~17@+37     (measured, w=64: 308 at @~15, 332 at @~17.7)
-    // Space Complexity: 385        (measured)
+    //  Time Complexity: 17@+37
+    // Space Complexity: 17@+200
     //   *armed = src[:2]    (hex.write_byte without its arm)
     // The same armed address, and @Assumes, as hex.read_back.
     // src is a hex[:2].

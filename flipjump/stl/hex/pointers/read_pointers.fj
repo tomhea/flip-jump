@@ -120,8 +120,8 @@ ns hex {
 
 
 ns hex {
-    //  Time Complexity: ~7@+13      (measured, w=64: 163 at @~15, 137 at @~17.7)
-    // Space Complexity: 192        (measured)
+    //  Time Complexity: 9@+13
+    // Space Complexity: 9@+72
     //   dst[:2] = *armed    (hex.read_byte without its arm)
     // armed is the address the last pointer operation used: before an _and_inc's inc, the last cell of an n-cell
     //   op, ptr+index of an _nth_ op; 0 before any.
@@ -141,10 +141,8 @@ ns hex {
 
 
 ns hex {
-    //  Time Complexity: ~n(w(0.5@+4) + 16@+27) + entry_address
-    // Space Complexity: ~n(w(0.88@+25) + 12@+103) + entry_address
-    // Measured (w=64, idx_n = 2; n = 1, 2, 4, 8, 16): time 1556, 2162, 3955, 6998, 14038 (@~16-18);
-    //   space 5775, 8383, 14319, 25951, 48719
+    //  Time Complexity: n(w(0.5@+4) + 16@+27)        (hex.read_hex n's; entry_address adds a constant)
+    // Space Complexity: n(w(0.88@+25) + 12@+103)
     //   dst[:n] = table[idx]    (the idx-th entry of a constant array of hex[:n] entries)
     //
     // table is a constant address; entry k is the n hex data-ops at table + k*n*dw (a hex.vec n value).
@@ -158,9 +156,8 @@ ns hex {
       end:
     }
 
-    //  Time Complexity: ~w(0.5@+4) + 9@+13 + entry_address
-    // Space Complexity: ~w(0.5@+22) + 9@+72 + entry_address
-    // Measured (w=64; idx_n = 1, 2, 4, 8): time 1176, 1339, 1594, 2132 (@~15);  space 4190, 4494, 5102, 6334
+    //  Time Complexity: idx_n(8@+23) + w(0.75@+5) + 27@+74
+    // Space Complexity: idx_n(6@+153) + w(1.125@+29.25) + 23@+382
     //   dst[:2] = table[idx]    (the idx-th entry of a constant array of bytes)
     //
     // table is a constant address; entry k is the byte data-op at table + k*dw (;byte*dw).
@@ -174,10 +171,8 @@ ns hex {
       end:
     }
 
-    //  Time Complexity: ~nb(w(0.5@+4) + 18@+27) + entry_address
-    // Space Complexity: ~nb(w(0.88@+25) + 14@+127) + entry_address
-    // Measured (w=64, idx_n = 2; nb = 1, 2, 4, 8, 16): time 1600, 2241, 4112, 7337, 14631 (@~16-18);
-    //   space 5839, 8511, 14575, 26463, 49743
+    //  Time Complexity: nb(w(0.5@+4) + 18@+27)       (hex.read_byte n's; entry_address adds a constant)
+    // Space Complexity: nb(w(0.88@+25) + 14@+127)
     //   dst[:2nb] = table[idx]    (the idx-th entry of a constant array of nb-byte entries)
     //
     // table is a constant address; entry k is the nb byte data-ops at table + k*nb*dw, little-endian
@@ -193,8 +188,8 @@ ns hex {
     }
 
     ns pointers {
-        //  Time Complexity: ~sw(4.5@+8) + w/4(@) + 5@+18       (size*2w a power of 2; else see hex.mul_const)
-        // Space Complexity: ~152sw + 1640      (w=64)
+        //  Time Complexity: sw(7@+23) + idx_n@ + w(0.25@+1) + 4@+15     (size*2w a power of 2; else hex.mul_const's for sw(3@+9))
+        // Space Complexity: sw(5@+141) + idx_n(@+12) + w(0.625@+7.25) + 4@+28
         //   dst[:w/4] = table + idx*size*2w    (the address of the idx-th size-ops entry of the array at table)
         //
         // table is a constant address; size is a constant (> 0); idx is an unsigned hex[:idx_n] (idx_n <= w/4).
