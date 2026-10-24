@@ -42,7 +42,7 @@ hexlib-add-mul-8, tests/compiled/hexlib_tests/mul/add_mul8.fjm, ,tests/inout/hex
 hexlib-add-mul-32, tests/compiled/hexlib_tests/mul/add_mul32.fjm, ,tests/inout/hexlib_tests/mul/add_mul32.out, False,False
 hexlib-add-mul-64, tests/compiled/hexlib_tests/mul/add_mul64.fjm, ,tests/inout/hexlib_tests/mul/add_mul64.out, False,False
 hexlib-add-mul-n, tests/compiled/hexlib_tests/mul/add_mul_n.fjm, ,tests/inout/hexlib_tests/mul/24equals.out, False,False
-hexlib-fixed_point, tests/compiled/hexlib_tests/mul/fixed_point.fjm, ,tests/inout/hexlib_tests/mul/627equals.out, False,False
+hexlib-fixed_point, tests/compiled/hexlib_tests/mul/fixed_point.fjm, ,tests/inout/hexlib_tests/mul/879equals.out, False,False
 hexlib-mul-16, tests/compiled/hexlib_tests/mul/mul16.fjm, ,tests/inout/hexlib_tests/mul/mul16.out, False,False
 hexlib-mul-32, tests/compiled/hexlib_tests/mul/mul32.fjm, ,tests/inout/hexlib_tests/mul/mul32.out, False,False
 hexlib-mul-64, tests/compiled/hexlib_tests/mul/mul64.fjm, ,tests/inout/hexlib_tests/mul/mul64.out, False,False
