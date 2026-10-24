@@ -164,13 +164,7 @@ ns hex {
     //  Time Complexity: 17@+37
     // Space Complexity: 17@+200
     //   *armed = src[:2]    (hex.write_byte without its arm)
-    //
-    // Writes the byte to the address the last pointer operation armed - that operation's address, not its
-    //   pointer variable's value: *_and_inc arm the address before the inc, the n-cell ops (read_byte n,
-    //   write_hex n, ...) the last cell, *_nth_* the indexed one. Before any pointer operation, it's address 0.
-    // @Assumes: on every path here, no pointer operation ran since the arm: no read / write / xor / zero /
-    //   flip / wflip / jump through a pointer, no push / pop, and no stl.call / stl.return.
-    // @Assumes: the armed address is dw-aligned - not the ptr+w ptr_wflip_2nd_word leaves (and so stl.call / stl.return).
+    // The same armed address, and @Assumes, as hex.read_back.
     // src is a hex[:2].
     def write_back src < hex.pointers.read_byte {
         .pointers.read_byte_from_inners_ptrs

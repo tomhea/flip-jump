@@ -123,13 +123,10 @@ ns hex {
     //  Time Complexity: 7@+13
     // Space Complexity: 7@+48
     //   dst[:2] = *armed    (hex.read_byte without its arm)
-    //
-    // Reads the byte at the address the last pointer operation armed - that operation's address, not its
-    //   pointer variable's value: *_and_inc arm the address before the inc, the n-cell ops (read_byte n,
-    //   write_hex n, ...) the last cell, *_nth_* the indexed one. Before any pointer operation, it's address 0.
-    // @Assumes: on every path here, no pointer operation ran since the arm: no read / write / xor / zero /
-    //   flip / wflip / jump through a pointer, no push / pop, and no stl.call / stl.return.
-    // @Assumes: the armed address is dw-aligned - not the ptr+w ptr_wflip_2nd_word leaves (and so stl.call / stl.return).
+    // armed is the address the last pointer operation used: before an _and_inc's inc, the last cell of an n-cell
+    //   op, ptr+index of an _nth_ op; 0 before any.
+    // @Assumes: on every path here, no pointer operation (push / pop and stl.call / stl.return included) ran since.
+    // @Assumes: armed is dw-aligned (not the ptr+w of ptr_wflip_2nd_word, and so of stl.call / stl.return).
     // dst is a hex[:2].
     def read_back dst < hex.pointers.read_byte {
         .zero 2, dst
@@ -149,7 +146,7 @@ ns hex {
     //   dst[:n] = table[idx]    (the idx-th entry of a constant array of hex[:n] entries)
     //
     // table is a constant address; entry k is the n hex data-ops at table + k*n*dw (a hex.vec n value).
-    // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst must not alias idx. entry_address: see hex.pointers.
+    // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst may alias idx. entry_address: see hex.pointers.
     // @requires hex.init & stl.ptr_init
     def read_entry n, dst, table, idx_n, idx @ ptr, end {
         .pointers.entry_address ptr, table, n, idx_n, idx
@@ -164,7 +161,7 @@ ns hex {
     //   dst[:2] = table[idx]    (the idx-th entry of a constant array of bytes)
     //
     // table is a constant address; entry k is the byte data-op at table + k*dw (;byte*dw).
-    // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst must not alias idx.
+    // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst may alias idx.
     // @requires hex.init & stl.ptr_init
     def read_entry_byte dst, table, idx_n, idx @ ptr, end {
         .pointers.entry_address ptr, table, 1, idx_n, idx
@@ -180,7 +177,7 @@ ns hex {
     //
     // table is a constant address; entry k is the nb byte data-ops at table + k*nb*dw, little-endian
     //   (byte i of the entry lands in dst[2i:2i+2]).
-    // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst must not alias idx.
+    // idx is an unsigned hex[:idx_n] (idx_n <= w/4); dst may alias idx.
     // @requires hex.init & stl.ptr_init
     def read_entry_packed nb, dst, table, idx_n, idx @ ptr, end {
         .pointers.entry_address ptr, table, nb, idx_n, idx
