@@ -70,7 +70,12 @@ ns hex {
     }
 
     ns pointers {
+        //  Time Complexity: ~h(5@+12) + 3@+5
+        // Space Complexity: ~h(5@+76) + 32(w-#w)
         //   the armed fields += 2w;  then *armed ^= hex[:h]      (h is 1 or 2)
+        // Measured through hex.xor_byte_to_ptr n / xor_hex_to_ptr n (with the arm; w=64; n = 1, 2, 4, 8, 16):
+        //   h=2: time 767, 962, 1479, 2570, 4821 (@~15-18);  space 2305, 4385, 8545, 16865, 34298
+        //   h=1: time 653, 718, 1048, 1733, 2995;  space 2177, 4129, 8033, 15841, 31901
         def advance_and_xor_to_flip_ptr h, hex {
             .advance
             rep(h, i) .xor_hex_to_flip_ptr hex+i*dw, 4*i
