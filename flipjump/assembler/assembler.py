@@ -10,7 +10,7 @@ import gc
 from array import array
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, Deque, List, Dict, MutableSequence, Tuple, Optional, Union
+from typing import Callable, Deque, List, Dict, MutableSequence, Set, Tuple, Optional, Union
 
 from flipjump.fjm.fjm_writer import Writer, new_word_buffer
 from flipjump.utils.constants import WFLIP_LABEL_PREFIX, DEFAULT_MAX_MACRO_RECURSION_DEPTH
@@ -110,7 +110,8 @@ class BinaryData:
         'padding_ops_indices',
         'wflips_dict',
         'pinned',
-        'pinned_floor',
+        'baked',
+        'pool_start',
     )
 
     def __init__(
@@ -121,17 +122,20 @@ class BinaryData:
         *,
         save_wflip_labels: bool = True,
         pinned: Optional[Dict[int, int]] = None,
+        pool_start: Optional[int] = None,
     ):
         """
         @param save_wflip_labels: whether to record a `:wflips:N` label per generated wflip-chain op
+        @param pinned: {jump-word address: block base} of BlockPool's pinned words
+        @param pool_start: where a table pool starts: a segment below it may not reach it
         """
         self.memory_width = memory_width
 
-        # {jump-word address: block base} for BlockPool; None for every other build, so the two use
-        # sites below cost one truthiness test per op when off
+        # {jump-word address: block base} for BlockPool; None for every other build, so the use site
+        # below costs one truthiness test per op when off
         self.pinned = pinned
-        # a flip value below a `pad 16` table address is a VALUE flip (hex.set, xor_by), not a jump target
-        self.pinned_floor = 16 * 2 * memory_width
+        self.baked: Set[int] = set()  # the pinned words whose op got its base (see unbaked_pins)
+        self.pool_start = pool_start
 
         self.first_address = first_segment.start_address
         self.next_wflip_address = first_segment.wflip_start_address
@@ -156,6 +160,11 @@ class BinaryData:
             index = self.padding_ops_indices.pop()
             return WFlipSpot(self.fj_words, index, self.first_address + self.memory_width * index)
 
+        if self.next_wflip_address + 2 * self.memory_width > 1 << self.memory_width:
+            raise FlipJumpAssemblerException(
+                f'Not enough space with the {self.memory_width}-bits memory-width: the wflip area of the segment at '
+                f'{hex(self.first_address)} reaches {hex(self.next_wflip_address + 2 * self.memory_width)}.'
+            )
         wflip_spot = WFlipSpot(self.wflip_words, len(self.wflip_words), self.next_wflip_address)
         self.wflip_words.extend((0, 0))
         self.next_wflip_address += 2 * self.memory_width
@@ -164,6 +173,11 @@ class BinaryData:
     def close_and_add_segment(self, fjm_writer: Writer) -> None:
         if self.next_wflip_address == self.first_address:
             return
+        if self.pool_start is not None and self.first_address < self.pool_start < self.next_wflip_address:
+            raise FlipJumpAssemblerException(
+                f'table-placement: the segment at {hex(self.first_address)} and its wflip area reach '
+                f'{hex(self.next_wflip_address)}, inside the table pool at {hex(self.pool_start)}. Raise pool_base.'
+            )
 
         add_segment_to_fjm(
             self.memory_width,
@@ -193,20 +207,35 @@ class BinaryData:
             # A pinned hex variable RESTS at `base + value` rather than at `value`, so the block's
             # base is baked into its declaration here. Only the variable's own op can match: a
             # wflip-chain op's jump word is at its own address, never at a pinned one.
-            base = self.pinned.get(self.first_address + (len(self.fj_words) + 1) * self.memory_width)
+            jump_word = self.first_address + (len(self.fj_words) + 1) * self.memory_width
+            base = self.pinned.get(jump_word)
             if base:
                 jump ^= base
+                self.baked.add(jump_word)
         # `+=` on an array only accepts another array; extend() takes any iterable of ints.
         self.fj_words.extend((flip, jump))
 
+    def pinned_value(self, word_address: int, flip_value: int, value_kind: int) -> int:
+        """the value a wflip flips into `word_address`, which may be a pinned word: it rests at `base + digit`,
+        so a writer installing an address V (a label, or a label plus a constant) flips `V ^ base` - for a
+        table's own arm just its index in the block, and the same rule for every other dispatcher through the
+        word (stl.comp_if1, hex.shifts.*, hex.tables.*) - while a number is a value, flipped as it is"""
+        base = self.pinned.get(word_address) if self.pinned else None
+        if not base or value_kind == VALUE_NUMBER:
+            return flip_value
+        if value_kind == VALUE_COMPUTED:
+            raise FlipJumpAssemblerException(
+                f'table-placement: the pinned word at {hex(word_address)} is wflipped by a value computed from '
+                f'labels, which is neither one address (rewritten for its block base) nor a number. Veto this '
+                f'word in pin_exclude.'
+            )
+        return flip_value ^ base
+
+    def unbaked_pins(self) -> List[int]:
+        """the pinned words no op was emitted for (a `reserve`d word): they rest at 0, not at their base"""
+        return sorted(set(self.pinned or ()) - self.baked)
+
     def insert_wflip_ops(self, word_address: int, flip_value: int, return_address: int) -> None:
-        if self.pinned:
-            # the word rests at `base + digit`, so a writer installing a jump target V flips
-            # `V ^ base` - for the table's own arm just its index in the block, and the same rule
-            # for every other dispatcher through the word (stl.comp_if1, hex.shifts.*, hex.tables.*)
-            base = self.pinned.get(word_address)
-            if base and flip_value >= self.pinned_floor:
-                flip_value ^= base
         if 0 == flip_value:
             self.insert_fj_op(0, return_address)
         else:
@@ -318,6 +347,26 @@ def resolve_pinned(
 # labels_resolve reports its progress once per this many ops
 _PROGRESS_CHUNK = 1 << 16
 
+# what a wflip's value is (see BinaryData.pinned_value): a number, one address (a label, plus a constant), or
+# a value computed from labels
+VALUE_NUMBER, VALUE_ADDRESS, VALUE_COMPUTED = 0, 1, 2
+
+
+def value_kind(value: Expr) -> int:
+    """the kind of a wflip's value expression (VALUE_*)"""
+    if not value.all_unknown_labels():
+        return VALUE_NUMBER
+    linear = op_stream.linear_sum(value)
+    return VALUE_ADDRESS if linear is not None and linear[0] is not None else VALUE_COMPUTED
+
+
+def _deferred_value_kind(stream: OpStream, encoded: int) -> int:
+    """the kind of a deferred wflip value (its slot is ~encoded)"""
+    tag = encoded & 3
+    if tag != op_stream.TAG_EXPR:
+        return VALUE_ADDRESS
+    return value_kind(stream.refs[encoded >> 2])
+
 
 def _deferred_value(stream: OpStream, encoded: int, next_slot: Callable[[], int], labels: Dict[str, int]) -> int:
     """the value of a deferred operand (its slot is ~encoded; see OpStream). Raises what the Expr would."""
@@ -348,6 +397,7 @@ def _labels_resolve_stream(
     in the same order, with the same values, as the op objects it replaces would make."""
     insert_fj_op = binary_data.insert_fj_op
     insert_wflip_ops = binary_data.insert_wflip_ops
+    pinned = binary_data.pinned
     kinds = stream.kinds
     refs = stream.refs
     slots = iter(stream.vals)
@@ -383,12 +433,17 @@ def _labels_resolve_stream(
                     if word_address < 0:
                         word_address = _deferred_value(stream, ~word_address, next_slot, labels)
                     flip_value = next_slot()
+                    kind_of_value = VALUE_NUMBER
                     if flip_value < 0:
+                        if pinned:
+                            kind_of_value = _deferred_value_kind(stream, ~flip_value)
                         flip_value = _deferred_value(stream, ~flip_value, next_slot, labels)
                     return_address = next_slot()
                     if return_address < 0:
                         return_address = _deferred_value(stream, ~return_address, next_slot, labels)
                     next_slot()  # the position
+                    if pinned:
+                        flip_value = binary_data.pinned_value(word_address, flip_value, kind_of_value)
                     insert_wflip_ops(word_address, flip_value, return_address)
                 except FlipJumpException as e:
                     raise FlipJumpAssemblerException(f"{e} in op {stream.op_at(op_index)}.")
@@ -416,6 +471,7 @@ def labels_resolve(
     save_wflip_labels: bool = True,
     pinned: Optional[Dict[int, int]] = None,
     on_progress: Optional[Callable[[float], None]] = None,
+    pool_start: Optional[int] = None,
 ) -> None:
     """
     resolve the labels and expressions to get the list of fj ops, and add all the data and segments into the fjm_writer.
@@ -425,22 +481,34 @@ def labels_resolve(
     @param fjm_writer: [out]: the .fjm file writer
     @param save_wflip_labels: record a `:wflips:N` debugging label per generated wflip-chain op
     @param on_progress: if given, called every _PROGRESS_CHUNK ops with the fraction of ops resolved (OpStream only)
+    @param pinned: {jump-word address: block base} of the words a BlockPool pinned (see BinaryData.pinned_value)
+    @param pool_start: where a table pool starts, if one placed tables: no other segment may reach it
     """
     if isinstance(ops, OpStream):
         first_object = ops.first_object()
         if not isinstance(first_object, NewSegment):
             first_op = ops.op_at(0) if ops else None
             raise FlipJumpAssemblerException(f"The first op must be of type NewSegment (and not {first_op}).")
-        binary_data = BinaryData(memory_width, first_object, labels, save_wflip_labels=save_wflip_labels, pinned=pinned)
+        binary_data = BinaryData(
+            memory_width,
+            first_object,
+            labels,
+            save_wflip_labels=save_wflip_labels,
+            pinned=pinned,
+            pool_start=pool_start,
+        )
         _labels_resolve_stream(ops, binary_data, labels, fjm_writer, on_progress)
         binary_data.close_and_add_segment(fjm_writer)
+        _refuse_unbaked_pins(binary_data)
         return
 
     first_segment = ops.popleft()
     if not isinstance(first_segment, NewSegment):
         raise FlipJumpAssemblerException(f"The first op must be of type NewSegment (and not {first_segment}).")
 
-    binary_data = BinaryData(memory_width, first_segment, labels, save_wflip_labels=save_wflip_labels, pinned=pinned)
+    binary_data = BinaryData(
+        memory_width, first_segment, labels, save_wflip_labels=save_wflip_labels, pinned=pinned, pool_start=pool_start
+    )
 
     for op in ops:
         if isinstance(op, FlipJump):
@@ -451,9 +519,10 @@ def labels_resolve(
 
         elif isinstance(op, WordFlip):
             try:
-                binary_data.insert_wflip_ops(
-                    op.get_word_address(labels), op.get_flip_value(labels), op.get_return_address(labels)
-                )
+                word_address, flip_value = op.get_word_address(labels), op.get_flip_value(labels)
+                if pinned:
+                    flip_value = binary_data.pinned_value(word_address, flip_value, value_kind(op.flip_value))
+                binary_data.insert_wflip_ops(word_address, flip_value, op.get_return_address(labels))
             except FlipJumpException as e:
                 raise FlipJumpAssemblerException(f"{e} in op {op}.")
 
@@ -470,6 +539,17 @@ def labels_resolve(
             raise FlipJumpAssemblerException(f"Can't resolve/assemble the next opcode - {str(op)}")
 
     binary_data.close_and_add_segment(fjm_writer)
+    _refuse_unbaked_pins(binary_data)
+
+
+def _refuse_unbaked_pins(binary_data: BinaryData) -> None:
+    unbaked = binary_data.unbaked_pins()
+    if unbaked:
+        raise FlipJumpAssemblerException(
+            f'table-placement: {len(unbaked)} pinned word(s) are no op (a `reserve`d variable?), first at '
+            f'{hex(unbaked[0])}: such a word rests at 0, not at its block base, so its arms miss. '
+            f'Veto it in pin_exclude.'
+        )
 
 
 def assert_first_op_assembled(fjm_writer: Writer) -> None:
@@ -539,7 +619,9 @@ def assemble(
         # expansion but the WORD is an expression (variables are usually declared after the code),
         # so it is resolved here, now that every label is known.
         pinned = None
+        pool_start = None
         if table_pool is not None:
+            pool_start = table_pool.pool_start()
             # a BlockPool records the alias these labels imply, for its census (a dict, not the labels)
             table_pool.labels_resolved(labels)
             pinned, table_pool.pin_conflicts = resolve_pinned(
@@ -558,6 +640,7 @@ def assemble(
                 save_wflip_labels=debugging_file_path is not None,
                 pinned=pinned,
                 on_progress=progress.update if progress.active else None,
+                pool_start=pool_start,
             )
         # MEMORY: every op is in the writer now; the stream (which labels-resolve reads, not consumes)
         # would otherwise live on through the binary's packing and compression

@@ -70,6 +70,11 @@ _ADD_SUB = ('+', '-')
 _NO_PARAMS: Dict[str, Expr] = {}
 
 
+def linear_sum(expr: Expr) -> Optional[Tuple[Optional[str], int]]:
+    """(label, constant) if expr is a +/- tree of at most one label (coefficient +1) and ints, else None"""
+    return _linear_in(expr, _NO_PARAMS)
+
+
 def _linear_in(expr: Expr, params: Dict[str, Expr]) -> Optional[Tuple[Optional[str], int]]:
     """(label, constant) if expr.eval_new(params) is a +/- tree of at most one label (coefficient +1) and
     ints, else None - without building the substituted tree: a name is replaced by its params value once
@@ -127,7 +132,7 @@ def _linear_memo(expr: Expr) -> Optional[Tuple[Optional[str], int]]:
 class OpStream:
     """an ordered stream of last-phase ops, stored compactly (see the module docstring)"""
 
-    __slots__ = ('kinds', 'vals', 'refs', 'labels', 'marks')
+    __slots__ = ('kinds', 'vals', 'refs', 'labels', 'marks', 'keep_label_values')
 
     def __init__(self, refs: List[Any], labels: Dict[str, int]):
         """
@@ -141,6 +146,8 @@ class OpStream:
         # (op index, vals index, ref) of every OBJ op, in order: flush_table_pool cuts the pool's
         # stream at its NewSegments without decoding it
         self.marks: List[Tuple[int, int, Any]] = []
+        # a wflip's value that names a label stays an expression (BlockPool tells an address from a number)
+        self.keep_label_values = False
 
     def __len__(self) -> int:
         return len(self.kinds)
@@ -290,9 +297,25 @@ class OpStream:
     ) -> None:
         """add_word_flip of the three operands' eval_new(params), the same slots"""
         self._operand_in(word_address, params)
-        self._operand_in(flip_value, params)
+        if self.keep_label_values:
+            self._value(flip_value.eval_new(params))
+        else:
+            self._operand_in(flip_value, params)
         self._operand_in(return_address, params)
         self._end_word_flip(code_position)
+
+    def _value(self, expr: Expr) -> None:
+        """a wflip value's slot(s), keep_label_values: one that names a label is never folded"""
+        if not expr.all_unknown_labels():
+            self._operand(expr)
+            return
+        refs = self.refs
+        if isinstance(expr.value, str):
+            self.vals.append(~(len(refs) << 2 | TAG_LABEL))
+            refs.append(expr.value)
+        else:
+            self.vals.append(~(len(refs) << 2 | TAG_EXPR))
+            refs.append(expr)
 
     def add_flip_jump(self, flip: Expr, jump: Expr, code_position: CodePosition) -> None:
         f: Any = flip.value
@@ -310,7 +333,10 @@ class OpStream:
         self, word_address: Expr, flip_value: Expr, return_address: Expr, code_position: CodePosition
     ) -> None:
         self._operand(word_address)
-        self._operand(flip_value)
+        if self.keep_label_values:
+            self._value(flip_value)
+        else:
+            self._operand(flip_value)
         self._operand(return_address)
         self._end_word_flip(code_position)
 
