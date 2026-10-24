@@ -52,7 +52,9 @@ ns hex {
     //   like:  hex.xor *ptr[:n], hex[:n]
     // ptr is a hex[:w/4] that holds an address, which we assume is an hex-variable, which is dw-aligned.
     // Arms ptr once; the armed fields then advance a cell at a time (see hex.pointers.advance).
+    // @Assumes: n >= 1 (n < 1 is refused at assemble time), and hex does not overlap ptr.
     def xor_hex_to_ptr n, ptr, hex {
+        rep(n < 1, i) .pointers.n_cell_ops__n_must_be_at_least_1
         .pointers.set_flip_pointer ptr
         .pointers.xor_hex_to_flip_ptr hex
         rep(n-1, i) .pointers.advance_and_xor_to_flip_ptr 1, hex + (i+1)*dw
@@ -63,7 +65,9 @@ ns hex {
     //   like:  hex.xor *ptr[:n], hex[:2n]
     // ptr is a hex[:w/4] that holds an address, which we assume is an hex-variable, which is dw-aligned.
     // Arms ptr once; the armed fields then advance a cell at a time (see hex.pointers.advance).
+    // @Assumes: n >= 1 (n < 1 is refused at assemble time), and hex does not overlap ptr.
     def xor_byte_to_ptr n, ptr, hex {
+        rep(n < 1, i) .pointers.n_cell_ops__n_must_be_at_least_1
         .pointers.set_flip_pointer ptr
         .pointers.xor_byte_to_flip_ptr hex
         rep(n-1, i) .pointers.advance_and_xor_to_flip_ptr 2, hex + (i+1)*2*dw

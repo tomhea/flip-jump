@@ -94,7 +94,9 @@ ns hex {
     //   like:  *ptr[:n] = src[:n]
     // src is a hex[:n]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     // Arms ptr once; the armed fields then advance a cell at a time (see hex.pointers.write_cells).
+    // @Assumes: n >= 1 (n < 1 is refused at assemble time), and src does not overlap ptr.
     def write_hex n, ptr, src {
+        rep(n < 1, i) .pointers.n_cell_ops__n_must_be_at_least_1
         .pointers.set_flip_and_jump_pointers ptr
         .pointers.write_cells n, 1, src
     }
@@ -114,7 +116,9 @@ ns hex {
     //   like:  *ptr[:n] = src[:2n]
     // src is a hex[:2n]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     // Arms ptr once; the armed fields then advance a cell at a time (see hex.pointers.write_cells).
+    // @Assumes: n >= 1 (n < 1 is refused at assemble time), and src does not overlap ptr.
     def write_byte n, ptr, src {
+        rep(n < 1, i) .pointers.n_cell_ops__n_must_be_at_least_1
         .pointers.set_flip_and_jump_pointers ptr
         .pointers.write_cells n, 2, src
     }

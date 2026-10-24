@@ -53,7 +53,9 @@ ns hex {
     //   like:  dst[:n] = *ptr[:n]
     // dst is a hex[:n]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     // Arms ptr once; the armed fields then advance a cell at a time (see hex.pointers.xor_cells_from_inners_ptrs).
+    // @Assumes: n >= 1 (n < 1 is refused at assemble time), and dst does not overlap ptr.
     def read_hex n, dst, ptr {
+        rep(n < 1, i) .pointers.n_cell_ops__n_must_be_at_least_1
         .zero n, dst
         .pointers.set_flip_and_jump_pointers ptr
         .pointers.xor_cells_from_inners_ptrs n, 1, dst
@@ -74,7 +76,9 @@ ns hex {
     //   like:  dst[:2n] = *ptr[:n]
     // dst is a hex[:2n]. ptr is a hex[:w/4] that holds an address, which we assume is dw-aligned.
     // Arms ptr once; the armed fields then advance a cell at a time (see hex.pointers.xor_cells_from_inners_ptrs).
+    // @Assumes: n >= 1 (n < 1 is refused at assemble time), and dst does not overlap ptr.
     def read_byte n, dst, ptr {
+        rep(n < 1, i) .pointers.n_cell_ops__n_must_be_at_least_1
         .zero 2*n, dst
         .pointers.set_flip_and_jump_pointers ptr
         .pointers.xor_cells_from_inners_ptrs n, 2, dst
